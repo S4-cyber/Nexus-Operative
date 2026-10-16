@@ -17,4 +17,4 @@ def test_matrix_ui_is_bundled():
     assert 'id="matrix-rain"' in html
     assert 'id="market-grid"' in html
     assert "loadMarkets()" in html
-    assert "streamMatrix()" in html
+    assert "matrixUpdate()" in html

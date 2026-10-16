@@ -9,7 +9,6 @@ from fastapi import HTTPException
 SERVICE="NexusOperativeResearch"
 ACCOUNT="OpenAIAdvisoryKey"
 _lock=threading.RLock()
-_enabled=False
 
 def _vault():
     if os.name!="nt":
@@ -31,14 +30,11 @@ def install(secret):
         vault=_vault()
         try:vault.set_password(SERVICE,ACCOUNT,secret)
         except Exception as exc:raise ValueError("VAULT_SAVE_FAILED") from None
-        global _enabled
-        _enabled=True
     return {"configured":True,"provider_connected":False,"stored_in":"WINDOWS_CREDENTIAL_MANAGER",
             "enabled_for_current_process":True,"paid_requests_sent":False,"live_orders_enabled":False}
 
 def retrieve():
     with _lock:
-        if not _enabled:return None
         try:return _vault().get_password(SERVICE,ACCOUNT)
         except Exception:return None
 
@@ -49,8 +45,6 @@ def configured():
 
 def disconnect():
     with _lock:
-        global _enabled
-        _enabled=False
         try:
             vault=_vault()
             try:vault.delete_password(SERVICE,ACCOUNT)

@@ -12,8 +12,9 @@ from nexus.paper_execution import PaperEngine
 from nexus.replay import replay
 from nexus.journal import record_replay, recent_replays
 from nexus.walkforward import walk_forward
+from nexus.risk_gate import evaluate as risk_evaluate
 
-app = FastAPI(title="Nexus Operative", version="1.9.2")
+app = FastAPI(title="Nexus Operative", version="1.9.3")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -104,6 +105,11 @@ def replay_history(limit: int = 20):
     except ValueError as exc:
         raise HTTPException(status_code=422,detail=str(exc))
 
+@app.post("/api/paper/risk-screen")
+def risk_screen(value: dict):
+    # A rejected/missing claim is never accepted as evidence of market profitability.
+    return risk_evaluate(value)
+
 class DepositPreview(BaseModel):
     amount: float = Field(gt=0, le=1000000)
     cadence: str = Field(pattern="^(once|weekly|monthly)$")
@@ -120,7 +126,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"1.9.2", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"1.9.3", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

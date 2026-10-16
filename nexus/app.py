@@ -18,9 +18,10 @@ from nexus.public_data import read_ticker, PRODUCTS
 from nexus.strategy_branches import available_branches
 from nexus.observer import observer, history as observation_history
 from nexus.tournament import tournament
+from nexus.council import council
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="2.1.0")
+app = FastAPI(title="Nexus Operative", version="2.2.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -88,6 +89,13 @@ def historical_replay(value: HistoricalReplay):
     except ValueError as exc:
         raise HTTPException(status_code=422,detail=str(exc))
 
+@app.post("/api/paper/council")
+def paper_council(evidence: dict):
+    try:
+        return council(evidence)
+    except ValueError as exc:
+        raise HTTPException(status_code=422,detail=str(exc))
+
 @app.post("/api/paper/tournament")
 def paper_tournament(value: HistoricalReplay):
     try:
@@ -152,7 +160,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"2.1.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"2.2.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

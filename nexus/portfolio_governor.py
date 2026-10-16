@@ -6,6 +6,7 @@ checks prohibit additional PAPER purchases; live trading remains impossible.
 """
 from decimal import Decimal, InvalidOperation
 from nexus.paper_portfolio import LOCK, _connect, PRODUCTS, D, FEE
+from nexus.transaction_seals import verify_seals
 
 def checked(raw, *, positive=False):
     try:
@@ -23,10 +24,13 @@ def audit_portfolio():
         entries=db.execute("SELECT id,action,product,cash_delta FROM ledger ORDER BY id").fetchall()
         positions=db.execute("SELECT product,quantity,entry FROM positions ORDER BY product").fetchall()
         journal=db.execute("SELECT ledger_id,action,product,quantity,entry FROM position_events ORDER BY ledger_id").fetchall()
+        chain_valid,chain_reason=verify_seals(db)
     if "initial" not in meta or "cash" not in meta:
         reasons.append("UNINITIALIZED_PORTFOLIO")
         return {"mode":"PAPER_INTEGRITY_AUDIT","integrity_ok":False,
                 "reasons":reasons,"simulation_only":True,"orders_enabled":False}
+    if meta.get("hash_chain_version")!="1":reasons.append("LEGACY_UNSEALED_JOURNAL")
+    if not chain_valid:reasons.append(chain_reason)
     try:
         capital=checked(meta["initial"],positive=True)
         cash=checked(meta["cash"])
@@ -83,7 +87,7 @@ def audit_portfolio():
         "journal_entries":len(entries),
         "paper_cost_basis_exposure":float(exposure) if exposure is not None else None,
         "simulation_only":True,"orders_enabled":False,
-        "limitations":"Version 2 journals reconstruct virtual quantities; legacy histories cannot be independently reconstructed. External fills are never verified."}
+        "limitations":"Version 2 journals reconstruct virtual quantities. SHA-256 seals detect isolated edits but are not externally anchored and cannot prevent coordinated rewrites. Legacy accounts require review."}
 
 def require_safe_ledger():
     report=audit_portfolio()

@@ -12,7 +12,7 @@ def test_integrity_checked_before_new_paper_buy(tmp_path,monkeypatch):
     initialize(1000)
     with sqlite3.connect(tmp_path/"paper_portfolio.sqlite3") as db:
         db.execute("UPDATE meta SET value='2000' WHERE key='cash'")
-    with pytest.raises(ValueError,match="mismatch"):
+    with pytest.raises(ValueError,match="CASH_JOURNAL_DISAGREEMENT"):
         buy("BTC-USD",10,quote())
     result=reconcile({})
     assert result["reconciled"] is False

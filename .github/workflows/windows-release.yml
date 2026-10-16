@@ -36,6 +36,21 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]" "pyinstaller>=6,<7"
           python -m pytest -q
+      - name: Validate PORTAL JavaScript syntax
+        shell: pwsh
+        run: |
+          $html = Get-Content 'dashboard/portal_preview.html' -Raw -Encoding UTF8
+          if (([regex]::Matches($html, '<script>')).Count -ne 1 -or
+              ([regex]::Matches($html, '</script>')).Count -ne 1 -or
+              ([regex]::Matches($html, '</html>')).Count -ne 1 -or
+              -not $html.TrimEnd().EndsWith('</html>')) {
+            throw 'PORTAL HTML document is malformed or has duplicate script content'
+          }
+          $code = [regex]::Match($html, '(?s)<script>(.*?)</script>').Groups[1].Value
+          if (-not $code) { throw 'PORTAL JavaScript missing' }
+          Set-Content -Path "$env:RUNNER_TEMP/portal_validate.js" -Value $code -Encoding UTF8
+          node --check "$env:RUNNER_TEMP/portal_validate.js"
+          if ($LASTEXITCODE -ne 0) { throw 'PORTAL JavaScript syntax check failed' }
       - name: Package standalone EXE
         shell: pwsh
         run: |

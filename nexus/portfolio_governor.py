@@ -22,6 +22,7 @@ def audit_portfolio():
         meta=dict(db.execute("SELECT key,value FROM meta"))
         entries=db.execute("SELECT id,action,product,cash_delta FROM ledger ORDER BY id").fetchall()
         positions=db.execute("SELECT product,quantity,entry FROM positions ORDER BY product").fetchall()
+        journal=db.execute("SELECT ledger_id,action,product,quantity,entry FROM position_events ORDER BY ledger_id").fetchall()
     if "initial" not in meta or "cash" not in meta:
         reasons.append("UNINITIALIZED_PORTFOLIO")
         return {"mode":"PAPER_INTEGRITY_AUDIT","integrity_ok":False,
@@ -38,6 +39,28 @@ def audit_portfolio():
             reasons.append("UNKNOWN_LEDGER_ACTION")
         if any(action=="INIT" for _,action,_,_ in entries[1:]):
             reasons.append("MULTIPLE_INITIAL_ENTRIES")
+        if meta.get("position_journal_version")!="2":
+            reasons.append("LEGACY_POSITION_HISTORY_UNVERIFIABLE")
+        else:
+            expected={}
+            trades={row[0]:(row[1],row[2]) for row in entries if row[1] in ("PAPER_BUY","PAPER_SELL")}
+            if len(journal)!=len(trades):reasons.append("MISSING_POSITION_EVENTS")
+            seen_ids=set()
+            for event_id,action,product,quantity,entry in journal:
+                if event_id in seen_ids or trades.get(event_id)!=(action,product):
+                    reasons.append("POSITION_EVENT_LEDGER_DISAGREEMENT")
+                seen_ids.add(event_id)
+                qty=checked(quantity,positive=True)
+                price=checked(entry,positive=True)
+                if action=="PAPER_BUY":
+                    if product in expected:reasons.append("DUPLICATE_POSITION_OPEN")
+                    expected[product]=(qty,price)
+                elif action=="PAPER_SELL":
+                    if expected.pop(product,None)!=(qty,price):
+                        reasons.append("POSITION_CLOSE_MISMATCH")
+                else:reasons.append("UNKNOWN_POSITION_EVENT")
+            stored={p:(checked(q,positive=True),checked(e,positive=True)) for p,q,e in positions}
+            if expected!=stored:reasons.append("POSITION_RECONSTRUCTION_MISMATCH")
         exposure=D(0)
         seen=set()
         for product,quantity,entry in positions:
@@ -60,7 +83,7 @@ def audit_portfolio():
         "journal_entries":len(entries),
         "paper_cost_basis_exposure":float(exposure) if exposure is not None else None,
         "simulation_only":True,"orders_enabled":False,
-        "limitations":"Cannot reconstruct historical position quantities from the legacy cash-only ledger, or verify real fills."}
+        "limitations":"Version 2 journals reconstruct virtual quantities; legacy histories cannot be independently reconstructed. External fills are never verified."}
 
 def require_safe_ledger():
     report=audit_portfolio()

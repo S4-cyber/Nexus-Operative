@@ -8,8 +8,9 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from nexus.state import load_settings, save_settings, audit
 from nexus.markets import list_markets
+from nexus.paper_execution import PaperEngine
 
-app = FastAPI(title="Nexus Operative", version="1.8.1")
+app = FastAPI(title="Nexus Operative", version="1.8.2")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -39,6 +40,31 @@ def update_paper_settings(value: PaperSettings):
         raise HTTPException(status_code=422, detail=str(e))
     return {"simulation_only": True, **settings}
 
+class PaperScenario(BaseModel):
+    capital: float = Field(gt=0, le=1000000)
+    tier: str = Field(pattern="^(terrestrial|solar|universal)$")
+    symbol: str = Field(pattern="^(SPY|QQQ|IWM|BTC/USD|ETH/USD)$")
+    direction: str = Field(pattern="^(UP|DOWN)$")
+    notional: float = Field(gt=0, le=1000000)
+    entry_price: float = Field(gt=0)
+    exit_price: float = Field(gt=0)
+
+@app.post("/api/paper/scenario")
+def paper_scenario(value: PaperScenario):
+    # Deterministic, one-roundtrip execution simulation; no external market or broker calls.
+    engine = PaperEngine(capital=value.capital)
+    now = time.time()
+    try:
+        enter = engine.open(value.tier,value.symbol,value.direction,value.notional,value.entry_price,now,{})
+        out = engine.close(value.symbol,value.exit_price,now,{})
+    except ValueError as exc:
+        raise HTTPException(status_code=422,detail=str(exc))
+    return {"mode":"PAPER_SCENARIO_ONLY","synthetic":True,"open":enter,"close":out,
+            "ending_paper_cash":float(engine.cash),
+            "starting_paper_cash":float(engine.initial),
+            "net_pnl":float(engine.cash-engine.initial),
+            "disclaimer":"This is a hypothetical round-trip, not a trade or estimated win probability."}
+
 class DepositPreview(BaseModel):
     amount: float = Field(gt=0, le=1000000)
     cadence: str = Field(pattern="^(once|weekly|monthly)$")
@@ -55,7 +81,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"1.8.1", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"1.8.2", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

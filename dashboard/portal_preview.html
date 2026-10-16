@@ -52,6 +52,9 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <p class="sub">Nexus already runs offline research without a paid AI account. Connecting an external AI provider adds structured specialist commentary; it does not enable trading, improve profitability guarantees, or override risk vetoes.</p>
 <p class="sub">On Windows: paste your API key once into the secure local vault form below. The key is sent only to your own 127.0.0.1 Nexus backend, stored in Windows Credential Manager, and is not sent to the AI provider until you separately choose a paid research request. A key is needed only for optional external commentary.</p>
 <div class="actions"><label for="aikey">API Key (local vault only) <input id="aikey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-..." size="34"></label><button id="aiconnect">Save Key Locally & Enable</button><button id="aidisconnect">Disconnect & Remove Saved Key</button></div>
+<div class="actions"><button id="aipreview">Preview Public Data Before Sending</button><button id="aisendpreview" disabled>Send Reviewed Data to AI (May Cost Money)</button></div>
+<p class="sub" id="aipreviewresult" role="status" aria-live="polite">Nothing prepared or sent. Previews use local, already collected Coinbase history and never make external AI calls.</p>
+<pre id="aipreviewdata" class="monitor" aria-label="Exact public research data that would be sent">No evidence preview.</pre>
 <div class="actions"><button id="aistatus">Check AI Connection</button><button id="aiguide">How to Connect Safely</button><button id="aitest" disabled>Send One Research Request (May Cost Money)</button></div>
 <p class="sub" id="aiconnectorstatus" role="status" aria-live="polite">Checking local configuration. No connection or paid requests are made automatically.</p>
 <div id="aisetup" class="monitor" hidden>
@@ -176,6 +179,26 @@ byId('readinesscheck').onclick=async()=>{try{
  const ai=d.optional_ai.configured?'Optional AI locally configured (not connected)':'Optional AI disconnected — no setup necessary';
  show('readinessresult','READY: offline research. Public market data uses internet when requested. '+storage+'. '+ai+'. No payments, orders or external calls made by this check.');
  }catch(e){show('readinessresult','Readiness check unavailable: '+e.message)}};
+let approvedAiPreview=null;
+byId('aipreview').onclick=async()=>{
+ approvedAiPreview=null;byId('aisendpreview').disabled=true;show('aipreviewdata','Preparing local-only public-market summary...');
+ try{const p=byId('publicpair').value;const d=await api('/api/paper/ai-provider/public-preview/'+encodeURIComponent(p));
+ if(!d.ready){show('aipreviewdata','Insufficient validated market history.');show('aipreviewresult','Cannot send: '+(d.reasons||[]).join(', '));return;}
+ approvedAiPreview={product:p,digest:d.sha256};
+ show('aipreviewdata',JSON.stringify(d.snapshot,null,2));
+ show('aipreviewresult','Preview ready. This is the exact public data proposed for the external AI provider; it contains no keys or account balances. Nothing sent.');byId('aisendpreview').disabled=false;
+ }catch(e){show('aipreviewresult','Preview unavailable: '+e.message);show('aipreviewdata','No data sent.')}
+};
+byId('aisendpreview').onclick=async()=>{
+ if(!approvedAiPreview)return;
+ if(byId('publicpair').value!==approvedAiPreview.product){approvedAiPreview=null;byId('aisendpreview').disabled=true;show('aipreviewresult','Market changed; preview again.');return;}
+ const accepted=window.confirm('Send the exact displayed public market summary to OpenAI for optional commentary? This may incur API charges. No credentials, balances or orders are included, and the model cannot trade.');
+ if(!accepted)return;
+ const selected=approvedAiPreview;approvedAiPreview=null;byId('aisendpreview').disabled=true;
+ try{const d=await api('/api/paper/ai-provider/public-preview/send',{method:'POST',headers:jsonHeaders,body:JSON.stringify({product:selected.product,preview_sha256:selected.digest})});
+ show('aipreviewresult','AI research only: '+d.advisory.verdict+' / '+d.advisory.reason+' / NO TRADE AUTHORITY');
+ }catch(e){show('aipreviewresult','No advisory result: '+e.message+'. Review fresh data before retrying.')}
+};
 async function refreshAISetup(){
  try{const d=await api('/api/paper/ai-provider/status');
  byId('aitest').disabled=!d.configured||d.requests_used_process>=d.max_requests_process;

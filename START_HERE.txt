@@ -1,0 +1,13 @@
+NEXUS OPERATIVE v1.7.2 — DEVELOPMENT PAPER SIMULATION
+
+Launch Nexus Operative from the Windows Start menu or desktop shortcut.
+The local application opens PORTAL in your browser at http://127.0.0.1:8000/portal
+(or an automatically selected alternative port).
+
+NO LIVE BROKERAGE, BANK LINKING, ACH TRANSFERS, CARD COLLECTION OR TRADING.
+All risk scores are illustrative, not profit forecasts. Emergency halt blocks
+subsequent simulated PORTAL activations until application restart.
+
+Local working files reside in %LOCALAPPDATA%\NexusOperative\storage.
+A computer switched off cannot provide a remote worker direct access to its USB drive.
+No cloud service has been connected or deployed.

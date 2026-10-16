@@ -7,8 +7,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from nexus.state import load_settings, save_settings, audit
+from nexus.markets import list_markets
 
-app = FastAPI(title="Nexus Operative", version="1.8.0")
+app = FastAPI(title="Nexus Operative", version="1.8.1")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -54,9 +55,26 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"1.8.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"1.8.1", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
+
+@app.get("/api/markets")
+def market_catalog():
+    return list_markets()
+
+@app.get("/api/matrix")
+def matrix():
+    return {
+      "mode":"SYNTHETIC_TELEMETRY",
+      "live_orders":False,
+      "active":not _paused and not _halted,
+      "events":[
+        {"tier":t["tier"],"message":t["example_trade"],"score":t["illustrative_signal_score"],
+         "outcome":t["current_outcome"],"synthetic":True}
+        for t in simulated_snapshot()
+      ]
+    }
 
 @app.get("/api/tiers")
 def tiers():

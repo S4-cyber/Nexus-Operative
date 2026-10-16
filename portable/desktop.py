@@ -33,6 +33,8 @@ def select_port(preferred=8000):
 def main():
     root, data = configure()
     os.chdir(root)
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
     import uvicorn
     from nexus.app import app
     port = select_port(os.environ.get("NEXUS_PORT", "8000"))

@@ -85,7 +85,7 @@ def corroborate(product,coinbase,kraken,now=None):
         divergence=float(abs(samples[0][0]-samples[1][0])/midpoint*10000)
         if divergence>MAX_MID_DIVERGENCE_BPS:
             issues.append("CROSS_VENUE_PRICE_DIVERGENCE")
-    if kraken.get("has_exchange_timestamp") is not False:
+    if not isinstance(kraken,dict) or kraken.get("has_exchange_timestamp") is not False:
         issues.append("KRAKEN_FRESHNESS_UNCERTAIN")
     return {"component":"TWO_VENUE_READ_ONLY_CORROBORATION","product":product,
             "decision":"VETO" if issues else "PROVISIONAL_AGREEMENT",

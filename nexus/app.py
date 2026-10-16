@@ -15,8 +15,10 @@ from nexus.walkforward import walk_forward
 from nexus.risk_gate import evaluate as risk_evaluate
 from nexus.stress import stress_screen
 from nexus.public_data import read_ticker, PRODUCTS
+from nexus.strategy_branches import available_branches
+from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="1.9.5")
+app = FastAPI(title="Nexus Operative", version="1.9.6")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -141,7 +143,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"1.9.5", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"1.9.6", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -153,6 +155,53 @@ def public_quote(product: str):
         return read_ticker(product)
     except ValueError:
         raise HTTPException(status_code=503,detail="Read-only public quote unavailable or stale")
+
+class PortfolioInit(BaseModel):
+    paper_capital: float = Field(gt=0, le=1000000)
+
+class PaperTrade(BaseModel):
+    product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
+    notional: float = Field(gt=0, le=1000000)
+
+class PaperClose(BaseModel):
+    product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
+
+@app.get("/api/strategy-branches")
+def strategy_branches():
+    return available_branches()
+
+@app.get("/api/paper/portfolio")
+def paper_portfolio():
+    return paper_portfolio_state()
+
+@app.post("/api/paper/portfolio/init")
+def paper_portfolio_init(data:PortfolioInit):
+    try:return init_paper_portfolio(data.paper_capital)
+    except ValueError as exc:raise HTTPException(status_code=409,detail=str(exc))
+
+@app.post("/api/paper/portfolio/buy")
+def paper_portfolio_buy(data:PaperTrade):
+    try:
+        quote=read_ticker(data.product)
+        return paper_buy(data.product,data.notional,quote)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+
+@app.post("/api/paper/portfolio/sell")
+def paper_portfolio_sell(data:PaperClose):
+    try:
+        quote=read_ticker(data.product)
+        return paper_sell(data.product,quote)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+
+@app.get("/api/paper/portfolio/reconcile")
+def paper_portfolio_reconcile():
+    snapshot=paper_portfolio_state()
+    quotes={}
+    for position in snapshot["positions"]:
+        try:quotes[position["product"]]=read_ticker(position["product"])
+        except ValueError:
+            return {"reconciled":False,"reason":"Quote unavailable", "simulation_only":True}
+    return reconcile_paper(quotes)
 
 @app.get("/api/markets")
 def market_catalog():

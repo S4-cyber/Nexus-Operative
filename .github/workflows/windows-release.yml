@@ -1,8 +1,5 @@
 name: Windows simulated-research build
 on:
-  push:
-    branches: [main]
-    paths: [BUILD_PORTFOLIO_V196.request]
   workflow_dispatch:
     inputs:
       source_branch:

@@ -9,8 +9,9 @@ from pydantic import BaseModel, Field
 from nexus.state import load_settings, save_settings, audit
 from nexus.markets import list_markets
 from nexus.paper_execution import PaperEngine
+from nexus.replay import replay
 
-app = FastAPI(title="Nexus Operative", version="1.8.2")
+app = FastAPI(title="Nexus Operative", version="1.9.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -65,6 +66,19 @@ def paper_scenario(value: PaperScenario):
             "net_pnl":float(engine.cash-engine.initial),
             "disclaimer":"This is a hypothetical round-trip, not a trade or estimated win probability."}
 
+class HistoricalReplay(BaseModel):
+    capital: float = Field(gt=0, le=1000000)
+    closes: list[float] = Field(min_length=5, max_length=10000)
+    tier: str = Field(pattern="^(terrestrial|solar|universal)$")
+    direction: str = Field(pattern="^(UP|DOWN)$")
+
+@app.post("/api/paper/replay")
+def historical_replay(value: HistoricalReplay):
+    try:
+        return replay(value.closes,value.capital,value.tier,value.direction)
+    except ValueError as exc:
+        raise HTTPException(status_code=422,detail=str(exc))
+
 class DepositPreview(BaseModel):
     amount: float = Field(gt=0, le=1000000)
     cadence: str = Field(pattern="^(once|weekly|monthly)$")
@@ -81,7 +95,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"1.8.2", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"1.9.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

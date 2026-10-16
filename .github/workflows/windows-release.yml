@@ -1,6 +1,20 @@
 name: Windows simulated-research build
 on:
+  push:
+    branches:
+      - development/windows-portal-foundation
   workflow_dispatch:
+    inputs:
+      source_branch:
+        description: 'Build this reviewed development source branch'
+        type: choice
+        required: true
+        default: development/windows-portal-foundation
+        options:
+          - development/windows-portal-foundation
+concurrency:
+  group: nexus-windows-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -9,6 +23,8 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'push' && github.ref_name || inputs.source_branch || 'development/windows-portal-foundation' }}
       - name: Require application source
         shell: pwsh
         run: |
@@ -26,6 +42,21 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]" "pyinstaller>=6,<7"
           python -m pytest -q
+      - name: Validate PORTAL JavaScript syntax
+        shell: pwsh
+        run: |
+          $html = Get-Content 'dashboard/portal_preview.html' -Raw -Encoding UTF8
+          if (([regex]::Matches($html, '<script>')).Count -ne 1 -or
+              ([regex]::Matches($html, '</script>')).Count -ne 1 -or
+              ([regex]::Matches($html, '</html>')).Count -ne 1 -or
+              -not $html.TrimEnd().EndsWith('</html>')) {
+            throw 'PORTAL HTML document is malformed or has duplicate script content'
+          }
+          $code = [regex]::Match($html, '(?s)<script>(.*?)</script>').Groups[1].Value
+          if (-not $code) { throw 'PORTAL JavaScript missing' }
+          Set-Content -Path "$env:RUNNER_TEMP/portal_validate.js" -Value $code -Encoding UTF8
+          node --check "$env:RUNNER_TEMP/portal_validate.js"
+          if ($LASTEXITCODE -ne 0) { throw 'PORTAL JavaScript syntax check failed' }
       - name: Package standalone EXE
         shell: pwsh
         run: |

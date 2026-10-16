@@ -34,12 +34,13 @@ from nexus.evidence_auditor import audit_evidence
 from nexus.latency import latency_observatory
 from nexus.model_adapters import coordinate as coordinate_model_advisors
 from nexus.provider_research import status as provider_research_status, request as provider_research_request
+from nexus.onboarding import inventory as local_capability_inventory
 from nexus.safety_benchmark import benchmark as safety_benchmark
 from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.41.1")
+app = FastAPI(title="Nexus Operative", version="0.42.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -110,6 +111,10 @@ def historical_replay(value: HistoricalReplay):
 @app.get("/api/paper/safety-benchmark")
 def run_safety_benchmark():
     return safety_benchmark()
+
+@app.get("/api/onboarding/readiness")
+def onboarding_readiness():
+    return local_capability_inventory()
 
 @app.get("/api/paper/ai-provider/status")
 def ai_provider_status():
@@ -215,7 +220,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.41.1", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.42.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

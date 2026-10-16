@@ -1,20 +1,16 @@
-# Nexus Operative Windows preview (v1.7.2)
+# Nexus Operative — pre-release development v0.38.0
 
-This branch is a small, buildable **simulated PORTAL desktop preview**, imported directly through the connected GitHub tools. It **is not the full v1.7.1 research engine**, whose additional modules and tests are not imported yet.
+This branch provides a **simulation-only** Windows PORTAL research application. The development snapshot previously labeled v3.8.0 was renumbered **v0.38.0** so v1.0.0 can be reserved for the first completed, reviewed launch. See [VERSIONING.md](VERSIONING.md) for historical labels, future prerelease numbering, and required release gates.
 
 ## Windows CI
+Every push to `development/windows-portal-foundation` automatically runs Python tests, validates PORTAL JavaScript, packages the Windows standalone EXE, verifies startup, and produces the Inno Setup installer if all steps pass. Artifacts are unsigned and temporary; check the relevant GitHub Actions run for results.
 
-The GitHub Actions workflow is **manual only** to avoid repeated incomplete-build notifications. It installs dependencies, runs pytest, builds the PyInstaller EXE, verifies the HTTP API and PORTAL UI, then builds the optional Inno Setup installer. Artifacts are not signed; Windows SmartScreen may warn.
+## Safety
+Public-data ingestion and strategy evaluations are research-only. No authorized live brokerage orders, transfers, bank linkage or autonomous live trading are present. Successful simulation or CI tests do **not** constitute production approval.
 
-## Security boundaries
-
-No Plaid Link, brokerage connection, autonomous remote worker, ACH deposit or live order route is implemented. Funding previews do not transfer money. No raw financial credentials are accepted. Do not store secrets in GitHub.
-
-## Launch from Python
-
-`python -m pip install -e ".[dev]"`
-`python portable/desktop.py`
-
-To run tests: `python -m pytest -q`
-
-The source has not been tested as a Windows EXE yet.
+## Run locally
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest -q
+python portable/desktop.py
+```

@@ -36,6 +36,7 @@ def test_risk_cap_and_halt():
     e=PaperEngine()
     with pytest.raises(ValueError):e.open("terrestrial","SPY","UP","3","500",now(),{})
     e.open("terrestrial","SPY","UP","1","500",now(),{})
+    e.cash = Decimal("90")
     with pytest.raises(ValueError):e._risk({"SPY":"1"})
     assert e.halted
 

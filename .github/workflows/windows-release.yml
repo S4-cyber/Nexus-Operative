@@ -6,7 +6,7 @@ permissions:
 jobs:
   test-and-build:
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - name: Require application source
@@ -29,11 +29,12 @@ jobs:
       - name: Package standalone EXE
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --name NexusOperative --collect-submodules nexus --collect-submodules uvicorn --collect-submodules fastapi --collect-submodules pydantic --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan.on --add-data "dashboard;dashboard" portable/desktop.py
+          python -m PyInstaller --noconfirm --clean --onefile --name NexusOperative --collect-submodules nexus --collect-submodules uvicorn --collect-submodules fastapi --collect-submodules pydantic --collect-submodules webview --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan.on --add-data "dashboard;dashboard" portable/desktop.py
           if (!(Test-Path dist/NexusOperative.exe)) { throw 'EXE missing' }
       - name: Verify EXE starts
         shell: pwsh
         run: |
+          $env:NEXUS_BROWSER_MODE = '1'
           $proc = Start-Process -FilePath ".\dist\NexusOperative.exe" -PassThru -WindowStyle Hidden
           try {
             $ready = $false

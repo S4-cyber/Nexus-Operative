@@ -26,7 +26,7 @@ from nexus.safety_benchmark import benchmark as safety_benchmark
 from nexus.portfolio_governor import audit_portfolio
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="2.8.0")
+app = FastAPI(title="Nexus Operative", version="2.9.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -192,7 +192,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"2.8.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"2.9.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

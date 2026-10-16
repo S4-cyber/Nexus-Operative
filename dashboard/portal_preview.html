@@ -39,6 +39,13 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <article class="card"><div class="label">Integration constellation</div><h2>Market Access Registry</h2><div id="market-grid" class="tiny">Loading supported targets…</div></article>
 </section>
 <section class="card"><div class="label">NEXUS council // independent governor</div><h2>Five-Specialist Decision Council</h2><p class="sub">Five deterministic evaluators can veto. This is not yet a connected multi-LLM system.</p><button id="counciltest">Run Council Diagnostic</button><button id="modeldiagnostic">Test Advisory Sandbox</button><p class="sub" id="councilstatus">Awaiting diagnostic.</p><p class="sub" id="modelreadout">No AI provider connected.</p><div id="councildetails" class="grid"></div></section>
+<section class="card" aria-label="First-run readiness">
+<div class="label">Plug-and-play // no account needed</div>
+<h2>System Readiness</h2>
+<p class="sub">Start using offline paper research immediately. This check reads local capability status only; it does not connect accounts, send information externally, place orders or incur charges.</p>
+<button id="readinesscheck">Check What Works Now</button>
+<p class="sub" id="readinessresult" role="status" aria-live="polite">Offline research is available without setup. Run the check for detailed capabilities.</p>
+</section>
 <section class="card" aria-label="Optional AI research connector">
 <div class="label">One-time optional setup // safe defaults enabled</div>
 <h2>Connect AI Research (Optional)</h2>
@@ -161,6 +168,12 @@ byId('safetybenchmark').onclick=async()=>{try{const d=await api('/api/paper/safe
 byId('riskdemo').onclick=async()=>{try{const d=await api('/api/paper/risk-screen',{method:'POST',headers:jsonHeaders,body:JSON.stringify({})});show('riskresult',d.decision+' / '+d.reasons.join(', '))}catch(e){show('riskresult',e.message)}};
 byId('stressdemo').onclick=async()=>{try{const d=await api('/api/paper/stress',{method:'POST',headers:jsonHeaders,body:JSON.stringify({equity:value('paperbudget'),notional:value('labamount'),direction:byId('labdir').value,daily_loss:0})});show('stressresult',d.decision+' / Max modeled loss $'+d.max_modeled_loss+' / NOT A LOSS GUARANTEE')}catch(e){show('stressresult',e.message)}};
 byId('counciltest').onclick=async()=>{try{const evidence={symbol:'BTC-USD',data_source:'coinbase_exchange_public',data_verified:false,quote_age_seconds:1,spread_bps:4,estimated_roundtrip_fees_bps:5,estimated_slippage_bps:6,conservative_edge_bps:0,history_observations:0,out_of_sample_trades:0,out_of_sample_net_pnl:0,equity:value('paperbudget'),proposed_notional:value('labamount'),current_exposure:0,daily_loss:0,stress_loss_estimate:0,emergency_halt:false,account_reconciled:false,market_eligible:false};const d=await api('/api/paper/council',{method:'POST',headers:jsonHeaders,body:JSON.stringify(evidence)});show('councilstatus',d.consensus+' / '+d.vetoes.join(', ')+' / GOVERNOR: '+d.governor_decision);const root=byId('councildetails');root.replaceChildren();for(const item of d.specialists){const c=document.createElement('div');c.className='market';c.textContent=item.specialist+' / '+item.verdict+' / '+item.reasons.join(', ');root.append(c)}}catch(e){show('councilstatus',e.message)}};
+byId('readinesscheck').onclick=async()=>{try{
+ const d=await api('/api/onboarding/readiness');
+ const storage=d.paper_storage.write_permission_indicated?'Storage path appears writable':'Storage path not confirmed writable';
+ const ai=d.optional_ai.configured?'Optional AI locally configured (not connected)':'Optional AI disconnected — no setup necessary';
+ show('readinessresult','READY: offline research. Public market data uses internet when requested. '+storage+'. '+ai+'. No payments, orders or external calls made by this check.');
+ }catch(e){show('readinessresult','Readiness check unavailable: '+e.message)}};
 async function refreshAISetup(){
  try{const d=await api('/api/paper/ai-provider/status');
  byId('aitest').disabled=!d.configured||d.requests_used_process>=d.max_requests_process;

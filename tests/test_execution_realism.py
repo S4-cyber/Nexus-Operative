@@ -52,4 +52,4 @@ def test_inadequate_data_veto_and_api_guard(tmp_path,monkeypatch):
     client=TestClient(app)
     assert client.post("/api/candle-research/BTC-USD/execution-stress").json()["live_orders_enabled"] is False
     assert client.post("/api/candle-research/INVALID/execution-stress").status_code==422
-    assert client.get("/api/status").json()["version"]=="0.39.0"
+    assert client.get("/api/status").json()["version"]==app.version

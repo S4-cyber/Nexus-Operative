@@ -83,6 +83,8 @@ def verify_ledger(db):
 def buy(product,notional,quote):
     amount=num(notional)
     _,ask=check_quote(product,quote)
+    from nexus.portfolio_governor import require_safe_ledger
+    require_safe_ledger()
     with LOCK,_connect() as db:
         meta=dict(db.execute("SELECT key,value FROM meta"))
         if "cash" not in meta:raise ValueError("Initialize first")

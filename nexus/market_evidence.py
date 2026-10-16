@@ -73,6 +73,7 @@ def recent(product=None,limit=25):
         valid=hashlib.sha256(payload.encode()).hexdigest()==digest
         try: details=json.loads(payload)
         except (ValueError,TypeError):details=None
+        valid=valid and isinstance(details,dict) and details.get("product")==p and details.get("decision")==decision and details.get("live_orders_enabled") is False
         items.append({"id":identifier,"observed_at":when,"product":p,
            "decision":decision if valid else "VETO",
            "details":details if valid else None,"local_record_integrity":valid,

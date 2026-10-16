@@ -5,7 +5,7 @@ includes a **separate, disabled-by-default** OpenAI Chat Completions research
 adapter for advisory-only responses. It never routes an order, produces an
 approval, accesses accounts or receives market-data-provider credentials.
 
-## Local setup (optional)
+## Recommended Windows setup — one-time, inside PORTAL\n1. Open Nexus PORTAL and expand **Connect AI Research (Optional)**.\n2. Create your own OpenAI API key and set an appropriate provider-side spending limit.\n3. Enter the key in **API Key (local vault only)** and choose **Save Key Locally & Enable**. The UI asks for explicit approval before storage; this saves it to Windows Credential Manager, not a plaintext config file.\n4. The system will not send billable inference requests until you separately click **Send One Research Request** and approve its confirmation. **Disconnect & Remove Saved Key** deletes the locally stored credential.\n\nThis built-in vault setup is currently Windows-specific. It runs on local loopback, so do not expose Nexus PORTAL to external networks. All AI features remain optional, and the system never requests funds or enables trades.\n\n## Alternate local environment setup (optional)
 1. Obtain an OpenAI API key directly from your own provider account and
    understand that requests can incur provider charges.
 2. On your own machine, set `NEXUS_ENABLE_LLM_RESEARCH=1` and set

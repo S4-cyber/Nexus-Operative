@@ -1,0 +1,69 @@
+"""Independent local paper-portfolio integrity governor.
+
+Audits local SQLite journal and position invariants without network access.
+It cannot prove that historical prices or fills were real. Failed integrity
+checks prohibit additional PAPER purchases; live trading remains impossible.
+"""
+from decimal import Decimal, InvalidOperation
+from nexus.paper_portfolio import LOCK, _connect, PRODUCTS, D, FEE
+
+def checked(raw, *, positive=False):
+    try:
+        value=Decimal(str(raw))
+    except (InvalidOperation,TypeError,ValueError) as exc:
+        raise ValueError("INVALID_NUMERIC_LEDGER_FIELD") from exc
+    if not value.is_finite() or value < 0 or (positive and value == 0):
+        raise ValueError("INVALID_NUMERIC_LEDGER_FIELD")
+    return value
+
+def audit_portfolio():
+    reasons=[]
+    with LOCK,_connect() as db:
+        meta=dict(db.execute("SELECT key,value FROM meta"))
+        entries=db.execute("SELECT id,action,product,cash_delta FROM ledger ORDER BY id").fetchall()
+        positions=db.execute("SELECT product,quantity,entry FROM positions ORDER BY product").fetchall()
+    if "initial" not in meta or "cash" not in meta:
+        reasons.append("UNINITIALIZED_PORTFOLIO")
+        return {"mode":"PAPER_INTEGRITY_AUDIT","integrity_ok":False,
+                "reasons":reasons,"simulation_only":True,"orders_enabled":False}
+    try:
+        capital=checked(meta["initial"],positive=True)
+        cash=checked(meta["cash"])
+        deltas=[Decimal(str(event[3])) for event in entries]
+        if not deltas or any(not d.is_finite() for d in deltas) or sum(deltas,D(0))!=cash:
+            reasons.append("CASH_JOURNAL_DISAGREEMENT")
+        if not entries or entries[0][1]!="INIT" or D(str(entries[0][3]))!=capital:
+            reasons.append("INVALID_INITIAL_ENTRY")
+        if any(action not in ("INIT","PAPER_BUY","PAPER_SELL") for _,action,_,_ in entries):
+            reasons.append("UNKNOWN_LEDGER_ACTION")
+        if any(action=="INIT" for _,action,_,_ in entries[1:]):
+            reasons.append("MULTIPLE_INITIAL_ENTRIES")
+        exposure=D(0)
+        seen=set()
+        for product,quantity,entry in positions:
+            if product not in PRODUCTS or product in seen:
+                reasons.append("UNKNOWN_OR_DUPLICATE_POSITION")
+            seen.add(product)
+            size=checked(quantity,positive=True)*checked(entry,positive=True)
+            exposure+=size
+            if size>capital*D(".02"):
+                reasons.append("POSITION_EXCEEDS_LIMIT")
+        if exposure>capital*D(".10"):
+            reasons.append("AGGREGATE_EXPOSURE_LIMIT")
+        if cash>capital*D("100"):
+            reasons.append("IMPLAUSIBLE_CASH_BALANCE")
+    except (InvalidOperation,ValueError,OverflowError):
+        reasons.append("INVALID_NUMERIC_LEDGER_FIELD")
+        exposure=None
+    return {"mode":"PAPER_INTEGRITY_AUDIT","integrity_ok":not reasons,
+        "reasons":sorted(set(reasons)),"position_count":len(positions),
+        "journal_entries":len(entries),
+        "paper_cost_basis_exposure":float(exposure) if exposure is not None else None,
+        "simulation_only":True,"orders_enabled":False,
+        "limitations":"Cannot reconstruct historical position quantities from the legacy cash-only ledger, or verify real fills."}
+
+def require_safe_ledger():
+    report=audit_portfolio()
+    if not report["integrity_ok"]:
+        raise ValueError("Paper governor veto: "+", ".join(report["reasons"]))
+    return report

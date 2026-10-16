@@ -19,9 +19,11 @@ from nexus.strategy_branches import available_branches
 from nexus.observer import observer, history as observation_history
 from nexus.tournament import tournament
 from nexus.council import council
+from nexus.evidence_auditor import audit_evidence
+from nexus.latency import latency_observatory
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="2.2.0")
+app = FastAPI(title="Nexus Operative", version="2.3.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -89,10 +91,26 @@ def historical_replay(value: HistoricalReplay):
     except ValueError as exc:
         raise HTTPException(status_code=422,detail=str(exc))
 
+@app.get("/api/latency")
+def latency_status():
+    return latency_observatory.summary()
+
+@app.post("/api/paper/evidence-audit")
+def evidence_audit(evidence:dict):
+    try:
+        return latency_observatory.measure("evidence_audit",lambda:audit_evidence(evidence))
+    except ValueError as exc:
+        raise HTTPException(status_code=422,detail=str(exc))
+
 @app.post("/api/paper/council")
 def paper_council(evidence: dict):
     try:
-        return council(evidence)
+        # Audit is independent: no asserted 'verified' flag can bypass it.
+        audit=latency_observatory.measure('evidence_audit',lambda:audit_evidence(evidence))
+        result=latency_observatory.measure('council_decision',lambda:council(evidence))
+        result['evidence_audit']=audit
+        result['consensus']='REJECT' if audit['decision']!='VERIFIED' else result['consensus']
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=422,detail=str(exc))
 
@@ -160,7 +178,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"2.2.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"2.3.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

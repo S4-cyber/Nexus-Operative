@@ -1,6 +1,14 @@
 name: Windows simulated-research build
 on:
   workflow_dispatch:
+    inputs:
+      source_branch:
+        description: 'Source branch to package (development only)'
+        required: true
+        type: choice
+        default: development/windows-portal-foundation
+        options:
+          - development/windows-portal-foundation
 permissions:
   contents: read
 jobs:
@@ -9,6 +17,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_branch }}
       - name: Require application source
         shell: pwsh
         run: |
@@ -51,6 +61,13 @@ jobs:
           } finally {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
           }
+      - name: Upload standalone EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: NexusOperative-Standalone-Windows
+          path: dist/NexusOperative.exe
+          if-no-files-found: error
+          retention-days: 30
       - name: Build installer (Inno Setup)
         shell: pwsh
         run: |
@@ -63,9 +80,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
       - uses: actions/upload-artifact@v4
         with:
-          name: NexusOperative-Windows-EXE
-          path: |
-            dist/NexusOperative.exe
-            release/NexusOperative-Setup-*.exe
+          name: NexusOperative-Windows-Installer
+          path: release/NexusOperative-Setup-*.exe
           if-no-files-found: error
           retention-days: 7

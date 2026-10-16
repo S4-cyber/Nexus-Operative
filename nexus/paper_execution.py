@@ -6,7 +6,7 @@ exposure, NOT margin borrowing, short sale, or an executable broker order.
 """
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from datetime import datetime, timezone
+import time
 
 D=Decimal
 TIERS={"terrestrial":D("0.01"),"solar":D("0.02"),"universal":D("0.03")}
@@ -24,8 +24,8 @@ def positive(n):
 
 def quote_age_ok(ts,now=None):
     if isinstance(ts,bool) or not isinstance(ts,(float,int)): return False
-    now=datetime.now(timezone.utc).timestamp() if now is None else now
-    return 0<=now-ts<=10
+    now=time.time() if now is None else now
+    return -1<=now-ts<=10
 
 @dataclass
 class PaperPosition:

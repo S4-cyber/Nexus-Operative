@@ -32,8 +32,13 @@ def validate_response(value,role):
         raise ValueError("Invalid role or verdict")
     if type(value.get("reason")) is not str or not 1<=len(value["reason"])<=300:
         raise ValueError("Missing bounded reason")
-    if value.get("order") is not None or value.get("credentials") is not None:
-        raise ValueError("Untrusted trading or credential request")
+    # Fail closed on all unexpected keys, including null-valued order/tool
+    # hints. External advisers have no authority to invent new capabilities.
+    allowed={"role","verdict","reason","estimated_cost_usd"}
+    if set(value)!=allowed:
+        raise ValueError("Unknown or missing advisory fields")
+    if any(ord(char)<32 and char not in "\\t\\n" for char in value["reason"]):
+        raise ValueError("Unsafe advisory control characters")
     cost=finite(value.get("estimated_cost_usd",0))
     if cost>BUDGET_USD:raise ValueError("Single-adapter cost exceeds budget")
     return {"role":role,"verdict":value["verdict"],"reason":value["reason"],

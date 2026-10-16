@@ -1,5 +1,8 @@
 name: Windows simulated-research build
 on:
+  push:
+    branches: [main]
+    paths: [BUILD_V18.request]
   workflow_dispatch:
     inputs:
       source_branch:
@@ -18,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_branch }}
+          ref: ${{ inputs.source_branch || 'development/windows-portal-foundation' }}
       - name: Require application source
         shell: pwsh
         run: |

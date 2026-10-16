@@ -30,6 +30,10 @@ def _connect():
     db.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY,value TEXT NOT NULL)")
     db.execute("CREATE TABLE IF NOT EXISTS positions (product TEXT PRIMARY KEY, quantity TEXT NOT NULL, entry TEXT NOT NULL)")
     db.execute("CREATE TABLE IF NOT EXISTS ledger (id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER NOT NULL,action TEXT NOT NULL,product TEXT NOT NULL,cash_delta TEXT NOT NULL)")
+    db.execute("""CREATE TABLE IF NOT EXISTS position_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, ledger_id INTEGER NOT NULL UNIQUE,
+      action TEXT NOT NULL, product TEXT NOT NULL,
+      quantity TEXT NOT NULL, entry TEXT NOT NULL)""")
     return db
 
 def state():
@@ -50,7 +54,7 @@ def initialize(capital):
     with LOCK,_connect() as db:
         if db.execute("SELECT value FROM meta WHERE key='initial'").fetchone():
             raise ValueError("Already initialized; no automatic reset")
-        db.executemany("INSERT INTO meta(key,value) VALUES(?,?)",[("initial",str(capital)),("cash",str(capital))])
+        db.executemany("INSERT INTO meta(key,value) VALUES(?,?)",[("initial",str(capital)),("cash",str(capital)),("position_journal_version","2")])
         db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"INIT","",str(capital)))
     return state()
 
@@ -99,7 +103,9 @@ def buy(product,notional,quote):
         delta=-amount*(D(1)+FEE)
         db.execute("INSERT INTO positions(product,quantity,entry) VALUES(?,?,?)",(product,str(qty),str(ask)))
         db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
-        db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_BUY",product,str(delta)))
+        cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_BUY",product,str(delta)))
+        db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
+                   (cur.lastrowid,"PAPER_BUY",product,str(qty),str(ask)))
     return state()
 
 def sell(product,quote):
@@ -111,7 +117,9 @@ def sell(product,quote):
         qty=D(pos[0]);delta=qty*bid*(D(1)-FEE)
         db.execute("DELETE FROM positions WHERE product=?",(product,))
         db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
-        db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_SELL",product,str(delta)))
+        cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_SELL",product,str(delta)))
+        db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
+                   (cur.lastrowid,"PAPER_SELL",product,str(qty),str(pos[1])))
     return state()
 
 def reconcile(quotes):

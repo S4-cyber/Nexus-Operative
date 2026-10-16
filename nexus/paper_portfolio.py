@@ -34,6 +34,7 @@ def _connect():
       id INTEGER PRIMARY KEY AUTOINCREMENT, ledger_id INTEGER NOT NULL UNIQUE,
       action TEXT NOT NULL, product TEXT NOT NULL,
       quantity TEXT NOT NULL, entry TEXT NOT NULL)""")
+    db.execute("CREATE TABLE IF NOT EXISTS chain_seals (ledger_id INTEGER PRIMARY KEY, previous TEXT NOT NULL, digest TEXT NOT NULL)")
     return db
 
 def state():
@@ -54,8 +55,10 @@ def initialize(capital):
     with LOCK,_connect() as db:
         if db.execute("SELECT value FROM meta WHERE key='initial'").fetchone():
             raise ValueError("Already initialized; no automatic reset")
-        db.executemany("INSERT INTO meta(key,value) VALUES(?,?)",[("initial",str(capital)),("cash",str(capital)),("position_journal_version","2")])
-        db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"INIT","",str(capital)))
+        db.executemany("INSERT INTO meta(key,value) VALUES(?,?)",[("initial",str(capital)),("cash",str(capital)),("position_journal_version","2"),("hash_chain_version","1")])
+        cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"INIT","",str(capital)))
+        from nexus.transaction_seals import append_seal
+        append_seal(db,cur.lastrowid)
     return state()
 
 def check_quote(product,quote):
@@ -106,6 +109,8 @@ def buy(product,notional,quote):
         cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_BUY",product,str(delta)))
         db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
                    (cur.lastrowid,"PAPER_BUY",product,str(qty),str(ask)))
+        from nexus.transaction_seals import append_seal
+        append_seal(db,cur.lastrowid)
     return state()
 
 def sell(product,quote):
@@ -120,6 +125,8 @@ def sell(product,quote):
         cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_SELL",product,str(delta)))
         db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
                    (cur.lastrowid,"PAPER_SELL",product,str(qty),str(pos[1])))
+        from nexus.transaction_seals import append_seal
+        append_seal(db,cur.lastrowid)
     return state()
 
 def reconcile(quotes):

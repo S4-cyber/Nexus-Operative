@@ -50,6 +50,8 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <div class="label">One-time optional setup // safe defaults enabled</div>
 <h2>Connect AI Research (Optional)</h2>
 <p class="sub">Nexus already runs offline research without a paid AI account. Connecting an external AI provider adds structured specialist commentary; it does not enable trading, improve profitability guarantees, or override risk vetoes.</p>
+<p class="sub">On Windows: paste your API key once into the secure local vault form below. The key is sent only to your own 127.0.0.1 Nexus backend, stored in Windows Credential Manager, and is not sent to the AI provider until you separately choose a paid research request. A key is needed only for optional external commentary.</p>
+<div class="actions"><label for="aikey">API Key (local vault only) <input id="aikey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-..." size="34"></label><button id="aiconnect">Save Key Locally & Enable</button><button id="aidisconnect">Disconnect & Remove Saved Key</button></div>
 <div class="actions"><button id="aistatus">Check AI Connection</button><button id="aiguide">How to Connect Safely</button><button id="aitest" disabled>Send One Research Request (May Cost Money)</button></div>
 <p class="sub" id="aiconnectorstatus" role="status" aria-live="polite">Checking local configuration. No connection or paid requests are made automatically.</p>
 <div id="aisetup" class="monitor" hidden>
@@ -179,6 +181,19 @@ async function refreshAISetup(){
  byId('aitest').disabled=!d.configured||d.requests_used_process>=d.max_requests_process;
  show('aiconnectorstatus',d.configured?'Local AI configuration detected. No paid requests sent. Remaining attempts this session: '+(d.max_requests_process-d.requests_used_process)+'.':'Optional AI is OFF. All offline research works normally. Choose How to Connect Safely for one-time instructions.');
  }catch(e){byId('aitest').disabled=true;show('aiconnectorstatus','AI status unavailable: '+e.message)}}
+byId('aiconnect').onclick=async()=>{const key=byId('aikey').value;
+ if(!key){show('aiconnectorstatus','Enter your own provider API key in the local vault field.');return;}
+ const accepted=window.confirm('Save this credential in Windows Credential Manager and enable optional research? This alone sends NO paid requests. A later research request sends its snapshot to OpenAI and may incur charges.');
+ if(!accepted)return;
+ try{await api('/api/paper/ai-provider/vault/connect',{method:'POST',headers:jsonHeaders,body:JSON.stringify({api_key:key})});show('aiconnectorstatus','Key saved in local Windows Credential Manager. No model requests sent.');}
+ catch(e){show('aiconnectorstatus','Local vault setup unavailable: '+e.message)}
+ finally{byId('aikey').value='';await refreshAISetup()}
+};
+byId('aidisconnect').onclick=async()=>{if(!window.confirm('Disconnect AI research and remove its locally saved key? External AI requests will stop.'))return;
+ try{await api('/api/paper/ai-provider/vault/disconnect',{method:'POST'});show('aiconnectorstatus','Stored key removed; optional AI disabled.');}
+ catch(e){show('aiconnectorstatus','Disconnect unavailable: '+e.message)}
+ await refreshAISetup();
+};
 byId('aistatus').onclick=refreshAISetup;
 byId('aiguide').onclick=()=>{byId('aisetup').hidden=!byId('aisetup').hidden};
 byId('aitest').onclick=async()=>{

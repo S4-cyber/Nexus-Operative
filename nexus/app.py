@@ -21,9 +21,10 @@ from nexus.tournament import tournament
 from nexus.council import council
 from nexus.evidence_auditor import audit_evidence
 from nexus.latency import latency_observatory
+from nexus.model_adapters import coordinate as coordinate_model_advisors
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="2.3.0")
+app = FastAPI(title="Nexus Operative", version="2.4.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -90,6 +91,13 @@ def historical_replay(value: HistoricalReplay):
         return replay(value.closes,value.capital,value.tier,value.direction)
     except ValueError as exc:
         raise HTTPException(status_code=422,detail=str(exc))
+
+@app.post("/api/paper/model-council")
+def model_council_preview(snapshot: dict):
+    try:
+        return coordinate_model_advisors(snapshot)
+    except (ValueError,TypeError,OverflowError) as exc:
+        raise HTTPException(status_code=422,detail="Invalid or oversized advisory snapshot")
 
 @app.get("/api/latency")
 def latency_status():
@@ -178,7 +186,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"2.3.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"2.4.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

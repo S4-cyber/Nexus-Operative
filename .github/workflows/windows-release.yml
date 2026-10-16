@@ -1,5 +1,8 @@
 name: Windows simulated-research build
 on:
+  push:
+    branches: [main]
+    paths: [BUILD_SENTINEL_V200.request]
   workflow_dispatch:
     inputs:
       source_branch:

@@ -4,7 +4,7 @@ import sqlite3
 import time
 from pathlib import Path
 import sys
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from nexus.state import load_settings, save_settings, audit
@@ -35,12 +35,13 @@ from nexus.latency import latency_observatory
 from nexus.model_adapters import coordinate as coordinate_model_advisors
 from nexus.provider_research import status as provider_research_status, request as provider_research_request
 from nexus.onboarding import inventory as local_capability_inventory
+from nexus import credential_vault
 from nexus.safety_benchmark import benchmark as safety_benchmark
 from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.42.0")
+app = FastAPI(title="Nexus Operative", version="0.43.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -115,6 +116,30 @@ def run_safety_benchmark():
 @app.get("/api/onboarding/readiness")
 def onboarding_readiness():
     return local_capability_inventory()
+
+class VaultKeySubmission(BaseModel):
+    api_key: str = Field(min_length=20,max_length=256)
+
+def _require_local_portal(request:Request):
+    from urllib.parse import urlsplit
+    # Prevent cross-site form CSRF and off-machine browser requests.
+    origin=request.headers.get("origin","")
+    target=request.url
+    expected=f"{target.scheme}://{target.netloc}"
+    if origin!=expected or target.hostname not in ("localhost","127.0.0.1") or request.client is None or request.client.host not in ("127.0.0.1","::1"):
+        raise HTTPException(status_code=403,detail="Use the local Nexus PORTAL to change connector settings")
+
+@app.post("/api/paper/ai-provider/vault/connect")
+def ai_vault_connect(data:VaultKeySubmission,request:Request):
+    _require_local_portal(request)
+    try:return credential_vault.install(data.api_key)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+
+@app.post("/api/paper/ai-provider/vault/disconnect")
+def ai_vault_disconnect(request:Request):
+    _require_local_portal(request)
+    try:return credential_vault.disconnect()
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.get("/api/paper/ai-provider/status")
 def ai_provider_status():
@@ -220,7 +245,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.42.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.43.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

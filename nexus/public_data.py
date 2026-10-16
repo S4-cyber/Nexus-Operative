@@ -56,7 +56,7 @@ def read_ticker(product,fetch=None,now=None):
     now=time.time() if now is None else now
     with _lock:
         cached=_cache.get(product)
-        if fetch is None and cached and 0<=now-cached[0]<CACHE_SECONDS:
+        if fetch is None and cached and 0<=now-cached[0]<CACHE_SECONDS and 0<=now-cached[1]["received_at"]<CACHE_SECONDS and -2<=now-datetime.fromisoformat(cached[1]["exchange_time"].replace("Z","+00:00")).timestamp()<=MAX_AGE_SECONDS:
             return dict(cached[1])
     default_transport=fetch is None
     if default_transport:

@@ -6,8 +6,9 @@ import sys
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
+from nexus.state import load_settings, save_settings, audit
 
-app = FastAPI(title="Nexus Operative", version="1.7.2")
+app = FastAPI(title="Nexus Operative", version="1.8.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -18,6 +19,24 @@ _tiers = {
 }
 class PortalCommand(BaseModel):
     enabled: bool
+
+class PaperSettings(BaseModel):
+    paper_budget: float = Field(gt=0, le=1000000)
+    terrestrial_allocation: int = Field(ge=0, le=100)
+    solar_allocation: int = Field(ge=0, le=100)
+    universal_allocation: int = Field(ge=0, le=100)
+
+@app.get("/api/paper/settings")
+def paper_settings():
+    return {"simulation_only": True, **load_settings()}
+
+@app.put("/api/paper/settings")
+def update_paper_settings(value: PaperSettings):
+    try:
+        settings = save_settings(value.model_dump())
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return {"simulation_only": True, **settings}
 
 class DepositPreview(BaseModel):
     amount: float = Field(gt=0, le=1000000)
@@ -35,7 +54,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"1.7.2", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"1.8.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -49,6 +68,7 @@ def portal(cmd:PortalCommand):
     if _halted and cmd.enabled:
         raise HTTPException(409,"Emergency halt engaged; cannot activate.")
     _paused=not cmd.enabled
+    audit('portal_resumed' if cmd.enabled else 'portal_paused')
     return status()
 
 @app.post("/api/simulate/halt")
@@ -56,6 +76,7 @@ def halt():
     global _halted,_paused
     _halted=True
     _paused=True
+    audit('emergency_halt')
     return status()
 
 @app.post("/api/funding/preview")

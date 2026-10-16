@@ -21,6 +21,7 @@ from nexus.cross_venue import crosscheck
 from nexus.market_evidence import capture as capture_market_evidence, recent as recent_market_evidence
 from nexus.data_quality import quality as market_data_quality
 from nexus.tick_history import capture_tick, dataset as chronological_tick_dataset
+from nexus.historical_candles import collect as collect_history_candles, history as read_history_candles
 from nexus.strategy_branches import available_branches
 from nexus.observer import observer, history as observation_history
 from nexus.tournament import tournament
@@ -33,7 +34,7 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="3.5.0")
+app = FastAPI(title="Nexus Operative", version="3.6.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -199,9 +200,20 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"3.5.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"3.6.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
+
+@app.post("/api/historical-candles/{product}/collect")
+def historical_candles_collect(product: str, granularity: int = 300):
+    if product not in PRODUCTS:raise HTTPException(status_code=404,detail="Unsupported product")
+    try:return collect_history_candles(product,granularity)
+    except ValueError:raise HTTPException(status_code=503,detail="Historical candle source unavailable or invalid")
+
+@app.get("/api/historical-candles/{product}")
+def historical_candles_history(product: str, granularity: int = 300, limit: int = 300):
+    try:return read_history_candles(product,granularity,limit)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.post("/api/research-ticks/{product}/capture")
 def capture_research_tick(product: str):

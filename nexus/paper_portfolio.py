@@ -14,6 +14,7 @@ from nexus.public_data import PRODUCTS
 LOCK=threading.RLock()
 D=Decimal
 FEE=D("0.001")
+MAX_SPREAD_BPS=D("150")
 
 def num(x):
     if isinstance(x,bool):raise ValueError("Invalid number")
@@ -65,7 +66,19 @@ def check_quote(product,quote):
     if not -1<=age<=10:raise ValueError("Quote too old")
     bid=num(quote.get("bid"));ask=num(quote.get("ask"))
     if bid>ask:raise ValueError("Crossed quote")
+    if (ask-bid)/((ask+bid)/2)*D("10000")>MAX_SPREAD_BPS:
+        raise ValueError("Excessive bid-ask spread")
     return bid,ask
+
+def verify_ledger(db):
+    row=db.execute("SELECT value FROM meta WHERE key='cash'").fetchone()
+    if not row:raise ValueError("Uninitialized ledger")
+    deltas=db.execute("SELECT cash_delta FROM ledger ORDER BY id").fetchall()
+    if not deltas:raise ValueError("Missing cash journal")
+    cash=D(row[0])
+    if sum((D(x[0]) for x in deltas),D(0))!=cash:
+        raise ValueError("Cash journal mismatch: new simulated buys blocked")
+    return cash
 
 def buy(product,notional,quote):
     amount=num(notional)
@@ -75,7 +88,9 @@ def buy(product,notional,quote):
         if "cash" not in meta:raise ValueError("Initialize first")
         if db.execute("SELECT 1 FROM positions WHERE product=?",(product,)).fetchone():
             raise ValueError("Already holding this paper product")
-        cash=D(meta["cash"]);capital=D(meta["initial"])
+        cash=verify_ledger(db);capital=D(meta["initial"])
+        exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
+        if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")
         if amount>capital*D(".02") or amount*(D(1)+FEE)>cash:
             raise ValueError("Position cap or cash exceeded")
         qty=amount/ask
@@ -88,19 +103,23 @@ def buy(product,notional,quote):
 def sell(product,quote):
     bid,_=check_quote(product,quote)
     with LOCK,_connect() as db:
-        cash=db.execute("SELECT value FROM meta WHERE key='cash'").fetchone()
+        cash=verify_ledger(db)
         pos=db.execute("SELECT quantity,entry FROM positions WHERE product=?",(product,)).fetchone()
-        if not cash or not pos:raise ValueError("Paper position unavailable")
+        if not pos:raise ValueError("Paper position unavailable")
         qty=D(pos[0]);delta=qty*bid*(D(1)-FEE)
         db.execute("DELETE FROM positions WHERE product=?",(product,))
-        db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(D(cash[0])+delta),))
+        db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
         db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_SELL",product,str(delta)))
     return state()
 
 def reconcile(quotes):
     info=state()
     if not info["initialized"]:return {**info,"reconciled":False,"reason":"Paper portfolio uninitialized"}
-    equity=D(str(info["cash"]))
+    with LOCK,_connect() as db:
+        try:verified_cash=verify_ledger(db)
+        except (ValueError,InvalidOperation):
+            return {**info,"reconciled":False,"reason":"Cash journal mismatch"}
+    equity=verified_cash
     for pos in info["positions"]:
         try: bid,_=check_quote(pos["product"],quotes[pos["product"]])
         except (KeyError,ValueError):

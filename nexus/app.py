@@ -20,6 +20,7 @@ from nexus.feed_guard import feed_guard
 from nexus.cross_venue import crosscheck
 from nexus.market_evidence import capture as capture_market_evidence, recent as recent_market_evidence
 from nexus.data_quality import quality as market_data_quality
+from nexus.tick_history import capture_tick, dataset as chronological_tick_dataset
 from nexus.strategy_branches import available_branches
 from nexus.observer import observer, history as observation_history
 from nexus.tournament import tournament
@@ -32,7 +33,7 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="3.4.0")
+app = FastAPI(title="Nexus Operative", version="3.5.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -198,9 +199,20 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"3.4.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"3.5.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
+
+@app.post("/api/research-ticks/{product}/capture")
+def capture_research_tick(product: str):
+    if product not in PRODUCTS:raise HTTPException(status_code=404,detail="Unsupported product")
+    try:return capture_tick(product)
+    except (ValueError,TypeError):raise HTTPException(status_code=503,detail="Research quote unavailable or invalid")
+
+@app.get("/api/research-ticks/{product}")
+def get_research_ticks(product: str, limit: int = 250, gap_seconds: float = 60):
+    try:return chronological_tick_dataset(product,limit,gap_seconds)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.get("/api/market-evidence/{product}/quality")
 def market_evidence_quality(product: str, limit: int = 100, gap_seconds: float = 60):

@@ -39,6 +39,20 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <article class="card"><div class="label">Integration constellation</div><h2>Market Access Registry</h2><div id="market-grid" class="tiny">Loading supported targets…</div></article>
 </section>
 <section class="card"><div class="label">NEXUS council // independent governor</div><h2>Five-Specialist Decision Council</h2><p class="sub">Five deterministic evaluators can veto. This is not yet a connected multi-LLM system.</p><button id="counciltest">Run Council Diagnostic</button><button id="modeldiagnostic">Test Advisory Sandbox</button><p class="sub" id="councilstatus">Awaiting diagnostic.</p><p class="sub" id="modelreadout">No AI provider connected.</p><div id="councildetails" class="grid"></div></section>
+<section class="card" aria-label="Optional AI research connector">
+<div class="label">One-time optional setup // safe defaults enabled</div>
+<h2>Connect AI Research (Optional)</h2>
+<p class="sub">Nexus already runs offline research without a paid AI account. Connecting an external AI provider adds structured specialist commentary; it does not enable trading, improve profitability guarantees, or override risk vetoes.</p>
+<div class="actions"><button id="aistatus">Check AI Connection</button><button id="aiguide">How to Connect Safely</button><button id="aitest" disabled>Send One Research Request (May Cost Money)</button></div>
+<p class="sub" id="aiconnectorstatus" role="status" aria-live="polite">Checking local configuration. No connection or paid requests are made automatically.</p>
+<div id="aisetup" class="monitor" hidden>
+<strong>One-time setup on your own computer</strong>
+<p>1. Create your own OpenAI API key using the provider's official developer site and set a small account spending limit.</p>
+<p>2. Set two local environment variables: <code>OPENAI_API_KEY</code> to your secret key, and <code>NEXUS_ENABLE_LLM_RESEARCH</code> to <code>1</code>. Restart Nexus after updating environment settings.</p>
+<p>3. Click <strong>Check AI Connection</strong>. If ready, the separate <strong>Send One Research Request</strong> button sends a built-in, nonsensitive demonstration snapshot to the provider. You may incur provider charges. No action or orders occur automatically.</p>
+<p><strong>Never paste your API key into this screen, code repositories, or chat.</strong> Configuration alone does not prove provider connectivity. The app's request cap is five attempts per process; this is NOT a guarantee of a dollar spending limit.</p>
+<p>Default offline research, market data, and paper-only controls require no AI setup.</p>
+</div></section>
 <section class="grid two">
 <article class="card"><div class="label">Evidence provenance</div><h2>Evidence Auditor</h2><button id="auditdiagnostic">Audit Synthetic Claim</button><p class="sub" id="auditreadout">Verification not established.</p></article>
 <article class="card"><div class="label">Timing measurements</div><h2>Latency Observatory</h2><button id="latencydiagnostic">Inspect Local Timing</button><p class="sub" id="latencyreadout">Exchange latency not measured.</p></article>
@@ -147,6 +161,23 @@ byId('safetybenchmark').onclick=async()=>{try{const d=await api('/api/paper/safe
 byId('riskdemo').onclick=async()=>{try{const d=await api('/api/paper/risk-screen',{method:'POST',headers:jsonHeaders,body:JSON.stringify({})});show('riskresult',d.decision+' / '+d.reasons.join(', '))}catch(e){show('riskresult',e.message)}};
 byId('stressdemo').onclick=async()=>{try{const d=await api('/api/paper/stress',{method:'POST',headers:jsonHeaders,body:JSON.stringify({equity:value('paperbudget'),notional:value('labamount'),direction:byId('labdir').value,daily_loss:0})});show('stressresult',d.decision+' / Max modeled loss $'+d.max_modeled_loss+' / NOT A LOSS GUARANTEE')}catch(e){show('stressresult',e.message)}};
 byId('counciltest').onclick=async()=>{try{const evidence={symbol:'BTC-USD',data_source:'coinbase_exchange_public',data_verified:false,quote_age_seconds:1,spread_bps:4,estimated_roundtrip_fees_bps:5,estimated_slippage_bps:6,conservative_edge_bps:0,history_observations:0,out_of_sample_trades:0,out_of_sample_net_pnl:0,equity:value('paperbudget'),proposed_notional:value('labamount'),current_exposure:0,daily_loss:0,stress_loss_estimate:0,emergency_halt:false,account_reconciled:false,market_eligible:false};const d=await api('/api/paper/council',{method:'POST',headers:jsonHeaders,body:JSON.stringify(evidence)});show('councilstatus',d.consensus+' / '+d.vetoes.join(', ')+' / GOVERNOR: '+d.governor_decision);const root=byId('councildetails');root.replaceChildren();for(const item of d.specialists){const c=document.createElement('div');c.className='market';c.textContent=item.specialist+' / '+item.verdict+' / '+item.reasons.join(', ');root.append(c)}}catch(e){show('councilstatus',e.message)}};
+async function refreshAISetup(){
+ try{const d=await api('/api/paper/ai-provider/status');
+ byId('aitest').disabled=!d.configured||d.requests_used_process>=d.max_requests_process;
+ show('aiconnectorstatus',d.configured?'Local AI configuration detected. No paid requests sent. Remaining attempts this session: '+(d.max_requests_process-d.requests_used_process)+'.':'Optional AI is OFF. All offline research works normally. Choose How to Connect Safely for one-time instructions.');
+ }catch(e){byId('aitest').disabled=true;show('aiconnectorstatus','AI status unavailable: '+e.message)}}
+byId('aistatus').onclick=refreshAISetup;
+byId('aiguide').onclick=()=>{byId('aisetup').hidden=!byId('aisetup').hidden};
+byId('aitest').onclick=async()=>{
+ const ok=window.confirm('Send ONE built-in public-data-only example to an external AI provider? This may incur API charges. No trades or account actions will be authorized.');
+ if(!ok)return;
+ byId('aitest').disabled=true;
+ try{const d=await api('/api/paper/ai-provider/market_regime/research',{method:'POST',headers:jsonHeaders,body:JSON.stringify({purpose:'demonstration_only',market:'BTC-USD',source:'illustrative_not_live',not_trading_evidence:true})});
+ show('aiconnectorstatus','Advisory: '+d.verdict+' / '+d.reason+' / Provider replied: '+Boolean(d.provider_connected)+'. No orders allowed.');
+ }catch(e){show('aiconnectorstatus','Research request unavailable: '+e.message)}
+ await refreshAISetup();
+};
+refreshAISetup();
 byId('modeldiagnostic').onclick=async()=>{try{const d=await api('/api/paper/model-council',{method:'POST',headers:jsonHeaders,body:JSON.stringify({test:'fixture'})});show('modelreadout',d.specialists.length+' fixture roles / all abstained '+d.all_abstained+' / NO PROVIDER / '+d.governor)}catch(e){show('modelreadout',e.message)}};
 byId('auditdiagnostic').onclick=async()=>{try{const d=await api('/api/paper/evidence-audit',{method:'POST',headers:jsonHeaders,body:JSON.stringify({symbol:'BTC-USD',data_source:'coinbase_exchange_public',data_verified:true,history_observations:100,out_of_sample_trades:30,conservative_edge_bps:50,equity:10000,proposed_notional:10})});show('auditreadout',d.decision+' / '+d.reasons.join(', '))}catch(e){show('auditreadout',e.message)}};
 byId('latencydiagnostic').onclick=async()=>{try{const d=await api('/api/latency');show('latencyreadout','Local p95 '+(d.p95_ms===null?'N/A':d.p95_ms+' ms')+' / Samples '+d.observations+' / EXCHANGE NOT MEASURED')}catch(e){show('latencyreadout',e.message)}};

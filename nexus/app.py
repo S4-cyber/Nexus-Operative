@@ -14,8 +14,9 @@ from nexus.journal import record_replay, recent_replays
 from nexus.walkforward import walk_forward
 from nexus.risk_gate import evaluate as risk_evaluate
 from nexus.stress import stress_screen
+from nexus.public_data import read_ticker, PRODUCTS
 
-app = FastAPI(title="Nexus Operative", version="1.9.4")
+app = FastAPI(title="Nexus Operative", version="1.9.5")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -140,9 +141,18 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"1.9.4", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"1.9.5", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
+
+@app.get("/api/public-quote/{product}")
+def public_quote(product: str):
+    if product not in PRODUCTS:
+        raise HTTPException(status_code=404,detail="Market product is not enabled")
+    try:
+        return read_ticker(product)
+    except ValueError:
+        raise HTTPException(status_code=503,detail="Read-only public quote unavailable or stale")
 
 @app.get("/api/markets")
 def market_catalog():

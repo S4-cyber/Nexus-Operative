@@ -1,15 +1,6 @@
 name: Windows simulated-research build
 on:
   workflow_dispatch:
-  push:
-    branches: [main, 'development/**']
-    paths:
-      - 'nexus/**'
-      - 'portable/**'
-      - 'dashboard/**'
-      - 'tests/**'
-      - 'pyproject.toml'
-      - '.github/workflows/windows-release.yml'
 permissions:
   contents: read
 jobs:

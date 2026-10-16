@@ -16,9 +16,10 @@ from nexus.risk_gate import evaluate as risk_evaluate
 from nexus.stress import stress_screen
 from nexus.public_data import read_ticker, PRODUCTS
 from nexus.strategy_branches import available_branches
+from nexus.observer import observer, history as observation_history
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="1.9.6")
+app = FastAPI(title="Nexus Operative", version="2.0.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -143,7 +144,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"1.9.6", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"2.0.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -165,6 +166,15 @@ class PaperTrade(BaseModel):
 
 class PaperClose(BaseModel):
     product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
+
+@app.get("/api/observer/status")
+def observer_status():
+    return observer.status()
+
+@app.get("/api/observer/history")
+def observer_history(limit:int=30):
+    try:return {"mode":"READ_ONLY_OBSERVER","events":observation_history(limit),"orders_enabled":False}
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.get("/api/strategy-branches")
 def strategy_branches():
@@ -231,6 +241,10 @@ def portal(cmd:PortalCommand):
         raise HTTPException(409,"Emergency halt engaged; cannot activate.")
     _paused=not cmd.enabled
     audit('portal_resumed' if cmd.enabled else 'portal_paused')
+    if cmd.enabled:
+        observer.start()
+    else:
+        observer.stop()
     return status()
 
 @app.post("/api/simulate/halt")
@@ -238,6 +252,7 @@ def halt():
     global _halted,_paused
     _halted=True
     _paused=True
+    observer.stop()
     audit('emergency_halt')
     return status()
 

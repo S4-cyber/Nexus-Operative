@@ -1,9 +1,6 @@
 name: Windows simulated-research build
 on:
   workflow_dispatch:
-  push:
-    branches: ['development/windows-portal-foundation']
-    paths: ['BUILD_NOW.request']
 permissions:
   contents: read
 jobs:

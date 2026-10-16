@@ -38,21 +38,43 @@ jobs:
       - name: Package standalone EXE
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --name NexusOperative --collect-submodules nexus --collect-submodules uvicorn --collect-submodules fastapi --collect-submodules pydantic --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan.on portable/desktop.py
+          python -m PyInstaller --noconfirm --clean --onefile --name NexusOperative --collect-submodules nexus --collect-submodules uvicorn --collect-submodules fastapi --collect-submodules pydantic --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan.on --add-data "dashboard;dashboard" portable/desktop.py
           if (!(Test-Path dist/NexusOperative.exe)) { throw 'EXE missing' }
       - name: Verify EXE starts
         shell: pwsh
         run: |
           $proc = Start-Process -FilePath ".\dist\NexusOperative.exe" -PassThru -WindowStyle Hidden
           try {
-            Start-Sleep -Seconds 6
-            if ($proc.HasExited) { throw "NexusOperative.exe exited early: $($proc.ExitCode)" }
+            $ready = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              Start-Sleep -Seconds 1
+              if ($proc.HasExited) { throw "NexusOperative.exe exited early: $($proc.ExitCode)" }
+              try {
+                $response = Invoke-WebRequest -Uri 'http://127.0.0.1:8000/api/status' -TimeoutSec 2
+                if ($response.StatusCode -eq 200) { $ready = $true; break }
+              } catch {}
+            }
+            if (!$ready) { throw 'Desktop backend did not become ready' }
+            $portal = Invoke-WebRequest -Uri 'http://127.0.0.1:8000/portal' -TimeoutSec 3
+            if ($portal.StatusCode -ne 200 -or $portal.Content -notmatch 'PORTAL') { throw 'Bundled PORTAL UI smoke test failed' }
           } finally {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
           }
+      - name: Build installer (Inno Setup)
+        shell: pwsh
+        run: |
+          if (!(Test-Path installer/NexusOperative.iss)) { throw 'Inno Setup definition missing' }
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (!(Test-Path $iscc)) { throw 'Inno Setup 6 is not present; install a trusted version first' }
+          New-Item -ItemType Directory -Force release/NexusOperative | Out-Null
+          Copy-Item dist/NexusOperative.exe release/NexusOperative/NexusOperative.exe
+          & $iscc installer/NexusOperative.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: NexusOperative-Windows-EXE
-          path: dist/NexusOperative.exe
+          path: |
+            dist/NexusOperative.exe
+            release/NexusOperative-Setup-*.exe
           if-no-files-found: error
           retention-days: 7

@@ -17,6 +17,7 @@ from nexus.risk_gate import evaluate as risk_evaluate
 from nexus.stress import stress_screen
 from nexus.public_data import read_ticker, PRODUCTS
 from nexus.feed_guard import feed_guard
+from nexus.cross_venue import crosscheck
 from nexus.strategy_branches import available_branches
 from nexus.observer import observer, history as observation_history
 from nexus.tournament import tournament
@@ -29,7 +30,7 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="3.1.0")
+app = FastAPI(title="Nexus Operative", version="3.2.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -195,9 +196,15 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"3.1.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"3.2.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
+
+@app.get("/api/public-quote/{product}/cross-venue")
+def public_cross_venue(product: str):
+    if product not in PRODUCTS:
+        raise HTTPException(status_code=404,detail="Market product not enabled")
+    return crosscheck(product)
 
 @app.get("/api/public-quote/{product}/quality")
 def quote_quality(product: str):

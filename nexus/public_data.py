@@ -58,7 +58,8 @@ def read_ticker(product,fetch=None,now=None):
         cached=_cache.get(product)
         if fetch is None and cached and 0<=now-cached[0]<CACHE_SECONDS:
             return dict(cached[1])
-    if fetch is None:
+    default_transport=fetch is None
+    if default_transport:
         def fetch(url):
             req=Request(url,headers={"Accept":"application/json","User-Agent":"NexusOperative-PublicMarketReader/1.0"})
             with urlopen(req,timeout=4) as response:
@@ -71,7 +72,7 @@ def read_ticker(product,fetch=None,now=None):
         result=parse_ticker(product,data,received=now)
     except (OSError,TimeoutError,ValueError,json.JSONDecodeError) as exc:
         raise ValueError("Public market quote unavailable or invalid") from exc
-    if fetch is not None and fetch.__name__ != "fetch":
+    if not default_transport:
         # A test or caller-supplied transport must not populate production cache.
         return result
     with _lock:

@@ -13,7 +13,7 @@ def test_configure_uses_private_directory(tmp_path, monkeypatch):
     assert storage.is_dir()
 
 def test_select_port_is_local_and_valid():
-    port = select_port(0) if False else select_port(8000)
+    port = select_port(8000)
     assert 1024 <= port <= 65535
 
 def test_no_banking_or_live_orders():

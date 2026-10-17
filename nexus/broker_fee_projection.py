@@ -159,7 +159,10 @@ def fixture_inputs():
 
 def fixture_report():
     from nexus.broker_cash_path import analyze_and_project
-    return analyze_and_project(**fixture_inputs())
+    from nexus.alpaca_activity_normalizer import fixture_report as activity_fixture
+    result=analyze_and_project(**fixture_inputs())
+    result['activity_normalization']=activity_fixture()
+    return result
 
 
 if __name__=='__main__':

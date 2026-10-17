@@ -162,6 +162,7 @@ def catalogue():
                 pending_cancel_is_terminal=False,fee_reconciled=False,position_reconciled=False,
                 durable_request_journal_scope='Bounded replay-validated request journal and explicitly authorized original-ID GET recovery coordinator exist with retained budgets/cooldowns, post-lock clock/permission guards, saved-key fencing and interrupted-ticket review; injected validation only, no automatic retry, account reconciliation or routing permission.',
                 fee_projection_scope='Disconnected explicit-execution/received-asset-fee projection and chronological fee-reserved funding audit available; account and spendable funds remain unverified.',
+                activity_normalization_scope='Bounded supplied Trading REST BTC/USD FILL/CFEE/FEE normalization with semantic deduplication and explicit fill-chain checks; fee debits retain unverified references/dates, never inferred links, timestamps, zero-fee coverage or account authority.',
                 account_inspection_scope='Explicit Windows-only local credential save/remove/status and separately confirmed fixed-host GET-only paper inspection controls exist; injected tests only, no authenticated acceptance, atomic snapshot, spendable-funds authority or order adapter.',
                 documentation_verified_at='2026-10-17',sources=list(SOURCES))
 

@@ -191,7 +191,7 @@ def test_aggregate_and_path_share_one_normalization_pass(monkeypatch):
     original=projection.unique;calls=[]
     def observed(rows,limit,key,normalize):calls.append(key);return original(rows,limit,key,normalize)
     monkeypatch.setattr(projection,'unique',observed)
-    combined=projection.fixture_report()
+    combined=path.analyze_and_project(**projection.fixture_inputs())
     assert calls==['broker_order_id','execution_id','activity_id']
     assert combined['cash_path']['declared_path_consistency_ok']
 

@@ -14,6 +14,7 @@ import sqlite3
 import tempfile
 from uuid import UUID
 from nexus import alpaca_paper_contract as contract
+from nexus import broker_lookup_policy as lookup
 
 MAX_REQUESTS = 128
 MAX_EVENTS = 4096
@@ -108,15 +109,20 @@ class BrokerRequestJournal:
             previous=digest
         return requests,broker_ids,len(rows),previous
 
-    def _apply(self, requests, broker_ids, kind, body):
+    def _apply(self, requests, broker_ids, kind, body, *, lookup_completion=False):
         if not isinstance(body,dict):raise ValueError('BROKER_JOURNAL_PAYLOAD_INVALID')
+        if not lookup_completion and kind not in ('LOOKUP_BEGIN','LOOKUP_RESULT') and any(r['lookup']['pending'] for r in requests.values()):
+            raise ValueError('BROKER_LOOKUP_PENDING_REVIEW_REQUIRED')
         if kind=='PREPARE':
             plan=_plan(body)
             if plan!=body:raise ValueError('BROKER_JOURNAL_PAYLOAD_INVALID')
             identity=plan['payload']['client_order_id']
             if identity in requests:raise ValueError('BROKER_JOURNAL_DUPLICATE_PREPARE')
             if len(requests)>=MAX_REQUESTS:raise ValueError('BROKER_JOURNAL_REQUEST_CAP')
-            requests[identity]=dict(plan=plan,tracker=contract.SnapshotTracker(plan),uncertain=False)
+            requests[identity]=dict(plan=plan,tracker=contract.SnapshotTracker(plan),uncertain=False,lookup=dict(attempts=0,pending=None,last_at=0,next_at=0,blocked=False,last_result=None))
+            return
+        if kind in ('LOOKUP_BEGIN','LOOKUP_RESULT'):
+            self._apply_lookup(requests,broker_ids,kind,body)
             return
         if kind not in ('SUBMISSION_UNCERTAIN','OBSERVE') or set(body)!=({'client_order_id'} if kind=='SUBMISSION_UNCERTAIN' else {'client_order_id','response'}):
             raise ValueError('BROKER_JOURNAL_EVENT_INVALID')
@@ -136,12 +142,48 @@ class BrokerRequestJournal:
         if assigned in broker_ids and broker_ids[assigned]!=identity:raise ValueError('BROKER_JOURNAL_BROKER_ID_REUSED')
         broker_ids[assigned]=identity
 
+    def _apply_lookup(self, requests, broker_ids, kind, body):
+        identity=body.get('client_order_id')
+        if not isinstance(identity,str) or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        request=requests[identity]; state=request['lookup']; now=lookup.clock(body.get('evaluated_at'))
+        if now<max(r['lookup']['last_at'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_CLOCK_REGRESSION')
+        if kind=='LOOKUP_BEGIN':
+            if set(body)!={'client_order_id','token','evaluated_at'}:raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
+            if not request['uncertain']:raise ValueError('BROKER_JOURNAL_NO_ATTEMPT_BOUNDARY')
+            latest=request['tracker'].status()['latest']
+            if latest and latest['terminal']:raise ValueError('BROKER_LOOKUP_TERMINAL_REQUIRES_RECONCILIATION')
+            if any(r['lookup']['pending'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_PENDING_REVIEW_REQUIRED')
+            if any(r['lookup']['blocked'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_ACCOUNT_REVIEW_REQUIRED')
+            if now<max(r['lookup']['next_at'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_COOLDOWN_ACTIVE')
+            if state['attempts']>=lookup.MAX_LOOKUPS_PER_REQUEST:raise ValueError('BROKER_LOOKUP_ATTEMPT_CAP')
+            expected=contract.sha(dict(account=self.account_digest,client_order_id=identity,attempt=state['attempts']+1,evaluated_at=now))
+            if body['token']!=expected:raise ValueError('BROKER_LOOKUP_TOKEN_DISAGREEMENT')
+            state.update(attempts=state['attempts']+1,pending=expected,last_at=now,next_at=now+lookup.MIN_LOOKUP_INTERVAL)
+            return
+        if set(body)!={'client_order_id','token','evaluated_at','outcome','retry_after_seconds','response'}:
+            raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
+        if not state['pending'] or body['token']!=state['pending']:raise ValueError('BROKER_LOOKUP_PENDING_TOKEN_REQUIRED')
+        outcome=body['outcome'];delay=body['retry_after_seconds']
+        if not isinstance(outcome,str) or outcome not in lookup.OUTCOMES or type(delay) is not int or not 0<=delay<=lookup.MAX_RETRY_AFTER:
+            raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
+        if (outcome=='RATE_LIMITED' and delay<1) or (outcome!='RATE_LIMITED' and delay!=0):raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
+        if outcome=='FOUND':
+            raw=body['response']
+            if _observation(raw,request['plan']['payload'])!=raw:raise ValueError('BROKER_JOURNAL_PAYLOAD_INVALID')
+            current=contract.normalize(raw,request['plan']['payload'])
+            if current!=request['tracker'].status()['latest']:
+                self._apply(requests,broker_ids,'OBSERVE',dict(client_order_id=identity,response=raw),lookup_completion=True)
+        elif body['response'] is not None:raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
+        wait=(delay if outcome=='RATE_LIMITED' else min(5*2**(state['attempts']-1),60) if outcome in ('NOT_FOUND','TIMEOUT','NETWORK_ERROR','SERVER_ERROR') else lookup.MIN_LOOKUP_INTERVAL)
+        state.update(pending=None,last_at=now,next_at=max(state['next_at'],now+wait),
+                     blocked=outcome in ('AUTH_DENIED','REVIEW_REQUIRED'),last_result=body)
+
     def _summary(self, identity, request):
         latest=request['tracker'].status()['latest']
         state=('OBSERVED_TERMINAL_RECONCILIATION_REQUIRED' if latest['terminal'] else 'OBSERVED_NONTERMINAL_REVIEW_REQUIRED') if latest else ('SUBMISSION_UNKNOWN_LOOKUP_REQUIRED' if request['uncertain'] else 'PREPARED_UNSENT_DIAGNOSTIC')
         return dict(client_order_id=identity,payload_sha256=request['plan']['payload_sha256'],
                     recovery_state=state,snapshot=latest,lookup_by_original_client_id_required=request['uncertain'] and not latest,
-                    submission_attempt_marked=request['uncertain'],automatic_retry=False,sendable=False,
+                    submission_attempt_marked=request['uncertain'],lookup=dict(attempts=request['lookup']['attempts'],attempt_limit=lookup.MAX_LOOKUPS_PER_REQUEST,pending=request['lookup']['pending'] is not None,next_allowed_at=request['lookup']['next_at'],review_blocked=request['lookup']['blocked'],last_outcome=(request['lookup']['last_result']['outcome'] if request['lookup']['last_result'] else None)),automatic_retry=False,sendable=False,
                     broker_connected=False,ledger_applied=False,broker_account_reconciled=False)
 
     def _write(self, kind, body):
@@ -152,6 +194,7 @@ class BrokerRequestJournal:
                 requests,broker_ids,count,previous=self._load(db)
                 identity=body['payload']['client_order_id'] if kind=='PREPARE' else body['client_order_id']
                 existing=requests.get(identity)
+                if any(r['lookup']['pending'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_PENDING_REVIEW_REQUIRED')
                 duplicate=False
                 if kind=='PREPARE' and existing:
                     if body!=existing['plan']:raise ValueError('BROKER_JOURNAL_CLIENT_ID_CONFLICT')
@@ -187,6 +230,40 @@ class BrokerRequestJournal:
         # Validation and append share one locked replay; extras are stripped there.
         return self._write('OBSERVE',dict(client_order_id=client_order_id,response=response))
 
+    def _lookup_write(self, identity, now, result=None):
+        self._identity(identity);lookup.clock(now)
+        if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        with closing(self._connect(write=True)) as db:
+            try:
+                requests,broker_ids,count,previous=self._load(db)
+                if identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+                request=requests[identity];state=request['lookup']
+                if result is None:
+                    kind='LOOKUP_BEGIN'
+                    # Keep a completion slot; ordinary writes are fenced while pending.
+                    if count+2>MAX_EVENTS:raise ValueError('BROKER_JOURNAL_LOOKUP_COMPLETION_RESERVE')
+                    token=contract.sha(dict(account=self.account_digest,client_order_id=identity,attempt=state['attempts']+1,evaluated_at=now))
+                    body=dict(client_order_id=identity,token=token,evaluated_at=now)
+                else:
+                    kind='LOOKUP_RESULT';body=dict(client_order_id=identity,evaluated_at=now,**result)
+                    if body['outcome']=='FOUND':body['response']=_observation(body['response'],request['plan']['payload'])
+                    if body==state['last_result']:
+                        db.commit()
+                        return dict(**self._summary(identity,request),duplicate=True,lookup_token=body['token'])
+                    if count>=MAX_EVENTS:raise ValueError('BROKER_JOURNAL_EVENT_CAP')
+                self._apply(requests,broker_ids,kind,body)
+                self._insert(db,count+1,kind,body,previous);db.commit()
+                return dict(**self._summary(identity,request),duplicate=False,lookup_token=body['token'],
+                            hypothetical_lookup=dict(method='GET',url=lookup.LOOKUP_URL,query=dict(client_order_id=identity),sendable=False))
+            except BaseException:db.rollback();raise
+
+    def begin_lookup(self, client_order_id, *, evaluated_at):
+        return self._lookup_write(client_order_id,evaluated_at)
+
+    def finish_lookup(self, client_order_id, token, *, evaluated_at, status_code=None, transport_error=None, retry_after=None, response=None):
+        outcome=lookup.classify(status_code=status_code,transport_error=transport_error,retry_after=retry_after,evaluated_at=evaluated_at)
+        return self._lookup_write(client_order_id,evaluated_at,dict(token=token,**outcome,response=response if outcome['outcome']=='FOUND' else None))
+
     def recovery(self):
         self._check_path()
         if not self.path.exists():
@@ -215,8 +292,15 @@ def fixture_report():
             journal.observe('nx_durable_fixture',raw)
         duplicate=BrokerRequestJournal(path,account).observe('nx_durable_fixture',raw)['duplicate']
         recovered=BrokerRequestJournal(path,account).recovery()
+        pacing=BrokerRequestJournal(Path(temporary)/'lookup.sqlite3',account)
+        pacing.prepare(plan);pacing.mark_submission_uncertain('nx_durable_fixture')
+        ticket=pacing.begin_lookup('nx_durable_fixture',evaluated_at=1000)['lookup_token']
+        timeout=pacing.finish_lookup('nx_durable_fixture',ticket,evaluated_at=1001,transport_error='TIMEOUT')
+        pacing=BrokerRequestJournal(pacing.path,account)
+        ticket=pacing.begin_lookup('nx_durable_fixture',evaluated_at=1006)['lookup_token']
+        limited=pacing.finish_lookup('nx_durable_fixture',ticket,evaluated_at=1007,status_code=429,retry_after='30')
         return dict(mode='DISPOSABLE_DURABLE_BROKER_REQUEST_FIXTURE',passed=True,uncertain_recovery_state=unknown,
-                    current_replay_duplicate=duplicate,recovered=recovered,broker_connected=False,ledger_applied=False,
+                    current_replay_duplicate=duplicate,recovered=recovered,lookup_recovery=dict(timeout_keeps_uncertainty=timeout['lookup_by_original_client_id_required'],rate_limit_next_allowed_at=limited['lookup']['next_allowed_at'],rate_limit_wait_seconds=30,attempts=limited['lookup']['attempts'],automatic_retry=False),broker_connected=False,ledger_applied=False,
                     limitations='Temporary injected observations and reopened connections; not broker integration, authenticated lookup, sustained operation or market execution.')
 
 

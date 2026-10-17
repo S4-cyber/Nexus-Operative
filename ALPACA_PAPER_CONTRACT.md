@@ -58,3 +58,28 @@ Run `python -m nexus.broker_request_journal` or Accounts → **Check Broker Requ
 Regression includes separate real child-process deaths after attempt/observation commit and fresh-process review, a commit that succeeds but loses its acknowledgment, rollback after inserted data, account mismatch, reused broker UUIDs, concurrent duplicates, invalid transitions, retention/byte caps, changed/missing chain prefixes and unchanged application storage. These are fixture results, not authenticated broker recovery or execution acceptance. Remaining gates include paper-connection authorization, scoped credential handling, actual broker lookup/streaming/cancel/pacing, execution IDs/corrections and received-asset fees, complete cash/position reconciliation and independent review.
 
 Additional primary reference reviewed 2026-10-17: [Get Order by Client Order ID](https://docs.alpaca.markets/us/reference/getorderbyclientorderid) documents the paper Trading API lookup at `/v2/orders:by_client_order_id`. The journal does not perform that request.
+
+## v0.91 retained original-ID lookup admission and outcomes
+
+The disconnected journal now supports explicit `begin_lookup` / `finish_lookup` records. They never call HTTP, obtain credentials, retry an order or run on startup. The returned hypothetical plan is GET-only at the fixed paper Trading API original-client-ID lookup path, with the journal's original ID and `sendable=false`. The pure `broker_lookup_policy.py` classifies caller-supplied status/transport results; neither the HTTP status nor the supplied account identity is authenticated.
+
+A lookup begins only after a retained uncertain-submission boundary, while that order is not terminal. Admission commits a deterministic account/request/attempt/time ticket and charges one of four total lookup attempts for that retained request. One pending lookup per journal blocks further lookup admission and ordinary journal writes. It reserves a completion event slot before admission so capacity exhaustion cannot consume the only result slot. A process death or lost begin acknowledgment leaves a charged pending ticket for explicit review; no timer, expiry, auto-clear or automatic resume exists. This is deliberately conservative diagnostic recovery, not an unattended broker adapter. It does not coordinate separate journals, processes making unrelated requests, accounts or remote instances.
+
+Lookup completion validates the ticket and supplied clock, then commits its outcome and any accepted allowlisted order observation together. A successful FOUND observation uses the existing identity/terms/state/cumulative checks; it never credits a ledger or reconciles fees/positions. Bad/stale/conflicting observations leave the lookup pending and retained state unchanged. Exact completed-event replays append nothing and cannot clear a newer pending lookup. A committed FOUND response survives a lost completion acknowledgment; replay resolves local truth. Current terminal orders stay in the reconciliation stage rather than authorizing more lookup attempts or resubmission.
+
+Local outcome rules, not provider quotas or trading permissions:
+
+| Supplied result | Retained behavior |
+| --- | --- |
+| 200 | Validate and retain the cumulative snapshot atomically with completion; no resubmit permission. |
+| 404 | Keep submission uncertainty and require original-ID review; never infer no order/no fill. |
+| TIMEOUT / NETWORK_ERROR / 5xx | Keep uncertainty; retain a local 5/10/20/40-second backoff after charged attempts. |
+| 429 | Apply a shared journal cooldown using valid Retry-After integer seconds or a timezone-aware HTTP date; no header uses a conservative local 60-second wait. |
+| 401 / 403 | Retain an account-review block on new lookup admission; no credential retry loop. |
+| Redirect, unsupported status or unsupported Retry-After | Retain a review block; no redirect/fallback route or short silent retry. |
+
+A minimum one-second interval applies even after successful completion. Waits are shared across requests in this account-scoped journal. Retry-After waits are never shortened to an arbitrary upper cap: malformed, overlong, non-ASCII, CR/LF-bearing or greater-than-one-day waits require review. Zero/elapsed waits retain the local one-second minimum. Raw error bodies, headers, location fields and credentials are not stored. Outcomes/cooldowns/attempts survive reopening and cannot be reset by repeated preparation. Read-only recovery includes their diagnostic state without any admission or network work.
+
+Times are explicit caller-supplied wall-clock samples. Regression blocks backward samples relative to retained lookup activity. This is not trusted time or a monotonic elapsed-time guarantee across OS clock changes/restarts: a future authenticated adapter still needs clock continuity, cancellation/stream coordination, actual provider pacing and distributed fencing. The shared write fence is unsuitable as a completed streaming adapter by itself. New lookup event kinds are additive to the v1 local journal; v0.90 readers reject them rather than silently discarding them. Future policy changes require explicit compatibility review; no running or retry permission is restored by reading old records.
+
+Accounts → Check Broker Request Recovery now also shows two injected lookup attempts, a retained timeout and a 30-second fixture rate-limit wait. The example uses a second temporary journal and does not delay or contact a service. Original request/partial-cancellation checks remain. CLI/API/controller/browser fixtures cover the added readout; no general lookup/write/connection HTTP endpoint is exposed.

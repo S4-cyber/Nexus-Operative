@@ -27,6 +27,19 @@ def test_funding_preview_does_not_transfer():
     assert r.json()['transfer_scheduled'] is False
     assert client.post('/api/funding/preview',json={'amount':-3,'cadence':'once'}).status_code==422
 
-def test_halt_is_irreversible_for_session():
+def test_halt_requires_explicit_reset_and_stays_paused(monkeypatch):
+    from nexus import app as backend
+    monkeypatch.setattr(backend.observer,"start",lambda:None)
+    monkeypatch.setattr(backend.observer,"stop",lambda:None)
     assert client.post('/api/simulate/halt').json()['halted'] is True
     assert client.post('/api/portal',json={'enabled':True}).status_code==409
+    assert client.post('/api/simulate/halt/reset',json={'confirm_reset':False}).status_code==422
+    assert client.get('/api/status').json()['halted'] is True
+    response=client.post('/api/simulate/halt/reset',json={'confirm_reset':True})
+    assert response.status_code==200
+    assert response.json()['halted'] is False
+    assert response.json()['portal_enabled'] is False
+    assert response.json()['live_orders_enabled'] is False
+    assert client.post('/api/simulate/halt/reset',json={'confirm_reset':True}).status_code==409
+    assert client.post('/api/portal',json={'enabled':True}).json()['portal_enabled'] is True
+    assert client.post('/api/portal',json={'enabled':False}).json()['portal_enabled'] is False

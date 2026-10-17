@@ -45,6 +45,6 @@ def test_api_is_research_only(tmp_path,monkeypatch):
 def test_fetch_rejects_invalid_observation_time_before_network():
     def no_network(_):
         raise AssertionError("Invalid timestamps must not reach transport")
-    for invalid in (True, False, -1, 0, float("nan"), float("inf"), "1234", None if False else []):
+    for invalid in (True, False, -1, 0, float("nan"), float("inf"), "1234", []):
         with pytest.raises(ValueError):
             fetch_candles("BTC-USD", 60, now=invalid, transport=no_network)

@@ -6,7 +6,9 @@ from nexus.model_adapters import validate_response
 
 def test_all_contract_cases_and_disagreement_governor():
     report=benchmark()
-    assert report["evaluated"]>=14
+    assert report["evaluated"] == 24
+    assert report["passed"] == 24
+    assert len({item["case"] for item in report["cases"]}) == 24
     assert report["all_contract_cases_passed"] is True
     assert report["disagreement_has_no_trade_authority"] is True
     assert report["external_models_called"] is False

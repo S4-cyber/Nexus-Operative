@@ -281,9 +281,10 @@ def test_concurrent_inspection_is_rejected_without_queue_or_network():
         module._lock.release()
 
 
-def test_no_runtime_route_or_auto_wiring():
+def test_no_automatic_runtime_inspection_or_get_route():
     from nexus.app import app, status
-    assert not any('inspection' in route.path for route in app.routes)
+    routes = [route for route in app.routes if route.path.endswith('/local-credentials/inspect')]
+    assert len(routes) == 1 and routes[0].methods == {'POST'}
     assert status()['broker_connected'] is False
 
 

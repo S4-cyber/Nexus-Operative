@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.94.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.95.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 # Lifecycle admission is serialized; a throttle cut publishes its latch before waiting.
@@ -183,6 +183,9 @@ def _require_local_portal(request:Request):
     expected=f"{target.scheme}://{target.netloc}"
     if origin!=expected or target.hostname not in ("localhost","127.0.0.1") or request.client is None or request.client.host not in ("127.0.0.1","::1"):
         raise HTTPException(status_code=403,detail="Use the local Nexus PORTAL to change connector settings")
+
+from nexus.paper_onboarding import register as register_paper_onboarding
+register_paper_onboarding(app, _require_local_portal)
 
 @app.post("/api/paper/ai-provider/vault/connect")
 def ai_vault_connect(data:VaultKeySubmission,request:Request):
@@ -325,7 +328,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.94.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.95.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}

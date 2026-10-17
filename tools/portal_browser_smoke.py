@@ -67,7 +67,7 @@ def run(output,channel=None):
         try:
             for width,height in ((1280,900),(390,844),(320,568)):
                 context=browser.new_context(viewport=dict(width=width,height=height),service_workers='block')
-                page=context.new_page();errors=[];blocked=[];writes=[];state={'pending':True};current_control=None
+                page=context.new_page();errors=[];blocked=[];writes=[];state={'pending':True,'paper_saved':False};current_control=None
                 page.add_init_script('''window.__helpEvents=[];for(const kind of ['pointerover','pointerout','scroll','focusin','focusout','blur'])document.addEventListener(kind,e=>{const c=e.target&&e.target.closest?e.target.closest('button,input,select,textarea'):null;window.__helpEvents.push({kind,id:c&&c.id,tag:c&&c.tagName,scrollY:window.scrollY});if(window.__helpEvents.length>60)window.__helpEvents.shift();},true);''')
                 page.on('pageerror',lambda error:errors.append(str(error)))
                 def route(request):
@@ -78,6 +78,16 @@ def run(output,channel=None):
                     if path=='/favicon.ico':request.fulfill(status=204);return
                     if request.request.method!='GET':
                         writes.append(path)
+                        paper_base='/api/execution/alpaca-paper/local-credentials/'
+                        if path.startswith(paper_base):
+                            action=path[len(paper_base):]
+                            if action not in ('status','save','inspect','remove'):
+                                blocked.append('UNKNOWN_PAPER_ACTION');request.abort();return
+                            if action=='save':state['paper_saved']=True
+                            if action=='remove':state['paper_saved']=False
+                            if action=='inspect':
+                                request.fulfill(json=dict(mode='READ_ONLY_PAPER_INSPECTION',checks='OBSERVED_FIELDS_COVERED',account_id='01234567-89ab-cdef-0123-456789abcdef',observed_usd_ceiling='900',observed_btc_available='1.9',open_order_count=0,ready_for_routing=False,spendable_funds_verified=False));return
+                            request.fulfill(json=dict(configured=state['paper_saved'],review_required=False,ready_for_routing=False));return
                         if path=='/api/execution/intent/'+ORDER+'/cancel':
                             state['pending']=False;request.fulfill(json=dict(status='SIMULATED_CANCELLED'));return
                         blocked.append('UNEXPECTED_WRITE '+path);request.abort();return
@@ -205,8 +215,33 @@ def run(output,channel=None):
                     page.locator('#forward-start').hover();expect(panel).to_be_visible()
                     page.screenshot(path=str(output/f'help-{width}x{height}.png'))
                     if writes:raise ValueError('HELP_BROWSER_INTERACTION_SENT_WRITE')
+                    # All credential/API writes below are intercepted fixtures only.
+                    page.locator('#tab-accounts').click()
+                    page.locator('#paper-credentials-status').click()
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('No saved paper key pair')
+                    for ident in ('paper-api-key','paper-api-secret'):
+                        page.locator('#'+ident).fill('PRIVATE-PAPER-FIXTURE-12345')
+                        page.locator('#'+ident).hover();expect(panel).to_be_visible()
+                        if 'PRIVATE-PAPER' in body.inner_text():raise ValueError('HELP_BROWSER_PAPER_SECRET_EXPOSED')
+                        page.mouse.move(0,0);expect(panel).to_be_hidden()
+                    page.once('dialog',lambda dialog:dialog.accept())
+                    page.locator('#paper-credentials-save').click()
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('Paper key pair saved locally')
+                    expect(page.locator('#paper-api-key')).to_have_value('')
+                    expect(page.locator('#paper-api-secret')).to_have_value('')
+                    page.once('dialog',lambda dialog:dialog.accept())
+                    page.locator('#paper-account-inspect').click()
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('Observed USD ceiling 900')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('Spendable funds NOT verified')
+                    page.once('dialog',lambda dialog:dialog.accept())
+                    page.locator('#paper-credentials-remove').click()
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('No saved paper key pair')
+                    if writes!=['/api/execution/alpaca-paper/local-credentials/'+action for action in ('status','save','inspect','remove')]:
+                        raise ValueError('UNEXPECTED_PAPER_CONTROL_WRITES')
+                    page.mouse.move(0,0);expect(panel).to_be_hidden()
+                    page.screenshot(path=str(output/f'paper-credentials-{width}x{height}.png'))
                     if errors or blocked:raise ValueError('HELP_BROWSER_PAGE_ERRORS: '+repr(errors+blocked))
-                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True,hub_readonly_views=True,workspace_tabs=7,automatic_startup_checks=True,tab_switch_preserves_inputs=True))
+                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True,hub_readonly_views=True,workspace_tabs=7,automatic_startup_checks=True,tab_switch_preserves_inputs=True,paper_credential_controls=True,intercepted_paper_reads_only=True))
                 except Exception as exc:
                     diagnostic=dict(viewport=dict(width=width,height=height),control=current_control,error=str(exc),page_errors=errors,blocked=blocked,
                                     events=page.evaluate('window.__helpEvents||[]'))

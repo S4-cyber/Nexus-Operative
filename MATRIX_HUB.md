@@ -4,7 +4,7 @@ Status: local foundation implemented; no shared cloud host, global instance sync
 
 ## Low-labor workflow
 
-PORTAL now has a Matrix Hub card. Select BTC, ETH or SOL, five-minute/hourly/daily candles and a maximum research window. Build Hub & Learn makes four bounded public GET requests for up to 600 closed candles, deduplicates them directly into the hub, seals the dataset, fits or reuses a model artifact and gives five existing council fixture adapters the same compact evidence. Daily bars can supply longer context; completeness and availability are not guaranteed. No paid inference, credential read or order is part of this action. Overlapping builds are rejected within this backend process.
+PORTAL now has a Matrix Hub card. Select BTC, ETH or SOL, five-minute/hourly/daily candles and a maximum research window. Build Hub & Learn makes four bounded public GET requests for up to 600 closed candles, deduplicates them directly into the hub, seals the dataset, fits or reuses a model artifact and trains or reuses the bundled three-learner council and two deterministic reviewers in that pack. Daily bars can supply longer context; completeness and availability are not guaranteed. No paid inference, credential read or order is part of this action. Overlapping builds are rejected within this backend process.
 
 Learn from Stored Data performs no public downloads: it imports an existing valid local candle cache where present, then uses retained hub history. It requires at least 240 consecutive bars. A requested maximum up to 10,000 uses available records; absent history is not fabricated. Source digest corruption or local revision flags stop import. Successful earlier pages remain after a later download fails; retrying reuses the same identities.
 
@@ -44,7 +44,7 @@ The first 70% of bars form the training prefix. Labels overlapping the chronolog
 
 Research limitations: retrospective source availability, repeated experiment selection, nonstationarity, sparse OHLCV rather than order books, overlapping horizon targets, unmodeled execution costs and single-source data. Held-out MAE or direction accuracy is not profit, executable capacity or release acceptance. Independent walk-forward/nested selection, uncertainty calibration, drift monitoring and cost/latency/forward evidence remain required. Stronger model families should be evaluated against this baseline rather than assumed better because they are larger.
 
-All five current council adapter roles receive the same dataset/model hashes and forecast summary. They are deliberately abstaining local fixtures; no paid or external AI models are connected. A future adviser may read a sealed dataset through a restricted read interface and submit a bounded testable proposal. It must not mutate canonical records, invent tools or bypass the deterministic governor. Every current report and signal leaves paper/live order authority false.
+The hub uses the built-in numerical council described below. The separate legacy external-adapter diagnostic retains five deliberately abstaining fixtures; no paid or external AI models are connected. A future adviser may read a sealed dataset through a restricted read interface and submit a bounded testable proposal. It must not mutate canonical records, invent tools or bypass the deterministic governor. Every current report and signal leaves paper/live order authority false.
 
 ## Shared-cloud target
 
@@ -56,3 +56,21 @@ References reviewed 2026-10-17:
 - Training-only preprocessing and leakage: https://scikit-learn.org/stable/common_pitfalls.html
 
 The implementation uses the Python standard library; citing validation principles does not mean scikit-learn is installed or used. Run the full suite, Python compilation, PORTAL JavaScript syntax and `node tools/hub_controls_smoke.cjs`. Browser acceptance is fixture-intercepted and cannot prove live predictive performance.
+
+## Built-in council (v0.80)
+
+Hub preparation now trains and seals an onboard council in the same model pack. No API key, external provider, downloaded weights or new dependency is required. The existing external-adapter diagnostic remains an intentionally disconnected fixture and the separate execution governor remains unchanged.
+
+Three ridge learners predict three-bar log returns using fixed feature views: trend (5/20/60-bar momentum), activity (volatility/volume surprise), and combined. They have separate fitted coefficients and training-only scalers but share a model family and dataset: their agreement is correlated, not independent confirmation. Training targets end strictly before the 70% holdout boundary. Three consecutive fixed holdout blocks must each have at least ten observations and strictly lower MAE than both zero-change and short-momentum baselines before a learner receives FURTHER_RESEARCH. No winner or parameters are selected on this tail. These blocks are retrospective diagnostics, not walk-forward validation, costs, confidence calibration or profit evidence.
+
+A deterministic validation reviewer recomputes eligibility from measurements rather than trusting votes and flags directional disagreement. A separate provenance/execution reviewer abstains because independently verified source, executable fills and account evidence are absent. Every result has NO_ORDER_AUTHORITY and paper/live order flags false, including unanimous research support. No council result replaces the forward runner's fixed fingerprinted policy.
+
+Use **Learn from Stored Data** after collecting new history. Unchanged dataset plus council engine version reuses the exact saved artifact; changed data or engine retrains. The complete candidate is sealed before the current research reference is published under the existing generation check. Failed training/publication leaves the prior reference and artifacts intact; old-generation signals still abstain. Previous versions remain readable for inspection, never automatic execution rollback. Existing artifact quotas stop further admission without deleting evidence. Legacy packs lacking the council migrate on next explicit preparation. There is no continuous scanner, unattended training scheduler or self-modifying source in this version.
+
+### Keeping models current
+
+Learning data updates coefficients; reviewed application releases update bundled algorithms and their engine version. A future background worker must coalesce newly closed bars, enforce a bounded cadence and resource budget, validate candidates, retain rollback evidence and keep execution promotion separate. Add stronger families and walk-forward/cost tests before claiming model quality. Shared cloud aggregation and anti-poisoning remain separate unfinished work.
+
+Larger local language models are an optional future backend: separately installed licensed weights, a pinned runtime, local resource measurements, content hashes, explicit downloads, compatibility tests and retained prior versions are needed. Never execute downloaded/generated Python or trust a model's suggested permission changes. This release does not contain a language-model runtime or GPT weights. A new algorithm/weight release can improve quality or efficiency but cannot increase physical CPU/GPU speed, RAM or storage. Hardware must be measured on the actual installation, not inferred from this development container. GPT-6.1's API documentation does not establish downloadable weights; local gpt-oss deployment is a separate documented option, not a claim of equivalence.
+
+References checked 2026-10-17: https://developers.openai.com/api/docs/models/gpt-6.1-sol and https://developers.openai.com/learn/gpt-oss . No provider request, weight download or hardware purchase occurred.

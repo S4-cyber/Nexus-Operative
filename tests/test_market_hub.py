@@ -121,7 +121,7 @@ def test_preparation_persists_and_reuses_models_and_council_never_executes(hub):
     add();a=model.prepare('BTC-USD');b=model.prepare('BTC-USD')
     assert a['model_artifact']==b['model_artifact'] and b['model_reused']
     assert a['dataset']==b['dataset'] and h.status()['artifact_count']==2
-    assert len(a['council']['specialists'])==5 and a['council']['all_abstained']
+    assert len(a['council']['specialists'])==5 and len(a['council']['learners'])==3
     assert not a['council']['paper_orders_enabled'] and not a['cloud_connected']
     sha=h.latest_model('BTC-USD',3600);at=a['model']['forecast_as_of']
     fresh=model.signal(sha,now=at+1);stale=model.signal(sha,now=at+7201)

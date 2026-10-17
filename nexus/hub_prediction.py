@@ -6,7 +6,7 @@ import math
 import statistics
 import time
 from nexus import market_hub as hub
-from nexus.model_adapters import coordinate
+from nexus.onboard_council import ENGINE_VERSION, train_validated
 
 SCHEMA='nexus.hub-momentum-model.v1'
 FEATURES=('momentum_5','momentum_20','momentum_60','volatility_20','volume_surprise_20')
@@ -89,7 +89,7 @@ def train(snapshot):
     return dict(schema=SCHEMA,implementation='PURGED_CHRONOLOGICAL_MULTI_HORIZON_RIDGE_BASELINE',
         dataset_content_sha256=hub.digest(hub.encoded(snapshot)),dataset_generation=snapshot['generation'],product=product,granularity=g,bars=n,
         feature_names=list(FEATURES),feature_lookback_bars=60,training_fraction=.7,
-        latest_features=dict(zip(FEATURES,x[n-1])),forecast_as_of=rows[-1]['starts_at']+g,models=models,
+        onboard_council=train_validated(snapshot),latest_features=dict(zip(FEATURES,x[n-1])),forecast_as_of=rows[-1]['starts_at']+g,models=models,
         source_verified=False,historical_point_in_time_verified=False,live_orders_enabled=False,paper_orders_enabled=False,
         limitations='Retrospective single-source research, not a proven powerful predictor or profit guarantee. Training-only scalers and purged labels; fixed held-out chronological tail, no random split. Baselines are comparisons, not model selection. Residual bands are training diagnostics, not calibrated intervals. No spread/depth/executable-fill or independent strategy acceptance is established.')
 
@@ -106,18 +106,14 @@ def prepare(product,granularity=3600,limit=1000):
     except ValueError as exc:
         if str(exc) not in ('HUB_NO_TRAINED_MODEL','HUB_MODEL_REQUIRES_REFRESH'):raise
         cached=None
-    if cached and cached.get('schema')==SCHEMA and cached.get('dataset_content_sha256')==frozen['content_sha256']:model=cached;reused=True
+    if cached and cached.get('schema')==SCHEMA and cached.get('dataset_content_sha256')==frozen['content_sha256'] and cached.get('onboard_council',{}).get('engine_version')==ENGINE_VERSION:model=cached;reused=True
     else:model=train(dataset)
     artifact=hub.seal(model)
-    # All five existing adviser roles receive the same compact, private-data-free view.
-    evidence=dict(dataset_content_sha256=frozen['content_sha256'],model_content_sha256=artifact['content_sha256'],
-        product=product,source_verified=False,forecast_as_of=model['forecast_as_of'],
-        forecasts=[dict(horizon_bars=m['horizon_bars'],return_bps=m['forecast_return_bps'],holdout_mae_log_bps=m['holdout_mae_log_bps']) for m in model['models']])
-    council=coordinate(evidence)
+    council=model['onboard_council']
     hub.register_model(product,granularity,artifact['content_sha256'])
     return dict(mode='SEALED_HUB_RESEARCH_ONLY',imported=imported,dataset=frozen,model_artifact=artifact,
         model=model,model_reused=reused,council=council,cloud_connected=False,live_orders_enabled=False,paper_orders_enabled=False,
-        note='One local preparation action; no new public downloads or provider requests. Existing council adapters are fixtures, not connected AI services. No model output is promoted into the fixed forward policy.')
+        note='One local preparation action; no new public downloads or provider requests. Bundled numerical specialists learn locally; no external AI service or LLM weights are connected. No model output is promoted into the fixed forward policy.')
 
 
 def signal(model_sha,now=None):

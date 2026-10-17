@@ -5,6 +5,7 @@ fees, not actual matching/depth. No broker IO, validated edge or live authority.
 Restarts always require an explicit new start. The read-only observer is separate.
 """
 import json
+import math
 import os
 import sqlite3
 import threading
@@ -27,11 +28,14 @@ from nexus.forward_ownership import ForwardOwnership
 INTERVAL=POLICY['interval_seconds']
 RANKING_INTERVAL=POLICY['ranking_seconds']
 PRODUCT=POLICY['product']
+CLOCK_DISCONTINUITY_TOLERANCE_SECONDS=2
 
 
 class PaperForwardRunner:
-    def __init__(self,orders=gateway,fetcher=read_ticker,clock=time.time):
+    def __init__(self,orders=gateway,fetcher=read_ticker,clock=time.time,monotonic_clock=None):
         self.orders=orders;self.fetcher=fetcher;self.clock=clock
+        self.monotonic_clock=monotonic_clock or (time.monotonic if clock is time.time else clock)
+        self._clock_anchor=None
         self._stop=threading.Event();self._stop.set()
         self._thread=None;self._lock=threading.RLock();self._cycle_lock=threading.Lock()
         self._execution_lock=threading.RLock();self._control_lock=threading.Lock()
@@ -55,7 +59,10 @@ class PaperForwardRunner:
         return db
 
     def _record(self,decision,reason,**extra):
-        row=dict(at=self.clock(),session=self._session,cycle=self._cycles,quote_evidence_sha256=self._observation_hash,decision=decision,reason=reason,
+        observed=self.clock()
+        valid=type(observed) in (int,float) and math.isfinite(observed)
+        recorded=observed if valid else (self._clock_anchor[0] if self._clock_anchor else time.time())
+        row=dict(at=recorded,clock_sample_valid=valid,session=self._session,cycle=self._cycles,quote_evidence_sha256=self._observation_hash,decision=decision,reason=reason,
                  product=PRODUCT,tier=self._tier,simulation_only=True,**extra)
         row['policy_id']=self._policy['id'];row['policy_sha256']=self._policy['policy_sha256']
         with closing(self._db()) as db,db:
@@ -95,6 +102,9 @@ class PaperForwardRunner:
             self._ownership=ForwardOwnership(self.orders._path().parent)
             self._ownership.acquire()
             try:
+                self._clock_anchor=None
+                reason=self._clock_check()
+                if reason:raise ValueError(reason)
                 selected_policy=admit(policy_id)
                 if tier not in TIERS:raise ValueError('UNKNOWN_RISK_TIER')
                 report=self.orders.recovery_report()
@@ -170,6 +180,8 @@ class PaperForwardRunner:
         with self._execution_lock:return self._execute_locked(*args)
 
     def _execute_locked(self,side,quantity,bid,ask,received,now,notional):
+        clock_reason=self._clock_check()
+        if clock_reason:return self._pause_clock(clock_reason)
         if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_BEFORE_SUBMIT')
         oid='pf_'+self._session+'_'+str(self._cycles)+'_'+side
         self.orders.submit(oid,PRODUCT,side,str(notional),tier=self._tier)
@@ -179,6 +191,8 @@ class PaperForwardRunner:
             # Quote may precede order creation by transport latency; use a fresh
             # observation boundary so the timestamp model retains source age.
             if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_BEFORE_FILL')
+            clock_reason=self._clock_check()
+            if clock_reason:return self._pause_clock(clock_reason)
             result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock(),fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'])
             if result.get('expired'):return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)
             return self._record(side,'MODELED_PUBLIC_QUOTE_FILL',order_id=oid,
@@ -186,12 +200,30 @@ class PaperForwardRunner:
         finally:
             self.orders.cancel(oid)
 
+    def _clock_check(self):
+        wall=self.clock();steady=self.monotonic_clock()
+        if any(type(v) not in (int,float) or not math.isfinite(v) for v in (wall,steady)):
+            return 'INVALID_RUNTIME_CLOCK'
+        if self._clock_anchor:
+            old_wall,old_steady=self._clock_anchor
+            elapsed=steady-old_steady
+            if elapsed<0 or wall<old_wall or abs((wall-old_wall)-elapsed)>CLOCK_DISCONTINUITY_TOLERANCE_SECONDS:
+                return 'RUNTIME_CLOCK_DISCONTINUITY'
+        self._clock_anchor=(wall,steady)
+        return None
+
+    def _pause_clock(self,reason):
+        self._prices.clear();self._last_rank=0;self._error=reason;self._stop.set()
+        return self._record('PAUSED',reason)
+
     def single_cycle(self):
         if not self._cycle_lock.acquire(blocking=False):return dict(decision='HOLD',reason='CYCLE_BUSY')
         try:
             if self._stop.is_set():return dict(decision='HOLD',reason='PAPER_FORWARD_STOPPED')
             self._cycles+=1
             self._observation_hash=None
+            clock_reason=self._clock_check()
+            if clock_reason:return self._pause_clock(clock_reason)
             report=self.orders.recovery_report()
             if report['halted'] or not report['portfolio_reconciled']:
                 self._stop.set();return self._record('PAUSED','HALT_OR_RECONCILIATION_VETO')
@@ -203,6 +235,8 @@ class PaperForwardRunner:
             quote=None
             try:
                 quote=self.fetcher(PRODUCT);now=self.clock()
+                clock_reason=self._clock_check()
+                if clock_reason:return self._pause_clock(clock_reason)
                 if not isinstance(quote,dict):raise ValueError('MISSING_FORWARD_QUOTE')
                 if self._stop.is_set():return self._record('HOLD','STOPPED_DURING_FETCH')
                 feed=self._guard.evaluate(quote,now)
@@ -222,10 +256,15 @@ class PaperForwardRunner:
                 self._failures+=1;self._error=type(exc).__name__
                 if self._failures>=self._policy['consecutive_failure_limit']:self._stop.set()
                 return self._record('PAUSED' if self._stop.is_set() else 'VETO','QUOTE_UNAVAILABLE_OR_INVALID',consecutive_failures=self._failures)
-            self._record_quote(quote,True)
-            self._failures=0;self._error=None
+            regressed=self._stamp is not None and stamp<self._stamp
+            self._record_quote(quote,not regressed,'EXCHANGE_TIME_REGRESSION' if regressed else None)
             if stamp==self._stamp:return self._record('HOLD','DUPLICATE_EXCHANGE_TICK')
-            if self._stamp is not None and stamp<self._stamp:return self._record('VETO','EXCHANGE_TIME_REGRESSION')
+            if self._stamp is not None and stamp<self._stamp:
+                self._prices.clear();self._last_rank=0
+                self._failures+=1
+                if self._failures>=self._policy['consecutive_failure_limit']:self._stop.set()
+                return self._record('PAUSED' if self._stop.is_set() else 'VETO','EXCHANGE_TIME_REGRESSION')
+            self._failures=0;self._error=None
             self._stamp=stamp
             if self._prices and now-self._prices[-1][0]>2*INTERVAL:self._prices.clear();self._last_rank=0
             self._prices.append((now,(bid+ask)/2))
@@ -277,7 +316,7 @@ class PaperForwardRunner:
                         product=PRODUCT,interval_seconds=INTERVAL,entry_ranking_seconds=RANKING_INTERVAL,
                         cycles=self._cycles,consecutive_feed_failures=self._failures,last_error=self._error,last_event=self._last,
                         live_orders_enabled=False,broker_connected=False,strategy_validated=False,
-                        liquidity_model='ASSUMED_QUANTITY_NO_DEPTH',automatic_restart=False,policy=dict(self._policy))
+                        liquidity_model='ASSUMED_QUANTITY_NO_DEPTH',automatic_restart=False,clock_guard_tolerance_seconds=CLOCK_DISCONTINUITY_TOLERANCE_SECONDS,policy=dict(self._policy))
 
     def evidence_report(self,session_id):
         import re

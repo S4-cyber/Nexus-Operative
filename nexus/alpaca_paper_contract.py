@@ -162,6 +162,7 @@ def catalogue():
                 pending_cancel_is_terminal=False,fee_reconciled=False,position_reconciled=False,
                 durable_request_journal_scope='Disconnected bounded request/uncertain-attempt/observation journal with account-scoped replay, retained lookup budgets, timeout/rate-limit outcome checks and explicit head-fenced interruption review exists; no authenticated lookup, transport or retry permission.',
                 fee_projection_scope='Disconnected explicit-execution/received-asset-fee projection and chronological fee-reserved funding audit available; account and spendable funds remain unverified.',
+                account_inspection_scope='Separate opt-in fixed-host GET-only inspection primitive exists, tested with injected responses only; no runtime wiring, credential persistence, authenticated acceptance, atomic snapshot or spendable-funds authority.',
                 documentation_verified_at='2026-10-17',sources=list(SOURCES))
 
 

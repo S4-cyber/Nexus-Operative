@@ -43,7 +43,7 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.45.0")
+app = FastAPI(title="Nexus Operative", version="0.45.1")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -265,7 +265,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.45.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.45.1", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -473,6 +473,23 @@ def halt():
     _paused=True
     observer.stop()
     audit('emergency_halt')
+    return status()
+
+class HaltResetConfirmation(BaseModel):
+    confirm_reset: bool
+
+@app.post("/api/simulate/halt/reset")
+def reset_emergency_halt(confirmation:HaltResetConfirmation):
+    global _halted,_paused
+    if confirmation.confirm_reset is not True:
+        raise HTTPException(status_code=422,detail="Explicit halt reset confirmation required")
+    if not _halted:
+        raise HTTPException(status_code=409,detail="Emergency halt is not active")
+    # RESET clears only the simulation latch, never resumes background work.
+    _paused=True
+    observer.stop()
+    _halted=False
+    audit("emergency_halt_reset_paused")
     return status()
 
 @app.post("/api/funding/preview")

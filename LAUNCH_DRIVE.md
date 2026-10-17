@@ -25,3 +25,8 @@ Set local reaction-time budgets for decision and risk evaluation; measure p50/p9
 
 ## Standing sprint rule
 Each hourly sprint should **first fix CI/build regressions and then complete the largest coherent unmet v1.0 launch gate** with test coverage. Allocate remaining capacity to global expansion as a research/discovery track. Do not increase a feature version just for plans or cosmetic metadata. Do not trade readiness for adding more listings.
+
+## First external execution service decision (planned)
+Use **Alpaca paper** as the first third-party broker API adapter: separate paper credentials and endpoint, broker order-ID reconciliation, provider-specific rate limits and asset eligibility. Add an IBKR paper adapter for expanded stocks/FX/options/futures after sessions and entitlements are verified; consider Coinbase Advanced as a separate authenticated crypto execution venue. Until explicit user permission, these adapters stay disconnected; they are not substitutes for independently tested execution safeguards.
+
+The provider-neutral `nexus/order_gateway.py` now models unique client order IDs, no-network simulated acknowledgement, cancellation and emergency cancellation; it does **not** simulate matched fills, manage real capital or hold actual assets. This is an early protocol boundary, not launch readiness.

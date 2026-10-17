@@ -1,7 +1,7 @@
 """Transactional, replay-validated offline order journal. No broker IO.
 
-Every request rebuilds state from committed commands under a SQLite write lock.
-This conservative bounded implementation favors recovery correctness over latency.
+Requests verify retained command history and use replay-validated checkpoints.
+Fresh processes replay prefixes before accepting cached state.
 No positions or account balances are inferred from reference-notional fills.
 """
 import json
@@ -11,15 +11,18 @@ from contextlib import closing
 from pathlib import Path
 from nexus.order_gateway import OrderGateway
 from nexus.order_accounting import AccountingOrderGateway
-from nexus import execution_portfolio
+from nexus import execution_portfolio, order_checkpoints
 
 MAX_COMMANDS = 10000
 METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due'))
 
 
 class DurableOrderGateway:
-    def __init__(self, path=None):
+    def __init__(self, path=None, checkpoints_enabled=True):
+        if type(checkpoints_enabled) is not bool:raise ValueError('INVALID_CHECKPOINT_OPTION')
         self.path = Path(path) if path is not None else None
+        self.checkpoints_enabled = checkpoints_enabled
+        self.restore_diagnostics = {}
 
     def _path(self):
         if self.path is not None:
@@ -34,22 +37,30 @@ class DurableOrderGateway:
         db.execute('PRAGMA synchronous=FULL')
         db.execute('''CREATE TABLE IF NOT EXISTS commands(
             sequence INTEGER PRIMARY KEY, payload TEXT NOT NULL)''')
+        db.execute('CREATE TABLE IF NOT EXISTS order_checkpoints(sequence INTEGER PRIMARY KEY,prefix_sha256 TEXT NOT NULL,state_json TEXT NOT NULL)')
         return db
 
     def _restore(self, db):
-        gateway = AccountingOrderGateway(clock=lambda: 0)
         rows = db.execute('SELECT sequence,payload FROM commands ORDER BY sequence').fetchmany(MAX_COMMANDS+1)
-        if len(rows)>MAX_COMMANDS:
-            raise ValueError('ORDER_JOURNAL_CAP_EXCEEDED')
-        try:
-            for expected, (sequence, payload) in enumerate(rows, 1):
-                command = json.loads(payload)
-                if sequence != expected or command['method'] not in METHODS:
-                    raise ValueError('INVALID_COMMAND')
-                getattr(gateway, command['method'])(*command['args'], **command['kwargs'])
-        except (ValueError, TypeError, KeyError, AttributeError) as exc:
-            raise ValueError('ORDER_JOURNAL_RECOVERY_FAILED') from exc
-        return gateway, len(rows)
+        if len(rows)>MAX_COMMANDS:raise ValueError('ORDER_JOURNAL_CAP_EXCEEDED')
+        if any(type(sequence) is not int or sequence!=expected for expected,(sequence,_) in enumerate(rows,1)):
+            raise ValueError('ORDER_JOURNAL_RECOVERY_FAILED')
+        def replay(commands,gateway=None):
+            if gateway is None:gateway=AccountingOrderGateway(clock=lambda:0)
+            try:
+                for sequence,payload in commands:
+                    command=json.loads(payload)
+                    if command['method'] not in METHODS:raise ValueError('INVALID_COMMAND')
+                    getattr(gateway,command['method'])(*command['args'],**command['kwargs'])
+            except (ValueError,TypeError,KeyError,AttributeError) as exc:
+                raise ValueError('ORDER_JOURNAL_RECOVERY_FAILED') from exc
+            return gateway
+        if self.checkpoints_enabled:
+            gateway,self.restore_diagnostics=order_checkpoints.restore(db,rows,replay)
+        else:
+            gateway=replay(rows)
+            self.restore_diagnostics=dict(checkpoint_sequence=0,prefix_replayed=len(rows),tail_replayed=0,cache_hit=False)
+        return gateway,len(rows)
 
     def _call(self, method, *args, **kwargs):
         # Validate JSON before opening a transaction; NaN is never persisted.
@@ -84,6 +95,8 @@ class DurableOrderGateway:
                 if count >= MAX_COMMANDS:
                     raise ValueError('ORDER_JOURNAL_CAP_REACHED')
                 db.execute('INSERT INTO commands VALUES (?,?)', (count+1, payload))
+                if self.checkpoints_enabled and (count+1)%order_checkpoints.INTERVAL==0:
+                    order_checkpoints.save(db,gateway,count+1)
         return result
 
     def submit(self, *args, **kwargs):
@@ -137,6 +150,8 @@ class DurableOrderGateway:
                     orders=list(gateway.intents.values()),execution_terms=gateway.order_terms,
                     quote_model_events=len(gateway.quote_events), live_orders_enabled=False,
                     portfolio_reconciled=gateway.portfolio_linked, execution_account=gateway.account_report(),
+                    recovery_diagnostics=dict(self.restore_diagnostics),
+                    retention=dict(command_history_deleted=False,checkpoint_limit=2,journal_command_limit=MAX_COMMANDS),
                     note='Reference notionals cannot establish quantities, positions or ownership.')
 
 

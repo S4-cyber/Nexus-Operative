@@ -91,3 +91,15 @@ Execution terms are immutable once set (maximum one-hour lifetime) and require a
 Expiry is a durable terminal transition at the deadline. It preserves any existing partial quantity, fees and cash accounting. Single-order and bounded batch expiry share the journal transaction; repeated expiry is idempotent, restart preserves it and reset does not reopen expired orders. Linked quote fills use the same atomic ledger bridge, risk-tier entry checks and exposure governor. Disengaged tiers still permit modeled exits and historical duplicate replay.
 
 The roadmap UTF-8 read test was corrected after Windows CI detected locale-dependent decoding. No broker/network integration or public mutation endpoint was added. Next critical path: validated checkpoints/retention and full durable-path latency measurements, then the integrated unattended paper loop. M4 remains partial pending extended stress and independent acceptance.
+
+## v0.55.0 — validated warm checkpoints and durable latency diagnostic
+
+The journal now saves a JSON checkpoint every 64 state-changing commands in the same transaction as the command and any linked ledger writes. It retains the two latest checkpoint snapshots and all command history. Checkpoint write failure rolls back the command/fill as well. No pickle, automatic history deletion or journal-cap bypass is used.
+
+A fresh process validates the saved state through full prefix replay. A bounded four-entry process cache subsequently restores that verified state only when the exact snapshot and retained command-prefix digest still match. Tail commands are replayed normally; changed prefix payloads, invalid sequence bounds or inconsistent snapshots fail closed. Checkpoints speed warm reconstruction; cold recovery still performs full prefix replay and every warm check still reads/hashes retained prefix payloads. Local checksums cannot prevent coordinated database rewrites.
+
+Tests cover cold/warm equivalence to full replay, tail processing, bounded snapshot retention, modified snapshot/history rejection, rollback of linked fills when checkpoint insertion fails, and forced process death during checkpoint insertion. The existing journal limit remains 10,000 commands, with ordinary intake reserving 1,001 control slots. Safe long-run archival still needs design and acceptance evidence.
+
+PORTAL offers an explicit disposable-account durability benchmark (`POST /api/execution/durable-benchmark`, 1–30 cycles, default 16). It compares full replay with checkpoints across submit, timed quote fill and partial cancellation, and reports local commit-return p50/p95/p99, command throughput and cold/warm recovery. Treatment order is fixed and this is a diagnostic, not a statistically controlled speedup claim. It excludes the linked portfolio, live tier validation, network, broker acknowledgments and actual fills. It neither changes application accounts nor validates the desired market-moves-per-second target.
+
+Next: linked-ledger/tier-inclusive measurement, bounded sustained-load handling and journal archival, followed by unattended buyer/hold/seller integration. The read-only roadmap marks M5 partial, not complete.

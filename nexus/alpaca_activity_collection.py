@@ -1,4 +1,4 @@
-"""Explicit bounded paper activity reads. No persistence or automatic continuation.
+"""Explicit bounded paper activity reads with optional caller-selected retention.
 
 Creation-date pagination is not execution/fee coverage. At most two pages and
 four total GETs; no order methods, arbitrary URLs, default window or account.
@@ -63,10 +63,15 @@ def is_activity_url(url):
 def collect_activities(api_key, api_secret, orders, *, expected_account_id, after, until,
                        confirm_read_only_paper=False, opener=None, wall_clock=time.time,
                        elapsed_clock=time.monotonic, permission_check=lambda: True,
-                       credential_check=lambda: True):
+                       credential_check=lambda: True, activity_store=None):
     session = transport._ReadSession(api_key, api_secret, confirm_read_only_paper=confirm_read_only_paper,
         opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check)
     account = adapter._uuid(expected_account_id)
+    if activity_store is not None:
+        from nexus.broker_activity_store import BrokerActivityStore
+        if type(activity_store) is not BrokerActivityStore or activity_store.account != account:
+            _fail('RETENTION_ACCOUNT_OR_TYPE')
+        activity_store.inspect()  # Missing state stays missing; corrupt history blocks IO.
     _, end = _window(after, until)
     # Snapshot caller terms once, before network work. Scalars are immutable;
     # validate the bounded copy again rather than borrowing a caller's live list.
@@ -100,6 +105,15 @@ def collect_activities(api_key, api_secret, orders, *, expected_account_id, afte
         if before != after_account: _fail('ACCOUNT_CHANGED_DURING_READ')
         if credential_check() is not True: _fail('CREDENTIALS_CHANGED')
         completed = session.evaluated_at()
+        retention = None
+        if activity_store is not None:
+            def admission():
+                session.checkpoint()
+                return credential_check() is True
+            retention = activity_store.retain(rows, frozen_orders, after=after, until=until, admission=admission)
+            # A post-commit fault may lose the return, never the retained receipt.
+            if admission() is not True: _fail('CREDENTIALS_CHANGED')
+            completed = session.evaluated_at()
         return dict(mode='EXPLICIT_BOUNDED_PAPER_ACTIVITY_COLLECTION',
                     source='INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_READS',
                     requested_creation_window=scope, scope_sha256=sha(scope),
@@ -108,7 +122,8 @@ def collect_activities(api_key, api_secret, orders, *, expected_account_id, afte
                     end_of_page_sequence_observed=end_observed, collection_limit_reached=not end_observed,
                     continuation_hint=None if end_observed else dict(scope_sha256=sha(scope), page_token=cursor),
                     activity_normalization=report, account_fields_double_checked=True, atomic_snapshot=False,
+                    local_retention=retention,
                     automatic_continuation=False, automatic_retry=False, activity_coverage_verified=False,
                     fee_coverage_complete=False, broker_account_reconciled=False, spendable_funds_verified=False,
                     ready_for_routing=False, broker_connected=False, live_orders_enabled=False, ledger_applied=False,
-                    limitations='Bounded sequential reads, not an atomic or retained dataset. A short page is only a pagination observation. Creation filters do not prove execution/fee coverage; delayed, revised or corrected source records may be missing. Cursor hints grant no automatic resume, ownership or trading permission.')
+                    limitations='Bounded sequential reads, not an atomic snapshot. Optional local retention preserves normalized unverified inputs only. A short page is only a pagination observation. Creation filters do not prove execution/fee coverage; delayed, revised or corrected source records may be missing. Cursor hints grant no automatic resume, ownership or trading permission.')

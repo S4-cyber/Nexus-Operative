@@ -241,7 +241,7 @@ def recover_saved(journal, client_order_id, *, expected_account_id,
 
 def collect_saved(orders, *, expected_account_id, after, until,
                   confirm_read_only_paper=False, opener=None, wall_clock=time.time,
-                  elapsed_clock=time.monotonic):
+                  elapsed_clock=time.monotonic, activity_store=None):
     """Internal one-shot activity collection; no runtime route or automatic start."""
     if confirm_read_only_paper is not True:
         _fail('READ_CONFIRMATION_REQUIRED')
@@ -253,7 +253,8 @@ def collect_saved(orders, *, expected_account_id, after, until,
     result = collect_activities(record['api_key'], record['api_secret'], orders,
         expected_account_id=expected_account_id, after=after, until=until,
         confirm_read_only_paper=True, opener=opener, wall_clock=wall_clock,
-        elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch), credential_check=credential_check)
+        elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch),
+        credential_check=credential_check, activity_store=activity_store)
     if not credential_check():
         _fail('READ_REVOKED')
     return result

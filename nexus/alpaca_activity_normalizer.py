@@ -148,8 +148,8 @@ def _record(raw, orders, account):
                 unverified_execution_reference=execution)
 
 
-def normalize(activities, orders, *, expected_account_id):
-    """Normalize a supplied REST activity set; never attest coverage or fee links."""
+def canonical_inputs(activities, orders, *, expected_account_id):
+    """Return bounded allowlisted inputs; discarded source metadata is not retained."""
     account = _uuid(expected_account_id)
     if _budget(activities) + _budget(orders) > MAX_INPUT_BYTES: _fail('INPUT_BYTE_CAP')
     def order_record(raw):
@@ -166,6 +166,13 @@ def normalize(activities, orders, *, expected_account_id):
             duplicates += 1
         else: records[identity] = record
     ordered = [records[key] for key in sorted(records)]
+    return account, order_map, ordered, duplicates, order_duplicates
+
+
+def normalize(activities, orders, *, expected_account_id):
+    """Normalize a supplied REST activity set; never attest coverage or fee links."""
+    account, order_map, ordered, duplicates, order_duplicates = canonical_inputs(
+        activities, orders, expected_account_id=expected_account_id)
     fills = [r for r in ordered if r['kind'] == 'FILL']; fees = [r for r in ordered if r['kind'] != 'FILL']
     executions = [dict(execution_id=r['activity_id'],broker_order_id=r['broker_order_id'],client_order_id=r['client_order_id'],
                        side=r['side'],product=r['product'],quantity=r['quantity'],price=r['price'],occurred_at=r['occurred_at']) for r in fills]

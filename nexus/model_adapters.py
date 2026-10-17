@@ -39,7 +39,9 @@ def validate_response(value,role):
         raise ValueError("Unknown or missing advisory fields")
     if any(ord(char)<32 and char not in "\\t\\n" for char in value["reason"]):
         raise ValueError("Unsafe advisory control characters")
-    cost=finite(value.get("estimated_cost_usd",0))
+    if type(value["estimated_cost_usd"]) not in (int,float):
+        raise ValueError("Advisory cost must be a JSON number")
+    cost=finite(value["estimated_cost_usd"])
     if cost>BUDGET_USD:raise ValueError("Single-adapter cost exceeds budget")
     return {"role":role,"verdict":value["verdict"],"reason":value["reason"],
             "estimated_cost_usd":float(cost),"adapter_type":"UNTRUSTED_ADVISORY"}

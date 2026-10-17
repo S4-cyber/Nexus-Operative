@@ -12,6 +12,7 @@ from pathlib import Path
 from nexus.order_gateway import OrderGateway
 from nexus.order_accounting import AccountingOrderGateway
 from nexus import execution_portfolio, order_checkpoints
+from nexus.execution_capacity import report as capacity_report, CONTROL_RESERVE
 
 MAX_COMMANDS = 10000
 METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due'))
@@ -90,7 +91,7 @@ class DurableOrderGateway:
                         require_entry(order['tier'],order['notional'])
                     execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
                 # Halt/cancel/reset must remain possible when normal intake is full.
-                if count >= MAX_COMMANDS-1001 and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill'):
+                if count >= MAX_COMMANDS-CONTROL_RESERVE and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill'):
                     raise ValueError('ORDER_JOURNAL_CAP_REACHED')
                 if count >= MAX_COMMANDS:
                     raise ValueError('ORDER_JOURNAL_CAP_REACHED')
@@ -152,6 +153,7 @@ class DurableOrderGateway:
                     portfolio_reconciled=gateway.portfolio_linked, execution_account=gateway.account_report(),
                     recovery_diagnostics=dict(self.restore_diagnostics),
                     retention=dict(command_history_deleted=False,checkpoint_limit=2,journal_command_limit=MAX_COMMANDS),
+                    capacity=capacity_report(count,len(gateway.intents),gateway.halted,MAX_COMMANDS),
                     note='Reference notionals cannot establish quantities, positions or ownership.')
 
 

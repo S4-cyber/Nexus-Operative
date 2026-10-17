@@ -4,6 +4,7 @@ All tiers default OFF. These limits only narrow the existing local
 simulation gateway; they never override portfolio or global risk vetoes.
 """
 import sqlite3,threading,time
+from contextlib import closing
 from decimal import Decimal
 from nexus.state import db_path,load_settings
 
@@ -16,7 +17,7 @@ def _db():
     return db
 
 def current():
-    with _lock,_db() as db:
+    with _lock,closing(_db()) as db,db:
         saved=dict(db.execute("SELECT tier,enabled FROM tier_permissions"))
     config=load_settings()
     return {"mode":"LOCAL_SIMULATED_RISK_PERMISSIONS",
@@ -32,7 +33,7 @@ def current():
 def configure(tier,enabled):
     if tier not in TIERS or type(enabled) is not bool:
         raise ValueError("INVALID_TIER_PERMISSION")
-    with _lock,_db() as db:
+    with _lock,closing(_db()) as db,db:
         db.execute("INSERT INTO tier_permissions(tier,enabled) VALUES(?,?) ON CONFLICT(tier) DO UPDATE SET enabled=excluded.enabled",(tier,int(enabled)))
     return current()
 
@@ -47,3 +48,4 @@ def require_entry(tier,notional):
     cap=min(Decimal("200"),budget*TIERS[tier],budget*Decimal(str(config[tier+"_allocation"]))/100)
     if amount>cap:raise ValueError("RISK_TIER_INTENT_CAP_EXCEEDED")
     return {"tier":tier,"tier_cap_usd":float(cap),"paper_only":True}
+

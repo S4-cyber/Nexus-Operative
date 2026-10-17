@@ -56,7 +56,7 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <article class="card"><div class="label">Execution bridge // planned provider connections</div>
 <h2>Buy / Hold / Sell Connectivity</h2>
 <p class="sub">Nexus will submit approved order intents to a supported broker's API, hold and reconcile positions there, then submit exits when the risk-approved strategy calls for them. Local lifecycle simulation and explicitly linked paper accounting are available for development; external execution remains disconnected. No broker account, live order, or payment connection is active.</p>
-<button id="execution-connectors">Check Broker Connections</button><button id="durable-benchmark">Measure Durable Gateway (Offline)</button><p class="sub" id="durable-benchmark-result">No durability benchmark run. Uses disposable test accounts; excludes linked portfolio and broker timing.</p><button id="decision-benchmark">Test 30 Decisions/sec (Offline)</button><p class="sub" id="decision-benchmark-result">No local throughput test yet. This does not send orders.</p><p class="sub" id="execution-connector-status">No broker connected. Local simulation only.</p>
+<button id="execution-connectors">Check Broker Connections</button><button id="execution-capacity">Check Execution Capacity</button><p class="sub" id="execution-capacity-result">No local capacity check requested.</p><button id="durable-benchmark">Measure Durable Gateway (Offline)</button><p class="sub" id="durable-benchmark-result">No durability benchmark run. Compares disposable gateway and linked-ledger accounts; excludes broker timing.</p><button id="decision-benchmark">Test 30 Decisions/sec (Offline)</button><p class="sub" id="decision-benchmark-result">No local throughput test yet. This does not send orders.</p><p class="sub" id="execution-connector-status">No broker connected. Local simulation only.</p>
 <div id="execution-connector-list" class="monitor tiny">Alpaca paper, Interactive Brokers paper, and Coinbase Advanced are planned adapters, not connected services.</div></article>
 <article class="card"><div class="label">Integration constellation</div><h2>Market Access Registry</h2><div id="market-grid" class="tiny">Loading supported targets…</div></article>
 </section>
@@ -300,12 +300,17 @@ byId('aidisconnect').onclick=async()=>{if(!window.confirm('Disconnect AI researc
  catch(e){show('aiconnectorstatus','Disconnect unavailable: '+e.message)}
  await refreshAISetup();
 };
+byId('execution-capacity').onclick=async()=>{
+ try{const d=await api('/api/execution/recovery'),c=d.capacity;
+ show('execution-capacity-result',c.command_count+'/'+c.command_limit+' commands; '+c.ordinary_commands_remaining+' ordinary writes remaining; '+c.intents_remaining+' new order IDs remaining. '+c.recommended_action+'. No automatic archival or history deletion.');
+ }catch(e){show('execution-capacity-result','Capacity unavailable: '+e.message)}
+};
 byId('durable-benchmark').onclick=async()=>{
  const button=byId('durable-benchmark');button.disabled=true;
  show('durable-benchmark-result','Measuring isolated gateway writes and recovery…');
  try{const d=await api('/api/execution/durable-benchmark',{method:'POST'});
- const summaries=d.treatments.map(t=>(t.checkpoints_enabled?'CHECKPOINT':'FULL REPLAY')+': p50 '+t.commit_return_latency.p50_ms+' / p95 '+t.commit_return_latency.p95_ms+' / p99 '+t.commit_return_latency.p99_ms+' ms; '+t.commands_per_second+' commands/sec; cold/warm recovery '+t.cold_recovery_ms+'/'+t.warm_recovery_ms+' ms');
- show('durable-benchmark-result',summaries.join(' | ')+' | Gateway only; excludes linked ledger, tier checks and brokers. Not market moves/sec.');
+ const summaries=d.treatments.map(t=>t.scope+' / '+(t.checkpoints_enabled?'CHECKPOINT':'FULL REPLAY')+': p50 '+t.commit_return_latency.p50_ms+' / p95 '+t.commit_return_latency.p95_ms+' / p99 '+t.commit_return_latency.p99_ms+' ms; '+t.commands_per_second+' commands/sec; cold/warm recovery '+t.cold_recovery_ms+'/'+t.warm_recovery_ms+' ms');
+ show('durable-benchmark-result',summaries.join(' | ')+' | Linked treatments include ledger and tier checks. Excludes signal queues and brokers; not market moves/sec.');
  }catch(e){show('durable-benchmark-result','Benchmark unavailable: '+e.message)}finally{button.disabled=false}
 };
 byId('release-roadmap-load').onclick=async()=>{

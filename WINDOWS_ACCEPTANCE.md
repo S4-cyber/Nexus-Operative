@@ -29,3 +29,5 @@ Record machine/Windows version, account privileges, exact artifact digest/source
 | Native window dependencies | Test available/missing WebView2 behavior and browser fallback; verify visible PORTAL and controls. |
 
 Do not run destructive acceptance steps on the only copy of user data. Do not infer successful migration from a same-version reinstall. M1 stays partial until the missing acceptance evidence is recorded and reviewed. See FORWARD_RUNBOOK.md for paper-session evidence and ROADMAP.md for the full release gates.
+
+Offline backup and new-directory restore commands are documented in FORWARD_RUNBOOK.md (`python -m nexus.recovery_bundle`). They require Nexus to be closed and do not select a runtime data path automatically.

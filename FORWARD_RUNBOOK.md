@@ -36,3 +36,19 @@ After stopping, exit the application before copying the entire portable data dir
 ## Remaining 1.0 acceptance
 
 Record sustained real-feed runs, independently reviewed policy/cost assumptions, network interruption and restart evidence, independent security/risk review, and clean-machine Windows install/upgrade/uninstall/recovery results. M1–M7 remain partial; disconnected broker-paper integration M8 and release authorization M9 remain open. Alpaca paper connection and 1.0 promotion require their respective explicit authorization. Never infer live-money permission from paper acceptance.
+
+## Verified offline recovery tool (source Python environment)
+
+Close Nexus before these commands. Use a separate backup destination and a new restore directory:
+
+```powershell
+python -m nexus.recovery_bundle backup "C:\path\to\storage" "D:\NexusBackup" --confirm-application-closed
+python -m nexus.recovery_bundle verify "D:\NexusBackup"
+python -m nexus.recovery_bundle restore "D:\NexusBackup" "C:\path\to\recovery-test" --confirm-application-closed
+```
+
+The tool retains all ordinary data files recursively, checks copied file hashes and SQLite quick-check results, and detects source changes during copying. It refuses existing destinations, destinations within the source, symlinks, and pending SQLite journal/WAL/SHM sidecars. It stages work and publishes only a verified result. Failed work is removed from the temporary staging directory; original data is not rewritten. Restore never switches the application's configured data path or starts it.
+
+If sidecars remain after a crash, preserve the entire original directory and investigate recovery on a separate complete copy before using this tool. Do not delete sidecars to bypass the check. The offline tool deliberately does not recover or checkpoint pending journals. Confirmation is an operator assertion that Nexus is closed; hash checks cannot prevent another process from starting or prove a globally consistent snapshot while writes occur.
+
+Backups are not encrypted and may contain private settings/evidence. Keep them in an appropriately protected location. Hashes are local integrity checks, not external attestation. After restore, use an isolated configuration targeting the new directory to check halted/stopped state, authoritative order replay, linked-ledger reconciliation and session evidence. Never point a recovery drill at the only original copy. Record the source commit beside the backup.

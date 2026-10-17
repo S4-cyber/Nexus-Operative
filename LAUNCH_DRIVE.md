@@ -171,3 +171,9 @@ Added a read-only downloadable session review summary with explicit active/inter
 ## v0.62 — installed-process acceptance and distribution integrity
 
 Added version/source-bound SHA256 distribution manifests with offline verification, duplicate/path rejection and changed/missing-file tests. Windows packaging now runs silent install, installed EXE startup, halt persistence, same-version reinstall/recovery and data-preserving uninstall, with installer/startup/result artifacts. Windows acceptance scope is documented in WINDOWS_ACCEPTANCE.md; native-window, default-path and cross-version clean-machine acceptance remain open. Local suite: 316 passed; compilation passed. Windows CI is required to establish the new installer result; no sustained feed or broker session started.
+
+## v0.63 — verified offline recovery bundles
+
+Added explicit application-closed backup, verification and restore CLI. It preserves ordinary files recursively, checks content and SQLite integrity, detects source changes during copying, refuses existing/nested destinations and symlinks, and stages output before publication. Restore only creates a new directory and never starts or reconfigures Nexus. Pending journal/WAL/SHM files require separate offline review; they are never deleted or replayed by this tool. Tests restore real order IDs, partial fills, fees and persistent halt, and cover corruption, changed-source rollback, manifest path injection, CLI confirmation and sidecar refusal. This extends recovery tooling, not independent clean-machine or sustained-feed acceptance.
+
+Windows build concurrency now lets a running build finish when a newer sprint is pushed, preserving installer acceptance evidence rather than repeatedly cancelling the active build. At this batch review, v0.62 Windows checks were still in progress; v0.61 packaging had been cancelled by the previous concurrency setting. Local v0.63 validation: 326 tests passed and compilation passed.

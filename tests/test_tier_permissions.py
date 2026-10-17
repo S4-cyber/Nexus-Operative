@@ -66,3 +66,36 @@ def test_controls_and_historical_labels_in_portal():
     assert "HISTORICAL WINS" in html
     assert "NO RELIABLE ESTIMATE" in html
     assert "Not a prediction" in html
+
+def test_paper_ledger_buy_requires_selected_engaged_tier(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",True)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend.observer,"start",lambda:None)
+    monkeypatch.setattr(backend.observer,"stop",lambda:None)
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    c=TestClient(app)
+    assert c.post("/api/paper/portfolio/init",json={"paper_capital":10000}).status_code==200
+    req={"product":"BTC-USD","notional":25,"tier":"terrestrial"}
+    assert c.post("/api/paper/portfolio/buy",json=req).status_code==409
+    c.post("/api/portal",json={"enabled":True})
+    assert c.post("/api/paper/portfolio/buy",json=req).status_code==422
+    assert c.post("/api/paper/portfolio/buy",json={"product":"BTC-USD","notional":25}).status_code==422
+    assert c.put("/api/tiers/solar/permission",json={"enabled":True}).status_code==200
+    assert c.post("/api/paper/portfolio/buy",json=req).status_code==422
+    assert c.put("/api/tiers/terrestrial/permission",json={"enabled":True}).status_code==200
+    approved=c.post("/api/paper/portfolio/buy",json=req)
+    assert approved.status_code==200
+    assert len(approved.json()["positions"])==1
+    assert approved.json()["live_orders_enabled"] is False
+    c.put("/api/tiers/terrestrial/permission",json={"enabled":False})
+    assert c.post("/api/paper/portfolio/sell",json={"product":"BTC-USD"}).status_code==200
+    c.post("/api/portal",json={"enabled":False})
+
+def test_ledger_ui_has_explicit_tier_selector():
+    html=TestClient(app).get("/portal").text
+    assert 'id="papertier"' in html
+    assert "tier:byId('papertier').value" in html

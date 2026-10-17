@@ -26,3 +26,9 @@ def test_early_valid_window_clamped_to_epoch():
     rows = fetch_candles("BTC-USD", 60, now=1200, transport=transport)
     assert len(rows) == 1
     assert seen[0]["start"][0].startswith("1970-01-01")
+
+
+def test_nonserializable_transport_payload_fails_closed():
+    from nexus.historical_candles import parse_candles
+    with pytest.raises(ValueError):
+        parse_candles("BTC-USD", 60, [[900, 90, 110, 99, 100, object()]], now=1200)

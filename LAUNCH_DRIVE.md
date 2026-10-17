@@ -221,3 +221,11 @@ Validation: 371 tests passed and Python compilation passed. No real-feed or exte
 Centralized timestamp/state/policy/counter/event validation for evidence, monitoring, history, cycle admission and diagnostic writes. Corrupt records pause before fetch; a changed stored policy is never overwritten by diagnostic updates. Stop fences/releases ownership even when its record cannot persist. Unavailable corrupted diagnostics return HTTP 503, while invalid caller limits remain HTTP 422. Tests verify no fetch/order/evidence mutation for corrupt metadata, preserved changed policy, safe failed STOP and API error classification. v0.68 safety passed; its pending Windows packaging run was superseded, so installed-EXE restoration remains awaiting packaged CI evidence.
 
 Validation: 381 tests passed; Python compilation passed. Both v0.67 Windows workflows passed at d9836c87eda9826f30847beaef2f3d7706fbe166; v0.69 checks were still in progress. No real-feed/broker session started.
+
+## v0.70 — pinned prior-version data recovery in Windows CI
+
+Added a separate checkout pinned to reviewed v0.64 source and source-origin-checked child fixture generation. The helper verifies HEAD, rejects tracked modifications, records fixture version/commit and requires an older fixture than the target. Windows installer smoke now runs both same-source recovery and prior-version fixture recovery against the installed EXE, preserving distinct evidence. Tests exercise source selection, commit mismatch, tracked modifications and missing pins. This validates a prior generated data fixture when CI passes; it does not claim prior-installer upgrade, old dependency reconstruction or broad historical-schema acceptance.
+
+Also pinned push checkout to the triggering SHA and added an explicit HEAD assertion. Previously queued packaging jobs checked the moving branch name, so their workflow status alone did not establish which source tip was packaged; the distribution manifest is the source reference. New push evidence will bind to the triggering commit.
+
+Validation: 383 tests passed; compilation and workflow YAML parsing passed. Pinned v0.64 data recovery and exact push-SHA packaging require the new Windows run; local source-selection tests do not establish those packaged outcomes.

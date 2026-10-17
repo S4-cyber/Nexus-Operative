@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.69.1. Branch: `development/windows-portal-foundation`.
+Revision: 0.70.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 | Milestone | Status | Evidence | Remaining acceptance |
 | --- | --- | --- | --- |
-| M1: Windows packaging and recovery | PARTIAL | Windows test, EXE startup and installer workflows; durable order recovery; installed-process/reinstall/uninstall smoke and distribution checksum tooling; verified offline backup/new-directory restore tooling and fresh-process linked-ledger/quote-evidence recovery drill and installed-API restored-data smoke tooling. | Installed-process/reinstall/uninstall CI passed at v0.62; record clean-machine native-window and cross-version upgrade/recovery acceptance. |
+| M1: Windows packaging and recovery | PARTIAL | Windows test, EXE startup and installer workflows; durable order recovery; installed-process/reinstall/uninstall smoke and distribution checksum tooling; verified offline backup/new-directory restore tooling and fresh-process linked-ledger/quote-evidence recovery drill and installed-API restored-data smoke tooling with pinned prior-version fixture support. | Installed-process/reinstall/uninstall CI passed at v0.62; record clean-machine native-window and cross-version upgrade/recovery acceptance. |
 | M2: Market data and provenance | PARTIAL | Public observation, timestamp/gap checks, historical admission and source diagnostics. | Independent provenance review; missing/revised/conflicting data and outage evidence. |
 | M3: Decision speed and risk authority | PARTIAL | Bounded local decision queue; individual Terrestrial/Solar/Universal entry permissions. | Measure full durable path under bursts; verify expiry, overload and permissions throughout autonomy. |
 | M4: Order lifecycle and portfolio reconciliation | PARTIAL | Partial/full priced fills, fees, idempotency, cancellation, durable recovery; atomic opt-in paper-ledger linking, partial-position reconstruction, adverse quote-cost assumptions and durable expiry. | Extend interruption/quote-path stress; independently review execution assumptions, existing-account migration and reconciliation. |

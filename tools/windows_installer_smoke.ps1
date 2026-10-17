@@ -1,7 +1,9 @@
 param(
     [Parameter(Mandatory=$true)][string]$Installer,
     [Parameter(Mandatory=$true)][string]$Version,
-    [Parameter(Mandatory=$true)][string]$EvidenceDirectory
+    [Parameter(Mandatory=$true)][string]$EvidenceDirectory,
+    [Parameter(Mandatory=$true)][string]$UpgradeSource,
+    [Parameter(Mandatory=$true)][string]$UpgradeCommit
 )
 $ErrorActionPreference = 'Stop'
 $installDir = Join-Path $env:RUNNER_TEMP 'nexus-install-smoke'
@@ -28,6 +30,8 @@ python tools/installed_smoke.py --exe "$installDir/NexusOperative.exe" --data "$
 if ($LASTEXITCODE -ne 0) { throw 'Reinstalled halt recovery failed' }
 python tools/packaged_recovery_smoke.py --exe "$installDir/NexusOperative.exe" --version $Version --evidence "$EvidenceDirectory"
 if ($LASTEXITCODE -ne 0) { throw 'Packaged backup recovery failed' }
+python tools/packaged_recovery_smoke.py --exe "$installDir/NexusOperative.exe" --version $Version --evidence "$EvidenceDirectory/cross-version" --fixture-source "$UpgradeSource" --fixture-commit $UpgradeCommit
+if ($LASTEXITCODE -ne 0) { throw 'Pinned prior-version data recovery failed' }
 $journalHash = (Get-FileHash $journal -Algorithm SHA256).Hash
 $uninstallLog = Join-Path $EvidenceDirectory 'uninstall.log'
 $proc = Start-Process -FilePath "$installDir/unins000.exe" -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$uninstallLog`"") -PassThru -Wait
@@ -35,4 +39,4 @@ if ($proc.ExitCode -ne 0) { throw "Uninstaller failed: $($proc.ExitCode)" }
 if (Test-Path "$installDir/NexusOperative.exe") { throw 'Uninstall left application executable' }
 if ((Get-FileHash $sentinel -Algorithm SHA256).Hash -ne $sentinelHash) { throw 'User sentinel changed' }
 if ((Get-FileHash $journal -Algorithm SHA256).Hash -ne $journalHash) { throw 'Uninstall modified user journal' }
-@{packaged_backup_recovery=$true;same_version_reinstall=$true;halt_recovered=$true;uninstall_preserved_data=$true;cross_version_upgrade_verified=$false;native_window_verified=$false} | ConvertTo-Json | Set-Content "$EvidenceDirectory/installer-result.json" -Encoding UTF8
+@{prior_version_data_recovery=$true;packaged_backup_recovery=$true;same_version_reinstall=$true;halt_recovered=$true;uninstall_preserved_data=$true;cross_version_upgrade_verified=$false;native_window_verified=$false} | ConvertTo-Json | Set-Content "$EvidenceDirectory/installer-result.json" -Encoding UTF8

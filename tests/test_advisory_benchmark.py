@@ -32,3 +32,14 @@ def test_read_only_offline_benchmark_endpoint_and_ui():
     assert 'id="advisorybenchmark"' in html
     assert "Check AI Safety Rules (Offline)" in html
     assert client.get("/api/status").json()["live_orders_enabled"] is False
+
+
+def test_legacy_unreviewed_ai_research_is_forbidden(monkeypatch):
+    from nexus import app as app_module
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Legacy endpoint must never call billable provider")
+    monkeypatch.setattr(app_module, "provider_research_request", forbidden)
+    client = TestClient(app)
+    response = client.post("/api/paper/ai-provider/market_regime/research", json={"private": "unreviewed"})
+    assert response.status_code == 403
+    assert "reviewed" in response.json()["detail"].lower()

@@ -191,7 +191,8 @@ class DurableOrderGateway:
         return self._call('archive_terminal',batch_id)
 
     def connections(self):
-        return OrderGateway().connections()
+        from nexus.alpaca_paper_contract import catalogue
+        return {**OrderGateway().connections(),'alpaca_paper_contract':catalogue()}
 
     def session_orders(self,session_id):
         import copy,re

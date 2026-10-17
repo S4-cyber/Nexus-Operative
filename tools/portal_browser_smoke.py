@@ -55,7 +55,8 @@ def run(output,channel=None):
         try:
             for width,height in ((1280,900),(390,844),(320,568)):
                 context=browser.new_context(viewport=dict(width=width,height=height),service_workers='block')
-                page=context.new_page();errors=[];blocked=[];writes=[];state={'pending':True}
+                page=context.new_page();errors=[];blocked=[];writes=[];state={'pending':True};current_control=None
+                page.add_init_script('''window.__helpEvents=[];for(const kind of ['pointerover','pointerout','scroll','focusin','focusout','blur'])document.addEventListener(kind,e=>{const c=e.target&&e.target.closest?e.target.closest('button,input,select,textarea'):null;window.__helpEvents.push({kind,id:c&&c.id,tag:c&&c.tagName,scrollY:window.scrollY});if(window.__helpEvents.length>60)window.__helpEvents.shift();},true);''')
                 page.on('pageerror',lambda error:errors.append(str(error)))
                 def route(request):
                     url=urlsplit(request.request.url);path=url.path+('?' + url.query if url.query else '')
@@ -80,6 +81,7 @@ def run(output,channel=None):
                     tested=0
                     for control in page.locator('button,input,select,textarea').all():
                         if not control.is_visible():continue
+                        current_control=dict(id=control.get_attribute('id'),tag=control.evaluate('e=>e.tagName'))
                         description=control.get_attribute('data-help')
                         if not description or len(description)<30:raise ValueError('HELP_BROWSER_CONTROL_MISSING_DESCRIPTION')
                         control.hover(force=True);expect(panel).to_be_visible();expect(body).to_have_text(description)
@@ -102,7 +104,10 @@ def run(output,channel=None):
                     if writes:raise ValueError('HELP_BROWSER_INTERACTION_SENT_WRITE')
                     if errors or blocked:raise ValueError('HELP_BROWSER_PAGE_ERRORS: '+repr(errors+blocked))
                     reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True))
-                except Exception:
+                except Exception as exc:
+                    diagnostic=dict(viewport=dict(width=width,height=height),control=current_control,error=str(exc),page_errors=errors,blocked=blocked,
+                                    events=page.evaluate('window.__helpEvents||[]'))
+                    (output/f'failure-{width}x{height}.json').write_text(json.dumps(diagnostic,indent=2),encoding='utf-8')
                     page.screenshot(path=str(output/f'failure-{width}x{height}.png'))
                     raise
                 finally:context.close()

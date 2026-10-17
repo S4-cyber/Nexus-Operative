@@ -5,6 +5,7 @@ const source=html.split('// BEGIN CONTROL HELP')[1].split('// END CONTROL HELP')
 const events={},windowEvents={};let observer;
 class Element{
  constructor(help){this.dataset={help};this.attrs={};this.hidden=true;this.isConnected=true;this.textContent='';this.value='private input value';this.disabled=false;}
+ matches(){return !!this.hovered;}
  closest(){return this.control||this;}
  getBoundingClientRect(){return this.rect||{top:20,bottom:50,left:20,right:100};}
  contains(other){return other===this||other&&other.control===this;}
@@ -34,6 +35,8 @@ control.rect={top:-100,bottom:-50,left:20,right:100};events.scroll();assert.equa
 events.focusin({target:control});events.focusout({target:control});assert.equal(panel.hidden,true);
 events.focusin({target:control});events.keydown({key:'Escape'});assert.equal(panel.hidden,true);
 for(const hide of [events.scroll,windowEvents.blur,windowEvents.resize]){events.pointerover({target:control});hide();assert.equal(panel.hidden,true);}
+control.hovered=true;events.pointerover({target:control});events.scroll();assert.equal(panel.hidden,false);
+control.hovered=false;events.scroll();assert.equal(panel.hidden,true);
 const dynamic=context.helpButton('Cancel only the unfilled paper remainder. Existing fills and holdings remain recorded.');
 assert.equal(dynamic.type,'button');
 events.pointerover({target:dynamic});assert.equal(text.textContent,dynamic.dataset.help);

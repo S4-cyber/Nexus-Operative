@@ -59,7 +59,7 @@ async def application_lifespan(application):
         await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
         await asyncio.to_thread(observer.stop)
 
-app = FastAPI(title="Nexus Operative", version="0.73.1",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.74.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -290,7 +290,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.73.1", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.74.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -588,6 +588,11 @@ def execution_order_recovery():
     try:return research_order_gateway.recovery_report()
     except (ValueError,OSError,sqlite3.Error):
         raise HTTPException(status_code=503,detail="ORDER_RECOVERY_UNAVAILABLE")
+
+@app.get("/api/execution/alpaca-paper/contract")
+def alpaca_paper_contract():
+    from nexus.alpaca_paper_contract import catalogue
+    return catalogue()
 
 @app.get("/api/execution/connectors")
 def execution_connector_catalog():

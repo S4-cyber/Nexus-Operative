@@ -1,4 +1,6 @@
 import sqlite3
+import json
+import hashlib
 import pytest
 from fastapi.testclient import TestClient
 from nexus.app import app
@@ -65,3 +67,18 @@ def test_direct_parser_rejects_invalid_observation_times():
     for invalid in (True, False, "1200", [], {}, 0, -1, float("nan"), float("inf")):
         with pytest.raises(ValueError):
             parse_candles("BTC-USD", 60, [row(900)], now=invalid)
+
+
+def test_digest_matching_but_invalid_ohlcv_is_rejected(tmp_path, monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA", str(tmp_path))
+    collect("BTC-USD", 60, now=1200, transport=lambda _: [row(900), row(960)])
+    with sqlite3.connect(tmp_path / "research_candles.sqlite3") as db:
+        payload = json.loads(db.execute("SELECT payload FROM candles WHERE starts_at=960").fetchone()[0])
+        payload["low"] = "120"
+        serialized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        digest = hashlib.sha256(serialized.encode()).hexdigest()
+        db.execute("UPDATE candles SET payload=?, digest=? WHERE starts_at=960", (serialized, digest))
+    result = history("BTC-USD", 60)
+    assert "CORRUPTED_BAR" in result["issues"]
+    assert result["candles"][-1]["valid"] is False
+    assert result["suitable_for_backtesting"] is False

@@ -12,6 +12,7 @@ from nexus.markets import list_markets
 from nexus.market_universe import page as market_universe_page
 from nexus.expansion_initiative import roadmap as expansion_roadmap, assess_evidence as assess_expansion_evidence
 from nexus.order_gateway import gateway as research_order_gateway
+from nexus.tier_permissions import current as tier_permissions_current, configure as configure_tier_permission, require_entry as require_tier_entry
 from nexus.decision_lane import benchmark as offline_decision_benchmark
 from nexus.paper_execution import PaperEngine
 from nexus.replay import replay
@@ -47,7 +48,7 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.49.0")
+app = FastAPI(title="Nexus Operative", version="0.50.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -269,7 +270,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.49.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.50.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -466,11 +467,19 @@ class SimulatedOrderIntent(BaseModel):
     side: str = Field(pattern="^(BUY|SELL)$")
     notional: float = Field(gt=0,le=200)
     provider: str = "nexus_local_paper"
+    tier: str = Field(pattern="^(terrestrial|solar|universal)$")
 
 @app.post("/api/execution/intent/simulate")
 def simulate_order_intent(data:SimulatedOrderIntent):
     if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
-    try:return research_order_gateway.submit(**data.model_dump())
+    if data.provider!="nexus_local_paper":raise HTTPException(status_code=422,detail="EXTERNAL_BROKER_NOT_AUTHORIZED")
+    if data.side=="BUY":
+        if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
+        try:require_tier_entry(data.tier,data.notional)
+        except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    # SELL intent is allowed even if a tier is disengaged, so risk-reducing
+    # exit requests are not blocked. This gateway only records a mock ACK.
+    try:return research_order_gateway.submit(data.client_order_id,data.product,data.side,data.notional,data.provider,tier=data.tier)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.post("/api/execution/intent/{client_order_id}/cancel")
@@ -495,9 +504,22 @@ def matrix():
       ]
     }
 
+class TierPermissionCommand(BaseModel):
+    enabled: bool
+
+@app.get("/api/tiers/permissions")
+def tier_permission_state():
+    return tier_permissions_current()
+
+@app.put("/api/tiers/{tier}/permission")
+def set_tier_permission(tier:str,cmd:TierPermissionCommand):
+    if _halted and cmd.enabled:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
+    try:return configure_tier_permission(tier,cmd.enabled)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+
 @app.get("/api/tiers")
 def tiers():
-    return {"data_mode":"ILLUSTRATIVE", "updated_at":int(time.time()), "tiers":simulated_snapshot()}
+    return {"data_mode":"ILLUSTRATIVE", "updated_at":int(time.time()), "tiers":simulated_snapshot(),"tier_permissions":tier_permissions_current()["tiers"]}
 
 @app.post("/api/portal")
 def portal(cmd:PortalCommand):

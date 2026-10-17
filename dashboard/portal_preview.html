@@ -56,7 +56,7 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <article class="card"><div class="label">Execution bridge // planned provider connections</div>
 <h2>Buy / Hold / Sell Connectivity</h2>
 <p class="sub">Nexus will submit approved order intents to a supported broker's API, hold and reconcile positions there, then submit exits when the risk-approved strategy calls for them. Local lifecycle simulation and explicitly linked paper accounting are available for development; external execution remains disconnected. No broker account, live order, or payment connection is active.</p>
-<button id="execution-connectors">Check Broker Connections</button><button id="execution-capacity">Check Execution Capacity</button><p class="sub" id="execution-capacity-result">No local capacity check requested.</p><button id="durable-benchmark">Measure Durable Gateway (Offline)</button><p class="sub" id="durable-benchmark-result">No durability benchmark run. Compares disposable gateway and linked-ledger accounts; excludes broker timing.</p><button id="decision-benchmark">Test 30 Decisions/sec (Offline)</button><p class="sub" id="decision-benchmark-result">No local throughput test yet. This does not send orders.</p><p class="sub" id="execution-connector-status">No broker connected. Local simulation only.</p>
+<button id="execution-connectors">Check Broker Connections</button><button id="operation-drill">Run Paper Recovery Drill (Offline)</button><p class="sub" id="operation-drill-result">Scripted disposable BUY/HOLD/SELL, tier-veto and archival checks. No application accounts are changed.</p><button id="archive-terminal">Archive Completed Paper Orders (Stay Halted)</button><p class="sub" id="archive-terminal-result">Requires emergency halt and a flat, reconciled account. Preserves old IDs, fills and command history.</p><button id="execution-capacity">Check Execution Capacity</button><p class="sub" id="execution-capacity-result">No local capacity check requested.</p><button id="durable-benchmark">Measure Durable Gateway (Offline)</button><p class="sub" id="durable-benchmark-result">No durability benchmark run. Compares disposable gateway and linked-ledger accounts; excludes broker timing.</p><button id="decision-benchmark">Test 30 Decisions/sec (Offline)</button><p class="sub" id="decision-benchmark-result">No local throughput test yet. This does not send orders.</p><p class="sub" id="execution-connector-status">No broker connected. Local simulation only.</p>
 <div id="execution-connector-list" class="monitor tiny">Alpaca paper, Interactive Brokers paper, and Coinbase Advanced are planned adapters, not connected services.</div></article>
 <article class="card"><div class="label">Integration constellation</div><h2>Market Access Registry</h2><div id="market-grid" class="tiny">Loading supported targets…</div></article>
 </section>
@@ -300,9 +300,25 @@ byId('aidisconnect').onclick=async()=>{if(!window.confirm('Disconnect AI researc
  catch(e){show('aiconnectorstatus','Disconnect unavailable: '+e.message)}
  await refreshAISetup();
 };
+byId('archive-terminal').onclick=async()=>{
+ const b=byId('archive-terminal');b.disabled=true;
+ try{const d=await api('/api/execution/recovery');
+ if(!d.halted)throw Error('Engage emergency halt first. Archival never closes holdings or resumes operation.');
+ if(!window.confirm('Archive '+d.orders.length+' completed paper orders into retained history? Old IDs and fills remain available. Nexus will stay halted. A flat, reconciled account is required.'))return;
+ const batch='archive_'+crypto.randomUUID();
+ const r=await api('/api/execution/archive-terminal',{method:'POST',headers:jsonHeaders,body:JSON.stringify({batch_id:batch,confirm_archive:true})});
+ show('archive-terminal-result','Archived '+r.order_count+' orders; evidence '+r.evidence_sha256+'. History retained; Nexus remains halted.');
+ }catch(e){show('archive-terminal-result','Archival unavailable: '+e.message)}finally{b.disabled=false}
+};
+byId('operation-drill').onclick=async()=>{
+ const b=byId('operation-drill');b.disabled=true;show('operation-drill-result','Running disposable recovery scenarios…');
+ try{const d=await api('/api/execution/operation-drill',{method:'POST'});
+ show('operation-drill-result',(d.passed?'PASSED':'FAILED')+' / '+d.cycles+' scripted BUY/HOLD/SELL cycles; '+d.tier_vetoes+' entry vetoes; '+d.halted_restart_checks+' halt/restart checks; '+d.archived_orders+' archived orders. Synthetic fixture, not live-data autonomy.');
+ }catch(e){show('operation-drill-result','Drill unavailable: '+e.message)}finally{b.disabled=false}
+};
 byId('execution-capacity').onclick=async()=>{
  try{const d=await api('/api/execution/recovery'),c=d.capacity;
- show('execution-capacity-result',c.command_count+'/'+c.command_limit+' commands; '+c.ordinary_commands_remaining+' ordinary writes remaining; '+c.intents_remaining+' new order IDs remaining. '+c.recommended_action+'. No automatic archival or history deletion.');
+ show('execution-capacity-result',c.command_count+'/'+c.command_limit+' active-epoch commands; '+c.ordinary_commands_remaining+' ordinary writes remaining; '+c.intents_remaining+' active order IDs remaining; '+d.archival.archived_order_count+' archived orders; '+d.archival.retained_commands+' retained commands. '+c.recommended_action+'. Logical archival is explicit; no history deletion.');
  }catch(e){show('execution-capacity-result','Capacity unavailable: '+e.message)}
 };
 byId('durable-benchmark').onclick=async()=>{

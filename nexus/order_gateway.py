@@ -24,6 +24,9 @@ class OrderGateway:
         self.intents={}
         self.halted=False
 
+    def lookup(self,client_order_id):
+        return self.intents.get(client_order_id)
+
     def connections(self):
         return {"mode":"BROKER_ADAPTER_DESIGN_ONLY","providers":[
             {"id":p,"connection":"LOCAL_SIMULATION" if p=="nexus_local_paper" else "NOT_CONNECTED",
@@ -46,7 +49,7 @@ class OrderGateway:
         payload["notional"]=str(amount.normalize())
         digest=hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()
         with self.lock:
-            old=self.intents.get(client_order_id)
+            old=self.lookup(client_order_id)
             if old:
                 if old["intent_sha256"]!=digest:raise ValueError("DUPLICATE_ID_CONFLICT")
                 return {**copy.deepcopy(old),"idempotent_replay":True}
@@ -84,7 +87,7 @@ class OrderGateway:
         if kind=="REJECT" and (amount or cost):raise ValueError("REJECTION_HAS_FILL_COST")
         event={"sequence":sequence,"kind":kind,"fill_notional":str(amount.normalize()),"fee":str(cost.normalize())}
         with self.lock:
-            record=self.intents.get(client_order_id)
+            record=self.lookup(client_order_id)
             if record is None:raise ValueError("UNKNOWN_ORDER_ID")
             events=record["lifecycle_events"]
             if event_id in events:
@@ -107,7 +110,7 @@ class OrderGateway:
 
     def cancel(self,client_order_id):
         with self.lock:
-            record=self.intents.get(client_order_id)
+            record=self.lookup(client_order_id)
             if record is None:raise ValueError("UNKNOWN_ORDER_ID")
             if record["status"] in ("SIMULATED_ACK_ONLY","SIMULATED_PARTIALLY_FILLED"):
                 record["status"]="SIMULATED_CANCELLED"

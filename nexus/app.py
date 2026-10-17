@@ -49,7 +49,7 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.56.0")
+app = FastAPI(title="Nexus Operative", version="0.57.0")
 _started = time.monotonic()
 _paused = True
 try:
@@ -280,7 +280,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.56.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.57.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -471,12 +471,42 @@ def execution_decision_benchmark(count:int=300):
     try:return offline_decision_benchmark(count)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
+@app.post("/api/execution/operation-drill")
+def execution_operation_drill(cycles:int=12):
+    from nexus.operation_drill import drill
+    try:return drill(cycles)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="OPERATION_DRILL_STORAGE_UNAVAILABLE")
+
 @app.post("/api/execution/durable-benchmark")
 def execution_durable_benchmark(cycles:int=16):
     from nexus.durable_benchmark import benchmark
     try:return benchmark(cycles)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
     except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="DURABLE_BENCHMARK_STORAGE_UNAVAILABLE")
+
+class ArchiveTerminalRequest(BaseModel):
+    batch_id: str = Field(min_length=1,max_length=64,pattern="^[A-Za-z0-9_-]+$")
+    confirm_archive: bool = Field(strict=True)
+
+@app.post("/api/execution/archive-terminal")
+def execution_archive_terminal(data:ArchiveTerminalRequest):
+    if data.confirm_archive is not True:
+        raise HTTPException(status_code=422,detail="EXPLICIT_ARCHIVE_CONFIRMATION_REQUIRED")
+    if not _halted or not _paused:
+        raise HTTPException(status_code=409,detail="ARCHIVAL_REQUIRES_HALTED_PAUSED_PORTAL")
+    try:
+        return {**research_order_gateway.archive_terminal(data.batch_id),"halted":True,"paused":True,"history_deleted":False}
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="ORDER_ARCHIVAL_STORAGE_UNAVAILABLE")
+
+@app.get("/api/execution/intent/{client_order_id}")
+def execution_order_history(client_order_id:str):
+    try:return research_order_gateway.order_report(client_order_id)
+    except ValueError as exc:
+        if str(exc)=="UNKNOWN_ORDER_ID":raise HTTPException(status_code=404,detail="UNKNOWN_ORDER_ID")
+        raise HTTPException(status_code=503,detail="ORDER_HISTORY_UNAVAILABLE")
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="ORDER_HISTORY_UNAVAILABLE")
 
 @app.get("/api/execution/recovery")
 def execution_order_recovery():

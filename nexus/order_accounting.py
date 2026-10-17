@@ -4,6 +4,8 @@ Priced fills and accounting are replayed from the same durable command transacti
 Unpriced historical events remain explicitly unreconciled; no quantity is inferred.
 """
 import copy
+import hashlib
+import json
 from decimal import Decimal, InvalidOperation
 from nexus.order_gateway import OrderGateway
 
@@ -22,6 +24,9 @@ def number(value, zero=False):
     return result
 
 
+MAX_ARCHIVED_INTENTS=10000
+MAX_ARCHIVE_BATCHES=100
+
 class AccountingOrderGateway(OrderGateway):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -31,6 +36,40 @@ class AccountingOrderGateway(OrderGateway):
         self.order_terms = {}
         self.quote_events = {}
         self._applying_quote = False
+        self.archived_intents = {}
+        self.archive_batches = {}
+        self.archival_boundary = 0
+
+    def lookup(self,client_order_id):
+        return self.intents.get(client_order_id) or self.archived_intents.get(client_order_id)
+
+    def archive_terminal(self,batch_id,sequence_boundary):
+        if not isinstance(batch_id,str) or not 1<=len(batch_id)<=64 or not batch_id.isascii() or not batch_id.replace('-','').replace('_','').isalnum():
+            raise ValueError('INVALID_ARCHIVE_BATCH_ID')
+        if batch_id in self.archive_batches:
+            return {**copy.deepcopy(self.archive_batches[batch_id]),'idempotent_replay':True}
+        if type(sequence_boundary) is not int or sequence_boundary<=self.archival_boundary:
+            raise ValueError('INVALID_ARCHIVE_BOUNDARY')
+        if not self.halted:raise ValueError('ARCHIVAL_REQUIRES_HALT')
+        if self.account is None or self.account['positions'] or not self.account_report()['reconciled']:
+            raise ValueError('ARCHIVAL_REQUIRES_RECONCILED_FLAT_ACCOUNT')
+        if not self.intents:raise ValueError('NO_TERMINAL_ORDERS_TO_ARCHIVE')
+        terminal=('SIMULATED_FILLED','SIMULATED_CANCELLED','SIMULATED_REJECTED','SIMULATED_EXPIRED')
+        if any(record['status'] not in terminal for record in self.intents.values()):raise ValueError('ARCHIVAL_HAS_OPEN_ORDERS')
+        if len(self.archived_intents)+len(self.intents)>MAX_ARCHIVED_INTENTS or len(self.archive_batches)>=MAX_ARCHIVE_BATCHES:
+            raise ValueError('RETAINED_ARCHIVE_LIMIT')
+        ids=sorted(self.intents)
+        evidence=dict(orders={oid:self.intents[oid] for oid in ids},
+                      executions=[[list(k),v] for k,v in sorted(self.executions.items()) if k[0] in self.intents],
+                      quote_events=[[list(k),v] for k,v in sorted(self.quote_events.items()) if k[0] in self.intents],
+                      terms={oid:self.order_terms[oid] for oid in ids if oid in self.order_terms})
+        digest=hashlib.sha256(json.dumps(evidence,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+        manifest=dict(batch_id=batch_id,sequence_boundary=sequence_boundary,order_ids=ids,order_count=len(ids),evidence_sha256=digest)
+        self.archived_intents.update(self.intents)
+        self.intents.clear()
+        self.archive_batches[batch_id]=manifest
+        self.archival_boundary=sequence_boundary
+        return {**copy.deepcopy(manifest),'idempotent_replay':False}
 
     def initialize_account(self, capital):
         amount = number(capital)
@@ -56,7 +95,7 @@ class AccountingOrderGateway(OrderGateway):
         if ttl>3600 or created+ttl>Decimal('1e12'):raise ValueError('ORDER_TTL_LIMIT')
         terms=dict(created_at=str(created.normalize()),expires_at=str((created+ttl).normalize()))
         with self.lock:
-            record=self.intents.get(client_order_id)
+            record=self.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             if client_order_id in self.order_terms:
                 if self.order_terms[client_order_id]!=terms:raise ValueError('ORDER_TERMS_CONFLICT')
@@ -70,7 +109,7 @@ class AccountingOrderGateway(OrderGateway):
     def expire_order(self, client_order_id, evaluated_at):
         now=number(evaluated_at)
         with self.lock:
-            record=self.intents.get(client_order_id)
+            record=self.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             if client_order_id not in self.order_terms:raise ValueError('MISSING_EXECUTION_TERMS')
             if now<Decimal(self.order_terms[client_order_id]['expires_at']):raise ValueError('ORDER_NOT_EXPIRED')
@@ -85,7 +124,7 @@ class AccountingOrderGateway(OrderGateway):
         if not isinstance(event_id,str) or not 1<=len(event_id)<=64 or not event_id.isascii() or not event_id.replace('-','').replace('_','').isalnum():
             raise ValueError('INVALID_EVENT_ID')
         with self.lock:
-            record=self.intents.get(client_order_id)
+            record=self.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             modeled=plan(record['side'],quantity,bid,ask,available_quantity,quote_at,evaluated_at,fee_bps,slippage_bps)
             detail=dict(sequence=sequence,**modeled)
@@ -117,7 +156,7 @@ class AccountingOrderGateway(OrderGateway):
         now=number(evaluated_at)
         with self.lock:
             due=[oid for oid,terms in self.order_terms.items()
-                 if now>=Decimal(terms['expires_at']) and self.intents[oid]['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED')]
+                 if now>=Decimal(terms['expires_at']) and self.intents.get(oid,{}).get('status') in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED')]
             for oid in due:self.expire_order(oid,evaluated_at)
             return dict(expired_order_ids=due,expired_count=len(due),live_orders_enabled=False)
 
@@ -133,10 +172,10 @@ class AccountingOrderGateway(OrderGateway):
             if key in self.executions:
                 if self.executions[key] != detail:
                     raise ValueError('DUPLICATE_EXECUTION_CONFLICT')
-                return {**copy.deepcopy(self.intents[client_order_id]), 'idempotent_replay':True}
+                return {**copy.deepcopy(self.lookup(client_order_id)), 'idempotent_replay':True}
             if self.account is None:
                 raise ValueError('INITIALIZE_EXECUTION_ACCOUNT_FIRST')
-            record = self.intents.get(client_order_id)
+            record = self.lookup(client_order_id)
             if record is None:
                 raise ValueError('UNKNOWN_ORDER_ID')
             # Mixing reference-only and quantity-based fills in one order is ambiguous.
@@ -172,7 +211,7 @@ class AccountingOrderGateway(OrderGateway):
             return result
 
     def account_report(self):
-        unpriced = sum(1 for oid, order in self.intents.items() for eid, event in order['lifecycle_events'].items()
+        unpriced = sum(1 for oid, order in list(self.intents.items())+list(self.archived_intents.items()) for eid, event in order['lifecycle_events'].items()
                        if event['kind']=='FILL' and (oid, eid) not in self.executions)
         return dict(mode='SYNTHETIC_EXECUTION_ACCOUNT', simulation_only=True, live_orders_enabled=False,
                     initialized=self.account is not None, account=copy.deepcopy(self.account),

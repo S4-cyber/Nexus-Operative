@@ -38,6 +38,12 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <section class="card"><div class="label">Watch-only Sentinel</div><h2>Autonomous Market Observer</h2><p class="sub">Public BTC, ETH and SOL snapshots are sampled periodically only when PORTAL is active. Observations are not trade recommendations.</p><p class="status" id="sentinelstate">Observer offline</p><div class="monitor tiny" id="sentinellog">No observations recorded.</div></section>
 <section class="grid two">
 <article class="card"><div class="label">Public exchange observation</div><h2>Read-only Quotes</h2><div class="actions"><select id="publicpair"><option>BTC-USD</option><option>ETH-USD</option><option>SOL-USD</option></select><button id="publicrefresh">Fetch Quote</button><button id="crossvenue">Compare Venues</button><button id="saveevidence">Record Evidence</button><button id="evidencehistory">Evidence History</button><button id="evidencequality">Data Quality</button><button id="capturetick">Capture Tick</button><button id="tickhistory">Tick History</button><button id="collectcandles">Collect Candles</button><button id="candlehistory">Candle History</button><button id="candleadmission">Validate Dataset</button><button id="candletournament">Research Tournament</button><button id="costsensitivity">Stress Trade Costs</button><button id="executionstress">Execution Stress</button><button id="regimestress">Regime Stress</button></div><p class="sub" id="publicresult">No quote requested.</p></article>
+<article class="card"><div class="label">Wide opportunity discovery // public spot universe</div>
+<h2>Market Universe Explorer</h2>
+<p class="sub">Discover potentially hundreds of Coinbase USD spot products with one click. These are candidates for further screening only; no orders, accounts, or automatic strategy approvals. Each still needs independent quote, liquidity, history, and risk validation.</p>
+<div class="actions"><button id="universe-load">Discover Public Markets</button><label>Find product <input id="universe-filter" type="text" maxlength="24" placeholder="BTC, ETH, SOL..." autocomplete="off"></label><button id="universe-search">Search</button><button id="universe-next">Next 100</button></div>
+<p class="sub" id="universe-status">No catalog loaded. This is optional and read-only.</p>
+<div id="universe-list" class="monitor tiny">Discovered markets will appear here. Research universe ≠ tradable positions.</div></article>
 <article class="card"><div class="label">Integration constellation</div><h2>Market Access Registry</h2><div id="market-grid" class="tiny">Loading supported targets…</div></article>
 </section>
 <section class="card"><div class="label">NEXUS council // independent governor</div><h2>Five-Specialist Decision Council</h2><p class="sub">Five deterministic evaluators can veto. This is not yet a connected multi-LLM system.</p><button id="counciltest">Run Council Diagnostic</button><button id="modeldiagnostic">Test Advisory Sandbox</button><button id="advisorybenchmark">Check AI Safety Rules (Offline)</button><p class="sub" id="councilstatus">Awaiting diagnostic.</p><p class="sub" id="modelreadout">No AI provider connected.</p><div id="councildetails" class="grid"></div></section>
@@ -142,6 +148,19 @@ async function refreshSentinel(){
  for(const event of log.events){const p=document.createElement('div');p.textContent=event.product+' / '+event.regime+' / '+event.decision+' / '+event.reasons.join(', ');root.append(p)}
  }catch(e){show('sentinelstate','Sentinel unavailable: '+e.message)}
 }
+let universeOffset=0;
+async function loadUniverse(){
+ const search=byId('universe-filter').value.trim().toUpperCase();
+ try{const d=await api('/api/markets/discover?limit=100&offset='+universeOffset+'&search='+encodeURIComponent(search));
+ show('universe-status',d.discovered_count+' public USD markets discovered / '+d.filtered_count+' matching / showing '+d.products.length+' starting at '+universeOffset+' / UNVERIFIED CANDIDATES ONLY / NO ORDERS');
+ const root=byId('universe-list');root.replaceChildren();
+ for(const item of d.products){const line=document.createElement('div');line.textContent=item.product+' / '+item.research_status+' / NO EXECUTION';root.append(line)}
+ if(!d.products.length){root.textContent='No matching markets, or no additional products.'}
+ }catch(e){show('universe-status','Public catalog unavailable: '+e.message+' / existing 3-market watchlist unaffected')}
+}
+byId('universe-load').onclick=()=>{universeOffset=0;loadUniverse()};
+byId('universe-search').onclick=()=>{universeOffset=0;loadUniverse()};
+byId('universe-next').onclick=()=>{universeOffset+=100;loadUniverse()};
 byId('publicrefresh').onclick=async()=>{try{const sym=byId('publicpair').value;const q=await api('/api/public-quote/'+sym);show('publicresult',sym+' Bid '+q.bid+' / Ask '+q.ask+' / Last '+q.last+' / Spread '+q.spread_bps+' bps. Read-only snapshot.')}catch(e){show('publicresult','Quote unavailable: '+e.message)}};
 byId('saveevidence').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/market-evidence/'+p+'/capture',{method:'POST'});show('publicresult','EVIDENCE '+d.decision+' / '+(d.issues||[]).join(', ')+' / stored '+d.record_sha256+' / NEVER TRADE APPROVAL')}catch(e){show('publicresult','Evidence capture unavailable: '+e.message)}};
 byId('capturetick').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/research-ticks/'+p+'/capture',{method:'POST'});show('publicresult','RESEARCH TICK '+d.decision+' / '+(d.stored?'Saved':'Not saved')+' / NO ORDERS')}catch(e){show('publicresult','Tick capture unavailable: '+e.message)}};

@@ -14,6 +14,8 @@ ORDER='pf_0123456789abcdef_7_BUY'
 
 
 def fixtures(path,pending=True):
+    if path=='/api/matrix/hub':return dict(bars=300,conflicts=0,database_bytes=32768,database_byte_limit=134217728,artifact_bytes=8192,artifact_byte_limit=33554432)
+    if path.startswith('/api/matrix/hub/signal?'):return dict(decision='ABSTAIN_STALE_OR_FUTURE_DATA',model_content_sha256='a'*64,forecast_as_of=1000,age_seconds=999999,forecasts=[])
     if path=='/api/status':return dict(portal_enabled=False,halted=False)
     if path=='/api/tiers':return dict(tiers=[],tier_permissions=[dict(tier=t,enabled=False,maximum_intent_usd=n) for t,n in [('terrestrial',100),('solar',200),('universal',200)]])
     if path.startswith('/api/tiers/performance'):return dict(tiers=[])
@@ -106,6 +108,10 @@ def run(output,channel=None):
                     expect(page.locator('#matrix-account-title')).to_contain_text('SINGULARITY')
                     page.mouse.move(0,0);expect(page.locator('#control-help')).to_be_hidden()
                     page.screenshot(path=str(output/f'singularity-{width}x{height}.png'))
+                    page.locator('#hub-status').click()
+                    expect(page.locator('#hub-readout')).to_contain_text('300 unique bars')
+                    page.locator('#hub-signal').click()
+                    expect(page.locator('#hub-readout')).to_contain_text('ABSTAIN_STALE_OR_FUTURE_DATA')
                     panel=page.locator('#control-help');body=page.locator('#control-help-text')
                     tested=0
                     for control in page.locator('button,input,select,textarea').all():
@@ -132,7 +138,7 @@ def run(output,channel=None):
                     page.screenshot(path=str(output/f'help-{width}x{height}.png'))
                     if writes:raise ValueError('HELP_BROWSER_INTERACTION_SENT_WRITE')
                     if errors or blocked:raise ValueError('HELP_BROWSER_PAGE_ERRORS: '+repr(errors+blocked))
-                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True))
+                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True,hub_readonly_views=True))
                 except Exception as exc:
                     diagnostic=dict(viewport=dict(width=width,height=height),control=current_control,error=str(exc),page_errors=errors,blocked=blocked,
                                     events=page.evaluate('window.__helpEvents||[]'))

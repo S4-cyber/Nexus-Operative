@@ -1,5 +1,6 @@
 """Nexus Operative development desktop API. Simulation only: no brokerage or money movement."""
 import math
+import threading
 import asyncio
 from contextlib import asynccontextmanager
 import sqlite3
@@ -59,7 +60,7 @@ async def application_lifespan(application):
         await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
         await asyncio.to_thread(observer.stop)
 
-app = FastAPI(title="Nexus Operative", version="0.78.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.79.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -290,7 +291,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.78.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.79.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -634,6 +635,42 @@ def cancel_order_intent(client_order_id:str):
 @app.get("/api/markets")
 def market_catalog():
     return list_markets()
+
+_hub_build_lock=threading.Lock()
+
+@app.get("/api/matrix/hub")
+def matrix_hub_status():
+    from nexus.market_hub import status
+    try:return status()
+    except (ValueError,OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="HUB_STORAGE_UNAVAILABLE")
+
+@app.post("/api/matrix/hub/prepare")
+def matrix_hub_prepare(product:str="BTC-USD",granularity:int=3600,limit:int=1000):
+    from nexus.hub_prediction import prepare
+    try:return prepare(product,granularity,limit)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="HUB_STORAGE_UNAVAILABLE")
+
+@app.post("/api/matrix/hub/build")
+def matrix_hub_build(product:str="BTC-USD",granularity:int=3600,limit:int=1000):
+    from nexus.market_hub import backfill
+    from nexus.hub_prediction import prepare
+    if product not in PRODUCTS or granularity not in (300,3600,86400) or not 240<=limit<=10000:raise HTTPException(status_code=422,detail="HUB_BUILD_SCOPE")
+    if not _hub_build_lock.acquire(False):raise HTTPException(status_code=409,detail='HUB_BUILD_ALREADY_RUNNING')
+    try:
+        collected=backfill(product,granularity)
+        return dict(collected=collected,**prepare(product,granularity,limit))
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="HUB_SOURCE_OR_STORAGE_UNAVAILABLE")
+    finally:_hub_build_lock.release()
+
+@app.get("/api/matrix/hub/signal")
+def matrix_hub_signal(product:str="BTC-USD",granularity:int=3600):
+    from nexus.market_hub import latest_model
+    from nexus.hub_prediction import signal
+    try:return signal(latest_model(product,granularity))
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="HUB_MODEL_UNAVAILABLE")
 
 @app.get("/api/matrix/account")
 def matrix_account_history(span:str="1d"):

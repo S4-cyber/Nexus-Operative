@@ -23,7 +23,7 @@ def challenges():
       ("oversized_reason",{**base,"reason":"X"*301},False),
       ("nonfinite_cost",{**base,"estimated_cost_usd":float("nan")},False),
       ("infinite_cost",{**base,"estimated_cost_usd":float("inf")},False),
-      ("string_cost",{**base,"estimated_cost_usd":"0"},True),
+      ("string_cost",{**base,"estimated_cost_usd":"0"},False),
       ("missing_cost",{k:v for k,v in base.items() if k!="estimated_cost_usd"},False),
       ("blank_reason",{**base,"reason":""},False),
       ("boolean_verdict",{**base,"verdict":True},False),

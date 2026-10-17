@@ -32,6 +32,12 @@ CLOCK_DISCONTINUITY_TOLERANCE_SECONDS=2
 SESSION_LIMIT=1000
 
 
+class OrderCleanupFailure(Exception):
+    def __init__(self,order_id,error):
+        self.order_id=order_id;self.error_type=type(error).__name__
+        super().__init__('ORDER_CLEANUP_FAILED_REVIEW_REQUIRED')
+
+
 class PaperForwardRunner:
     def __init__(self,orders=gateway,fetcher=read_ticker,clock=time.time,monotonic_clock=None):
         self.orders=orders;self.fetcher=fetcher;self.clock=clock
@@ -215,7 +221,10 @@ class PaperForwardRunner:
             return self._record(side,'MODELED_PUBLIC_QUOTE_FILL',order_id=oid,
                                 liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
         finally:
-            self.orders.cancel(oid)
+            try:self.orders.cancel(oid)
+            except (OSError,sqlite3.Error,ValueError) as exc:
+                self._stop.set()
+                raise OrderCleanupFailure(oid,exc) from exc
 
     def _clock_check(self):
         wall=self.clock();steady=self.monotonic_clock()
@@ -332,6 +341,11 @@ class PaperForwardRunner:
             # The immutable lifetime starts at the quote observation, not a
             # later wall-clock value; all timestamps are preserved in the model.
             try:return self._execute(side,quantity,bid,ask,received,received,amount,stamp)
+            except OrderCleanupFailure as exc:
+                self._prices.clear();self._last_rank=0;self._error=str(exc)
+                return self._record('PAUSED',str(exc),order_id=exc.order_id,
+                                    error_type=exc.error_type,cleanup_acknowledged=False,
+                                    order_ledger_authoritative=True)
             except ValueError as exc:
                 reason=str(exc)
                 if reason in ('INVALID_RUNTIME_CLOCK','RUNTIME_CLOCK_DISCONTINUITY'):return self._pause_clock(reason)
@@ -365,6 +379,7 @@ class PaperForwardRunner:
         policy,counts,last=forward_sessions.parse(*session)
         checked=forward_evidence.crosscheck(quotes,orders,counts,policy)
         reasons=quotes['reasons']+checked['reasons']
+        if last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':reasons.append('ORDER_CLEANUP_REQUIRES_REVIEW')
         import hashlib
         policy_digest=hashlib.sha256(forward_evidence.canonical({k:v for k,v in policy.items() if k!='policy_sha256'}).encode()).hexdigest()
         if policy_digest!=policy.get('policy_sha256'):reasons.append('SESSION_POLICY_FINGERPRINT_DISAGREEMENT')

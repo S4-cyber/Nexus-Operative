@@ -1,4 +1,4 @@
-# Nexus Operative — pre-release development v0.63.0
+# Nexus Operative — pre-release development v0.64.0
 
 This branch provides a **simulation-only** Windows PORTAL research application. The development snapshot previously labeled v3.8.0 was renumbered **v0.38.0** so v1.0.0 can be reserved for the first completed, reviewed launch. See [VERSIONING.md](VERSIONING.md) for historical labels, future prerelease numbering, and required release gates.
 
@@ -21,3 +21,5 @@ Experimental forward operation and portable review: [FORWARD_RUNBOOK.md](FORWARD
 Windows distribution checksums, automated installer smoke scope and outstanding manual acceptance: [WINDOWS_ACCEPTANCE.md](WINDOWS_ACCEPTANCE.md).
 
 Offline verified data backup/restore: `python -m nexus.recovery_bundle --help`. Close Nexus first; see FORWARD_RUNBOOK.md for supported scope and recovery checks.
+
+Disposable linked-account, archival and quote-evidence recovery drill: `python -m nexus.recovery_drill` (injected quotes, temporary databases, fresh-process restore validation).

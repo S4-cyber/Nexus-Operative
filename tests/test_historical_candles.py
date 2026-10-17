@@ -59,3 +59,9 @@ def test_corrupt_bar_does_not_hide_gap(tmp_path, monkeypatch):
     assert "CORRUPTED_BAR" in result["issues"]
     assert "MISSING_BAR_INTERVAL" in result["issues"]
     assert result["suitable_for_backtesting"] is False
+
+
+def test_direct_parser_rejects_invalid_observation_times():
+    for invalid in (True, False, "1200", [], {}, 0, -1, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            parse_candles("BTC-USD", 60, [row(900)], now=invalid)

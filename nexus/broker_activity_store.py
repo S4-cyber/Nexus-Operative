@@ -140,6 +140,11 @@ class BrokerActivityStore:
             activities, receipts, head, _ = self._load(db)
             return self._report(activities, receipts, head)
 
+    def review(self):
+        """Read-only combined diagnostic; never infer complete coverage or funds."""
+        from nexus.broker_activity_review import review
+        return review(self)
+
     def _report(self, activities, receipts, head):
         return dict(mode='UNATTESTED_LOCAL_PAPER_ACTIVITY_RETENTION', account_sha256=self.account_digest,
             head_sha256=head, retained_batches=len(receipts), retained_activities=len(activities),

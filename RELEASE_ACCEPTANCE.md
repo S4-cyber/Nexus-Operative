@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.100.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.101.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -20,6 +20,7 @@ The trial command uses separate temporary child-process data roots and never sta
 | Paper operations | 24 buy/hold/sell rounds, tier vetoes, halt/restart, logical archives and original-ID replay | Scripted accounting, retained identities and history remain consistent | Long-run storage, indefinite operation or broker ownership |
 | Backup/restore | Disposable linked-account and quote-evidence backup, fresh-directory restore and fresh-process fingerprints | Local fixture restoration and cross-database agreement | Real owner backups, Windows profile/ACL/key recovery or complete disaster recovery |
 | Capacity | Four 30-cycle gateway/linked-account treatments, checkpoint comparisons and two bounded burst treatments | Local durable accounting and measured commit-return latency under the declared workload | Exchange throughput, feed-to-order latency, sustained production load or a guaranteed optimization factor |
+| Retained activity merge | Two synthetic partial-fill batches, evolving order snapshots and unlinked fee debits through real temporary retention/replay/review | Combined explicit fills agree with supplied order quantities/prices; coverage and fee-link flags stay unverified | Actual broker activity completeness, correction semantics, fee links or reconciled spending |
 | HTTP startup/shutdown | Actual loopback TCP server/lifespan and status, roadmap, To Do, root redirect markup and Portal HTML requests | Fresh source-process startup stays stopped, creates no accounting data and performs no external connection/vault access during checked reads; server shuts down | Rendered browser interaction, installed Windows desktop behavior, existing-account migration or actual provider access |
 
 The HTTP trial denies/counts non-loopback connections and keyring operations in its disposable child. It checks the actual Portal asset separately from root meta-refresh markup. Other trial profiles use the established injected/scripted fixtures; these are not claimed to have a system-wide network sandbox. Sample counts and modeled liquidity are explicit. Zero exit alone does not certify a profile. No trial grants order, funding, model promotion, resume or release authority.
@@ -29,7 +30,7 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, nine Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_100_0.json`; exact new-source Windows trials must still run |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_101_0.json`; exact new-source Windows trials must still run |
 | Windows packaging and data recovery | Predecessor verified | v0.98 exact commit `65763dd5f9ed4b7367f064a1bf1b25023c114fa0` packaging run39075131403/job117521122766 succeeded; v0.99/new-source evidence tracked separately |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
@@ -43,3 +44,5 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | 1.0 release approval | BLOCKED | Complete all agreed acceptance gates and obtain explicit owner release approval; live activation remains separate |
 
 A green local trial or Windows workflow cannot check the remaining boxes. Read the generated ROADMAP.md for the complete staged roadmap; update this evidence through source review, never a runtime completion checkbox. Windows safety CI now runs the same bounded trial suite and retains its JSON report for 30 days alongside the existing browser evidence.
+
+The v0.101 activity review also detects conflicting equal-time order snapshots, quantity regressions, terminal status/financial revisions and average-price changes without added quantity. It reports unions/gaps of declared creation windows only; an overlapping or gap-free request schedule never proves received activity coverage. Review is read-only, bounded to 1,000 distinct orders and does not repair, prune, link fees or authorize trading.

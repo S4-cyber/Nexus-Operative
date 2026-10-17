@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity')
 
 
 def _require(condition, code):
@@ -92,6 +92,9 @@ def _execute(profile):
         from nexus.durable_benchmark import benchmark
         return benchmark(30)
     if profile == 'http': return _http_trial()
+    if profile == 'activity':
+        from nexus.broker_activity_review import fixture_report
+        return fixture_report()
     raise ValueError('RELEASE_TRIAL_UNKNOWN_PROFILE')
 
 
@@ -110,6 +113,13 @@ def _validate(profile, result):
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
+    if profile == 'activity':
+        reviewed = result['review']
+        _require(reviewed['retained_batches'] == 2 and reviewed['retained_activities'] == 5
+                 and reviewed['normalization_evaluated'] is True, 'ACTIVITY_MERGE')
+        _require(reviewed['activity_coverage_verified'] is False and reviewed['fee_coverage_complete'] is False
+                 and reviewed['ready_for_routing'] is False, 'ACTIVITY_AUTHORITY')
+        _require(reviewed['review_reasons'] == ['ACTIVITY_COVERAGE_UNVERIFIED', 'FEE_LINK_AND_TIMING_UNVERIFIED'], 'ACTIVITY_CONSISTENCY')
     if profile == 'forward':
         _require(result['rounds'] == 20 and len(result['recovered']['sessions']) == 20, 'FORWARD_SESSIONS')
         _require(result['recovered']['flat'] is True and result['recovered']['forward_stopped'] is True

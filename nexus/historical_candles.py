@@ -64,7 +64,10 @@ def parse_candles(product,granularity,rows,now):
 def fetch_candles(product,granularity=300,now=None,transport=None):
     if product not in PRODUCTS or granularity not in GRANULARITIES:
         raise ValueError("Unsupported candle market or granularity")
-    now=time.time() if now is None else float(now)
+    if now is None:
+        now=time.time()
+    elif type(now) not in (int,float) or not math.isfinite(now) or now<=0:
+        raise ValueError("Invalid candle observation time")
     # End on latest fully closed interval. A bounded 150-bar window prevents
     # Coinbase 300-bar pagination limits and oversized historical retrievals.
     end=int(now//granularity)*granularity

@@ -1,4 +1,4 @@
-"""Opt-in GET-only paper inspection primitive; not registered with the runtime.
+"""Bounded GET-only paper reader shared by explicit inspection and recovery.
 
 No credential storage, environment lookup, order methods, journal writes or retries.
 Injected transports are trusted test seams and never attest a broker account.
@@ -137,59 +137,96 @@ def _report(before, positions, orders, after, expected, source):
                 limitations='Sequential observations only. Matching account fields do not prove positions/orders were atomic or complete. No asset entitlement, fees, settled funds, journal reconciliation or trading permission is verified.')
 
 
-def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
-                    expected_account_id=None, opener=None, wall_clock=time.time,
-                    elapsed_clock=time.monotonic, permission_check=lambda: True):
-    """Perform four bounded GETs only after explicit per-call authorization.
+class _ReadSession:
+    """Private fixed-path GET session shared by account inspection and recovery."""
+    def __init__(self, api_key, api_secret, *, confirm_read_only_paper=False,
+                 opener=None, wall_clock=time.time, elapsed_clock=time.monotonic,
+                 permission_check=lambda: True):
+        if confirm_read_only_paper is not True:
+            _fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
+        for value in (api_key, api_secret):
+            if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
+                _fail('PAPER_INSPECTION_CREDENTIAL_FORMAT_INVALID')
+        self.key, self.secret = api_key, api_secret
+        self.injected = opener is not None
+        self.reader = opener
+        self.wall_clock, self.elapsed_clock = wall_clock, elapsed_clock
+        self.permission_check = permission_check
+        self.start = self.previous = None
+        self.requests = 0
+        self.active = False
+        self.entered = False
 
-    Not wired to PORTAL, startup, Engage, vaults or environment variables. The
-    injected opener is trusted code, not an untrusted plugin boundary. Deadlines
-    are checked at IO boundaries; synchronous reads cannot be forcibly canceled.
-    """
-    if confirm_read_only_paper is not True:
-        _fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
-    for value in (api_key, api_secret):
-        if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
-            _fail('PAPER_INSPECTION_CREDENTIAL_FORMAT_INVALID')
-    expected = None if expected_account_id is None else _uuid(expected_account_id)
-    if not _lock.acquire(blocking=False):
-        _fail('PAPER_INSPECTION_BUSY')
-    try:
-        start = previous = None
+    def __enter__(self):
+        if self.entered:
+            _fail('PAPER_INSPECTION_SESSION_REUSE_DENIED')
+        if not _lock.acquire(blocking=False):
+            _fail('PAPER_INSPECTION_BUSY')
+        try:
+            self.checkpoint()
+            if self.reader is None:
+                self.reader = build_opener(ProxyHandler({}), _NoRedirect())
+            self.active = self.entered = True
+            return self
+        except BaseException as exc:
+            _lock.release()
+            if isinstance(exc, Exception):
+                _sanitize(exc)
+            raise
 
-        def checkpoint():
-            nonlocal start, previous
-            if permission_check() is not True:
+    def __exit__(self, kind, value, traceback):
+        self.active = False
+        _lock.release()
+        if kind is not None and issubclass(kind, Exception):
+            _sanitize(value)
+
+    def checkpoint(self):
+        try:
+            if self.permission_check() is not True:
                 _fail('PAPER_INSPECTION_PERMISSION_REVOKED')
-            current = (wall_clock(), elapsed_clock())
+            current = (self.wall_clock(), self.elapsed_clock())
             if any(type(v) not in (int, float) or not 0 <= v <= 1e12 or not math.isfinite(v) for v in current):
                 _fail('PAPER_INSPECTION_CLOCK_INVALID')
-            if start is None:
-                start = current
-            if previous is not None and any(a < b for a, b in zip(current, previous)):
+            if self.start is None:
+                self.start = current
+            if self.previous is not None and any(a < b for a, b in zip(current, self.previous)):
                 _fail('PAPER_INSPECTION_CLOCK_REGRESSION')
-            if abs((current[0] - start[0]) - (current[1] - start[1])) > 2:
+            if abs((current[0] - self.start[0]) - (current[1] - self.start[1])) > 2:
                 _fail('PAPER_INSPECTION_CLOCK_DISCONTINUITY')
-            if current[1] - start[1] >= TOTAL_SECONDS:
+            if current[1] - self.start[1] >= TOTAL_SECONDS:
                 _fail('PAPER_INSPECTION_TIME_BUDGET')
-            previous = current
-            return max(0.001, min(REQUEST_TIMEOUT, TOTAL_SECONDS - (current[1] - start[1])))
+            self.previous = current
+            return max(0.001, min(REQUEST_TIMEOUT, TOTAL_SECONDS - (current[1] - self.start[1])))
+        except Exception as exc:
+            _sanitize(exc)
 
-        checkpoint()
-        injected = opener is not None
-        reader = opener if injected else build_opener(ProxyHandler({}), _NoRedirect())
-        values = []
-        for url in URLS:
-            timeout = checkpoint()
-            request = Request(url, method='GET', headers={
-                'APCA-API-KEY-ID': api_key, 'APCA-API-SECRET-KEY': api_secret,
-                'Accept': 'application/json', 'Accept-Encoding': 'identity',
-                'User-Agent': 'NexusOperativePaperInspection/0.x'})
-            with reader.open(request, timeout=timeout) as response:
-                checkpoint()
+    def evaluated_at(self):
+        self.checkpoint()
+        return self.previous[0]
+
+    def get(self, url, *, lookup=False):
+        if not self.active:
+            _fail('PAPER_INSPECTION_SESSION_NOT_ACTIVE')
+        from nexus.broker_lookup_policy import LOOKUP_URL
+        lookup_path = isinstance(url, str) and re.fullmatch(re.escape(LOOKUP_URL) + r'\?client_order_id=[A-Za-z0-9_-]{1,64}', url)
+        if lookup and not lookup_path or not lookup and url not in URLS:
+            _fail('PAPER_INSPECTION_PATH_DENIED')
+        if self.requests >= 4:
+            _fail('PAPER_INSPECTION_REQUEST_CAP')
+        timeout = self.checkpoint()
+        request = Request(url, method='GET', headers={
+            'APCA-API-KEY-ID': self.key, 'APCA-API-SECRET-KEY': self.secret,
+            'Accept': 'application/json', 'Accept-Encoding': 'identity',
+            'User-Agent': 'NexusOperativePaperInspection/0.x'})
+        self.requests += 1
+        try:
+            with self.reader.open(request, timeout=timeout) as response:
+                self.checkpoint()
                 if response.geturl() != url:
                     _fail('PAPER_INSPECTION_RESPONSE_URL_CHANGED')
                 if response.status != 200:
+                    if lookup:
+                        return self._outcome(response.status, response.headers)
                     _fail('PAPER_INSPECTION_HTTP_STATUS_REVIEW')
                 if response.headers.get('Content-Type', '').split(';')[0].strip().lower() != 'application/json':
                     _fail('PAPER_INSPECTION_CONTENT_TYPE_INVALID')
@@ -200,37 +237,77 @@ def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
                     _fail('PAPER_INSPECTION_BODY_CAP')
                 body = bytearray()
                 while True:
-                    checkpoint()
+                    self.checkpoint()
                     chunk = response.read(min(65536, MAX_BODY + 1 - len(body)))
-                    checkpoint()
+                    self.checkpoint()
                     if not isinstance(chunk, bytes):
                         _fail('PAPER_INSPECTION_BODY_INVALID')
-                    body.extend(chunk)
-                    if len(body) > MAX_BODY:
+                    if len(body) + len(chunk) > MAX_BODY:
                         _fail('PAPER_INSPECTION_BODY_CAP')
+                    body.extend(chunk)
                     if not chunk:
                         break
                 if length is not None and len(body) != int(length):
                     _fail('PAPER_INSPECTION_BODY_LENGTH_CHANGED')
                 value = json.loads(body.decode('utf-8'), object_pairs_hook=_pairs, parse_constant=_nonfinite, parse_float=Decimal)
-                if url == URLS[0]:
-                    normalized = _account(value)
-                    if expected is not None and normalized['id'] != expected:
-                        _fail('PAPER_INSPECTION_ACCOUNT_ID_CHANGED')
-                values.append(value)
-        result = _report(*values, expected, 'INJECTED_UNATTESTED' if injected else 'PAPER_HTTPS_READS')
-        checkpoint()
-        return result
-    except HTTPError as exc:
-        code = exc.code
-        exc.close()
-        reason = 'AUTH_DENIED' if code in (401, 403) else 'RATE_LIMIT' if code == 429 else 'HTTP_STATUS_REVIEW'
+                return dict(status_code=200, response=value) if lookup else value
+        except HTTPError as exc:
+            try:
+                self.checkpoint()
+                if exc.geturl() != url:
+                    _fail('PAPER_INSPECTION_RESPONSE_URL_CHANGED')
+                if lookup:
+                    return self._outcome(exc.code, exc.headers)
+            finally:
+                exc.close()
+            _sanitize(exc)
+        except (TimeoutError, URLError, OSError) as exc:
+            if lookup:
+                self.checkpoint()
+                timed_out = isinstance(exc, TimeoutError) or isinstance(getattr(exc, 'reason', None), TimeoutError)
+                return dict(transport_error='TIMEOUT' if timed_out else 'NETWORK_ERROR')
+            _sanitize(exc)
+
+    def _outcome(self, code, headers):
+        if type(code) is not int or not 100 <= code <= 599 or 300 <= code <= 399:
+            _fail('PAPER_INSPECTION_HTTP_STATUS_REVIEW')
+        # Never read error bodies. Duplicate/oversized headers become review,
+        # never an abbreviated cooldown or retained private header content.
+        values = headers.get_all('Retry-After') if hasattr(headers, 'get_all') else [headers.get('Retry-After')]
+        value = values[0] if values and len(values) == 1 else None
+        if values and len(values) > 1 or value is not None and (not isinstance(value, str) or len(value) > 128):
+            value = 'INVALID'
+        return dict(status_code=code, retry_after=value)
+
+
+def _sanitize(exc):
+    if isinstance(exc, PaperInspectionError):
+        raise exc
+    if isinstance(exc, HTTPError):
+        reason = 'AUTH_DENIED' if exc.code in (401, 403) else 'RATE_LIMIT' if exc.code == 429 else 'HTTP_STATUS_REVIEW'
         raise PaperInspectionError('PAPER_INSPECTION_' + reason) from None
-    except PaperInspectionError:
-        raise
-    except (TimeoutError, URLError, OSError):
+    if isinstance(exc, (TimeoutError, URLError, OSError)):
         raise PaperInspectionError('PAPER_INSPECTION_TRANSPORT_UNAVAILABLE') from None
-    except Exception:
-        raise PaperInspectionError('PAPER_INSPECTION_RESPONSE_INVALID') from None
-    finally:
-        _lock.release()
+    raise PaperInspectionError('PAPER_INSPECTION_RESPONSE_INVALID') from None
+
+
+def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
+                    expected_account_id=None, opener=None, wall_clock=time.time,
+                    elapsed_clock=time.monotonic, permission_check=lambda: True):
+    """Four bounded account GETs after explicit authorization; no order methods."""
+    # Validate authorization and credentials before even inspecting caller scope.
+    session = _ReadSession(api_key, api_secret, confirm_read_only_paper=confirm_read_only_paper,
+        opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check)
+    expected = None if expected_account_id is None else _uuid(expected_account_id)
+    with session:
+        values = []
+        for url in URLS:
+            value = session.get(url)
+            if url == URLS[0]:
+                normalized = _account(value)
+                if expected is not None and normalized['id'] != expected:
+                    _fail('PAPER_INSPECTION_ACCOUNT_ID_CHANGED')
+            values.append(value)
+        result = _report(*values, expected, 'INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_READS')
+        session.checkpoint()
+        return result

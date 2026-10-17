@@ -1,6 +1,6 @@
-"""Disconnected, replay-validated Alpaca paper request recovery foundation.
+"""Replay-validated Alpaca paper request recovery journal.
 
-Explicit local paths and caller-supplied account identity only. No transport,
+Explicit local paths and caller-supplied account identity only. The journal has no transport,
 credentials, automatic retries, synthetic ledger writes or trading authority.
 """
 from contextlib import closing
@@ -49,7 +49,7 @@ def _observation(response, payload):
 
 
 class BrokerRequestJournal:
-    """Append-only bounded local fixture journal, bound to one supplied paper account."""
+    """Append-only bounded local journal, bound to one supplied paper account."""
     def __init__(self, path, paper_account_id):
         self.path = Path(path)
         try:account = str(UUID(paper_account_id))
@@ -242,7 +242,7 @@ class BrokerRequestJournal:
         # Validation and append share one locked replay; extras are stripped there.
         return self._write('OBSERVE',dict(client_order_id=client_order_id,response=response))
 
-    def _lookup_write(self, identity, now, result=None):
+    def _lookup_write(self, identity, now, result=None, admission=None):
         self._identity(identity);lookup.clock(now)
         if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         with closing(self._connect(write=True)) as db:
@@ -250,6 +250,8 @@ class BrokerRequestJournal:
                 requests,broker_ids,count,previous=self._load(db)
                 if identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
                 request=requests[identity];state=request['lookup']
+                if admission is not None:now=lookup.clock(admission())
+                if callable(result):result=result(now)
                 if result is None:
                     kind='LOOKUP_BEGIN'
                     # Keep a completion slot; ordinary writes are fenced while pending.
@@ -264,7 +266,9 @@ class BrokerRequestJournal:
                         return dict(**self._summary(identity,request),duplicate=True,lookup_token=body['token'])
                     if count>=MAX_EVENTS:raise ValueError('BROKER_JOURNAL_EVENT_CAP')
                 self._apply(requests,broker_ids,kind,body)
-                self._insert(db,count+1,kind,body,previous);db.commit()
+                self._insert(db,count+1,kind,body,previous)
+                if admission is not None:lookup.clock(admission())
+                db.commit()
                 return dict(**self._summary(identity,request),duplicate=False,lookup_token=body['token'],
                             hypothetical_lookup=dict(method='GET',url=lookup.LOOKUP_URL,query=dict(client_order_id=identity),sendable=False))
             except BaseException:db.rollback();raise
@@ -275,6 +279,28 @@ class BrokerRequestJournal:
     def finish_lookup(self, client_order_id, token, *, evaluated_at, status_code=None, transport_error=None, retry_after=None, response=None):
         outcome=lookup.classify(status_code=status_code,transport_error=transport_error,retry_after=retry_after,evaluated_at=evaluated_at)
         return self._lookup_write(client_order_id,evaluated_at,dict(token=token,**outcome,response=response if outcome['outcome']=='FOUND' else None))
+
+    def lookup_request(self, client_order_id):
+        """Copy immutable original terms without initializing or admitting IO."""
+        self._identity(client_order_id);self._check_path()
+        if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        with closing(self._connect()) as db:
+            requests,_,_,head=self._load(db)
+        if client_order_id not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        return dict(plan=json.loads(contract.canonical(requests[client_order_id]['plan'])),
+                    account_sha256=self.account_digest,head_sha256=head)
+
+    def begin_lookup_checked(self, client_order_id, *, admission):
+        """Internal runtime hook: sample permission/time again under write admission."""
+        return self._lookup_write(client_order_id,lookup.clock(admission()),admission=admission)
+
+    def finish_lookup_checked(self, client_order_id, token, *, admission, status_code=None,
+                              transport_error=None, retry_after=None, response=None):
+        def result(now):
+            outcome=lookup.classify(status_code=status_code,transport_error=transport_error,
+                                    retry_after=retry_after,evaluated_at=now)
+            return dict(token=token,**outcome,response=response if outcome['outcome']=='FOUND' else None)
+        return self._lookup_write(client_order_id,lookup.clock(admission()),result,admission=admission)
 
     def pending_lookup(self):
         """Read-only review snapshot; no timeout inference, IO admission or repair."""

@@ -160,7 +160,7 @@ def catalogue():
                 observation_scope='Latest allowlisted snapshot and bounded historical digests only; identity/status/cumulative-quantity diagnostics, not durable broker recovery or fee/position reconciliation.',
                 unknown_submission_action='Look up the original client order ID and reconcile before considering a retry; never infer no fill from a timeout.',
                 pending_cancel_is_terminal=False,fee_reconciled=False,position_reconciled=False,
-                durable_request_journal_scope='Disconnected bounded request/uncertain-attempt/observation journal with account-scoped replay, retained lookup budgets, timeout/rate-limit outcome checks and explicit head-fenced interruption review exists; no authenticated lookup, transport or retry permission.',
+                durable_request_journal_scope='Bounded replay-validated request journal and explicitly authorized original-ID GET recovery coordinator exist with retained budgets/cooldowns, post-lock clock/permission guards, saved-key fencing and interrupted-ticket review; injected validation only, no automatic retry, account reconciliation or routing permission.',
                 fee_projection_scope='Disconnected explicit-execution/received-asset-fee projection and chronological fee-reserved funding audit available; account and spendable funds remain unverified.',
                 account_inspection_scope='Explicit Windows-only local credential save/remove/status and separately confirmed fixed-host GET-only paper inspection controls exist; injected tests only, no authenticated acceptance, atomic snapshot, spendable-funds authority or order adapter.',
                 documentation_verified_at='2026-10-17',sources=list(SOURCES))

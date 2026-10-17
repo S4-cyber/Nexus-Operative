@@ -1,7 +1,8 @@
 import sqlite3
+import pytest
 from fastapi.testclient import TestClient
 from nexus.app import app
-from nexus.historical_candles import collect,history,parse_candles
+from nexus.historical_candles import collect,history,parse_candles,fetch_candles
 
 def row(t,close=100):
     return [t,90,110,99,close,5]
@@ -39,3 +40,11 @@ def test_api_is_research_only(tmp_path,monkeypatch):
     assert client.get("/api/historical-candles/BTC-USD?granularity=17").status_code==422
     assert client.post("/api/historical-candles/INVALID/collect").status_code==404
     assert client.get("/api/status").json()["live_orders_enabled"] is False
+
+
+def test_fetch_rejects_invalid_observation_time_before_network():
+    def no_network(_):
+        raise AssertionError("Invalid timestamps must not reach transport")
+    for invalid in (True, False, -1, 0, float("nan"), float("inf"), "1234", None if False else []):
+        with pytest.raises(ValueError):
+            fetch_candles("BTC-USD", 60, now=invalid, transport=no_network)

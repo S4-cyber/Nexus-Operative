@@ -96,3 +96,9 @@ Stop still fences execution and releases ownership if recording STOP fails. `STO
 ## Exact quantities on risk-reducing exits
 
 When the full held position fits the per-order notional cap, the runner now sells its exact reconciled quantity rather than rounding it down to the precision used for new entries. This avoids leaving dust from earlier priced fills with more than 12 decimal places. If the position exceeds the cap, the runner still rounds the capped partial exit down; later qualifying exits can close the remaining exact quantity. Entry tier disengagement continues to permit these exits. Accounting and modeled execution costs remain checked and reconciled.
+
+## Forward process interruption boundary tests
+
+The regression suite now terminates an actual child process immediately before quote fill and immediately after fill commit but before its BUY counter persists. Recovery must reconcile the linked ledger and retained quote chain, release the OS owner and remain stopped. An outstanding order blocks a new session until explicit review/cancellation. Duplicate order submission must not add a command or repeat the fill.
+
+After a committed fill with a missing diagnostic counter, evidence keeps reporting `SESSION_COUNTER_FILL_DISAGREEMENT`; recovery does not rewrite the old record. A new explicitly prepared session may monitor and close that holding with the entry tier off. A flat account with its tier off still cannot enter. These deterministic process-death tests complement checkpoint/archival interruption tests; they do not establish sustained live-feed operation or independent acceptance.

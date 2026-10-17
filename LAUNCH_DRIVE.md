@@ -241,3 +241,9 @@ Validation: 396 tests passed and Python compilation passed. Both v0.69 Windows w
 Uncapped paper exits now preserve the exact reconciled holding quantity, avoiding dust when earlier priced fills carry more than 12 decimal places. Capped partial exits still round down and remain bounded by the existing notional limit. Regression tests close a high-precision earlier holding with the entry tier disabled, and close an above-cap holding across two qualifying exits while checking every order cap, flat/reconciled final accounting and consistent retained quote evidence. These are injected fixture tests, not market execution evidence.
 
 Validation: 398 tests passed and Python compilation passed; the v0.70 exact-commit Windows build had completed both checkouts and SHA binding but remained in Install and test. No packaged prior-version recovery outcome is claimed yet.
+
+## Forward crash acceptance extension — v0.70.2 development
+
+Added actual child-process termination at the forward fill boundary: before fill and after committed fill/before BUY diagnostic record. Verified linked accounting, seven retained observations, interrupted-session review, OS ownership release, no automatic resume, outstanding-order admission veto and idempotent duplicate submission. Explicit cancellation permits a new tier-off risk-reducing exit after the committed-fill crash; the original counter disagreement remains visible. Flat tier-off reentry is rejected. This batch adds acceptance tests and runbook evidence without changing the runtime version.
+
+Validation: 400 tests passed and Python compilation passed. The exact v0.70 Windows run 38995983189 passed SHA binding, installer/reinstall/uninstall including pinned v0.64 data recovery, checksum generation and distribution upload; remaining evidence upload/job cleanup was in progress. Recorded these automated component outcomes in the read-only roadmap while retaining M1 partial.

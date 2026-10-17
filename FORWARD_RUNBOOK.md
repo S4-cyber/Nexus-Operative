@@ -92,3 +92,7 @@ Reports and portable summaries include exact decimal modeled buy/sell notionals 
 Before a cycle fetches data, and before a diagnostic write, the runner validates the retained session's timestamps, state, policy, nonnegative integer counters and last event. The stored policy must exactly match the active admitted policy before any write. Invalid data pauses intake; diagnostic writes never overwrite a changed policy to make it look valid.
 
 Stop still fences execution and releases ownership if recording STOP fails. `STOP_DIAGNOSTIC_STORAGE_FAILURE` means the final session record needs review, not that the worker has running permission. Malformed history/session diagnostics return unavailable responses; invalid request limits remain validation errors. Preserve the original data and investigate a copy. Do not edit counters or policy records to suppress the failure. Ledger reconciliation remains independent and authoritative.
+
+## Exact quantities on risk-reducing exits
+
+When the full held position fits the per-order notional cap, the runner now sells its exact reconciled quantity rather than rounding it down to the precision used for new entries. This avoids leaving dust from earlier priced fills with more than 12 decimal places. If the position exceeds the cap, the runner still rounds the capped partial exit down; later qualifying exits can close the remaining exact quantity. Entry tier disengagement continues to permit these exits. Accounting and modeled execution costs remain checked and reconciled.

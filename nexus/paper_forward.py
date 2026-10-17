@@ -292,8 +292,15 @@ class PaperForwardRunner:
                 equity=Decimal(account['cash'])+qty*bid*(1-Decimal(self._policy['fee_bps'])/10000)
                 if abs(move)<self._policy['exit_threshold_bps'] and equity>Decimal(account['initial'])*(1-Decimal(self._policy['capital_loss_bps'])/10000):
                     return self._record('HOLD','POSITION_WITHIN_EXPERIMENTAL_EXIT_BANDS')
-                px=bid*(1-Decimal(self._policy['slippage_bps'])/10000);amount=min(Decimal(200),qty*px)
-                quantity=min(qty,(amount/px).quantize(Decimal('1e-12'),rounding=ROUND_DOWN))
+                px=bid*(1-Decimal(self._policy['slippage_bps'])/10000)
+                position_notional=qty*px
+                if position_notional<=Decimal(200):
+                    # Preserve the exact reconciled holding quantity, including
+                    # older priced fills with more precision than new entries.
+                    quantity=qty;amount=position_notional
+                else:
+                    amount=Decimal(200)
+                    quantity=(amount/px).quantize(Decimal('1e-12'),rounding=ROUND_DOWN)
                 side='SELL'
             else:
                 if now-self._last_rank<RANKING_INTERVAL:return self._record('HOLD','ENTRY_RANKING_INTERVAL')

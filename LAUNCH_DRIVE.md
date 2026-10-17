@@ -235,3 +235,9 @@ Validation: 383 tests passed; compilation and workflow YAML parsing passed. Pinn
 Bounded retained duplicate IDs independently from queued events, with no silent eviction on consumption or halt. Full retention rejects new IDs while preserving duplicate detection. Invalid/nonfinite clock samples now reject research signals instead of bypassing expiry comparisons. Added defensive read-only capacity/metric snapshots to the local benchmark report. Tests cover retention exhaustion, duplicate preservation, queue-overflow retry, invalid clocks, configuration bounds and defensive snapshots. This remains an offline research benchmark: no paper/broker orders are created and no market-path throughput is established.
 
 Validation: 396 tests passed and Python compilation passed. Both v0.69 Windows workflows completed successfully, but its pre-pin packaging workflow used a moving source branch, so consult the artifact manifest for the packaged source SHA. v0.70 exact-SHA/pinned-prior-fixture workflows were still in progress.
+
+## v0.70.2 — exact risk-reducing exit quantities
+
+Uncapped paper exits now preserve the exact reconciled holding quantity, avoiding dust when earlier priced fills carry more than 12 decimal places. Capped partial exits still round down and remain bounded by the existing notional limit. Regression tests close a high-precision earlier holding with the entry tier disabled, and close an above-cap holding across two qualifying exits while checking every order cap, flat/reconciled final accounting and consistent retained quote evidence. These are injected fixture tests, not market execution evidence.
+
+Validation: 398 tests passed and Python compilation passed; the v0.70 exact-commit Windows build had completed both checkouts and SHA binding but remained in Install and test. No packaged prior-version recovery outcome is claimed yet.

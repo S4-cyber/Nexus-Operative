@@ -78,3 +78,21 @@ def test_cut_at_intent_clear_boundary_wins_reset_and_repersists(control,monkeypa
     assert g.recovery_report()['halted']
     c.post('/api/simulate/halt')
     assert intent.requested(g._path()) and api._recover_emergency_cut()==(True,True)
+
+
+@pytest.mark.parametrize('present',[True,False])
+def test_windows_create_permission_error_only_accepts_existing_latch(tmp_path,monkeypatch,present):
+    order=tmp_path/'orders.sqlite3';target=intent.path(order)
+    if present:target.mkdir()
+    original=intent.os.open
+    def windows_open(path,*args,**kwargs):
+        if path==target:raise PermissionError('simulated Windows EACCES')
+        return original(path,*args,**kwargs)
+    monkeypatch.setattr(intent.os,'open',windows_open)
+    if present:
+        intent.persist(order)
+        assert target.is_dir() and intent.requested(order)
+        with pytest.raises(OSError):intent.clear(order)
+    else:
+        with pytest.raises(PermissionError):intent.persist(order)
+        assert not target.exists()

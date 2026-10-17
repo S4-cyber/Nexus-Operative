@@ -18,7 +18,8 @@ STATUSES=TERMINAL|frozenset(('accepted','pending_new','new','partially_filled','
 MAX_SNAPSHOTS=256
 SOURCES=('https://docs.alpaca.markets/us/docs/crypto-trading',
          'https://docs.alpaca.markets/us/docs/orders-at-alpaca',
-         'https://docs.alpaca.markets/us/reference/postorder')
+         'https://docs.alpaca.markets/us/reference/postorder',
+         'https://docs.alpaca.markets/us/reference/getorderbyclientorderid')
 
 
 def canonical(value):return json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False)
@@ -69,7 +70,7 @@ def preview(client_order_id,product,side,quantity,limit_price,asset,*,metadata_a
                 broker_connected=False,live_orders_enabled=False,ledger_applied=False,
                 reference_notional=text(notional),metadata_scope='CALLER_SUPPLIED_UNATTESTED',
                 blockers=['EXPLICIT_PAPER_CONNECTION_AUTHORIZATION_REQUIRED','ACCOUNT_AND_ASSET_ELIGIBILITY_NOT_ATTESTED',
-                          'DURABLE_BROKER_ID_RECOVERY_NOT_IMPLEMENTED','FEE_ASSET_AND_POSITION_RECONCILIATION_REQUIRED'],
+                          'AUTHENTICATED_BROKER_ID_RECOVERY_REQUIRED','FEE_ASSET_AND_POSITION_RECONCILIATION_REQUIRED'],
                 limitations='Preview only. Metadata increments are caller supplied; no rounding. The local $200 quantity-times-limit screen is not a market-fill notional guarantee. No broker account, balance, entitlement, fee or fill is verified.')
 
 
@@ -159,6 +160,7 @@ def catalogue():
                 observation_scope='Latest allowlisted snapshot and bounded historical digests only; identity/status/cumulative-quantity diagnostics, not durable broker recovery or fee/position reconciliation.',
                 unknown_submission_action='Look up the original client order ID and reconcile before considering a retry; never infer no fill from a timeout.',
                 pending_cancel_is_terminal=False,fee_reconciled=False,position_reconciled=False,
+                durable_request_journal_scope='Disconnected bounded request/uncertain-attempt/observation journal with account-scoped replay exists; no authenticated lookup, transport or retry permission.',
                 fee_projection_scope='Disconnected explicit-execution/received-asset-fee fixture projection available; account reconciliation remains unverified.',
                 documentation_verified_at='2026-10-17',sources=list(SOURCES))
 

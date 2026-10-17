@@ -33,7 +33,10 @@ def persist(order_path):
     target = path(order_path)
     target.parent.mkdir(parents=True, exist_ok=True)
     try:fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    except FileExistsError:
+    except (FileExistsError, PermissionError):
+        # Windows reports an existing directory as EACCES rather than EEXIST.
+        # A genuine denial with no observable latch must still fail closed.
+        if not requested(order_path):raise
         # A previous/interrupted latch is already conservative recovery evidence.
         # Do not follow it or rewrite it; only an explicit reset removes it.
         _sync_directory(target.parent)

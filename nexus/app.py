@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 import sys
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from nexus.state import load_settings, save_settings, audit
 from nexus.markets import list_markets
@@ -64,7 +64,7 @@ async def application_lifespan(application):
             try:await asyncio.to_thread(observer.stop)
             finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.85.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.86.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 # Lifecycle admission is serialized; a throttle cut publishes its latch before waiting.
@@ -310,7 +310,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.85.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.86.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -396,6 +396,11 @@ def quote_quality(product: str):
         return {"component":"SINGLE_SOURCE_FEED_GUARD","product":product,
                 "decision":"VETO","reasons":["PROVIDER_UNAVAILABLE"],
                 "independent_price_verification":False,"live_orders_enabled":False}
+
+@app.get("/api/public-data/efficiency")
+def public_data_efficiency():
+    from nexus.public_data import efficiency
+    return JSONResponse(efficiency(),headers={"Cache-Control":"no-store"})
 
 @app.get("/api/public-quote/{product}")
 def public_quote(product: str):

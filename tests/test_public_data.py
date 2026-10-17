@@ -43,8 +43,9 @@ def test_api_rejects_unknown_product_without_network():
 def test_default_transport_uses_actual_receipt_time(monkeypatch):
     import json
     import nexus.public_data as public
-    ticks=iter([NOW,NOW+4])
-    monkeypatch.setattr(public.time,'time',lambda:next(ticks))
+    ticks=iter([NOW,NOW+4]);elapsed=iter([1000,1004])
+    from types import SimpleNamespace
+    monkeypatch.setattr(public,'time',SimpleNamespace(time=lambda:next(ticks),monotonic=lambda:next(elapsed)))
     monkeypatch.setattr(public,'_cache',{})
     class Response:
         status=200

@@ -1,12 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.85.0 (pre-release).** This is a numbering-policy correction, not a declaration that previously shipped versions were production-ready.
+**Current development build: 0.86.0 (pre-release).** This is a numbering-policy correction, not a declaration that previously shipped versions were production-ready.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
 
 ## Forward version policy
-- **0.85.0, 0.86.0, 0.87.0, …:** milestone-level pre-release development. Versions may progress beyond 0.99.0 if necessary (e.g., 0.100.0); there is no deadline-based automatic 1.0 promotion.
+- **0.86.0, 0.87.0, 0.88.0, …:** milestone-level pre-release development. Versions may progress beyond 0.99.0 if necessary (e.g., 0.100.0); there is no deadline-based automatic 1.0 promotion.
 - **0.x.y:** fixes, small coherent enhancements, and refactoring of that pre-release milestone. No live-money approval implied.
 - **1.0.0:** first completed production release, only after all launch acceptance gates are evidenced and explicitly approved by the project owner.
 - **1.1.0 onward:** features added after the 1.0.0 launch, maintaining documented compatibility where possible.
@@ -21,7 +21,9 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 5. Sustained autonomous paper-trading reliability with persistent accounting, reconciliation and automatic risk vetoes.
 6. Secure, permission-scoped execution infrastructure independently tested with strict order lifecycle handling, idempotency and emergency stops.
 7. Extended forward validation, operational monitoring, secrets management, independent security/risk review and documented recovery drills.
-8. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
+8. Secure provider-held funding and governed autonomous execution workflows for the agreed production scope: credential isolation, spendable-funds and cash/position reconciliation, transfer failure/duplicate handling and a separately authorized limited rollout. No release enables deposits or live orders automatically.
+9. Secure computer-off operation for the agreed scope, including encrypted durable state, remote stop, distributed ownership and quota/outage recovery.
+10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
 

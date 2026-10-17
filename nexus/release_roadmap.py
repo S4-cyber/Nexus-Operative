@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.85.0'
+REVISION = '0.86.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -21,7 +21,7 @@ class Milestone:
 MILESTONES = (
     Milestone('M1','Windows packaging and recovery','PARTIAL','Windows test, EXE startup and installer workflows; durable order recovery; installed-process/reinstall/uninstall smoke and distribution checksum tooling; verified offline backup/new-directory restore tooling and fresh-process linked-ledger/quote-evidence recovery drill and installed-API restored-data smoke tooling with pinned prior-version fixture support and default Windows data-layout checks; documented beginner help for all PORTAL controls and isolated headless-browser acceptance tooling; seven named workspaces and an automatic read-only beginner startup checklist with saved-state observations and optional/future setup distinctions.','Exact-SHA v0.84.0 installer/reinstall/uninstall and pinned v0.64 data recovery steps passed; record clean-machine native-window, ordinary-user profile/ACL and prior-installer upgrade acceptance.'),
     Milestone('M2','Market data and provenance','PARTIAL','Public observation, timestamp/gap checks, historical admission and source diagnostics; redirect-disabled public transport with exact response-URL checks; canonical compressed hub bars with cross-collector deduplication, conflict quarantine and hash-verified sealed datasets; bounded public candle collection selected by default on explicit Portal start, closed-boundary request coalescing, pre-network storage checks and receipt-time clock/stop fencing.','Independent provenance review; missing/revised/conflicting data and outage evidence.'),
-    Milestone('M3','Decision speed and risk authority','PARTIAL','Bounded local research decision queue and retained-ID limits with invalid-clock rejection; disposable bounded linked-ledger burst timing, overflow/expiry and halt flushing; individual Terrestrial/Solar/Universal entry permissions.','Measure full durable path under bursts; verify expiry, overload and permissions throughout autonomy.'),
+    Milestone('M3','Decision speed and risk authority','PARTIAL','Bounded local research decision queue and retained-ID limits with invalid-clock rejection; disposable bounded linked-ledger burst timing, overflow/expiry and halt flushing; individual Terrestrial/Solar/Universal entry permissions; bounded per-product public quote request sharing with clock-fenced cache reuse and process-local transport/avoided-request diagnostics.','Measure full durable path under bursts; verify expiry, overload and permissions throughout autonomy.'),
     Milestone('M4','Order lifecycle and portfolio reconciliation','PARTIAL','Partial/full priced fills, fees, idempotency, cancellation, durable recovery; atomic opt-in paper-ledger linking, partial-position reconstruction, adverse quote-cost assumptions, post-lock runtime exchange/receipt freshness and expiry/stop checks, durable expiry, cleanup-failure pauses and forward process-death tests before/after fill commit.','Extend interruption/quote-path stress; independently review execution assumptions, existing-account migration and reconciliation.'),
     Milestone('M5','Durable latency and capacity','PARTIAL','Replay-validated checkpoints, two-snapshot retention, checkpoint interruption tests and isolated gateway and linked-ledger/tier-inclusive p50/p95/p99 benchmark; capacity admission diagnostics; opt-in atomic quote-order fixture treatment with retained commands and crash rollback tests; explicit logical archival with retained IDs and commands.','Physical offload/long-run scalability, sustained queue pressure and independent archival acceptance; no broker throughput validated.'),
     Milestone('M6','Scientific strategy evidence','PARTIAL','Chronological research, holdout, regime and cost-stress modules; persisted multi-horizon ridge momentum baselines with training-only scaling, purged chronological holdout, naive/momentum comparisons, generation invalidation and compact research signals; three built-in trained feature specialists with fixed three-block baseline checks, disagreement reporting and independent deterministic validation/provenance reviewers; versioned saved research packs and unchanged-data reuse; three expanding-window refits with purged training targets, delayed nonoverlapping modeled fills, fixed cost scenarios and fold-consistency checks; shared causal feature computation and serialized preparation; engine-started bounded learning with captured public/saved-only scope, bounded polls/fit attempts, generation skips, local OS ownership and stop-fenced publication.','Independent model calibration and walk-forward/forward evidence, licensed shared-source provenance, delisting/survivorship review and performance audit; trained baselines are not validated market edge.'),
@@ -30,11 +30,45 @@ MILESTONES = (
     Milestone('M9','Release acceptance and authorization','OPEN','0.x numbering and release gates enforced.','Independent security/risk review, operator runbook, complete acceptance evidence and explicit owner approval for 1.0. Live-money activation requires separate authorization.'),
 )
 
+# Product milestones complement the nine technical evidence tracks above.
+# These are implementation/acceptance states, never permissions to move money.
+DELIVERY_STAGES = (
+    dict(id='D1',title='Usable research application',status='FOUNDATION_IMPLEMENTED',
+         progress='Windows packaging, seven workspaces, beginner help, startup checklist, Matrix views and engine/throttle controls exist.',
+         remaining='Clean-machine/native-window/profile and upgrade acceptance; keep startup and recovery dependable.',depends_on=[]),
+    dict(id='D2',title='Learning models with defensible strategy evidence',status='PARTIAL',
+         progress='Deduplicated local history, bounded public collection, trained numerical council, held-out and modeled cost checks exist.',
+         remaining='Independent provenance, calibration and sustained forward evaluation; verify net results after costs and drawdowns before governed policy promotion.',depends_on=['D1']),
+    dict(id='D3',title='Autonomous paper trading',status='EXPERIMENTAL_IMPLEMENTED',
+         progress='Explicit Engage Paper runs the fixed BTC experiment with virtual funds, tier gates, durable accounting, recovery and an independent emergency cut.',
+         remaining='Sustained real-feed reliability, incident evidence and reviewed strategy quality. Current council models do not direct orders.',depends_on=['D1','D2']),
+    dict(id='D4',title='Connected broker paper trading',status='OPEN',
+         progress='Disconnected Alpaca paper request/status/fee fixtures exist; no external broker adapter is connected.',
+         remaining='Authorized paper account setup, scoped secrets, durable broker-ID/order/fill recovery, fees, rate limits and broker cash/position reconciliation.',depends_on=['D3']),
+    dict(id='D5',title='Secure deposits and available-funds verification',status='NOT_IMPLEMENTED',
+         progress='Funding is preview-only. No bank link, deposit, withdrawal or real balance access exists.',
+         remaining='Use a selected provider-held account and reviewed hosted funding workflow; isolate credentials, never collect raw banking credentials, reconcile pending/settled transfers and spendable cash, verify failure/reversal and duplicate handling. No app custody or automatic transfers.',depends_on=['D4']),
+    dict(id='D6',title='Governed autonomous live trading',status='BLOCKED',
+         progress='Real-money execution remains disabled; research and simulated balances cannot authorize spending.',
+         remaining='Validated and explicitly approved policy, live provider integration, reconciled spendable funds, hard exposure/loss/order caps, pacing, monitoring, emergency cut and independently reviewed limited rollout. Separate owner authorization is mandatory.',depends_on=['D2','D3','D4','D5']),
+    dict(id='D7',title='Secure computer-off operation and shared Matrix hub',status='PLANNED',
+         progress='Local capped data/model stores and process ownership exist; cloud deployment and instance synchronization do not.',
+         remaining='Select an eligible free-tier host without automatic billing; authenticated controls, encryption/key recovery, durable shared state, distributed fencing, quotas, remote stop and multi-day computer-off paper tests.',depends_on=['D3','D4']),
+    dict(id='D8',title='Speed, resilience and independent acceptance',status='PARTIAL',
+         progress='Durable latency/queue fixtures, crash/recovery tests, Windows workflows and shared public-quote intake diagnostics exist.',
+         remaining='Measure full feed-to-decision-to-broker path, sustained load/outages, long-run storage, security/risk review and documented operations; fixture speed is not exchange fill speed.',depends_on=['D2','D3','D4']),
+    dict(id='D9',title='1.0 production release',status='BLOCKED',
+         progress='The project remains a 0.x prerelease with source-controlled acceptance gates.',
+         remaining='All agreed production workflows, including secure funding and governed autonomous execution, must be implemented and accepted; complete testing, reconciliation, security/risk review, recovery/runbooks, cloud acceptance for the agreed scope and explicit owner release approval. A release never activates live trading by itself.',depends_on=['D1','D2','D3','D4','D5','D6','D7','D8']),
+)
+
 SETTINGS = (
     ('broad_refresh_seconds',5),('ranking_seconds',15),('ai_candidate_count',30),
     ('adaptive_acceleration',True),('autonomous_paper_first',True),
 )
 NEXT = (
+    'Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.',
+    'Keep emergency control responsive under feed-reader saturation; verify dedicated control scheduling and durable cut acknowledgment under overload.',
     'Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.',
     'Extend linked quote-model stress and independently review cost, liquidity and expiry assumptions.',
     'Extend sustained-load admission and recovery; validate physical offload and long-run costs while preserving IDs and audit evidence.',
@@ -49,6 +83,8 @@ NEXT = (
 def snapshot():
     return dict(read_only=True, revision=REVISION, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
+                delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
+                production_scope='Secure provider-held funding, governed autonomous execution and computer-off operation are product goals. All agreed production workflows require acceptance before 1.0; live activation always requires separate authorization.',
                 settings_scope='TARGET_DESIGN_NOT_EFFECTIVE_RUNTIME', settings=dict(SETTINGS), milestones=[asdict(m) for m in MILESTONES], next_steps=list(NEXT),
                 supporting_track='Global market expansion and secure computer-off cloud continuity are explicit staged goals; venue/data/risk and hosting acceptance remain required.',
                 strategic_goals=[dict(id='G1',title='Global opportunity expansion',status='PLANNED',goal='Broaden assets, markets and providers through the existing 12-avenue expansion initiative; validate source rights, eligibility, liquidity, costs and reproducible paper evidence before enabling each route.'),
@@ -64,6 +100,9 @@ def markdown():
            'Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.','',
            '| Milestone | Status | Evidence | Remaining acceptance |','| --- | --- | --- | --- |']
     lines += [f'| {m.id}: {m.title} | {m.status} | {m.evidence} | {m.remaining} |' for m in MILESTONES]
+    lines += ['','## Product milestones: funding, autonomy and final release','','| Stage | Status | Built so far | Still required |','| --- | --- | --- | --- |']
+    lines += [f"| {s['id']}: {s['title']} | {s['status']} | {s['progress']} | {s['remaining']} |" for s in d['delivery_stages']]
+    lines += ['',d['production_scope']]
     lines += ['','## Standing target settings (verify actual runtime separately)','']+[f'- {key}: {value}' for key,value in SETTINGS]
     lines += ['','## Next sequence','']+[f'{i}. {step}' for i,step in enumerate(NEXT,1)]
     lines += ['','## Explicit expansion and cloud goals','']

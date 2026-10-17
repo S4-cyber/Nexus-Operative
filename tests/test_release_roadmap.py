@@ -27,3 +27,20 @@ def test_checked_in_roadmap_matches_code_and_portal_links_it():
 
 def c_html():
     return TestClient(app).get('/portal').text
+
+
+def test_product_roadmap_explicitly_tracks_funding_autonomy_and_final_acceptance():
+    data=snapshot();stages={s['id']:s for s in data['delivery_stages']}
+    assert len(stages)==9
+    assert stages['D3']['status']=='EXPERIMENTAL_IMPLEMENTED'
+    assert stages['D5']['status']=='NOT_IMPLEMENTED' and 'Funding is preview-only' in stages['D5']['progress']
+    assert stages['D6']['status']=='BLOCKED' and 'Separate owner authorization' in stages['D6']['remaining']
+    assert stages['D9']['status']=='BLOCKED' and 'security/risk review' in stages['D9']['remaining']
+    assert set(stages['D9']['depends_on'])==set(stages)-{'D9'}
+    prior=set()
+    for stage in stages.values():
+        assert set(stage['depends_on'])<=prior
+        prior.add(stage['id'])
+    stages['D9']['depends_on'].clear()
+    assert len(snapshot()['delivery_stages'][-1]['depends_on'])==8
+    assert 'Secure deposits and available-funds verification' in markdown()

@@ -10,9 +10,10 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 from nexus.order_gateway import OrderGateway
+from nexus.order_accounting import AccountingOrderGateway
 
 MAX_COMMANDS = 10000
-METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset'))
+METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill'))
 
 
 class DurableOrderGateway:
@@ -35,7 +36,7 @@ class DurableOrderGateway:
         return db
 
     def _restore(self, db):
-        gateway = OrderGateway(clock=lambda: 0)
+        gateway = AccountingOrderGateway(clock=lambda: 0)
         rows = db.execute('SELECT sequence,payload FROM commands ORDER BY sequence').fetchmany(MAX_COMMANDS+1)
         if len(rows)>MAX_COMMANDS:
             raise ValueError('ORDER_JOURNAL_CAP_EXCEEDED')
@@ -55,12 +56,12 @@ class DurableOrderGateway:
         with closing(self._connect()) as db, db:
             db.execute('BEGIN IMMEDIATE')
             gateway, count = self._restore(db)
-            before = (gateway.halted, json.dumps(gateway.intents, sort_keys=True))
+            before = (gateway.halted, json.dumps([gateway.intents, gateway.account, sorted((str(k), v) for k,v in gateway.executions.items())], sort_keys=True))
             result = getattr(gateway, method)(*args, **kwargs)
-            after = (gateway.halted, json.dumps(gateway.intents, sort_keys=True))
+            after = (gateway.halted, json.dumps([gateway.intents, gateway.account, sorted((str(k), v) for k,v in gateway.executions.items())], sort_keys=True))
             if before != after:
                 # Halt/cancel/reset must remain possible when normal intake is full.
-                if count >= MAX_COMMANDS-1001 and method in ('submit','simulate_event'):
+                if count >= MAX_COMMANDS-1001 and method in ('submit','simulate_event','simulate_priced_fill','initialize_account'):
                     raise ValueError('ORDER_JOURNAL_CAP_REACHED')
                 if count >= MAX_COMMANDS:
                     raise ValueError('ORDER_JOURNAL_CAP_REACHED')
@@ -82,6 +83,12 @@ class DurableOrderGateway:
     def reset(self):
         return self._call('reset')
 
+    def initialize_account(self, capital):
+        return self._call('initialize_account', capital)
+
+    def simulate_priced_fill(self, *args, **kwargs):
+        return self._call('simulate_priced_fill', *args, **kwargs)
+
     def connections(self):
         return OrderGateway().connections()
 
@@ -91,7 +98,7 @@ class DurableOrderGateway:
         return dict(mode='OFFLINE_ORDER_RECOVERY', status='REPLAY_VERIFIED',
                     commands=count, halted=gateway.halted,
                     orders=list(gateway.intents.values()), live_orders_enabled=False,
-                    portfolio_reconciled=False,
+                    portfolio_reconciled=False, execution_account=gateway.account_report(),
                     note='Reference notionals cannot establish quantities, positions or ownership.')
 
 

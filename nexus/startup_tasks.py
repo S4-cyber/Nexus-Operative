@@ -83,7 +83,7 @@ def checklist():
     try:configured=ai_status()['configured'];state='COMPLETE' if configured else 'OPTIONAL'
     except Exception:state='UNKNOWN'
     add('external_ai','Connect external AI only if you want it','Optional connections',state,
-        'A saved local configuration ticks this optional box, not a working provider test. Built-in AI works without it; explicit external requests may cost money.','ai','aistatus')
+        'An explicit configuration observation in this process ticks this optional box; it can be stale. After restart saved vault presence is unknown until an explicit action. This is not a working provider test. This checklist never opens the vault. Built-in AI works without it; explicit external requests may cost money.','ai','aistatus')
     add('paper_read','Optionally inspect an Alpaca paper account','Optional connections','ON_DEMAND',
         'Windows-only local key storage and separately confirmed account reads are available in Accounts. This checklist never opens the vault or contacts Alpaca. An inspection is not broker trading or spendable-funds approval.','accounts','paper-credentials-status')
     add('payment','Link payment or a bank account','Future connections','UNAVAILABLE',

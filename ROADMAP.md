@@ -1,8 +1,21 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.101.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.101.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
+
+Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
+
+```mermaid
+flowchart TD
+    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]
+    B --> C["Sustained trials and independent review"]
+    C --> D["Secure funding and governed live workflows"]
+    C --> E["Secure computer-off cloud"]
+    D --> F["Complete acceptance and owner approval"]
+    E --> F
+    F --> G["1.0 release"]
+```
 
 | Milestone | Status | Evidence | Remaining acceptance |
 | --- | --- | --- | --- |

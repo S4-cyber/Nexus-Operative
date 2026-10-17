@@ -42,6 +42,11 @@ def _http_trial():
         raise RuntimeError('RELEASE_TRIAL_CREDENTIAL_ACCESS_DENIED')
     for name in ('get_keyring', 'get_password', 'set_password', 'delete_password'):
         setattr(keyring, name, denied)
+    # Exercise the Windows-only credential gate on every host using injected
+    # policy metadata, while keyring itself remains denied above.
+    from types import SimpleNamespace
+    from nexus import credential_vault
+    credential_vault.os = SimpleNamespace(name='nt')
     from nexus.app import app
     root = Path(os.environ['NEXUS_PORTABLE_DATA'])
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -55,7 +60,7 @@ def _http_trial():
             time.sleep(.01)
         opener = build_opener(ProxyHandler({}))
         base = 'http://127.0.0.1:' + str(listener.getsockname()[1])
-        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/', '/portal'):
+        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/', '/portal'):
             with opener.open(base + path, timeout=5) as response:
                 body = response.read(2 * 1024 * 1024)
                 _require(response.status == 200, 'HTTP_STATUS')
@@ -70,6 +75,7 @@ def _http_trial():
         _require(not any(attempts.values()), 'UNEXPECTED_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, **attempts,
+            credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',
             limitations='Real local source-process HTTP only. No rendered browser, Windows executable, actual provider, order or sustained market test.')
     finally:
         server.should_exit = True; thread.join(timeout=10); listener.close()

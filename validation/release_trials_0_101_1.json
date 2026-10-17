@@ -1,0 +1,669 @@
+{
+  "actual_broker_acceptance": false,
+  "elapsed_seconds": {
+    "activity": 0.061,
+    "capacity": 5.074,
+    "forward": 2.584,
+    "http": 0.594,
+    "operations": 1.495,
+    "recovery": 0.229
+  },
+  "environment": {
+    "python": "3.12.14",
+    "sqlite": "3.53.1",
+    "system": "Linux"
+  },
+  "limitations": "Disposable offline process/HTTP/accounting trials. Wall-clock local storage timings include current machine load and are not broker or market latency. Synthetic quotes and assumed liquidity/fees cannot authenticate real-market performance, profitability, source provenance or complete 1.0 acceptance.",
+  "live_orders_enabled": false,
+  "mode": "BOUNDED_OFFLINE_RELEASE_TRIALS",
+  "money_movement_enabled": false,
+  "native_windows_acceptance": false,
+  "passed": true,
+  "production_release_ready": false,
+  "profiles": {
+    "activity": {
+      "application_accounts_changed": false,
+      "broker_connected": false,
+      "isolated_temporary_storage": true,
+      "live_orders_enabled": false,
+      "mode": "DISPOSABLE_MERGED_ACTIVITY_REVIEW",
+      "passed": true,
+      "release_approved": false,
+      "review": {
+        "account_sha256": "4242a3bcf13673bba791a95451c6edd9463f3d678a6dba4953a59d2d8112feae",
+        "activity_coverage_verified": false,
+        "activity_normalization": {
+          "account_scope": "CALLER_DECLARED_WITH_OPTIONAL_ROW_ID_CHECKS",
+          "broker_account_reconciled": false,
+          "broker_connected": false,
+          "duplicate_activities_ignored": 0,
+          "duplicate_orders_ignored": 0,
+          "execution_identity_scope": "REST_ACTIVITY_ID_NOT_STREAM_EXECUTION_ID",
+          "executions": [
+            {
+              "broker_order_id": "01234567-89ab-cdef-0123-456789abcde1",
+              "client_order_id": "fixture_1",
+              "execution_id": "20261017180000000::11234567-89ab-cdef-0123-000000000001",
+              "occurred_at": "2026-10-17T18:00:00+00:00",
+              "price": "85",
+              "product": "BTC-USD",
+              "quantity": "0.4",
+              "side": "BUY"
+            },
+            {
+              "broker_order_id": "01234567-89ab-cdef-0123-456789abcde2",
+              "client_order_id": "fixture_2",
+              "execution_id": "20261017180000000::11234567-89ab-cdef-0123-000000000002",
+              "occurred_at": "2026-10-17T18:00:02+00:00",
+              "price": "110",
+              "product": "BTC-USD",
+              "quantity": "0.999",
+              "side": "SELL"
+            },
+            {
+              "broker_order_id": "01234567-89ab-cdef-0123-456789abcde1",
+              "client_order_id": "fixture_1",
+              "execution_id": "20261017180000000::11234567-89ab-cdef-0123-000000000005",
+              "occurred_at": "2026-10-17T18:00:01+00:00",
+              "price": "110",
+              "product": "BTC-USD",
+              "quantity": "0.6",
+              "side": "BUY"
+            }
+          ],
+          "fee_coverage_complete": false,
+          "fee_debits": [
+            {
+              "activity_id": "20261017180000000::11234567-89ab-cdef-0123-000000000003",
+              "amount": "0.001",
+              "asset": "BTC",
+              "kind": "CFEE",
+              "order_reference": null,
+              "reported_date": "2026-10-18",
+              "unverified_execution_reference": null
+            },
+            {
+              "activity_id": "20261017180000000::11234567-89ab-cdef-0123-000000000004",
+              "amount": "0.10989",
+              "asset": "USD",
+              "kind": "FEE",
+              "order_reference": null,
+              "reported_date": "2026-10-18",
+              "unverified_execution_reference": null
+            }
+          ],
+          "input_sha256": "af9595c4aae67d26e491c80780465fd9171bc8a4e03b3803e7cac85ad3108633",
+          "ledger_applied": false,
+          "limitations": "Supplied REST records only; unsupported/corrected activities require review. Fee dates/references are not verified execution links or posting instants. No inferred fills, zero fees, pagination completeness, account attestation or synthetic-ledger changes.",
+          "live_orders_enabled": false,
+          "mode": "SUPPLIED_ALPACA_REST_ACTIVITY_NORMALIZATION",
+          "normalized_activities": [
+            {
+              "activity_id": "20261017180000000::11234567-89ab-cdef-0123-000000000001",
+              "broker_order_id": "01234567-89ab-cdef-0123-456789abcde1",
+              "client_order_id": "fixture_1",
+              "cumulative_quantity": "0.4",
+              "fill_type": "partial_fill",
+              "kind": "FILL",
+              "leaves_quantity": "0.6",
+              "occurred_at": "2026-10-17T18:00:00+00:00",
+              "price": "85",
+              "product": "BTC-USD",
+              "quantity": "0.4",
+              "side": "BUY"
+            },
+            {
+              "activity_id": "20261017180000000::11234567-89ab-cdef-0123-000000000002",
+              "broker_order_id": "01234567-89ab-cdef-0123-456789abcde2",
+              "client_order_id": "fixture_2",
+              "cumulative_quantity": "0.999",
+              "fill_type": "fill",
+              "kind": "FILL",
+              "leaves_quantity": "0",
+              "occurred_at": "2026-10-17T18:00:02+00:00",
+              "price": "110",
+              "product": "BTC-USD",
+              "quantity": "0.999",
+              "side": "SELL"
+            },
+            {
+              "activity_id": "20261017180000000::11234567-89ab-cdef-0123-000000000003",
+              "amount": "0.001",
+              "asset": "BTC",
+              "kind": "CFEE",
+              "order_reference": null,
+              "reported_date": "2026-10-18",
+              "unverified_execution_reference": null
+            },
+            {
+              "activity_id": "20261017180000000::11234567-89ab-cdef-0123-000000000004",
+              "amount": "0.10989",
+              "asset": "USD",
+              "kind": "FEE",
+              "order_reference": null,
+              "reported_date": "2026-10-18",
+              "unverified_execution_reference": null
+            },
+            {
+              "activity_id": "20261017180000000::11234567-89ab-cdef-0123-000000000005",
+              "broker_order_id": "01234567-89ab-cdef-0123-456789abcde1",
+              "client_order_id": "fixture_1",
+              "cumulative_quantity": "1",
+              "fill_type": "fill",
+              "kind": "FILL",
+              "leaves_quantity": "0",
+              "occurred_at": "2026-10-17T18:00:01+00:00",
+              "price": "110",
+              "product": "BTC-USD",
+              "quantity": "0.6",
+              "side": "BUY"
+            }
+          ],
+          "ready_for_routing": false,
+          "recognized_fee_debits": {
+            "BTC": "0.001",
+            "USD": "0.10989"
+          },
+          "review_reasons": [
+            "ACTIVITY_COVERAGE_UNVERIFIED",
+            "FEE_LINK_AND_TIMING_UNVERIFIED"
+          ],
+          "spendable_funds_verified": false,
+          "status": "REVIEW_REQUIRED"
+        },
+        "ambiguous_order_ids": [],
+        "automatic_continuation": false,
+        "broker_account_reconciled": false,
+        "broker_connected": false,
+        "distinct_order_snapshots": 3,
+        "distinct_orders": 2,
+        "fee_coverage_complete": false,
+        "head_sha256": "0d29888101ce33d4c89361b62f90ec5dc8cf90a08a4993d83e4b5f7981562bca",
+        "ledger_applied": false,
+        "limitations": "Retained supplied observations only. Latest reported order time is not an atomic broker snapshot or verified event order. Equal-time conflicts and quantity/terminal revisions require review. Requested-window unions/gaps describe collection intent, not received-page completeness, boundary inclusion, execution/fee coverage or source attestation. No guessed fee links, posting times, fills, holdings, spending or resume permission.",
+        "live_orders_enabled": false,
+        "mode": "UNATTESTED_RETAINED_ACTIVITY_REVIEW",
+        "normalization_evaluated": true,
+        "read_only": true,
+        "ready_for_routing": false,
+        "requested_window_review": {
+          "activity_coverage_verified": false,
+          "boundary_semantics_verified": false,
+          "components": [
+            {
+              "after": "2026-10-17T00:00:00Z",
+              "until": "2026-10-18T00:00:00Z"
+            }
+          ],
+          "gaps_between_requested_windows": [],
+          "scope": "CALLER_DECLARED_CREATION_WINDOWS_ONLY",
+          "unique_windows": 1
+        },
+        "retained_activities": 5,
+        "retained_batches": 2,
+        "review_reasons": [
+          "ACTIVITY_COVERAGE_UNVERIFIED",
+          "FEE_LINK_AND_TIMING_UNVERIFIED"
+        ],
+        "snapshot_revision_order_ids": [],
+        "snapshot_selection": "REPORTED_UPDATED_AT_DIAGNOSTIC_ONLY",
+        "source": "SUPPLIED_UNATTESTED",
+        "spendable_funds_verified": false,
+        "status": "REVIEW_REQUIRED"
+      },
+      "source": "FIXED_SYNTHETIC_REST_EXAMPLE"
+    },
+    "capacity": {
+      "application_accounts_changed": false,
+      "atomic_burst_treatment": {
+        "accounting_consistent": true,
+        "admitted": 8,
+        "admitted_to_completion_latency": {
+          "p50_ms": 56.195,
+          "p95_ms": 130.038,
+          "p99_ms": 130.038
+        },
+        "application_accounts_changed": false,
+        "atomic_order_transactions": true,
+        "broker_orders": 0,
+        "cold_recovery_ms": 2.614,
+        "completed_roundtrips": 8,
+        "duplicate_fill_replays": 16,
+        "duplicate_rejections": 1,
+        "durable_commands": 67,
+        "durable_roundtrip_latency": {
+          "p50_ms": 16.136,
+          "p95_ms": 19.853,
+          "p99_ms": 19.853
+        },
+        "expired_before_execution": 0,
+        "halt_flushed": 0,
+        "halted": true,
+        "limitations": "Serially drained bounded fixture burst. Includes real local queue residence, linked ledger/tier writes, duplicate replay; cold validation is checked separately after timing. Uses fixed synthetic quote time. Excludes feed, strategy, streaming, network and broker timing; roundtrips are not market moves.",
+        "offered": 30,
+        "overflow_rejections": 22,
+        "queue_age_limit_ms": 250.0,
+        "queue_capacity": 8,
+        "queue_wait_latency": {
+          "p50_ms": 40.059,
+          "p95_ms": 110.184,
+          "p99_ms": 110.184
+        },
+        "scope": "TEMPORARY_LINKED_LEDGER_FIXTURE_BURST",
+        "target_validated": false
+      },
+      "burst_treatment": {
+        "accounting_consistent": true,
+        "admitted": 8,
+        "admitted_to_completion_latency": {
+          "p50_ms": 107.975,
+          "p95_ms": 257.888,
+          "p99_ms": 257.888
+        },
+        "application_accounts_changed": false,
+        "atomic_order_transactions": false,
+        "broker_orders": 0,
+        "cold_recovery_ms": 2.454,
+        "completed_roundtrips": 8,
+        "duplicate_fill_replays": 16,
+        "duplicate_rejections": 1,
+        "durable_commands": 67,
+        "durable_roundtrip_latency": {
+          "p50_ms": 35.288,
+          "p95_ms": 38.954,
+          "p99_ms": 38.954
+        },
+        "expired_before_execution": 0,
+        "halt_flushed": 0,
+        "halted": true,
+        "limitations": "Serially drained bounded fixture burst. Includes real local queue residence, linked ledger/tier writes, duplicate replay; cold validation is checked separately after timing. Uses fixed synthetic quote time. Excludes feed, strategy, streaming, network and broker timing; roundtrips are not market moves.",
+        "offered": 30,
+        "overflow_rejections": 22,
+        "queue_age_limit_ms": 250.0,
+        "queue_capacity": 8,
+        "queue_wait_latency": {
+          "p50_ms": 72.283,
+          "p95_ms": 219.359,
+          "p99_ms": 219.359
+        },
+        "scope": "TEMPORARY_LINKED_LEDGER_FIXTURE_BURST",
+        "target_validated": false
+      },
+      "isolated_temporary_storage": true,
+      "limitations": "Local commit-return timings. Linked treatments include ledger integrity, tier-entry reads and atomic reconciliation. The separate burst treatment adds bounded local queue residence and overload/expiry. Both exclude streaming, strategy, network, broker acknowledgments and actual market fills. Cold validation remains full replay; all retained payloads are still hashed. No fixed speedup or market throughput is established.",
+      "live_orders_enabled": false,
+      "mode": "OFFLINE_DURABLE_GATEWAY_BENCHMARK",
+      "simulation_only": true,
+      "target_market_moves_per_second": 30,
+      "target_validated": false,
+      "treatments": [
+        {
+          "accounting_consistent": true,
+          "broker_orders": 0,
+          "checkpoints_enabled": false,
+          "cold_recovery_ms": 6.737,
+          "commands_per_second": 221.606,
+          "commit_return_latency": {
+            "p50_ms": 4.532,
+            "p95_ms": 6.733,
+            "p99_ms": 7.742
+          },
+          "cycles": 30,
+          "durable_commands": 240,
+          "elapsed_seconds": 1.083004,
+          "portfolio_linked": false,
+          "recovery_diagnostics": {
+            "cache_hit": false,
+            "checkpoint_sequence": 0,
+            "prefix_replayed": 241,
+            "tail_replayed": 0
+          },
+          "scope": "GATEWAY_ONLY",
+          "tier_checks_included": false,
+          "warm_recovery_ms": 4.412
+        },
+        {
+          "accounting_consistent": true,
+          "broker_orders": 0,
+          "checkpoints_enabled": true,
+          "cold_recovery_ms": 6.272,
+          "commands_per_second": 294.585,
+          "commit_return_latency": {
+            "p50_ms": 3.406,
+            "p95_ms": 4.765,
+            "p99_ms": 5.925
+          },
+          "cycles": 30,
+          "durable_commands": 240,
+          "elapsed_seconds": 0.814704,
+          "portfolio_linked": false,
+          "recovery_diagnostics": {
+            "cache_hit": true,
+            "checkpoint_sequence": 192,
+            "prefix_replayed": 0,
+            "tail_replayed": 49
+          },
+          "scope": "GATEWAY_ONLY",
+          "tier_checks_included": false,
+          "warm_recovery_ms": 2.16
+        },
+        {
+          "accounting_consistent": true,
+          "broker_orders": 0,
+          "checkpoints_enabled": false,
+          "cold_recovery_ms": 5.68,
+          "commands_per_second": 170.08,
+          "commit_return_latency": {
+            "p50_ms": 5.581,
+            "p95_ms": 10.478,
+            "p99_ms": 11.557
+          },
+          "cycles": 30,
+          "durable_commands": 240,
+          "elapsed_seconds": 1.411105,
+          "portfolio_linked": true,
+          "recovery_diagnostics": {
+            "cache_hit": false,
+            "checkpoint_sequence": 0,
+            "prefix_replayed": 242,
+            "tail_replayed": 0
+          },
+          "scope": "LINKED_LEDGER_AND_TIER",
+          "tier_checks_included": true,
+          "warm_recovery_ms": 5.715
+        },
+        {
+          "accounting_consistent": true,
+          "broker_orders": 0,
+          "checkpoints_enabled": true,
+          "cold_recovery_ms": 7.589,
+          "commands_per_second": 203.647,
+          "commit_return_latency": {
+            "p50_ms": 4.495,
+            "p95_ms": 7.807,
+            "p99_ms": 8.718
+          },
+          "cycles": 30,
+          "durable_commands": 240,
+          "elapsed_seconds": 1.178508,
+          "portfolio_linked": true,
+          "recovery_diagnostics": {
+            "cache_hit": true,
+            "checkpoint_sequence": 192,
+            "prefix_replayed": 0,
+            "tail_replayed": 50
+          },
+          "scope": "LINKED_LEDGER_AND_TIER",
+          "tier_checks_included": true,
+          "warm_recovery_ms": 3.545
+        }
+      ]
+    },
+    "forward": {
+      "application_accounts_changed": false,
+      "broker_connected": false,
+      "cycle_latency": {
+        "p50_ms": 5.147,
+        "p95_ms": 23.156,
+        "p99_ms": 26.144
+      },
+      "cycles": 280,
+      "isolated_temporary_storage": true,
+      "limitations": "Serial injected quotes with synthetic time; cycle timings include runner, evidence and durable linked ledger. No actual feed, worker scheduling, process-kill, streaming, broker or sustained-market throughput acceptance.",
+      "live_orders_enabled": false,
+      "mode": "DISPOSABLE_FORWARD_RUNNER_DRILL",
+      "passed": true,
+      "recovered": {
+        "account_sha256": "4db6746cdedb025bab6f53d683f47f52da30492216d74571741cd596f640f6b7",
+        "commands": 143,
+        "flat": true,
+        "forward_stopped": true,
+        "halted": true,
+        "ownership_released": true,
+        "portfolio_reconciled": true,
+        "sessions": [
+          {
+            "evidence_sha256": "8ac462503ec96583ef532bdf8cae036e1bb94c8f0851e5fe3b5b10eb46e3fd7a",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "4a4cd4ee6393017f8b16b10bc8c2ccbaff2c9efe376a22720c6390e5ac90eba5",
+            "quote_observations": 14,
+            "session": "27842c725eef403a"
+          },
+          {
+            "evidence_sha256": "d5db7876220e34e325061d0b916f8f4df3765232bc0bd2191ce06937c98c474d",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "1594485b38fba26dc875ef99f8d98ecaf089aaa2d8eb41e5390b4e09ec5fac9d",
+            "quote_observations": 14,
+            "session": "b58873cb5524473a"
+          },
+          {
+            "evidence_sha256": "1fa3e1964574bdd2c12325305020b22bd301ebfab81dbd131cdedfacfe9f5eb5",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "cfdcc3bff40c13e253f19dc7e4ba61d204373790ed3f5d3d379420d07b799950",
+            "quote_observations": 14,
+            "session": "c0450276435e4561"
+          },
+          {
+            "evidence_sha256": "a183af5583c3d8143b36a35ae88502c4dba70c2e985c0711f201c7cab59e9d86",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "5c5bdc58d29dca1606605371a33aeb89ea99557306102dfa8a06986fb04053e4",
+            "quote_observations": 14,
+            "session": "c8521b0717e842a6"
+          },
+          {
+            "evidence_sha256": "2a2cfd4c8a262c47e589ad0ca9df0f7a3e7e636a01ed8c27e70edf37519a326e",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "9c22bafc0ecc2830e747699c13c9d92fdc97ca7dfd24ebd71710f45febf81b38",
+            "quote_observations": 14,
+            "session": "9b166dc5bf434947"
+          },
+          {
+            "evidence_sha256": "8b1191d222e5a0c5c69a341cf14f26ebd411109ccc366a3d375677b741ee201c",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "e15ccbce6d7ee247bb9845b104c0dc0fbe65e424d99c6b5dba9966ae8d71a8c8",
+            "quote_observations": 14,
+            "session": "21a6423bc7d249a4"
+          },
+          {
+            "evidence_sha256": "6b343076542dbfab11e0334b4f1ae4f9483e46ebc94adc76431cd9b658fd029b",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "6a4c8b37137c9596ef541c2a9a627e8b3b2651f568cb865adb00c89e4ae5ad66",
+            "quote_observations": 14,
+            "session": "4092078762214873"
+          },
+          {
+            "evidence_sha256": "d4e4549d6e644413ffc1ec78eb8cd48b886211ad52d01afbfd23c953c8a0fe56",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "1aaf8ef2aa40e6e2444133b50c8e6453e2ec6ccc9fcc7fa7088c4f8df8c537db",
+            "quote_observations": 14,
+            "session": "91326a0f600e4c45"
+          },
+          {
+            "evidence_sha256": "3f9b30bbcde0fee561b48741f979ceb434d23b9601ac2f2861e54b2989c5bb6b",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "c5628ed58c975933137d5a3e0998013ea092d5b079a57a67feb86d65edb4779f",
+            "quote_observations": 14,
+            "session": "469c9f7e9fef4ce8"
+          },
+          {
+            "evidence_sha256": "d006e35584f8437392a928dfda3a8b88af8cc65965888218e3daee3036242b9f",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "430163bd514a2be44a50328c7bb707e6f34fa83f3decdf0e68a5ff4081316c6c",
+            "quote_observations": 14,
+            "session": "90770c6f5fd8460a"
+          },
+          {
+            "evidence_sha256": "6a23ff4e8dfc2c5dd25d8199fea6dec450bf22a8e4dc0cdb48d60021c6368dce",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "00af17532a494ff03e3c392137baa17be3f6fd2419c40cc737ecf5199c5be463",
+            "quote_observations": 14,
+            "session": "5cde809268424f33"
+          },
+          {
+            "evidence_sha256": "f81c515962abf8c91136e2333b30fc58e7f512241cffb8420da32c7b7e279e58",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "1a20fced8cb77d8fe6c833c4f70b9bccc149cdeb36a5500deb7ac31ded333bb8",
+            "quote_observations": 14,
+            "session": "2086f164e8584212"
+          },
+          {
+            "evidence_sha256": "b1a2e539440792b8546753dec98dc87bcf2619cdf5c2be048665fe8b3a301567",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "b9d5d9d8cbf4f2c3873d22dae4cfa6f249711b4df191e0c2ffb31b3ad56beba0",
+            "quote_observations": 14,
+            "session": "e26e2d039f854070"
+          },
+          {
+            "evidence_sha256": "8199c1b146a6508f4a7e4bc2bb9dcde513c830b131bec835161ada86f699315e",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "1a35ba0dfc393f8638ba60b2b99a53f6a83ab6f91dc6d14a528171a59b4b461f",
+            "quote_observations": 14,
+            "session": "0a6c70c200b94691"
+          },
+          {
+            "evidence_sha256": "9508f20f7e73611a68eceedf8a31bd69fd5990510d3e11c19b7707ab4bf915da",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "9b68dfcedd5c17500996baff486a11f02662f8885808ea05f1f6ddbc3fea67be",
+            "quote_observations": 14,
+            "session": "347ad4d161c145ad"
+          },
+          {
+            "evidence_sha256": "920b9d4456018b5ce2e0ab899c02a70b8afebac9493fe5e37e8906a1166b95e7",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "007b643234f988275ec5c71f320bd8b70dab752ad65f3f8779f7ec4af5d595d5",
+            "quote_observations": 14,
+            "session": "a745cd23644d4e18"
+          },
+          {
+            "evidence_sha256": "7958750facebf690505cc399d4127c2a05404accdbf5ac88c43605269413f10f",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "0e70257f5cd5201e0277680ed40b7de485624cf919eb1b4c8b9bc0f45f6240f6",
+            "quote_observations": 14,
+            "session": "b75372f2bf71418f"
+          },
+          {
+            "evidence_sha256": "3697cca222920183e68e12aff0a791eb0e0ac40a8b6629e7dab43dabc761ff6c",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "8039c6147c520d399782cbbe7565cc7df344ba75d1417a1749aa52dbc50a91a8",
+            "quote_observations": 14,
+            "session": "74f50da6828f49d2"
+          },
+          {
+            "evidence_sha256": "1d76c211f4ef58561dfa5e13fca7299954e67d244edf301abd9341cce0dd26fd",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "e2035754d9faea0ba6528ce54e5e340c1f5d1ea1e7a3de23d4ed258f0d45b3ad",
+            "quote_observations": 14,
+            "session": "1bf4162eef3d408e"
+          },
+          {
+            "evidence_sha256": "00d2a3ad0fefc0cb85f3d3fba88b7222ab501764fc1f8292926b83602682628a",
+            "modeled_buy_orders": 1,
+            "modeled_sell_orders": 1,
+            "orders_sha256": "d95e1f78f0830479ae0e73866edff3c00af2f2c0c04c0d1a0d0f1fb5b1911e40",
+            "quote_observations": 14,
+            "session": "a81d15d984fa4a1c"
+          }
+        ]
+      },
+      "release_approved": false,
+      "rounds": 20,
+      "target_validated": false
+    },
+    "http": {
+      "credential_operations": 0,
+      "credential_policy_branch": "INJECTED_WINDOWS_ONLY_GATE",
+      "endpoints_checked": [
+        "/api/status",
+        "/api/roadmap",
+        "/api/onboarding/tasks",
+        "/api/onboarding/readiness",
+        "/api/paper/ai-provider/status",
+        "/",
+        "/portal"
+      ],
+      "external_connections": 0,
+      "graceful_shutdown": true,
+      "limitations": "Real local source-process HTTP only. No rendered browser, Windows executable, actual provider, order or sustained market test.",
+      "passed": true,
+      "startup_data_files": 0,
+      "startup_engine_stopped": true,
+      "transport": "REAL_LOOPBACK_TCP_HTTP"
+    },
+    "operations": {
+      "application_accounts_changed": false,
+      "archive_batches": 24,
+      "archived_orders": 48,
+      "buy_fills": 24,
+      "cycles": 24,
+      "halted_restart_checks": 24,
+      "history_deleted": false,
+      "hold_checks": 24,
+      "limitations": "Scripted synthetic fixture with reconstructed gateway instances; not live-data strategy operation, real process death, network-outage validation or market performance evidence.",
+      "live_orders_enabled": false,
+      "mode": "SCRIPTED_OFFLINE_OPERATION_DRILL",
+      "old_id_deduplicated": true,
+      "passed": true,
+      "portfolio_reconciled": true,
+      "retained_commands": 266,
+      "sell_fills": 24,
+      "tier_vetoes": 24
+    },
+    "recovery": {
+      "broker_connected": false,
+      "limitations": "Temporary fixture and fresh Python processes; not a real-feed run, process-kill test, cross-version migration or independent release acceptance.",
+      "live_orders_enabled": false,
+      "mode": "DISPOSABLE_INJECTED_QUOTE_RECOVERY_DRILL",
+      "passed": true,
+      "recovered": {
+        "account_sha256": "39dbc7b47cec5bb3df3f35ed09f61de1c5d3e0bfac3d6aa81ab9986f9bec61b1",
+        "archived_session_orders": 2,
+        "forward_stopped": true,
+        "halted": true,
+        "modeled_buy_orders": 1,
+        "modeled_sell_orders": 1,
+        "order_sha256": "2f5749da0ca7e4c25321aaadf689b2faf56f0418a1e2ff4e76551a7f46481d74",
+        "policy_sha256": "8f2b54cbc7e8a029d02e7216480274c2d3de2f4f6ac4b23759b980785881e600",
+        "portfolio_reconciled": true,
+        "quote_head_sha256": "48c78e0578abeead19bbd7106731e91d0f0424beb68815d3a9ac525a985beb32",
+        "quote_observations": 8,
+        "session": "f4b8a951d26e4117",
+        "session_order_ids": [
+          "pf_f4b8a951d26e4117_7_BUY",
+          "pf_f4b8a951d26e4117_8_SELL"
+        ],
+        "source_modes": [
+          "INJECTED_TRANSPORT_UNATTESTED"
+        ]
+      },
+      "release_approved": false,
+      "verified_files": 5
+    }
+  },
+  "real_market_realism_authenticated": false,
+  "release_approved": false,
+  "source_fingerprint": {
+    "files": 220,
+    "sha256": "a9ebf928292d577249439e2ff9bb45696c9d0c9646e9d09acddfc08c78cff7d6"
+  },
+  "sustained_forward_acceptance": false,
+  "version": "0.101.1"
+}

@@ -31,11 +31,15 @@ def enabled():
     return (os.environ.get("NEXUS_ENABLE_LLM_RESEARCH")=="1" and bool(os.environ.get("OPENAI_API_KEY"))) or bool(credential_vault.retrieve())
 
 def status():
-    return {"provider":"openai_chat_completions","configured":enabled(),
-            "provider_connected":False,"model":MODEL if enabled() else None,
+    observed = credential_vault.local_status()
+    environment_configured = os.environ.get("NEXUS_ENABLE_LLM_RESEARCH")=="1" and bool(os.environ.get("OPENAI_API_KEY"))
+    configured = environment_configured or observed['configured']
+    return {"provider":"openai_chat_completions","configured":configured,
+            "provider_connected":False,"model":MODEL if configured else None,
+            "credential_observation":observed,"environment_configuration_present":environment_configured,
             "requests_used_process":_calls,"max_requests_process":MAX_CALLS_PER_PROCESS,
             "live_orders_enabled":False,"advisory_only":True,
-            "note":"Configured does not prove provider connectivity. Explicit local opt-in and API billing required."}
+            "note":"Passive process-local configuration hint only; no vault or provider check. After restart saved vault configuration is unknown until an explicit action. Cached observations may be stale. Explicit requests still re-read credentials and require local opt-in and API billing."}
 
 def request(role,snapshot,transport=None):
     global _calls
@@ -88,3 +92,4 @@ def request(role,snapshot,transport=None):
     return {**advisory,"provider_connected":True,
             "live_orders_enabled":False,
             "note":"Untrusted advisory only; no trading permission. Cost is model-reported estimate, not a verified billing amount."}
+

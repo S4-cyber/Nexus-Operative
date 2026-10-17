@@ -32,7 +32,7 @@ def fixtures(path,pending=True):
     if path=='/api/strategy-branches':return dict(branches=[])
     if path=='/api/paper/settings':return dict(paper_budget=10000,terrestrial_allocation=50,solar_allocation=35,universal_allocation=15)
     if path=='/api/paper/portfolio':return dict(initialized=False)
-    if path=='/api/paper/ai-provider/status':return dict(configured=False,requests_used_process=0,max_requests_process=5)
+    if path=='/api/paper/ai-provider/status':return dict(configured=False,requests_used_process=0,max_requests_process=5,credential_observation=dict(state='NOT_CHECKED',current_vault_checked=False))
     if path=='/api/observer/status':return dict(active=False,cycles=0,last_error=None)
     if path.startswith('/api/observer/history'):return dict(events=[])
     if path=='/api/paper/forward/recovery':
@@ -173,6 +173,9 @@ def run(output,channel=None):
                         page.locator('#tab-'+workspace).click()
                         expect(page.locator('#tab-'+workspace)).to_have_attribute('aria-selected','true')
                         expect(page.locator('#panel-'+workspace)).to_be_visible()
+                        if workspace=='ai':
+                            expect(page.locator('#aiconnectorstatus')).to_contain_text('have not been checked')
+                            expect(page.locator('#aiconnectorstatus')).to_contain_text('No vault lookup')
                         if workspace=='todo':
                             expect(page.locator('#startup-summary')).to_contain_text('Checked ')
                             expect(page.locator('#startup-check-engine')).to_be_checked()

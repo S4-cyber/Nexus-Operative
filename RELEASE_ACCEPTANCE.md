@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.101.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.101.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -30,7 +30,7 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, nine Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_101_0.json`; exact new-source Windows trials must still run |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_101_1.json`; exact new-source Windows trials must still run |
 | Windows packaging and data recovery | Predecessor verified | v0.98 exact commit `65763dd5f9ed4b7367f064a1bf1b25023c114fa0` packaging run39075131403/job117521122766 succeeded; v0.99/new-source evidence tracked separately |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
@@ -46,3 +46,7 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 A green local trial or Windows workflow cannot check the remaining boxes. Read the generated ROADMAP.md for the complete staged roadmap; update this evidence through source review, never a runtime completion checkbox. Windows safety CI now runs the same bounded trial suite and retains its JSON report for 30 days alongside the existing browser evidence.
 
 The v0.101 activity review also detects conflicting equal-time order snapshots, quantity regressions, terminal status/financial revisions and average-price changes without added quantity. It reports unions/gaps of declared creation windows only; an overlapping or gap-free request schedule never proves received activity coverage. Review is read-only, bounded to 1,000 distinct orders and does not repair, prune, link fees or authorize trading.
+
+Windows regression blocker identified in v0.100: passive AI status called credential retrieval, which attempted OS access on Windows during readiness/To Do. The v0.101.1 correction uses nonblocking process-local hints, labels restart state as NOT_CHECKED and keeps actual request-time credential checks. The real HTTP trial injects the Windows-only gate on every host and covers provider status/readiness as well as To Do. This simulated branch is not native Windows acceptance; the fixed source still requires green Windows CI.
+
+Passive AI metadata is also tested under an injected Windows-only credential policy on Linux. A previous “configured” hint may be stale and never grants request permission; explicit request-time retrieval remains required. The Portal labels NOT_CHECKED honestly after restart and keeps reviewed public-data requests separately confirmed. The new `ai_status_smoke.cjs` checks the actual controller, bringing the controller suite to ten. A Windows regression failure is recorded as a blocker until the corrected exact-source workflow passes; local reproduction/trials do not erase it.

@@ -21,3 +21,16 @@ def test_setup_status_does_not_trigger_paid_request(monkeypatch):
     assert report["configured"] is False
     assert report["provider_connected"] is False
     assert report["live_orders_enabled"] is False
+
+
+
+def test_actual_ai_status_controller():
+    import shutil
+    import subprocess
+    import pytest
+    from pathlib import Path
+    node=shutil.which('node')
+    if not node: pytest.skip('Node is unavailable')
+    root=Path(__file__).resolve().parents[1]
+    child=subprocess.run([node,str(root/'tools/ai_status_smoke.cjs')],capture_output=True,text=True,timeout=15)
+    assert child.returncode==0,child.stderr

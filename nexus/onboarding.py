@@ -31,7 +31,7 @@ def inventory(data_path=None):
         "optional_ai":{"configured":ai["configured"],"provider_connected":False,
             "setup_required_if_used":True,
             "attempts_remaining":max(0,ai["max_requests_process"]-ai["requests_used_process"]),
-            "explanation":"AI requires separate account, possible provider billing and explicit opt-in. No paid request sent."},
+            "explanation":"Passive configuration hint only; no OS credential lookup or provider test. Saved vault presence after restart is unknown until an explicit action. AI requires separate opt-in and may involve provider billing."},
         "experimental_paper_forward":{"available":True,"starts_automatically":False,"strategy_validated":False,
             "product":"BTC-USD","requires_active_portal":True,"requires_engaged_tier":True,
             "explanation":"Explicitly started public-quote experiment with modeled liquidity/costs and linked paper accounting. No broker orders."},

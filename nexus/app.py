@@ -168,9 +168,8 @@ def ai_provider_status():
 
 @app.post("/api/paper/ai-provider/{role}/research")
 def ai_provider_research(role: str, snapshot: dict):
-    try:return provider_research_request(role,snapshot)
-    except ValueError as exc:
-        raise HTTPException(status_code=422,detail=str(exc))
+    # Legacy arbitrary-payload route is fail-closed; use reviewed consent.
+    raise HTTPException(status_code=403, detail="Use reviewed public-preview consent workflow")
 
 @app.post("/api/paper/model-council")
 def model_council_preview(snapshot: dict):

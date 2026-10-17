@@ -43,6 +43,8 @@ def parse_candles(product,granularity,rows,now):
     if product not in PRODUCTS or granularity not in GRANULARITIES:
         raise ValueError("Unapproved candle market or granularity")
     if not isinstance(rows,list) or len(rows)>MAX_BARS:raise ValueError("Invalid candle response length")
+    if len(json.dumps(rows,allow_nan=False).encode())>MAX_RESPONSE:
+        raise ValueError("Oversized candle response")
     if type(now) not in (int,float) or not math.isfinite(now) or now<=0:raise ValueError("Invalid observation time")
     result=[]
     seen=set()

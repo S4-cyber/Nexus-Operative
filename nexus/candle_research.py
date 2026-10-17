@@ -42,6 +42,10 @@ def review(product,granularity=3600,limit=300):
         close_prices.append(str(close))
     if len(close_prices)!=len(candles):
         reasons.append("INCOMPLETE_CANDLE_VALIDATION")
+    # The caller requests a maximum, not a guarantee that the latest
+    # observations have arrived. Never interpret a truncated window as clean.
+    if len(candles)<limit:
+        reasons.append("REQUESTED_CANDLE_WINDOW_INCOMPLETE")
     return {"mode":"HISTORICAL_CANDLE_ADMISSION","product":product,
         "granularity":granularity,"candles_examined":len(candles),
         "research_eligible":not reasons,"reasons":sorted(set(reasons)),

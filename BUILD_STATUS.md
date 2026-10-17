@@ -21,6 +21,7 @@ Artifacts are in a ZIP on the workflow-run summary page. They are not in the rep
 The executable and installer are unsigned development builds and may produce Windows SmartScreen warnings. Do not bypass security warnings on an unverified file.
 
 ## Development constraints
-- The workflow is **manual only**. We will not generate failure emails on every source commit.
-- This branch is a compact PORTAL preview. The extended research/learning engine is not fully imported.
+- Pushes to the development branch run Windows packaging and the safety regression; manual dispatch is also available.
+- This branch contains the PORTAL, research modules and offline execution simulator. Sustained autonomous forward operation and external broker adapters remain unfinished.
 - If the first run fails, inspect the failing step's logs. Do not enable live-money operations merely to test the packaging pipeline.
+

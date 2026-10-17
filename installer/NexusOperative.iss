@@ -1,5 +1,5 @@
 #define AppName "Nexus Operative"
-#define AppVersion "0.50.0"
+#define AppVersion "0.51.0"
 [Setup]
 AppId={{BFCE93A2-A6EF-42E1-B641-DC51B2B6A7C0}
 AppName={#AppName}
@@ -7,7 +7,7 @@ AppVersion={#AppVersion}
 DefaultDirName={localappdata}\Programs\Nexus Operative
 DefaultGroupName=Nexus Operative
 OutputDir=..\release
-OutputBaseFilename=NexusOperative-Setup-0.50.0
+OutputBaseFilename=NexusOperative-Setup-0.51.0
 PrivilegesRequired=lowest
 Compression=lzma2
 SolidCompression=yes
@@ -23,3 +23,4 @@ Name: "{autodesktop}\Nexus Operative"; Filename: "{app}\NexusOperative.exe"; Tas
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"
 [Run]
 Filename: "{app}\NexusOperative.exe"; Description: "Launch Nexus Operative"; Flags: nowait postinstall skipifsilent
+

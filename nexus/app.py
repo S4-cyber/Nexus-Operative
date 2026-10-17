@@ -11,7 +11,7 @@ from nexus.state import load_settings, save_settings, audit
 from nexus.markets import list_markets
 from nexus.market_universe import page as market_universe_page
 from nexus.expansion_initiative import roadmap as expansion_roadmap, assess_evidence as assess_expansion_evidence
-from nexus.order_gateway import gateway as research_order_gateway
+from nexus.durable_orders import gateway as research_order_gateway
 from nexus.tier_permissions import current as tier_permissions_current, configure as configure_tier_permission, require_entry as require_tier_entry
 from nexus.tier_performance import tier_performance
 from nexus.decision_lane import benchmark as offline_decision_benchmark
@@ -49,10 +49,14 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.50.0")
+app = FastAPI(title="Nexus Operative", version="0.51.0")
 _started = time.monotonic()
 _paused = True
-_halted = False
+try:
+    _halted = research_order_gateway.recovery_report()["halted"]
+except (ValueError,OSError,sqlite3.Error):
+    _halted = True  # Recovery failure must not silently reopen intake.
+
 _tiers = {
     "terrestrial": {"risk":"low", "max_weight":0.01, "score":28, "approach":"Prioritize liquid assets, modest position exposure and defined exits."},
     "solar": {"risk":"moderate", "max_weight":0.03, "score":38, "approach":"Research trend signals, confirmation and volatility before considering entries."},
@@ -271,7 +275,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.50.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.51.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -462,6 +466,12 @@ def execution_decision_benchmark(count:int=300):
     try:return offline_decision_benchmark(count)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
+@app.get("/api/execution/recovery")
+def execution_order_recovery():
+    try:return research_order_gateway.recovery_report()
+    except (ValueError,OSError,sqlite3.Error):
+        raise HTTPException(status_code=503,detail="ORDER_RECOVERY_UNAVAILABLE")
+
 @app.get("/api/execution/connectors")
 def execution_connector_catalog():
     return research_order_gateway.connections()
@@ -486,11 +496,13 @@ def simulate_order_intent(data:SimulatedOrderIntent):
     # exit requests are not blocked. This gateway only records a mock ACK.
     try:return research_order_gateway.submit(data.client_order_id,data.product,data.side,data.notional,data.provider,tier=data.tier)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="ORDER_STORAGE_UNAVAILABLE")
 
 @app.post("/api/execution/intent/{client_order_id}/cancel")
 def cancel_order_intent(client_order_id:str):
     try:return research_order_gateway.cancel(client_order_id)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="ORDER_STORAGE_UNAVAILABLE")
 
 @app.get("/api/markets")
 def market_catalog():
@@ -551,7 +563,9 @@ def halt():
     _halted=True
     _paused=True
     observer.stop()
-    research_order_gateway.emergency_halt()
+    try:research_order_gateway.emergency_halt()
+    except (ValueError,OSError,sqlite3.Error):
+        raise HTTPException(status_code=503,detail="HALTED_LOCALLY_ORDER_STORAGE_UNAVAILABLE")
     audit('emergency_halt')
     return status()
 
@@ -568,8 +582,10 @@ def reset_emergency_halt(confirmation:HaltResetConfirmation):
     # RESET clears only the simulation latch, never resumes background work.
     _paused=True
     observer.stop()
+    try:research_order_gateway.reset()
+    except (ValueError,OSError,sqlite3.Error):
+        raise HTTPException(status_code=503,detail="HALT_RESET_STORAGE_UNAVAILABLE")
     _halted=False
-    research_order_gateway.reset()
     audit("emergency_halt_reset_paused")
     return status()
 
@@ -591,3 +607,4 @@ def portal_view():
 @app.get("/",response_class=HTMLResponse)
 def home():
     return '<meta http-equiv="refresh" content="0;url=/portal">'
+

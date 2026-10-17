@@ -29,6 +29,7 @@ INTERVAL=POLICY['interval_seconds']
 RANKING_INTERVAL=POLICY['ranking_seconds']
 PRODUCT=POLICY['product']
 CLOCK_DISCONTINUITY_TOLERANCE_SECONDS=2
+SESSION_LIMIT=1000
 
 
 class PaperForwardRunner:
@@ -70,7 +71,7 @@ class PaperForwardRunner:
             old=db.execute('SELECT started_at,updated_at,state,counts_json FROM sessions WHERE id=?',(self._session,)).fetchone()
             if old is None:
                 if decision!='START':raise ValueError('FORWARD_SESSION_MISSING')
-                if db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]>=1000:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
+                if db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]>=SESSION_LIMIT:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
                 started=row['at'];state='RUNNING';counts={}
             else:
                 if decision=='START':raise ValueError('FORWARD_SESSION_ID_REUSED')
@@ -107,6 +108,9 @@ class PaperForwardRunner:
                 if reason:raise ValueError(reason)
                 selected_policy=admit(policy_id)
                 if tier not in TIERS:raise ValueError('UNKNOWN_RISK_TIER')
+                storage=self.storage_capacity()
+                if not storage['session_intake_allowed']:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
+                if not storage['quote_intake_allowed']:raise ValueError('FORWARD_QUOTE_EVIDENCE_CAP')
                 report=self.orders.recovery_report()
                 existing_positions=(report['execution_account']['account'] or {}).get('positions',{})
                 if not existing_positions:require_entry(tier,1)
@@ -224,6 +228,9 @@ class PaperForwardRunner:
             self._observation_hash=None
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
+            storage=self.storage_capacity()
+            if not storage['quote_intake_allowed']:
+                self._stop.set();return self._record('PAUSED','FORWARD_QUOTE_EVIDENCE_CAP')
             report=self.orders.recovery_report()
             if report['halted'] or not report['portfolio_reconciled']:
                 self._stop.set();return self._record('PAUSED','HALT_OR_RECONCILIATION_VETO')
@@ -356,8 +363,25 @@ class PaperForwardRunner:
             results.append(dict(session=sid,started_at=started,updated_at=updated,stored_state=state,
                                 effective_state='INTERRUPTED_OR_PRIOR_SESSION' if interrupted else 'STOPPED_WITHOUT_FINAL_RECORD' if unrecorded_stop else 'HEARTBEAT_STALE' if stale else state,
                                 requires_review=interrupted or stale or unrecorded_stop,policy=json.loads(policy),counts=json.loads(counts),last_event=json.loads(last)))
-        return dict(read_only=True,sessions=results,automatic_resume=False,session_limit=1000,
+        return dict(read_only=True,sessions=results,automatic_resume=False,session_limit=SESSION_LIMIT,
                     execution_source_of_truth='ORDER_JOURNAL_NOT_SESSION_COUNTERS')
+
+    def storage_capacity(self):
+        with closing(self._db()) as db,db:
+            db.execute('BEGIN')
+            sessions=db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]
+            quotes=db.execute('SELECT COUNT(*) FROM forward_quotes').fetchone()[0]
+        sessions_left=max(0,SESSION_LIMIT-sessions);quotes_left=max(0,forward_evidence.LIMIT-quotes)
+        warnings=[]
+        for label,left,limit in (('SESSION_HISTORY',sessions_left,SESSION_LIMIT),('QUOTE_EVIDENCE',quotes_left,forward_evidence.LIMIT)):
+            if left==0:warnings.append(label+'_FULL')
+            elif left<=max(1,limit//10):warnings.append(label+'_NEAR_LIMIT')
+        return dict(read_only=True,sessions_retained=sessions,session_limit=SESSION_LIMIT,sessions_remaining=sessions_left,
+                    quote_observations_retained=quotes,quote_limit=forward_evidence.LIMIT,quote_observations_remaining=quotes_left,
+                    session_intake_allowed=sessions_left>0,quote_intake_allowed=quotes_left>0,
+                    new_session_storage_available=sessions_left>0 and quotes_left>0,warnings=warnings,
+                    automatic_deletion=False,automatic_archival=False,
+                    scope='Storage admission diagnostics only; does not grant execution permission or guarantee future exit evidence capacity. Back up and review limits; never delete retained evidence to admit a run.')
 
     def history(self):
         with closing(self._db()) as db:

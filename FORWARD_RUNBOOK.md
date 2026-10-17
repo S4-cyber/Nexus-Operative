@@ -72,3 +72,9 @@ Runtime compares wall-clock elapsed time with an independent monotonic clock bef
 Repeated regressing exchange timestamps now count toward the existing three-failure limit and clear warmup immediately; their retained quote observations are marked rejected. A normal long elapsed gap with consistent clocks clears warmup without being labeled a clock failure. Duplicate exchange ticks never add entry warmup observations. Clock correction does not automatically restart a paused session; inspect accounting and session evidence before explicitly starting again.
 
 The standard runner uses `time.time` and `time.monotonic`. Deterministic callers injecting a custom wall clock default to that clock for elapsed-time simulation; tests can pass an independent `monotonic_clock` explicitly. This does not synchronize exchange time or independently attest feed timestamps.
+
+## Retained storage preflight
+
+PORTAL now displays retained quote/session counts and warnings at the final ten percent of either limit. `GET /api/paper/forward` includes the same read-only `storage_capacity` diagnostics. The current caps are 100,000 observations and 1,000 session summaries. New-session admission checks both before initializing or linking accounting. Existing sessions may continue when the session-count cap is reached; exhausted quote storage pauses before fetching another observation. Append-time checks remain authoritative if another writer changes capacity after preflight.
+
+No history is deleted or archived automatically. Storage availability is one admission check, not execution permission or a guarantee of future exit capacity. The system remains bounded; physical offload and indefinite operation are unvalidated. Stop and back up before limits are reached, review any held paper position and retain all evidence. Do not edit or delete records to bypass a cap.

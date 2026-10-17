@@ -195,3 +195,9 @@ Both v0.63 Windows workflows now passed at commit a74496f3a977822ba3826213043655
 Added independent wall/monotonic elapsed-time checks around fetch and order writes. Backward/nonfinite clocks or drift above two seconds pause, clear warmup and release ownership after cycle completion; submitted but unfilled orders cancel. Invalid-clock diagnostics use a valid fallback timestamp and label the invalid sample. Regressing exchange timestamps clear warmup, retain rejected quote evidence and count toward the three-failure pause. Tests cover forward/backward/nonfinite jumps, transport and post-submit jumps, repeated exchange regressions and normal long-gap rewarming. This is safety validation with injected observations, not sustained market evidence.
 
 Validation: 347 tests passed; Python compilation passed. v0.64 Windows safety tests passed, packaging remained in progress; v0.65 Windows checks were pending/in progress. No real-feed or broker session was started.
+
+## v0.67 — retained-storage admission and PORTAL capacity diagnostics
+
+Moved session/quote retention admission before account initialization/linking, retaining append-time hard caps. Exhausted quote storage pauses an existing run before another fetch. Read-only status and PORTAL expose retained counts, remaining slots and near-limit/full warnings without deleting evidence or granting execution permission. Tests verify no accounting files are created on full-storage rejection, no fetch occurs at exhaustion, and diagnostics leave orders/session evidence unchanged. Both v0.64 Windows workflows passed; v0.65 safety passed and its pending packaging run was superseded. Full sustained operation/physical offload remains a release gate.
+
+Validation: 351 tests passed, Python compilation passed and PORTAL JavaScript syntax passed. v0.66 Windows checks were still in progress. No public-feed forward session or external broker connection was started.

@@ -1,0 +1,38 @@
+# Emergency control under feed load
+
+Emergency Stop remains an independent paper throttle cut. It leaves the research engine, observer and bounded learning worker in their prior state, preserves committed fills/holdings and attempts durable cancellation of pending simulated remainders. Reset clears only the cut; Engage remains explicit. No broker, deposit, transfer, live order or cloud connection is added.
+
+## Scheduling and acknowledgment
+
+POST /api/simulate/halt is an async admission handler. It publishes the process-local halt flag and advances the cut epoch before waiting. Cleanup uses a lazy ThreadPoolExecutor with one dedicated worker; neither Starlette/AnyIO blocking feed routes nor the asyncio general executor use that worker. Repeated requests coalesce onto one pending concurrent Future, with no additional cleanup queue. Every request still advances the epoch so a concurrent reset cannot override it. Default process startup and GET status do not allocate this worker.
+
+The worker acquires the existing trading-control lock, persists the gateway emergency halt/cancellation, invokes the runner’s existing stop fence even if storage fails, and records the audit event. The handler acknowledges success only after that operation returns. Existing SQLite write/replay locks, execution freshness/stop hooks, cleanup handling and local ownership remain authoritative. Committed fills before the cut are retained; this does not liquidate holdings. A previously admitted quote fetch may finish after the fence, with the runner stopped and ownership held until cycle completion.
+
+Shielding prevents cancellation/disconnection of an awaiting HTTP task from cancelling submitted cleanup. Pending state is released by the concurrent Future completion callback, independent of the caller’s event loop. Async result exceptions are consumed for disconnected callers; expected errors return sanitized 503 details and leave intake latched. A failed executor submit can enqueue before thread start fails; the failure path cancels queued items and retires that executor, allowing a later explicit retry. It does not acknowledge a durable cut when worker admission fails.
+
+## Observable states and reset
+
+GET /api/status is async, no-store and performs no IO. The synchronous status() helper remains available to local code. The snapshot reports:
+
+| State | Meaning |
+| --- | --- |
+| CLEAR | No process-local emergency latch is active. This grants no trading permission. |
+| PENDING | A cleanup Future is pending; local API intake is latched. Reset is disabled/rejected. |
+| VERIFIED | The local durable cut, runner-stop fence and audit returned successfully, or startup recovered a validated durable halt. |
+| UNCONFIRMED | Local intake is latched but completion was not verified; review/retry the cut and inspect recovery. |
+
+Verified is scoped to those local operations. It is not broker cancellation evidence, liquidation, complete strategy/account health, independent audit or a hard deadline guarantee. A stopped worker’s separate diagnostic/recovery markers still need review.
+
+Reset validates explicit confirmation, captures the current epoch and rejects pending cuts in async admission before it queues on general-worker capacity. The blocking reset then checks the epoch/pending state again under trading control and after its durable operation. A newer cut wins, including one received while reset waits on the general executor or storage. Reset never engages a runner or changes the research engine’s on/off state.
+
+## Shutdown and bounds
+
+Lifespan cleanup drains the dedicated executor before other component cleanup. Drain rejects new job admission, still latches local intake and returns unconfirmed 503 for such requests. Waiting does not cancel queued/running cut work. Shutdown releases the executor so a later local application lifespan can create a new one; old futures do not carry running permission. Normal process restart still starts research/paper stopped and recovers the durable gateway latch.
+
+This reserves execution-worker capacity; it cannot bypass OS scheduling, a stalled event loop/GIL, a held trading/SQLite lock, failed storage, process death or all resource exhaustion. Storage and runner cleanup can delay acknowledgment. No overall realtime timeout is claimed and no success is returned merely because a request was admitted. Network socket, clean-machine/native-window, sustained feed/CPU/storage overload and remote broker acceptance remain separate.
+
+## Verification
+
+Thirteen cases in tests/test_emergency_lane.py use the actual ASGI app and injected blocking feed/storage callbacks. They verify Emergency Stop and no-store status while AnyIO feed workers and, separately, both general pools are saturated; twenty concurrent cuts sharing one cleanup; no reset window; success/failure cleanup after caller cancellation; worker-construction, submit and actual thread-start failures with explicit retry; lifecycle drain and reopening; cleanup/audit failure state; status without storage/worker allocation; and a reset queued before a newer cut. Existing start/reset/partial-fill/fetch/clock/ownership/accounting tests remain.
+
+tools/engine_controls_smoke.cjs executes the actual UI controller for pending/verified/unconfirmed text and reset disabling, alongside the original engine/Engage/Disengage/emergency behavior. Other controller/browser checks preserve beginner black/purple help and all seven tabs. Tests use synthetic funds and injected IO, not a production outage, a sustained source run or live-money acceptance.

@@ -49,7 +49,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 </style></head>
 <body><main>
 <header><div class="brand">◈ NEXUS OPERATIVE</div><small>LOCAL DEVELOPMENT · PAPER RESEARCH ONLY · No bank, card or brokerage is connected</small></header>
-<section class="hero"><div class="label">Autonomous research command bridge</div><h1>NEXUS</h1><p class="sub">TERRESTRIAL // SOLAR // UNIVERSAL</p><button class="portal" id="activate" data-help="Start the research engine: public observation, bounded history collection and built-in learning checks using the Research selections. This never starts trading. Turning the engine off also stops paper trading; holdings stay recorded.">START PORTAL</button><button id="engage" disabled data-help="Engage the fixed experimental BTC paper policy with the entry tier selected below and compatible virtual funds. Portal must be running and the emergency cut cleared. Learned council models remain advisory; no deposited real funds or broker orders are used.">ENGAGE PAPER</button><button id="disengage" disabled data-help="Release the paper throttle and stop this session. The research engine keeps running. Existing virtual holdings remain; this does not sell them or set the emergency latch.">DISENGAGE</button><button class="danger" id="halt" data-help="Emergency throttle cut: latch paper execution off and cancel outstanding simulated remainders, preserving filled holdings. Research and learning keep running. Reset clears the latch only; Engage is always a separate action.">EMERGENCY STOP</button><button id="reset-halt" hidden data-help="Clear the trading cut after reviewing the cause. Research keeps its current state and trading stays disengaged. You must separately choose Engage Paper to resume the experiment.">RESET TRADING CUT</button><p class="status" id="status">Connecting to local research engine…</p></section>
+<section class="hero"><div class="label">Autonomous research command bridge</div><h1>NEXUS</h1><p class="sub">TERRESTRIAL // SOLAR // UNIVERSAL</p><button class="portal" id="activate" data-help="Start the research engine: public observation, bounded history collection and built-in learning checks using the Research selections. This never starts trading. Turning the engine off also stops paper trading; holdings stay recorded.">START PORTAL</button><button id="engage" disabled data-help="Engage the fixed experimental BTC paper policy with the entry tier selected below and compatible virtual funds. Portal must be running and the emergency cut cleared. Learned council models remain advisory; no deposited real funds or broker orders are used.">ENGAGE PAPER</button><button id="disengage" disabled data-help="Release the paper throttle and stop this session. The research engine keeps running. Existing virtual holdings remain; this does not sell them or set the emergency latch.">DISENGAGE</button><button class="danger" id="halt" data-help="Emergency throttle cut: request durable paper cancellation and runner stop through reserved worker capacity. Pending means cleanup is still running; verified means local checks finished; unconfirmed needs review or retry. Research keeps running, holdings remain, and Reset never engages.">EMERGENCY STOP</button><button id="reset-halt" hidden data-help="Clear the trading cut after reviewing the cause. Research keeps its current state and trading stays disengaged. You must separately choose Engage Paper to resume the experiment.">RESET TRADING CUT</button><p class="status" id="status">Connecting to local research engine…</p></section>
 <nav class="workspace-tabs" role="tablist" aria-label="Nexus workspaces">
 <button type="button" id="tab-portal" role="tab" aria-controls="panel-portal" aria-selected="true" tabindex="0" data-help="Observe account movement and control the experimental paper session. Switching pages preserves settings and never starts trading.">Portal</button>
 <button type="button" id="tab-risk" role="tab" aria-controls="panel-risk" aria-selected="false" tabindex="-1" data-help="Choose virtual allocations, entry tiers and risk checks. Switching pages preserves settings and never starts trading.">Risk</button>
@@ -281,7 +281,7 @@ async function update(){
   byId('reset-halt').hidden=!halted;
   byId('halt').disabled=false;
   show('activate',portalActive?'STOP PORTAL':'START PORTAL');
-  show('status',(portalActive?'RESEARCH ENGINE ON':'RESEARCH ENGINE OFF')+(halted?' · TRADING CUT LATCHED':' · PAPER THROTTLE SEPARATE'));
+  renderEngineStatus(status);
   byId('matrix-hangar').hidden=!portalActive;
   byId('matrix-hangar').classList.toggle('open',portalActive);
   byId('matrix-hangar').setAttribute('aria-hidden',String(!portalActive));
@@ -320,6 +320,11 @@ async function update(){
 }
 // BEGIN ENGINE CONTROLS
 let paperRunning=false,paperStateKnown=false,engageBusy=false;
+function renderEngineStatus(status){
+ const cut=status.emergency_cut_state;
+ byId('reset-halt').disabled=status.emergency_cut_pending===true;
+ show('status',(portalActive?'RESEARCH ENGINE ON':'RESEARCH ENGINE OFF')+(halted?(cut==='PENDING'?' · TRADING CUT PENDING':cut==='VERIFIED'?' · TRADING CUT VERIFIED':' · CUT UNCONFIRMED · REVIEW RECOVERY'):' · PAPER THROTTLE SEPARATE'));
+}
 function syncTradingControls(){
  const canStart=paperStateKnown&&portalActive&&!halted&&!paperRunning&&!engageBusy;
  byId('engage').disabled=!canStart;byId('forward-start').disabled=!canStart;
@@ -335,6 +340,7 @@ byId('activate').onclick=async()=>{
 byId('halt').onclick=async()=>{
  // Cut immediately; never wait for a confirmation or an Engage request to finish.
  halted=true;syncTradingControls();
+ show('status','EMERGENCY CUT REQUESTED · Waiting for durable cancellation and runner stop.');
  try{await api('/api/simulate/halt',{method:'POST'});await update();await localRefreshControl('status');await refreshForward()}
  catch(e){show('status','Emergency cut unconfirmed: '+e.message+'. Retry Emergency Stop and inspect recovery.');}
 };

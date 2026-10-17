@@ -3,6 +3,7 @@ import math
 import threading
 import asyncio
 from contextlib import asynccontextmanager
+from concurrent.futures import ThreadPoolExecutor
 import sqlite3
 import time
 from pathlib import Path
@@ -59,12 +60,14 @@ from nexus.paper_portfolio import initialize as init_paper_portfolio, state as p
 async def application_lifespan(application):
     try:yield
     finally:
-        try:await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
+        try:await asyncio.to_thread(_drain_emergency_lane)
         finally:
-            try:await asyncio.to_thread(observer.stop)
-            finally:await asyncio.to_thread(refresh_worker.shutdown)
+            try:await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
+            finally:
+                try:await asyncio.to_thread(observer.stop)
+                finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.86.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.87.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 # Lifecycle admission is serialized; a throttle cut publishes its latch before waiting.
@@ -73,9 +76,14 @@ _trading_control_lock = threading.RLock()
 _cut_lock = threading.Lock()
 _cut_epoch = 0
 _cut_pending = 0
+_cut_executor = None
+_cut_future = None
+_cut_lane_closing = False
 try:
     _halted = research_order_gateway.recovery_report()["halted"]
+    _cut_confirmed = _halted
 except (ValueError,OSError,sqlite3.Error):
+    _cut_confirmed = False
     _halted = True  # Recovery failure must not silently reopen intake.
 
 _tiers = {
@@ -308,11 +316,19 @@ def release_roadmap():
     from nexus.release_roadmap import snapshot
     return snapshot()
 
-@app.get("/api/status")
 def status():
-    return {"version":"0.86.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
-      "halted":_halted, "broker_connected":False,"bank_connected":False,
+    with _cut_lock:
+        halted=_halted;pending=bool(_cut_pending)
+        cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
+    return {"version":"0.87.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+      "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
+      "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
+
+@app.get("/api/status")
+async def runtime_status():
+    # This snapshot performs no IO and must not queue behind blocking feed workers.
+    return JSONResponse(status(),headers={"Cache-Control":"no-store"})
 
 @app.post("/api/candle-research/{product}/regime-stress")
 def candle_regime_stress(product: str, granularity: int = 3600, limit: int = 300):
@@ -813,34 +829,89 @@ def portal(cmd:PortalCommand):
             audit('portal_resumed' if cmd.enabled else 'portal_paused')
             return status()
 
-@app.post("/api/simulate/halt")
-def halt():
-    global _halted,_cut_epoch,_cut_pending
-    with _cut_lock:
-        _halted=True
-        _cut_epoch+=1
-        _cut_pending+=1
-    try:
-        with _trading_control_lock:
+def _complete_emergency_cut():
+    with _trading_control_lock:
+        try:
             # Persist the cut before waiting for worker cleanup. Research keeps running.
             try:research_order_gateway.emergency_halt()
-            except (ValueError,OSError,sqlite3.Error):
-                raise HTTPException(status_code=503,detail="HALTED_LOCALLY_ORDER_STORAGE_UNAVAILABLE")
             finally:paper_forward_runner.stop('EMERGENCY_THROTTLE_CUT')
-            audit('emergency_halt')
-            return status()
+        except (ValueError,OSError,sqlite3.Error,RuntimeError):
+            raise HTTPException(status_code=503,detail="HALTED_LOCALLY_CUT_CLEANUP_UNCONFIRMED")
+        try:audit('emergency_halt')
+        except (ValueError,OSError,sqlite3.Error):
+            raise HTTPException(status_code=503,detail="HALTED_EXECUTION_STOPPED_AUDIT_UNAVAILABLE")
+
+
+def _emergency_cut_done(future):
+    global _cut_pending,_cut_confirmed
+    # Completion, not an HTTP caller's lifetime, releases the pending reset fence.
+    with _cut_lock:
+        if _cut_future is future:
+            _cut_pending=0
+            _cut_confirmed=not future.cancelled() and future.exception() is None
+
+
+def _consume_control_result(future):
+    # A disconnected/cancelled caller must not leave an unobserved async exception.
+    if not future.cancelled():future.exception()
+
+
+def _drain_emergency_lane():
+    global _cut_executor,_cut_future,_cut_lane_closing
+    with _cut_lock:
+        _cut_lane_closing=True
+        executor=_cut_executor
+    try:
+        if executor is not None:executor.shutdown(wait=True,cancel_futures=False)
     finally:
-        with _cut_lock:_cut_pending-=1
+        with _cut_lock:
+            if _cut_executor is executor:
+                _cut_executor=None
+                _cut_future=None
+            _cut_lane_closing=False
+
+
+@app.post("/api/simulate/halt")
+async def halt():
+    global _halted,_cut_epoch,_cut_pending,_cut_executor,_cut_future,_cut_confirmed
+    new_job=False
+    with _cut_lock:
+        _halted=True
+        _cut_confirmed=False
+        _cut_epoch+=1
+        if _cut_lane_closing:
+            raise HTTPException(status_code=503,detail="HALTED_LOCALLY_APPLICATION_SHUTTING_DOWN")
+        if _cut_pending:
+            future=_cut_future  # Coalesce repeats; no unbounded executor queue.
+        else:
+            _cut_pending=1
+            try:
+                if _cut_executor is None:
+                    _cut_executor=ThreadPoolExecutor(max_workers=1,thread_name_prefix='nexus-emergency-cut')
+                future=_cut_executor.submit(_complete_emergency_cut)
+                _cut_future=future
+                new_job=True
+            except Exception:
+                # submit() may enqueue before thread creation fails: drain that item too.
+                failed_executor=_cut_executor
+                _cut_executor=None
+                _cut_future=None
+                _cut_pending=0
+                if failed_executor is not None:
+                    failed_executor.shutdown(wait=False,cancel_futures=True)
+                raise HTTPException(status_code=503,detail="HALTED_LOCALLY_CONTROL_WORKER_UNAVAILABLE")
+    # Register outside _cut_lock: an already-completed Future calls this inline.
+    if new_job:future.add_done_callback(_emergency_cut_done)
+    waiting=asyncio.wrap_future(future)
+    waiting.add_done_callback(_consume_control_result)
+    await asyncio.shield(waiting)  # Client cancellation never cancels durable cleanup.
+    return status()
 
 class HaltResetConfirmation(BaseModel):
     confirm_reset: bool
 
-@app.post("/api/simulate/halt/reset")
-def reset_emergency_halt(confirmation:HaltResetConfirmation):
-    global _halted
-    if confirmation.confirm_reset is not True:
-        raise HTTPException(status_code=422,detail="Explicit halt reset confirmation required")
-    with _cut_lock:epoch=_cut_epoch
+def _complete_halt_reset(epoch):
+    global _halted,_cut_confirmed
     with _trading_control_lock:
         with _cut_lock:
             if _cut_pending or epoch!=_cut_epoch:
@@ -853,7 +924,9 @@ def reset_emergency_halt(confirmation:HaltResetConfirmation):
             raise HTTPException(status_code=503,detail="HALT_RESET_STORAGE_UNAVAILABLE")
         with _cut_lock:
             interrupted=epoch!=_cut_epoch or bool(_cut_pending)
-            if not interrupted:_halted=False
+            if not interrupted:
+                _halted=False
+                _cut_confirmed=False
         if interrupted:
             # A newer cut always wins, including one received during durable reset.
             try:research_order_gateway.emergency_halt()
@@ -862,6 +935,17 @@ def reset_emergency_halt(confirmation:HaltResetConfirmation):
             raise HTTPException(status_code=409,detail="RESET_INTERRUPTED_BY_EMERGENCY_CUT")
         audit("emergency_halt_reset_disengaged")
         return status()
+
+@app.post("/api/simulate/halt/reset")
+async def reset_emergency_halt(confirmation:HaltResetConfirmation):
+    if confirmation.confirm_reset is not True:
+        raise HTTPException(status_code=422,detail="Explicit halt reset confirmation required")
+    # Capture intent before general-worker scheduling, not after a queued request wakes.
+    with _cut_lock:
+        epoch=_cut_epoch
+        if _cut_pending:raise HTTPException(status_code=409,detail="EMERGENCY_CUT_IN_PROGRESS")
+        if not _halted:raise HTTPException(status_code=409,detail="Emergency halt is not active")
+    return await asyncio.to_thread(_complete_halt_reset,epoch)
 
 @app.post("/api/funding/preview")
 def funding_preview(data:DepositPreview):

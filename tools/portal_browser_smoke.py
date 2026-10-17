@@ -85,6 +85,20 @@ def run(output,channel=None):
                 try:
                     page.goto(ORIGIN+'/portal')
                     expect(page.locator('#tier-engagement button')).to_have_count(3)
+                    # Render cut-state fixtures only; no stop/reset request is sent.
+                    page.evaluate("() => {halted=true;byId('reset-halt').hidden=false;renderEngineStatus({emergency_cut_state:'PENDING',emergency_cut_pending:true})}")
+                    expect(page.locator('#status')).to_contain_text('TRADING CUT PENDING')
+                    expect(page.locator('#reset-halt')).to_be_disabled()
+                    page.locator('#reset-halt').hover()
+                    expect(page.locator('#control-help-text')).to_contain_text('Clear the trading cut')
+                    page.mouse.move(0,0)
+                    page.screenshot(path=str(output/f'emergency-pending-{width}x{height}.png'))
+                    page.evaluate("() => renderEngineStatus({emergency_cut_state:'UNCONFIRMED',emergency_cut_pending:false})")
+                    expect(page.locator('#status')).to_contain_text('CUT UNCONFIRMED')
+                    expect(page.locator('#reset-halt')).to_be_enabled()
+                    page.evaluate("() => renderEngineStatus({emergency_cut_state:'VERIFIED',emergency_cut_pending:false})")
+                    expect(page.locator('#status')).to_contain_text('TRADING CUT VERIFIED')
+                    page.evaluate("() => {halted=false;byId('reset-halt').hidden=true;renderEngineStatus({emergency_cut_state:'CLEAR',emergency_cut_pending:false});syncTradingControls()}")
                     page.locator('#forward-recovery').click()
                     expect(page.get_by_role('button',name='Cancel Pending Remainder')).to_have_count(1)
                     # Display account fixtures without activating PORTAL, observation or order IO.

@@ -17,6 +17,9 @@ const context={byId,Math,Number,JSON,portalActive:false,halted:false,jsonHeaders
  },refreshForward:async()=>{vm.runInContext('paperStateKnown=true;paperRunning='+forward+';syncTradingControls()',context)}};
 vm.createContext(context);vm.runInContext(source,context);
 (async()=>{
+ context.halted=true;context.renderEngineStatus({emergency_cut_state:'PENDING',emergency_cut_pending:true});assert.equal(byId('reset-halt').disabled,true);assert.match(byId('status').textContent,/CUT PENDING/);
+ context.renderEngineStatus({emergency_cut_state:'UNCONFIRMED',emergency_cut_pending:false});assert.match(byId('status').textContent,/CUT UNCONFIRMED/);assert.equal(byId('reset-halt').disabled,false);
+ context.renderEngineStatus({emergency_cut_state:'VERIFIED',emergency_cut_pending:false});assert.match(byId('status').textContent,/CUT VERIFIED/);context.halted=false;
  assert.equal(calls.length,0);context.syncTradingControls();assert.equal(byId('engage').disabled,true);
  assert.match(html, /id="hub-refresh-public" type="checkbox" checked/);
  await byId('activate').onclick();assert.equal(calls.length,1);

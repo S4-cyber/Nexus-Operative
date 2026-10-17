@@ -34,4 +34,5 @@ def test_halt_reset_controls_are_explicit():
     assert 'id="reset-halt"' in html
     assert "window.confirm('Clear emergency halt?" in html
     assert "confirm_reset:true" in html
-    assert "STILL PAUSED" in html
+    assert "Trading stays DISENGAGED" in html
+

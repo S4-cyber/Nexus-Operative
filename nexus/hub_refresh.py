@@ -48,7 +48,7 @@ class ResearchRefresh:
                 public_history_enabled=bool(self._config and self._config.get('collect_public_history')),
                 external_requests_enabled=not self._stop.is_set() and bool(self._config and self._config.get('collect_public_history')),
                 source_requests=self._source_requests,source_request_limit=collection.MAX_SOURCE_REQUESTS,
-                note='Saved-data mode by default; fixed public history only after separate opt-in. One-process job admission; OS ownership excludes other refresh workers on this directory. Model research never replaces the forward policy.')
+                note='Portal/UI select bounded public history by default; standalone legacy API/core calls remain saved-only unless explicitly selected. One-process job admission; OS ownership excludes other refresh workers on this directory. Model research never replaces the forward policy.')
 
     def _arm(self,product,granularity,limit,admission=None,*,collect_public_history=False):
         with self._lock:

@@ -176,7 +176,7 @@ def test_api_reads_do_not_start_worker_and_explicit_start_requires_active_portal
     assert not worker.status()['enabled'] and not worker.status()['ownership_held']
 
 
-def test_pause_and_halt_stop_refresh_and_shutdown_runs_despite_other_cleanup_failure(local,monkeypatch):
+def test_pause_stops_refresh_but_cut_keeps_it_and_shutdown_survives_other_cleanup_failure(local,monkeypatch):
     import asyncio
     from types import SimpleNamespace
     from fastapi.testclient import TestClient
@@ -192,7 +192,8 @@ def test_pause_and_halt_stop_refresh_and_shutdown_runs_despite_other_cleanup_fai
     assert not worker.status()['enabled']
     worker._arm('BTC-USD',3600,1000)
     assert client.post('/api/simulate/halt').status_code==200
-    assert not worker.status()['enabled'] and not worker.status()['ownership_held']
+    assert worker.status()['enabled'] and worker.status()['ownership_held']
+    worker.stop()
     monkeypatch.setattr(app,'paper_forward_runner',SimpleNamespace(stop=lambda *_:(_ for _ in ()).throw(ValueError('cleanup failed'))))
     worker._arm('BTC-USD',3600,1000)
     async def close():

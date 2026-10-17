@@ -64,9 +64,15 @@ async def application_lifespan(application):
             try:await asyncio.to_thread(observer.stop)
             finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.84.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.85.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
+# Lifecycle admission is serialized; a throttle cut publishes its latch before waiting.
+_engine_control_lock = threading.Lock()
+_trading_control_lock = threading.RLock()
+_cut_lock = threading.Lock()
+_cut_epoch = 0
+_cut_pending = 0
 try:
     _halted = research_order_gateway.recovery_report()["halted"]
 except (ValueError,OSError,sqlite3.Error):
@@ -79,6 +85,10 @@ _tiers = {
 }
 class PortalCommand(BaseModel):
     enabled: bool
+    product: str = Field(default="BTC-USD",pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
+    granularity: int = Field(default=3600)
+    limit: int = Field(default=1000,ge=240,le=1000)
+    collect_public_history: bool = True
 
 class PaperSettings(BaseModel):
     paper_budget: float = Field(gt=0, le=1000000)
@@ -300,7 +310,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.84.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.85.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -448,17 +458,26 @@ def paper_portfolio_init(data:PortfolioInit):
 def paper_portfolio_buy(data:PaperTrade):
     if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
     if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
+    with _cut_lock:epoch=_cut_epoch
     try:
         require_tier_entry(data.tier,data.notional)
         quote=read_ticker(data.product)
-        return paper_buy(data.product,data.notional,quote)
+        with _trading_control_lock:
+            if _halted or epoch!=_cut_epoch:raise HTTPException(status_code=409,detail="EMERGENCY_CUT_INTERRUPTED_TRADE")
+            if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
+            require_tier_entry(data.tier,data.notional)
+            return paper_buy(data.product,data.notional,quote)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.post("/api/paper/portfolio/sell")
 def paper_portfolio_sell(data:PaperClose):
+    if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
+    with _cut_lock:epoch=_cut_epoch
     try:
         quote=read_ticker(data.product)
-        return paper_sell(data.product,quote)
+        with _trading_control_lock:
+            if _halted or epoch!=_cut_epoch:raise HTTPException(status_code=409,detail="EMERGENCY_CUT_INTERRUPTED_TRADE")
+            return paper_sell(data.product,quote)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.get("/api/paper/portfolio/reconcile")
@@ -547,14 +566,21 @@ def paper_forward_status():
 def paper_forward_start(data:PaperForwardStart):
     if not data.confirm_experimental_paper:
         raise HTTPException(status_code=422,detail="EXPERIMENTAL_PAPER_CONFIRMATION_REQUIRED")
-    if _paused or _halted:raise HTTPException(status_code=409,detail="ACTIVATE_UNHALTED_PORTAL_FIRST")
-    try:return paper_forward_runner.start(data.tier,data.policy_id)
-    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
-    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="FORWARD_STORAGE_UNAVAILABLE")
+    with _trading_control_lock:
+        if _paused or _halted:raise HTTPException(status_code=409,detail="ACTIVATE_UNHALTED_PORTAL_FIRST")
+        try:
+            result=paper_forward_runner.start(data.tier,data.policy_id)
+            # A cut/pause can arrive while preparation is admitting the session.
+            if _halted or _paused:
+                paper_forward_runner.stop('START_INTERRUPTED_BY_CUT_OR_PAUSE')
+                raise HTTPException(status_code=409,detail="ENGAGE_INTERRUPTED_BY_CUT_OR_PAUSE")
+            return result
+        except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+        except (OSError,sqlite3.Error,RuntimeError):raise HTTPException(status_code=503,detail="FORWARD_STORAGE_OR_START_UNAVAILABLE")
 
 @app.post("/api/paper/forward/stop")
 def paper_forward_stop():
-    return paper_forward_runner.stop()
+    with _trading_control_lock:return paper_forward_runner.stop()
 
 @app.post("/api/execution/operation-drill")
 def execution_operation_drill(cycles:int=12):
@@ -623,17 +649,18 @@ class SimulatedOrderIntent(BaseModel):
 
 @app.post("/api/execution/intent/simulate")
 def simulate_order_intent(data:SimulatedOrderIntent):
-    if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
-    if data.provider!="nexus_local_paper":raise HTTPException(status_code=422,detail="EXTERNAL_BROKER_NOT_AUTHORIZED")
-    if data.side=="BUY":
-        if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
-        try:require_tier_entry(data.tier,data.notional)
+    with _trading_control_lock:
+        if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
+        if data.provider!="nexus_local_paper":raise HTTPException(status_code=422,detail="EXTERNAL_BROKER_NOT_AUTHORIZED")
+        if data.side=="BUY":
+            if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
+            try:require_tier_entry(data.tier,data.notional)
+            except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+        # SELL intent is allowed even if a tier is disengaged, so risk-reducing
+        # exit requests are not blocked. This gateway only records a mock ACK.
+        try:return research_order_gateway.submit(data.client_order_id,data.product,data.side,data.notional,data.provider,tier=data.tier)
         except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
-    # SELL intent is allowed even if a tier is disengaged, so risk-reducing
-    # exit requests are not blocked. This gateway only records a mock ACK.
-    try:return research_order_gateway.submit(data.client_order_id,data.product,data.side,data.notional,data.provider,tier=data.tier)
-    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
-    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="ORDER_STORAGE_UNAVAILABLE")
+        except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="ORDER_STORAGE_UNAVAILABLE")
 
 @app.post("/api/execution/intent/{client_order_id}/cancel")
 def cancel_order_intent(client_order_id:str):
@@ -658,7 +685,7 @@ def hub_refresh_status():return refresh_worker.status()
 
 @app.post("/api/matrix/hub/refresh/start")
 def hub_refresh_start(value:RefreshRequest):
-    try:return refresh_worker.start(value.product,value.granularity,value.limit,admission=lambda:not _paused and not _halted,collect_public_history=value.collect_public_history)
+    try:return refresh_worker.start(value.product,value.granularity,value.limit,admission=lambda:not _paused,collect_public_history=value.collect_public_history)
     except ValueError as exc:raise HTTPException(status_code=409,detail=str(exc))
     except (OSError,RuntimeError):raise HTTPException(status_code=503,detail='REFRESH_STORAGE_OR_START_UNAVAILABLE')
 
@@ -710,7 +737,7 @@ def matrix_account_history(span:str="1d"):
 
 @app.post("/api/matrix/account/observe")
 def matrix_account_observe():
-    if _paused or _halted:raise HTTPException(status_code=409,detail="PORTAL_MUST_BE_ACTIVE")
+    if _paused:raise HTTPException(status_code=409,detail="PORTAL_MUST_BE_ACTIVE")
     from nexus.matrix_account import capture
     try:return capture()
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
@@ -721,7 +748,7 @@ def matrix():
     return {
       "mode":"SYNTHETIC_TELEMETRY",
       "live_orders":False,
-      "active":not _paused and not _halted,
+      "active":not _paused,
       "events":[
         {"tier":t["tier"],"message":t["example_trade"],"score":t["illustrative_signal_score"],
          "outcome":t["current_outcome"],"synthetic":True}
@@ -755,53 +782,81 @@ def tiers():
 @app.post("/api/portal")
 def portal(cmd:PortalCommand):
     global _paused
-    if _halted and cmd.enabled:
-        raise HTTPException(409,"Emergency halt engaged; cannot activate.")
-    _paused=not cmd.enabled
-    audit('portal_resumed' if cmd.enabled else 'portal_paused')
-    if cmd.enabled:
-        observer.start()
-    else:
-        paper_forward_runner.stop('PORTAL_PAUSE')
-        observer.stop()
-        refresh_worker.stop('PORTAL_PAUSE')
-    return status()
+    if cmd.granularity not in (300,3600,86400):
+        raise HTTPException(status_code=422,detail="REFRESH_SCOPE")
+    with _engine_control_lock:
+        if cmd.enabled and not _paused:return status()  # Idempotent; never re-arm budgets on a retry.
+        if not cmd.enabled:
+            _paused=True  # Fence a concurrently preparing Engage before waiting.
+        with _trading_control_lock:
+            if cmd.enabled:
+                _paused=False
+                try:
+                    observer.start()
+                    refresh_worker.start(cmd.product,cmd.granularity,cmd.limit,
+                        admission=lambda:not _paused,collect_public_history=cmd.collect_public_history)
+                except (ValueError,OSError,sqlite3.Error,RuntimeError):
+                    _paused=True
+                    try:refresh_worker.stop('PORTAL_START_FAILED')
+                    finally:observer.stop()
+                    raise HTTPException(status_code=503,detail="RESEARCH_START_FAILED_ENGINE_OFF")
+            else:
+                try:paper_forward_runner.stop('PORTAL_PAUSE')
+                finally:
+                    try:observer.stop()
+                    finally:refresh_worker.stop('PORTAL_PAUSE')
+            audit('portal_resumed' if cmd.enabled else 'portal_paused')
+            return status()
 
 @app.post("/api/simulate/halt")
 def halt():
-    global _halted,_paused
-    _halted=True
-    _paused=True
-    refresh_worker.stop('PORTAL_HALT_OR_RESET')
-    paper_forward_runner.stop('PORTAL_HALT_OR_RESET')
-    observer.stop()
-    try:research_order_gateway.emergency_halt()
-    except (ValueError,OSError,sqlite3.Error):
-        raise HTTPException(status_code=503,detail="HALTED_LOCALLY_ORDER_STORAGE_UNAVAILABLE")
-    audit('emergency_halt')
-    return status()
+    global _halted,_cut_epoch,_cut_pending
+    with _cut_lock:
+        _halted=True
+        _cut_epoch+=1
+        _cut_pending+=1
+    try:
+        with _trading_control_lock:
+            # Persist the cut before waiting for worker cleanup. Research keeps running.
+            try:research_order_gateway.emergency_halt()
+            except (ValueError,OSError,sqlite3.Error):
+                raise HTTPException(status_code=503,detail="HALTED_LOCALLY_ORDER_STORAGE_UNAVAILABLE")
+            finally:paper_forward_runner.stop('EMERGENCY_THROTTLE_CUT')
+            audit('emergency_halt')
+            return status()
+    finally:
+        with _cut_lock:_cut_pending-=1
 
 class HaltResetConfirmation(BaseModel):
     confirm_reset: bool
 
 @app.post("/api/simulate/halt/reset")
 def reset_emergency_halt(confirmation:HaltResetConfirmation):
-    global _halted,_paused
+    global _halted
     if confirmation.confirm_reset is not True:
         raise HTTPException(status_code=422,detail="Explicit halt reset confirmation required")
-    if not _halted:
-        raise HTTPException(status_code=409,detail="Emergency halt is not active")
-    # RESET clears only the simulation latch, never resumes background work.
-    _paused=True
-    refresh_worker.stop('PORTAL_HALT_OR_RESET')
-    paper_forward_runner.stop('PORTAL_HALT_OR_RESET')
-    observer.stop()
-    try:research_order_gateway.reset()
-    except (ValueError,OSError,sqlite3.Error):
-        raise HTTPException(status_code=503,detail="HALT_RESET_STORAGE_UNAVAILABLE")
-    _halted=False
-    audit("emergency_halt_reset_paused")
-    return status()
+    with _cut_lock:epoch=_cut_epoch
+    with _trading_control_lock:
+        with _cut_lock:
+            if _cut_pending or epoch!=_cut_epoch:
+                raise HTTPException(status_code=409,detail="EMERGENCY_CUT_IN_PROGRESS")
+            if not _halted:raise HTTPException(status_code=409,detail="Emergency halt is not active")
+        try:
+            paper_forward_runner.stop('THROTTLE_RESET_STAYS_DISENGAGED')
+            research_order_gateway.reset()
+        except (ValueError,OSError,sqlite3.Error):
+            raise HTTPException(status_code=503,detail="HALT_RESET_STORAGE_UNAVAILABLE")
+        with _cut_lock:
+            interrupted=epoch!=_cut_epoch or bool(_cut_pending)
+            if not interrupted:_halted=False
+        if interrupted:
+            # A newer cut always wins, including one received during durable reset.
+            try:research_order_gateway.emergency_halt()
+            except (ValueError,OSError,sqlite3.Error):
+                raise HTTPException(status_code=503,detail="HALTED_LOCALLY_ORDER_STORAGE_UNAVAILABLE")
+            raise HTTPException(status_code=409,detail="RESET_INTERRUPTED_BY_EMERGENCY_CUT")
+        audit("emergency_halt_reset_disengaged")
+        return status()
 
 @app.post("/api/funding/preview")
 def funding_preview(data:DepositPreview):

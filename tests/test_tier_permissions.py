@@ -23,6 +23,7 @@ def test_all_tiers_off_by_default_and_caps_are_independent(tmp_path,monkeypatch)
 def test_tier_buy_is_blocked_unless_engaged_and_portal_active(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
     monkeypatch.setattr(backend.observer,"start",lambda:None)
+    monkeypatch.setattr(backend.refresh_worker,"start",lambda *a,**k:None)
     monkeypatch.setattr(backend.observer,"stop",lambda:None)
     monkeypatch.setattr(backend,"_halted",False)
     monkeypatch.setattr(backend,"_paused",True)
@@ -72,6 +73,7 @@ def test_paper_ledger_buy_requires_selected_engaged_tier(tmp_path,monkeypatch):
     monkeypatch.setattr(backend,"_paused",True)
     monkeypatch.setattr(backend,"_halted",False)
     monkeypatch.setattr(backend.observer,"start",lambda:None)
+    monkeypatch.setattr(backend.refresh_worker,"start",lambda *a,**k:None)
     monkeypatch.setattr(backend.observer,"stop",lambda:None)
     quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
            "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
@@ -99,3 +101,4 @@ def test_ledger_ui_has_explicit_tier_selector():
     html=TestClient(app).get("/portal").text
     assert 'id="papertier"' in html
     assert "tier:byId('papertier').value" in html
+

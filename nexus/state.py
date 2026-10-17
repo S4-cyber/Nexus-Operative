@@ -68,7 +68,7 @@ def save_settings(values):
     return load_settings()
 
 def audit(event):
-    if event not in {"portal_resumed", "portal_paused", "emergency_halt", "emergency_halt_reset_paused"}:
+    if event not in {"portal_resumed", "portal_paused", "emergency_halt", "emergency_halt_reset_paused","emergency_halt_reset_disengaged"}:
         raise ValueError("Unrecognized audit event")
     with closing(_connect()) as conn,conn:
         conn.execute("INSERT INTO audit_events(time,event) VALUES (?,?)", (int(time.time()), event))

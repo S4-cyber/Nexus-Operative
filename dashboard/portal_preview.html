@@ -282,7 +282,7 @@ async function matrixUpdate(){if(!portalActive)return;try{const d=await api('/ap
 loadMarkets();loadBranches();loadPaper();refreshPortfolio();refreshSentinel();update().then(()=>{if(portalActive)sampleMatrixPrice()});
 setInterval(()=>{if(portalActive){cycle++;update();matrixUpdate();sampleMatrixPrice()}},6000);
 setInterval(refreshSentinel,12000);setInterval(renderRain,90);
-</script></body></html>
+</body></html>
 +value.toFixed(2)+' / '+pricePoints.length+' observed ticks / Coinbase exchange / ~6s refresh / READ ONLY, NOT TRADE FILLS');
  }catch(e){show('matrix-price-caption','PUBLIC PRICE TRACKER DISCONNECTED / '+pair+' / '+e.message+' / No simulated replacement data');}
  finally{quoteBusy=false}

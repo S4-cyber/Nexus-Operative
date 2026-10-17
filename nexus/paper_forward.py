@@ -185,6 +185,12 @@ class PaperForwardRunner:
     def _execute(self,*args):
         with self._execution_lock:return self._execute_locked(*args)
 
+    def _execution_now(self):
+        if self._stop.is_set():raise ValueError('RUNNER_STOPPED_BEFORE_FILL')
+        reason=self._clock_check()
+        if reason:raise ValueError(reason)
+        return self.clock()
+
     def _execute_locked(self,side,quantity,bid,ask,received,now,notional):
         clock_reason=self._clock_check()
         if clock_reason:return self._pause_clock(clock_reason)
@@ -199,8 +205,10 @@ class PaperForwardRunner:
             if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_BEFORE_FILL')
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
-            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock(),fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'])
-            if result.get('expired'):return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)
+            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock(),fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=self._execution_now)
+            if result.get('expired'):
+                self._prices.clear();self._last_rank=0
+                return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)
             return self._record(side,'MODELED_PUBLIC_QUOTE_FILL',order_id=oid,
                                 liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
         finally:
@@ -322,7 +330,10 @@ class PaperForwardRunner:
             # later wall-clock value; all timestamps are preserved in the model.
             try:return self._execute(side,quantity,bid,ask,received,received,amount)
             except ValueError as exc:
-                return self._record('VETO',str(exc))
+                reason=str(exc)
+                if reason in ('INVALID_RUNTIME_CLOCK','RUNTIME_CLOCK_DISCONTINUITY'):return self._pause_clock(reason)
+                if reason=='STALE_OR_FUTURE_SYNTHETIC_QUOTE':self._prices.clear();self._last_rank=0
+                return self._record('HOLD' if reason=='RUNNER_STOPPED_BEFORE_FILL' else 'VETO',reason)
         except (OSError,sqlite3.Error,ValueError) as exc:
             self._error=type(exc).__name__;self._stop.set()
             return dict(decision='PAUSED',reason='FORWARD_STORAGE_OR_INTEGRITY_FAILURE')

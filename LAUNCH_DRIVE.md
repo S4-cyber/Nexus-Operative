@@ -267,3 +267,11 @@ Refactored existing single-command transactions through shared per-command appli
 Validation: 420 tests passed, Python compilation passed and PORTAL JavaScript syntax passed. All prior durable accounting, checkpoint, archival and forward interruption tests remain green. Atomic grouping remains offline/diagnostic only and retains state-changing logical commands; idempotent/no-op actions still add no journal rows. It cannot roll back an external broker fill and is not a broker execution transaction.
 
 One illustrative real-timing 12-item comparison admitted eight in each treatment: ordinary transactions completed three roundtrips before queue expiry (five expired), atomic orders completed four (four expired), and both ended flat/halted/reconciled. Completed-item p95 was 291.387 ms ordinary and 279.880 ms atomic. This small sequential host run is not a statistical speedup result or evidence of market throughput.
+
+## v0.72.1 — post-lock execution freshness and stop fencing
+
+Moved runtime quote evaluation to after SQLite write-lock acquisition and state restoration. The runner rechecks stop and wall/monotonic continuity at that boundary, journals the actual sampled evaluation time and preserves deterministic replay. Invalid runtime samples fail closed. Delayed stale/expired quotes clear entry warmup, and the existing finally cancellation preserves no-fill cleanup. The optional atomic fixture path uses the same hook without being promoted into the forward runner. Regression tests cover a real competing SQLite writer, replay delay, stop during replay, timestamp retention, invalid samples and full rollback.
+
+v0.72 safety CI completed successfully; its Windows packaging run was pending at this review. No real-feed or broker session was started.
+
+Validation: all 430 tests passed; Python compilation passed. The ten new cases include actual SQLite write-lock contention and fail-closed replay-delay/stop checks. The dependency stack emitted one existing Starlette TestClient/httpx deprecation warning. Windows packaging for this fix awaits CI.

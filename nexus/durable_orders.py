@@ -5,6 +5,7 @@ Fresh processes replay prefixes before accepting cached state.
 No positions or account balances are inferred from reference-notional fills.
 """
 import json
+import math
 import os
 import sqlite3
 from contextlib import closing
@@ -70,7 +71,8 @@ class DurableOrderGateway:
     def _call(self, method, *args, **kwargs):
         return self._call_many(((method,args,kwargs),))[0]
 
-    def _call_many(self,steps):
+    def _call_many(self,steps,execution_clock=None):
+        if execution_clock is not None and not callable(execution_clock):raise ValueError('INVALID_EXECUTION_CLOCK')
         steps=tuple(steps)
         if not steps or len(steps)>4:raise ValueError('INVALID_ORDER_TRANSACTION_SIZE')
         if len(steps)>1:
@@ -88,6 +90,14 @@ class DurableOrderGateway:
             gateway,count=self._restore(db)
             results=[]
             for method,args,kwargs,payload in prepared:
+                if method=='simulate_quote_fill' and execution_clock is not None:
+                    evaluated=execution_clock()
+                    try:valid=type(evaluated) in (int,float) and math.isfinite(evaluated)
+                    except OverflowError:valid=False
+                    if not valid:raise ValueError('INVALID_EXECUTION_CLOCK_SAMPLE')
+                    if len(args)>8:args=(*args[:8],evaluated,*args[9:])
+                    else:kwargs={**kwargs,'evaluated_at':evaluated}
+                    payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
                 result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
                 results.append(result)
         return results
@@ -128,7 +138,7 @@ class DurableOrderGateway:
         return result,count+(before!=after)
 
     def execute_quote_order(self,client_order_id,product,side,notional,*,tier,created_at,ttl_seconds,
-                            quantity,bid,ask,available_quantity,quote_at,evaluated_at,fee_bps=10,slippage_bps=5):
+                            quantity,bid,ask,available_quantity,quote_at,evaluated_at,fee_bps=10,slippage_bps=5,execution_clock=None):
         """Opt-in offline atomic order treatment; not used by the forward runner.
 
         Retains ordinary replayable commands. Any failure rolls back new changes
@@ -138,7 +148,7 @@ class DurableOrderGateway:
             ('submit',(client_order_id,product,side,notional),dict(tier=tier)),
             ('set_execution_terms',(client_order_id,created_at,ttl_seconds),{}),
             ('simulate_quote_fill',(client_order_id,'fill',1,quantity,bid,ask,available_quantity,quote_at,evaluated_at),dict(fee_bps=fee_bps,slippage_bps=slippage_bps)),
-            ('cancel',(client_order_id,),{})))
+            ('cancel',(client_order_id,),{})),execution_clock=execution_clock)
         return dict(order=results[3],fill=results[2],atomic_transaction=True,live_orders_enabled=False)
 
     def submit(self, *args, **kwargs):
@@ -171,8 +181,8 @@ class DurableOrderGateway:
     def expire_order(self, *args, **kwargs):
         return self._call('expire_order', *args, **kwargs)
 
-    def simulate_quote_fill(self, *args, **kwargs):
-        return self._call('simulate_quote_fill', *args, **kwargs)
+    def simulate_quote_fill(self, *args, execution_clock=None, **kwargs):
+        return self._call_many((('simulate_quote_fill',args,kwargs),),execution_clock=execution_clock)[0]
 
     def expire_due(self, evaluated_at):
         return self._call('expire_due', evaluated_at)

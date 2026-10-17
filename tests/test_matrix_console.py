@@ -18,3 +18,20 @@ def test_matrix_ui_is_bundled():
     assert 'id="market-grid"' in html
     assert "loadMarkets()" in html
     assert "matrixUpdate()" in html
+
+def test_matrix_live_chart_is_read_only_not_synthetic():
+    html=TestClient(app).get("/portal").text
+    assert 'id="matrix-price-chart"' in html
+    assert 'id="matrix-price-caption"' in html
+    assert "sampleMatrixPrice()" in html
+    assert "/api/public-quote/" in html
+    assert "Unverified or stale ticker" in html
+    assert "No simulated replacement data" in html
+    assert "observed exchange ticks" in html
+
+def test_halt_reset_controls_are_explicit():
+    html=TestClient(app).get("/portal").text
+    assert 'id="reset-halt"' in html
+    assert "window.confirm('Clear emergency halt?" in html
+    assert "confirm_reset:true" in html
+    assert "STILL PAUSED" in html

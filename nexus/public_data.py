@@ -1,7 +1,8 @@
 """Coinbase Exchange PUBLIC ticker reader — GET-only, no credentials or orders.
 
 Access is strictly limited to three hard-coded product paths. A single public
-HTTPS endpoint is used. The adapter never accepts URLs, tokens, order details,
+HTTPS endpoint is used; redirects are rejected and the response URL must match
+the requested product exactly. The adapter never accepts URLs, tokens, order details,
 or account credentials. Readings are informational, not execution signals.
 """
 from datetime import datetime, timezone
@@ -9,7 +10,7 @@ from decimal import Decimal, InvalidOperation
 import json
 import threading
 import time
-from urllib.request import Request, urlopen
+from urllib.request import Request, HTTPRedirectHandler, build_opener
 
 PRODUCTS={"BTC-USD","ETH-USD","SOL-USD"}
 BASE="https://api.exchange.coinbase.com/products/"
@@ -17,6 +18,15 @@ MAX_AGE_SECONDS=30
 CACHE_SECONDS=3
 _lock=threading.Lock()
 _cache={}
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self,req,fp,code,msg,headers,newurl):
+        fp.close()
+        raise ValueError("Public market redirects disabled")
+
+
+_opener=build_opener(_NoRedirect())
 
 def _value(raw):
     try:
@@ -63,7 +73,8 @@ def read_ticker(product,fetch=None,now=None):
     if default_transport:
         def fetch(url):
             req=Request(url,headers={"Accept":"application/json","User-Agent":"NexusOperative-PublicMarketReader/1.0"})
-            with urlopen(req,timeout=4) as response:
+            with _opener.open(req,timeout=4) as response:
+                if response.geturl()!=url:raise ValueError("Unexpected market response URL")
                 if response.status!=200:raise ValueError("Market provider not available")
                 body=response.read(65537)
                 if len(body)>65536:raise ValueError("Market response too large")

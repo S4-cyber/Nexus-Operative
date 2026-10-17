@@ -48,10 +48,11 @@ def test_default_transport_uses_actual_receipt_time(monkeypatch):
     monkeypatch.setattr(public,'_cache',{})
     class Response:
         status=200
+        def geturl(self):return public.BASE+'BTC-USD/ticker'
         def __enter__(self):return self
         def __exit__(self,*args):pass
         def read(self,limit):return json.dumps(payload(seconds=3)).encode()
-    monkeypatch.setattr(public,'urlopen',lambda *args,**kwargs:Response())
+    monkeypatch.setattr(public._opener,'open',lambda *args,**kwargs:Response())
     result=public.read_ticker('BTC-USD')
     assert result['received_at']==NOW+4
     assert result['age_seconds']==1

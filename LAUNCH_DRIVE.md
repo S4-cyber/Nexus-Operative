@@ -283,3 +283,11 @@ Added a bounded CLI exercising actual paper runner cycles with temporary child-p
 Both Windows workflows for exact v0.72.1 commit 05564202aa1c631ff3afb963633779b30ec7f61c passed: safety run 39049338459 and packaging run 39049338431. M1 remains partial pending manual clean-machine/profile/upgrade acceptance. No broker or public-feed session was started.
 
 Validation: all 443 tests passed (13 new drill cases) and Python compilation passed. A maximum-bound 20-round run completed 280 runner cycles and retained 280 observations, 20 BUY orders and 20 SELL orders; all 143 state-changing commands recovered with flat/halted/reconciled accounting and identical fresh-process fingerprints. This host run measured cycle p50 5.385 ms, p95 25.896 ms and p99 29.223 ms. Synthetic-time fixture timings are not a scheduler or market-throughput guarantee. One existing Starlette TestClient/httpx deprecation warning remains. Windows verification of this new tooling awaits its CI run.
+
+## v0.72.3 — public quote transport destination enforcement
+
+Replaced redirect-following default transport with a redirect-rejecting opener and exact response-URL check before body reads. Hard-coded product paths can no longer silently redirect to another destination and retain Coinbase provenance labels. Existing GET-only requests, timeout/body limits, receipt-time capture and default-success-only cache remain. Regression tests exercise the actual urllib redirect handler for 301/302/303/307/308 across external, downgrade and same-origin product destinations; invalid response URLs/status/size/JSON, successful GET/cache behavior and actual flat/holding runner failure pauses are also covered. Existing positions and journal commands remain unchanged on rejected transport, with no invented fills.
+
+v0.72.2 Windows safety and packaging workflows were in progress at the initial review. No real-feed or broker session was started; source review and independent provenance acceptance remain open.
+
+Validation: all 466 tests passed (23 new transport/integration cases) and Python compilation passed. Actual redirect-handler tests verify a single request only and closure of the rejected response, preventing redirect socket leaks. The existing Starlette TestClient/httpx deprecation warning remains. Windows CI for this fix is pending submission.

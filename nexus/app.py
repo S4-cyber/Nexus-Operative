@@ -59,7 +59,7 @@ async def application_lifespan(application):
         await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
         await asyncio.to_thread(observer.stop)
 
-app = FastAPI(title="Nexus Operative", version="0.72.2",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.72.3",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -290,7 +290,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.72.2", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.72.3", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

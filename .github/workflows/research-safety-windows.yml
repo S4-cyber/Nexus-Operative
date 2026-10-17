@@ -23,6 +23,17 @@ jobs:
       - name: Run complete Python regression suite
         run: python -m pytest -q
 
+      - name: Run bounded offline release trials
+        run: python -m nexus.release_trials --output release-trial-evidence/report.json
+      - name: Retain source-fingerprinted release trials
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-trial-evidence
+          path: release-trial-evidence
+          retention-days: 30
+          if-no-files-found: warn
+
       - name: Install headless browser for control-help acceptance
         run: python -m playwright install chromium --only-shell
       - name: Verify real-browser control help with isolated fixtures

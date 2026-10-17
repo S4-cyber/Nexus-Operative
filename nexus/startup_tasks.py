@@ -77,7 +77,7 @@ def checklist():
     from nexus.hub_refresh import refresh_worker
     running=refresh_worker.status()['enabled']
     add('refresh','Optionally refresh learning as stored data changes','Research setup','COMPLETE' if running else 'OPTIONAL',
-        'Activate Portal, then explicitly start Local Learning Refresh in Research. It checks stored data only, with bounded sessions. Running does not prove a fresh or successful prediction; Pause and Halt stop it.','research','hub-refresh-start')
+        'Activate Portal, then explicitly start Local Learning Refresh in Research. Saved-data mode is the default; new public price history requires its separate opt-in, within bounded sessions. Running does not prove a fresh or successful prediction; Pause and Halt stop it.','research','hub-refresh-start')
     add('quotes','Fetch a public quote when you need current prices','Research setup','ON_DEMAND',
         'Use Fetch Quote in Research. This checklist makes no exchange request and does not claim an internet connection was tested.','research','publicrefresh')
     try:configured=ai_status()['configured'];state='COMPLETE' if configured else 'OPTIONAL'

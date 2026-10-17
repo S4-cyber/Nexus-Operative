@@ -64,7 +64,7 @@ async def application_lifespan(application):
             try:await asyncio.to_thread(observer.stop)
             finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.83.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.84.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -300,7 +300,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.83.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.84.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -650,6 +650,7 @@ _hub_build_lock=BUILD_LOCK
 class RefreshRequest(BaseModel):
     product:str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
     granularity:int = 3600
+    collect_public_history:bool = False
     limit:int = Field(default=1000,ge=240,le=1000)
 
 @app.get("/api/matrix/hub/refresh")
@@ -657,7 +658,7 @@ def hub_refresh_status():return refresh_worker.status()
 
 @app.post("/api/matrix/hub/refresh/start")
 def hub_refresh_start(value:RefreshRequest):
-    try:return refresh_worker.start(value.product,value.granularity,value.limit,admission=lambda:not _paused and not _halted)
+    try:return refresh_worker.start(value.product,value.granularity,value.limit,admission=lambda:not _paused and not _halted,collect_public_history=value.collect_public_history)
     except ValueError as exc:raise HTTPException(status_code=409,detail=str(exc))
     except (OSError,RuntimeError):raise HTTPException(status_code=503,detail='REFRESH_STORAGE_OR_START_UNAVAILABLE')
 

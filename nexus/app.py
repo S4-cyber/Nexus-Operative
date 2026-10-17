@@ -34,7 +34,7 @@ from nexus.evidence_auditor import audit_evidence
 from nexus.latency import latency_observatory
 from nexus.model_adapters import coordinate as coordinate_model_advisors
 from nexus.advisory_benchmark import benchmark as advisory_contract_benchmark
-from nexus.provider_research import status as provider_research_status, request as provider_research_request
+from nexus.provider_research import status as provider_research_status
 from nexus.onboarding import inventory as local_capability_inventory
 from nexus import credential_vault
 from nexus.ai_evidence_preview import build as ai_evidence_preview, authorize_preview as ai_authorize_preview

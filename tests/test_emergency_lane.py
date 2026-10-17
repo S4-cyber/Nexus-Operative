@@ -138,7 +138,7 @@ def test_shutdown_drains_unacknowledged_cut_before_other_cleanup_and_can_reopen(
     original=g.emergency_halt
     def slow_cut():entered.set();assert release.wait(5);original();events.append('cut_committed')
     monkeypatch.setattr(g,'emergency_halt',slow_cut)
-    monkeypatch.setattr(api,'paper_forward_runner',SimpleNamespace(stop=lambda reason:events.append(reason)))
+    monkeypatch.setattr(api,'paper_forward_runner',SimpleNamespace(stop=lambda reason:events.append(reason),request_cut=lambda:None))
     async def exercise():
         context=api.application_lifespan(None);await context.__aenter__()
         request=asyncio.create_task(api.halt());await until(entered.is_set)

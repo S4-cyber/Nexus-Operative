@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.87.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.88.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 # Lifecycle admission is serialized; a throttle cut publishes its latch before waiting.
@@ -320,7 +320,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.87.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.88.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -596,7 +596,9 @@ def paper_forward_start(data:PaperForwardStart):
                 paper_forward_runner.stop('START_INTERRUPTED_BY_CUT_OR_PAUSE')
                 raise HTTPException(status_code=409,detail="ENGAGE_INTERRUPTED_BY_CUT_OR_PAUSE")
             return result
-        except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+        except ValueError as exc:
+            code=409 if str(exc) in ('EMERGENCY_CUT_REQUESTED','EMERGENCY_HALT_ACTIVE') else 422
+            raise HTTPException(status_code=code,detail=str(exc))
         except (OSError,sqlite3.Error,RuntimeError):raise HTTPException(status_code=503,detail="FORWARD_STORAGE_OR_START_UNAVAILABLE")
 
 @app.post("/api/paper/forward/stop")
@@ -879,6 +881,7 @@ async def halt():
         _halted=True
         _cut_confirmed=False
         _cut_epoch+=1
+        paper_forward_runner.request_cut()  # Nonblocking execution veto before any durable wait.
         if _cut_lane_closing:
             raise HTTPException(status_code=503,detail="HALTED_LOCALLY_APPLICATION_SHUTTING_DOWN")
         if _cut_pending:
@@ -925,6 +928,7 @@ def _complete_halt_reset(epoch):
         with _cut_lock:
             interrupted=epoch!=_cut_epoch or bool(_cut_pending)
             if not interrupted:
+                paper_forward_runner.clear_cut_signal()
                 _halted=False
                 _cut_confirmed=False
         if interrupted:

@@ -44,6 +44,7 @@ class PaperForwardRunner:
         self.monotonic_clock=monotonic_clock or (time.monotonic if clock is time.time else clock)
         self._clock_anchor=None
         self._stop=threading.Event();self._stop.set()
+        self._cut_requested=threading.Event()
         self._thread=None;self._lock=threading.RLock();self._cycle_lock=threading.Lock()
         self._execution_lock=threading.RLock();self._control_lock=threading.Lock()
         self._session=None;self._tier=None;self._prices=deque(maxlen=POLICY['warmup_observations'])
@@ -102,9 +103,21 @@ class PaperForwardRunner:
                 'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
                 self._policy['policy_sha256'],error)
 
+    def request_cut(self):
+        """Signal only: no locks owned by execution, IO, ownership release or acknowledgment."""
+        self._cut_requested.set()
+
+    def clear_cut_signal(self):
+        """Coordinator only: after durable reset and its final epoch check. Never starts work."""
+        self._cut_requested.clear()
+
+    def _intake_stopped(self):
+        return self._stop.is_set() or self._cut_requested.is_set()
+
     def prepare(self,tier,policy_id=POLICY['id']):
         """Validate/start session state without starting a thread (also testable offline)."""
         with self._cycle_lock,self._lock:
+            if self._cut_requested.is_set():raise ValueError('EMERGENCY_CUT_REQUESTED')
             if not self._stop.is_set() or (self._thread and self._thread.is_alive()):raise ValueError('PAPER_FORWARD_ALREADY_ACTIVE')
             if self._ownership and self._ownership.held:
                 raise ValueError('PAPER_FORWARD_PREVIOUS_CYCLE_STILL_ACTIVE')
@@ -136,6 +149,7 @@ class PaperForwardRunner:
                 holding=bool(report['execution_account']['account']['positions'])
                 if not report['capacity']['lifecycle_intake_allowed'] or report['capacity']['ordinary_commands_remaining']<(4 if holding else 12) or report['capacity']['intents_remaining']<(1 if holding else 2):
                     raise ValueError('INSUFFICIENT_FORWARD_JOURNAL_CAPACITY')
+                if self._cut_requested.is_set():raise ValueError('EMERGENCY_CUT_REQUESTED')
                 self._policy=selected_policy
                 self._session=uuid.uuid4().hex[:16];self._tier=tier
                 self._prices.clear();self._guard=FeedGuard();self._stamp=None;self._last_rank=0
@@ -178,7 +192,7 @@ class PaperForwardRunner:
             return self.status()
 
     def _run(self):
-        while not self._stop.is_set():
+        while not self._intake_stopped():
             try:self.single_cycle()
             except Exception as exc:
                 # Unknown worker failures pause rather than creating an unmonitored loop.
@@ -192,7 +206,7 @@ class PaperForwardRunner:
         with self._execution_lock:return self._execute_locked(*args)
 
     def _execution_now(self,exchange_at):
-        if self._stop.is_set():raise ValueError('RUNNER_STOPPED_BEFORE_FILL')
+        if self._intake_stopped():raise ValueError('RUNNER_STOPPED_BEFORE_FILL')
         reason=self._clock_check()
         if reason:raise ValueError(reason)
         now=self._clock_anchor[0]
@@ -203,15 +217,15 @@ class PaperForwardRunner:
     def _execute_locked(self,side,quantity,bid,ask,received,now,notional,exchange_at):
         clock_reason=self._clock_check()
         if clock_reason:return self._pause_clock(clock_reason)
-        if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_BEFORE_SUBMIT')
+        if self._intake_stopped():return self._record('HOLD','RUNNER_STOPPED_BEFORE_SUBMIT')
         oid='pf_'+self._session+'_'+str(self._cycles)+'_'+side
         self.orders.submit(oid,PRODUCT,side,str(notional),tier=self._tier)
         try:
-            if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_AFTER_SUBMIT')
+            if self._intake_stopped():return self._record('HOLD','RUNNER_STOPPED_AFTER_SUBMIT')
             self.orders.set_execution_terms(oid,now,self._policy['order_lifetime_seconds'])
             # Quote may precede order creation by transport latency; use a fresh
             # observation boundary so the timestamp model retains source age.
-            if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_BEFORE_FILL')
+            if self._intake_stopped():return self._record('HOLD','RUNNER_STOPPED_BEFORE_FILL')
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
             result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock(),fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=lambda:self._execution_now(exchange_at))
@@ -245,7 +259,7 @@ class PaperForwardRunner:
     def single_cycle(self):
         if not self._cycle_lock.acquire(blocking=False):return dict(decision='HOLD',reason='CYCLE_BUSY')
         try:
-            if self._stop.is_set():return dict(decision='HOLD',reason='PAPER_FORWARD_STOPPED')
+            if self._intake_stopped():return dict(decision='HOLD',reason='PAPER_FORWARD_STOPPED')
             self._cycles+=1
             self._observation_hash=None
             with closing(self._db()) as db:
@@ -272,7 +286,7 @@ class PaperForwardRunner:
                 clock_reason=self._clock_check()
                 if clock_reason:return self._pause_clock(clock_reason)
                 if not isinstance(quote,dict):raise ValueError('MISSING_FORWARD_QUOTE')
-                if self._stop.is_set():return self._record('HOLD','STOPPED_DURING_FETCH')
+                if self._intake_stopped():return self._record('HOLD','STOPPED_DURING_FETCH')
                 feed=self._guard.evaluate(quote,now)
                 if quote.get('product')!=PRODUCT:raise ValueError('QUOTE_PRODUCT_MISMATCH')
                 if not isinstance(quote.get('exchange_time'),str):raise ValueError('INVALID_EXCHANGE_TIMESTAMP')
@@ -360,7 +374,7 @@ class PaperForwardRunner:
 
     def status(self):
         with self._lock:
-            return dict(mode='EXPERIMENTAL_PUBLIC_QUOTE_PAPER_FORWARD',enabled=not self._stop.is_set(),
+            return dict(mode='EXPERIMENTAL_PUBLIC_QUOTE_PAPER_FORWARD',enabled=not self._intake_stopped(),cut_requested=self._cut_requested.is_set(),
                         worker_alive=bool(self._thread and self._thread.is_alive()),ownership_held=bool(self._ownership and self._ownership.held),session=self._session,tier=self._tier,
                         product=PRODUCT,interval_seconds=INTERVAL,entry_ranking_seconds=RANKING_INTERVAL,
                         cycles=self._cycles,consecutive_feed_failures=self._failures,last_error=self._error,last_event=self._last,

@@ -183,7 +183,7 @@ def test_pause_stops_refresh_but_cut_keeps_it_and_shutdown_survives_other_cleanu
     from nexus import app
     worker,_=local;monkeypatch.setattr(app,'refresh_worker',worker)
     monkeypatch.setattr(app,'audit',lambda *_:None)
-    monkeypatch.setattr(app,'paper_forward_runner',SimpleNamespace(stop=lambda *_:None))
+    monkeypatch.setattr(app,'paper_forward_runner',SimpleNamespace(stop=lambda *_:None,request_cut=lambda:None))
     monkeypatch.setattr(app,'observer',SimpleNamespace(stop=lambda:None))
     monkeypatch.setattr(app,'research_order_gateway',SimpleNamespace(emergency_halt=lambda:None))
     monkeypatch.setattr(app,'_paused',False);monkeypatch.setattr(app,'_halted',False)

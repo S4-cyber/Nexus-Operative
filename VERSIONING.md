@@ -11,6 +11,8 @@ Earlier development iterations were labeled 1.x, 2.x, and 3.x while the applicat
 - **1.0.0:** first completed production release, only after all launch acceptance gates are evidenced and explicitly approved by the project owner.
 - **1.1.0 onward:** features added after the 1.0.0 launch, maintaining documented compatibility where possible.
 
+The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Global opportunity expansion in [EXPANSION_INITIATIVE.md](EXPANSION_INITIATIVE.md) is secondary to closing launch blockers. Low-latency autonomous *paper* execution and its reliability tests belong to the v1.0 critical path; real-money use is separately authorized.
+
 ## Required gates before 1.0.0
 1. Stable packaging, installer, startup, configuration, upgrade and recovery tests.
 2. Independently audited and reliable market-data freshness/provenance, gaps, replays and failure behavior.

@@ -68,9 +68,11 @@ def benchmark(cycles=16):
             root=Path(directory)
             reports=[measure(root/'full-replay',cycles,False),measure(root/'checkpoint',cycles,True),
                      measure(root/'linked-full-replay',cycles,False,True),measure(root/'linked-checkpoint',cycles,True,True)]
+            from nexus.durable_burst import measure as burst_measure
+            burst=burst_measure(root/'linked-burst',cycles)
         return dict(mode='OFFLINE_DURABLE_GATEWAY_BENCHMARK',simulation_only=True,live_orders_enabled=False,
                     isolated_temporary_storage=True,application_accounts_changed=False,
-                    treatments=reports,target_market_moves_per_second=30,
+                    treatments=reports,burst_treatment=burst,target_market_moves_per_second=30,
                     target_validated=False,
-                    limitations='Local commit-return timings. Linked treatments include ledger integrity, tier-entry reads and atomic reconciliation. Excludes streaming, strategy, event-queue delays, network, broker acknowledgments and actual fills. Cold validation remains full replay; all retained payloads are still hashed. No fixed speedup or market throughput is established.')
+                    limitations='Local commit-return timings. Linked treatments include ledger integrity, tier-entry reads and atomic reconciliation. The separate burst treatment adds bounded local queue residence and overload/expiry. Both exclude streaming, strategy, network, broker acknowledgments and actual market fills. Cold validation remains full replay; all retained payloads are still hashed. No fixed speedup or market throughput is established.')
     finally:_LOCK.release()

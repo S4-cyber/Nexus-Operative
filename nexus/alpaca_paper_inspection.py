@@ -209,7 +209,8 @@ class _ReadSession:
             _fail('PAPER_INSPECTION_SESSION_NOT_ACTIVE')
         from nexus.broker_lookup_policy import LOOKUP_URL
         lookup_path = isinstance(url, str) and re.fullmatch(re.escape(LOOKUP_URL) + r'\?client_order_id=[A-Za-z0-9_-]{1,64}', url)
-        if lookup and not lookup_path or not lookup and url not in URLS:
+        from nexus.alpaca_activity_collection import is_activity_url
+        if lookup and not lookup_path or not lookup and url not in URLS and not is_activity_url(url):
             _fail('PAPER_INSPECTION_PATH_DENIED')
         if self.requests >= 4:
             _fail('PAPER_INSPECTION_REQUEST_CAP')

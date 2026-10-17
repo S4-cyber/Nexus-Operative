@@ -237,3 +237,23 @@ def recover_saved(journal, client_order_id, *, expected_account_id,
     if not credential_check():
         _fail('READ_REVOKED')
     return result
+
+
+def collect_saved(orders, *, expected_account_id, after, until,
+                  confirm_read_only_paper=False, opener=None, wall_clock=time.time,
+                  elapsed_clock=time.monotonic):
+    """Internal one-shot activity collection; no runtime route or automatic start."""
+    if confirm_read_only_paper is not True:
+        _fail('READ_CONFIRMATION_REQUIRED')
+    from nexus.alpaca_activity_collection import collect_activities
+    epoch, raw, record = _capture()
+    def credential_check():
+        current_epoch, current_raw, _ = _capture()
+        return epoch == current_epoch and raw == current_raw and _current(epoch)
+    result = collect_activities(record['api_key'], record['api_secret'], orders,
+        expected_account_id=expected_account_id, after=after, until=until,
+        confirm_read_only_paper=True, opener=opener, wall_clock=wall_clock,
+        elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch), credential_check=credential_check)
+    if not credential_check():
+        _fail('READ_REVOKED')
+    return result

@@ -22,6 +22,7 @@ from nexus.tier_permissions import require_entry, TIERS
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
 from nexus import forward_evidence
+from nexus.forward_ownership import ForwardOwnership
 
 INTERVAL=POLICY['interval_seconds']
 RANKING_INTERVAL=POLICY['ranking_seconds']
@@ -39,6 +40,7 @@ class PaperForwardRunner:
         self._failures=0;self._cycles=0;self._last=None;self._error=None
         self._policy=admit(POLICY["id"])
         self._observation_hash=None
+        self._ownership=None
 
     def _db(self):
         root=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))
@@ -87,34 +89,45 @@ class PaperForwardRunner:
     def prepare(self,tier,policy_id=POLICY['id']):
         """Validate/start session state without starting a thread (also testable offline)."""
         with self._cycle_lock,self._lock:
-            if not self._stop.is_set():raise ValueError('PAPER_FORWARD_ALREADY_ACTIVE')
-            selected_policy=admit(policy_id)
-            if tier not in TIERS:raise ValueError('UNKNOWN_RISK_TIER')
-            report=self.orders.recovery_report()
-            existing_positions=(report['execution_account']['account'] or {}).get('positions',{})
-            if not existing_positions:require_entry(tier,1)
-            if report['halted']:raise ValueError('EMERGENCY_HALT_ACTIVE')
-            if not report['execution_account']['initialized']:
-                self.orders.initialize_account(load_settings()['paper_budget'])
+            if not self._stop.is_set() or (self._thread and self._thread.is_alive()):raise ValueError('PAPER_FORWARD_ALREADY_ACTIVE')
+            if self._ownership and self._ownership.held:
+                raise ValueError('PAPER_FORWARD_PREVIOUS_CYCLE_STILL_ACTIVE')
+            self._ownership=ForwardOwnership(self.orders._path().parent)
+            self._ownership.acquire()
+            try:
+                selected_policy=admit(policy_id)
+                if tier not in TIERS:raise ValueError('UNKNOWN_RISK_TIER')
                 report=self.orders.recovery_report()
-            if not report['portfolio_reconciled']:
-                self.orders.link_portfolio()
-                report=self.orders.recovery_report()
-            if any(p!=PRODUCT for p in report['execution_account']['account']['positions']):
-                raise ValueError('FORWARD_RUNNER_REQUIRES_BTC_ONLY_ACCOUNT')
-            if any(o['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') for o in report['orders']):
-                raise ValueError('REVIEW_OUTSTANDING_PAPER_ORDERS_FIRST')
-            holding=bool(report['execution_account']['account']['positions'])
-            if not report['capacity']['lifecycle_intake_allowed'] or report['capacity']['ordinary_commands_remaining']<(4 if holding else 12) or report['capacity']['intents_remaining']<(1 if holding else 2):
-                raise ValueError('INSUFFICIENT_FORWARD_JOURNAL_CAPACITY')
-            self._policy=selected_policy
-            self._session=uuid.uuid4().hex[:16];self._tier=tier
-            self._prices.clear();self._guard=FeedGuard();self._stamp=None;self._last_rank=0
-            self._cycles=0;self._failures=0;self._error=None;self._observation_hash=None;self._stop.clear()
-            try:self._record('START','EXPERIMENTAL_MOMENTUM_PAPER_POLICY')
-            except (OSError,sqlite3.Error,ValueError):
-                self._stop.set();self._error='START_DIAGNOSTIC_STORAGE_FAILURE';raise
-            return self.status()
+                existing_positions=(report['execution_account']['account'] or {}).get('positions',{})
+                if not existing_positions:require_entry(tier,1)
+                if report['halted']:raise ValueError('EMERGENCY_HALT_ACTIVE')
+                if not report['execution_account']['initialized']:
+                    self.orders.initialize_account(load_settings()['paper_budget'])
+                    report=self.orders.recovery_report()
+                if not report['portfolio_reconciled']:
+                    self.orders.link_portfolio()
+                    report=self.orders.recovery_report()
+                if any(p!=PRODUCT for p in report['execution_account']['account']['positions']):
+                    raise ValueError('FORWARD_RUNNER_REQUIRES_BTC_ONLY_ACCOUNT')
+                if any(o['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') for o in report['orders']):
+                    raise ValueError('REVIEW_OUTSTANDING_PAPER_ORDERS_FIRST')
+                holding=bool(report['execution_account']['account']['positions'])
+                if not report['capacity']['lifecycle_intake_allowed'] or report['capacity']['ordinary_commands_remaining']<(4 if holding else 12) or report['capacity']['intents_remaining']<(1 if holding else 2):
+                    raise ValueError('INSUFFICIENT_FORWARD_JOURNAL_CAPACITY')
+                self._policy=selected_policy
+                self._session=uuid.uuid4().hex[:16];self._tier=tier
+                self._prices.clear();self._guard=FeedGuard();self._stamp=None;self._last_rank=0
+                self._cycles=0;self._failures=0;self._error=None;self._observation_hash=None;self._stop.clear()
+                try:self._record('START','EXPERIMENTAL_MOMENTUM_PAPER_POLICY')
+                except (OSError,sqlite3.Error,ValueError):
+                    self._stop.set();self._error='START_DIAGNOSTIC_STORAGE_FAILURE';raise
+                return self.status()
+            except BaseException:
+                self._stop.set();self._ownership.release();raise
+
+    def _release_stopped_ownership(self):
+        if self._stop.is_set() and self._ownership:
+            self._ownership.release()
 
     def start(self,tier,policy_id=POLICY['id']):
         with self._control_lock:
@@ -123,7 +136,7 @@ class PaperForwardRunner:
             self._thread=threading.Thread(target=self._run,daemon=True,name='nexus-paper-forward')
             try:self._thread.start()
             except RuntimeError:
-                self._stop.set();self._error='WORKER_START_FAILED';raise
+                self._stop.set();self._release_stopped_ownership();self._error='WORKER_START_FAILED';raise
             return self.status()
 
     def stop(self,reason='MANUAL_STOP'):
@@ -137,6 +150,9 @@ class PaperForwardRunner:
             if was_enabled and self._session:
                 try:self._record('STOP',reason)
                 except (OSError,sqlite3.Error,ValueError):self._error='STOP_DIAGNOSTIC_STORAGE_FAILURE'
+            if self._cycle_lock.acquire(blocking=False):
+                try:self._release_stopped_ownership()
+                finally:self._cycle_lock.release()
             return self.status()
 
     def _run(self):
@@ -148,6 +164,7 @@ class PaperForwardRunner:
                 try:self._record('PAUSED','UNHANDLED_WORKER_FAILURE',error_type=type(exc).__name__)
                 except (OSError,sqlite3.Error,ValueError):pass
             self._stop.wait(INTERVAL)
+        self._release_stopped_ownership()
 
     def _execute(self,*args):
         with self._execution_lock:return self._execute_locked(*args)
@@ -249,12 +266,14 @@ class PaperForwardRunner:
         except (OSError,sqlite3.Error,ValueError) as exc:
             self._error=type(exc).__name__;self._stop.set()
             return dict(decision='PAUSED',reason='FORWARD_STORAGE_OR_INTEGRITY_FAILURE')
-        finally:self._cycle_lock.release()
+        finally:
+            self._release_stopped_ownership()
+            self._cycle_lock.release()
 
     def status(self):
         with self._lock:
             return dict(mode='EXPERIMENTAL_PUBLIC_QUOTE_PAPER_FORWARD',enabled=not self._stop.is_set(),
-                        worker_alive=bool(self._thread and self._thread.is_alive()),session=self._session,tier=self._tier,
+                        worker_alive=bool(self._thread and self._thread.is_alive()),ownership_held=bool(self._ownership and self._ownership.held),session=self._session,tier=self._tier,
                         product=PRODUCT,interval_seconds=INTERVAL,entry_ranking_seconds=RANKING_INTERVAL,
                         cycles=self._cycles,consecutive_feed_failures=self._failures,last_error=self._error,last_event=self._last,
                         live_orders_enabled=False,broker_connected=False,strategy_validated=False,

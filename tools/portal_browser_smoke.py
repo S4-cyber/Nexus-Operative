@@ -4,6 +4,7 @@ import hashlib
 import importlib.metadata
 import json
 import os
+import time
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -77,6 +78,29 @@ def run(output,channel=None):
                     expect(page.locator('#tier-engagement button')).to_have_count(3)
                     page.locator('#forward-recovery').click()
                     expect(page.get_by_role('button',name='Cancel Pending Remainder')).to_have_count(1)
+                    # Display account fixtures without activating PORTAL, observation or order IO.
+                    now=time.time()
+                    fixture_points=[]
+                    for i in range(4):
+                        fixture_points.append(dict(at=now-18+i*6,complete=True,equity=str(1000+i*3),cash='800',pnl=str(i*3),initial='1000',account_revision=2,
+                            positions=[dict(product='BTC-USD',quantity='1',unrealized_pnl=str(i*5)),dict(product='ETH-USD',quantity='2',unrealized_pnl=str(-i*2))],missing_products=[]))
+                    matrix_fixture=dict(points=fixture_points,range_start=now-60,range_end=now,observations_in_range=4,downsampled=False,account_initialized=True,current_revision=2,
+                        adjustments=[dict(id=2,at=now,action='PAPER_BUY',product='BTC-USD',quantity='1',entry='100',cash_delta='-100')])
+                    page.evaluate("d=>{const section=document.getElementById('matrix-hangar');section.hidden=false;section.classList.add('open');section.setAttribute('aria-hidden','false');applyAccountHistory(d)}",matrix_fixture)
+                    expect(page.locator('#matrix-account-summary')).to_contain_text('1,009.00')
+                    page.locator('#matrix-fractal').click()
+                    expect(page.locator('#matrix-fractal')).to_have_attribute('aria-pressed','true')
+                    expect(page.locator('#matrix-account-title')).to_contain_text('FRACTAL')
+                    expect(page.locator('#matrix-account-legend')).to_contain_text('BTC-USD')
+                    expect(page.locator('#matrix-account-legend')).to_contain_text('ETH-USD')
+                    page.locator('#matrix-adjustments').select_option('2')
+                    expect(page.locator('#matrix-adjustment-detail')).to_contain_text('recorded quantity 1')
+                    page.locator('#matrix-account-chart').scroll_into_view_if_needed()
+                    page.screenshot(path=str(output/f'fractal-{width}x{height}.png'))
+                    page.locator('#matrix-singularity').click()
+                    expect(page.locator('#matrix-singularity')).to_have_attribute('aria-pressed','true')
+                    expect(page.locator('#matrix-account-title')).to_contain_text('SINGULARITY')
+                    page.screenshot(path=str(output/f'singularity-{width}x{height}.png'))
                     panel=page.locator('#control-help');body=page.locator('#control-help-text')
                     tested=0
                     for control in page.locator('button,input,select,textarea').all():
@@ -103,7 +127,7 @@ def run(output,channel=None):
                     page.screenshot(path=str(output/f'help-{width}x{height}.png'))
                     if writes:raise ValueError('HELP_BROWSER_INTERACTION_SENT_WRITE')
                     if errors or blocked:raise ValueError('HELP_BROWSER_PAGE_ERRORS: '+repr(errors+blocked))
-                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True))
+                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True))
                 except Exception as exc:
                     diagnostic=dict(viewport=dict(width=width,height=height),control=current_control,error=str(exc),page_errors=errors,blocked=blocked,
                                     events=page.evaluate('window.__helpEvents||[]'))

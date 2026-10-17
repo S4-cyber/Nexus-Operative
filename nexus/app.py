@@ -59,7 +59,7 @@ async def application_lifespan(application):
         await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
         await asyncio.to_thread(observer.stop)
 
-app = FastAPI(title="Nexus Operative", version="0.75.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.76.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -290,7 +290,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.75.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.76.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -634,6 +634,21 @@ def cancel_order_intent(client_order_id:str):
 @app.get("/api/markets")
 def market_catalog():
     return list_markets()
+
+@app.get("/api/matrix/account")
+def matrix_account_history(span:str="1d"):
+    from nexus.matrix_account import history
+    try:return history(span)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="MATRIX_STORAGE_UNAVAILABLE")
+
+@app.post("/api/matrix/account/observe")
+def matrix_account_observe():
+    if _paused or _halted:raise HTTPException(status_code=409,detail="PORTAL_MUST_BE_ACTIVE")
+    from nexus.matrix_account import capture
+    try:return capture()
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="MATRIX_STORAGE_UNAVAILABLE")
 
 @app.get("/api/matrix")
 def matrix():

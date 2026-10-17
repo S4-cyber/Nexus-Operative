@@ -18,8 +18,14 @@ input,select,textarea{background:#02170a;color:#d2ffe6;border:1px solid #277d4d;
 label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12px;margin:5px}input[type=number]{width:115px}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .metric{font-size:34px;font-weight:700;color:#94ffb9;margin:6px 0}.tiny{font:12px/1.5 Consolas,monospace;color:#92eeb4}.status{color:#6fff9f}
 #matrix-hangar{max-height:0;opacity:0;overflow:hidden;transition:max-height .55s ease,opacity .3s ease;border:1px solid transparent;border-radius:13px}
-#matrix-hangar.open{max-height:850px;opacity:1;border-color:#24884b;margin-bottom:15px}
+#matrix-hangar[hidden]{display:none}
+#matrix-hangar.open{max-height:none;opacity:1;border-color:#24884b;margin-bottom:15px}
 .matrix-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px;border-bottom:1px solid #1c703d;color:var(--green);font-size:12px;letter-spacing:.12em}
+.matrix-account{padding:14px;border-bottom:1px solid #206b43}.matrix-account h2{letter-spacing:.12em}
+.matrix-account button[aria-pressed="true"]{background:#553078;border-color:#df9dff;color:#fff}
+#matrix-account-chart{display:block;width:100%;height:270px;background:#010d07}
+#matrix-account-legend{display:flex;gap:12px;flex-wrap:wrap;font:12px/1.6 Consolas,monospace}
+#matrix-adjustments{width:min(100%,650px)}#matrix-account-summary{overflow-wrap:anywhere}
 #matrix-rain{width:100%;height:180px;display:block;background:#010802}
 #matrix-price-chart{display:block;width:100%;height:220px;background:#010d07;border-top:1px solid #185e34}
 #matrix-price-caption{padding:9px 14px;color:#9af5c1;font:12px/1.5 Consolas,monospace}
@@ -36,7 +42,16 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <body><main>
 <header><div class="brand">◈ NEXUS OPERATIVE</div><small>LOCAL DEVELOPMENT · PAPER RESEARCH ONLY · No bank, card or brokerage is connected</small></header>
 <section class="hero"><div class="label">Autonomous research command bridge</div><h1>PORTAL</h1><p class="sub">TERRESTRIAL // SOLAR // UNIVERSAL</p><button class="portal" id="activate" data-help="Start or pause the public market observer and research display. Pausing also stops the experimental paper runner; existing paper holdings stay recorded.">ACTIVATE PORTAL</button><button class="danger" id="halt" data-help="Stop paper automation and cancel outstanding simulated order remainders. Filled paper holdings are preserved. The halt stays active until you explicitly reset it.">EMERGENCY HALT</button><button id="reset-halt" hidden data-help="Clear the emergency halt while keeping PORTAL paused. This does not restart research or a paper session; review the reason for the halt first.">RESET HALT (Stay Paused)</button><p class="status" id="status">Connecting to local research engine…</p></section>
-<section id="matrix-hangar" aria-label="Synthetic trade telemetry" aria-hidden="true"><div class="matrix-head"><span>◈ MATRIX STREAM // TELEMETRY</span><span id="matrix-state">STANDBY</span></div><canvas id="matrix-rain" aria-hidden="true"></canvas><div id="matrix-price-caption" role="status">LIVE PUBLIC PRICE TRACKER / Read-only Coinbase quotes, no account connection. Activate PORTAL to begin sampling.</div><canvas id="matrix-price-chart" aria-label="Real-time public exchange price history line graph, collected while PORTAL is active" role="img"></canvas><div id="matrix-feed">PORTAL inactive. No live positions or brokerage orders.</div></section>
+<section id="matrix-hangar" hidden aria-label="Account Matrix and public telemetry" aria-hidden="true"><div class="matrix-head"><span>◈ MATRIX STREAM // TELEMETRY</span><span id="matrix-state">STANDBY</span></div><div class="matrix-account">
+<div class="actions" aria-label="Account graph mode"><button id="matrix-singularity" aria-pressed="true" aria-controls="matrix-account-chart" data-help="Show the whole local paper account as one value line: available cash plus estimated sale value of holdings. This is observed paper data, not a connected brokerage balance.">Singularity</button><button id="matrix-fractal" aria-pressed="false" aria-controls="matrix-account-chart" data-help="Show a separate colored unrealized gain or loss line for each paper holding. Buying, selling or changing its cost basis can change a line; these are not lifetime returns.">Fractal</button>
+<label>Time range <select id="matrix-range" data-help="Choose how much retained account history to display. Day and year windows are rolling; year to date begins January 1 UTC. Earlier history is not invented when tracking has just begun."><option value="1m">One minute</option><option value="1h">One hour</option><option value="1d" selected>One day</option><option value="1mo">One month (30 days)</option><option value="1y">One year (365 days)</option><option value="ytd">Year to date (UTC)</option><option value="all">All retained</option></select></label></div>
+<h2 id="matrix-account-title">SINGULARITY // Account movement</h2>
+<p class="sub" id="matrix-account-summary" role="status" aria-live="polite">Activate PORTAL to observe the local paper account. No historical values are manufactured.</p>
+<canvas id="matrix-account-chart" role="img" aria-label="Observed paper-account valuation history. The text below provides the latest values."></canvas><div id="matrix-account-legend"></div>
+<label for="matrix-adjustments">Position adjustments (latest 50 journal events)</label><select id="matrix-adjustments" data-help="Inspect recent recorded paper buys, sells and account initialization. Selecting an event shows its time, quantity and cash change; it never places, changes or cancels an order."><option value="">No recorded account adjustments</option></select>
+<p class="tiny" id="matrix-adjustment-detail" role="status">Select a recorded event to inspect it.</p>
+<p class="sub">Local paper account · estimated public bid less modeled exit fee · ~6 second observation while PORTAL is active · incomplete prices leave gaps · Fractal = unrealized P/L in USD. Only retained observations are shown; collection pauses at storage capacity. Decorative rain below is not position data.</p>
+</div><canvas id="matrix-rain" aria-hidden="true"></canvas><div id="matrix-price-caption" role="status">LIVE PUBLIC PRICE TRACKER / Read-only Coinbase quotes, no account connection. Activate PORTAL to begin sampling.</div><canvas id="matrix-price-chart" aria-label="Real-time public exchange price history line graph, collected while PORTAL is active" role="img"></canvas><div id="matrix-feed">PORTAL inactive. No live positions or brokerage orders.</div></section>
 <section class="card" aria-label="Read-only release roadmap"><div class="label">Project continuity // read-only</div><h2>Roadmap to 1.0</h2><p class="sub">Review milestones, remaining acceptance work and the next development steps. This reference is bundled with Nexus and cannot be edited from PORTAL.</p><button id="release-roadmap-load" aria-controls="release-roadmap-content" data-help="Show the saved plan for the 1.0 release, including completed work and remaining checks. Viewing it does not change settings.">View Release Roadmap</button><div id="release-roadmap-content" class="monitor tiny" role="status" aria-live="polite">Select View Release Roadmap to load the bundled project reference.</div></section>
 <section class="card" id="risk-tier-controls"><h2>Risk Tier Engagement</h2><div class="actions" id="tier-engagement"></div><p class="sub" id="tier-permission-status">All tiers default OFF.</p></section>
 <section class="grid" id="tiers"></section>
@@ -176,9 +191,10 @@ async function update(){
   byId('halt').disabled=halted;
   show('activate',portalActive?'PAUSE PORTAL':'ACTIVATE PORTAL');
   show('status',halted?'EMERGENCY HALT ACTIVE':portalActive?'RESEARCH ACTIVE · NO LIVE ORDERS':'PAPER RESEARCH PAUSED');
+  byId('matrix-hangar').hidden=!portalActive;
   byId('matrix-hangar').classList.toggle('open',portalActive);
   byId('matrix-hangar').setAttribute('aria-hidden',String(!portalActive));
-  show('matrix-state',portalActive?'SYNTHETIC / NO ORDERS':'STANDBY');
+  show('matrix-state',portalActive?'LOCAL PAPER + PUBLIC DATA / NO BROKER':'STANDBY');
   if(Date.now()-tierStudyAt>300000){
     tierStudyAt=Date.now();
     try{tierStudy=await api('/api/tiers/performance?product=BTC-USD')}
@@ -211,7 +227,7 @@ async function update(){
   }
  }catch(e){show('status','Local engine unavailable: '+e.message)}
 }
-byId('activate').onclick=async()=>{try{await api('/api/portal',{method:'POST',headers:jsonHeaders,body:JSON.stringify({enabled:!portalActive})});await update()}catch(e){show('status',e.message)}};
+byId('activate').onclick=async()=>{try{await api('/api/portal',{method:'POST',headers:jsonHeaders,body:JSON.stringify({enabled:!portalActive})});await update();if(portalActive)refreshAccountMatrix(true)}catch(e){show('status',e.message)}};
 byId('halt').onclick=async()=>{try{await api('/api/simulate/halt',{method:'POST'});await update()}catch(e){show('status',e.message)}};
 byId('reset-halt').onclick=async()=>{if(!window.confirm('Clear emergency halt? Research remains PAUSED. You must separately click ACTIVATE PORTAL to restart monitoring. No live trading is enabled.'))return;
  try{await api('/api/simulate/halt/reset',{method:'POST',headers:jsonHeaders,body:JSON.stringify({confirm_reset:true})});await update();show('status','EMERGENCY HALT RESET / STILL PAUSED / Press ACTIVATE PORTAL when ready.');}
@@ -437,6 +453,7 @@ byId('release-roadmap-load').onclick=async()=>{
  try{const d=await api('/api/roadmap');
  const lines=['NEXUS OPERATIVE / '+d.revision+' / READ ONLY','Branch: '+d.branch,''];
  for(const m of d.milestones){lines.push(m.id+' / '+m.title+' / '+m.status,'Evidence: '+m.evidence,'Remaining: '+m.remaining,'');}
+ for(const goal of d.strategic_goals||[]){lines.push(goal.id+' / '+goal.title+' / '+goal.status,goal.goal,...(goal.cost_preference?['Cost: '+goal.cost_preference,'Acceptance: '+goal.acceptance]:[]),'');}
  lines.push('NEXT STEPS',...d.next_steps.map((step,i)=>(i+1)+'. '+step),'',d.supporting_track,'',d.speed_target,'',d.resume);
  show('release-roadmap-content',lines.join('\n'));
  }catch(e){show('release-roadmap-content','Roadmap unavailable: '+e.message)}
@@ -457,6 +474,61 @@ byId('advisorybenchmark').onclick=async()=>{try{const d=await api('/api/paper/ai
 byId('modeldiagnostic').onclick=async()=>{try{const d=await api('/api/paper/model-council',{method:'POST',headers:jsonHeaders,body:JSON.stringify({test:'fixture'})});show('modelreadout',d.specialists.length+' fixture roles / all abstained '+d.all_abstained+' / NO PROVIDER / '+d.governor)}catch(e){show('modelreadout',e.message)}};
 byId('auditdiagnostic').onclick=async()=>{try{const d=await api('/api/paper/evidence-audit',{method:'POST',headers:jsonHeaders,body:JSON.stringify({symbol:'BTC-USD',data_source:'coinbase_exchange_public',data_verified:true,history_observations:100,out_of_sample_trades:30,conservative_edge_bps:50,equity:10000,proposed_notional:10})});show('auditreadout',d.decision+' / '+d.reasons.join(', '))}catch(e){show('auditreadout',e.message)}};
 byId('latencydiagnostic').onclick=async()=>{try{const d=await api('/api/latency');show('latencyreadout','Local p95 '+(d.p95_ms===null?'N/A':d.p95_ms+' ms')+' / Samples '+d.observations+' / EXCHANGE NOT MEASURED')}catch(e){show('latencyreadout',e.message)}};
+// BEGIN ACCOUNT MATRIX
+let accountMode='singularity',accountHistory=null,accountBusy=false,accountRequest=0;
+const accountCanvas=byId('matrix-account-chart'),accountContext=accountCanvas.getContext('2d');
+const matrixColors=['#55f99d','#db9aff','#ffcf70','#7fceff'];
+function matrixMoney(value){return Number(value).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function renderAccountMatrix(){
+ const width=Math.max(240,Math.floor(accountCanvas.clientWidth||600)),height=270,dpr=Math.min(window.devicePixelRatio||1,2);
+ accountCanvas.width=width*dpr;accountCanvas.height=height*dpr;accountContext.setTransform(dpr,0,0,dpr,0,0);
+ const c=accountContext;c.fillStyle='#010d07';c.fillRect(0,0,width,height);c.font='12px Consolas,monospace';
+ const history=accountHistory,points=history?history.points:[],fractal=accountMode==='fractal';
+ const products=[...new Set(points.flatMap(p=>p.positions.map(x=>x.product)))].sort();
+ const series=fractal?products.map((product,i)=>({name:product,color:matrixColors[i%matrixColors.length],values:points.map(p=>{const x=p.positions.find(x=>x.product===product);return x?Number(x.unrealized_pnl):null})})):[{name:'Total estimated equity',color:matrixColors[0],values:points.map(p=>p.complete?Number(p.equity):null)}];
+ const legend=byId('matrix-account-legend');legend.replaceChildren();
+ for(const line of series){const item=document.createElement('span');item.style.color=line.color;item.textContent=line.name;legend.append(item)}
+ show('matrix-account-title',fractal?'FRACTAL // Individual holdings':'SINGULARITY // Account movement');
+ byId('matrix-singularity').setAttribute('aria-pressed',String(!fractal));byId('matrix-fractal').setAttribute('aria-pressed',String(fractal));
+ const values=series.flatMap(s=>s.values.filter(v=>v!==null&&Number.isFinite(v)));
+ if(!values.length){c.fillStyle='#b4c8bc';c.fillText(fractal?'No marked positions in this range':'No complete account observations yet',12,100);return;}
+ const min=Math.min(...values),max=Math.max(...values),pad=Math.max((max-min)*.12,Math.abs(max)*.00001,.01),low=min-pad,high=max+pad;
+ const left=72,right=width-12,top=24,bottom=228,first=history.range_start||points[0].at,last=history.range_end;
+ const x=at=>left+(at-first)/Math.max(1,last-first)*(right-left),y=v=>top+(high-v)/(high-low)*(bottom-top);
+ c.strokeStyle='#1d4933';c.fillStyle='#a7c8b2';
+ for(let i=0;i<4;i++){const v=low+(high-low)*i/3,py=y(v);c.beginPath();c.moveTo(left,py);c.lineTo(right,py);c.stroke();c.fillText(v.toFixed(2),2,py+4)}
+ if(low<0&&high>0){c.strokeStyle='#789580';c.beginPath();c.moveTo(left,y(0));c.lineTo(right,y(0));c.stroke()}
+ for(const line of series){c.strokeStyle=line.color;c.fillStyle=line.color;c.lineWidth=2;let previous=null;
+  line.values.forEach((v,i)=>{if(v===null||!Number.isFinite(v)){previous=null;return;}const point=points[i],px=x(point.at),py=y(v);
+   // Downsampling and observation gaps never become a fabricated continuous path.
+   if(previous&&!history.downsampled&&point.at-previous.at<=15&&point.at>previous.at){c.beginPath();c.moveTo(previous.x,previous.y);c.lineTo(px,py);c.stroke()}
+   c.beginPath();c.arc(px,py,2.5,0,Math.PI*2);c.fill();previous={at:point.at,x:px,y:py};});}
+ c.fillStyle='#b4c8bc';c.fillText('USD',2,14);const format=t=>new Date(t*1000).toLocaleString();
+ c.fillText(format(first),6,252);const endLabel=format(last);c.fillText(endLabel,Math.max(6,width-c.measureText(endLabel).width-6),267);
+}
+function applyAccountHistory(data){
+ accountHistory=data;const points=data.points,last=points[points.length-1];
+ let status=!data.account_initialized?'Paper account is not initialized.':!last?'No observations in this range. Tracking begins while PORTAL is active.':last.complete?'Estimated equity $'+matrixMoney(last.equity)+' / cash $'+matrixMoney(last.cash)+' / net change from initial $'+matrixMoney(last.pnl):'Incomplete valuation: missing fresh marks for '+last.missing_products.join(', ');
+ if(last){status+=' / observed '+new Date(last.at*1000).toLocaleString();if(Date.now()/1000-last.at>15)status+=' / STALE';if(last.account_revision!==data.current_revision)status+=' / account changed since this observation';for(const p of last.positions)status+=' / '+p.product+' qty '+p.quantity+' / unrealized $'+matrixMoney(p.unrealized_pnl)}
+ status+=' / '+data.observations_in_range+' observed samples'+(data.downsampled?' (spaced dots; detail reduced)':'')+' / source: local paper; not independently reconciled';show('matrix-account-summary',status);
+ const select=byId('matrix-adjustments'),selected=select.value;select.replaceChildren();
+ const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=data.adjustments.length?'Select a recorded adjustment':'No recorded account adjustments';select.append(placeholder);
+ for(const a of data.adjustments){const o=document.createElement('option');o.value=String(a.id);o.textContent='#'+a.id+' / '+new Date(a.at*1000).toLocaleTimeString()+' / '+a.action+' / '+(a.product||'account')+' / cash $'+matrixMoney(a.cash_delta);select.append(o)}
+ if(data.adjustments.some(a=>String(a.id)===selected))select.value=selected;
+ showMatrixAdjustment();renderAccountMatrix();
+}
+function showMatrixAdjustment(){const a=accountHistory&&accountHistory.adjustments.find(a=>String(a.id)===byId('matrix-adjustments').value);show('matrix-adjustment-detail',a?new Date(a.at*1000).toLocaleString()+' / '+a.action+' '+a.product+' / recorded quantity '+(a.quantity||'unavailable')+' / recorded basis $'+(a.entry||'unavailable')+' / cash change $'+matrixMoney(a.cash_delta):'Select a recorded event to inspect it. No order is sent.')}
+async function refreshAccountMatrix(observe=false){
+ if(!portalActive||accountBusy)return;accountBusy=true;const request=++accountRequest,span=byId('matrix-range').value;
+ try{let capture=null;if(observe)capture=await api('/api/matrix/account/observe',{method:'POST'});const data=await api('/api/matrix/account?span='+encodeURIComponent(span));if(portalActive&&request===accountRequest&&span===byId('matrix-range').value){applyAccountHistory(data);if(capture&&!capture.recorded&&!['OBSERVATION_INTERVAL_OR_CLOCK','PAPER_ACCOUNT_UNINITIALIZED'].includes(capture.reason))show('matrix-account-summary',byId('matrix-account-summary').textContent+' / observation paused: '+capture.reason)}}
+ catch(e){show('matrix-account-summary','Account observation unavailable: '+e.message+' / prior graph is historical, not a current balance')}
+ finally{accountBusy=false;if(portalActive&&span!==byId('matrix-range').value)refreshAccountMatrix(false)}
+}
+byId('matrix-singularity').onclick=()=>{accountMode='singularity';renderAccountMatrix()};
+byId('matrix-fractal').onclick=()=>{accountMode='fractal';renderAccountMatrix()};
+byId('matrix-range').onchange=()=>refreshAccountMatrix(false);byId('matrix-adjustments').onchange=showMatrixAdjustment;
+window.addEventListener('resize',renderAccountMatrix);renderAccountMatrix();
+// END ACCOUNT MATRIX
 // Read-only, observed public Coinbase ticker history; never a synthetic P/L curve.
 const priceCanvas=byId('matrix-price-chart'),priceContext=priceCanvas.getContext('2d');
 let pricePoints=[],chartPair='',quoteBusy=false,lastExchangeStamp='';
@@ -495,7 +567,7 @@ async function sampleMatrixPrice(){
  }catch(e){show('matrix-price-caption','PUBLIC PRICE TRACKER DISCONNECTED / '+pair+' / '+e.message+' / No simulated replacement data')}
  finally{quoteBusy=false}
 }
-byId('publicpair').addEventListener('change',()=>{chartPair='';pricePoints=[];lastExchangeStamp='';redrawMatrixPrice();if(portalActive)sampleMatrixPrice()});
+byId('publicpair').addEventListener('change',()=>{chartPair='';pricePoints=[];lastExchangeStamp='';redrawMatrixPrice();if(portalActive){sampleMatrixPrice();refreshAccountMatrix(true)}});
 window.addEventListener('resize',redrawMatrixPrice);
 redrawMatrixPrice();
 const matrix=byId('matrix-rain'),ctx=matrix.getContext('2d');let drops=[];
@@ -503,8 +575,8 @@ function resizeRain(){matrix.width=Math.max(320,matrix.clientWidth);matrix.heigh
 resizeRain();window.addEventListener('resize',resizeRain);
 function renderRain(){if(!portalActive||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;ctx.fillStyle='rgba(1,8,2,.19)';ctx.fillRect(0,0,matrix.width,matrix.height);ctx.fillStyle='#4eff80';ctx.font='12px Consolas,monospace';drops.forEach((y,i)=>{ctx.fillText('01NEXUS'[Math.floor(Math.random()*7)],i*14,y*14);drops[i]=y>16?0:y+.4})}
 async function matrixUpdate(){if(!portalActive)return;try{const d=await api('/api/matrix');const root=byId('matrix-feed');for(const e of d.events){const line=document.createElement('div');line.textContent=new Date().toLocaleTimeString()+' / '+e.tier+' / '+e.message+' / '+e.outcome+' / SYNTHETIC';root.prepend(line)}while(root.children.length>24)root.lastChild.remove()}catch(e){show('matrix-feed','Telemetry unavailable: '+e.message)}}
-loadMarkets();loadBranches();loadPaper();refreshPortfolio();refreshSentinel();update().then(()=>{if(portalActive)sampleMatrixPrice()});
-setInterval(()=>{if(portalActive){cycle++;update();matrixUpdate();sampleMatrixPrice()}},6000);
+loadMarkets();loadBranches();loadPaper();refreshPortfolio();refreshSentinel();update().then(()=>{if(portalActive){sampleMatrixPrice();refreshAccountMatrix(true)}});
+setInterval(()=>{if(portalActive){cycle++;update();matrixUpdate();sampleMatrixPrice();refreshAccountMatrix(true)}},6000);
 setInterval(refreshSentinel,12000);setInterval(renderRain,90);
 </script></body></html>
 

@@ -163,3 +163,7 @@ Review while a session is running is explicitly provisional: session evidence an
 The public ticker adapter now timestamps actual receipt after the default HTTP transport returns, while preserving deterministic caller-supplied times and separate exchange-time freshness checks. Tests cover delayed transport receipt, quote/fill agreement, injected-source labeling, payload edits, tail deletion, head corruption, evidence-cap admission, failed writes, extra-field exclusion, counter mismatch and review API boundaries. No sustained real-feed session was run for this batch.
 
 Next: sustained real-source forward evidence, independent attestation/strategy review and broader scheduling/physical history offload. These remain acceptance work; M2/M6/M7 are not complete.
+
+## v0.61 — portable forward review and operator continuity
+
+Added a read-only downloadable session review summary with explicit active/interrupted-session and injected-provenance blockers, deterministic SHA256 integrity envelope and offline verification CLI. FORWARD_RUNBOOK.md documents start/monitor/stop, policy fingerprints, authoritative accounting, stopped backups and recovery evidence. Summaries do not replace raw databases or independently attest public sources. Both v0.60 Windows workflows passed before this batch. Sustained real-feed validation, independent review and clean-machine acceptance remain open; no session or broker connection was started for this change.

@@ -60,7 +60,7 @@ async def application_lifespan(application):
         await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
         await asyncio.to_thread(observer.stop)
 
-app = FastAPI(title="Nexus Operative", version="0.81.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.82.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -296,7 +296,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.81.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.82.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -652,9 +652,11 @@ def matrix_hub_status():
 @app.post("/api/matrix/hub/prepare")
 def matrix_hub_prepare(product:str="BTC-USD",granularity:int=3600,limit:int=1000):
     from nexus.hub_prediction import prepare
+    if not _hub_build_lock.acquire(False):raise HTTPException(status_code=409,detail='HUB_BUILD_ALREADY_RUNNING')
     try:return prepare(product,granularity,limit)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
     except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="HUB_STORAGE_UNAVAILABLE")
+    finally:_hub_build_lock.release()
 
 @app.post("/api/matrix/hub/build")
 def matrix_hub_build(product:str="BTC-USD",granularity:int=3600,limit:int=1000):

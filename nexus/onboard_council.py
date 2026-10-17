@@ -6,13 +6,13 @@ The caller must supply a dataset already validated by hub_prediction.train.
 import math
 import statistics
 
-ENGINE_VERSION = 'nexus.onboard-council.v1'
+ENGINE_VERSION = 'nexus.onboard-council.v2'
 # Fixed before evaluating the tail. Different feature views, same ridge family/data;
 # these are correlated experiments, not independent sources or three LLMs.
 VIEWS = (('trend', (0, 1, 2)), ('activity', (3, 4)), ('combined', (0, 1, 2, 3, 4)))
 
 
-def review(learners, provenance_verified=False):
+def review(learners, provenance_verified=False, walk_forward=None):
     """Recompute verdicts from measurements; never trust a learner's own vote."""
     checked = []
     for item in learners:
@@ -31,6 +31,17 @@ def review(learners, provenance_verified=False):
                     or not values[0] < min(values[1:])):
                 reasons.append('BASELINE_NOT_BEATEN_IN_EVERY_BLOCK')
                 break
+        if walk_forward is not None:
+            parts=[];folds=walk_forward.get('folds',[]);coverage=len(folds)==3
+            for fold in folds:
+                matches=[x for x in fold.get('learners',[]) if x.get('role')==item['role']]
+                scenarios=[s for x in matches for s in x.get('cost_scenarios',[]) if s.get('roundtrip_cost_bps')==25]
+                if len(matches)!=1 or len(scenarios)!=1:coverage=False
+                else:parts.append(scenarios[0])
+            if not coverage or len(parts)!=3 or any(s.get('trades',0)<5 for s in parts):
+                reasons.append('INSUFFICIENT_DELAYED_FILL_TRADES')
+            if not coverage or len(parts)!=3 or any(type(s.get('net_return_pct')) not in (int,float) or not math.isfinite(s['net_return_pct']) or s['net_return_pct']<=0 for s in parts):
+                reasons.append('COST_ADJUSTED_FOLDS_NOT_CONSISTENT')
         checked.append(dict(role=item['role'], kind='TRAINED_NUMERICAL_MODEL',
                             verdict='ABSTAIN' if reasons else 'FURTHER_RESEARCH', reasons=sorted(set(reasons)),
                             forecast_return_bps=forecast))
@@ -43,16 +54,16 @@ def review(learners, provenance_verified=False):
                 dict(role='provenance_execution_review', kind='DETERMINISTIC_REVIEWER', verdict='ABSTAIN',
                      reasons=['NO_EXECUTABLE_FILL_OR_ACCOUNT_EVIDENCE'] + ([] if provenance_verified else ['SOURCE_NOT_INDEPENDENTLY_VERIFIED']))]
     return dict(specialists=checked, disagreement=disagreement, eligible_learners=len(eligible),
-                all_abstained=not eligible, governor='NO_ORDER_AUTHORITY',
+                all_abstained=not eligible, walk_forward_review_applied=walk_forward is not None, governor='NO_ORDER_AUTHORITY',
                 paper_orders_enabled=False, live_orders_enabled=False)
 
 
-def train_validated(snapshot):
+def train_validated(snapshot, raw_features=None, walk_forward=None):
     from nexus.hub_prediction import features, fit, predict
     rows = snapshot['records']; n = len(rows); split = int(n * .7); horizon = 3
     closes = [float(row['close']) for row in rows]; volumes = [float(row['volume']) for row in rows]
     training = list(range(60, split - horizon)); testing = list(range(split, n - horizon))
-    raw = {t: features(closes, volumes, t) for t in range(60, n)}
+    raw = raw_features if raw_features is not None else {t: features(closes, volumes, t) for t in range(60, n)}
     targets = {t: math.log(closes[t + horizon] / closes[t]) for t in training + testing}
     learners = []
     for role, columns in VIEWS:
@@ -71,6 +82,6 @@ def train_validated(snapshot):
             first_holdout_feature_at=rows[testing[0]]['starts_at']+snapshot['granularity'],
             validation_blocks=blocks, forecast_return_bps=math.expm1(value)*10000 if abs(value)<=.5 else None))
     return dict(engine_version=ENGINE_VERSION, mode='BUILT_IN_TRAINED_RESEARCH_COUNCIL',
-                provider_connected=False, local_llm_installed=False, learners=learners, **review(learners),
+                provider_connected=False, local_llm_installed=False, learners=learners, **review(learners,walk_forward=walk_forward),
                 refresh_policy='Explicit stored-data preparation; reuse unchanged data and engine. No background scheduler or code/weight downloads.',
-                limitations='Correlated ridge feature specialists, not GPT-class language models or independent data sources. Three fixed tail blocks are diagnostic checks, not walk-forward validation, calibrated confidence or evidence of profit.')
+                limitations='Correlated ridge feature specialists, not GPT-class language models or independent data sources. Tail-block errors and separate expanding-window cost checks remain retrospective diagnostics, not calibrated confidence or evidence of profit.')

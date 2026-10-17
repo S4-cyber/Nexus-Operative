@@ -7,6 +7,7 @@ import statistics
 import time
 from nexus import market_hub as hub
 from nexus.onboard_council import ENGINE_VERSION, train_validated
+from nexus.hub_validation import evaluate_validated
 
 SCHEMA='nexus.hub-momentum-model.v1'
 FEATURES=('momentum_5','momentum_20','momentum_60','volatility_20','volume_surprise_20')
@@ -86,10 +87,11 @@ def train(snapshot):
             training_residual_p90_log_bps=residuals[min(len(residuals)-1,int(.9*len(residuals)))]*10000,
             forecast_return_bps=math.expm1(forecast)*10000 if in_range else None,
             forecast_status='RESEARCH_ESTIMATE' if in_range else 'EXTRAPOLATION_ABSTAIN',calibrated_probability=False))
+    validation=evaluate_validated(snapshot,x)
     return dict(schema=SCHEMA,implementation='PURGED_CHRONOLOGICAL_MULTI_HORIZON_RIDGE_BASELINE',
         dataset_content_sha256=hub.digest(hub.encoded(snapshot)),dataset_generation=snapshot['generation'],product=product,granularity=g,bars=n,
         feature_names=list(FEATURES),feature_lookback_bars=60,training_fraction=.7,
-        onboard_council=train_validated(snapshot),latest_features=dict(zip(FEATURES,x[n-1])),forecast_as_of=rows[-1]['starts_at']+g,models=models,
+        onboard_council=train_validated(snapshot,x,validation),walk_forward=validation,latest_features=dict(zip(FEATURES,x[n-1])),forecast_as_of=rows[-1]['starts_at']+g,models=models,
         source_verified=False,historical_point_in_time_verified=False,live_orders_enabled=False,paper_orders_enabled=False,
         limitations='Retrospective single-source research, not a proven powerful predictor or profit guarantee. Training-only scalers and purged labels; fixed held-out chronological tail, no random split. Baselines are comparisons, not model selection. Residual bands are training diagnostics, not calibrated intervals. No spread/depth/executable-fill or independent strategy acceptance is established.')
 

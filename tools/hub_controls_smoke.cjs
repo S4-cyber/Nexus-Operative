@@ -4,17 +4,18 @@ const html=fs.readFileSync(require('node:path').join(__dirname,'../dashboard/por
 const source=html.split('// BEGIN HUB CONTROLS')[1].split('// END HUB CONTROLS')[0];
 const elements={},calls=[];function byId(id){return elements[id]||(elements[id]={value:'',disabled:false,textContent:''})}
 byId('hub-product').value='BTC-USD';byId('hub-interval').value='3600';byId('hub-window').value='1000';
-let resolveRequest;
-const sandbox={byId,show:(id,s)=>byId(id).textContent=String(s),encodeURIComponent,Date,Math,api:async(path,options)=>{calls.push({path,options});return new Promise(resolve=>{resolveRequest=resolve})}};
+let resolveRequest,rejectRequest;
+const sandbox={byId,show:(id,s)=>byId(id).textContent=String(s),encodeURIComponent,Date,Math,api:async(path,options)=>{calls.push({path,options});return new Promise((resolve,reject)=>{resolveRequest=resolve;rejectRequest=reject})}};
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 (async()=>{
  const work=sandbox.hubResearch('build');assert.equal(calls.length,1);assert.equal(byId('hub-product').disabled,true);
  await sandbox.hubResearch('build');assert.equal(calls.length,1);
  assert.equal(calls[0].path,'/api/matrix/hub/build?product=BTC-USD&granularity=3600&limit=1000');assert.equal(calls[0].options.method,'POST');
- resolveRequest({dataset:{content_sha256:'dataset'},model_artifact:{content_sha256:'model'},model_reused:false,model:{product:'BTC-USD',granularity:3600,bars:600,forecast_as_of:1000,models:[{horizon_bars:1,horizon_seconds:3600,forecast_return_bps:1,holdout_mae_log_bps:2,zero_change_baseline_mae_log_bps:3}]},council:{engine_version:'nexus.onboard-council.v1',eligible_learners:0,disagreement:false,specialists:[{role:'trend',verdict:'ABSTAIN',reasons:['BASELINE_NOT_BEATEN_IN_EVERY_BLOCK']}]}});
- await work;assert.equal(byId('hub-product').disabled,false);assert.match(byId('hub-readout').textContent,/BTC-USD/);assert.match(byId('hub-readout').textContent,/0 of 3 learners/);assert.match(byId('hub-readout').textContent,/no order authority/);
+ resolveRequest({dataset:{content_sha256:'dataset'},model_artifact:{content_sha256:'model'},model_reused:false,model:{product:'BTC-USD',granularity:3600,bars:600,forecast_as_of:1000,walk_forward:{folds:[{},{},{}],costs_bps:[10,25,50],decision:'FORWARD_EVIDENCE_REQUIRED',summary:[{role:'trend',cost_scenarios:[{roundtrip_cost_bps:25,trades:0,net_return_pct:0,max_drawdown_pct:0,positive_net_folds:0,folds_with_trades:0}]}]},models:[{horizon_bars:1,horizon_seconds:3600,forecast_return_bps:1,holdout_mae_log_bps:2,zero_change_baseline_mae_log_bps:3}]},council:{engine_version:'nexus.onboard-council.v2',eligible_learners:0,disagreement:false,specialists:[{role:'trend',verdict:'ABSTAIN',reasons:['BASELINE_NOT_BEATEN_IN_EVERY_BLOCK']}]}});
+ await work;assert.equal(byId('hub-product').disabled,false);assert.match(byId('hub-readout').textContent,/BTC-USD/);assert.match(byId('hub-readout').textContent,/0 of 3 learners/);assert.match(byId('hub-readout').textContent,/no order authority/);assert.match(byId('hub-readout').textContent,/3 expanding training windows/);assert.match(byId('hub-readout').textContent,/NO TRADES/);assert.match(byId('hub-readout').textContent,/positive net folds 0\/3/);
  const read=byId('hub-signal').onclick();assert.equal(calls[1].options,undefined);assert.ok(calls[1].path.startsWith('/api/matrix/hub/signal?'));
  resolveRequest({decision:'ABSTAIN_STALE_OR_FUTURE_DATA',model_content_sha256:'model',forecast_as_of:1000,age_seconds:999999,forecasts:[]});await read;
  assert.match(byId('hub-readout').textContent,/ABSTAIN_STALE/);
+ const busy=sandbox.hubResearch('prepare');rejectRequest(Error('HUB_BUILD_ALREADY_RUNNING'));await busy;assert.match(byId('hub-readout').textContent,/already running.*Wait/);assert.equal(byId('hub-prepare').disabled,false);
  console.log('Hub controls: explicit bounded build, duplicate-click guard, selection freeze, research-only council readout and read-only cached signal passed.');
 })().catch(e=>{console.error(e);process.exitCode=1});

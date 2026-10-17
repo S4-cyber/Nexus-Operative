@@ -49,3 +49,43 @@ def test_benchmark_api_is_offline_and_visible():
     html=client.get("/portal").text
     assert 'id="decision-benchmark"' in html
     assert "Does NOT measure exchange execution" in html
+
+
+
+def test_retained_ids_are_bounded_without_silent_eviction():
+    lane=BoundedDecisionLane(clock=lambda:10,queue_capacity=1,event_capacity=2)
+    for seq in (1,2):
+        assert lane.offer(seq,10,'BTC-USD','BUY',10)=='QUEUED'
+        assert lane.decide_one()=='RESEARCH_SIGNAL_ACCEPTED_NO_ORDER'
+    assert lane.offer(3,10,'BTC-USD','BUY',10)=='EVENT_RETENTION_FULL'
+    assert lane.offer(1,10,'BTC-USD','BUY',10)=='DUPLICATE'
+    assert lane.snapshot()['retained_event_ids']==lane.snapshot()['event_retention_capacity']==2
+    assert not lane.snapshot()['automatic_id_deletion'] and not lane.queue
+    lane.halt()
+    assert lane.snapshot()['retained_event_ids']==2
+
+
+@pytest.mark.parametrize('bad',[float('nan'),float('inf'),float('-inf'),True,'10',None])
+def test_invalid_clock_never_accepts_research_signal(bad):
+    lane=BoundedDecisionLane(clock=lambda:bad)
+    lane.offer(1,10,'BTC-USD','BUY',10)
+    assert lane.decide_one()=='INVALID_CLOCK'
+    assert lane.metrics['accepted']==0 and lane.metrics['invalid_clock']==1
+    assert lane.offer(1,10,'BTC-USD','BUY',10)=='DUPLICATE'
+
+
+@pytest.mark.parametrize('capacity',[0,-1,3001,True,1.5])
+def test_event_retention_configuration_is_bounded(capacity):
+    with pytest.raises(ValueError,match='INVALID_EVENT_RETENTION_CAPACITY'):
+        BoundedDecisionLane(event_capacity=capacity)
+
+
+def test_overflow_does_not_consume_retained_id_and_snapshot_is_defensive():
+    lane=BoundedDecisionLane(clock=lambda:10,queue_capacity=1,event_capacity=2)
+    lane.offer(1,10,'BTC-USD','BUY',10)
+    assert lane.offer(2,10,'BTC-USD','BUY',10)=='QUEUE_FULL'
+    assert lane.snapshot()['retained_event_ids']==1
+    snapshot=lane.snapshot();snapshot['metrics']['accepted']=999
+    assert lane.metrics['accepted']==0
+    lane.decide_one()
+    assert lane.offer(2,10,'BTC-USD','BUY',10)=='QUEUED'

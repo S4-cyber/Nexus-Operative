@@ -14,17 +14,25 @@ MAX_AGE_MS=250
 MAX_EVENTS=3000
 MAX_NOTIONAL=Decimal("200")
 
+def finite_clock(value):
+    try:return type(value) in (int,float) and math.isfinite(value)
+    except OverflowError:return False
+
+
 class BoundedDecisionLane:
-    def __init__(self,clock=time.monotonic,queue_capacity=MAX_QUEUE):
+    def __init__(self,clock=time.monotonic,queue_capacity=MAX_QUEUE,event_capacity=MAX_EVENTS):
         if type(queue_capacity)!=int or not 1<=queue_capacity<=MAX_QUEUE:
             raise ValueError("INVALID_QUEUE_CAPACITY")
+        if type(event_capacity) is not int or not 1<=event_capacity<=MAX_EVENTS:
+            raise ValueError("INVALID_EVENT_RETENTION_CAPACITY")
         self.clock=clock
         self.capacity=queue_capacity
+        self.event_capacity=event_capacity
         self.queue=deque()
         self.seen=set()
         self.halted=False
         self.metrics={"queued":0,"accepted":0,"rejected":0,"overflow":0,
-                      "expired":0,"duplicates":0,"processed":0}
+                      "expired":0,"duplicates":0,"processed":0,"retention_full":0,"invalid_clock":0}
 
     def offer(self,sequence,created_at,product,side,notional):
         if self.halted:return "HALTED"
@@ -32,10 +40,13 @@ class BoundedDecisionLane:
         if sequence in self.seen:
             self.metrics["duplicates"]+=1
             return "DUPLICATE"
+        if len(self.seen)>=self.event_capacity:
+            self.metrics["retention_full"]+=1
+            return "EVENT_RETENTION_FULL"
         if len(self.queue)>=self.capacity:
             self.metrics["overflow"]+=1
             return "QUEUE_FULL"
-        if type(created_at) not in (float,int) or not math.isfinite(created_at):
+        if not finite_clock(created_at):
             raise ValueError("INVALID_TIMESTAMP")
         self.seen.add(sequence)
         self.queue.append((sequence,created_at,product,side,notional))
@@ -47,8 +58,13 @@ class BoundedDecisionLane:
         if not self.queue:return "EMPTY"
         seq,created,product,side,notional=self.queue.popleft()
         self.metrics["processed"]+=1
-        delta=self.clock()-created
-        if delta<0 or delta*1000>MAX_AGE_MS:
+        now=self.clock()
+        if not finite_clock(now):
+            self.metrics["invalid_clock"]+=1
+            self.metrics["rejected"]+=1
+            return "INVALID_CLOCK"
+        delta=now-created
+        if not math.isfinite(delta) or delta<0 or delta*1000>MAX_AGE_MS:
             self.metrics["expired"]+=1
             self.metrics["rejected"]+=1
             return "EXPIRED"
@@ -65,6 +81,12 @@ class BoundedDecisionLane:
         # Event acceptance is NOT permission to create an order or trade.
         self.metrics["accepted"]+=1
         return "RESEARCH_SIGNAL_ACCEPTED_NO_ORDER"
+
+    def snapshot(self):
+        return dict(read_only=True,queue_depth=len(self.queue),queue_capacity=self.capacity,
+                    retained_event_ids=len(self.seen),event_retention_capacity=self.event_capacity,
+                    metrics=dict(self.metrics),halted=self.halted,automatic_id_deletion=False,
+                    orders_created=False,live_orders_enabled=False)
 
     def halt(self):
         self.halted=True
@@ -94,7 +116,8 @@ def benchmark(count=300,clock=time.perf_counter):
         "p50_ms":pct(.5),"p95_ms":pct(.95),"p99_ms":pct(.99),
         "measurement_duration_seconds":round(elapsed,5),
         "target_met_in_this_synthetic_run":count/elapsed>=TARGET_DECISIONS_PER_SECOND,
-        "results":outcomes,"queue_capacity":lane.capacity,
+        "results":outcomes,"queue_capacity":lane.capacity,"retention":lane.snapshot(),
         "broker_orders_submitted":0,"broker_fills_confirmed":0,
         "live_orders_enabled":False,"paper_orders_created":False,
         "limitations":"Single-process synthetic CPU benchmark only. Does NOT measure event stream ingest, network, broker acknowledgments, actual fills, sustained load, or market profitability."}
+

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.70.0'
+REVISION = '0.70.1'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -21,7 +21,7 @@ class Milestone:
 MILESTONES = (
     Milestone('M1','Windows packaging and recovery','PARTIAL','Windows test, EXE startup and installer workflows; durable order recovery; installed-process/reinstall/uninstall smoke and distribution checksum tooling; verified offline backup/new-directory restore tooling and fresh-process linked-ledger/quote-evidence recovery drill and installed-API restored-data smoke tooling with pinned prior-version fixture support.','Installed-process/reinstall/uninstall CI passed at v0.62; record clean-machine native-window and cross-version upgrade/recovery acceptance.'),
     Milestone('M2','Market data and provenance','PARTIAL','Public observation, timestamp/gap checks, historical admission and source diagnostics.','Independent provenance review; missing/revised/conflicting data and outage evidence.'),
-    Milestone('M3','Decision speed and risk authority','PARTIAL','Bounded local decision queue; individual Terrestrial/Solar/Universal entry permissions.','Measure full durable path under bursts; verify expiry, overload and permissions throughout autonomy.'),
+    Milestone('M3','Decision speed and risk authority','PARTIAL','Bounded local research decision queue and retained-ID limits with invalid-clock rejection; individual Terrestrial/Solar/Universal entry permissions.','Measure full durable path under bursts; verify expiry, overload and permissions throughout autonomy.'),
     Milestone('M4','Order lifecycle and portfolio reconciliation','PARTIAL','Partial/full priced fills, fees, idempotency, cancellation, durable recovery; atomic opt-in paper-ledger linking, partial-position reconstruction, adverse quote-cost assumptions and durable expiry.','Extend interruption/quote-path stress; independently review execution assumptions, existing-account migration and reconciliation.'),
     Milestone('M5','Durable latency and capacity','PARTIAL','Replay-validated checkpoints, two-snapshot retention, checkpoint interruption tests and isolated gateway and linked-ledger/tier-inclusive p50/p95/p99 benchmark; capacity admission diagnostics; explicit logical archival with retained IDs and commands.','Physical offload/long-run scalability, sustained queue pressure and independent archival acceptance; no broker throughput validated.'),
     Milestone('M6','Scientific strategy evidence','PARTIAL','Chronological research, holdout, regime and cost-stress modules.','Reproducible forward evidence, delisting/survivorship review and independent performance audit.'),

@@ -229,3 +229,9 @@ Added a separate checkout pinned to reviewed v0.64 source and source-origin-chec
 Also pinned push checkout to the triggering SHA and added an explicit HEAD assertion. Previously queued packaging jobs checked the moving branch name, so their workflow status alone did not establish which source tip was packaged; the distribution manifest is the source reference. New push evidence will bind to the triggering commit.
 
 Validation: 383 tests passed; compilation and workflow YAML parsing passed. Pinned v0.64 data recovery and exact push-SHA packaging require the new Windows run; local source-selection tests do not establish those packaged outcomes.
+
+## v0.70.1 — research decision-lane retention and clock correctness
+
+Bounded retained duplicate IDs independently from queued events, with no silent eviction on consumption or halt. Full retention rejects new IDs while preserving duplicate detection. Invalid/nonfinite clock samples now reject research signals instead of bypassing expiry comparisons. Added defensive read-only capacity/metric snapshots to the local benchmark report. Tests cover retention exhaustion, duplicate preservation, queue-overflow retry, invalid clocks, configuration bounds and defensive snapshots. This remains an offline research benchmark: no paper/broker orders are created and no market-path throughput is established.
+
+Validation: 396 tests passed and Python compilation passed. Both v0.69 Windows workflows completed successfully, but its pre-pin packaging workflow used a moving source branch, so consult the artifact manifest for the packaged source SHA. v0.70 exact-SHA/pinned-prior-fixture workflows were still in progress.

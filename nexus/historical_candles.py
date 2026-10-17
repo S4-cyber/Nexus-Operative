@@ -72,8 +72,14 @@ def fetch_candles(product,granularity=300,now=None,transport=None):
     # Coinbase 300-bar pagination limits and oversized historical retrievals.
     end=int(now//granularity)*granularity
     start=end-150*granularity
-    query=urlencode({"start":datetime.fromtimestamp(start,timezone.utc).isoformat(),
-                     "end":datetime.fromtimestamp(end,timezone.utc).isoformat(),
+    if start<0:
+        raise ValueError("Observation time is too early for historical window")
+    try:
+        start_iso=datetime.fromtimestamp(start,timezone.utc).isoformat()
+        end_iso=datetime.fromtimestamp(end,timezone.utc).isoformat()
+    except (OverflowError,OSError,ValueError) as exc:
+        raise ValueError("Observation time outside supported calendar range") from exc
+    query=urlencode({"start":start_iso,"end":end_iso,
                      "granularity":granularity})
     url=f"https://api.exchange.coinbase.com/products/{product}/candles?{query}"
     if transport is None:

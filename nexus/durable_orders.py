@@ -150,6 +150,21 @@ class DurableOrderGateway:
     def connections(self):
         return OrderGateway().connections()
 
+    def session_orders(self,session_id):
+        import copy,re
+        if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
+        prefix='pf_'+session_id+'_'
+        with closing(self._connect()) as db,db:
+            portfolio=execution_portfolio.attach(db,self._path().parent/'paper_portfolio.sqlite3')
+            db.execute('BEGIN')
+            gateway,_=self._restore(db)
+            if gateway.portfolio_linked:execution_portfolio.compare(portfolio,gateway.account)
+        records={**gateway.archived_intents,**gateway.intents}
+        matched={key:dict(order=copy.deepcopy(record),quote_events=[]) for key,record in records.items() if key.startswith(prefix)}
+        for (oid,_),detail in gateway.quote_events.items():
+            if oid in matched:matched[oid]['quote_events'].append(copy.deepcopy(detail))
+        return list(matched.values())
+
     def order_report(self,client_order_id):
         import copy
         with closing(self._connect()) as db,db:

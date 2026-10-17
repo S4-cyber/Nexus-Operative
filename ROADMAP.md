@@ -1,6 +1,6 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.59.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.60.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
@@ -12,7 +12,7 @@ Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`.
 | M4: Order lifecycle and portfolio reconciliation | PARTIAL | Partial/full priced fills, fees, idempotency, cancellation, durable recovery; atomic opt-in paper-ledger linking, partial-position reconstruction, adverse quote-cost assumptions and durable expiry. | Extend interruption/quote-path stress; independently review execution assumptions, existing-account migration and reconciliation. |
 | M5: Durable latency and capacity | PARTIAL | Replay-validated checkpoints, two-snapshot retention, checkpoint interruption tests and isolated gateway and linked-ledger/tier-inclusive p50/p95/p99 benchmark; capacity admission diagnostics; explicit logical archival with retained IDs and commands. | Physical offload/long-run scalability, sustained queue pressure and independent archival acceptance; no broker throughput validated. |
 | M6: Scientific strategy evidence | PARTIAL | Chronological research, holdout, regime and cost-stress modules. | Reproducible forward evidence, delisting/survivorship review and independent performance audit. |
-| M7: Unattended paper operation | PARTIAL | Explicitly started BTC public-quote paper runner; tier-gated entries, exits, halt/pause, feed-failure stop, durable session counters/heartbeats and fingerprinted fixed-policy admission. | Run sustained real-feed forward validation, independent policy evidence review and multi-market scheduling; injected outage tests are not market performance evidence. |
+| M7: Unattended paper operation | PARTIAL | Explicitly started BTC public-quote paper runner; tier-gated entries, exits, halt/pause, feed-failure stop, durable session counters/heartbeats and fingerprinted fixed-policy admission; retained quote evidence and quote/fill crosschecks. | Run sustained real-feed forward validation, independent policy evidence review and multi-market scheduling; injected outage tests are not market performance evidence. |
 | M8: Broker paper integration and operations | OPEN | Provider-neutral design; external adapters remain disconnected. | Alpaca paper first after explicit paper-connection authorization; broker IDs, pacing, eligibility and reconciliation. IBKR paper then Coinbase Advanced expansion. |
 | M9: Release acceptance and authorization | OPEN | 0.x numbering and release gates enforced. | Independent security/risk review, operator runbook, complete acceptance evidence and explicit owner approval for 1.0. Live-money activation requires separate authorization. |
 

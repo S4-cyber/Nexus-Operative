@@ -53,6 +53,7 @@ def parse_ticker(product,payload,received=None):
 def read_ticker(product,fetch=None,now=None):
     if product not in PRODUCTS:raise ValueError("Unsupported market product")
     # Never cache after the exchange tick itself is stale.
+    explicit_now=now is not None
     now=time.time() if now is None else now
     with _lock:
         cached=_cache.get(product)
@@ -69,12 +70,14 @@ def read_ticker(product,fetch=None,now=None):
                 return json.loads(body)
     try:
         data=fetch(BASE+product+"/ticker")
-        result=parse_ticker(product,data,received=now)
+        received=time.time() if default_transport and not explicit_now else now
+        result=parse_ticker(product,data,received=received)
     except (OSError,TimeoutError,ValueError,json.JSONDecodeError) as exc:
         raise ValueError("Public market quote unavailable or invalid") from exc
     if not default_transport:
         # A test or caller-supplied transport must not populate production cache.
         return result
     with _lock:
-        _cache[product]=(now,result)
+        _cache[product]=(received,result)
     return result
+

@@ -37,3 +37,21 @@ def test_transport_failure_does_not_return_fake_quote():
 def test_api_rejects_unknown_product_without_network():
     assert TestClient(app).get("/api/public-quote/INVALID").status_code==404
     assert TestClient(app).get("/api/status").json()["live_orders_enabled"] is False
+
+
+
+def test_default_transport_uses_actual_receipt_time(monkeypatch):
+    import json
+    import nexus.public_data as public
+    ticks=iter([NOW,NOW+4])
+    monkeypatch.setattr(public.time,'time',lambda:next(ticks))
+    monkeypatch.setattr(public,'_cache',{})
+    class Response:
+        status=200
+        def __enter__(self):return self
+        def __exit__(self,*args):pass
+        def read(self,limit):return json.dumps(payload(seconds=3)).encode()
+    monkeypatch.setattr(public,'urlopen',lambda *args,**kwargs:Response())
+    result=public.read_ticker('BTC-USD')
+    assert result['received_at']==NOW+4
+    assert result['age_seconds']==1

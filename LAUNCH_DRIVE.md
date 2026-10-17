@@ -149,3 +149,17 @@ Read-only session evidence identifies stale heartbeats, previous/interrupted run
 Unavailable/malformed observations and long observation gaps clear the entry history; recovery must accumulate fresh warmup observations. None/non-dict quotes, missing timestamps, stale observations and provider errors follow the same bounded failure pause. Tests exercise temporary outage recovery, long-gap warmup reset, three failures while holding, paused persisted state, explicit tier-off exit resume, session-counter transaction rollback, restart/stale evidence, immutable policy copies, unknown policy rejection, API bounds and session-cap admission.
 
 No real-feed forward run was started for this batch. Next remains sustained public-data/outage evidence, independent strategy review and bounded broader scheduling. M7 remains partial; green injected-data tests do not close forward-operation or profitability gates.
+
+## v0.60.0 — forward quote provenance and execution-evidence review
+
+Each fetched forward observation is now recorded before it can cause a modeled fill. Evidence contains only allowlisted quote fields, evaluation/cycle/session identifiers, eligibility outcome, source classification and policy fingerprint. Standard reader observations are labeled single-source/unattested; supplied transports are labeled injected/unattested. Extra account/key fields are never retained. Missing or malformed quote outcomes are recorded as rejected evidence when storage is available.
+
+Evidence uses a per-session local hash chain and transactional head/count record. Append checks the current head/tail; review checks all retained rows, order, identities, chain continuity and count/head agreement. There is a 100,000-observation global cap with no automatic deletion. Evidence write failure, cap exhaustion or head corruption pauses forward operation before a new order is submitted. Local hashes are not externally anchored and cannot prevent coordinated rewrites.
+
+`GET /api/paper/forward/sessions/{id}/evidence` and PORTAL review summarize observation span, gaps, rejection counts, distinct/repeated exchange timestamps, source modes and local integrity. Read-only lookup retrieves both active and archived session orders from the execution journal. Modeled fills are compared with the corresponding recorded bid, ask and receipt timestamp; session BUY/SELL counts are checked against filled orders. Policy payload fingerprints are recomputed. Disagreements are reported, never silently repaired.
+
+Review while a session is running is explicitly provisional: session evidence and accounting are separate database snapshots. No report grants release approval, verifies profitability or certifies independent feed truth. Pre-evidence legacy sessions correctly report missing quote evidence; historical observations are not reconstructed or invented.
+
+The public ticker adapter now timestamps actual receipt after the default HTTP transport returns, while preserving deterministic caller-supplied times and separate exchange-time freshness checks. Tests cover delayed transport receipt, quote/fill agreement, injected-source labeling, payload edits, tail deletion, head corruption, evidence-cap admission, failed writes, extra-field exclusion, counter mismatch and review API boundaries. No sustained real-feed session was run for this batch.
+
+Next: sustained real-source forward evidence, independent attestation/strategy review and broader scheduling/physical history offload. These remain acceptance work; M2/M6/M7 are not complete.

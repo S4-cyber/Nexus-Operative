@@ -59,7 +59,7 @@ async def application_lifespan(application):
         await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
         await asyncio.to_thread(observer.stop)
 
-app = FastAPI(title="Nexus Operative", version="0.59.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.60.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -290,7 +290,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.59.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.60.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -491,6 +491,15 @@ class PaperForwardStart(BaseModel):
 def paper_forward_policies():
     from nexus.paper_policy import catalogue
     return catalogue()
+
+@app.get("/api/paper/forward/sessions/{session_id}/evidence")
+def paper_forward_evidence(session_id:str):
+    try:return paper_forward_runner.evidence_report(session_id)
+    except ValueError as exc:
+        if str(exc)=='UNKNOWN_FORWARD_SESSION':raise HTTPException(status_code=404,detail=str(exc))
+        if str(exc)=='INVALID_FORWARD_SESSION_ID':raise HTTPException(status_code=422,detail=str(exc))
+        raise HTTPException(status_code=503,detail="FORWARD_EVIDENCE_UNAVAILABLE")
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="FORWARD_EVIDENCE_UNAVAILABLE")
 
 @app.get("/api/paper/forward/sessions")
 def paper_forward_sessions(limit:int=20):

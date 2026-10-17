@@ -21,6 +21,7 @@ from nexus.public_data import read_ticker
 from nexus.tier_permissions import require_entry, TIERS
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
+from nexus import forward_evidence
 
 INTERVAL=POLICY['interval_seconds']
 RANKING_INTERVAL=POLICY['ranking_seconds']
@@ -37,6 +38,7 @@ class PaperForwardRunner:
         self._guard=FeedGuard();self._stamp=None;self._last_rank=0
         self._failures=0;self._cycles=0;self._last=None;self._error=None
         self._policy=admit(POLICY["id"])
+        self._observation_hash=None
 
     def _db(self):
         root=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))
@@ -47,10 +49,11 @@ class PaperForwardRunner:
         db.execute("""CREATE TABLE IF NOT EXISTS sessions(
             id TEXT PRIMARY KEY,started_at REAL NOT NULL,updated_at REAL NOT NULL,
             state TEXT NOT NULL,policy_json TEXT NOT NULL,counts_json TEXT NOT NULL,last_json TEXT NOT NULL)""")
+        forward_evidence.schema(db)
         return db
 
     def _record(self,decision,reason,**extra):
-        row=dict(at=self.clock(),session=self._session,decision=decision,reason=reason,
+        row=dict(at=self.clock(),session=self._session,cycle=self._cycles,quote_evidence_sha256=self._observation_hash,decision=decision,reason=reason,
                  product=PRODUCT,tier=self._tier,simulation_only=True,**extra)
         row['policy_id']=self._policy['id'];row['policy_sha256']=self._policy['policy_sha256']
         with closing(self._db()) as db,db:
@@ -73,6 +76,13 @@ class PaperForwardRunner:
             db.execute('DELETE FROM cycles WHERE id NOT IN (SELECT id FROM cycles ORDER BY id DESC LIMIT 1000)')
         with self._lock:self._last=row
         return row
+
+    def _record_quote(self,quote,eligible,error=None):
+        with closing(self._db()) as db,db:
+            db.execute('BEGIN IMMEDIATE')
+            self._observation_hash=forward_evidence.append(db,self._session,self._cycles,self.clock(),quote,eligible,
+                'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
+                self._policy['policy_sha256'],error)
 
     def prepare(self,tier,policy_id=POLICY['id']):
         """Validate/start session state without starting a thread (also testable offline)."""
@@ -100,7 +110,7 @@ class PaperForwardRunner:
             self._policy=selected_policy
             self._session=uuid.uuid4().hex[:16];self._tier=tier
             self._prices.clear();self._guard=FeedGuard();self._stamp=None;self._last_rank=0
-            self._cycles=0;self._failures=0;self._error=None;self._stop.clear()
+            self._cycles=0;self._failures=0;self._error=None;self._observation_hash=None;self._stop.clear()
             try:self._record('START','EXPERIMENTAL_MOMENTUM_PAPER_POLICY')
             except (OSError,sqlite3.Error,ValueError):
                 self._stop.set();self._error='START_DIAGNOSTIC_STORAGE_FAILURE';raise
@@ -164,6 +174,7 @@ class PaperForwardRunner:
         try:
             if self._stop.is_set():return dict(decision='HOLD',reason='PAPER_FORWARD_STOPPED')
             self._cycles+=1
+            self._observation_hash=None
             report=self.orders.recovery_report()
             if report['halted'] or not report['portfolio_reconciled']:
                 self._stop.set();return self._record('PAUSED','HALT_OR_RECONCILIATION_VETO')
@@ -172,6 +183,7 @@ class PaperForwardRunner:
             required_ids=1 if has_position else 2
             if report['capacity']['ordinary_commands_remaining']<required_writes or report['capacity']['intents_remaining']<required_ids or not report['capacity']['new_intents_allowed']:
                 self._stop.set();return self._record('PAUSED','JOURNAL_OR_ID_CAPACITY_VETO')
+            quote=None
             try:
                 quote=self.fetcher(PRODUCT);now=self.clock()
                 if not isinstance(quote,dict):raise ValueError('MISSING_FORWARD_QUOTE')
@@ -188,10 +200,12 @@ class PaperForwardRunner:
                 bid=Decimal(str(quote['bid']));ask=Decimal(str(quote['ask']))
                 if not bid.is_finite() or not ask.is_finite():raise ValueError('INVALID_QUOTE')
             except (ValueError,KeyError,TypeError,OSError,TimeoutError) as exc:
+                self._record_quote(quote,False,type(exc).__name__)
                 self._prices.clear();self._last_rank=0
                 self._failures+=1;self._error=type(exc).__name__
                 if self._failures>=self._policy['consecutive_failure_limit']:self._stop.set()
                 return self._record('PAUSED' if self._stop.is_set() else 'VETO','QUOTE_UNAVAILABLE_OR_INVALID',consecutive_failures=self._failures)
+            self._record_quote(quote,True)
             self._failures=0;self._error=None
             if stamp==self._stamp:return self._record('HOLD','DUPLICATE_EXCHANGE_TICK')
             if self._stamp is not None and stamp<self._stamp:return self._record('VETO','EXCHANGE_TIME_REGRESSION')
@@ -245,6 +259,32 @@ class PaperForwardRunner:
                         cycles=self._cycles,consecutive_feed_failures=self._failures,last_error=self._error,last_event=self._last,
                         live_orders_enabled=False,broker_connected=False,strategy_validated=False,
                         liquidity_model='ASSUMED_QUANTITY_NO_DEPTH',automatic_restart=False,policy=dict(self._policy))
+
+    def evidence_report(self,session_id):
+        import re
+        if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
+        with closing(self._db()) as db,db:
+            db.execute('BEGIN')
+            session=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json FROM sessions WHERE id=?',(session_id,)).fetchone()
+            if session is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
+            quotes=forward_evidence.review(db,session_id)
+        orders=self.orders.session_orders(session_id)
+        counts=json.loads(session[4]);policy=json.loads(session[3])
+        checked=forward_evidence.crosscheck(quotes,orders,counts)
+        reasons=quotes['reasons']+checked['reasons']
+        import hashlib
+        policy_digest=hashlib.sha256(forward_evidence.canonical({k:v for k,v in policy.items() if k!='policy_sha256'}).encode()).hexdigest()
+        if policy_digest!=policy.get('policy_sha256'):reasons.append('SESSION_POLICY_FINGERPRINT_DISAGREEMENT')
+        if not quotes['observations']:reasons.append('NO_RECORDED_QUOTE_EVIDENCE')
+        if any(p['policy_sha256']!=policy['policy_sha256'] for p in quotes['points']):reasons.append('QUOTE_POLICY_FINGERPRINT_DISAGREEMENT')
+        summary={k:v for k,v in quotes.items() if k!='points'}
+        return dict(mode='READ_ONLY_FORWARD_EVIDENCE_REVIEW',read_only=True,session=session_id,
+                    started_at=session[0],updated_at=session[1],stored_state=session[2],policy=policy,
+                    counters=counts,quote_evidence=summary,execution_crosscheck=checked,
+                    provisional_active_session=session_id==self._session and not self._stop.is_set(),
+                    local_consistency_ok=not reasons,reasons=sorted(set(reasons)),
+                    live_orders_enabled=False,release_approved=False,strategy_validated=False,
+                    limitations='Local consistency diagnostics, not independent market attestation or sustained-run acceptance. Injected transports are labeled separately. Counters may miss a committed fill after a process crash; the order ledger is authoritative. Local hashes cannot prevent coordinated database rewrites. Review while stopped for a stable cross-database snapshot.')
 
     def sessions(self,limit=20):
         if type(limit) is not int or not 1<=limit<=100:raise ValueError('INVALID_SESSION_HISTORY_LIMIT')

@@ -215,3 +215,9 @@ Extended session evidence beyond quote bid/ask/time matching: recompute modeled 
 Malformed session policy/counter metadata now produces a fail-closed unavailable-evidence response, including list/null values and boolean counters. Tests verify this API behavior. v0.67 safety passed while packaging was in progress; v0.68 checks remained pending/in progress.
 
 Validation: 371 tests passed and Python compilation passed. No real-feed or external broker session was started.
+
+## v0.69.1 — session metadata validation on read and write
+
+Centralized timestamp/state/policy/counter/event validation for evidence, monitoring, history, cycle admission and diagnostic writes. Corrupt records pause before fetch; a changed stored policy is never overwritten by diagnostic updates. Stop fences/releases ownership even when its record cannot persist. Unavailable corrupted diagnostics return HTTP 503, while invalid caller limits remain HTTP 422. Tests verify no fetch/order/evidence mutation for corrupt metadata, preserved changed policy, safe failed STOP and API error classification. v0.68 safety passed; its pending Windows packaging run was superseded, so installed-EXE restoration remains awaiting packaged CI evidence.
+
+Validation: 381 tests passed; Python compilation passed. Both v0.67 Windows workflows passed at d9836c87eda9826f30847beaef2f3d7706fbe166; v0.69 checks were still in progress. No real-feed/broker session started.

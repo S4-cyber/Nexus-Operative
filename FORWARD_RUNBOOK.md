@@ -86,3 +86,9 @@ The Windows installer smoke also exercises the recovered fixture through the ins
 Session evidence now checks each quote-driven fill's price, quantity, fee, assumed available quantity, cost rates, timing and unique positive event sequence. It recomputes price/fee arithmetic, compares fee/slippage rates with the recorded policy and checks summed event notionals/fees against the order's totals. Disagreements appear as `FILL_MODEL_OR_POLICY_DISAGREEMENT`; no evidence is repaired. Existing quote-to-observation checks remain separate.
 
 Reports and portable summaries include exact decimal modeled buy/sell notionals and fees for events that pass these model checks. These are execution-cost diagnostics, not realized strategy returns, independently available liquidity, a market-performance score or release acceptance. The durable ledger remains authoritative. Checks can reveal local inconsistency but cannot attest coordinated rewrites or validate the policy's economic assumptions.
+
+## Damaged diagnostic session records
+
+Before a cycle fetches data, and before a diagnostic write, the runner validates the retained session's timestamps, state, policy, nonnegative integer counters and last event. The stored policy must exactly match the active admitted policy before any write. Invalid data pauses intake; diagnostic writes never overwrite a changed policy to make it look valid.
+
+Stop still fences execution and releases ownership if recording STOP fails. `STOP_DIAGNOSTIC_STORAGE_FAILURE` means the final session record needs review, not that the worker has running permission. Malformed history/session diagnostics return unavailable responses; invalid request limits remain validation errors. Preserve the original data and investigate a copy. Do not edit counters or policy records to suppress the failure. Ledger reconciliation remains independent and authoritative.

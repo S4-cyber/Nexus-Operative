@@ -59,7 +59,7 @@ async def application_lifespan(application):
         await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
         await asyncio.to_thread(observer.stop)
 
-app = FastAPI(title="Nexus Operative", version="0.69.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.69.1",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -290,7 +290,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.69.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.69.1", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -515,13 +515,15 @@ def paper_forward_review_export(session_id:str):
 @app.get("/api/paper/forward/sessions")
 def paper_forward_sessions(limit:int=20):
     try:return paper_forward_runner.sessions(limit)
-    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except ValueError as exc:
+        if str(exc)=="INVALID_SESSION_HISTORY_LIMIT":raise HTTPException(status_code=422,detail=str(exc))
+        raise HTTPException(status_code=503,detail="FORWARD_SESSIONS_UNAVAILABLE")
     except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="FORWARD_SESSIONS_UNAVAILABLE")
 
 @app.get("/api/paper/forward")
 def paper_forward_status():
     try:return {**paper_forward_runner.status(),"history":paper_forward_runner.history(),"storage_capacity":paper_forward_runner.storage_capacity()}
-    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="FORWARD_DIAGNOSTICS_UNAVAILABLE")
+    except (OSError,sqlite3.Error,ValueError):raise HTTPException(status_code=503,detail="FORWARD_DIAGNOSTICS_UNAVAILABLE")
 
 @app.post("/api/paper/forward/start")
 def paper_forward_start(data:PaperForwardStart):

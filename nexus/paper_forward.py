@@ -22,7 +22,7 @@ from nexus.public_data import read_ticker
 from nexus.tier_permissions import require_entry, TIERS
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
-from nexus import forward_evidence
+from nexus import forward_evidence,forward_sessions
 from nexus.forward_ownership import ForwardOwnership
 
 INTERVAL=POLICY['interval_seconds']
@@ -68,14 +68,16 @@ class PaperForwardRunner:
         row['policy_id']=self._policy['id'];row['policy_sha256']=self._policy['policy_sha256']
         with closing(self._db()) as db,db:
             db.execute('BEGIN IMMEDIATE')
-            old=db.execute('SELECT started_at,updated_at,state,counts_json FROM sessions WHERE id=?',(self._session,)).fetchone()
+            old=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(self._session,)).fetchone()
             if old is None:
                 if decision!='START':raise ValueError('FORWARD_SESSION_MISSING')
                 if db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]>=SESSION_LIMIT:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
                 started=row['at'];state='RUNNING';counts={}
             else:
                 if decision=='START':raise ValueError('FORWARD_SESSION_ID_REUSED')
-                started,updated,state,raw=old;counts=json.loads(raw)
+                policy,counts,last=forward_sessions.parse(*old)
+                if policy!=self._policy:raise ValueError('FORWARD_SESSION_POLICY_CHANGED')
+                started,updated,state=old[:3]
                 row['at']=max(row['at'],updated)
             counts[decision]=counts.get(decision,0)+1
             if decision=='PAUSED':state='PAUSED'
@@ -226,6 +228,11 @@ class PaperForwardRunner:
             if self._stop.is_set():return dict(decision='HOLD',reason='PAPER_FORWARD_STOPPED')
             self._cycles+=1
             self._observation_hash=None
+            with closing(self._db()) as db:
+                metadata=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(self._session,)).fetchone()
+                if metadata is None:raise ValueError('FORWARD_SESSION_MISSING')
+                stored_policy,_,_=forward_sessions.parse(*metadata)
+                if stored_policy!=self._policy:raise ValueError('FORWARD_SESSION_POLICY_CHANGED')
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
             storage=self.storage_capacity()
@@ -330,13 +337,11 @@ class PaperForwardRunner:
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
         with closing(self._db()) as db,db:
             db.execute('BEGIN')
-            session=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json FROM sessions WHERE id=?',(session_id,)).fetchone()
+            session=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(session_id,)).fetchone()
             if session is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
             quotes=forward_evidence.review(db,session_id)
         orders=self.orders.session_orders(session_id)
-        counts=json.loads(session[4]);policy=json.loads(session[3])
-        if not isinstance(counts,dict) or any(not isinstance(k,str) or type(v) is not int or v<0 for k,v in counts.items()) or not isinstance(policy,dict) or not isinstance(policy.get('policy_sha256'),str):
-            raise ValueError('INVALID_FORWARD_SESSION_METADATA')
+        policy,counts,last=forward_sessions.parse(*session)
         checked=forward_evidence.crosscheck(quotes,orders,counts,policy)
         reasons=quotes['reasons']+checked['reasons']
         import hashlib
@@ -359,12 +364,13 @@ class PaperForwardRunner:
             rows=db.execute('SELECT id,started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions ORDER BY started_at DESC,rowid DESC LIMIT ?',(limit,)).fetchall()
         results=[]
         for sid,started,updated,state,policy,counts,last in rows:
+            policy,counts,last=forward_sessions.parse(started,updated,state,policy,counts,last)
             interrupted=state=='RUNNING' and sid!=self._session
             stale=state=='RUNNING' and self.clock()-updated>20
             unrecorded_stop=state=='RUNNING' and sid==self._session and self._stop.is_set()
             results.append(dict(session=sid,started_at=started,updated_at=updated,stored_state=state,
                                 effective_state='INTERRUPTED_OR_PRIOR_SESSION' if interrupted else 'STOPPED_WITHOUT_FINAL_RECORD' if unrecorded_stop else 'HEARTBEAT_STALE' if stale else state,
-                                requires_review=interrupted or stale or unrecorded_stop,policy=json.loads(policy),counts=json.loads(counts),last_event=json.loads(last)))
+                                requires_review=interrupted or stale or unrecorded_stop,policy=policy,counts=counts,last_event=last))
         return dict(read_only=True,sessions=results,automatic_resume=False,session_limit=SESSION_LIMIT,
                     execution_source_of_truth='ORDER_JOURNAL_NOT_SESSION_COUNTERS')
 
@@ -387,7 +393,7 @@ class PaperForwardRunner:
 
     def history(self):
         with closing(self._db()) as db:
-            return [json.loads(row[0]) for row in db.execute('SELECT detail FROM cycles ORDER BY id DESC LIMIT 30')]
+            return [forward_sessions.event(row[0]) for row in db.execute('SELECT detail FROM cycles ORDER BY id DESC LIMIT 30')]
 
 
 runner=PaperForwardRunner()

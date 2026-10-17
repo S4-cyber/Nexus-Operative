@@ -1,6 +1,6 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.69.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.69.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.69.0'
+REVISION = '0.69.1'
 BRANCH = 'development/windows-portal-foundation'
 
 

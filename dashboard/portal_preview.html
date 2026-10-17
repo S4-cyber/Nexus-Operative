@@ -127,26 +127,29 @@ function helpButton(description){
 (function installControlHelp(){
  const panel=document.getElementById('control-help'),text=document.getElementById('control-help-text');
  const selector='button,input,select,textarea,[role="button"],[contenteditable="true"]';
- let active=null;
+ let active=null,focusMode=false;
  function control(target){return target&&typeof target.closest==='function'?target.closest(selector):null;}
  function hide(){
   if(active){const ids=(active.getAttribute('aria-describedby')||'').split(/\s+/).filter(id=>id&&id!=='control-help');
    if(ids.length)active.setAttribute('aria-describedby',ids.join(' '));else active.removeAttribute('aria-describedby');}
-  active=null;panel.hidden=true;text.textContent='';
+  active=null;focusMode=false;panel.hidden=true;text.textContent='';
  }
- function showHelp(element){
+ function showHelp(element,fromFocus=false){
   if(!element)return;
   if(active!==element)hide();
-  active=element;text.textContent=element.dataset.help||'Help for this control has not been provided yet. Review the surrounding instructions before changing it.';
+  active=element;focusMode=fromFocus;text.textContent=element.dataset.help||'Help for this control has not been provided yet. Review the surrounding instructions before changing it.';
   const ids=new Set((element.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean));ids.add('control-help');
   element.setAttribute('aria-describedby',[...ids].join(' '));panel.hidden=false;
  }
  document.addEventListener('pointerover',event=>showHelp(control(event.target)),true);
  document.addEventListener('pointerout',event=>{const element=control(event.target);if(element===active&&(!event.relatedTarget||!element.contains(event.relatedTarget)))hide();},true);
- document.addEventListener('focusin',event=>showHelp(control(event.target)));
+ document.addEventListener('focusin',event=>showHelp(control(event.target),true));
  document.addEventListener('focusout',event=>{if(control(event.target)===active)hide();});
  document.addEventListener('keydown',event=>{if(event.key==='Escape')hide();});
- document.addEventListener('scroll',hide,true);window.addEventListener('blur',hide);window.addEventListener('resize',hide);
+ document.addEventListener('scroll',()=>{
+  if(active&&focusMode){const r=active.getBoundingClientRect();if(r.bottom>0&&r.top<window.innerHeight&&r.right>0&&r.left<window.innerWidth)return;}
+  hide();
+ },true);window.addEventListener('blur',hide);window.addEventListener('resize',hide);
  new MutationObserver(()=>{if(active&&!active.isConnected)hide();}).observe(document.body,{childList:true,subtree:true});
 })();
 // END CONTROL HELP

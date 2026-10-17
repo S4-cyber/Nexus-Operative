@@ -17,8 +17,21 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install project and test dependencies
-        run: python -m pip install -e ".[dev]"
+        run: python -m pip install -e ".[dev,ui]"
       - name: Compile Python source
         run: python -m compileall -q nexus tests
       - name: Run complete Python regression suite
         run: python -m pytest -q
+
+      - name: Install headless browser for control-help acceptance
+        run: python -m playwright install chromium --only-shell
+      - name: Verify real-browser control help with isolated fixtures
+        run: python tools/portal_browser_smoke.py --output browser-evidence
+      - name: Retain browser screenshots and acceptance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-browser-evidence
+          path: browser-evidence
+          retention-days: 30
+          if-no-files-found: warn

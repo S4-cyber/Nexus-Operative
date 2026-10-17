@@ -73,9 +73,9 @@ def fetch_candles(product,granularity=300,now=None,transport=None):
     # End on latest fully closed interval. A bounded 150-bar window prevents
     # Coinbase 300-bar pagination limits and oversized historical retrievals.
     end=int(now//granularity)*granularity
-    start=end-150*granularity
-    if start<0:
-        raise ValueError("Observation time is too early for historical window")
+    if end<=0:
+        raise ValueError("No fully closed candle interval available")
+    start=max(0,end-150*granularity)
     try:
         start_iso=datetime.fromtimestamp(start,timezone.utc).isoformat()
         end_iso=datetime.fromtimestamp(end,timezone.utc).isoformat()

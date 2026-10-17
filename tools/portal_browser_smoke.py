@@ -85,9 +85,11 @@ def run(output,channel=None):
                         fixture_points.append(dict(at=now-18+i*6,complete=True,equity=str(1000+i*3),cash='800',pnl=str(i*3),initial='1000',account_revision=2,
                             positions=[dict(product='BTC-USD',quantity='1',unrealized_pnl=str(i*5)),dict(product='ETH-USD',quantity='2',unrealized_pnl=str(-i*2))],missing_products=[]))
                     matrix_fixture=dict(points=fixture_points,range_start=now-60,range_end=now,observations_in_range=4,downsampled=False,account_initialized=True,current_revision=2,
+                        retention=dict(total_samples=4,active_samples=4,archived_samples=0,retained_limit=6000000),
                         adjustments=[dict(id=2,at=now,action='PAPER_BUY',product='BTC-USD',quantity='1',entry='100',cash_delta='-100')])
-                    page.evaluate("d=>{const section=document.getElementById('matrix-hangar');section.hidden=false;section.classList.add('open');section.setAttribute('aria-hidden','false');applyAccountHistory(d)}",matrix_fixture)
+                    page.evaluate("d=>{const section=document.getElementById('matrix-hangar');section.hidden=false;section.classList.add('open');section.setAttribute('aria-hidden','false');document.getElementById('matrix-state').textContent='INTERCEPTED ACCOUNT FIXTURE / NO BROKER';applyAccountHistory(d)}",matrix_fixture)
                     expect(page.locator('#matrix-account-summary')).to_contain_text('1,009.00')
+                    expect(page.locator('#matrix-account-summary')).to_contain_text('retained 4 of 6,000,000')
                     page.locator('#matrix-fractal').click()
                     expect(page.locator('#matrix-fractal')).to_have_attribute('aria-pressed','true')
                     expect(page.locator('#matrix-account-title')).to_contain_text('FRACTAL')
@@ -95,11 +97,13 @@ def run(output,channel=None):
                     expect(page.locator('#matrix-account-legend')).to_contain_text('ETH-USD')
                     page.locator('#matrix-adjustments').select_option('2')
                     expect(page.locator('#matrix-adjustment-detail')).to_contain_text('recorded quantity 1')
+                    page.mouse.move(0,0);expect(page.locator('#control-help')).to_be_hidden()
                     page.locator('#matrix-account-chart').scroll_into_view_if_needed()
                     page.screenshot(path=str(output/f'fractal-{width}x{height}.png'))
                     page.locator('#matrix-singularity').click()
                     expect(page.locator('#matrix-singularity')).to_have_attribute('aria-pressed','true')
                     expect(page.locator('#matrix-account-title')).to_contain_text('SINGULARITY')
+                    page.mouse.move(0,0);expect(page.locator('#control-help')).to_be_hidden()
                     page.screenshot(path=str(output/f'singularity-{width}x{height}.png'))
                     panel=page.locator('#control-help');body=page.locator('#control-help-text')
                     tested=0

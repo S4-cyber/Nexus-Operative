@@ -11,6 +11,7 @@ from nexus.state import load_settings, save_settings, audit
 from nexus.markets import list_markets
 from nexus.market_universe import page as market_universe_page
 from nexus.expansion_initiative import roadmap as expansion_roadmap, assess_evidence as assess_expansion_evidence
+from nexus.order_gateway import gateway as research_order_gateway
 from nexus.paper_execution import PaperEngine
 from nexus.replay import replay
 from nexus.journal import record_replay, recent_replays
@@ -45,7 +46,7 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.47.0")
+app = FastAPI(title="Nexus Operative", version="0.48.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -267,7 +268,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.47.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.48.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -449,6 +450,28 @@ def discover_public_market_universe(limit: int = 100, offset: int = 0, search: s
     except ValueError as exc:
         raise HTTPException(status_code=503 if "UNAVAILABLE" in str(exc) else 422,detail=str(exc))
 
+@app.get("/api/execution/connectors")
+def execution_connector_catalog():
+    return research_order_gateway.connections()
+
+class SimulatedOrderIntent(BaseModel):
+    client_order_id: str = Field(min_length=1,max_length=64)
+    product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
+    side: str = Field(pattern="^(BUY|SELL)$")
+    notional: float = Field(gt=0,le=200)
+    provider: str = "nexus_local_paper"
+
+@app.post("/api/execution/intent/simulate")
+def simulate_order_intent(data:SimulatedOrderIntent):
+    if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
+    try:return research_order_gateway.submit(**data.model_dump())
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+
+@app.post("/api/execution/intent/{client_order_id}/cancel")
+def cancel_order_intent(client_order_id:str):
+    try:return research_order_gateway.cancel(client_order_id)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+
 @app.get("/api/markets")
 def market_catalog():
     return list_markets()
@@ -489,6 +512,7 @@ def halt():
     _halted=True
     _paused=True
     observer.stop()
+    research_order_gateway.emergency_halt()
     audit('emergency_halt')
     return status()
 
@@ -506,6 +530,7 @@ def reset_emergency_halt(confirmation:HaltResetConfirmation):
     _paused=True
     observer.stop()
     _halted=False
+    research_order_gateway.reset()
     audit("emergency_halt_reset_paused")
     return status()
 

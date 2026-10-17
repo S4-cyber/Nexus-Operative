@@ -5,7 +5,6 @@ Requires Windows Credential Manager via the installed keyring backend.
 """
 import os
 import threading
-from fastapi import HTTPException
 SERVICE="NexusOperativeResearch"
 ACCOUNT="OpenAIAdvisoryKey"
 _lock=threading.RLock()
@@ -26,20 +25,27 @@ def _vault():
         import keyring
         backend=keyring.get_keyring()
         # Explicitly disallow plaintext or third-party fallback keyrings.
-        if not type(backend).__module__.startswith("keyring.backends.Windows"):
+        if type(backend).__module__ != 'keyring.backends.Windows' or type(backend).__name__ != 'WinVaultKeyring':
             raise ValueError("TRUSTED_WINDOWS_VAULT_UNAVAILABLE")
-        return keyring
+        return backend  # Use the exact checked object, not a second backend dispatch.
     except (ImportError,RuntimeError) as exc:
         raise ValueError("TRUSTED_WINDOWS_VAULT_UNAVAILABLE") from exc
 
+def validate_secret(secret):
+    if not isinstance(secret,str) or not 20<=len(secret)<=256 or not secret.startswith("sk-") or any(not 33 <= ord(char) <= 126 for char in secret):
+        raise ValueError("INVALID_KEY_FORMAT")
+    return secret
+
 def install(secret):
     global _observation
-    if not isinstance(secret,str) or not 20<=len(secret)<=256 or not secret.startswith("sk-") or "\n" in secret or "\r" in secret:
-        raise ValueError("INVALID_KEY_FORMAT")
+    validate_secret(secret)
     with _lock:
         _observation = None
         vault=_vault()
-        try:vault.set_password(SERVICE,ACCOUNT,secret)
+        try:
+            vault.set_password(SERVICE,ACCOUNT,secret)
+            if vault.get_password(SERVICE,ACCOUNT) != secret:
+                raise ValueError('UNCONFIRMED_VAULT_SAVE')
         except Exception as exc:raise ValueError("VAULT_SAVE_FAILED") from None
         _observation = True
     return {"configured":True,"provider_connected":False,"stored_in":"WINDOWS_CREDENTIAL_MANAGER",
@@ -50,6 +56,7 @@ def retrieve():
     with _lock:
         try:
             secret = _vault().get_password(SERVICE,ACCOUNT)
+            if secret is not None: validate_secret(secret)
             _observation = bool(secret)
             return secret
         except Exception:
@@ -66,7 +73,11 @@ def disconnect():
         _observation = None
         try:
             vault=_vault()
-            try:vault.delete_password(SERVICE,ACCOUNT)
+            try:
+                if vault.get_password(SERVICE,ACCOUNT) is not None:
+                    vault.delete_password(SERVICE,ACCOUNT)
+                if vault.get_password(SERVICE,ACCOUNT) is not None:
+                    raise ValueError('UNCONFIRMED_VAULT_REMOVAL')
             except Exception as exc:raise ValueError("VAULT_DELETE_FAILED") from None
         except ValueError:raise
         _observation = False

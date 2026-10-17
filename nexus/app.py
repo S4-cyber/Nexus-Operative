@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.101.1",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.101.2",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 # Lifecycle admission is serialized; a throttle cut publishes its latch before waiting.
@@ -178,9 +178,6 @@ def onboarding_tasks():
 def onboarding_readiness():
     return local_capability_inventory()
 
-class VaultKeySubmission(BaseModel):
-    api_key: str = Field(min_length=20,max_length=256)
-
 def _require_local_portal(request:Request):
     from urllib.parse import urlsplit
     # Prevent cross-site form CSRF and off-machine browser requests.
@@ -193,17 +190,8 @@ def _require_local_portal(request:Request):
 from nexus.paper_onboarding import register as register_paper_onboarding
 register_paper_onboarding(app, _require_local_portal)
 
-@app.post("/api/paper/ai-provider/vault/connect")
-def ai_vault_connect(data:VaultKeySubmission,request:Request):
-    _require_local_portal(request)
-    try:return credential_vault.install(data.api_key)
-    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
-
-@app.post("/api/paper/ai-provider/vault/disconnect")
-def ai_vault_disconnect(request:Request):
-    _require_local_portal(request)
-    try:return credential_vault.disconnect()
-    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+from nexus.ai_onboarding import register as register_ai_onboarding
+register_ai_onboarding(app, _require_local_portal)
 
 class PublicAiConsent(BaseModel):
     product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
@@ -226,7 +214,7 @@ def ai_advisory_benchmark():
 
 @app.get("/api/paper/ai-provider/status")
 def ai_provider_status():
-    return provider_research_status()
+    return JSONResponse(provider_research_status(),headers={"Cache-Control":"no-store","Pragma":"no-cache"})
 
 @app.post("/api/paper/ai-provider/{role}/research")
 def ai_provider_research(role: str, snapshot: dict):
@@ -334,7 +322,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.101.1", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.101.2", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}

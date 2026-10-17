@@ -69,12 +69,12 @@ class Store:
 def test_explicit_actions_update_hint_but_cached_presence_never_authorizes_request(passive,monkeypatch):
     store=Store();monkeypatch.setattr(vault,'_vault',lambda:store)
     vault.install('sk-explicit-test-only-placeholder-12345')
-    assert provider.status()['configured'] and store.reads==0
+    assert provider.status()['configured'] and store.reads==1
     store.secret=None  # External removal after observed install.
     called=[]
     with pytest.raises(ValueError,match='LLM_RESEARCH_DISABLED'):
         provider.request('market_regime',{},transport=lambda *args:called.append(True))
-    assert called==[] and store.reads==1
+    assert called==[] and store.reads==2
     assert not provider.status()['configured']
     vault.install('sk-explicit-test-only-placeholder-12345')
     vault.disconnect();assert vault.local_status()['state']=='OBSERVED_ABSENT'

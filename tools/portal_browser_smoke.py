@@ -14,6 +14,10 @@ ORDER='pf_0123456789abcdef_7_BUY'
 
 
 def fixtures(path,pending=True):
+    if path=='/api/onboarding/tasks':return dict(checked_at=1000,summary='Automatic local observations; no execution permission.',items=[
+        dict(id='engine',title='Use built-in research and AI',group='Start here',status='COMPLETE',checked=True,detail='Built-in numerical learning is included; no provider account is required.',tab='ai',target='counciltest'),
+        dict(id='budget',title='Save your virtual budget',group='Before a paper session',status='NEEDS_SETUP',checked=False,detail='Save virtual allocations in Risk; no money is deposited.',tab='risk',target='paperbudget'),
+        dict(id='payment',title='Link payment or a bank account',group='Future connections',status='UNAVAILABLE',checked=False,detail='Payment linking is not implemented and is not needed for offline research.',tab='accounts',target='preview')])
     if path=='/api/matrix/hub':return dict(bars=300,conflicts=0,database_bytes=32768,database_byte_limit=134217728,artifact_bytes=8192,artifact_byte_limit=33554432)
     if path.startswith('/api/matrix/hub/signal?'):return dict(decision='ABSTAIN_STALE_OR_FUTURE_DATA',model_content_sha256='a'*64,forecast_as_of=1000,age_seconds=999999,forecasts=[])
     if path=='/api/status':return dict(portal_enabled=False,halted=False)
@@ -108,37 +112,60 @@ def run(output,channel=None):
                     expect(page.locator('#matrix-account-title')).to_contain_text('SINGULARITY')
                     page.mouse.move(0,0);expect(page.locator('#control-help')).to_be_hidden()
                     page.screenshot(path=str(output/f'singularity-{width}x{height}.png'))
+                    page.locator('#tab-research').click()
                     page.locator('#hub-status').click()
                     expect(page.locator('#hub-readout')).to_contain_text('300 unique bars')
                     page.locator('#hub-signal').click()
                     expect(page.locator('#hub-readout')).to_contain_text('ABSTAIN_STALE_OR_FUTURE_DATA')
                     panel=page.locator('#control-help');body=page.locator('#control-help-text')
-                    tested=0
-                    for control in page.locator('button,input,select,textarea').all():
-                        if not control.is_visible():continue
-                        current_control=dict(id=control.get_attribute('id'),tag=control.evaluate('e=>e.tagName'))
-                        description=control.get_attribute('data-help')
-                        if not description or len(description)<30:raise ValueError('HELP_BROWSER_CONTROL_MISSING_DESCRIPTION')
-                        control.hover(force=True);expect(panel).to_be_visible();expect(body).to_have_text(description)
-                        data=panel.evaluate('''e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {position:s.position,background:s.backgroundColor,color:s.color,font_size:parseFloat(s.fontSize),pointer_events:s.pointerEvents,rect:{x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width},viewport_width:innerWidth,viewport_height:innerHeight,scroll_height:e.scrollHeight,client_height:e.clientHeight}}''')
-                        validate_geometry(data);tested+=1
-                        page.mouse.move(0,0);expect(panel).to_be_hidden()
+                    tested=0;seen=set()
+                    for workspace in ('portal','risk','research','ai','accounts','todo','help'):
+                        page.locator('#tab-'+workspace).click()
+                        expect(page.locator('#tab-'+workspace)).to_have_attribute('aria-selected','true')
+                        expect(page.locator('#panel-'+workspace)).to_be_visible()
+                        if workspace=='todo':
+                            expect(page.locator('#startup-summary')).to_contain_text('Checked ')
+                            expect(page.locator('#startup-check-engine')).to_be_checked()
+                            expect(page.locator('#startup-check-payment')).not_to_be_checked()
+                            expect(page.locator('#startup-check-payment')).to_be_disabled()
+                            page.mouse.move(0,0)
+                            page.screenshot(path=str(output/f'startup-{width}x{height}.png'),full_page=True)
+                        for control in page.locator('button,input,select,textarea').all():
+                            if not control.is_visible():continue
+                            identity=control.evaluate("e=>{if(!e.dataset.smokeId)e.dataset.smokeId=String(window.__smokeId=(window.__smokeId||0)+1);return e.dataset.smokeId}")
+                            if identity in seen:continue
+                            seen.add(identity)
+                            current_control=dict(id=control.get_attribute('id'),tag=control.evaluate('e=>e.tagName'),workspace=workspace)
+                            description=control.get_attribute('data-help')
+                            if not description or len(description)<30:raise ValueError('HELP_BROWSER_CONTROL_MISSING_DESCRIPTION')
+                            control.hover(force=True);expect(panel).to_be_visible();expect(body).to_have_text(description)
+                            data=panel.evaluate('''e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {position:s.position,background:s.backgroundColor,color:s.color,font_size:parseFloat(s.fontSize),pointer_events:s.pointerEvents,rect:{x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width},viewport_width:innerWidth,viewport_height:innerHeight,scroll_height:e.scrollHeight,client_height:e.clientHeight}}''')
+                            validate_geometry(data);tested+=1
+                            page.mouse.move(0,0);expect(panel).to_be_hidden()
                     if tested<90:raise ValueError('HELP_BROWSER_CONTROL_COVERAGE_INCOMPLETE')
                     if writes:raise ValueError('HELP_BROWSER_HOVER_SENT_WRITE')
+                    page.locator('#tab-portal').click()
                     page.locator('#forward-tier').hover()
                     page.locator('#forward-tier').select_option('solar')
                     page.mouse.move(0,0);expect(panel).to_be_hidden()
+                    page.locator('#tab-risk').click()
+                    page.locator('#paperbudget').fill('12345')
+                    page.locator('#tab-help').click()
+                    page.locator('#tab-risk').click()
+                    expect(page.locator('#paperbudget')).to_have_value('12345')
                     page.locator('#paperbudget').focus();expect(panel).to_be_visible()
                     page.keyboard.press('Escape');expect(panel).to_be_hidden()
+                    page.locator('#tab-ai').click()
                     page.locator('#aikey').fill('PRIVATE-FIXTURE-NOT-A-REAL-KEY')
                     page.locator('#aikey').hover();expect(panel).to_be_visible()
                     if 'PRIVATE-FIXTURE' in body.inner_text():raise ValueError('HELP_BROWSER_INPUT_VALUE_EXPOSED')
                     page.locator('#aikey').fill('');page.mouse.move(0,0)
+                    page.locator('#tab-portal').click()
                     page.locator('#forward-start').hover();expect(panel).to_be_visible()
                     page.screenshot(path=str(output/f'help-{width}x{height}.png'))
                     if writes:raise ValueError('HELP_BROWSER_INTERACTION_SENT_WRITE')
                     if errors or blocked:raise ValueError('HELP_BROWSER_PAGE_ERRORS: '+repr(errors+blocked))
-                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True,hub_readonly_views=True))
+                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True,hub_readonly_views=True,workspace_tabs=7,automatic_startup_checks=True,tab_switch_preserves_inputs=True))
                 except Exception as exc:
                     diagnostic=dict(viewport=dict(width=width,height=height),control=current_control,error=str(exc),page_errors=errors,blocked=blocked,
                                     events=page.evaluate('window.__helpEvents||[]'))

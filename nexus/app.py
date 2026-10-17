@@ -13,6 +13,7 @@ from nexus.market_universe import page as market_universe_page
 from nexus.expansion_initiative import roadmap as expansion_roadmap, assess_evidence as assess_expansion_evidence
 from nexus.order_gateway import gateway as research_order_gateway
 from nexus.tier_permissions import current as tier_permissions_current, configure as configure_tier_permission, require_entry as require_tier_entry
+from nexus.tier_performance import tier_performance
 from nexus.decision_lane import benchmark as offline_decision_benchmark
 from nexus.paper_execution import PaperEngine
 from nexus.replay import replay
@@ -506,6 +507,12 @@ def matrix():
 
 class TierPermissionCommand(BaseModel):
     enabled: bool
+
+@app.get("/api/tiers/performance")
+def tier_historical_performance(product:str="BTC-USD"):
+    if product not in PRODUCTS:raise HTTPException(status_code=422,detail="Unsupported research product")
+    try:return tier_performance(product)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.get("/api/tiers/permissions")
 def tier_permission_state():

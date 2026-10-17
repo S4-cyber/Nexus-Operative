@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from nexus.state import load_settings, save_settings, audit
 from nexus.markets import list_markets
 from nexus.market_universe import page as market_universe_page
+from nexus.expansion_initiative import roadmap as expansion_roadmap, assess_evidence as assess_expansion_evidence
 from nexus.paper_execution import PaperEngine
 from nexus.replay import replay
 from nexus.journal import record_replay, recent_replays
@@ -44,7 +45,7 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.46.0")
+app = FastAPI(title="Nexus Operative", version="0.47.0")
 _started = time.monotonic()
 _paused = True
 _halted = False
@@ -266,7 +267,7 @@ def simulated_snapshot():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.46.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.47.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -432,6 +433,15 @@ def paper_portfolio_reconcile():
         except ValueError:
             return {"reconciled":False,"reason":"Quote unavailable", "simulation_only":True}
     return reconcile_paper(quotes)
+
+@app.get("/api/expansion/roadmap")
+def expansion_initiative_roadmap():
+    return expansion_roadmap()
+
+@app.post("/api/expansion/{avenue}/screen")
+def expansion_initiative_screen(avenue: str, evidence: dict):
+    try:return assess_expansion_evidence(avenue,evidence)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.get("/api/markets/discover")
 def discover_public_market_universe(limit: int = 100, offset: int = 0, search: str = ""):

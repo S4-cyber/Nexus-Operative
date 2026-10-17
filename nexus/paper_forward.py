@@ -4,7 +4,6 @@ Public quotes are observations; fills assume available quantity, slippage and
 fees, not actual matching/depth. No broker IO, validated edge or live authority.
 Restarts always require an explicit new start. The read-only observer is separate.
 """
-import hashlib
 import json
 import os
 import sqlite3
@@ -21,10 +20,11 @@ from nexus.feed_guard import FeedGuard
 from nexus.public_data import read_ticker
 from nexus.tier_permissions import require_entry, TIERS
 from nexus.state import load_settings
+from nexus.paper_policy import admit, POLICY
 
-INTERVAL=5
-RANKING_INTERVAL=15
-PRODUCT='BTC-USD'
+INTERVAL=POLICY['interval_seconds']
+RANKING_INTERVAL=POLICY['ranking_seconds']
+PRODUCT=POLICY['product']
 
 
 class PaperForwardRunner:
@@ -33,30 +33,52 @@ class PaperForwardRunner:
         self._stop=threading.Event();self._stop.set()
         self._thread=None;self._lock=threading.RLock();self._cycle_lock=threading.Lock()
         self._execution_lock=threading.RLock();self._control_lock=threading.Lock()
-        self._session=None;self._tier=None;self._prices=deque(maxlen=6)
+        self._session=None;self._tier=None;self._prices=deque(maxlen=POLICY['warmup_observations'])
         self._guard=FeedGuard();self._stamp=None;self._last_rank=0
         self._failures=0;self._cycles=0;self._last=None;self._error=None
+        self._policy=admit(POLICY["id"])
 
     def _db(self):
         root=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))
         root.mkdir(parents=True,exist_ok=True)
         db=sqlite3.connect(root/'paper_forward.sqlite3',timeout=10)
+        db.execute('PRAGMA synchronous=FULL')
         db.execute('CREATE TABLE IF NOT EXISTS cycles(id INTEGER PRIMARY KEY,at REAL NOT NULL,detail TEXT NOT NULL)')
+        db.execute("""CREATE TABLE IF NOT EXISTS sessions(
+            id TEXT PRIMARY KEY,started_at REAL NOT NULL,updated_at REAL NOT NULL,
+            state TEXT NOT NULL,policy_json TEXT NOT NULL,counts_json TEXT NOT NULL,last_json TEXT NOT NULL)""")
         return db
 
     def _record(self,decision,reason,**extra):
         row=dict(at=self.clock(),session=self._session,decision=decision,reason=reason,
                  product=PRODUCT,tier=self._tier,simulation_only=True,**extra)
+        row['policy_id']=self._policy['id'];row['policy_sha256']=self._policy['policy_sha256']
         with closing(self._db()) as db,db:
+            db.execute('BEGIN IMMEDIATE')
+            old=db.execute('SELECT started_at,updated_at,state,counts_json FROM sessions WHERE id=?',(self._session,)).fetchone()
+            if old is None:
+                if decision!='START':raise ValueError('FORWARD_SESSION_MISSING')
+                if db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]>=1000:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
+                started=row['at'];state='RUNNING';counts={}
+            else:
+                if decision=='START':raise ValueError('FORWARD_SESSION_ID_REUSED')
+                started,updated,state,raw=old;counts=json.loads(raw)
+                row['at']=max(row['at'],updated)
+            counts[decision]=counts.get(decision,0)+1
+            if decision=='PAUSED':state='PAUSED'
+            elif decision=='STOP':state='STOPPED'
+            db.execute('INSERT OR REPLACE INTO sessions VALUES (?,?,?,?,?,?,?)',
+                       (self._session,started,row['at'],state,json.dumps(self._policy,sort_keys=True),json.dumps(counts,sort_keys=True),json.dumps(row,allow_nan=False)))
             db.execute('INSERT INTO cycles(at,detail) VALUES (?,?)',(row['at'],json.dumps(row,allow_nan=False)))
             db.execute('DELETE FROM cycles WHERE id NOT IN (SELECT id FROM cycles ORDER BY id DESC LIMIT 1000)')
         with self._lock:self._last=row
         return row
 
-    def prepare(self,tier):
+    def prepare(self,tier,policy_id=POLICY['id']):
         """Validate/start session state without starting a thread (also testable offline)."""
         with self._cycle_lock,self._lock:
             if not self._stop.is_set():raise ValueError('PAPER_FORWARD_ALREADY_ACTIVE')
+            selected_policy=admit(policy_id)
             if tier not in TIERS:raise ValueError('UNKNOWN_RISK_TIER')
             report=self.orders.recovery_report()
             existing_positions=(report['execution_account']['account'] or {}).get('positions',{})
@@ -75,31 +97,36 @@ class PaperForwardRunner:
             holding=bool(report['execution_account']['account']['positions'])
             if not report['capacity']['lifecycle_intake_allowed'] or report['capacity']['ordinary_commands_remaining']<(4 if holding else 12) or report['capacity']['intents_remaining']<(1 if holding else 2):
                 raise ValueError('INSUFFICIENT_FORWARD_JOURNAL_CAPACITY')
+            self._policy=selected_policy
             self._session=uuid.uuid4().hex[:16];self._tier=tier
             self._prices.clear();self._guard=FeedGuard();self._stamp=None;self._last_rank=0
             self._cycles=0;self._failures=0;self._error=None;self._stop.clear()
             try:self._record('START','EXPERIMENTAL_MOMENTUM_PAPER_POLICY')
-            except (OSError,sqlite3.Error):
+            except (OSError,sqlite3.Error,ValueError):
                 self._stop.set();self._error='START_DIAGNOSTIC_STORAGE_FAILURE';raise
             return self.status()
 
-    def start(self,tier):
+    def start(self,tier,policy_id=POLICY['id']):
         with self._control_lock:
             if self._thread and self._thread.is_alive():raise ValueError('PAPER_FORWARD_ALREADY_ACTIVE')
-            self.prepare(tier)
+            self.prepare(tier,policy_id)
             self._thread=threading.Thread(target=self._run,daemon=True,name='nexus-paper-forward')
             try:self._thread.start()
             except RuntimeError:
                 self._stop.set();self._error='WORKER_START_FAILED';raise
             return self.status()
 
-    def stop(self):
+    def stop(self,reason='MANUAL_STOP'):
         with self._control_lock:
+            was_enabled=not self._stop.is_set()
             self._stop.set()
             # Fence the full local order sequence before acknowledging stop.
             with self._execution_lock:pass
             worker=self._thread
             if worker and worker.is_alive() and worker is not threading.current_thread():worker.join(timeout=6)
+            if was_enabled and self._session:
+                try:self._record('STOP',reason)
+                except (OSError,sqlite3.Error,ValueError):self._error='STOP_DIAGNOSTIC_STORAGE_FAILURE'
             return self.status()
 
     def _run(self):
@@ -108,6 +135,8 @@ class PaperForwardRunner:
             except Exception as exc:
                 # Unknown worker failures pause rather than creating an unmonitored loop.
                 self._error=type(exc).__name__;self._stop.set()
+                try:self._record('PAUSED','UNHANDLED_WORKER_FAILURE',error_type=type(exc).__name__)
+                except (OSError,sqlite3.Error,ValueError):pass
             self._stop.wait(INTERVAL)
 
     def _execute(self,*args):
@@ -119,11 +148,11 @@ class PaperForwardRunner:
         self.orders.submit(oid,PRODUCT,side,str(notional),tier=self._tier)
         try:
             if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_AFTER_SUBMIT')
-            self.orders.set_execution_terms(oid,now,2)
+            self.orders.set_execution_terms(oid,now,self._policy['order_lifetime_seconds'])
             # Quote may precede order creation by transport latency; use a fresh
             # observation boundary so the timestamp model retains source age.
             if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_BEFORE_FILL')
-            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock())
+            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock(),fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'])
             if result.get('expired'):return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)
             return self._record(side,'MODELED_PUBLIC_QUOTE_FILL',order_id=oid,
                                 liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
@@ -145,25 +174,29 @@ class PaperForwardRunner:
                 self._stop.set();return self._record('PAUSED','JOURNAL_OR_ID_CAPACITY_VETO')
             try:
                 quote=self.fetcher(PRODUCT);now=self.clock()
+                if not isinstance(quote,dict):raise ValueError('MISSING_FORWARD_QUOTE')
                 if self._stop.is_set():return self._record('HOLD','STOPPED_DURING_FETCH')
                 feed=self._guard.evaluate(quote,now)
                 if quote.get('product')!=PRODUCT:raise ValueError('QUOTE_PRODUCT_MISMATCH')
+                if not isinstance(quote.get('exchange_time'),str):raise ValueError('INVALID_EXCHANGE_TIMESTAMP')
                 exchange=datetime.fromisoformat(quote['exchange_time'].replace('Z','+00:00'))
                 if exchange.tzinfo is None:raise ValueError('QUOTE_TIMEZONE_MISSING')
                 stamp=exchange.timestamp()
                 received=float(quote['received_at'])
-                if feed['decision']=='VETO' or not 0<=now-received<=2 or not 0<=now-stamp<=10:
+                if feed['decision']=='VETO' or not 0<=now-received<=self._policy['receive_age_seconds'] or not 0<=now-stamp<=self._policy['exchange_age_seconds']:
                     raise ValueError('STALE_OR_UNVERIFIED_FORWARD_QUOTE')
                 bid=Decimal(str(quote['bid']));ask=Decimal(str(quote['ask']))
                 if not bid.is_finite() or not ask.is_finite():raise ValueError('INVALID_QUOTE')
             except (ValueError,KeyError,TypeError,OSError,TimeoutError) as exc:
+                self._prices.clear();self._last_rank=0
                 self._failures+=1;self._error=type(exc).__name__
-                if self._failures>=3:self._stop.set()
+                if self._failures>=self._policy['consecutive_failure_limit']:self._stop.set()
                 return self._record('PAUSED' if self._stop.is_set() else 'VETO','QUOTE_UNAVAILABLE_OR_INVALID',consecutive_failures=self._failures)
             self._failures=0;self._error=None
             if stamp==self._stamp:return self._record('HOLD','DUPLICATE_EXCHANGE_TICK')
             if self._stamp is not None and stamp<self._stamp:return self._record('VETO','EXCHANGE_TIME_REGRESSION')
             self._stamp=stamp
+            if self._prices and now-self._prices[-1][0]>2*INTERVAL:self._prices.clear();self._last_rank=0
             self._prices.append((now,(bid+ask)/2))
             account=report['execution_account']['account']
             if any(p!=PRODUCT for p in account['positions']):
@@ -172,25 +205,25 @@ class PaperForwardRunner:
             if position:
                 qty=Decimal(position['quantity']);entry=Decimal(position['entry'])
                 move=(bid/entry-1)*10000
-                equity=Decimal(account['cash'])+qty*bid*Decimal('.999')
-                if abs(move)<50 and equity>Decimal(account['initial'])*Decimal('.95'):
+                equity=Decimal(account['cash'])+qty*bid*(1-Decimal(self._policy['fee_bps'])/10000)
+                if abs(move)<self._policy['exit_threshold_bps'] and equity>Decimal(account['initial'])*(1-Decimal(self._policy['capital_loss_bps'])/10000):
                     return self._record('HOLD','POSITION_WITHIN_EXPERIMENTAL_EXIT_BANDS')
-                px=bid*Decimal('.9995');amount=min(Decimal(200),qty*px)
+                px=bid*(1-Decimal(self._policy['slippage_bps'])/10000);amount=min(Decimal(200),qty*px)
                 quantity=min(qty,(amount/px).quantize(Decimal('1e-12'),rounding=ROUND_DOWN))
                 side='SELL'
             else:
                 if now-self._last_rank<RANKING_INTERVAL:return self._record('HOLD','ENTRY_RANKING_INTERVAL')
                 self._last_rank=now
-                if len(self._prices)<6 or now-self._prices[0][0]<25:
+                if len(self._prices)<self._policy['warmup_observations'] or now-self._prices[0][0]<self._policy['warmup_seconds']:
                     return self._record('HOLD','WARMUP_REQUIRES_SIX_DISTINCT_TICKS')
                 move=(self._prices[-1][1]/self._prices[0][1]-1)*10000
-                if move<30:return self._record('HOLD','EXPERIMENTAL_ENTRY_THRESHOLD_NOT_MET')
-                amount=min(Decimal(50),Decimal(account['initial'])*Decimal('.01'))
+                if move<self._policy['entry_threshold_bps']:return self._record('HOLD','EXPERIMENTAL_ENTRY_THRESHOLD_NOT_MET')
+                amount=min(Decimal(self._policy['maximum_entry_usd']),Decimal(account['initial'])*Decimal(self._policy['initial_entry_fraction_bps'])/10000)
                 try:require_entry(self._tier,str(amount))
                 except ValueError as exc:return self._record('VETO',str(exc))
-                if Decimal(account['cash'])<=Decimal(account['initial'])*Decimal('.95'):
+                if Decimal(account['cash'])<=Decimal(account['initial'])*(1-Decimal(self._policy['capital_loss_bps'])/10000):
                     self._stop.set();return self._record('PAUSED','INITIAL_CAPITAL_LOSS_THRESHOLD')
-                px=ask*Decimal('1.0005')
+                px=ask*(1+Decimal(self._policy['slippage_bps'])/10000)
                 quantity=(amount/px).quantize(Decimal('1e-12'),rounding=ROUND_DOWN)
                 side='BUY'
             if quantity<=0:return self._record('VETO','QUANTITY_BELOW_PRECISION')
@@ -211,7 +244,22 @@ class PaperForwardRunner:
                         product=PRODUCT,interval_seconds=INTERVAL,entry_ranking_seconds=RANKING_INTERVAL,
                         cycles=self._cycles,consecutive_feed_failures=self._failures,last_error=self._error,last_event=self._last,
                         live_orders_enabled=False,broker_connected=False,strategy_validated=False,
-                        liquidity_model='ASSUMED_QUANTITY_NO_DEPTH',automatic_restart=False)
+                        liquidity_model='ASSUMED_QUANTITY_NO_DEPTH',automatic_restart=False,policy=dict(self._policy))
+
+    def sessions(self,limit=20):
+        if type(limit) is not int or not 1<=limit<=100:raise ValueError('INVALID_SESSION_HISTORY_LIMIT')
+        with closing(self._db()) as db:
+            rows=db.execute('SELECT id,started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions ORDER BY started_at DESC,rowid DESC LIMIT ?',(limit,)).fetchall()
+        results=[]
+        for sid,started,updated,state,policy,counts,last in rows:
+            interrupted=state=='RUNNING' and sid!=self._session
+            stale=state=='RUNNING' and self.clock()-updated>20
+            unrecorded_stop=state=='RUNNING' and sid==self._session and self._stop.is_set()
+            results.append(dict(session=sid,started_at=started,updated_at=updated,stored_state=state,
+                                effective_state='INTERRUPTED_OR_PRIOR_SESSION' if interrupted else 'STOPPED_WITHOUT_FINAL_RECORD' if unrecorded_stop else 'HEARTBEAT_STALE' if stale else state,
+                                requires_review=interrupted or stale or unrecorded_stop,policy=json.loads(policy),counts=json.loads(counts),last_event=json.loads(last)))
+        return dict(read_only=True,sessions=results,automatic_resume=False,session_limit=1000,
+                    execution_source_of_truth='ORDER_JOURNAL_NOT_SESSION_COUNTERS')
 
     def history(self):
         with closing(self._db()) as db:

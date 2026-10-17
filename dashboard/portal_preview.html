@@ -125,6 +125,7 @@ async function api(path,options){
  return body;
 }
 function show(id,s){byId(id).textContent=String(s)}
+let tierStudy=null,tierStudyAt=0;
 async function update(){
  try{
   const status=await api('/api/status');
@@ -137,6 +138,11 @@ async function update(){
   byId('matrix-hangar').classList.toggle('open',portalActive);
   byId('matrix-hangar').setAttribute('aria-hidden',String(!portalActive));
   show('matrix-state',portalActive?'SYNTHETIC / NO ORDERS':'STANDBY');
+  if(Date.now()-tierStudyAt>300000){
+    tierStudyAt=Date.now();
+    try{tierStudy=await api('/api/tiers/performance?product=BTC-USD')}
+    catch(_){tierStudy=null}
+  }
   const data=await api('/api/tiers');const root=byId('tiers');root.replaceChildren();
   const switches=byId('tier-engagement');switches.replaceChildren();
   for(const policy of data.tier_permissions){
@@ -155,8 +161,11 @@ async function update(){
   for(const t of data.tiers){
    const card=document.createElement('article');card.className='card';
    const h=document.createElement('h2');h.textContent=t.tier.toUpperCase();
-   const num=document.createElement('div');num.className='metric';num.textContent=t.illustrative_signal_score+'/100';
-   const p=document.createElement('p');p.className='sub';p.textContent=t.strategy_approach+' Signal is illustrative, not a probability of profit.';
+   const num=document.createElement('div');num.className='metric';const observed=tierStudy&&tierStudy.tiers?tierStudy.tiers.find(x=>x.tier===t.tier):null;
+   num.textContent=observed&&observed.holdout_win_rate_pct!==null?observed.holdout_win_rate_pct+'% HISTORICAL WINS':'N/A · NO RELIABLE ESTIMATE';
+   const p=document.createElement('p');p.className='sub';p.textContent=t.strategy_approach+' '+(observed&&observed.holdout_net_return_pct!==null?
+  'Historical holdout net '+observed.holdout_net_return_pct+'%; observed/day '+observed.observed_return_per_day_pct+'%; drawdown '+observed.holdout_drawdown_pct+'%; '+observed.holdout_trade_count+' trades. Not a prediction.':
+  'No statistically defensible daily/minute profit projection; more independent forward-tested trades required.');
    card.append(h,num,p);root.append(card);
   }
  }catch(e){show('status','Local engine unavailable: '+e.message)}

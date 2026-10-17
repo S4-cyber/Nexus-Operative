@@ -61,5 +61,6 @@ def test_request_count_exhaustion_even_on_provider_errors(monkeypatch):
 def test_api_disabled_and_no_live_orders(monkeypatch):
     monkeypatch.delenv("NEXUS_ENABLE_LLM_RESEARCH",raising=False)
     c=TestClient(app)
-    assert c.post("/api/paper/ai-provider/market_regime/research",json={}).status_code==422
+    # Synthetic TestClient has no trusted localhost Origin; the security gate rejects it before optional-provider validation.
+    assert c.post("/api/paper/ai-provider/market_regime/research",json={}).status_code==403
     assert c.get("/api/status").json()["live_orders_enabled"] is False

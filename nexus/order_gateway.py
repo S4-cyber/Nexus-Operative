@@ -32,7 +32,7 @@ class OrderGateway:
             "live_orders_enabled":False,"broker_connected":False,
             "note":"External providers are placeholders; no credentials, broker calls or order routing."}
 
-    def submit(self,client_order_id,product,side,notional,provider="nexus_local_paper"):
+    def submit(self,client_order_id,product,side,notional,provider="nexus_local_paper",tier=None):
         if not isinstance(client_order_id,str) or not 1<=len(client_order_id)<=64 or not client_order_id.replace("-","").replace("_","").isalnum():
             raise ValueError("INVALID_ORDER_ID")
         if not isinstance(product,str) or product not in ("BTC-USD","ETH-USD","SOL-USD"):
@@ -40,8 +40,9 @@ class OrderGateway:
         if side not in ("BUY","SELL"):raise ValueError("INVALID_SIDE")
         amount=_positive(notional)
         if provider not in ALLOWED_PROVIDERS:raise ValueError("UNKNOWN_PROVIDER")
+        if tier is not None and tier not in ("terrestrial","solar","universal"):raise ValueError("UNKNOWN_RISK_TIER")
         payload={"id":client_order_id,"product":product,"side":side,
-                 "notional":str(amount),"provider":provider}
+                 "notional":str(amount),"provider":provider,"tier":tier}
         digest=hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()
         with self.lock:
             old=self.intents.get(client_order_id)

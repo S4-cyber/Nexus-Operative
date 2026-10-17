@@ -48,3 +48,14 @@ def test_fetch_rejects_invalid_observation_time_before_network():
     for invalid in (True, False, -1, 0, float("nan"), float("inf"), "1234", []):
         with pytest.raises(ValueError):
             fetch_candles("BTC-USD", 60, now=invalid, transport=no_network)
+
+
+def test_corrupt_bar_does_not_hide_gap(tmp_path, monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA", str(tmp_path))
+    collect("BTC-USD", 60, now=1200, transport=lambda _: [row(900), row(960), row(1080)])
+    with sqlite3.connect(tmp_path / "research_candles.sqlite3") as db:
+        db.execute("UPDATE candles SET payload=? WHERE starts_at=?", ("{}", 960))
+    result = history("BTC-USD", 60)
+    assert "CORRUPTED_BAR" in result["issues"]
+    assert "MISSING_BAR_INTERVAL" in result["issues"]
+    assert result["suitable_for_backtesting"] is False

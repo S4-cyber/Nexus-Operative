@@ -1,5 +1,8 @@
 # Nexus Expansion Initiative — Broad, Evidence-First Discovery
 
+**Parallel supporting workstream only.** The principal development objective is the reliable, tested v1.0 launch in [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Expansion must not divert a sprint from fixing release-blocking build or safety failures.
+
+
 Goal: cover hundreds or thousands of candidate markets across the world **without** indiscriminately placing trades. Market coverage is a discovery problem; productive trading is a separate, long-running validation problem.
 
 ## Now built

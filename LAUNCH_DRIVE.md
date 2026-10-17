@@ -207,3 +207,11 @@ Validation: 351 tests passed, Python compilation passed and PORTAL JavaScript sy
 Extended Windows installer smoke with a disposable four-database paper fixture, verified backup/new-directory restore and installed-EXE HTTP comparison of account and archived-order fingerprints, quote chain/count, policy, modeled buy/sell counts and stopped/halted behavior. The original backup is reverified afterward; baseline, process log and JSON results are retained in installer evidence. Unit tests reject changed account/order/quote/policy baselines. A source-process end-to-end harness is also run locally; only Windows CI establishes packaged behavior. This is same-source recovery, not a cross-version upgrade or sustained public-feed run.
 
 Validation: 356 tests passed, Python compilation passed and the full restored-data HTTP harness passed using a source launcher. Both v0.66 Windows workflows passed at commit 13694d0ef90c504e4bc396a19f9fd92c688c4811; v0.67 checks were still in progress. New installed-EXE recovery coverage awaits its own Windows run.
+
+## v0.69 — execution model and recorded-policy evidence crosschecks
+
+Extended session evidence beyond quote bid/ask/time matching: recompute modeled price/fee arithmetic; require positive finite quantity/prices, adequate assumed capacity, unique positive sequences and evaluation before policy lifetime; compare fee/slippage rates with the recorded policy and event notional/fee sums with order totals. Report exact decimal modeled buy/sell notionals and fees, clearly scoped as local diagnostics rather than returns or liquidity validation. Tests inject price, quantity, fee, sequence, cost-rate, capacity, timing and total disagreements without rewriting persisted evidence.
+
+Malformed session policy/counter metadata now produces a fail-closed unavailable-evidence response, including list/null values and boolean counters. Tests verify this API behavior. v0.67 safety passed while packaging was in progress; v0.68 checks remained pending/in progress.
+
+Validation: 371 tests passed and Python compilation passed. No real-feed or external broker session was started.

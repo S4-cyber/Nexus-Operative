@@ -80,3 +80,9 @@ PORTAL now displays retained quote/session counts and warnings at the final ten 
 No history is deleted or archived automatically. Storage availability is one admission check, not execution permission or a guarantee of future exit capacity. The system remains bounded; physical offload and indefinite operation are unvalidated. Stop and back up before limits are reached, review any held paper position and retain all evidence. Do not edit or delete records to bypass a cap.
 
 The Windows installer smoke also exercises the recovered fixture through the installed application API. See WINDOWS_ACCEPTANCE.md for its exact scope and artifacts; it never runs the forward policy in the installed process or connects to a market feed.
+
+## Modeled execution cost consistency
+
+Session evidence now checks each quote-driven fill's price, quantity, fee, assumed available quantity, cost rates, timing and unique positive event sequence. It recomputes price/fee arithmetic, compares fee/slippage rates with the recorded policy and checks summed event notionals/fees against the order's totals. Disagreements appear as `FILL_MODEL_OR_POLICY_DISAGREEMENT`; no evidence is repaired. Existing quote-to-observation checks remain separate.
+
+Reports and portable summaries include exact decimal modeled buy/sell notionals and fees for events that pass these model checks. These are execution-cost diagnostics, not realized strategy returns, independently available liquidity, a market-performance score or release acceptance. The durable ledger remains authoritative. Checks can reveal local inconsistency but cannot attest coordinated rewrites or validate the policy's economic assumptions.

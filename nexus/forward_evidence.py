@@ -82,8 +82,9 @@ def review(db,session):
                 points=points)
 
 
-def crosscheck(quotes,orders,counts):
+def crosscheck(quotes,orders,counts,policy):
     indexed={p['cycle']:p for p in quotes['points']};reasons=[];fills={'BUY':0,'SELL':0}
+    totals={'BUY':Decimal(0),'SELL':Decimal(0)};fees=Decimal(0)
     for item in orders:
         order=item['order']
         if Decimal(order['simulated_filled_notional'])==0:continue
@@ -97,5 +98,28 @@ def crosscheck(quotes,orders,counts):
                     if Decimal(assumptions[model])!=Decimal(str(quote[field])):raise ValueError()
             if not item['quote_events']:raise ValueError()
         except (ValueError,KeyError,TypeError,ArithmeticError):reasons.append('FILL_QUOTE_EVIDENCE_DISAGREEMENT')
+        try:
+            notional=Decimal(0);cost=Decimal(0);sequences=set()
+            for execution in item['quote_events']:
+                a=execution['assumptions']
+                qty=Decimal(execution['quantity']);price=Decimal(execution['price']);fee=Decimal(execution['fee'])
+                bid=Decimal(a['bid']);ask=Decimal(a['ask']);capacity=Decimal(a['available_quantity'])
+                fee_bps=Decimal(a['fee_bps']);slip=Decimal(a['slippage_bps'])
+                age=Decimal(a['evaluated_at'])-Decimal(a['quote_at'])
+                values=(qty,price,fee,bid,ask,capacity,fee_bps,slip,age)
+                if not all(v.is_finite() for v in values):raise ValueError()
+                if qty<=0 or price<=0 or bid<=0 or ask<bid or fee<0 or capacity<qty:raise ValueError()
+                if not 0<=age<Decimal(str(policy['order_lifetime_seconds'])):raise ValueError()
+                if fee_bps!=Decimal(str(policy['fee_bps'])) or slip!=Decimal(str(policy['slippage_bps'])):raise ValueError()
+                expected=ask*(1+slip/10000) if order['side']=='BUY' else bid*(1-slip/10000)
+                if price!=expected or fee!=qty*price*fee_bps/10000:raise ValueError()
+                sequence=execution['sequence']
+                if type(sequence) is not int or sequence<1 or sequence in sequences:raise ValueError()
+                sequences.add(sequence);notional+=qty*price;cost+=fee
+            if not item['quote_events'] or notional!=Decimal(order['simulated_filled_notional']) or cost!=Decimal(order['simulated_fee_total']):raise ValueError()
+            totals[order['side']]+=notional;fees+=cost
+        except (ValueError,KeyError,TypeError,ArithmeticError):reasons.append('FILL_MODEL_OR_POLICY_DISAGREEMENT')
     if any(counts.get(side,0)!=fills[side] for side in ('BUY','SELL')):reasons.append('SESSION_COUNTER_FILL_DISAGREEMENT')
-    return dict(integrity_ok=not reasons,reasons=sorted(set(reasons)),modeled_buy_orders=fills['BUY'],modeled_sell_orders=fills['SELL'])
+    return dict(integrity_ok=not reasons,reasons=sorted(set(reasons)),modeled_buy_orders=fills['BUY'],modeled_sell_orders=fills['SELL'],
+                modeled_buy_notional=str(totals['BUY']),modeled_sell_notional=str(totals['SELL']),modeled_fees=str(fees),
+                totals_scope='Consistent modeled execution events only; not a profit or available-liquidity assessment.')

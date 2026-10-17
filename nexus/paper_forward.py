@@ -335,7 +335,9 @@ class PaperForwardRunner:
             quotes=forward_evidence.review(db,session_id)
         orders=self.orders.session_orders(session_id)
         counts=json.loads(session[4]);policy=json.loads(session[3])
-        checked=forward_evidence.crosscheck(quotes,orders,counts)
+        if not isinstance(counts,dict) or any(not isinstance(k,str) or type(v) is not int or v<0 for k,v in counts.items()) or not isinstance(policy,dict) or not isinstance(policy.get('policy_sha256'),str):
+            raise ValueError('INVALID_FORWARD_SESSION_METADATA')
+        checked=forward_evidence.crosscheck(quotes,orders,counts,policy)
         reasons=quotes['reasons']+checked['reasons']
         import hashlib
         policy_digest=hashlib.sha256(forward_evidence.canonical({k:v for k,v in policy.items() if k!='policy_sha256'}).encode()).hexdigest()

@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 from decimal import Decimal
+from datetime import datetime
 
 LIMIT=100000
 FIELDS=('provider','product','bid','ask','last','received_at','exchange_time','read_only','orders_allowed')
@@ -98,6 +99,19 @@ def crosscheck(quotes,orders,counts,policy):
                     if Decimal(assumptions[model])!=Decimal(str(quote[field])):raise ValueError()
             if not item['quote_events']:raise ValueError()
         except (ValueError,KeyError,TypeError,ArithmeticError):reasons.append('FILL_QUOTE_EVIDENCE_DISAGREEMENT')
+        try:
+            quote=indexed[int(order['id'].split('_')[2])]['quote']
+            stamp=quote['exchange_time']
+            if not isinstance(stamp,str):raise ValueError()
+            exchange=datetime.fromisoformat(stamp.replace('Z','+00:00'))
+            if exchange.tzinfo is None:raise ValueError()
+            exchange_at=Decimal(str(exchange.timestamp()))
+            for execution in item['quote_events']:
+                evaluated=Decimal(execution['assumptions']['evaluated_at'])
+                age=evaluated-exchange_at
+                if not age.is_finite() or not 0<=age<=Decimal(str(policy['exchange_age_seconds'])):raise ValueError()
+        except (ValueError,KeyError,TypeError,ArithmeticError,OverflowError,IndexError):
+            reasons.append('FILL_EXCHANGE_TIME_DISAGREEMENT')
         try:
             notional=Decimal(0);cost=Decimal(0);sequences=set()
             for execution in item['quote_events']:

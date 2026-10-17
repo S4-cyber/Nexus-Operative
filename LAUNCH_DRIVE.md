@@ -291,3 +291,11 @@ Replaced redirect-following default transport with a redirect-rejecting opener a
 v0.72.2 Windows safety and packaging workflows were in progress at the initial review. No real-feed or broker session was started; source review and independent provenance acceptance remain open.
 
 Validation: all 466 tests passed (23 new transport/integration cases) and Python compilation passed. Actual redirect-handler tests verify a single request only and closure of the rejected response, preventing redirect socket leaks. The existing Starlette TestClient/httpx deprecation warning remains. Windows CI for this fix is pending submission.
+
+## v0.72.4 — exchange freshness at the durable fill boundary
+
+Closed an exchange-time gap remaining after receipt-time refresh: a quote could pass its ten-second exchange-age check at intake but cross that boundary during write-lock/replay delay while its receipt remained less than two seconds old. The runner now carries exchange time into its post-lock runtime hook and checks age against the exact continuity-checked wall sample, removing a second unchecked wall-clock read. Both entries and exits fail closed, clear warmup and cancel unfilled orders; prior holdings remain authoritative. Retained-evidence crosschecks independently compare fill evaluation to timezone-aware source exchange timestamps and preserve disagreements in portable review blockers. Fixed policy parameters/fingerprint remain unchanged.
+
+New regression cases cover BUY and tier-off SELL across the exact ten-second boundary, stale and still-valid replay delays, old/future/invalid retained timestamps and portable blocker propagation without accounting mutation. v0.72.3 safety was in progress and packaging pending at the initial review. No real-feed or broker session was started.
+
+Validation: all 479 tests passed (13 new exchange-age cases) and Python compilation passed. BUY and tier-off SELL retain valid exact-boundary fills and veto stale delayed fills without accounting mutation; portable review integrity verification succeeds while preserving the explicit exchange-time blocker. The existing Starlette TestClient/httpx deprecation warning remains. Windows verification of this fix awaits CI.

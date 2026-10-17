@@ -185,13 +185,16 @@ class PaperForwardRunner:
     def _execute(self,*args):
         with self._execution_lock:return self._execute_locked(*args)
 
-    def _execution_now(self):
+    def _execution_now(self,exchange_at):
         if self._stop.is_set():raise ValueError('RUNNER_STOPPED_BEFORE_FILL')
         reason=self._clock_check()
         if reason:raise ValueError(reason)
-        return self.clock()
+        now=self._clock_anchor[0]
+        if not 0<=now-exchange_at<=self._policy['exchange_age_seconds']:
+            raise ValueError('STALE_OR_FUTURE_EXCHANGE_QUOTE_AT_FILL')
+        return now
 
-    def _execute_locked(self,side,quantity,bid,ask,received,now,notional):
+    def _execute_locked(self,side,quantity,bid,ask,received,now,notional,exchange_at):
         clock_reason=self._clock_check()
         if clock_reason:return self._pause_clock(clock_reason)
         if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_BEFORE_SUBMIT')
@@ -205,7 +208,7 @@ class PaperForwardRunner:
             if self._stop.is_set():return self._record('HOLD','RUNNER_STOPPED_BEFORE_FILL')
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
-            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock(),fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=self._execution_now)
+            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock(),fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=lambda:self._execution_now(exchange_at))
             if result.get('expired'):
                 self._prices.clear();self._last_rank=0
                 return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)
@@ -328,11 +331,11 @@ class PaperForwardRunner:
             if quantity<=0:return self._record('VETO','QUANTITY_BELOW_PRECISION')
             # The immutable lifetime starts at the quote observation, not a
             # later wall-clock value; all timestamps are preserved in the model.
-            try:return self._execute(side,quantity,bid,ask,received,received,amount)
+            try:return self._execute(side,quantity,bid,ask,received,received,amount,stamp)
             except ValueError as exc:
                 reason=str(exc)
                 if reason in ('INVALID_RUNTIME_CLOCK','RUNTIME_CLOCK_DISCONTINUITY'):return self._pause_clock(reason)
-                if reason=='STALE_OR_FUTURE_SYNTHETIC_QUOTE':self._prices.clear();self._last_rank=0
+                if reason in ('STALE_OR_FUTURE_SYNTHETIC_QUOTE','STALE_OR_FUTURE_EXCHANGE_QUOTE_AT_FILL'):self._prices.clear();self._last_rank=0
                 return self._record('HOLD' if reason=='RUNNER_STOPPED_BEFORE_FILL' else 'VETO',reason)
         except (OSError,sqlite3.Error,ValueError) as exc:
             self._error=type(exc).__name__;self._stop.set()

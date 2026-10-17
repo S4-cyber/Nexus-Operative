@@ -129,6 +129,17 @@ def history(product,granularity=300,limit=300):
             valid=(hashlib.sha256(payload.encode()).hexdigest()==digest and
                    isinstance(data,dict) and data.get("starts_at")==stamp)
         except (ValueError,TypeError):data=None;valid=False
+        if valid:
+            try:
+                fields={"starts_at","low","high","open","close","volume"}
+                if set(data)!=fields:
+                    raise ValueError("Unexpected stored candle fields")
+                raw_row=[stamp,data["low"],data["high"],data["open"],data["close"],data["volume"]]
+                normalized=parse_candles(product,granularity,[raw_row],stamp+granularity)
+                if len(normalized)!=1 or normalized[0]!=data:
+                    raise ValueError("Invalid stored candle structure")
+            except (ValueError,TypeError,KeyError):
+                valid=False
         if not valid:
             issues.append("CORRUPTED_BAR")
             result.append({"starts_at":stamp,"valid":False})

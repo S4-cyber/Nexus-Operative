@@ -54,7 +54,7 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <article class="card"><div class="label">Execution bridge // planned provider connections</div>
 <h2>Buy / Hold / Sell Connectivity</h2>
 <p class="sub">Nexus will submit approved order intents to a supported broker's API, hold and reconcile positions there, then submit exits when the risk-approved strategy calls for them. For now, only local simulated acknowledgments are implemented. No broker account, live order, or payment connection is active.</p>
-<button id="execution-connectors">Check Broker Connections</button><p class="sub" id="execution-connector-status">No broker connected. Local simulation only.</p>
+<button id="execution-connectors">Check Broker Connections</button><button id="decision-benchmark">Test 30 Decisions/sec (Offline)</button><p class="sub" id="decision-benchmark-result">No local throughput test yet. This does not send orders.</p><p class="sub" id="execution-connector-status">No broker connected. Local simulation only.</p>
 <div id="execution-connector-list" class="monitor tiny">Alpaca paper, Interactive Brokers paper, and Coinbase Advanced are planned adapters, not connected services.</div></article>
 <article class="card"><div class="label">Integration constellation</div><h2>Market Access Registry</h2><div id="market-grid" class="tiny">Loading supported targets…</div></article>
 </section>
@@ -166,6 +166,11 @@ byId('expansion-load').onclick=async()=>{try{
  for(const venue of d.avenues){const line=document.createElement('div');line.style.marginBottom='12px';line.textContent=venue.name+' / '+venue.status+' / '+venue.research_requirements+' / RESEARCH ONLY / NOT APPROVED';root.append(line)}
  show('expansion-status',d.avenues.length+' research avenues tracked. Only spot crypto public catalog is connected for discovery; others need data connections and verification. No orders or account access.');
  }catch(e){show('expansion-status','Expansion roadmap unavailable: '+e.message)}
+};
+byId('decision-benchmark').onclick=async()=>{try{
+ const d=await api('/api/execution/decision-benchmark?count=300');
+ show('decision-benchmark-result','Local synthetic processing: '+d.local_decisions_per_second+' decisions/sec / p95 '+d.p95_ms+' ms / p99 '+d.p99_ms+' ms / 30/sec test target '+(d.target_met_in_this_synthetic_run?'MET':'NOT MET')+' / 0 orders, 0 fills. Does NOT measure exchange execution.');
+ }catch(e){show('decision-benchmark-result','Offline speed test unavailable: '+e.message)}
 };
 byId('execution-connectors').onclick=async()=>{try{
  const d=await api('/api/execution/connectors');

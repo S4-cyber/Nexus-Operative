@@ -275,3 +275,11 @@ Moved runtime quote evaluation to after SQLite write-lock acquisition and state 
 v0.72 safety CI completed successfully; its Windows packaging run was pending at this review. No real-feed or broker session was started.
 
 Validation: all 430 tests passed; Python compilation passed. The ten new cases include actual SQLite write-lock contention and fail-closed replay-delay/stop checks. The dependency stack emitted one existing Starlette TestClient/httpx deprecation warning. Windows packaging for this fix awaits CI.
+
+## v0.72.2 — repeatable forward-operation acceptance drill
+
+Added a bounded CLI exercising actual paper runner cycles with temporary child-process storage. Each round verifies warmup/entry, duplicate tick suppression, hold, tier-off exit and reentry veto, three-failure pause and released ownership. Reconstructed gateways retain all prior session/order/quote evidence; a separate process verifies flat/halted/reconciled accounting, session fill counts, source classifications and full account/order/evidence fingerprints. Reports include serial runner-cycle latency percentiles and explicitly exclude real-feed/scheduler/broker throughput. Input bounds, caller-data isolation, cross-process disagreement, missing database and ledger/quote corruption are regression-tested.
+
+Both Windows workflows for exact v0.72.1 commit 05564202aa1c631ff3afb963633779b30ec7f61c passed: safety run 39049338459 and packaging run 39049338431. M1 remains partial pending manual clean-machine/profile/upgrade acceptance. No broker or public-feed session was started.
+
+Validation: all 443 tests passed (13 new drill cases) and Python compilation passed. A maximum-bound 20-round run completed 280 runner cycles and retained 280 observations, 20 BUY orders and 20 SELL orders; all 143 state-changing commands recovered with flat/halted/reconciled accounting and identical fresh-process fingerprints. This host run measured cycle p50 5.385 ms, p95 25.896 ms and p99 29.223 ms. Synthetic-time fixture timings are not a scheduler or market-throughput guarantee. One existing Starlette TestClient/httpx deprecation warning remains. Windows verification of this new tooling awaits its CI run.

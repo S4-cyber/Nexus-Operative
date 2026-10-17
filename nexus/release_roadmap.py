@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.72.1'
+REVISION = '0.72.2'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -25,7 +25,7 @@ MILESTONES = (
     Milestone('M4','Order lifecycle and portfolio reconciliation','PARTIAL','Partial/full priced fills, fees, idempotency, cancellation, durable recovery; atomic opt-in paper-ledger linking, partial-position reconstruction, adverse quote-cost assumptions, post-lock runtime expiry/stop checks, durable expiry and forward process-death tests before/after fill commit.','Extend interruption/quote-path stress; independently review execution assumptions, existing-account migration and reconciliation.'),
     Milestone('M5','Durable latency and capacity','PARTIAL','Replay-validated checkpoints, two-snapshot retention, checkpoint interruption tests and isolated gateway and linked-ledger/tier-inclusive p50/p95/p99 benchmark; capacity admission diagnostics; opt-in atomic quote-order fixture treatment with retained commands and crash rollback tests; explicit logical archival with retained IDs and commands.','Physical offload/long-run scalability, sustained queue pressure and independent archival acceptance; no broker throughput validated.'),
     Milestone('M6','Scientific strategy evidence','PARTIAL','Chronological research, holdout, regime and cost-stress modules.','Reproducible forward evidence, delisting/survivorship review and independent performance audit.'),
-    Milestone('M7','Unattended paper operation','PARTIAL','Explicitly started BTC public-quote paper runner; tier-gated entries, exits, halt/pause, feed-failure stop, durable session counters/heartbeats and fingerprinted fixed-policy admission; retained quote evidence, quote/fill price/quantity/fee/policy crosschecks, portable review summaries and exclusive local process ownership, clock-discontinuity pauses and exchange-regression warmup fencing and retained-storage preflight with operator runbook.','Run sustained real-feed forward validation, independent policy evidence review and multi-market scheduling; injected outage tests are not market performance evidence.'),
+    Milestone('M7','Unattended paper operation','PARTIAL','Explicitly started BTC public-quote paper runner; tier-gated entries, exits, halt/pause, feed-failure stop, durable session counters/heartbeats and fingerprinted fixed-policy admission; retained quote evidence, quote/fill price/quantity/fee/policy crosschecks, portable review summaries and exclusive local process ownership, clock-discontinuity pauses and exchange-regression warmup fencing and retained-storage preflight with operator runbook; bounded repeatable forward-runner fixture drill with fresh-process evidence comparison.','Run sustained real-feed forward validation, independent policy evidence review and multi-market scheduling; injected outage tests are not market performance evidence.'),
     Milestone('M8','Broker paper integration and operations','OPEN','Provider-neutral design; external adapters remain disconnected.','Alpaca paper first after explicit paper-connection authorization; broker IDs, pacing, eligibility and reconciliation. IBKR paper then Coinbase Advanced expansion.'),
     Milestone('M9','Release acceptance and authorization','OPEN','0.x numbering and release gates enforced.','Independent security/risk review, operator runbook, complete acceptance evidence and explicit owner approval for 1.0. Live-money activation requires separate authorization.'),
 )

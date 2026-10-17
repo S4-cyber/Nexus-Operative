@@ -34,7 +34,7 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 <header><div class="brand">◈ NEXUS OPERATIVE</div><small>LOCAL DEVELOPMENT · PAPER RESEARCH ONLY · No bank, card or brokerage is connected</small></header>
 <section class="hero"><div class="label">Autonomous research command bridge</div><h1>PORTAL</h1><p class="sub">TERRESTRIAL // SOLAR // UNIVERSAL</p><button class="portal" id="activate">ACTIVATE PORTAL</button><button class="danger" id="halt">EMERGENCY HALT</button><button id="reset-halt" hidden>RESET HALT (Stay Paused)</button><p class="status" id="status">Connecting to local research engine…</p></section>
 <section id="matrix-hangar" aria-label="Synthetic trade telemetry" aria-hidden="true"><div class="matrix-head"><span>◈ MATRIX STREAM // TELEMETRY</span><span id="matrix-state">STANDBY</span></div><canvas id="matrix-rain" aria-hidden="true"></canvas><div id="matrix-price-caption" role="status">LIVE PUBLIC PRICE TRACKER / Read-only Coinbase quotes, no account connection. Activate PORTAL to begin sampling.</div><canvas id="matrix-price-chart" aria-label="Real-time public exchange price history line graph, collected while PORTAL is active" role="img"></canvas><div id="matrix-feed">PORTAL inactive. No live positions or brokerage orders.</div></section>
-<section class="card" aria-label="Risk tier controls"><div class="label">Independent simulated risk policy</div><h2>Engage Research Risk Tiers</h2><p class="sub">All tiers start OFF. Engagement permits new local simulated BUY intents subject to tier caps; disengagement blocks new entries. Exit intents remain available. No live trading.</p><div class="actions" id="tier-engagement"></div><p class="sub" id="tier-permission-status" role="status">Checking permissions…</p></section>
+<section class="card" id="risk-tier-controls"><h2>Risk Tier Engagement</h2><div class="actions" id="tier-engagement"></div><p class="sub" id="tier-permission-status">All tiers default OFF.</p></section>
 <section class="grid" id="tiers"></section>
 <section class="card"><div class="label">Watch-only Sentinel</div><h2>Autonomous Market Observer</h2><p class="sub">Public BTC, ETH and SOL snapshots are sampled periodically only when PORTAL is active. Observations are not trade recommendations.</p><p class="status" id="sentinelstate">Observer offline</p><div class="monitor tiny" id="sentinellog">No observations recorded.</div></section>
 <section class="grid two">
@@ -138,225 +138,20 @@ async function update(){
   byId('matrix-hangar').setAttribute('aria-hidden',String(!portalActive));
   show('matrix-state',portalActive?'SYNTHETIC / NO ORDERS':'STANDBY');
   const data=await api('/api/tiers');const root=byId('tiers');root.replaceChildren();
-  const controls=byId('tier-engagement');controls.replaceChildren();
-  for(const p of data.tier_permissions){
-    const btn=document.createElement('button');btn.type='button';
-    btn.textContent=(p.enabled?'DISENGAGE ':'ENGAGE ')+p.tier.toUpperCase()+' · 
-  for(const t of data.tiers){
-   const card=document.createElement('article');card.className='card';
-   const h=document.createElement('h2');h.textContent=t.tier.toUpperCase();
-   const num=document.createElement('div');num.className='metric';num.textContent=t.illustrative_signal_score+'/100';
-   const p=document.createElement('p');p.className='sub';p.textContent=t.strategy_approach+' Signal is illustrative, not a probability of profit.';
-   card.append(h,num,p);root.append(card);
+  const switches=byId('tier-engagement');switches.replaceChildren();
+  for(const policy of data.tier_permissions){
+    const button=document.createElement('button');
+    button.textContent=(policy.enabled?'DISENGAGE ':'ENGAGE ')+policy.tier.toUpperCase()+' / $'+policy.maximum_intent_usd+' cap';
+    button.setAttribute('aria-pressed',String(policy.enabled));
+    button.disabled=halted&&!policy.enabled;
+    button.onclick=async()=>{
+      if(!policy.enabled&&!window.confirm('Engage '+policy.tier+' simulated BUY risk? No broker orders.'))return;
+      try{await api('/api/tiers/'+policy.tier+'/permission',{method:'PUT',headers:jsonHeaders,body:JSON.stringify({enabled:!policy.enabled})});await update()}
+      catch(error){show('tier-permission-status','Risk control unavailable: '+error.message)}
+    };switches.append(button);
   }
- }catch(e){show('status','Local engine unavailable: '+e.message)}
-}
-byId('activate').onclick=async()=>{try{await api('/api/portal',{method:'POST',headers:jsonHeaders,body:JSON.stringify({enabled:!portalActive})});await update()}catch(e){show('status',e.message)}};
-byId('halt').onclick=async()=>{try{await api('/api/simulate/halt',{method:'POST'});await update()}catch(e){show('status',e.message)}};
-byId('reset-halt').onclick=async()=>{if(!window.confirm('Clear emergency halt? Research remains PAUSED. You must separately click ACTIVATE PORTAL to restart monitoring. No live trading is enabled.'))return;
- try{await api('/api/simulate/halt/reset',{method:'POST',headers:jsonHeaders,body:JSON.stringify({confirm_reset:true})});await update();show('status','EMERGENCY HALT RESET / STILL PAUSED / Press ACTIVATE PORTAL when ready.');}
- catch(e){show('status','Halt reset unsuccessful: '+e.message)}
-};
-async function refreshSentinel(){
- try{
- const s=await api('/api/observer/status');
- show('sentinelstate',(s.active?'WATCHING':'IDLE')+' / '+s.cycles+' cycles'+(s.last_error?' / '+s.last_error:''));
- const log=await api('/api/observer/history?limit=10');const root=byId('sentinellog');root.replaceChildren();
- for(const event of log.events){const p=document.createElement('div');p.textContent=event.product+' / '+event.regime+' / '+event.decision+' / '+event.reasons.join(', ');root.append(p)}
- }catch(e){show('sentinelstate','Sentinel unavailable: '+e.message)}
-}
-byId('expansion-load').onclick=async()=>{try{
- const d=await api('/api/expansion/roadmap');
- const root=byId('expansion-list');root.replaceChildren();
- for(const venue of d.avenues){const line=document.createElement('div');line.style.marginBottom='12px';line.textContent=venue.name+' / '+venue.status+' / '+venue.research_requirements+' / RESEARCH ONLY / NOT APPROVED';root.append(line)}
- show('expansion-status',d.avenues.length+' research avenues tracked. Only spot crypto public catalog is connected for discovery; others need data connections and verification. No orders or account access.');
- }catch(e){show('expansion-status','Expansion roadmap unavailable: '+e.message)}
-};
-byId('decision-benchmark').onclick=async()=>{try{
- const d=await api('/api/execution/decision-benchmark?count=300');
- show('decision-benchmark-result','Local synthetic processing: '+d.local_decisions_per_second+' decisions/sec / p95 '+d.p95_ms+' ms / p99 '+d.p99_ms+' ms / 30/sec test target '+(d.target_met_in_this_synthetic_run?'MET':'NOT MET')+' / 0 orders, 0 fills. Does NOT measure exchange execution.');
- }catch(e){show('decision-benchmark-result','Offline speed test unavailable: '+e.message)}
-};
-byId('execution-connectors').onclick=async()=>{try{
- const d=await api('/api/execution/connectors');
- const root=byId('execution-connector-list');root.replaceChildren();
- for(const p of d.providers){const item=document.createElement('div');item.textContent=p.id+' / '+p.connection+' / broker submission '+(p.paper_submission_supported?'LOCAL SIMULATION ONLY':'DISABLED');root.append(item)}
- show('execution-connector-status','Broker connected: '+d.broker_connected+' / LIVE ORDERS DISABLED / No credentials requested.');
- }catch(e){show('execution-connector-status','Connector status unavailable: '+e.message)}
-};
-let universeOffset=0;
-async function loadUniverse(){
- const search=byId('universe-filter').value.trim().toUpperCase();
- try{const d=await api('/api/markets/discover?limit=100&offset='+universeOffset+'&search='+encodeURIComponent(search));
- show('universe-status',d.discovered_count+' public USD markets discovered / '+d.filtered_count+' matching / showing '+d.products.length+' starting at '+universeOffset+' / UNVERIFIED CANDIDATES ONLY / NO ORDERS');
- const root=byId('universe-list');root.replaceChildren();
- for(const item of d.products){const line=document.createElement('div');line.textContent=item.product+' / '+item.research_status+' / NO EXECUTION';root.append(line)}
- if(!d.products.length){root.textContent='No matching markets, or no additional products.'}
- }catch(e){show('universe-status','Public catalog unavailable: '+e.message+' / existing 3-market watchlist unaffected')}
-}
-byId('universe-load').onclick=()=>{universeOffset=0;loadUniverse()};
-byId('universe-search').onclick=()=>{universeOffset=0;loadUniverse()};
-byId('universe-next').onclick=()=>{universeOffset+=100;loadUniverse()};
-byId('publicrefresh').onclick=async()=>{try{const sym=byId('publicpair').value;const q=await api('/api/public-quote/'+sym);show('publicresult',sym+' Bid '+q.bid+' / Ask '+q.ask+' / Last '+q.last+' / Spread '+q.spread_bps+' bps. Read-only snapshot.')}catch(e){show('publicresult','Quote unavailable: '+e.message)}};
-byId('saveevidence').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/market-evidence/'+p+'/capture',{method:'POST'});show('publicresult','EVIDENCE '+d.decision+' / '+(d.issues||[]).join(', ')+' / stored '+d.record_sha256+' / NEVER TRADE APPROVAL')}catch(e){show('publicresult','Evidence capture unavailable: '+e.message)}};
-byId('capturetick').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/research-ticks/'+p+'/capture',{method:'POST'});show('publicresult','RESEARCH TICK '+d.decision+' / '+(d.stored?'Saved':'Not saved')+' / NO ORDERS')}catch(e){show('publicresult','Tick capture unavailable: '+e.message)}};
-byId('collectcandles').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/historical-candles/'+p+'/collect?granularity=300',{method:'POST'});show('publicresult','OHLCV RESEARCH / new '+d.inserted+' / revised '+d.revised+' / unchanged '+d.unchanged+' / NO TRADE APPROVAL')}catch(e){show('publicresult','Historical candle collection unavailable: '+e.message)}};
-byId('candleadmission').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/candle-research/'+p+'/admission?granularity=3600');show('publicresult','DATASET '+(d.research_eligible?'RESEARCH ELIGIBLE':'REJECTED')+' / '+d.candles_examined+' bars / '+d.reasons.join(', ')+' / NOT VERIFIED FOR ORDERS')}catch(e){show('publicresult','Dataset review failed: '+e.message)}};
-byId('regimestress').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/candle-research/'+p+'/regime-stress?granularity=3600',{method:'POST'});show('publicresult','REGIME STRESS '+d.decision+' / '+(d.warnings||d.reasons||[]).join(', ')+' / '+(d.holdout_regimes||[]).map(w=>w.window+':'+w.regimes.map(r=>r.regime+' '+r.trades+' trades').join(', ')).join(' | ')+' / NEVER TRADE APPROVAL')}catch(e){show('publicresult','Regime stress unavailable: '+e.message)}};
-byId('executionstress').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/candle-research/'+p+'/execution-stress?granularity=3600',{method:'POST'});show('publicresult','EXECUTION RESEARCH '+d.decision+' / '+(d.warnings||d.reasons||[]).join(', ')+' / TRAINING-ONLY / TWO HOLDOUTS / VOLUME-CAPPED / NO TRADE AUTHORITY')}catch(e){show('publicresult','Execution stress unavailable: '+e.message)}};
-byId('costsensitivity').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/candle-research/'+p+'/cost-sensitivity?granularity=3600',{method:'POST'});show('publicresult','COST STRESS '+d.decision+' / '+(d.warnings||d.reasons||[]).join(', ')+' / SCENARIOS '+(d.cost_scenarios||[]).map(x=>x.round_trip_fee_bps+'+'+x.slippage_each_side_bps+'bps:'+x.report.net_pnl).join(' | ')+' / NO LIVE ORDERS')}catch(e){show('publicresult','Cost stress analysis unavailable: '+e.message)}};
-byId('candletournament').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/candle-research/'+p+'/evaluate?granularity=3600',{method:'POST'});show('publicresult','TOURNAMENT '+d.decision+' / '+(d.reasons||d.risk_warnings||[]).join(', ')+' / NO AUTOTRADING')}catch(e){show('publicresult','Research tournament failed: '+e.message)}};
-byId('candlehistory').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/historical-candles/'+p+'?granularity=300');show('publicresult','HISTORICAL CANDLES '+d.sample_count+' / '+(d.issues.join(', ')||'No observed quality issues')+' / RESEARCH ONLY')}catch(e){show('publicresult','Historical candles unavailable: '+e.message)}};
-byId('tickhistory').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/research-ticks/'+p+'?limit=100');show('publicresult','CHRONOLOGICAL TICKS '+d.sample_count+' / '+(d.issues.join(', ')||'NO DETECTED GAPS')+' / NOT VALIDATED BACKTEST HISTORY')}catch(e){show('publicresult','Tick history unavailable: '+e.message)}};
-byId('evidencequality').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/market-evidence/'+p+'/quality');show('publicresult','QUALITY '+(d.quality_pass?'LOCAL PASS':'REVIEW')+' / samples '+d.sample_count+' / gaps '+d.sampling_gap_count+' / issues '+d.issues.join(', ')+' / NOT VALIDATED BACKTEST DATA')}catch(e){show('publicresult','Data quality unavailable: '+e.message)}};
-byId('evidencehistory').onclick=async()=>{try{const d=await api('/api/market-evidence?limit=10');show('publicresult',d.observations.length+' local records / '+d.observations.map(x=>x.product+':'+x.decision+(x.local_record_integrity?'':' CORRUPTED')).join(' | ')+' / NOT MARKET AUTHENTICATION')}catch(e){show('publicresult','Evidence history unavailable: '+e.message)}};
-byId('crossvenue').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/public-quote/'+p+'/cross-venue');show('publicresult','CROSS-VENUE '+d.decision+' / '+(d.mid_divergence_bps===null?'N/A':d.mid_divergence_bps+' bps')+' / '+d.issues.join(', ')+' / NO LIVE ORDER AUTHORITY. Kraken tick timestamp unavailable.')}catch(e){show('publicresult','Cross-venue check failed: '+e.message)}};
-async function loadMarkets(){try{const d=await api('/api/markets');const root=byId('market-grid');root.replaceChildren();for(const p of d.providers){const c=document.createElement('div');c.className='market';c.textContent=p.name+' / '+p.connectivity+' / NO ORDERS';root.append(c)}}catch(e){show('market-grid',e.message)}}
-async function loadBranches(){try{const d=await api('/api/strategy-branches');const root=byId('researchbranches');root.className='grid';root.replaceChildren();for(const b of d.branches){const c=document.createElement('div');c.className='market';const title=document.createElement('strong');title.textContent=b.label;const p=document.createElement('p');p.className='sub';p.textContent=b.status+' / '+b.limitations;c.append(title,p);root.append(c)}}catch(e){show('researchbranches',e.message)}}
-async function loadPaper(){try{const d=await api('/api/paper/settings');byId('paperbudget').value=d.paper_budget;byId('terrapct').value=d.terrestrial_allocation;byId('solarpct').value=d.solar_allocation;byId('univpct').value=d.universal_allocation}catch(e){show('paperstatus',e.message)}}
-byId('savepaper').onclick=async()=>{try{await api('/api/paper/settings',{method:'PUT',headers:jsonHeaders,body:JSON.stringify({paper_budget:value('paperbudget'),terrestrial_allocation:value('terrapct'),solar_allocation:value('solarpct'),universal_allocation:value('univpct')})});show('paperstatus','Saved locally. No transfer or trade.')}catch(e){show('paperstatus',e.message)}};
-byId('preview').onclick=async()=>{try{const d=await api('/api/funding/preview',{method:'POST',headers:jsonHeaders,body:JSON.stringify({amount:value('amount'),cadence:byId('cadence').value})});show('fundstatus','Preview $'+d.amount+' / '+d.cadence+' / NO TRANSFER')}catch(e){show('fundstatus',e.message)}};
-async function refreshPortfolio(){try{const s=await api('/api/paper/portfolio');show('paperledger',s.initialized?'Virtual cash $'+s.cash.toFixed(2)+' / '+s.positions.length+' positions / '+s.event_count+' ledger events':'Not initialized.')}catch(e){show('paperledger',e.message)}}
-async function portfolioCommand(endpoint,payload){try{await api(endpoint,{method:'POST',headers:jsonHeaders,body:JSON.stringify(payload)});await refreshPortfolio()}catch(e){show('paperledger','Paper command rejected: '+e.message)}}
-byId('paperstart').onclick=()=>portfolioCommand('/api/paper/portfolio/init',{paper_capital:value('paperinit')});
-byId('paperbuy').onclick=()=>portfolioCommand('/api/paper/portfolio/buy',{product:byId('paperproduct').value,notional:value('paperorder')});
-byId('papersell').onclick=()=>portfolioCommand('/api/paper/portfolio/sell',{product:byId('paperproduct').value});
-byId('paperreconcile').onclick=async()=>{try{const d=await api('/api/paper/portfolio/reconcile');show('paperledger',d.reconciled?'Reconciled / Estimated virtual liquidation $'+d.liquidation_value:'Not reconciled: '+d.reason)}catch(e){show('paperledger',e.message)}};
-byId('paperaudit').onclick=async()=>{try{const d=await api('/api/paper/portfolio/integrity');show('paperledger',d.integrity_ok?'GOVERNOR VERIFIED / '+d.journal_entries+' paper ledger events / '+d.position_count+' positions / NO LIVE ORDERS':'GOVERNOR VETO / '+d.reasons.join(', '))}catch(e){show('paperledger','Audit unavailable: '+e.message)}};
-byId('recoveryreport').onclick=async()=>{try{const d=await api('/api/paper/portfolio/recovery-report');show('paperledger','RECOVERY: '+d.status+' / '+d.reasons.join(', ')+' / '+d.recommended_action)}catch(e){show('paperledger','Recovery report unavailable: '+e.message)}};
-byId('snapshotbackup').onclick=async()=>{try{const d=await api('/api/paper/portfolio/snapshot',{method:'POST'});show('paperledger','LOCAL SNAPSHOT SAVED: '+d.filename+' / SHA256 '+d.sha256+' / Original unchanged. Protect the backup file.')}catch(e){show('paperledger','Snapshot could not be saved: '+e.message)}};
-byId('labrun').onclick=async()=>{try{const d=await api('/api/paper/scenario',{method:'POST',headers:jsonHeaders,body:JSON.stringify({capital:value('paperbudget'),tier:byId('labtier').value,symbol:'SPY',direction:byId('labdir').value,notional:value('labamount'),entry_price:value('labentry'),exit_price:value('labexit')})});show('labresult','Hypothetical net P/L $'+d.net_pnl.toFixed(2)+' / Ending virtual cash $'+d.ending_paper_cash.toFixed(2))}catch(e){show('labresult',e.message)}};
-function replayPayload(){return {capital:value('paperbudget'),tier:byId('replaytier').value,direction:byId('replaydir').value,closes:byId('replayprices').value.split(/[\s,;]+/).filter(Boolean).map(Number)}}
-async function replayCall(path){return await api(path,{method:'POST',headers:jsonHeaders,body:JSON.stringify(replayPayload())})}
-byId('runreplay').onclick=async()=>{try{const d=await replayCall('/api/paper/replay');show('replayresult','Offline net P/L $'+d.net_pnl.toFixed(2)+' / '+d.trades+' trades / drawdown '+d.max_drawdown_pct.toFixed(2)+'%. Not a forecast.')}catch(e){show('replayresult',e.message)}};
-byId('savereplay').onclick=async()=>{try{const d=await replayCall('/api/paper/replay/record');show('replayaudit','Saved local run '+d.run_id+' / net $'+d.net_pnl.toFixed(2))}catch(e){show('replayaudit',e.message)}};
-byId('walkforward').onclick=async()=>{try{const d=await replayCall('/api/paper/walk-forward');show('replayresult','Walk-forward '+d.decision+' / Holdout net $'+d.holdout.net_pnl.toFixed(2))}catch(e){show('replayresult',e.message)}};
-byId('tournament').onclick=async()=>{try{const d=await replayCall('/api/paper/tournament');show('tournamentresult',d.decision+' / '+d.selected.id+' / Holdout net $'+d.holdout.net_pnl.toFixed(2)+' / '+d.reasons.join(', '))}catch(e){show('tournamentresult',e.message)}};
-byId('safetybenchmark').onclick=async()=>{try{const d=await api('/api/paper/safety-benchmark');show('benchmarkresult',d.caught+'/'+d.evaluated+' synthetic hazards detected / nominal controls blocked: '+d.unverified_control_blocked+' / NO ORDER AUTHORITY')}catch(e){show('benchmarkresult',e.message)}};
-byId('riskdemo').onclick=async()=>{try{const d=await api('/api/paper/risk-screen',{method:'POST',headers:jsonHeaders,body:JSON.stringify({})});show('riskresult',d.decision+' / '+d.reasons.join(', '))}catch(e){show('riskresult',e.message)}};
-byId('stressdemo').onclick=async()=>{try{const d=await api('/api/paper/stress',{method:'POST',headers:jsonHeaders,body:JSON.stringify({equity:value('paperbudget'),notional:value('labamount'),direction:byId('labdir').value,daily_loss:0})});show('stressresult',d.decision+' / Max modeled loss $'+d.max_modeled_loss+' / NOT A LOSS GUARANTEE')}catch(e){show('stressresult',e.message)}};
-byId('counciltest').onclick=async()=>{try{const evidence={symbol:'BTC-USD',data_source:'coinbase_exchange_public',data_verified:false,quote_age_seconds:1,spread_bps:4,estimated_roundtrip_fees_bps:5,estimated_slippage_bps:6,conservative_edge_bps:0,history_observations:0,out_of_sample_trades:0,out_of_sample_net_pnl:0,equity:value('paperbudget'),proposed_notional:value('labamount'),current_exposure:0,daily_loss:0,stress_loss_estimate:0,emergency_halt:false,account_reconciled:false,market_eligible:false};const d=await api('/api/paper/council',{method:'POST',headers:jsonHeaders,body:JSON.stringify(evidence)});show('councilstatus',d.consensus+' / '+d.vetoes.join(', ')+' / GOVERNOR: '+d.governor_decision);const root=byId('councildetails');root.replaceChildren();for(const item of d.specialists){const c=document.createElement('div');c.className='market';c.textContent=item.specialist+' / '+item.verdict+' / '+item.reasons.join(', ');root.append(c)}}catch(e){show('councilstatus',e.message)}};
-byId('readinesscheck').onclick=async()=>{try{
- const d=await api('/api/onboarding/readiness');
- const storage=d.paper_storage.write_permission_indicated?'Storage path appears writable':'Storage path not confirmed writable';
- const ai=d.optional_ai.configured?'Optional AI locally configured (not connected)':'Optional AI disconnected — no setup necessary';
- show('readinessresult','READY: offline research. Public market data uses internet when requested. '+storage+'. '+ai+'. No payments, orders or external calls made by this check.');
- }catch(e){show('readinessresult','Readiness check unavailable: '+e.message)}};
-let approvedAiPreview=null;
-byId('aipreview').onclick=async()=>{
- approvedAiPreview=null;byId('aisendpreview').disabled=true;show('aipreviewdata','Preparing local-only public-market summary...');
- try{const p=byId('publicpair').value;const d=await api('/api/paper/ai-provider/public-preview/'+encodeURIComponent(p));
- if(!d.ready){show('aipreviewdata','Insufficient validated market history.');show('aipreviewresult','Cannot send: '+(d.reasons||[]).join(', '));return;}
- approvedAiPreview={product:p,digest:d.sha256};
- show('aipreviewdata',JSON.stringify(d.snapshot,null,2));
- show('aipreviewresult','Preview ready. This is the exact public data proposed for the external AI provider; it contains no keys or account balances. Nothing sent.');byId('aisendpreview').disabled=false;
- }catch(e){show('aipreviewresult','Preview unavailable: '+e.message);show('aipreviewdata','No data sent.')}
-};
-byId('aisendpreview').onclick=async()=>{
- if(!approvedAiPreview)return;
- if(byId('publicpair').value!==approvedAiPreview.product){approvedAiPreview=null;byId('aisendpreview').disabled=true;show('aipreviewresult','Market changed; preview again.');return;}
- const accepted=window.confirm('Send the exact displayed public market summary to OpenAI for optional commentary? This may incur API charges. No credentials, balances or orders are included, and the model cannot trade.');
- if(!accepted)return;
- const selected=approvedAiPreview;approvedAiPreview=null;byId('aisendpreview').disabled=true;
- try{const d=await api('/api/paper/ai-provider/public-preview/send',{method:'POST',headers:jsonHeaders,body:JSON.stringify({product:selected.product,preview_sha256:selected.digest})});
- show('aipreviewresult','AI research only: '+d.advisory.verdict+' / '+d.advisory.reason+' / NO TRADE AUTHORITY');
- }catch(e){show('aipreviewresult','No advisory result: '+e.message+'. Review fresh data before retrying.')}
-};
-async function refreshAISetup(){
- try{const d=await api('/api/paper/ai-provider/status');
- byId('aitest').disabled=!d.configured||d.requests_used_process>=d.max_requests_process;
- show('aiconnectorstatus',d.configured?'Local AI configuration detected. No paid requests sent. Remaining attempts this session: '+(d.max_requests_process-d.requests_used_process)+'.':'Optional AI is OFF. All offline research works normally. Choose How to Connect Safely for one-time instructions.');
- }catch(e){byId('aitest').disabled=true;show('aiconnectorstatus','AI status unavailable: '+e.message)}}
-byId('aiconnect').onclick=async()=>{const key=byId('aikey').value;
- if(!key){show('aiconnectorstatus','Enter your own provider API key in the local vault field.');return;}
- const accepted=window.confirm('Save this credential in Windows Credential Manager and enable optional research? This alone sends NO paid requests. A later research request sends its snapshot to OpenAI and may incur charges.');
- if(!accepted)return;
- try{await api('/api/paper/ai-provider/vault/connect',{method:'POST',headers:jsonHeaders,body:JSON.stringify({api_key:key})});show('aiconnectorstatus','Key saved in local Windows Credential Manager. No model requests sent.');}
- catch(e){show('aiconnectorstatus','Local vault setup unavailable: '+e.message)}
- finally{byId('aikey').value='';await refreshAISetup()}
-};
-byId('aidisconnect').onclick=async()=>{if(!window.confirm('Disconnect AI research and remove its locally saved key? External AI requests will stop.'))return;
- try{await api('/api/paper/ai-provider/vault/disconnect',{method:'POST'});show('aiconnectorstatus','Stored key removed; optional AI disabled.');}
- catch(e){show('aiconnectorstatus','Disconnect unavailable: '+e.message)}
- await refreshAISetup();
-};
-byId('aistatus').onclick=refreshAISetup;
-byId('aiguide').onclick=()=>{byId('aisetup').hidden=!byId('aisetup').hidden};
-byId('aitest').onclick=async()=>{
- const ok=window.confirm('Send ONE built-in public-data-only example to an external AI provider? This may incur API charges. No trades or account actions will be authorized.');
- if(!ok)return;
- byId('aitest').disabled=true;
- try{const d=await api('/api/paper/ai-provider/market_regime/research',{method:'POST',headers:jsonHeaders,body:JSON.stringify({purpose:'demonstration_only',market:'BTC-USD',source:'illustrative_not_live',not_trading_evidence:true})});
- show('aiconnectorstatus','Advisory: '+d.verdict+' / '+d.reason+' / Provider replied: '+Boolean(d.provider_connected)+'. No orders allowed.');
- }catch(e){show('aiconnectorstatus','Research request unavailable: '+e.message)}
- await refreshAISetup();
-};
-refreshAISetup();
-byId('advisorybenchmark').onclick=async()=>{try{const d=await api('/api/paper/ai-provider/advisory-benchmark');show('modelreadout','OFFLINE AI RULE TEST '+d.passed+'/'+d.evaluated+' cases / safe disagreement '+d.disagreement_has_no_trade_authority+' / NO EXTERNAL MODEL CALLS / NO ORDERS. This checks local validation, not AI intelligence.')}catch(e){show('modelreadout','Offline AI rule test unavailable: '+e.message)}};
-byId('modeldiagnostic').onclick=async()=>{try{const d=await api('/api/paper/model-council',{method:'POST',headers:jsonHeaders,body:JSON.stringify({test:'fixture'})});show('modelreadout',d.specialists.length+' fixture roles / all abstained '+d.all_abstained+' / NO PROVIDER / '+d.governor)}catch(e){show('modelreadout',e.message)}};
-byId('auditdiagnostic').onclick=async()=>{try{const d=await api('/api/paper/evidence-audit',{method:'POST',headers:jsonHeaders,body:JSON.stringify({symbol:'BTC-USD',data_source:'coinbase_exchange_public',data_verified:true,history_observations:100,out_of_sample_trades:30,conservative_edge_bps:50,equity:10000,proposed_notional:10})});show('auditreadout',d.decision+' / '+d.reasons.join(', '))}catch(e){show('auditreadout',e.message)}};
-byId('latencydiagnostic').onclick=async()=>{try{const d=await api('/api/latency');show('latencyreadout','Local p95 '+(d.p95_ms===null?'N/A':d.p95_ms+' ms')+' / Samples '+d.observations+' / EXCHANGE NOT MEASURED')}catch(e){show('latencyreadout',e.message)}};
-// Read-only, observed public Coinbase ticker history; never a synthetic P/L curve.
-const priceCanvas=byId('matrix-price-chart'),priceContext=priceCanvas.getContext('2d');
-let pricePoints=[],chartPair='',quoteBusy=false,lastExchangeStamp='';
-function redrawMatrixPrice(){
- const width=Math.max(320,Math.floor(priceCanvas.clientWidth||320)),height=220;
- priceCanvas.width=width;priceCanvas.height=height;
- const ctx=priceContext;ctx.clearRect(0,0,width,height);
- ctx.fillStyle='#010d07';ctx.fillRect(0,0,width,height);
- ctx.strokeStyle='#16422b';ctx.lineWidth=1;
- for(let i=1;i<4;i++){const y=i*height/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(width,y);ctx.stroke()}
- if(pricePoints.length<2){ctx.fillStyle='#92c3a6';ctx.font='13px Segoe UI';ctx.fillText('Waiting for two observed exchange ticks (no synthetic data)',14,100);return;}
- const min=Math.min(...pricePoints.map(x=>x.price)),max=Math.max(...pricePoints.map(x=>x.price));
- const pad=Math.max((max-min)*.1,min*.000001,1e-8);
- const low=min-pad,high=max+pad;
- const first=pricePoints[0].at,last=pricePoints[pricePoints.length-1].at;
- ctx.strokeStyle='#55f99d';ctx.lineWidth=2;ctx.beginPath();
- pricePoints.forEach((point,i)=>{const x=12+(point.at-first)/Math.max(1,last-first)*(width-24);
- const y=12+(high-point.price)/(high-low)*(height-24);
- if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke();
- ctx.fillStyle='#b6ffcc';ctx.font='12px Consolas,monospace';
- ctx.fillText(high.toFixed(2),12,15);ctx.fillText(low.toFixed(2),12,height-7);
-}
-async function sampleMatrixPrice(){
- if(!portalActive||quoteBusy)return;
- const pair=byId('publicpair').value;
- if(pair!==chartPair){chartPair=pair;pricePoints=[];lastExchangeStamp='';redrawMatrixPrice()}
- quoteBusy=true;
- try{const tick=await api('/api/public-quote/'+encodeURIComponent(pair));
- if(!portalActive||pair!==byId('publicpair').value)return;
- const value=Number(tick.last),received=Number(tick.received_at)*1000;
- const fresh=Number(tick.age_seconds)<=30&&Number(tick.age_seconds)>=-2;
- if(!tick.read_only||tick.product!==pair||!Number.isFinite(value)||value<=0||!Number.isFinite(received)||!fresh)throw Error('Unverified or stale ticker');
- const stamp=String(tick.exchange_time);
- if(stamp!==lastExchangeStamp){lastExchangeStamp=stamp;pricePoints.push({at:received,price:value});if(pricePoints.length>180)pricePoints.shift();redrawMatrixPrice()}
- show('matrix-price-caption','LIVE PUBLIC QUOTE / '+pair+' / $'+value.toFixed(2)+' / '+pricePoints.length+' observed exchange ticks / Coinbase / ~6s refresh / READ ONLY');
- }catch(e){show('matrix-price-caption','PUBLIC PRICE TRACKER DISCONNECTED / '+pair+' / '+e.message+' / No simulated replacement data')}
- finally{quoteBusy=false}
-}
-byId('publicpair').addEventListener('change',()=>{chartPair='';pricePoints=[];lastExchangeStamp='';redrawMatrixPrice();if(portalActive)sampleMatrixPrice()});
-window.addEventListener('resize',redrawMatrixPrice);
-redrawMatrixPrice();
-const matrix=byId('matrix-rain'),ctx=matrix.getContext('2d');let drops=[];
-function resizeRain(){matrix.width=Math.max(320,matrix.clientWidth);matrix.height=180;drops=Array.from({length:Math.ceil(matrix.width/14)},()=>Math.random()*14)}
-resizeRain();window.addEventListener('resize',resizeRain);
-function renderRain(){if(!portalActive||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;ctx.fillStyle='rgba(1,8,2,.19)';ctx.fillRect(0,0,matrix.width,matrix.height);ctx.fillStyle='#4eff80';ctx.font='12px Consolas,monospace';drops.forEach((y,i)=>{ctx.fillText('01NEXUS'[Math.floor(Math.random()*7)],i*14,y*14);drops[i]=y>16?0:y+.4})}
-async function matrixUpdate(){if(!portalActive)return;try{const d=await api('/api/matrix');const root=byId('matrix-feed');for(const e of d.events){const line=document.createElement('div');line.textContent=new Date().toLocaleTimeString()+' / '+e.tier+' / '+e.message+' / '+e.outcome+' / SYNTHETIC';root.prepend(line)}while(root.children.length>24)root.lastChild.remove()}catch(e){show('matrix-feed','Telemetry unavailable: '+e.message)}}
-loadMarkets();loadBranches();loadPaper();refreshPortfolio();refreshSentinel();update().then(()=>{if(portalActive)sampleMatrixPrice()});
-setInterval(()=>{if(portalActive){cycle++;update();matrixUpdate();sampleMatrixPrice()}},6000);
-setInterval(refreshSentinel,12000);setInterval(renderRain,90);
-</script></body></html>
-+p.maximum_intent_usd+' max';
-    btn.setAttribute('aria-pressed',String(p.enabled));
-    btn.disabled=halted&&!p.enabled;
-    btn.onclick=async()=>{
-      if(!p.enabled&&!window.confirm('Engage '+p.tier.toUpperCase()+' LOCAL SIMULATED buy entries? No broker orders.'))return;
-      try{await api('/api/tiers/'+p.tier+'/permission',{method:'PUT',headers:jsonHeaders,body:JSON.stringify({enabled:!p.enabled})});await update()}
-      catch(e){show('tier-permission-status','Risk control error: '+e.message)}
-    };
-    controls.append(btn);
-  }
-  show('tier-permission-status',data.tier_permissions.filter(p=>p.enabled).map(p=>p.tier.toUpperCase()).join(', ')||'ALL TIERS OFF · New simulation entries blocked');
+  show('tier-permission-status',data.tier_permissions.filter(p=>p.enabled).map(p=>p.tier).join(', ')||'ALL TIERS OFF');
+
   for(const t of data.tiers){
    const card=document.createElement('article');card.className='card';
    const h=document.createElement('h2');h.textContent=t.tier.toUpperCase();

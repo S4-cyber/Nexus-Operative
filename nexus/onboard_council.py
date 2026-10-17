@@ -83,5 +83,5 @@ def train_validated(snapshot, raw_features=None, walk_forward=None):
             validation_blocks=blocks, forecast_return_bps=math.expm1(value)*10000 if abs(value)<=.5 else None))
     return dict(engine_version=ENGINE_VERSION, mode='BUILT_IN_TRAINED_RESEARCH_COUNCIL',
                 provider_connected=False, local_llm_installed=False, learners=learners, **review(learners,walk_forward=walk_forward),
-                refresh_policy='Explicit stored-data preparation; reuse unchanged data and engine. No background scheduler or code/weight downloads.',
+                refresh_policy='Manual preparation or explicitly armed bounded saved-data refresh; reuse unchanged data and engine. No price/provider requests or code/weight downloads.',
                 limitations='Correlated ridge feature specialists, not GPT-class language models or independent data sources. Tail-block errors and separate expanding-window cost checks remain retrospective diagnostics, not calibrated confidence or evidence of profit.')

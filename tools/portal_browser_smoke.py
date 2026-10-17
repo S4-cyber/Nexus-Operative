@@ -18,6 +18,7 @@ def fixtures(path,pending=True):
         dict(id='engine',title='Use built-in research and AI',group='Start here',status='COMPLETE',checked=True,detail='Built-in numerical learning is included; no provider account is required.',tab='ai',target='counciltest'),
         dict(id='budget',title='Save your virtual budget',group='Before a paper session',status='NEEDS_SETUP',checked=False,detail='Save virtual allocations in Risk; no money is deposited.',tab='risk',target='paperbudget'),
         dict(id='payment',title='Link payment or a bank account',group='Future connections',status='UNAVAILABLE',checked=False,detail='Payment linking is not implemented and is not needed for offline research.',tab='accounts',target='preview')])
+    if path=='/api/matrix/hub/refresh':return dict(phase='STOPPED',reason=None,configuration=None,polls=0,poll_limit=60,fits=0,fit_limit=8,unchanged_skips=0,cycle_active=False)
     if path=='/api/matrix/hub':return dict(bars=300,conflicts=0,database_bytes=32768,database_byte_limit=134217728,artifact_bytes=8192,artifact_byte_limit=33554432)
     if path.startswith('/api/matrix/hub/signal?'):return dict(decision='ABSTAIN_STALE_OR_FUTURE_DATA',model_content_sha256='a'*64,forecast_as_of=1000,age_seconds=999999,forecasts=[])
     if path=='/api/status':return dict(portal_enabled=False,halted=False)
@@ -113,6 +114,8 @@ def run(output,channel=None):
                     page.mouse.move(0,0);expect(page.locator('#control-help')).to_be_hidden()
                     page.screenshot(path=str(output/f'singularity-{width}x{height}.png'))
                     page.locator('#tab-research').click()
+                    page.locator('#hub-refresh-status').click()
+                    expect(page.locator('#hub-refresh-readout')).to_contain_text('STOPPED')
                     page.locator('#hub-status').click()
                     expect(page.locator('#hub-readout')).to_contain_text('300 unique bars')
                     page.locator('#hub-signal').click()

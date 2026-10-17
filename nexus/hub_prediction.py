@@ -96,12 +96,14 @@ def train(snapshot):
         limitations='Retrospective single-source research, not a proven powerful predictor or profit guarantee. Training-only scalers and purged labels; fixed held-out chronological tail, no random split. Baselines are comparisons, not model selection. Residual bands are training diagnostics, not calibrated intervals. No spread/depth/executable-fill or independent strategy acceptance is established.')
 
 
-def prepare(product,granularity=3600,limit=1000):
+def prepare(product,granularity=3600,limit=1000,*,import_cache=True,publisher=None,before_train=None):
     if type(limit) is not int or not 240<=limit<=10000:raise ValueError('HUB_MODEL_WINDOW_LIMIT')
-    try:imported=hub.import_local(product,granularity,min(limit,1000))
-    except ValueError as exc:
-        if str(exc)!='COLLECT_LOCAL_CANDLES_FIRST':raise
-        imported=dict(inserted=0,duplicates=0,quarantined=0,note='No local candle cache; use already stored hub history')
+    imported=dict(inserted=0,duplicates=0,quarantined=0,note='Cache import handled by the local refresh poll')
+    if import_cache:
+        try:imported=hub.import_local(product,granularity,min(limit,1000))
+        except ValueError as exc:
+            if str(exc)!='COLLECT_LOCAL_CANDLES_FIRST':raise
+            imported=dict(inserted=0,duplicates=0,quarantined=0,note='No local candle cache; use already stored hub history')
     dataset=hub.snapshot(product,granularity,limit);frozen=hub.seal(dataset)
     reused=False
     try:cached=hub.read(hub.latest_model(product,granularity))
@@ -109,10 +111,12 @@ def prepare(product,granularity=3600,limit=1000):
         if str(exc) not in ('HUB_NO_TRAINED_MODEL','HUB_MODEL_REQUIRES_REFRESH'):raise
         cached=None
     if cached and cached.get('schema')==SCHEMA and cached.get('dataset_content_sha256')==frozen['content_sha256'] and cached.get('onboard_council',{}).get('engine_version')==ENGINE_VERSION:model=cached;reused=True
-    else:model=train(dataset)
+    else:
+        if before_train:before_train()
+        model=train(dataset)
     artifact=hub.seal(model)
     council=model['onboard_council']
-    hub.register_model(product,granularity,artifact['content_sha256'])
+    (publisher or hub.register_model)(product,granularity,artifact['content_sha256'])
     return dict(mode='SEALED_HUB_RESEARCH_ONLY',imported=imported,dataset=frozen,model_artifact=artifact,
         model=model,model_reused=reused,council=council,cloud_connected=False,live_orders_enabled=False,paper_orders_enabled=False,
         note='One local preparation action; no new public downloads or provider requests. Bundled numerical specialists learn locally; no external AI service or LLM weights are connected. No model output is promoted into the fixed forward policy.')

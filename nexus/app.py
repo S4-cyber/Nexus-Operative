@@ -16,6 +16,8 @@ from nexus.market_universe import page as market_universe_page
 from nexus.expansion_initiative import roadmap as expansion_roadmap, assess_evidence as assess_expansion_evidence
 from nexus.durable_orders import gateway as research_order_gateway
 from nexus.paper_forward import runner as paper_forward_runner
+from nexus.hub_refresh import refresh_worker
+from nexus.hub_jobs import BUILD_LOCK
 from nexus.tier_permissions import current as tier_permissions_current, configure as configure_tier_permission, require_entry as require_tier_entry
 from nexus.tier_performance import tier_performance
 from nexus.decision_lane import benchmark as offline_decision_benchmark
@@ -57,10 +59,12 @@ from nexus.paper_portfolio import initialize as init_paper_portfolio, state as p
 async def application_lifespan(application):
     try:yield
     finally:
-        await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
-        await asyncio.to_thread(observer.stop)
+        try:await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
+        finally:
+            try:await asyncio.to_thread(observer.stop)
+            finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.82.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.83.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -296,7 +300,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.82.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.83.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -641,7 +645,24 @@ def cancel_order_intent(client_order_id:str):
 def market_catalog():
     return list_markets()
 
-_hub_build_lock=threading.Lock()
+_hub_build_lock=BUILD_LOCK
+
+class RefreshRequest(BaseModel):
+    product:str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
+    granularity:int = 3600
+    limit:int = Field(default=1000,ge=240,le=1000)
+
+@app.get("/api/matrix/hub/refresh")
+def hub_refresh_status():return refresh_worker.status()
+
+@app.post("/api/matrix/hub/refresh/start")
+def hub_refresh_start(value:RefreshRequest):
+    try:return refresh_worker.start(value.product,value.granularity,value.limit,admission=lambda:not _paused and not _halted)
+    except ValueError as exc:raise HTTPException(status_code=409,detail=str(exc))
+    except (OSError,RuntimeError):raise HTTPException(status_code=503,detail='REFRESH_STORAGE_OR_START_UNAVAILABLE')
+
+@app.post("/api/matrix/hub/refresh/stop")
+def hub_refresh_stop():return refresh_worker.stop()
 
 @app.get("/api/matrix/hub")
 def matrix_hub_status():
@@ -742,6 +763,7 @@ def portal(cmd:PortalCommand):
     else:
         paper_forward_runner.stop('PORTAL_PAUSE')
         observer.stop()
+        refresh_worker.stop('PORTAL_PAUSE')
     return status()
 
 @app.post("/api/simulate/halt")
@@ -749,6 +771,7 @@ def halt():
     global _halted,_paused
     _halted=True
     _paused=True
+    refresh_worker.stop('PORTAL_HALT_OR_RESET')
     paper_forward_runner.stop('PORTAL_HALT_OR_RESET')
     observer.stop()
     try:research_order_gateway.emergency_halt()
@@ -769,6 +792,7 @@ def reset_emergency_halt(confirmation:HaltResetConfirmation):
         raise HTTPException(status_code=409,detail="Emergency halt is not active")
     # RESET clears only the simulation latch, never resumes background work.
     _paused=True
+    refresh_worker.stop('PORTAL_HALT_OR_RESET')
     paper_forward_runner.stop('PORTAL_HALT_OR_RESET')
     observer.stop()
     try:research_order_gateway.reset()

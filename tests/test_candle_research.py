@@ -51,3 +51,12 @@ def test_api_and_empty_history_fails_closed(tmp_path,monkeypatch):
     assert c.get("/api/candle-research/BTC-USD/admission").status_code==200
     assert c.post("/api/candle-research/INVALID/evaluate").status_code==422
     assert c.get("/api/status").json()["live_orders_enabled"] is False
+
+
+def test_shorter_than_requested_window_is_not_admitted(tmp_path, monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA", str(tmp_path))
+    seed(bars(125))
+    result = review("BTC-USD", 3600, 130)
+    assert result["research_eligible"] is False
+    assert "REQUESTED_CANDLE_WINDOW_INCOMPLETE" in result["reasons"]
+    assert result["closes"] == []

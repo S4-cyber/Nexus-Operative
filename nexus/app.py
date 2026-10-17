@@ -49,7 +49,7 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.52.0")
+app = FastAPI(title="Nexus Operative", version="0.53.0")
 _started = time.monotonic()
 _paused = True
 try:
@@ -273,9 +273,14 @@ def simulated_snapshot():
        for i,(name,data) in enumerate(_tiers.items())
     ]
 
+@app.get("/api/roadmap")
+def release_roadmap():
+    from nexus.release_roadmap import snapshot
+    return snapshot()
+
 @app.get("/api/status")
 def status():
-    return {"version":"0.52.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.53.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 

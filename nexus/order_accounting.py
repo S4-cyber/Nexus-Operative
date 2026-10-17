@@ -27,6 +27,7 @@ class AccountingOrderGateway(OrderGateway):
         super().__init__(**kwargs)
         self.account = None
         self.executions = {}
+        self.portfolio_linked = False
 
     def initialize_account(self, capital):
         amount = number(capital)
@@ -36,6 +37,16 @@ class AccountingOrderGateway(OrderGateway):
             raise ValueError('ACCOUNT_ALREADY_INITIALIZED')
         self.account = dict(initial=str(amount), cash=str(amount), positions={})
         return self.account_report()
+
+    def link_portfolio(self):
+        if self.portfolio_linked:
+            return {"linked":True,"idempotent_replay":True}
+        if self.account is None or self.executions or self.account['positions'] or self.account['cash']!=self.account['initial']:
+            raise ValueError('LINK_REQUIRES_NEW_EXECUTION_ACCOUNT')
+        if any(event['kind']=='FILL' for order in self.intents.values() for event in order['lifecycle_events'].values()):
+            raise ValueError('LINK_REQUIRES_NO_EXISTING_FILLS')
+        self.portfolio_linked = True
+        return {"linked":True,"idempotent_replay":False}
 
     def simulate_priced_fill(self, client_order_id, event_id, sequence, quantity, price, fee='0'):
         if type(sequence) is not int or not 1 <= sequence <= 1000:
@@ -92,4 +103,4 @@ class AccountingOrderGateway(OrderGateway):
                     initialized=self.account is not None, account=copy.deepcopy(self.account),
                     priced_fills=len(self.executions), unpriced_fills=unpriced,
                     reconciled=self.account is not None and unpriced == 0,
-                    shared_with_quote_portfolio=False)
+                    shared_with_quote_portfolio=self.portfolio_linked)

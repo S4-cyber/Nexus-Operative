@@ -27,6 +27,10 @@ def _connect():
     path=Path(os.environ.get("NEXUS_PORTABLE_DATA",str(Path.home()/".nexus-operative")))
     path.mkdir(parents=True,exist_ok=True)
     db=sqlite3.connect(path/"paper_portfolio.sqlite3",timeout=10)
+    create_schema(db)
+    return db
+
+def create_schema(db):
     db.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY,value TEXT NOT NULL)")
     db.execute("CREATE TABLE IF NOT EXISTS positions (product TEXT PRIMARY KEY, quantity TEXT NOT NULL, entry TEXT NOT NULL)")
     db.execute("CREATE TABLE IF NOT EXISTS ledger (id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER NOT NULL,action TEXT NOT NULL,product TEXT NOT NULL,cash_delta TEXT NOT NULL)")
@@ -35,7 +39,7 @@ def _connect():
       action TEXT NOT NULL, product TEXT NOT NULL,
       quantity TEXT NOT NULL, entry TEXT NOT NULL)""")
     db.execute("CREATE TABLE IF NOT EXISTS chain_seals (ledger_id INTEGER PRIMARY KEY, previous TEXT NOT NULL, digest TEXT NOT NULL)")
-    return db
+    db.execute("""CREATE TABLE IF NOT EXISTS execution_fills (ledger_id INTEGER PRIMARY KEY, order_id TEXT NOT NULL, event_id TEXT NOT NULL, quantity TEXT NOT NULL, price TEXT NOT NULL, fee TEXT NOT NULL, UNIQUE(order_id,event_id))""")
 
 def state():
     with LOCK,_connect() as db:
@@ -94,6 +98,7 @@ def buy(product,notional,quote):
     require_safe_ledger()
     with LOCK,_connect() as db:
         meta=dict(db.execute("SELECT key,value FROM meta"))
+        if meta.get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
         if "cash" not in meta:raise ValueError("Initialize first")
         if db.execute("SELECT 1 FROM positions WHERE product=?",(product,)).fetchone():
             raise ValueError("Already holding this paper product")
@@ -116,6 +121,7 @@ def buy(product,notional,quote):
 def sell(product,quote):
     bid,_=check_quote(product,quote)
     with LOCK,_connect() as db:
+        if dict(db.execute("SELECT key,value FROM meta")).get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
         cash=verify_ledger(db)
         pos=db.execute("SELECT quantity,entry FROM positions WHERE product=?",(product,)).fetchone()
         if not pos:raise ValueError("Paper position unavailable")
@@ -145,3 +151,4 @@ def reconcile(quotes):
     return {**info,"reconciled":True,"liquidation_value":round(float(equity),6),
             "unrealized_inclusive_pnl":round(float(equity-D(str(info["initial_capital"]))),6),
             "note":"Paper liquidation estimate using available public bid, not guaranteed execution."}
+

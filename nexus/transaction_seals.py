@@ -12,7 +12,11 @@ def row_payload(db,ledger_id):
     record=db.execute("SELECT id,at,action,product,cash_delta FROM ledger WHERE id=?",(ledger_id,)).fetchone()
     if record is None:raise ValueError("LEDGER_RECORD_MISSING")
     event=db.execute("SELECT action,product,quantity,entry FROM position_events WHERE ledger_id=?",(ledger_id,)).fetchone()
-    return json.dumps({"ledger":list(record),"position":list(event) if event else None},
+    payload={"ledger":list(record),"position":list(event) if event else None}
+    if record[2] in ("PAPER_FILL_BUY","PAPER_FILL_SELL"):
+        execution=db.execute("SELECT order_id,event_id,quantity,price,fee FROM execution_fills WHERE ledger_id=?",(ledger_id,)).fetchone()
+        payload["execution"]=list(execution) if execution else None
+    return json.dumps(payload,
                       sort_keys=True,separators=(",",":"),ensure_ascii=True)
 
 def checksum(previous,payload):
@@ -36,3 +40,4 @@ def verify_seals(db):
             return False,"HASH_CHAIN_DIGEST_MISMATCH"
         previous=stored_digest
     return True,previous
+

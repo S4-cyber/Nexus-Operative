@@ -3,8 +3,8 @@ from nexus.app import app
 from nexus.market_universe import parse,page
 
 def product(base,status="online",**flags):
-    return {"id":base+"-USD","base_currency":base,"quote_currency":"USD",
-            "status":status,"quote_increment":"0.01",**flags}
+    return {**{"id":base+"-USD","base_currency":base,"quote_currency":"USD",
+            "status":status,"quote_increment":"0.01"},**flags}
 
 def test_catalog_can_hold_thousands_without_trade_authority():
     rows=[product("T"+str(i).zfill(4)) for i in range(2500)]

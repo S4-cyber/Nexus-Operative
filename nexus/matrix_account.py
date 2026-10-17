@@ -5,16 +5,22 @@ import math
 import os
 from pathlib import Path
 import sqlite3
+import shutil
 import threading
 import time
 from datetime import datetime, timezone
 from decimal import Decimal, localcontext
+from contextlib import closing
 from nexus.public_data import PRODUCTS, read_ticker
 from nexus.paper_portfolio import check_quote, FEE
 
 LOCK=threading.Lock()
 MAX_SAMPLES=100000
 MAX_RETAINED_SAMPLES=6000000
+MAX_DATABASE_BYTES=1024*1024*1024
+MIN_FREE_DISK_BYTES=256*1024*1024
+INSERT_WRITE_BUDGET=1024*1024
+MAX_POINT_BYTES=65536
 MIN_INTERVAL=5
 RANGES={'1m':60,'1h':3600,'1d':86400,'1mo':30*86400,'1y':365*86400,'ytd':None,'all':None}
 
@@ -33,7 +39,7 @@ def decimal(value,positive=False):
 def account():
     path=root()/'paper_portfolio.sqlite3'
     if not path.exists():return None
-    with sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=2) as db:
+    with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=2)) as db, db:
         db.execute('BEGIN')
         meta=dict(db.execute('SELECT key,value FROM meta'))
         if 'initial' not in meta:return None
@@ -75,15 +81,60 @@ def observation(state,quotes,now):
             source='LOCAL_PAPER_ACCOUNT_PUBLIC_BID_ESTIMATE',accounting_verified=False)
 
 
+class _StorageBlocked(ValueError):
+    pass
+
+
+def storage_status(db=None):
+    """Read-only capacity telemetry; never creates directories or removes history."""
+    directory=root()
+    while not directory.exists():
+        if directory.parent==directory:raise OSError('MATRIX_STORAGE_VOLUME_UNAVAILABLE')
+        directory=directory.parent
+    free=shutil.disk_usage(directory).free
+    path=root()/'matrix_observations.sqlite3'
+    allocated=path.stat().st_size if path.exists() else 0
+    reusable=0
+    if db is not None:
+        page_size=db.execute('PRAGMA page_size').fetchone()[0]
+        allocated=max(allocated,db.execute('PRAGMA page_count').fetchone()[0]*page_size)
+        reusable=db.execute('PRAGMA freelist_count').fetchone()[0]*page_size
+    warnings=[]
+    if allocated>MAX_DATABASE_BYTES or allocated-reusable+INSERT_WRITE_BUDGET>MAX_DATABASE_BYTES:warnings.append('OBSERVATION_DATABASE_BYTE_CAP')
+    if free<MIN_FREE_DISK_BYTES+allocated+INSERT_WRITE_BUDGET:warnings.append('OBSERVATION_DISK_RESERVE_LOW')
+    return dict(database_bytes=allocated,reusable_database_bytes=reusable,database_byte_limit=MAX_DATABASE_BYTES,
+        disk_free_bytes=free,minimum_free_disk_bytes=MIN_FREE_DISK_BYTES,
+        required_free_disk_bytes_for_sample=MIN_FREE_DISK_BYTES+allocated+INSERT_WRITE_BUDGET,warnings=warnings,
+        scope='LOCAL_OBSERVATION_DATABASE_ONLY_NOT_A_CLOUD_QUOTA_OR_DISK_RESERVATION')
+
+
+def storage_admission(db=None,extra_bytes=INSERT_WRITE_BUDGET,*,check_database=True):
+    info=storage_status(db)
+    if check_database and (info['database_bytes']>MAX_DATABASE_BYTES or info['database_bytes']-info['reusable_database_bytes']+extra_bytes>MAX_DATABASE_BYTES):
+        return 'OBSERVATION_DATABASE_BYTE_CAP'
+    # Leave room for the original database's rollback journal plus conservative
+    # new pages, while keeping headroom for other local work. This is a point-in-
+    # time check, not a reservation against other processes consuming the disk.
+    if info['disk_free_bytes']<MIN_FREE_DISK_BYTES+info['database_bytes']+extra_bytes:
+        return 'OBSERVATION_DISK_RESERVE_LOW'
+    return None
+
+
 def _open():
     root().mkdir(parents=True,exist_ok=True)
     db=sqlite3.connect(root()/'matrix_observations.sqlite3',timeout=2)
-    db.execute('PRAGMA synchronous=FULL')
-    db.execute('CREATE TABLE IF NOT EXISTS observations(id INTEGER PRIMARY KEY,at REAL NOT NULL,payload TEXT NOT NULL)')
-    db.execute('CREATE INDEX IF NOT EXISTS observations_at ON observations(at)')
-    db.execute('CREATE TABLE IF NOT EXISTS archived_observations(id INTEGER PRIMARY KEY,at REAL NOT NULL,payload TEXT NOT NULL)')
-    db.execute('CREATE INDEX IF NOT EXISTS archived_observations_at ON archived_observations(at)')
-    return db
+    try:
+        db.execute('PRAGMA synchronous=FULL')
+        page_size=db.execute('PRAGMA page_size').fetchone()[0]
+        db.execute('PRAGMA max_page_count='+str(max(1,MAX_DATABASE_BYTES//page_size)))
+        db.execute('CREATE TABLE IF NOT EXISTS observations(id INTEGER PRIMARY KEY,at REAL NOT NULL,payload TEXT NOT NULL)')
+        db.execute('CREATE INDEX IF NOT EXISTS observations_at ON observations(at)')
+        db.execute('CREATE TABLE IF NOT EXISTS archived_observations(id INTEGER PRIMARY KEY,at REAL NOT NULL,payload TEXT NOT NULL)')
+        db.execute('CREATE INDEX IF NOT EXISTS archived_observations_at ON archived_observations(at)')
+        return db
+    except BaseException:
+        db.close()
+        raise
 
 
 
@@ -99,6 +150,10 @@ def retain_capacity(db,now):
     eligible='at<? AND id<(SELECT MAX(id) FROM observations)'
     count=db.execute('SELECT COUNT(*) FROM observations WHERE '+eligible,(cutoff,)).fetchone()[0]
     if not count:return 'OBSERVATION_CAP_REACHED'
+    payload_bytes=db.execute('SELECT COALESCE(SUM(length(CAST(payload AS BLOB))),0) FROM observations WHERE '+eligible,(cutoff,)).fetchone()[0]
+    required=payload_bytes+count*512+INSERT_WRITE_BUDGET
+    reason=storage_admission(db,required)
+    if reason:return reason
     db.execute('INSERT INTO archived_observations SELECT * FROM observations WHERE '+eligible,(cutoff,))
     db.execute('DELETE FROM observations WHERE '+eligible,(cutoff,))
     return None
@@ -110,7 +165,9 @@ def capture(reader=read_ticker):
     try:
         before=account()
         if before is None:return dict(recorded=False,reason='PAPER_ACCOUNT_UNINITIALIZED')
-        with _open() as db:
+        admission=storage_admission(check_database=False)
+        if admission:return dict(recorded=False,reason=admission)
+        with closing(_open()) as db, db:
             db.execute('BEGIN IMMEDIATE')
             last=db.execute('SELECT id,at FROM observations ORDER BY id DESC LIMIT 1').fetchone()
             retained_head=db.execute('SELECT MAX(id) FROM archived_observations').fetchone()[0]
@@ -118,6 +175,8 @@ def capture(reader=read_ticker):
                 raise ValueError('MATRIX_RETAINED_IDENTITY_HEAD_DISAGREEMENT')
             now=time.time()
             if last and now-last[1]<MIN_INTERVAL:return dict(recorded=False,reason='OBSERVATION_INTERVAL_OR_CLOCK')
+            admission=storage_admission(db)
+            if admission:return dict(recorded=False,reason=admission)
             capacity=retain_capacity(db,now)
             if capacity:return dict(recorded=False,reason=capacity)
             quotes={}
@@ -131,8 +190,18 @@ def capture(reader=read_ticker):
             observed_at=time.time()
             if observed_at<now:return dict(recorded=False,reason='OBSERVATION_CLOCK_REGRESSION')
             point=observation(after,quotes,observed_at)
-            db.execute('INSERT INTO observations(at,payload) VALUES(?,?)',(point['at'],json.dumps(point,sort_keys=True)))
+            payload=json.dumps(point,sort_keys=True)
+            if len(payload.encode('utf-8'))>MAX_POINT_BYTES:raise _StorageBlocked('OBSERVATION_PAYLOAD_LIMIT')
+            admission=storage_admission(db)
+            if admission:raise _StorageBlocked(admission)
+            db.execute('INSERT INTO observations(at,payload) VALUES(?,?)',(point['at'],payload))
         return dict(recorded=True,point=point)
+    except _StorageBlocked as exc:
+        return dict(recorded=False,reason=str(exc))
+    except sqlite3.OperationalError as exc:
+        if getattr(exc,'sqlite_errorcode',None)==sqlite3.SQLITE_FULL:
+            return dict(recorded=False,reason='OBSERVATION_DATABASE_STORAGE_FULL')
+        raise
     finally:LOCK.release()
 
 
@@ -140,10 +209,11 @@ def history(span='1d',now=None):
     if span not in RANGES:raise ValueError('MATRIX_UNSUPPORTED_RANGE')
     now=time.time() if now is None else now
     start=0 if span=='all' else datetime(datetime.fromtimestamp(now,timezone.utc).year,1,1,tzinfo=timezone.utc).timestamp() if span=='ytd' else now-RANGES[span]
-    path=root()/'matrix_observations.sqlite3';points=[];count=0;first=None;active=0;archived=0
+    path=root()/'matrix_observations.sqlite3';points=[];count=0;first=None;active=0;archived=0;storage=storage_status()
     if path.exists():
-        with sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=2) as db:
+        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=2)) as db, db:
             db.execute('BEGIN')
+            storage=storage_status(db)
             tables=['observations']
             if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='archived_observations'").fetchone():tables.append('archived_observations')
             active=db.execute('SELECT COUNT(*) FROM observations').fetchone()[0]
@@ -162,7 +232,7 @@ def history(span='1d',now=None):
     state=account()
     return dict(mode='OBSERVED_LOCAL_PAPER_HISTORY',range=span,range_start=start,range_end=now,timezone='UTC',
         points=points,observations_in_range=count,retained_since=first,downsampled=count>len(points),
-        retention=dict(active_samples=active,archived_samples=archived,total_samples=active+archived,active_limit=MAX_SAMPLES,retained_limit=MAX_RETAINED_SAMPLES,archive_scope='SAME_DATABASE_LOGICAL_RETENTION_NOT_PHYSICAL_OFFLOAD'),
+        retention=dict(active_samples=active,archived_samples=archived,total_samples=active+archived,active_limit=MAX_SAMPLES,retained_limit=MAX_RETAINED_SAMPLES,storage=storage,archive_scope='SAME_DATABASE_LOGICAL_RETENTION_NOT_PHYSICAL_OFFLOAD'),
         adjustments=state['adjustments'] if state else [],account_initialized=state is not None,
         current_revision=state['revision'] if state else None,broker_connected=False,live_orders_enabled=False,
         note='Observed samples only; no historical backfill. Equity estimates liquidation at public bid less modeled 10 bps exit fee. Fractal shows holding unrealized P/L, not lifetime realized return. Gaps mean incomplete prices. Up to 100000 active and 6000000 total samples; closed-day rows move transactionally into retained history without deleting payloads. This is logical retention in the same database, not physical offload or unlimited storage. Account integrity is not independently verified.')

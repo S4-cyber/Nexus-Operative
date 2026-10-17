@@ -261,3 +261,125 @@ def test_missing_or_conflicting_retained_head_cannot_reuse_observation_identity(
         m.capture(lambda p:pytest.fail('head verification before quote IO'))
     with sqlite3.connect(path/'matrix_observations.sqlite3') as db:
         assert list(db.execute('SELECT * FROM observations UNION ALL SELECT * FROM archived_observations ORDER BY 1'))==before
+
+
+def test_storage_telemetry_is_read_only_even_before_data_directory_exists(tmp_path,monkeypatch):
+    target=tmp_path/'not-created';monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(target))
+    report=m.history()
+    storage=report['retention']['storage']
+    assert storage['database_bytes']==0 and storage['database_byte_limit']==1024**3
+    assert storage['minimum_free_disk_bytes']==256*1024**2
+    assert not target.exists()
+
+
+@pytest.mark.parametrize('kind',['byte_budget','disk_reserve'])
+def test_storage_admission_blocks_before_quote_io_without_deleting_data(account,monkeypatch,kind):
+    from types import SimpleNamespace
+    path,clock=account;m.capture(quote);clock[0]+=6
+    before=(path/'matrix_observations.sqlite3').read_bytes()
+    if kind=='byte_budget':monkeypatch.setattr(m,'MAX_DATABASE_BYTES',65536)
+    else:monkeypatch.setattr(m.shutil,'disk_usage',lambda p:SimpleNamespace(free=0))
+    result=m.capture(lambda p:pytest.fail('storage denial must precede quote IO'))
+    expected='OBSERVATION_DATABASE_BYTE_CAP' if kind=='byte_budget' else 'OBSERVATION_DISK_RESERVE_LOW'
+    assert result==dict(recorded=False,reason=expected)
+    assert (path/'matrix_observations.sqlite3').read_bytes()==before
+    h=m.history('all');assert len(h['points'])==1
+    assert expected in h['retention']['storage']['warnings']
+
+
+def test_disk_loss_during_fetch_rolls_back_closed_day_move_and_does_not_ack_sample(account,monkeypatch):
+    from types import SimpleNamespace
+    path,clock=account;monkeypatch.setattr(m,'MAX_SAMPLES',2)
+    m.capture(quote);clock[0]+=6;m.capture(quote);clock[0]+=86400
+    with sqlite3.connect(path/'matrix_observations.sqlite3') as db:before=list(db.execute('SELECT * FROM observations'))
+    checks=[]
+    def space(p):
+        checks.append(1)
+        return SimpleNamespace(free=2**40 if len(checks)<=3 else 0)
+    monkeypatch.setattr(m.shutil,'disk_usage',space)
+    assert m.capture(quote)==dict(recorded=False,reason='OBSERVATION_DISK_RESERVE_LOW')
+    with sqlite3.connect(path/'matrix_observations.sqlite3') as db:
+        assert list(db.execute('SELECT * FROM observations'))==before
+        assert db.execute('SELECT COUNT(*) FROM archived_observations').fetchone()[0]==0
+    monkeypatch.setattr(m.shutil,'disk_usage',lambda p:SimpleNamespace(free=2**40))
+    assert m.capture(quote)['recorded']
+
+
+@pytest.mark.parametrize('budget',['bytes','disk'])
+def test_closed_day_copy_budget_is_checked_before_fetch(account,monkeypatch,budget):
+    path,clock=account;monkeypatch.setattr(m,'MAX_SAMPLES',2)
+    m.capture(quote);clock[0]+=6;m.capture(quote);clock[0]+=86400
+    with sqlite3.connect(path/'matrix_observations.sqlite3') as db:
+        # Original fixture payloads are retained exactly; a large older row needs
+        # additional temporary copy pages before its source pages can be reused.
+        point=json.loads(db.execute('SELECT payload FROM observations WHERE id=1').fetchone()[0]);point['legacy_fixture_padding']='x'*2*1024*1024
+        db.execute('UPDATE observations SET payload=? WHERE id=1',(json.dumps(point),))
+        used=db.execute('PRAGMA page_count').fetchone()[0]*db.execute('PRAGMA page_size').fetchone()[0]
+    if budget=='bytes':
+        monkeypatch.setattr(m,'MAX_DATABASE_BYTES',used+m.INSERT_WRITE_BUDGET+65536)
+        expected='OBSERVATION_DATABASE_BYTE_CAP'
+    else:
+        from types import SimpleNamespace
+        monkeypatch.setattr(m.shutil,'disk_usage',lambda p:SimpleNamespace(free=m.MIN_FREE_DISK_BYTES+used+m.INSERT_WRITE_BUDGET+65536))
+        expected='OBSERVATION_DISK_RESERVE_LOW'
+    assert m.capture(lambda p:pytest.fail('archive budget before transport'))['reason']==expected
+    with sqlite3.connect(path/'matrix_observations.sqlite3') as db:
+        assert db.execute('SELECT COUNT(*) FROM observations').fetchone()[0]==2
+        assert db.execute('SELECT COUNT(*) FROM archived_observations').fetchone()[0]==0
+
+
+def test_sqlite_page_limit_catches_actual_allocation_failure_without_acknowledgment(account,monkeypatch):
+    path,clock=account;m.capture(quote);clock[0]+=6
+    size=(path/'matrix_observations.sqlite3').stat().st_size
+    monkeypatch.setattr(m,'MAX_DATABASE_BYTES',size)
+    monkeypatch.setattr(m,'storage_admission',lambda *a,**k:None) # Bypass estimates to exercise SQLite's independent limit.
+    original=m.observation
+    def large(*args):return {**original(*args),'fixture_padding':'x'*60000}
+    monkeypatch.setattr(m,'observation',large)
+    result=m.capture(quote)
+    assert result==dict(recorded=False,reason='OBSERVATION_DATABASE_STORAGE_FULL')
+    with sqlite3.connect(path/'matrix_observations.sqlite3') as db:
+        assert db.execute('SELECT COUNT(*) FROM observations').fetchone()[0]==1
+        assert db.execute('PRAGMA quick_check').fetchone()[0]=='ok'
+    assert (path/'matrix_observations.sqlite3').stat().st_size==size
+
+
+def test_oversized_point_is_not_appended_and_collection_can_retry(account,monkeypatch):
+    path,clock=account;m.capture(quote);clock[0]+=6
+    original=m.observation
+    monkeypatch.setattr(m,'observation',lambda *a:{**original(*a),'fixture_padding':'x'*m.MAX_POINT_BYTES})
+    assert m.capture(quote)==dict(recorded=False,reason='OBSERVATION_PAYLOAD_LIMIT')
+    monkeypatch.setattr(m,'observation',original)
+    assert m.capture(quote)['recorded']
+    assert m.history('all')['retention']['total_samples']==2
+
+
+def test_disk_probe_failure_releases_observation_guard(account,monkeypatch):
+    original=m.shutil.disk_usage
+    monkeypatch.setattr(m.shutil,'disk_usage',lambda p:(_ for _ in ()).throw(OSError('fixture probe failed')))
+    with pytest.raises(OSError,match='fixture probe failed'):m.capture(quote)
+    monkeypatch.setattr(m.shutil,'disk_usage',original)
+    assert m.capture(quote)['recorded']
+
+
+def test_missing_storage_volume_fails_without_looping_or_creating_paths(monkeypatch):
+    class MissingVolume:
+        def exists(self):return False
+        @property
+        def parent(self):return self
+    monkeypatch.setattr(m,'root',lambda:MissingVolume())
+    with pytest.raises(OSError,match='MATRIX_STORAGE_VOLUME_UNAVAILABLE'):m.storage_status()
+
+
+def test_preexisting_oversized_database_cannot_bypass_budget_with_free_pages(account,monkeypatch):
+    path,clock=account;m.capture(quote);clock[0]+=6
+    with sqlite3.connect(path/'matrix_observations.sqlite3') as db:
+        db.execute('CREATE TABLE disposable_padding(value TEXT)')
+        db.execute('INSERT INTO disposable_padding VALUES(?)',('x'*2*1024*1024,));db.commit()
+        db.execute('DROP TABLE disposable_padding')
+    allocated=(path/'matrix_observations.sqlite3').stat().st_size
+    monkeypatch.setattr(m,'MAX_DATABASE_BYTES',allocated-4096)
+    result=m.capture(lambda p:pytest.fail('oversized file before transport'))
+    assert result==dict(recorded=False,reason='OBSERVATION_DATABASE_BYTE_CAP')
+    assert (path/'matrix_observations.sqlite3').stat().st_size==allocated
+    assert m.history('all')['retention']['total_samples']==1

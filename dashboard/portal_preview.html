@@ -479,6 +479,18 @@ let accountMode='singularity',accountHistory=null,accountBusy=false,accountReque
 const accountCanvas=byId('matrix-account-chart'),accountContext=accountCanvas.getContext('2d');
 const matrixColors=['#55f99d','#db9aff','#ffcf70','#7fceff'];
 function matrixMoney(value){return Number(value).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function matrixObservationReason(reason){return ({
+ OBSERVATION_DATABASE_BYTE_CAP:'History storage budget cannot fit the next update. Saved observations remain available; review storage before continuing.',
+ OBSERVATION_DISK_RESERVE_LOW:'Low free disk space. Collection paused to leave room for other account data; saved history remains available.',
+ OBSERVATION_DATABASE_STORAGE_FULL:'The observation database could not allocate space. The new sample was not saved; existing history was retained.',
+ OBSERVATION_PAYLOAD_LIMIT:'This observation exceeded the record-size limit and was not saved. Review the account data.',
+ RETAINED_OBSERVATION_CAP_REACHED:'The retained-history sample limit is reached. Collection paused without deleting saved history.',
+ OBSERVATION_CAP_REACHED:'The active history is full and no older completed day can move yet. Collection is paused.',
+ ACCOUNT_CHANGED_DURING_OBSERVATION:'The account changed while prices loaded. Waiting for the next observation.',
+ OBSERVATION_IN_PROGRESS:'An account observation is already running.',
+ OBSERVATION_CLOCK_REGRESSION:'The clock moved backwards during observation. That sample was not saved.'
+})[reason]||String(reason)}
+
 function renderAccountMatrix(){
  const width=Math.max(240,Math.floor(accountCanvas.clientWidth||600)),height=270,dpr=Math.min(window.devicePixelRatio||1,2);
  accountCanvas.width=width*dpr;accountCanvas.height=height*dpr;accountContext.setTransform(dpr,0,0,dpr,0,0);
@@ -511,6 +523,7 @@ function applyAccountHistory(data){
  let status=!data.account_initialized?'Paper account is not initialized.':!last?'No observations in this range. Tracking begins while PORTAL is active.':last.complete?'Estimated equity $'+matrixMoney(last.equity)+' / cash $'+matrixMoney(last.cash)+' / net change from initial $'+matrixMoney(last.pnl):'Incomplete valuation: missing fresh marks for '+last.missing_products.join(', ');
  if(last){status+=' / observed '+new Date(last.at*1000).toLocaleString();if(Date.now()/1000-last.at>15)status+=' / STALE';if(last.account_revision!==data.current_revision)status+=' / account changed since this observation';for(const p of last.positions)status+=' / '+p.product+' qty '+p.quantity+' / unrealized $'+matrixMoney(p.unrealized_pnl)}
  if(data.retention){status+=' / retained '+data.retention.total_samples.toLocaleString()+' of '+data.retention.retained_limit.toLocaleString()+' observations ('+data.retention.archived_samples.toLocaleString()+' archived)'}
+ const storage=data.retention&&data.retention.storage;if(storage){status+=' / history storage '+(storage.database_bytes/1048576).toFixed(1)+' of '+(storage.database_byte_limit/1048576).toFixed(0)+' MiB';for(const warning of storage.warnings)status+=' / '+matrixObservationReason(warning)}
  status+=' / '+data.observations_in_range+' observed samples'+(data.downsampled?' (spaced dots; detail reduced)':'')+' / source: local paper; not independently reconciled';show('matrix-account-summary',status);
  const select=byId('matrix-adjustments'),selected=select.value;select.replaceChildren();
  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=data.adjustments.length?'Select a recorded adjustment':'No recorded account adjustments';select.append(placeholder);
@@ -521,7 +534,7 @@ function applyAccountHistory(data){
 function showMatrixAdjustment(){const a=accountHistory&&accountHistory.adjustments.find(a=>String(a.id)===byId('matrix-adjustments').value);show('matrix-adjustment-detail',a?new Date(a.at*1000).toLocaleString()+' / '+a.action+' '+a.product+' / recorded quantity '+(a.quantity||'unavailable')+' / recorded basis $'+(a.entry||'unavailable')+' / cash change $'+matrixMoney(a.cash_delta):'Select a recorded event to inspect it. No order is sent.')}
 async function refreshAccountMatrix(observe=false){
  if(!portalActive||accountBusy)return;accountBusy=true;const request=++accountRequest,span=byId('matrix-range').value;
- try{let capture=null;if(observe)capture=await api('/api/matrix/account/observe',{method:'POST'});const data=await api('/api/matrix/account?span='+encodeURIComponent(span));if(portalActive&&request===accountRequest&&span===byId('matrix-range').value){applyAccountHistory(data);if(capture&&!capture.recorded&&!['OBSERVATION_INTERVAL_OR_CLOCK','PAPER_ACCOUNT_UNINITIALIZED'].includes(capture.reason))show('matrix-account-summary',byId('matrix-account-summary').textContent+' / observation paused: '+capture.reason)}}
+ try{let capture=null;if(observe)capture=await api('/api/matrix/account/observe',{method:'POST'});const data=await api('/api/matrix/account?span='+encodeURIComponent(span));if(portalActive&&request===accountRequest&&span===byId('matrix-range').value){applyAccountHistory(data);if(capture&&!capture.recorded&&!['OBSERVATION_INTERVAL_OR_CLOCK','PAPER_ACCOUNT_UNINITIALIZED'].includes(capture.reason)&&!(data.retention?.storage?.warnings||[]).includes(capture.reason))show('matrix-account-summary',byId('matrix-account-summary').textContent+' / '+matrixObservationReason(capture.reason))}}
  catch(e){show('matrix-account-summary','Account observation unavailable: '+e.message+' / prior graph is historical, not a current balance')}
  finally{accountBusy=false;if(portalActive&&span!==byId('matrix-range').value)refreshAccountMatrix(false)}
 }

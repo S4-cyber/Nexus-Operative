@@ -25,3 +25,13 @@ The display's observation/refresh cadence does not pace the execution engine or 
 Verified offline data-directory backup/restore includes active and archived Matrix history. A fresh-process fixture confirms the same retained points and account revision after restore. This does not encrypt a backup or authorize an automatic session restart.
 
 Capture also rejects missing or conflicting active/retained ID heads before fetching prices. It does not automatically repair deleted or corrupted observation history.
+
+## Storage admission
+
+Observation collection now has a 1 GiB SQLite page budget and a 256 MiB free-disk reserve, in addition to the active and total sample caps. These are fixed local engineering limits, not configurable trading permissions. Byte/disk limits can stop collection well before six million observations or a full year's coverage. Already larger databases are not truncated or repaired automatically.
+
+Before fetching quotes, collection checks free space, estimated insert capacity and temporary closed-day copy capacity. It leaves additional room for the existing database's rollback journal and a conservative write allowance. A second check after fetching catches space consumed during observation; denial rolls back a pending archive move and does not acknowledge a saved sample. SQLite's independent maximum-page setting rejects unexpected database growth; a real allocation-limit fixture verifies rollback and no acknowledgment. Individual new JSON observations are limited to 64 KiB.
+
+The budget applies to this observation database, not execution journals, the entire data folder, backup copies or a cloud account. SQLite journals/sidecars can require extra temporary disk space. Free-space checks are snapshots, not reservations against other processes or a guarantee against a full disk. A missing storage volume or failed disk probe blocks collection without an automatic repair or a hung path search. Connections are explicitly closed on success and failure.
+
+GET remains read-only and reports allocated/reusable database bytes, byte limit, disk free space, minimum/estimated required headroom and warnings. PORTAL displays used MiB and plain-language collection warnings while retaining historical graphs. No saved history is deleted to satisfy a budget, and no paper execution permission or session state is changed by these observation-only checks. Monitoring/collection is still local; this does not provide encrypted or computer-off cloud operation.

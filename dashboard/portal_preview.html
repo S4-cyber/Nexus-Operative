@@ -279,7 +279,11 @@ async function sampleMatrixPrice(){
 function resizeRain(){matrix.width=Math.max(320,matrix.clientWidth);matrix.height=180;drops=Array.from({length:Math.ceil(matrix.width/14)},()=>Math.random()*14)}resizeRain();window.addEventListener('resize',resizeRain);
 function renderRain(){if(!portalActive||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;ctx.fillStyle='rgba(1,8,2,.19)';ctx.fillRect(0,0,matrix.width,matrix.height);ctx.fillStyle='#4eff80';ctx.font='12px Consolas,monospace';drops.forEach((y,i)=>{ctx.fillText('01NEXUS'[Math.floor(Math.random()*7)],i*14,y*14);drops[i]=y>16?0:y+.4})}
 async function matrixUpdate(){if(!portalActive)return;try{const d=await api('/api/matrix');const root=byId('matrix-feed');for(const e of d.events){const line=document.createElement('div');line.textContent=new Date().toLocaleTimeString()+' / '+e.tier+' / '+e.message+' / '+e.outcome+' / SYNTHETIC';root.prepend(line)}while(root.children.length>24)root.lastChild.remove()}catch(e){show('matrix-feed','Telemetry unavailable: '+e.message)}}
+const matrix=byId('matrix-rain'),ctx=matrix.getContext('2d');let drops=[];
+function resizeRain(){matrix.width=Math.max(320,matrix.clientWidth);matrix.height=180;drops=Array.from({length:Math.ceil(matrix.width/14)},()=>Math.random()*14)}
+resizeRain();window.addEventListener('resize',resizeRain);
+function renderRain(){if(!portalActive||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;ctx.fillStyle='rgba(1,8,2,.19)';ctx.fillRect(0,0,matrix.width,matrix.height);ctx.fillStyle='#4eff80';ctx.font='12px Consolas,monospace';drops.forEach((y,i)=>{ctx.fillText('01NEXUS'[Math.floor(Math.random()*7)],i*14,y*14);drops[i]=y>16?0:y+.4})}
 loadMarkets();loadBranches();loadPaper();refreshPortfolio();refreshSentinel();update().then(()=>{if(portalActive)sampleMatrixPrice()});
 setInterval(()=>{if(portalActive){cycle++;update();matrixUpdate();sampleMatrixPrice()}},6000);
 setInterval(refreshSentinel,12000);setInterval(renderRain,90);
-</body></html>
+</script></body></html>

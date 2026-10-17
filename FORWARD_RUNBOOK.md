@@ -143,3 +143,7 @@ v0.87 control overload: the Emergency Stop handler latches local intake before q
 
 
 v0.88 storage contention: the runner receives a distinct local cut signal before durable cleanup admission/waits. It vetoes new cycles and fill evaluation after a SQLite write wait, while existing execution/ownership fencing and STOP diagnostics remain. Stop and engine retries cannot clear it; only epoch-checked durable reset can, without restarting. PENDING/UNCONFIRMED still need review, and already admitted/committed transactions are not erased. Real order/portfolio write-lock and process-death fixtures now verify those boundaries. Before-commit process death can lose the volatile signal; never assume a durable halt from an unacknowledged request. Restart remains stopped and pending orders block new admission. Persistent pre-commit intent and broker-level acceptance remain open.
+
+### Independent cut intent (v0.89)
+
+A crash after the worker saves cut intent but before the order transaction commits now recovers a local cut, not clear intake. Inspect outstanding remainders and retained fills; explicitly retry Emergency Stop for durable cancellation. Do not infer cancellation from intent alone. Reset remains explicit, keeps the runner stopped and must remove the intent successfully before clearing local admission. Recovery/status never repairs orders automatically. See EMERGENCY_CONTROL.md for the remaining pre-write/process/power-loss and multi-process limits.

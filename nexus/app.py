@@ -49,7 +49,7 @@ from nexus.model_adapters import coordinate as coordinate_model_advisors
 from nexus.advisory_benchmark import benchmark as advisory_contract_benchmark
 from nexus.provider_research import status as provider_research_status
 from nexus.onboarding import inventory as local_capability_inventory
-from nexus import credential_vault
+from nexus import credential_vault, emergency_intent
 from nexus.ai_evidence_preview import build as ai_evidence_preview, authorize_preview as ai_authorize_preview
 from nexus.safety_benchmark import benchmark as safety_benchmark
 from nexus.portfolio_governor import audit_portfolio
@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.88.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.89.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 # Lifecycle admission is serialized; a throttle cut publishes its latch before waiting.
@@ -79,12 +79,17 @@ _cut_pending = 0
 _cut_executor = None
 _cut_future = None
 _cut_lane_closing = False
-try:
-    _halted = research_order_gateway.recovery_report()["halted"]
-    _cut_confirmed = _halted
-except (ValueError,OSError,sqlite3.Error):
-    _cut_confirmed = False
-    _halted = True  # Recovery failure must not silently reopen intake.
+def _recover_emergency_cut():
+    try:
+        pending_intent = emergency_intent.requested(research_order_gateway._path())
+        durable_halt = research_order_gateway.recovery_report()["halted"]
+        halted, confirmed = pending_intent or durable_halt, durable_halt
+    except (ValueError,OSError,sqlite3.Error):
+        halted, confirmed = True, False
+    if halted:paper_forward_runner.request_cut()
+    return halted, confirmed
+
+_halted, _cut_confirmed = _recover_emergency_cut()
 
 _tiers = {
     "terrestrial": {"risk":"low", "max_weight":0.01, "score":28, "approach":"Prioritize liquid assets, modest position exposure and defined exits."},
@@ -320,7 +325,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.88.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.89.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -834,9 +839,11 @@ def portal(cmd:PortalCommand):
 def _complete_emergency_cut():
     with _trading_control_lock:
         try:
-            # Persist the cut before waiting for worker cleanup. Research keeps running.
-            try:research_order_gateway.emergency_halt()
-            finally:paper_forward_runner.stop('EMERGENCY_THROTTLE_CUT')
+            # Independent intent precedes SQLite. Still halt/stop if its disk write fails.
+            try:emergency_intent.persist(research_order_gateway._path())
+            finally:
+                try:research_order_gateway.emergency_halt()
+                finally:paper_forward_runner.stop('EMERGENCY_THROTTLE_CUT')
         except (ValueError,OSError,sqlite3.Error,RuntimeError):
             raise HTTPException(status_code=503,detail="HALTED_LOCALLY_CUT_CLEANUP_UNCONFIRMED")
         try:audit('emergency_halt')
@@ -920,9 +927,12 @@ def _complete_halt_reset(epoch):
             if _cut_pending or epoch!=_cut_epoch:
                 raise HTTPException(status_code=409,detail="EMERGENCY_CUT_IN_PROGRESS")
             if not _halted:raise HTTPException(status_code=409,detail="Emergency halt is not active")
+            _cut_confirmed=False  # Reset may commit before a later intent-clear failure.
         try:
             paper_forward_runner.stop('THROTTLE_RESET_STAYS_DISENGAGED')
             research_order_gateway.reset()
+            # Serialized with cut persistence; a newer queued cut writes after this reset.
+            emergency_intent.clear(research_order_gateway._path())
         except (ValueError,OSError,sqlite3.Error):
             raise HTTPException(status_code=503,detail="HALT_RESET_STORAGE_UNAVAILABLE")
         with _cut_lock:
@@ -933,7 +943,9 @@ def _complete_halt_reset(epoch):
                 _cut_confirmed=False
         if interrupted:
             # A newer cut always wins, including one received during durable reset.
-            try:research_order_gateway.emergency_halt()
+            try:
+                try:emergency_intent.persist(research_order_gateway._path())
+                finally:research_order_gateway.emergency_halt()
             except (ValueError,OSError,sqlite3.Error):
                 raise HTTPException(status_code=503,detail="HALTED_LOCALLY_ORDER_STORAGE_UNAVAILABLE")
             raise HTTPException(status_code=409,detail="RESET_INTERRUPTED_BY_EMERGENCY_CUT")

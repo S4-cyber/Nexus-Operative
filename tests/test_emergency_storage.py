@@ -152,6 +152,7 @@ def test_process_death_without_ack_preserves_truth_and_never_auto_resumes(tmp_pa
     try:
         line=ready.get(timeout=20)
         assert line.strip()=='boundary'
+        assert (tmp_path/'emergency_cut.intent').exists()
         proc.kill();proc.wait(10)
     finally:
         if proc.poll() is None:proc.kill();proc.wait(10)
@@ -161,12 +162,12 @@ def test_process_death_without_ack_preserves_truth_and_never_auto_resumes(tmp_pa
     data=json.loads(cold.stdout);report=data['report'];committed=boundary=='after_commit_before_ack'
     assert report['halted']==committed and report['portfolio_reconciled']
     assert not data['status']['portal_enabled'] and not data['status']['live_orders_enabled']
-    assert data['status']['emergency_cut_state']==('VERIFIED' if committed else 'CLEAR')
+    assert data['status']['emergency_cut_state']==('VERIFIED' if committed else 'UNCONFIRMED')
     assert not data['runner']['enabled'] and not data['runner']['worker_alive'] and not data['runner']['ownership_held']
     assert report['execution_account']['account']['positions']['BTC-USD']['quantity']=='1'
     order=report['orders'][0];assert order['simulated_filled_notional']=='25'
     assert order['status']==('SIMULATED_CANCELLED' if committed else 'SIMULATED_PARTIALLY_FILLED')
-    assert data['admission']==('EMERGENCY_HALT_ACTIVE' if committed else 'REVIEW_OUTSTANDING_PAPER_ORDERS_FIRST')
+    assert data['admission']=='EMERGENCY_CUT_REQUESTED'
 
 
 def test_busy_timeout_is_unconfirmed_and_explicit_retry_cancels_preserving_fills(control,monkeypatch):

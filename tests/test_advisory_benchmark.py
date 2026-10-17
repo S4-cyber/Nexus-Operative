@@ -43,3 +43,10 @@ def test_legacy_unreviewed_ai_research_is_forbidden(monkeypatch):
     response = client.post("/api/paper/ai-provider/market_regime/research", json={"private": "unreviewed"})
     assert response.status_code == 403
     assert "reviewed" in response.json()["detail"].lower()
+
+
+def test_portal_describes_reviewed_paid_consent():
+    html = TestClient(app).get("/portal").text
+    assert "SHA-256 hash" in html
+    assert "May Cost Money" in html
+    assert "If the public dataset is not eligible or changes" in html

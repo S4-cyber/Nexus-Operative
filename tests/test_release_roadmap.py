@@ -20,7 +20,7 @@ def test_bundled_reference_is_read_only_and_independent():
 
 def test_checked_in_roadmap_matches_code_and_portal_links_it():
     root=Path(__file__).resolve().parents[1]
-    assert (root/'ROADMAP.md').read_text()==markdown()
+    assert (root/'ROADMAP.md').read_text(encoding='utf-8')==markdown()
     assert 'release-roadmap-load' in c_html()
     assert "api('/api/roadmap')" in c_html()
 

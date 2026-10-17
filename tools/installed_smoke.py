@@ -16,6 +16,24 @@ def request(base,path,method='GET'):
         return raw if path=='/portal' else json.loads(raw)
 
 
+def launch_environment(data=None,default_data_root=None,environ=None):
+    if (data is None)==(default_data_root is None):raise ValueError('CHOOSE_ONE_DATA_LAYOUT')
+    env=dict(os.environ if environ is None else environ)
+    env['NEXUS_BROWSER_MODE']='1'
+    if default_data_root is not None:
+        root=Path(default_data_root).resolve()
+        env['LOCALAPPDATA']=str(root)
+        # Inherited overrides would make this a portable-path test instead.
+        for key in ('NEXUS_PORTABLE_DATA','NEXUS_AUDIT_PATH','NEXUS_RESERVE_PATH','NEXUS_STRATEGY_MEMORY_PATH'):
+            env.pop(key,None)
+        expected=root/'NexusOperative'/'storage'
+    else:
+        expected=Path(data).resolve();env['NEXUS_PORTABLE_DATA']=str(expected)
+        for key in ('NEXUS_AUDIT_PATH','NEXUS_RESERVE_PATH','NEXUS_STRATEGY_MEMORY_PATH'):
+            env.pop(key,None)
+    return env,expected
+
+
 def verify_recovery(base,expected,fetch=request):
     from nexus.recovery_drill import fingerprint
     recovery=fetch(base,'/api/execution/recovery')
@@ -45,17 +63,21 @@ def verify_recovery(base,expected,fetch=request):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--exe',required=True,type=Path)
-    parser.add_argument('--data',required=True,type=Path)
+    layout=parser.add_mutually_exclusive_group(required=True)
+    layout.add_argument('--data',type=Path)
+    layout.add_argument('--default-data-root',type=Path)
     parser.add_argument('--version',required=True)
     parser.add_argument('--expect-halted',action='store_true')
     parser.add_argument('--output',required=True,type=Path)
     parser.add_argument('--expected-recovery',type=Path)
     args=parser.parse_args()
-    args.data.mkdir(parents=True,exist_ok=True)
+    if args.default_data_root is not None and os.name!='nt':parser.error('Default frozen Windows layout requires Windows')
+    env,expected_data=launch_environment(args.data,args.default_data_root)
+    if args.data is not None:expected_data.mkdir(parents=True,exist_ok=True)
+    else:args.default_data_root.mkdir(parents=True,exist_ok=True)
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
-    env={**os.environ,'NEXUS_BROWSER_MODE':'1','NEXUS_PORT':str(port),
-         'NEXUS_PORTABLE_DATA':str(args.data.resolve())}
+    env['NEXUS_PORT']=str(port)
     # Keep startup evidence in the artifact; avoid pipes that can fill and deadlock.
     with args.output.with_suffix('.log').open('w',encoding='utf-8') as log:
         proc=subprocess.Popen([str(args.exe.resolve())],env=env,stdout=log,stderr=subprocess.STDOUT)
@@ -68,6 +90,7 @@ def main():
                 except (OSError,urllib.error.URLError):
                     if time.monotonic()>deadline:raise RuntimeError('INSTALLED_START_TIMEOUT')
                     time.sleep(.25)
+            assert (expected_data/'order_lifecycle.sqlite3').is_file(), 'Expected data layout was not used'
             assert status['version']==args.version, status
             assert status['halted'] is args.expect_halted, status
             assert not status['portal_enabled'] and not status['live_orders_enabled'] and not status['broker_connected']
@@ -79,6 +102,7 @@ def main():
             assert request(base,'/api/execution/recovery')['halted']
             args.output.write_text(json.dumps(dict(version=args.version,initial_halted=status['halted'],
                 portal_served=True,forward_stopped=True,halt_persisted=True,restored_recovery=restored,
+                data_layout='DEFAULT_WINDOWS_APPDATA' if args.default_data_root else 'EXPLICIT_PORTABLE_DIRECTORY',
                 scope='CI installed-process smoke; no native window, market feed or cross-version upgrade acceptance.'),indent=2),encoding='utf-8')
         finally:
             # PyInstaller onefile has a parent bootloader and application child.

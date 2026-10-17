@@ -373,6 +373,7 @@ class PortfolioInit(BaseModel):
 class PaperTrade(BaseModel):
     product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
     notional: float = Field(gt=0, le=1000000)
+    tier: str = Field(pattern="^(terrestrial|solar|universal)$")
 
 class PaperClose(BaseModel):
     product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
@@ -416,7 +417,10 @@ def paper_portfolio_init(data:PortfolioInit):
 
 @app.post("/api/paper/portfolio/buy")
 def paper_portfolio_buy(data:PaperTrade):
+    if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
+    if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
     try:
+        require_tier_entry(data.tier,data.notional)
         quote=read_ticker(data.product)
         return paper_buy(data.product,data.notional,quote)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))

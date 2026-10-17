@@ -100,9 +100,44 @@ jobs:
           Copy-Item dist/NexusOperative.exe release/NexusOperative/NexusOperative.exe
           & $iscc installer/NexusOperative.iss
           if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+      - name: Verify installed application, reinstall and data-preserving uninstall
+        shell: pwsh
+        run: |
+          $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          $installer = (Resolve-Path "release/NexusOperative-Setup-$version.exe").Path
+          ./tools/windows_installer_smoke.ps1 -Installer $installer -Version $version -EvidenceDirectory "$env:RUNNER_TEMP/nexus-installer-evidence"
+      - name: Create distribution checksum manifest
+        shell: pwsh
+        run: |
+          $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          $sourceCommit = git rev-parse HEAD
+          Copy-Item dist/NexusOperative.exe release/NexusOperative.exe
+          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe"
+          if ($LASTEXITCODE -ne 0) { throw 'Manifest creation failed' }
+          python -m nexus.artifact_manifest verify release/artifact-manifest.json release
+          if ($LASTEXITCODE -ne 0) { throw 'Manifest verification failed' }
+      - name: Upload distribution with source and checksum manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: NexusOperative-Windows-Distribution
+          path: |
+            release/NexusOperative.exe
+            release/NexusOperative-Setup-*.exe
+            release/artifact-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve installer acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NexusOperative-Installer-Smoke-Evidence
+          path: ${{ runner.temp }}/nexus-installer-evidence
+          if-no-files-found: warn
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
           name: NexusOperative-Windows-Installer
           path: release/NexusOperative-Setup-*.exe
           if-no-files-found: error
           retention-days: 7
+

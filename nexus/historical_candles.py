@@ -121,6 +121,9 @@ def history(product,granularity=300,limit=300):
                         (product,granularity,limit)).fetchall()
     result=[];issues=[];prior=None
     for stamp,payload,digest,revisions in reversed(rows):
+        if prior is not None and stamp-prior!=granularity:
+            issues.append("MISSING_BAR_INTERVAL")
+        prior=stamp
         try:
             data=json.loads(payload)
             valid=(hashlib.sha256(payload.encode()).hexdigest()==digest and
@@ -131,9 +134,6 @@ def history(product,granularity=300,limit=300):
             result.append({"starts_at":stamp,"valid":False})
             continue
         if revisions:issues.append("REVISED_BAR")
-        if prior is not None and stamp-prior!=granularity:
-            issues.append("MISSING_BAR_INTERVAL")
-        prior=stamp
         result.append({**data,"revision_count":revisions,"valid":True})
     if len(result)<2:issues.append("INSUFFICIENT_HISTORY")
     return {"mode":"SINGLE_SOURCE_CANDLE_RESEARCH","product":product,

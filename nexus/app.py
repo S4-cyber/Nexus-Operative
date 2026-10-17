@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.91.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.92.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 # Lifecycle admission is serialized; a throttle cut publishes its latch before waiting.
@@ -325,7 +325,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.91.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.92.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -656,7 +656,9 @@ def execution_order_recovery():
 @app.get("/api/execution/alpaca-paper/fee-projection-fixture")
 def alpaca_paper_fee_fixture():
     from nexus.broker_fee_projection import fixture_report
-    return fixture_report()
+    try:return JSONResponse(fixture_report(),headers={"Cache-Control":"no-store"})
+    except (ValueError,OSError,sqlite3.Error):
+        raise HTTPException(status_code=503,detail="OFFLINE_BROKER_FEE_FIXTURE_UNAVAILABLE")
 
 @app.get("/api/execution/alpaca-paper/request-recovery-fixture")
 def alpaca_paper_request_recovery_fixture():

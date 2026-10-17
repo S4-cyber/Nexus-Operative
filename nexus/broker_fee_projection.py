@@ -69,7 +69,7 @@ def balances(raw):
     return {asset:number(raw[asset],zero=True) for asset in ('USD','BTC')}
 
 
-def reconcile(orders,executions,fees,*,opening_balances,opening_at,observed_balances,observed_at,fee_coverage_complete=False):
+def _project(orders,executions,fees,*,opening_balances,opening_at,observed_balances,observed_at,fee_coverage_complete=False):
     if type(fee_coverage_complete) is not bool:raise ValueError('INVALID_BROKER_FEE_COVERAGE_DECLARATION')
     opening=balances(opening_balances);observed=balances(observed_balances)
     start=timestamp(opening_at);end=timestamp(observed_at)
@@ -120,7 +120,7 @@ def reconcile(orders,executions,fees,*,opening_balances,opening_at,observed_bala
                     fees=sorted(fees.values(),key=lambda r:r['activity_id']),
                     opening_balances={k:text(v) for k,v in opening.items()},observed_balances={k:text(v) for k,v in observed.items()},
                     opening_at=start.isoformat(),observed_at=end.isoformat(),fee_coverage_complete=fee_coverage_complete)
-    return dict(mode='DISCONNECTED_BROKER_FEE_PROJECTION',input_consistency_ok=not reasons,reasons=sorted(set(reasons)),
+    report=dict(mode='DISCONNECTED_BROKER_FEE_PROJECTION',input_consistency_ok=not reasons,reasons=sorted(set(reasons)),
                 projected_balances={k:text(v) for k,v in projected.items()},declared_balances={k:text(v) for k,v in observed.items()},
                 projection_matches_declared_balances=matches,input_sha256=sha(normalized),
                 orders=len(orders),executions=len(executions),fee_activities=len(fees),
@@ -131,6 +131,14 @@ def reconcile(orders,executions,fees,*,opening_balances,opening_at,observed_bala
                 coverage_scope='CALLER_DECLARED_AND_EXECUTION_LINKED_NOT_INDEPENDENTLY_ATTESTED',
                 broker_account_reconciled=False,broker_connected=False,ledger_applied=False,ready_for_routing=False,live_orders_enabled=False,
                 limitations='Pure supplied-data consistency only. Explicit execution prices are required; cumulative averages never create executions. Fee links, opening balances and completeness are unverified inputs. Intraperiod spending capacity is not proved. Missing corrections, transfers, deposits or fees can invalidate the projection. No existing paper account is modified.')
+
+    return report,normalized
+
+
+def reconcile(orders,executions,fees,*,opening_balances,opening_at,observed_balances,observed_at,fee_coverage_complete=False):
+    return _project(orders,executions,fees,opening_balances=opening_balances,opening_at=opening_at,
+                    observed_balances=observed_balances,observed_at=observed_at,
+                    fee_coverage_complete=fee_coverage_complete)[0]
 
 
 def fixture_inputs():
@@ -149,7 +157,9 @@ def fixture_inputs():
                      observed_balances={'USD':'1009.78011','BTC':'0'},observed_at='2026-10-17T18:00:03+00:00',fee_coverage_complete=True)
 
 
-def fixture_report():return reconcile(**fixture_inputs())
+def fixture_report():
+    from nexus.broker_cash_path import analyze_and_project
+    return analyze_and_project(**fixture_inputs())
 
 
 if __name__=='__main__':

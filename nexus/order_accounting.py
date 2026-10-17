@@ -1,4 +1,4 @@
-"""Separate synthetic execution account; never changes the quote-driven portfolio.
+"""Synthetic execution accounting, optionally linked atomically to the paper ledger.
 
 Priced fills and accounting are replayed from the same durable command transaction.
 Unpriced historical events remain explicitly unreconciled; no quantity is inferred.
@@ -28,6 +28,9 @@ class AccountingOrderGateway(OrderGateway):
         self.account = None
         self.executions = {}
         self.portfolio_linked = False
+        self.order_terms = {}
+        self.quote_events = {}
+        self._applying_quote = False
 
     def initialize_account(self, capital):
         amount = number(capital)
@@ -48,7 +51,79 @@ class AccountingOrderGateway(OrderGateway):
         self.portfolio_linked = True
         return {"linked":True,"idempotent_replay":False}
 
+    def set_execution_terms(self, client_order_id, created_at, ttl_seconds):
+        created=number(created_at);ttl=number(ttl_seconds)
+        if ttl>3600 or created+ttl>Decimal('1e12'):raise ValueError('ORDER_TTL_LIMIT')
+        terms=dict(created_at=str(created.normalize()),expires_at=str((created+ttl).normalize()))
+        with self.lock:
+            record=self.intents.get(client_order_id)
+            if record is None:raise ValueError('UNKNOWN_ORDER_ID')
+            if client_order_id in self.order_terms:
+                if self.order_terms[client_order_id]!=terms:raise ValueError('ORDER_TERMS_CONFLICT')
+                return {**copy.deepcopy(record),'idempotent_replay':True}
+            if self.halted:raise ValueError('EMERGENCY_HALT_ACTIVE')
+            if record['status']!='SIMULATED_ACK_ONLY' or record['lifecycle_events']:
+                raise ValueError('TERMS_REQUIRE_UNFILLED_ORDER')
+            self.order_terms[client_order_id]=terms
+            return {**copy.deepcopy(record),'idempotent_replay':False}
+
+    def expire_order(self, client_order_id, evaluated_at):
+        now=number(evaluated_at)
+        with self.lock:
+            record=self.intents.get(client_order_id)
+            if record is None:raise ValueError('UNKNOWN_ORDER_ID')
+            if client_order_id not in self.order_terms:raise ValueError('MISSING_EXECUTION_TERMS')
+            if now<Decimal(self.order_terms[client_order_id]['expires_at']):raise ValueError('ORDER_NOT_EXPIRED')
+            changed=record['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED')
+            if changed:record['status']='SIMULATED_EXPIRED'
+            return {**copy.deepcopy(record),'expired':record['status']=='SIMULATED_EXPIRED','idempotent_replay':not changed}
+
+    def simulate_quote_fill(self, client_order_id, event_id, sequence, quantity, bid, ask,
+                            available_quantity, quote_at, evaluated_at, fee_bps=10, slippage_bps=5):
+        from nexus.quote_execution import plan
+        if type(sequence) is not int or not 1<=sequence<=1000:raise ValueError('INVALID_EVENT_SEQUENCE')
+        if not isinstance(event_id,str) or not 1<=len(event_id)<=64 or not event_id.isascii() or not event_id.replace('-','').replace('_','').isalnum():
+            raise ValueError('INVALID_EVENT_ID')
+        with self.lock:
+            record=self.intents.get(client_order_id)
+            if record is None:raise ValueError('UNKNOWN_ORDER_ID')
+            modeled=plan(record['side'],quantity,bid,ask,available_quantity,quote_at,evaluated_at,fee_bps,slippage_bps)
+            detail=dict(sequence=sequence,**modeled)
+            key=(client_order_id,event_id)
+            if key in self.quote_events:
+                if self.quote_events[key]!=detail:raise ValueError('DUPLICATE_QUOTE_EVENT_CONFLICT')
+                return {**copy.deepcopy(record),'idempotent_replay':True}
+            if client_order_id not in self.order_terms:raise ValueError('MISSING_EXECUTION_TERMS')
+            if self.halted:raise ValueError('EMERGENCY_HALT_ACTIVE')
+            if number(quote_at)<Decimal(self.order_terms[client_order_id]['created_at']):raise ValueError('QUOTE_PRECEDES_ORDER')
+            previous_times=[Decimal(v['assumptions']['evaluated_at']) for (oid,_),v in self.quote_events.items() if oid==client_order_id]
+            if previous_times and number(evaluated_at)<max(previous_times):raise ValueError('QUOTE_TIME_REGRESSION')
+            if number(evaluated_at)>=Decimal(self.order_terms[client_order_id]['expires_at']):
+                return self.expire_order(client_order_id,evaluated_at)
+            self._applying_quote=True
+            try:
+                result=self.simulate_priced_fill(client_order_id,event_id,sequence,modeled['quantity'],modeled['price'],modeled['fee'])
+            finally:
+                self._applying_quote=False
+            self.quote_events[key]=detail
+            return result
+
+    def simulate_event(self, client_order_id, event_id, sequence, kind, fill_notional='0', fee='0'):
+        if client_order_id in self.order_terms and kind=='FILL':
+            raise ValueError('TIMED_ORDER_REQUIRES_QUOTE_MODEL')
+        return super().simulate_event(client_order_id,event_id,sequence,kind,fill_notional,fee)
+
+    def expire_due(self, evaluated_at):
+        now=number(evaluated_at)
+        with self.lock:
+            due=[oid for oid,terms in self.order_terms.items()
+                 if now>=Decimal(terms['expires_at']) and self.intents[oid]['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED')]
+            for oid in due:self.expire_order(oid,evaluated_at)
+            return dict(expired_order_ids=due,expired_count=len(due),live_orders_enabled=False)
+
     def simulate_priced_fill(self, client_order_id, event_id, sequence, quantity, price, fee='0'):
+        if client_order_id in self.order_terms and not self._applying_quote:
+            raise ValueError('TIMED_ORDER_REQUIRES_QUOTE_MODEL')
         if type(sequence) is not int or not 1 <= sequence <= 1000:
             raise ValueError('INVALID_EVENT_SEQUENCE')
         qty = number(quantity); px = number(price); cost = number(fee, zero=True)

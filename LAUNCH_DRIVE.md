@@ -81,3 +81,13 @@ Linked entry fills require their individual risk tier to be engaged and within i
 Completed component checks include partial fills and partial cancellation, independent cash/position detail checks, duplicate replay after tier disengagement, two-database rollback on failed commit, and a subprocess forcibly terminated after portfolio writes but before command insertion/commit. Restart rolls back both databases; retry records one fill. Emergency halt can still persist despite a portfolio discrepancy; reset remains vetoed until integrity is restored.
 
 Remaining M4 acceptance: wider spread/slippage/expiry scenarios, repeated interruption stress, independent migration/reconciliation review, and integration into the unattended loop. Full replay remains a capacity bottleneck; M5 checkpoints/retention and durable p50/p95/p99 measurement remain next. No public priced-fill/link mutation endpoint or external broker connection was added.
+
+## v0.54.0 — bounded synthetic quote execution and expiry
+
+The internal quote-fill model uses explicit synthetic bid/ask, available quantity and observation/evaluation timestamps. Buys use ask plus adverse slippage; sells use bid minus adverse slippage, with explicit per-fill fees. Inputs must be finite, positive where applicable, no older than two seconds, uncrossed and within a 150 bps spread bound. Fee/slippage assumptions are bounded at 100 bps each. These are test assumptions, not measured depth, queue priority, market latency or actual fills.
+
+Execution terms are immutable once set (maximum one-hour lifetime) and require an unfilled order. Timed orders cannot bypass the quote path through raw reference fills or direct priced fills. Evaluations cannot precede order creation or regress behind earlier modeled evaluations. Equivalent numeric inputs replay idempotently; conflicting quote/cost assumptions are rejected.
+
+Expiry is a durable terminal transition at the deadline. It preserves any existing partial quantity, fees and cash accounting. Single-order and bounded batch expiry share the journal transaction; repeated expiry is idempotent, restart preserves it and reset does not reopen expired orders. Linked quote fills use the same atomic ledger bridge, risk-tier entry checks and exposure governor. Disengaged tiers still permit modeled exits and historical duplicate replay.
+
+The roadmap UTF-8 read test was corrected after Windows CI detected locale-dependent decoding. No broker/network integration or public mutation endpoint was added. Next critical path: validated checkpoints/retention and full durable-path latency measurements, then the integrated unattended paper loop. M4 remains partial pending extended stress and independent acceptance.

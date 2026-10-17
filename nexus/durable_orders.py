@@ -14,7 +14,7 @@ from nexus.order_accounting import AccountingOrderGateway
 from nexus import execution_portfolio
 
 MAX_COMMANDS = 10000
-METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio'))
+METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due'))
 
 
 class DurableOrderGateway:
@@ -59,18 +59,18 @@ class DurableOrderGateway:
             db.execute('BEGIN IMMEDIATE')
             gateway, count = self._restore(db)
             if gateway.portfolio_linked:
-                if method not in ('emergency_halt','cancel'):
+                if method not in ('emergency_halt','cancel','expire_order','expire_due'):
                     execution_portfolio.compare(portfolio,gateway.account)
                 if method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
                     raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
-            before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.account, sorted((str(k), v) for k,v in gateway.executions.items())], sort_keys=True))
+            before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
             result = getattr(gateway, method)(*args, **kwargs)
-            after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.account, sorted((str(k), v) for k,v in gateway.executions.items())], sort_keys=True))
+            after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
             if before != after:
                 if method=='link_portfolio':
                     execution_portfolio.link(portfolio,gateway.account)
                     portfolio.execute("INSERT OR REPLACE INTO meta VALUES ('execution_linked','1')")
-                if method=='simulate_priced_fill' and gateway.portfolio_linked:
+                if method in ('simulate_priced_fill','simulate_quote_fill') and gateway.portfolio_linked and not result.get('expired'):
                     oid=args[0] if args else kwargs['client_order_id']
                     eid=args[1] if len(args)>1 else kwargs['event_id']
                     order=gateway.intents[oid]
@@ -79,7 +79,7 @@ class DurableOrderGateway:
                         require_entry(order['tier'],order['notional'])
                     execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
                 # Halt/cancel/reset must remain possible when normal intake is full.
-                if count >= MAX_COMMANDS-1001 and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio'):
+                if count >= MAX_COMMANDS-1001 and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill'):
                     raise ValueError('ORDER_JOURNAL_CAP_REACHED')
                 if count >= MAX_COMMANDS:
                     raise ValueError('ORDER_JOURNAL_CAP_REACHED')
@@ -110,6 +110,18 @@ class DurableOrderGateway:
     def link_portfolio(self):
         return self._call('link_portfolio')
 
+    def set_execution_terms(self, *args, **kwargs):
+        return self._call('set_execution_terms', *args, **kwargs)
+
+    def expire_order(self, *args, **kwargs):
+        return self._call('expire_order', *args, **kwargs)
+
+    def simulate_quote_fill(self, *args, **kwargs):
+        return self._call('simulate_quote_fill', *args, **kwargs)
+
+    def expire_due(self, evaluated_at):
+        return self._call('expire_due', evaluated_at)
+
     def connections(self):
         return OrderGateway().connections()
 
@@ -122,7 +134,8 @@ class DurableOrderGateway:
                 execution_portfolio.compare(portfolio,gateway.account)
         return dict(mode='OFFLINE_ORDER_RECOVERY', status='REPLAY_VERIFIED',
                     commands=count, halted=gateway.halted,
-                    orders=list(gateway.intents.values()), live_orders_enabled=False,
+                    orders=list(gateway.intents.values()),execution_terms=gateway.order_terms,
+                    quote_model_events=len(gateway.quote_events), live_orders_enabled=False,
                     portfolio_reconciled=gateway.portfolio_linked, execution_account=gateway.account_report(),
                     note='Reference notionals cannot establish quantities, positions or ownership.')
 

@@ -1,6 +1,6 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.53.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.54.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
@@ -9,7 +9,7 @@ Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`.
 | M1: Windows packaging and recovery | PARTIAL | Windows test, EXE startup and installer workflows; durable order recovery. | Record clean-machine install, upgrade, uninstall and recovery evidence. |
 | M2: Market data and provenance | PARTIAL | Public observation, timestamp/gap checks, historical admission and source diagnostics. | Independent provenance review; missing/revised/conflicting data and outage evidence. |
 | M3: Decision speed and risk authority | PARTIAL | Bounded local decision queue; individual Terrestrial/Solar/Universal entry permissions. | Measure full durable path under bursts; verify expiry, overload and permissions throughout autonomy. |
-| M4: Order lifecycle and portfolio reconciliation | PARTIAL | Partial/full priced fills, fees, idempotency, cancellation, durable recovery; atomic opt-in paper-ledger linking and partial-position reconstruction. | Exercise spread/slippage/expiry and extended recovery; review existing-account migration and reconciliation independently. |
+| M4: Order lifecycle and portfolio reconciliation | PARTIAL | Partial/full priced fills, fees, idempotency, cancellation, durable recovery; atomic opt-in paper-ledger linking, partial-position reconstruction, adverse quote-cost assumptions and durable expiry. | Extend interruption/quote-path stress; independently review execution assumptions, existing-account migration and reconciliation. |
 | M5: Durable latency and capacity | OPEN | Pure decision benchmark exists; this does not measure broker fill speed. | Validated checkpoints/retention, durable p50/p95/p99, queue pressure and interruption drills at scale. |
 | M6: Scientific strategy evidence | PARTIAL | Chronological research, holdout, regime and cost-stress modules. | Reproducible forward evidence, delisting/survivorship review and independent performance audit. |
 | M7: Unattended paper operation | OPEN | Observer, risk gates and paper execution components exist. | Integrate monitored buyer/hold/seller loop; restart/network drills and sustained unattended runs. |
@@ -27,7 +27,7 @@ Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`.
 ## Next sequence
 
 1. Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.
-2. Add conservative spread/slippage/expiry scenarios and independent execution-detail accounting checks.
+2. Extend linked quote-model stress and independently review cost, liquidity and expiry assumptions.
 3. Implement validated durable checkpoints and retention; measure the complete paper path.
 4. Integrate unattended paper buyer/hold/seller operation with all tier and global vetoes.
 5. Finish provider-paper integration, forward evidence, packaging and independent release acceptance.

@@ -1,5 +1,7 @@
 """Nexus Operative development desktop API. Simulation only: no brokerage or money movement."""
 import math
+import asyncio
+from contextlib import asynccontextmanager
 import sqlite3
 import time
 from pathlib import Path
@@ -12,6 +14,7 @@ from nexus.markets import list_markets
 from nexus.market_universe import page as market_universe_page
 from nexus.expansion_initiative import roadmap as expansion_roadmap, assess_evidence as assess_expansion_evidence
 from nexus.durable_orders import gateway as research_order_gateway
+from nexus.paper_forward import runner as paper_forward_runner
 from nexus.tier_permissions import current as tier_permissions_current, configure as configure_tier_permission, require_entry as require_tier_entry
 from nexus.tier_performance import tier_performance
 from nexus.decision_lane import benchmark as offline_decision_benchmark
@@ -49,7 +52,14 @@ from nexus.portfolio_governor import audit_portfolio
 from nexus.recovery import recovery_report, backup_snapshot
 from nexus.paper_portfolio import initialize as init_paper_portfolio, state as paper_portfolio_state, buy as paper_buy, sell as paper_sell, reconcile as reconcile_paper
 
-app = FastAPI(title="Nexus Operative", version="0.57.0")
+@asynccontextmanager
+async def application_lifespan(application):
+    try:yield
+    finally:
+        await asyncio.to_thread(paper_forward_runner.stop)
+        await asyncio.to_thread(observer.stop)
+
+app = FastAPI(title="Nexus Operative", version="0.58.0",lifespan=application_lifespan)
 _started = time.monotonic()
 _paused = True
 try:
@@ -280,7 +290,7 @@ def release_roadmap():
 
 @app.get("/api/status")
 def status():
-    return {"version":"0.57.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
+    return {"version":"0.58.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused and not _halted,
       "halted":_halted, "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
@@ -471,6 +481,28 @@ def execution_decision_benchmark(count:int=300):
     try:return offline_decision_benchmark(count)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
+class PaperForwardStart(BaseModel):
+    tier: str = Field(pattern="^(terrestrial|solar|universal)$")
+    confirm_experimental_paper: bool = Field(strict=True)
+
+@app.get("/api/paper/forward")
+def paper_forward_status():
+    try:return {**paper_forward_runner.status(),"history":paper_forward_runner.history()}
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="FORWARD_DIAGNOSTICS_UNAVAILABLE")
+
+@app.post("/api/paper/forward/start")
+def paper_forward_start(data:PaperForwardStart):
+    if not data.confirm_experimental_paper:
+        raise HTTPException(status_code=422,detail="EXPERIMENTAL_PAPER_CONFIRMATION_REQUIRED")
+    if _paused or _halted:raise HTTPException(status_code=409,detail="ACTIVATE_UNHALTED_PORTAL_FIRST")
+    try:return paper_forward_runner.start(data.tier)
+    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="FORWARD_STORAGE_UNAVAILABLE")
+
+@app.post("/api/paper/forward/stop")
+def paper_forward_stop():
+    return paper_forward_runner.stop()
+
 @app.post("/api/execution/operation-drill")
 def execution_operation_drill(cycles:int=12):
     from nexus.operation_drill import drill
@@ -596,6 +628,7 @@ def portal(cmd:PortalCommand):
     if cmd.enabled:
         observer.start()
     else:
+        paper_forward_runner.stop()
         observer.stop()
     return status()
 
@@ -604,6 +637,7 @@ def halt():
     global _halted,_paused
     _halted=True
     _paused=True
+    paper_forward_runner.stop()
     observer.stop()
     try:research_order_gateway.emergency_halt()
     except (ValueError,OSError,sqlite3.Error):
@@ -623,6 +657,7 @@ def reset_emergency_halt(confirmation:HaltResetConfirmation):
         raise HTTPException(status_code=409,detail="Emergency halt is not active")
     # RESET clears only the simulation latch, never resumes background work.
     _paused=True
+    paper_forward_runner.stop()
     observer.stop()
     try:research_order_gateway.reset()
     except (ValueError,OSError,sqlite3.Error):

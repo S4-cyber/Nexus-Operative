@@ -32,9 +32,13 @@ def inventory(data_path=None):
             "setup_required_if_used":True,
             "attempts_remaining":max(0,ai["max_requests_process"]-ai["requests_used_process"]),
             "explanation":"AI requires separate account, possible provider billing and explicit opt-in. No paid request sent."},
+        "experimental_paper_forward":{"available":True,"starts_automatically":False,"strategy_validated":False,
+            "product":"BTC-USD","requires_active_portal":True,"requires_engaged_tier":True,
+            "explanation":"Explicitly started public-quote experiment with modeled liquidity/costs and linked paper accounting. No broker orders."},
         "model_roles":list(ROLES),
         "defaults_safety":{"external_ai_enabled_automatically":False,
             "live_orders_enabled":False,"money_movement_enabled":False,
             "research_only":True},
         "onboarding_state":"READY_FOR_OFFLINE_RESEARCH",
         "note":"Capability inventory is not a live-connection test, security audit or launch certification."}
+

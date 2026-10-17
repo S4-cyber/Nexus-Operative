@@ -1,4 +1,4 @@
-# Nexus Operative — pre-release development v0.57.0
+# Nexus Operative — pre-release development v0.58.0
 
 This branch provides a **simulation-only** Windows PORTAL research application. The development snapshot previously labeled v3.8.0 was renumbered **v0.38.0** so v1.0.0 can be reserved for the first completed, reviewed launch. See [VERSIONING.md](VERSIONING.md) for historical labels, future prerelease numbering, and required release gates.
 

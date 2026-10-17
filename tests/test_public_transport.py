@@ -36,7 +36,8 @@ def test_real_redirect_handler_never_requests_redirect_target(monkeypatch,code,l
     (public.BASE+'ETH-USD/ticker',200,b'{}'),
     (public.BASE+'BTC-USD/ticker',503,b'{}'),
     (public.BASE+'BTC-USD/ticker',200,b'x'*65537),
-    (public.BASE+'BTC-USD/ticker',200,b'not json')])
+    (public.BASE+'BTC-USD/ticker',200,b'not json')],
+    ids=['foreign-response-url','wrong-product-response-url','provider-unavailable','oversized-body','malformed-json'])
 def test_default_transport_rejects_response_without_caching(monkeypatch,url,status,body):
     reads=[]
     class Response:

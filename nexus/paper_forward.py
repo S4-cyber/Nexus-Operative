@@ -404,11 +404,21 @@ class PaperForwardRunner:
             interrupted=state=='RUNNING' and sid!=self._session
             stale=state=='RUNNING' and self.clock()-updated>20
             unrecorded_stop=state=='RUNNING' and sid==self._session and self._stop.is_set()
+            review_reasons=[]
+            if interrupted:review_reasons.append('INTERRUPTED_OR_PRIOR_SESSION')
+            if stale:review_reasons.append('HEARTBEAT_STALE')
+            if unrecorded_stop:review_reasons.append('STOPPED_WITHOUT_FINAL_RECORD')
+            if last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':review_reasons.append('ORDER_CLEANUP_REQUIRES_REVIEW')
             results.append(dict(session=sid,started_at=started,updated_at=updated,stored_state=state,
                                 effective_state='INTERRUPTED_OR_PRIOR_SESSION' if interrupted else 'STOPPED_WITHOUT_FINAL_RECORD' if unrecorded_stop else 'HEARTBEAT_STALE' if stale else state,
-                                requires_review=interrupted or stale or unrecorded_stop,policy=policy,counts=counts,last_event=last))
+                                requires_review=bool(review_reasons),review_reasons=review_reasons,policy=policy,counts=counts,last_event=last))
         return dict(read_only=True,sessions=results,automatic_resume=False,session_limit=SESSION_LIMIT,
                     execution_source_of_truth='ORDER_JOURNAL_NOT_SESSION_COUNTERS')
+
+    def recovery_status(self,limit=20):
+        from nexus.forward_recovery import build
+        history=self.sessions(limit)
+        return build(self.status(),self.orders.recovery_report(),history)
 
     def storage_capacity(self):
         with closing(self._db()) as db,db:

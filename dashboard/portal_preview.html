@@ -18,9 +18,11 @@ input,select,textarea{background:#02170a;color:#d2ffe6;border:1px solid #277d4d;
 label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12px;margin:5px}input[type=number]{width:115px}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .metric{font-size:34px;font-weight:700;color:#94ffb9;margin:6px 0}.tiny{font:12px/1.5 Consolas,monospace;color:#92eeb4}.status{color:#6fff9f}
 #matrix-hangar{max-height:0;opacity:0;overflow:hidden;transition:max-height .55s ease,opacity .3s ease;border:1px solid transparent;border-radius:13px}
-#matrix-hangar.open{max-height:470px;opacity:1;border-color:#24884b;margin-bottom:15px}
+#matrix-hangar.open{max-height:850px;opacity:1;border-color:#24884b;margin-bottom:15px}
 .matrix-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px;border-bottom:1px solid #1c703d;color:var(--green);font-size:12px;letter-spacing:.12em}
 #matrix-rain{width:100%;height:180px;display:block;background:#010802}
+#matrix-price-chart{display:block;width:100%;height:220px;background:#010d07;border-top:1px solid #185e34}
+#matrix-price-caption{padding:9px 14px;color:#9af5c1;font:12px/1.5 Consolas,monospace}
 #matrix-feed{padding:10px 15px;max-height:155px;overflow:auto;font:12px/1.5 Consolas,monospace;color:#7affaa}
 #matrix-feed div{border-bottom:1px solid #123a21;padding:2px}
 #researchbranches,#market-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
@@ -30,8 +32,8 @@ label{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12
 </style></head>
 <body><main>
 <header><div class="brand">◈ NEXUS OPERATIVE</div><small>LOCAL DEVELOPMENT · PAPER RESEARCH ONLY · No bank, card or brokerage is connected</small></header>
-<section class="hero"><div class="label">Autonomous research command bridge</div><h1>PORTAL</h1><p class="sub">TERRESTRIAL // SOLAR // UNIVERSAL</p><button class="portal" id="activate">ACTIVATE PORTAL</button><button class="danger" id="halt">EMERGENCY HALT</button><p class="status" id="status">Connecting to local research engine…</p></section>
-<section id="matrix-hangar" aria-label="Synthetic trade telemetry" aria-hidden="true"><div class="matrix-head"><span>◈ MATRIX STREAM // TELEMETRY</span><span id="matrix-state">STANDBY</span></div><canvas id="matrix-rain" aria-hidden="true"></canvas><div id="matrix-feed">PORTAL inactive. No live positions or brokerage orders.</div></section>
+<section class="hero"><div class="label">Autonomous research command bridge</div><h1>PORTAL</h1><p class="sub">TERRESTRIAL // SOLAR // UNIVERSAL</p><button class="portal" id="activate">ACTIVATE PORTAL</button><button class="danger" id="halt">EMERGENCY HALT</button><button id="reset-halt" hidden>RESET HALT (Stay Paused)</button><p class="status" id="status">Connecting to local research engine…</p></section>
+<section id="matrix-hangar" aria-label="Synthetic trade telemetry" aria-hidden="true"><div class="matrix-head"><span>◈ MATRIX STREAM // TELEMETRY</span><span id="matrix-state">STANDBY</span></div><canvas id="matrix-rain" aria-hidden="true"></canvas><div id="matrix-price-caption" role="status">LIVE PUBLIC PRICE TRACKER / Read-only Coinbase quotes, no account connection. Activate PORTAL to begin sampling.</div><canvas id="matrix-price-chart" aria-label="Real-time public exchange price history line graph, collected while PORTAL is active" role="img"></canvas><div id="matrix-feed">PORTAL inactive. No live positions or brokerage orders.</div></section>
 <section class="grid" id="tiers"></section>
 <section class="card"><div class="label">Watch-only Sentinel</div><h2>Autonomous Market Observer</h2><p class="sub">Public BTC, ETH and SOL snapshots are sampled periodically only when PORTAL is active. Observations are not trade recommendations.</p><p class="status" id="sentinelstate">Observer offline</p><div class="monitor tiny" id="sentinellog">No observations recorded.</div></section>
 <section class="grid two">
@@ -109,6 +111,8 @@ async function update(){
   const status=await api('/api/status');
   portalActive=!!status.portal_enabled;halted=!!status.halted;
   byId('activate').disabled=halted;
+  byId('reset-halt').hidden=!halted;
+  byId('halt').disabled=halted;
   show('activate',portalActive?'PAUSE PORTAL':'ACTIVATE PORTAL');
   show('status',halted?'EMERGENCY HALT ACTIVE':portalActive?'RESEARCH ACTIVE · NO LIVE ORDERS':'PAPER RESEARCH PAUSED');
   byId('matrix-hangar').classList.toggle('open',portalActive);
@@ -126,6 +130,10 @@ async function update(){
 }
 byId('activate').onclick=async()=>{try{await api('/api/portal',{method:'POST',headers:jsonHeaders,body:JSON.stringify({enabled:!portalActive})});await update()}catch(e){show('status',e.message)}};
 byId('halt').onclick=async()=>{try{await api('/api/simulate/halt',{method:'POST'});await update()}catch(e){show('status',e.message)}};
+byId('reset-halt').onclick=async()=>{if(!window.confirm('Clear emergency halt? Research remains PAUSED. You must separately click ACTIVATE PORTAL to restart monitoring. No live trading is enabled.'))return;
+ try{await api('/api/simulate/halt/reset',{method:'POST',headers:jsonHeaders,body:JSON.stringify({confirm_reset:true})});await update();show('status','EMERGENCY HALT RESET / STILL PAUSED / Press ACTIVATE PORTAL when ready.');}
+ catch(e){show('status','Halt reset unsuccessful: '+e.message)}
+};
 async function refreshSentinel(){
  try{
  const s=await api('/api/observer/status');
@@ -233,6 +241,55 @@ byId('advisorybenchmark').onclick=async()=>{try{const d=await api('/api/paper/ai
 byId('modeldiagnostic').onclick=async()=>{try{const d=await api('/api/paper/model-council',{method:'POST',headers:jsonHeaders,body:JSON.stringify({test:'fixture'})});show('modelreadout',d.specialists.length+' fixture roles / all abstained '+d.all_abstained+' / NO PROVIDER / '+d.governor)}catch(e){show('modelreadout',e.message)}};
 byId('auditdiagnostic').onclick=async()=>{try{const d=await api('/api/paper/evidence-audit',{method:'POST',headers:jsonHeaders,body:JSON.stringify({symbol:'BTC-USD',data_source:'coinbase_exchange_public',data_verified:true,history_observations:100,out_of_sample_trades:30,conservative_edge_bps:50,equity:10000,proposed_notional:10})});show('auditreadout',d.decision+' / '+d.reasons.join(', '))}catch(e){show('auditreadout',e.message)}};
 byId('latencydiagnostic').onclick=async()=>{try{const d=await api('/api/latency');show('latencyreadout','Local p95 '+(d.p95_ms===null?'N/A':d.p95_ms+' ms')+' / Samples '+d.observations+' / EXCHANGE NOT MEASURED')}catch(e){show('latencyreadout',e.message)}};
+// Read-only, observed public Coinbase ticker history; never a synthetic P/L curve.
+const priceCanvas=byId('matrix-price-chart'),priceContext=priceCanvas.getContext('2d');
+let pricePoints=[],chartPair='',quoteBusy=false,lastExchangeStamp='';
+function redrawMatrixPrice(){
+ const width=Math.max(320,Math.floor(priceCanvas.clientWidth||320)),height=220;
+ priceCanvas.width=width;priceCanvas.height=height;
+ const ctx=priceContext;ctx.clearRect(0,0,width,height);
+ ctx.fillStyle='#010d07';ctx.fillRect(0,0,width,height);
+ ctx.strokeStyle='#16422b';ctx.lineWidth=1;
+ for(let i=1;i<4;i++){const y=i*height/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(width,y);ctx.stroke()}
+ if(pricePoints.length<2){ctx.fillStyle='#92c3a6';ctx.font='13px Segoe UI';ctx.fillText('Waiting for two observed exchange ticks (no synthetic data)',14,100);return;}
+ const min=Math.min(...pricePoints.map(x=>x.price)),max=Math.max(...pricePoints.map(x=>x.price));
+ const pad=Math.max((max-min)*.1,min*.000001,1e-8);
+ const low=min-pad,high=max+pad;
+ const first=pricePoints[0].at,last=pricePoints[pricePoints.length-1].at;
+ ctx.strokeStyle='#55f99d';ctx.lineWidth=2;ctx.beginPath();
+ pricePoints.forEach((point,i)=>{const x=12+(point.at-first)/Math.max(1,last-first)*(width-24);
+ const y=12+(high-point.price)/(high-low)*(height-24);
+ if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke();
+ ctx.fillStyle='#b6ffcc';ctx.font='12px Consolas,monospace';
+ ctx.fillText(high.toFixed(2),12,15);ctx.fillText(low.toFixed(2),12,height-7);
+}
+async function sampleMatrixPrice(){
+ if(!portalActive||quoteBusy)return;
+ const pair=byId('publicpair').value;
+ if(pair!==chartPair){chartPair=pair;pricePoints=[];lastExchangeStamp='';redrawMatrixPrice()}
+ quoteBusy=true;
+ try{const tick=await api('/api/public-quote/'+encodeURIComponent(pair));
+ if(!portalActive||pair!==byId('publicpair').value)return;
+ const value=Number(tick.last),received=Number(tick.received_at)*1000;
+ const fresh=Number(tick.age_seconds)<=30&&Number(tick.age_seconds)>=-2;
+ if(!tick.read_only||tick.product!==pair||!Number.isFinite(value)||value<=0||!Number.isFinite(received)||!fresh)throw Error('Unverified or stale ticker');
+ const stamp=String(tick.exchange_time);
+ if(stamp!==lastExchangeStamp){lastExchangeStamp=stamp;pricePoints.push({at:received,price:value});if(pricePoints.length>180)pricePoints.shift();redrawMatrixPrice()}
+ show('matrix-price-caption','LIVE PUBLIC QUOTE / '+pair+' / 
+function resizeRain(){matrix.width=Math.max(320,matrix.clientWidth);matrix.height=180;drops=Array.from({length:Math.ceil(matrix.width/14)},()=>Math.random()*14)}resizeRain();window.addEventListener('resize',resizeRain);
+function renderRain(){if(!portalActive||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;ctx.fillStyle='rgba(1,8,2,.19)';ctx.fillRect(0,0,matrix.width,matrix.height);ctx.fillStyle='#4eff80';ctx.font='12px Consolas,monospace';drops.forEach((y,i)=>{ctx.fillText('01NEXUS'[Math.floor(Math.random()*7)],i*14,y*14);drops[i]=y>16?0:y+.4})}
+async function matrixUpdate(){if(!portalActive)return;try{const d=await api('/api/matrix');const root=byId('matrix-feed');for(const e of d.events){const line=document.createElement('div');line.textContent=new Date().toLocaleTimeString()+' / '+e.tier+' / '+e.message+' / '+e.outcome+' / SYNTHETIC';root.prepend(line)}while(root.children.length>24)root.lastChild.remove()}catch(e){show('matrix-feed','Telemetry unavailable: '+e.message)}}
+loadMarkets();loadBranches();loadPaper();refreshPortfolio();refreshSentinel();update().then(()=>{if(portalActive)sampleMatrixPrice()});
+setInterval(()=>{if(portalActive){cycle++;update();matrixUpdate();sampleMatrixPrice()}},6000);
+setInterval(refreshSentinel,12000);setInterval(renderRain,90);
+</script></body></html>
++value.toFixed(2)+' / '+pricePoints.length+' observed ticks / Coinbase exchange / ~6s refresh / READ ONLY, NOT TRADE FILLS');
+ }catch(e){show('matrix-price-caption','PUBLIC PRICE TRACKER DISCONNECTED / '+pair+' / '+e.message+' / No simulated replacement data');}
+ finally{quoteBusy=false}
+}
+byId('publicpair').addEventListener('change',()=>{chartPair='';pricePoints=[];lastExchangeStamp='';redrawMatrixPrice();if(portalActive)sampleMatrixPrice()});
+window.addEventListener('resize',redrawMatrixPrice);
+redrawMatrixPrice();
 const matrix=byId('matrix-rain'),ctx=matrix.getContext('2d');let drops=[];
 function resizeRain(){matrix.width=Math.max(320,matrix.clientWidth);matrix.height=180;drops=Array.from({length:Math.ceil(matrix.width/14)},()=>Math.random()*14)}resizeRain();window.addEventListener('resize',resizeRain);
 function renderRain(){if(!portalActive||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;ctx.fillStyle='rgba(1,8,2,.19)';ctx.fillRect(0,0,matrix.width,matrix.height);ctx.fillStyle='#4eff80';ctx.font='12px Consolas,monospace';drops.forEach((y,i)=>{ctx.fillText('01NEXUS'[Math.floor(Math.random()*7)],i*14,y*14);drops[i]=y>16?0:y+.4})}

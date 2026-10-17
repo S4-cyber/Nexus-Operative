@@ -51,3 +51,7 @@ Browser help acceptance uses intercepted fixtures only via tools/portal_browser_
 Alpaca paper foundation is disconnected: read ALPACA_PAPER_CONTRACT.md. Previews and bounded observation diagnostics are not an adapter, entitlement, fee reconciliation or durable broker recovery. Never feed cumulative quantities/average prices into the synthetic USD-fee ledger, infer no fill from a timeout, or treat pending_cancel as final. Keep gateway external submission denied until separately authorized integration and acceptance exist.
 
 The real Windows browser run exposed automatic-scroll hover loss. Keep help visible while its control is actually hovered and visible, including scroll events queued after pointer entry; hide immediately on pointer leave. Failure artifacts include the current control, event history and screenshot to distinguish implementation defects from tool failures.
+
+Broker fee projection is pure supplied-data aggregate arithmetic, not a raw activity adapter or reconciled broker account. Require explicit execution prices/IDs and execution-linked fee activity records; never infer fills from cumulative averages or missing fees as zero. Keep BTC/USD fee units separate, reject conflicting duplicate IDs and flag unverified coverage. Even matching fixtures never grant routing, attest a broker account or write the synthetic ledger.
+
+Pointer event targets may have no matching control even when no help is active. Require a non-null control before comparing identity or calling contains; retain background pointerout regression coverage.

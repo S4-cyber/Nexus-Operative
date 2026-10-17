@@ -30,3 +30,15 @@ Explicit paper-connection authorization; credential isolation and paper account/
 - [Trading API create order](https://docs.alpaca.markets/us/reference/postorder): paper order endpoint and request fields.
 
 This uses the paper **Trading API** contract, not the separate Broker API sandbox. Documentation may change; future connection work must revalidate it.
+
+## Explicit execution and asset-fee projection
+
+`nexus/broker_fee_projection.py` adds pure aggregate interval balance arithmetic for caller-supplied BTC/USD observations. It does not parse raw broker activities, query an account or write a ledger. Inputs include declared opening/closing balances and timestamps, normalized order snapshots, explicit execution IDs with actual execution prices, and fee activity IDs explicitly linked to executions. No execution or price is invented from a cumulative order average.
+
+BUY increases gross BTC and reduces USD by explicit quantity times price. Its supported received-asset fee reduces BTC. SELL reduces gross BTC and adds USD; its supported received-asset fee reduces USD. Quantities, gross notionals and fees remain separate, without a hypothetical BTC-to-USD fee conversion. The fixed example buys 1 BTC at a synthetic $100, deducts a 0.001 BTC fee, sells the remaining 0.999 BTC at a synthetic $110 and deducts a $0.10989 fee. Its ending declared balances agree at BTC 0 and USD 1009.78011 from an opening USD 1000. These are fixture values, not market prices, expected returns or actual holdings.
+
+The projection deduplicates identical order/execution/fee identities, rejects conflicting reuse, bounds input counts, validates identity/time links, compares explicit fills with snapshot quantities/averages and checks declared balances exactly. Missing fee records, unknown fee links, unsupported received assets, unknown coverage or negative projected balances block local consistency. Explicit zero fees require records; missing fees are never silently set to zero. Cumulative snapshot rounding or corrections may require manual review rather than automatic tolerances.
+
+`fee_coverage_complete` is only a caller declaration. Even a matching projection always reports `broker_account_reconciled=false`, `ready_for_routing=false`, `ledger_applied=false` and no broker connection. This is aggregate balance conservation, not proof of intraperiod spending capacity, authenticated coverage or account reconciliation. Deposits, withdrawals, corrections, historical fee links and other assets need a future authorized adapter and coverage evidence.
+
+Run `python -m nexus.broker_fee_projection`, or select **Check Broker Fee Fixture** in PORTAL. The read-only `GET /api/execution/alpaca-paper/fee-projection-fixture` exposes only that fixed example and has no write operation. Existing synthetic accounts and the forward runner remain unchanged.

@@ -159,6 +159,7 @@ def catalogue():
                 observation_scope='Latest allowlisted snapshot and bounded historical digests only; identity/status/cumulative-quantity diagnostics, not durable broker recovery or fee/position reconciliation.',
                 unknown_submission_action='Look up the original client order ID and reconcile before considering a retry; never infer no fill from a timeout.',
                 pending_cancel_is_terminal=False,fee_reconciled=False,position_reconciled=False,
+                fee_projection_scope='Disconnected explicit-execution/received-asset-fee fixture projection available; account reconciliation remains unverified.',
                 documentation_verified_at='2026-10-17',sources=list(SOURCES))
 
 

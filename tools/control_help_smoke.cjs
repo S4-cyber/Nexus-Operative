@@ -22,6 +22,10 @@ const context={document,window,MutationObserver,Set};vm.createContext(context);
 const factory=html.slice(html.indexOf('function helpButton'),html.indexOf('// BEGIN CONTROL HELP'));
 vm.runInContext(factory+source,context);
 assert.throws(()=>context.helpButton('Too short'),/require practical help/);
+// Ordinary headings/background have no matching control, including between hover sessions.
+const background={closest:()=>null};
+for(const relatedTarget of [null,background]){events.pointerout({target:background,relatedTarget});assert.equal(panel.hidden,true);}
+events.pointerover({target:background});assert.equal(panel.hidden,true);
 const control=new Element('Choose the virtual budget used by the research model. Saving does not move money.');
 control.disabled=true;control.setAttribute('aria-describedby','existing-hint');
 events.pointerover({target:control});assert.equal(panel.hidden,false);assert.equal(text.textContent,control.dataset.help);

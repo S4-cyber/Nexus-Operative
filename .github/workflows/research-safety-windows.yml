@@ -20,5 +20,5 @@ jobs:
         run: python -m pip install -e ".[dev]"
       - name: Compile Python source
         run: python -m compileall -q nexus tests
-      - name: Run offline advisory and candle integrity regressions
-        run: python -m pytest -q tests/test_advisory_benchmark.py tests/test_historical_candles.py tests/test_candle_calendar_guard.py
+      - name: Run complete Python regression suite
+        run: python -m pytest -q

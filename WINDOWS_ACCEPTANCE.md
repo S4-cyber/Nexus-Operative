@@ -33,3 +33,9 @@ Do not run destructive acceptance steps on the only copy of user data. Do not in
 Offline backup and new-directory restore commands are documented in FORWARD_RUNBOOK.md (`python -m nexus.recovery_bundle`). They require Nexus to be closed and do not select a runtime data path automatically.
 
 Both v0.62 Windows workflows passed for commit `35239e562c72078a0d7ea32e240518c35a57e247`, including installed startup, same-version reinstall, halt recovery, data-preserving uninstall and checksum generation. This closes that automated component; manual native-window/default-path and cross-version acceptance remains open.
+
+## Restored data through the installed EXE
+
+The installer workflow now creates a disposable linked paper fixture with injected BUY/SELL quotes, a halted/archived account and retained session evidence. It makes a verified offline backup, restores to a new directory and launches the installed executable against that copy. The smoke reads the installed API to compare exact account and archived order fingerprints, quote-chain head/count, policy fingerprint, modeled BUY/SELL counts and stopped/halted state. It verifies the retained backup again afterward. Fixture baseline, process logs and recovery results are included with installer evidence.
+
+`python tools/packaged_recovery_smoke.py --exe <installed-exe> --version <expected-version> --evidence <new-evidence-folder>` runs this same disposable exercise. It uses source Python to create and verify the fixture, and the selected executable to serve restored data. Only CI results for the exact commit establish Windows packaged behavior. A source launcher can exercise the HTTP harness locally but cannot establish PyInstaller/installer correctness. This remains same-source recovery, not cross-version migration, native-window or real-feed acceptance.

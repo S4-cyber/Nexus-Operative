@@ -35,7 +35,7 @@ def _review(session):
     if len(orders)!=2 or report['orders'] or report['execution_account']['account']['positions']:
         raise ValueError('RECOVERY_DRILL_ARCHIVE_OR_POSITION_FAILED')
     return dict(session=session,halted=True,portfolio_reconciled=True,forward_stopped=True,
-                archived_session_orders=len(orders),
+                archived_session_orders=len(orders),session_order_ids=[item['order']['id'] for item in orders],
                 order_sha256=fingerprint(orders),account_sha256=fingerprint(report['execution_account']),
                 quote_head_sha256=evidence['quote_evidence']['head_sha256'],
                 quote_observations=evidence['quote_evidence']['observations'],

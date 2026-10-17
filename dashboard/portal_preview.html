@@ -351,9 +351,11 @@ byId('durable-benchmark').onclick=async()=>{
  show('durable-benchmark-result','Measuring isolated gateway writes and recovery…');
  try{const d=await api('/api/execution/durable-benchmark',{method:'POST'});
  const summaries=d.treatments.map(t=>t.scope+' / '+(t.checkpoints_enabled?'CHECKPOINT':'FULL REPLAY')+': p50 '+t.commit_return_latency.p50_ms+' / p95 '+t.commit_return_latency.p95_ms+' / p99 '+t.commit_return_latency.p99_ms+' ms; '+t.commands_per_second+' commands/sec; cold/warm recovery '+t.cold_recovery_ms+'/'+t.warm_recovery_ms+' ms');
- const b=d.burst_treatment;const latency=b.admitted_to_completion_latency;
- summaries.push('FIXTURE BURST: '+b.completed_roundtrips+'/'+b.admitted+' roundtrips; '+b.overflow_rejections+' overflow / '+b.expired_before_execution+' expired; queue p95 '+(b.queue_wait_latency?b.queue_wait_latency.p95_ms:'n/a')+' ms; admitted-to-completion p95 '+(latency?latency.p95_ms:'n/a')+' ms; accounting '+(b.accounting_consistent?'verified':'FAILED'));
- show('durable-benchmark-result',summaries.join(' | ')+' | Local temporary fixtures include ledger and tier checks. Burst timing includes bounded queue wait. Excludes feeds, strategy and brokers; not market moves/sec.');
+ for(const [label,b] of [['FIXTURE BURST',d.burst_treatment],['ATOMIC ORDER FIXTURE',d.atomic_burst_treatment]]){
+ const latency=b.admitted_to_completion_latency;
+ summaries.push(label+': '+b.completed_roundtrips+'/'+b.admitted+' roundtrips; '+b.overflow_rejections+' overflow / '+b.expired_before_execution+' expired; queue p95 '+(b.queue_wait_latency?b.queue_wait_latency.p95_ms:'n/a')+' ms; admitted-to-completion p95 '+(latency?latency.p95_ms:'n/a')+' ms; accounting '+(b.accounting_consistent?'verified':'FAILED'));
+ }
+ show('durable-benchmark-result',summaries.join(' | ')+' | Local temporary fixtures include ledger and tier checks. Burst timing includes bounded queue wait. Atomic orders are diagnostic only; the forward runner is unchanged. Excludes feeds, strategy and brokers; not market moves/sec.');
  }catch(e){show('durable-benchmark-result','Benchmark unavailable: '+e.message)}finally{button.disabled=false}
 };
 byId('release-roadmap-load').onclick=async()=>{

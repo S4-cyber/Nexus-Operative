@@ -68,45 +68,78 @@ class DurableOrderGateway:
         return gateway,len(rows)
 
     def _call(self, method, *args, **kwargs):
-        # Validate JSON before opening a transaction; NaN is never persisted.
-        payload = json.dumps(dict(method=method, args=args, kwargs=kwargs), allow_nan=False)
-        with closing(self._connect()) as db, db:
+        return self._call_many(((method,args,kwargs),))[0]
+
+    def _call_many(self,steps):
+        steps=tuple(steps)
+        if not steps or len(steps)>4:raise ValueError('INVALID_ORDER_TRANSACTION_SIZE')
+        if len(steps)>1:
+            if [step[0] for step in steps]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
+                raise ValueError('INVALID_QUOTE_ORDER_TRANSACTION')
+            if len({step[1][0] for step in steps})!=1:raise ValueError('QUOTE_ORDER_TRANSACTION_ID_MISMATCH')
+        prepared=[]
+        for method,args,kwargs in steps:
+            if method not in METHODS:raise ValueError('INVALID_COMMAND')
+            payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
+            prepared.append((method,args,kwargs,payload))
+        with closing(self._connect()) as db,db:
             portfolio=execution_portfolio.attach(db,self._path().parent/'paper_portfolio.sqlite3')
             db.execute('BEGIN IMMEDIATE')
-            gateway, count = self._restore(db)
-            active_count=count-gateway.archival_boundary
-            if method=='archive_terminal':
-                args=(*args,count+1)
-                payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
-            if gateway.portfolio_linked:
-                if method not in ('emergency_halt','cancel','expire_order','expire_due'):
-                    execution_portfolio.compare(portfolio,gateway.account)
-                if method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
-                    raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
-            before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
-            result = getattr(gateway, method)(*args, **kwargs)
-            after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
-            if before != after:
-                if method=='link_portfolio':
-                    execution_portfolio.link(portfolio,gateway.account)
-                    portfolio.execute("INSERT OR REPLACE INTO meta VALUES ('execution_linked','1')")
-                if method in ('simulate_priced_fill','simulate_quote_fill') and gateway.portfolio_linked and not result.get('expired'):
-                    oid=args[0] if args else kwargs['client_order_id']
-                    eid=args[1] if len(args)>1 else kwargs['event_id']
-                    order=gateway.intents[oid]
-                    if order['side']=='BUY':
-                        from nexus.tier_permissions import require_entry
-                        require_entry(order['tier'],order['notional'])
-                    execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
-                # Halt/cancel/reset must remain possible when normal intake is full.
-                if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill'):
-                    raise ValueError('ORDER_JOURNAL_CAP_REACHED')
-                if (active_count >= MAX_COMMANDS and method!='archive_terminal') or count>=MAX_RETAINED_COMMANDS:
-                    raise ValueError('ORDER_JOURNAL_CAP_REACHED')
-                db.execute('INSERT INTO commands VALUES (?,?)', (count+1, payload))
-                if self.checkpoints_enabled and (count+1)%order_checkpoints.INTERVAL==0:
-                    order_checkpoints.save(db,gateway,count+1)
-        return result
+            gateway,count=self._restore(db)
+            results=[]
+            for method,args,kwargs,payload in prepared:
+                result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
+                results.append(result)
+        return results
+
+    def _apply(self,db,portfolio,gateway,count,method,args,kwargs,payload):
+        active_count=count-gateway.archival_boundary
+        if method=='archive_terminal':
+            args=(*args,count+1)
+            payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
+        if gateway.portfolio_linked:
+            if method not in ('emergency_halt','cancel','expire_order','expire_due'):
+                execution_portfolio.compare(portfolio,gateway.account)
+            if method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
+                raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
+        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        result = getattr(gateway, method)(*args, **kwargs)
+        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        if before != after:
+            if method=='link_portfolio':
+                execution_portfolio.link(portfolio,gateway.account)
+                portfolio.execute("INSERT OR REPLACE INTO meta VALUES ('execution_linked','1')")
+            if method in ('simulate_priced_fill','simulate_quote_fill') and gateway.portfolio_linked and not result.get('expired'):
+                oid=args[0] if args else kwargs['client_order_id']
+                eid=args[1] if len(args)>1 else kwargs['event_id']
+                order=gateway.intents[oid]
+                if order['side']=='BUY':
+                    from nexus.tier_permissions import require_entry
+                    require_entry(order['tier'],order['notional'])
+                execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
+            # Halt/cancel/reset must remain possible when normal intake is full.
+            if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill'):
+                raise ValueError('ORDER_JOURNAL_CAP_REACHED')
+            if (active_count >= MAX_COMMANDS and method!='archive_terminal') or count>=MAX_RETAINED_COMMANDS:
+                raise ValueError('ORDER_JOURNAL_CAP_REACHED')
+            db.execute('INSERT INTO commands VALUES (?,?)', (count+1, payload))
+            if self.checkpoints_enabled and (count+1)%order_checkpoints.INTERVAL==0:
+                order_checkpoints.save(db,gateway,count+1)
+        return result,count+(before!=after)
+
+    def execute_quote_order(self,client_order_id,product,side,notional,*,tier,created_at,ttl_seconds,
+                            quantity,bid,ask,available_quantity,quote_at,evaluated_at,fee_bps=10,slippage_bps=5):
+        """Opt-in offline atomic order treatment; not used by the forward runner.
+
+        Retains ordinary replayable commands. Any failure rolls back new changes
+        and linked ledger writes; only the completed transaction is acknowledged.
+        """
+        results=self._call_many((
+            ('submit',(client_order_id,product,side,notional),dict(tier=tier)),
+            ('set_execution_terms',(client_order_id,created_at,ttl_seconds),{}),
+            ('simulate_quote_fill',(client_order_id,'fill',1,quantity,bid,ask,available_quantity,quote_at,evaluated_at),dict(fee_bps=fee_bps,slippage_bps=slippage_bps)),
+            ('cancel',(client_order_id,),{})))
+        return dict(order=results[3],fill=results[2],atomic_transaction=True,live_orders_enabled=False)
 
     def submit(self, *args, **kwargs):
         return self._call('submit', *args, **kwargs)

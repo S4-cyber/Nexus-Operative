@@ -1,4 +1,4 @@
-# Nexus Operative — pre-release development v0.71.0
+# Nexus Operative — pre-release development v0.72.0
 
 This branch provides a **simulation-only** Windows PORTAL research application. The development snapshot previously labeled v3.8.0 was renumbered **v0.38.0** so v1.0.0 can be reserved for the first completed, reviewed launch. See [VERSIONING.md](VERSIONING.md) for historical labels, future prerelease numbering, and required release gates.
 
@@ -25,3 +25,5 @@ Offline verified data backup/restore: `python -m nexus.recovery_bundle --help`. 
 Disposable linked-account, archival and quote-evidence recovery drill: `python -m nexus.recovery_drill` (injected quotes, temporary databases, fresh-process restore validation).
 
 The offline decision benchmark now reports bounded event-ID retention as well as queue capacity. Retention exhaustion never evicts duplicate IDs; invalid clocks reject signals. This benchmark has no execution authority.
+
+The durability benchmark now compares ordinary and opt-in atomic quote-order fixture bursts. The atomic treatment retains separate journal commands in one commit; it is not enabled in the forward runner. No market throughput target is validated by these timings.

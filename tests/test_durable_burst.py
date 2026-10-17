@@ -32,3 +32,10 @@ def test_halt_flushes_pending_burst_before_execution(tmp_path):
 def test_burst_work_is_bounded(tmp_path,count):
     with pytest.raises(ValueError,match='INVALID_BURST_CYCLES'):measure(tmp_path,count)
     assert not list(tmp_path.iterdir())
+
+
+def test_atomic_order_treatment_preserves_logical_commands_and_accounting(tmp_path):
+    report=measure(tmp_path,8,clock=lambda:1,atomic_orders=True)
+    assert report['atomic_order_transactions']
+    assert report['completed_roundtrips']==8 and report['durable_commands']==67
+    assert report['duplicate_fill_replays']==16 and report['accounting_consistent']

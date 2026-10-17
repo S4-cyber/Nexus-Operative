@@ -12,7 +12,8 @@ MAX_CYCLES=30
 MAX_QUEUE_AGE_SECONDS=.250
 
 
-def measure(root,cycles,clock=time.perf_counter,halt_after=None):
+def measure(root,cycles,clock=time.perf_counter,halt_after=None,atomic_orders=False):
+    if type(atomic_orders) is not bool:raise ValueError('INVALID_ATOMIC_ORDER_OPTION')
     if type(cycles) is not int or not 1<=cycles<=MAX_CYCLES:raise ValueError('INVALID_BURST_CYCLES')
     if halt_after is not None and (type(halt_after) is not int or not 0<=halt_after<=cycles):raise ValueError('INVALID_BURST_HALT')
     from nexus.durable_benchmark import percentiles
@@ -44,12 +45,17 @@ def measure(root,cycles,clock=time.perf_counter,halt_after=None):
             stamp=1000+seq*30
             for side in ('BUY','SELL'):
                 oid=f'burst_{seq}_{side}'
-                g.submit(oid,'BTC-USD',side,50,tier='terrestrial')
-                g.set_execution_terms(oid,stamp,10)
                 args=(oid,'fill',1,1,25,25.1,2,stamp+1,stamp+1)
-                g.simulate_quote_fill(*args)
+                if atomic_orders:
+                    g.execute_quote_order(oid,'BTC-USD',side,50,tier='terrestrial',created_at=stamp,ttl_seconds=10,
+                                          quantity=1,bid=25,ask=25.1,available_quantity=2,quote_at=stamp+1,evaluated_at=stamp+1)
+                else:
+                    g.submit(oid,'BTC-USD',side,50,tier='terrestrial')
+                    g.set_execution_terms(oid,stamp,10)
+                    g.simulate_quote_fill(*args)
                 if not g.simulate_quote_fill(*args)['idempotent_replay']:raise ValueError('BURST_DUPLICATE_NOT_IDEMPOTENT')
-                replays+=1;g.cancel(oid)
+                replays+=1
+                if not atomic_orders:g.cancel(oid)
             finished=sample()
             if finished<began:raise ValueError('BURST_CLOCK_REGRESSION')
             execution.append((finished-began)*1000);end_to_end.append((finished-offered)*1000);completed+=1
@@ -60,7 +66,7 @@ def measure(root,cycles,clock=time.perf_counter,halt_after=None):
         consistent=(restored['halted'] and restored['portfolio_reconciled'] and
                     not restored['execution_account']['account']['positions'] and
                     len(restored['orders'])==2*completed and restored['commands']==3+8*completed)
-        return dict(scope='TEMPORARY_LINKED_LEDGER_FIXTURE_BURST',offered=cycles,queue_capacity=CAPACITY,
+        return dict(scope='TEMPORARY_LINKED_LEDGER_FIXTURE_BURST',atomic_order_transactions=atomic_orders,offered=cycles,queue_capacity=CAPACITY,
                     admitted=len(seen),overflow_rejections=overflow,duplicate_rejections=duplicates,
                     completed_roundtrips=completed,expired_before_execution=expired,halt_flushed=flushed,
                     duplicate_fill_replays=replays,queue_age_limit_ms=MAX_QUEUE_AGE_SECONDS*1000,

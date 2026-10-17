@@ -52,3 +52,11 @@ def test_portal_describes_reviewed_paid_consent():
     assert "SHA-256 hash" in html
     assert "May Cost Money" in html
     assert "If the public dataset is not eligible or changes" in html
+
+
+def test_cost_must_be_json_number():
+    base = {"role": "market_regime", "verdict": "ABSTAIN", "reason": "No evidence", "estimated_cost_usd": 0}
+    for bad in ("0", None, True, [], {}):
+        with pytest.raises(ValueError):
+            validate_response({**base, "estimated_cost_usd": bad}, "market_regime")
+    assert validate_response({**base, "estimated_cost_usd": 0.01}, "market_regime")["estimated_cost_usd"] == 0.01

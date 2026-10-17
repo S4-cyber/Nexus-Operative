@@ -105,13 +105,16 @@ class BrokerRequestJournal:
             if seq==1:
                 if kind!='BIND' or body!=dict(schema=SCHEMA,account_sha256=self.account_digest):
                     raise ValueError('BROKER_JOURNAL_ACCOUNT_OR_SCHEMA_DISAGREEMENT')
-            else:self._apply(requests,broker_ids,kind,body)
+            else:
+                if kind=='LOOKUP_INTERRUPTED' and (not isinstance(body,dict) or body.get('expected_head')!=parent):
+                    raise ValueError('BROKER_LOOKUP_REVIEW_HEAD_DISAGREEMENT')
+                self._apply(requests,broker_ids,kind,body)
             previous=digest
         return requests,broker_ids,len(rows),previous
 
     def _apply(self, requests, broker_ids, kind, body, *, lookup_completion=False):
         if not isinstance(body,dict):raise ValueError('BROKER_JOURNAL_PAYLOAD_INVALID')
-        if not lookup_completion and kind not in ('LOOKUP_BEGIN','LOOKUP_RESULT') and any(r['lookup']['pending'] for r in requests.values()):
+        if not lookup_completion and kind not in ('LOOKUP_BEGIN','LOOKUP_RESULT','LOOKUP_INTERRUPTED') and any(r['lookup']['pending'] for r in requests.values()):
             raise ValueError('BROKER_LOOKUP_PENDING_REVIEW_REQUIRED')
         if kind=='PREPARE':
             plan=_plan(body)
@@ -119,9 +122,9 @@ class BrokerRequestJournal:
             identity=plan['payload']['client_order_id']
             if identity in requests:raise ValueError('BROKER_JOURNAL_DUPLICATE_PREPARE')
             if len(requests)>=MAX_REQUESTS:raise ValueError('BROKER_JOURNAL_REQUEST_CAP')
-            requests[identity]=dict(plan=plan,tracker=contract.SnapshotTracker(plan),uncertain=False,lookup=dict(attempts=0,pending=None,last_at=0,next_at=0,blocked=False,last_result=None))
+            requests[identity]=dict(plan=plan,tracker=contract.SnapshotTracker(plan),uncertain=False,lookup=dict(attempts=0,pending=None,last_at=0,next_at=0,blocked=False,last_result=None,last_outcome=None,interruptions=0,last_interruption=None))
             return
-        if kind in ('LOOKUP_BEGIN','LOOKUP_RESULT'):
+        if kind in ('LOOKUP_BEGIN','LOOKUP_RESULT','LOOKUP_INTERRUPTED'):
             self._apply_lookup(requests,broker_ids,kind,body)
             return
         if kind not in ('SUBMISSION_UNCERTAIN','OBSERVE') or set(body)!=({'client_order_id'} if kind=='SUBMISSION_UNCERTAIN' else {'client_order_id','response'}):
@@ -147,6 +150,15 @@ class BrokerRequestJournal:
         if not isinstance(identity,str) or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         request=requests[identity]; state=request['lookup']; now=lookup.clock(body.get('evaluated_at'))
         if now<max(r['lookup']['last_at'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_CLOCK_REGRESSION')
+        if kind=='LOOKUP_INTERRUPTED':
+            if set(body)!={'client_order_id','token','evaluated_at','expected_head','confirm_interrupted'} or body['confirm_interrupted'] is not True:
+                raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
+            if not state['pending'] or body['token']!=state['pending']:
+                raise ValueError('BROKER_LOOKUP_PENDING_TOKEN_REQUIRED')
+            wait=min(5*2**(state['attempts']-1),60)
+            state.update(pending=None,last_at=now,next_at=max(state['next_at'],now+wait),
+                         interruptions=state['interruptions']+1,last_interruption=body,last_outcome='INTERRUPTED')
+            return
         if kind=='LOOKUP_BEGIN':
             if set(body)!={'client_order_id','token','evaluated_at'}:raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
             if not request['uncertain']:raise ValueError('BROKER_JOURNAL_NO_ATTEMPT_BOUNDARY')
@@ -176,14 +188,14 @@ class BrokerRequestJournal:
         elif body['response'] is not None:raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
         wait=(delay if outcome=='RATE_LIMITED' else min(5*2**(state['attempts']-1),60) if outcome in ('NOT_FOUND','TIMEOUT','NETWORK_ERROR','SERVER_ERROR') else lookup.MIN_LOOKUP_INTERVAL)
         state.update(pending=None,last_at=now,next_at=max(state['next_at'],now+wait),
-                     blocked=outcome in ('AUTH_DENIED','REVIEW_REQUIRED'),last_result=body)
+                     blocked=outcome in ('AUTH_DENIED','REVIEW_REQUIRED'),last_result=body,last_outcome=outcome)
 
     def _summary(self, identity, request):
         latest=request['tracker'].status()['latest']
         state=('OBSERVED_TERMINAL_RECONCILIATION_REQUIRED' if latest['terminal'] else 'OBSERVED_NONTERMINAL_REVIEW_REQUIRED') if latest else ('SUBMISSION_UNKNOWN_LOOKUP_REQUIRED' if request['uncertain'] else 'PREPARED_UNSENT_DIAGNOSTIC')
         return dict(client_order_id=identity,payload_sha256=request['plan']['payload_sha256'],
                     recovery_state=state,snapshot=latest,lookup_by_original_client_id_required=request['uncertain'] and not latest,
-                    submission_attempt_marked=request['uncertain'],lookup=dict(attempts=request['lookup']['attempts'],attempt_limit=lookup.MAX_LOOKUPS_PER_REQUEST,pending=request['lookup']['pending'] is not None,next_allowed_at=request['lookup']['next_at'],review_blocked=request['lookup']['blocked'],last_outcome=(request['lookup']['last_result']['outcome'] if request['lookup']['last_result'] else None)),automatic_retry=False,sendable=False,
+                    submission_attempt_marked=request['uncertain'],lookup=dict(attempts=request['lookup']['attempts'],attempt_limit=lookup.MAX_LOOKUPS_PER_REQUEST,pending=request['lookup']['pending'] is not None,next_allowed_at=request['lookup']['next_at'],review_blocked=request['lookup']['blocked'],interruptions=request['lookup']['interruptions'],last_outcome=request['lookup']['last_outcome']),automatic_retry=False,sendable=False,
                     broker_connected=False,ledger_applied=False,broker_account_reconciled=False)
 
     def _write(self, kind, body):
@@ -264,6 +276,50 @@ class BrokerRequestJournal:
         outcome=lookup.classify(status_code=status_code,transport_error=transport_error,retry_after=retry_after,evaluated_at=evaluated_at)
         return self._lookup_write(client_order_id,evaluated_at,dict(token=token,**outcome,response=response if outcome['outcome']=='FOUND' else None))
 
+    def pending_lookup(self):
+        """Read-only review snapshot; no timeout inference, IO admission or repair."""
+        self._check_path()
+        requests={};head=ZERO
+        if self.path.exists():
+            with closing(self._connect()) as db:requests,_,_,head=self._load(db)
+        pending=[(identity,r) for identity,r in requests.items() if r['lookup']['pending']]
+        if len(pending)>1:raise ValueError('BROKER_LOOKUP_PENDING_STATE_DISAGREEMENT')
+        result=dict(mode='READ_ONLY_PENDING_BROKER_LOOKUP',read_only=True,head_sha256=head,
+                    pending=bool(pending),automatic_resume=False,automatic_submission=False,
+                    broker_connected=False,live_orders_enabled=False)
+        if pending:
+            identity,request=pending[0];state=request['lookup']
+            result.update(client_order_id=identity,lookup_token=state['pending'],
+                          payload_sha256=request['plan']['payload_sha256'],started_at=state['last_at'],
+                          attempts=state['attempts'],next_allowed_at=state['next_at'],
+                          review_action='Explicitly record interruption only after reviewing the current ticket; this cannot cancel a network request or resolve the original order.')
+        return result
+
+    def interrupt_lookup(self, client_order_id, token, *, expected_head, evaluated_at, confirm_interrupted=False):
+        """Explicit local review event, never cancellation, repair or resubmission."""
+        self._identity(client_order_id);lookup.clock(evaluated_at)
+        if confirm_interrupted is not True:raise ValueError('BROKER_LOOKUP_INTERRUPTION_CONFIRMATION_REQUIRED')
+        for value in (token,expected_head):
+            if not isinstance(value,str) or not re.fullmatch(r'[0-9a-f]{64}',value):
+                raise ValueError('INVALID_BROKER_LOOKUP_REVIEW_REFERENCE')
+        if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        body=dict(client_order_id=client_order_id,token=token,expected_head=expected_head,
+                  evaluated_at=evaluated_at,confirm_interrupted=True)
+        with closing(self._connect(write=True)) as db:
+            try:
+                requests,broker_ids,count,previous=self._load(db)
+                if client_order_id not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+                request=requests[client_order_id]
+                if body==request['lookup']['last_interruption']:
+                    db.commit()
+                    return dict(**self._summary(client_order_id,request),duplicate=True,interruption_recorded=True)
+                if expected_head!=previous:raise ValueError('BROKER_LOOKUP_REVIEW_HEAD_DISAGREEMENT')
+                if count>=MAX_EVENTS:raise ValueError('BROKER_JOURNAL_EVENT_CAP')
+                self._apply(requests,broker_ids,'LOOKUP_INTERRUPTED',body)
+                self._insert(db,count+1,'LOOKUP_INTERRUPTED',body,previous);db.commit()
+                return dict(**self._summary(client_order_id,request),duplicate=False,interruption_recorded=True)
+            except BaseException:db.rollback();raise
+
     def recovery(self):
         self._check_path()
         if not self.path.exists():
@@ -299,8 +355,17 @@ def fixture_report():
         pacing=BrokerRequestJournal(pacing.path,account)
         ticket=pacing.begin_lookup('nx_durable_fixture',evaluated_at=1006)['lookup_token']
         limited=pacing.finish_lookup('nx_durable_fixture',ticket,evaluated_at=1007,status_code=429,retry_after='30')
+        pacing.begin_lookup('nx_durable_fixture',evaluated_at=1037)
+        pacing=BrokerRequestJournal(pacing.path,account)
+        review=pacing.pending_lookup()
+        interrupted=pacing.interrupt_lookup('nx_durable_fixture',review['lookup_token'],
+                expected_head=review['head_sha256'],evaluated_at=1038,confirm_interrupted=True)
+        late_rejected=False
+        try:pacing.finish_lookup('nx_durable_fixture',review['lookup_token'],evaluated_at=1039,status_code=404)
+        except ValueError as exc:late_rejected=str(exc)=='BROKER_LOOKUP_PENDING_TOKEN_REQUIRED'
+        if not late_rejected:raise ValueError('BROKER_FIXTURE_LATE_COMPLETION_NOT_FENCED')
         return dict(mode='DISPOSABLE_DURABLE_BROKER_REQUEST_FIXTURE',passed=True,uncertain_recovery_state=unknown,
-                    current_replay_duplicate=duplicate,recovered=recovered,lookup_recovery=dict(timeout_keeps_uncertainty=timeout['lookup_by_original_client_id_required'],rate_limit_next_allowed_at=limited['lookup']['next_allowed_at'],rate_limit_wait_seconds=30,attempts=limited['lookup']['attempts'],automatic_retry=False),broker_connected=False,ledger_applied=False,
+                    current_replay_duplicate=duplicate,recovered=recovered,lookup_recovery=dict(timeout_keeps_uncertainty=timeout['lookup_by_original_client_id_required'],rate_limit_next_allowed_at=limited['lookup']['next_allowed_at'],rate_limit_wait_seconds=30,attempts=limited['lookup']['attempts'],interruption_recorded=interrupted['interruption_recorded'],interruption_keeps_uncertainty=interrupted['lookup_by_original_client_id_required'],late_completion_rejected=late_rejected,attempts_after_interruption=interrupted['lookup']['attempts'],automatic_retry=False),broker_connected=False,ledger_applied=False,
                     limitations='Temporary injected observations and reopened connections; not broker integration, authenticated lookup, sustained operation or market execution.')
 
 

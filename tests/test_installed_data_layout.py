@@ -27,3 +27,38 @@ def test_portable_layout_isolates_auxiliary_databases(tmp_path):
 def test_layout_selection_is_unambiguous(tmp_path,both):
     with pytest.raises(ValueError,match='CHOOSE_ONE_DATA_LAYOUT'):
         launch_environment(data=tmp_path if both else None,default_data_root=tmp_path if both else None)
+
+
+@pytest.mark.parametrize('case',['wrong_budget','tier_off','missing_purpose','auto_start','promoted_funds','reset_off','empty_checklist'])
+def test_packaged_setup_acceptance_rejects_wrong_defaults_or_permission(case):
+    from tools.installed_smoke import verify_setup
+    budget=10000;on=True;writes=[]
+    def fetch(base,path,method='GET',data=None):
+        nonlocal budget,on
+        if method=='PUT':
+            writes.append((path,data))
+            if path=='/api/paper/settings':budget=data['paper_budget']
+            else:on=False
+        if path=='/api/paper/settings':return dict(simulation_only=True,paper_budget=99 if case=='wrong_budget' else budget,
+            terrestrial_allocation=50,solar_allocation=35,universal_allocation=15)
+        if path=='/api/tiers/permissions':return dict(tiers=[dict(tier=t,enabled=(on if case!='tier_off' else False) if t=='terrestrial' else False)
+            for t in ('terrestrial','solar','universal')]) if case!='reset_off' or not writes else dict(tiers=[dict(tier='terrestrial',enabled=True),dict(tier='solar',enabled=False),dict(tier='universal',enabled=False)])
+        if path=='/api/status':return dict(portal_enabled=case=='auto_start',live_orders_enabled=False,broker_connected=False,money_movement_enabled=case=='promoted_funds')
+        if path=='/api/paper/forward':return dict(enabled=False)
+        if path=='/api/onboarding/tasks':return dict(items=[] if case=='empty_checklist' else [dict(why='' if case=='missing_purpose' else 'Built-in tools need no external paid account.',setup_scope='Included')])
+        return {}
+    with pytest.raises(AssertionError):verify_setup('http://127.0.0.1', 'first-run',fetch)
+    assert all(path in ('/api/paper/settings','/api/tiers/terrestrial/permission') for path,_ in writes)
+
+
+def test_saved_setup_acceptance_is_read_only():
+    from tools.installed_smoke import verify_setup
+    def fetch(base,path,method='GET',data=None):
+        assert method=='GET' and data is None
+        if path=='/api/paper/settings':return dict(simulation_only=True,paper_budget=2500,terrestrial_allocation=50,solar_allocation=35,universal_allocation=15)
+        if path=='/api/tiers/permissions':return dict(tiers=[dict(tier=t,enabled=False) for t in ('terrestrial','solar','universal')])
+        if path=='/api/status':return dict(portal_enabled=False,live_orders_enabled=False,broker_connected=False,money_movement_enabled=False)
+        if path=='/api/paper/forward':return dict(enabled=False)
+        return dict(items=[dict(why='Built-in tools need no external paid account.',setup_scope='Included')])
+    result=verify_setup('http://127.0.0.1','saved',fetch)
+    assert result['saved_choices_verified'] and result['trading_stayed_stopped']

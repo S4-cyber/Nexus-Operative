@@ -84,12 +84,12 @@ def test_source_fingerprint_tracks_source_test_and_workflow_changes(tmp_path):
     for name in ('nexus','tests','tools','.github/workflows','dashboard','installer'):
         (tmp_path/name).mkdir(parents=True)
     for name in ('pyproject.toml','dashboard/portal_preview.html','installer/NexusOperative.iss','nexus/core.py',
-                 'tests/test_core.py','.github/workflows/test.yml'):
+                 'tests/test_core.py','tools/installer.ps1','.github/workflows/test.yml'):
         (tmp_path/name).write_text('original')
     original = trials.source_digest(tmp_path)
     (tmp_path/'report.json').write_text('generated output')
     assert trials.source_digest(tmp_path) == original
-    for name in ('nexus/core.py','tests/test_core.py','.github/workflows/test.yml'):
+    for name in ('nexus/core.py','tests/test_core.py','tools/installer.ps1','.github/workflows/test.yml'):
         (tmp_path/name).write_text('changed')
         assert trials.source_digest(tmp_path) != original
         (tmp_path/name).write_text('original')

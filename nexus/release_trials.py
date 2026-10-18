@@ -610,7 +610,7 @@ def _validate(profile, result):
 def source_digest(root):
     """Fingerprint executed source and test inputs; excludes generated reports/docs."""
     root = Path(root); entries = []
-    paths = set(root.glob('nexus/*.py')) | set(root.glob('tests/*.py')) | set(root.glob('tools/*.py')) | set(root.glob('tools/*.cjs'))
+    paths = set(root.glob('nexus/*.py')) | set(root.glob('tests/*.py')) | set(root.glob('tools/*.py')) | set(root.glob('tools/*.cjs')) | set(root.glob('tools/*.ps1'))
     paths |= set(root.glob('.github/workflows/*.yml')) | set(root.glob('portable/*.py'))
     paths |= {root/'pyproject.toml', root/'dashboard/portal_preview.html', root/'installer/NexusOperative.iss'}
     paths |= {root/name for name in ('.gitignore','.gitleaks.toml','.github/CODEOWNERS','.github/dependabot.yml') if (root/name).is_file()}

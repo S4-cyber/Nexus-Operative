@@ -30,7 +30,7 @@ def fixtures(path,pending=True,missing_history=False):
         from nexus.release_roadmap import progress_estimate
         return dict(progress_estimate=progress_estimate(),read_only=True,revision='0.86.0',branch='development/windows-portal-foundation',delivery_stages=[dict(id='D5',title='Secure deposits',status='NOT_IMPLEMENTED',progress='Preview only.',remaining='Reconcile spendable funds.'),dict(id='D9',title='1.0 production release',status='BLOCKED',progress='Prerelease.',remaining='Independent acceptance.')],production_scope='Separate live authorization required.',milestones=[],strategic_goals=[],next_steps=['Validate sustained paper operation.'],supporting_track='Cloud planned.',speed_target='No broker speed validation.',resume='Read source roadmap.')
     if path=='/api/execution/alpaca-paper/fee-projection-fixture':return dict(input_consistency_ok=True,reasons=[],projected_balances=dict(USD='1009.78011',BTC='0'),fees_by_asset=dict(BTC='0.001',USD='0.10989'),cash_path=dict(declared_path_consistency_ok=True),activity_normalization=dict(status='REVIEW_REQUIRED',fee_coverage_complete=False,executions=[{},{}],fee_debits=[{},{}]))
-    if path=='/api/execution/alpaca-paper/request-recovery-fixture':return dict(passed=True,current_replay_duplicate=True,lookup_recovery=dict(attempts=2,rate_limit_wait_seconds=30,interruption_recorded=True,late_completion_rejected=True),recovered=dict(retained_events=6,requests=[dict(snapshot=dict(filled_quantity='1'))]))
+    if path=='/api/execution/alpaca-paper/request-recovery-fixture':return dict(submission_review=dict(read_only=True,passive=True,clear_before_marker=True,recovery_required_after_marker=True,sendable=False,routing_authorized=False,capacity_reserved=False),passed=True,current_replay_duplicate=True,lookup_recovery=dict(attempts=2,rate_limit_wait_seconds=30,interruption_recorded=True,late_completion_rejected=True),recovered=dict(retained_events=6,requests=[dict(snapshot=dict(filled_quantity='1'))]))
     if path=='/api/public-data/efficiency':return dict(read_only=True,requests=12,transport_attempts=4,cache_hits=6,shared_returns=2,transport_failures=0,wait_timeouts=0,active_requests=0,active_request_limit=3,mean_successful_transport_ms=120)
     if path=='/api/status':return dict(portal_enabled=False,halted=False)
     if path=='/api/tiers':return dict(tiers=[],tier_permissions=[dict(tier=t,enabled=False,maximum_intent_usd=n) for t,n in [('terrestrial',100),('solar',200),('universal',200)]])
@@ -209,6 +209,8 @@ def run(output,channel=None):
                     expect(page.locator('#broker-request-result')).to_contain_text('Fixture rate-limit wait 30 seconds')
                     expect(page.locator('#broker-request-result')).to_contain_text('Interrupted lookup review recorded')
                     expect(page.locator('#broker-request-result')).to_contain_text('Late reply rejected')
+                    expect(page.locator('#broker-request-result')).to_contain_text('Passive preflight checked')
+                    expect(page.locator('#broker-request-result')).to_contain_text('Marked attempt requires original-ID recovery')
                     expect(page.locator('#broker-request-fixture')).to_be_enabled()
                     page.locator('#broker-fee-fixture').click()
                     expect(page.locator('#broker-fee-result')).to_contain_text('COVERED IN SUPPLIED HISTORY')

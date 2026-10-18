@@ -270,6 +270,40 @@ class BrokerRequestJournal:
         self._identity(client_order_id)
         return self._write('SUBMISSION_UNCERTAIN',dict(client_order_id=client_order_id))
 
+    def submission_review(self,client_order_id,*,evaluated_at):
+        """Read local marker blockers only; no reservation or caller admission.
+
+        A clear snapshot is neither transport permission nor account/risk/funds
+        acceptance. The checked writer must re-evaluate its own current state.
+        """
+        self._identity(client_order_id);now=lookup.clock(evaluated_at);self._check_path()
+        present=self.path.exists();requests={};count=0;head=ZERO
+        if present:
+            with closing(self._connect()) as db:requests,_,count,head=self._load(db)
+        request=requests.get(client_order_id);reasons=[]
+        floor=max((r['lookup']['last_at'] for r in requests.values()),default=0)
+        deadline=max((r['lookup']['next_at'] for r in requests.values()
+            if r['lookup']['last_outcome']=='RATE_LIMITED'),default=0)
+        if not request:reasons.append('REQUEST_NOT_PREPARED')
+        if request and request['uncertain']:reasons.append('ORIGINAL_ID_RECOVERY_REQUIRED')
+        if any(r['lookup']['blocked'] for r in requests.values()):reasons.append('ACCOUNT_REVIEW_REQUIRED')
+        if any(r['lookup']['pending'] for r in requests.values()):reasons.append('LOOKUP_PENDING_REVIEW_REQUIRED')
+        if now<floor:reasons.append('CLOCK_REGRESSION')
+        if now<deadline:reasons.append('ACCOUNT_COOLDOWN_ACTIVE')
+        required=1+self._recovery_reserve(requests)+(2 if request and not request['uncertain'] else 0)
+        if request and not request['uncertain'] and count+required>MAX_EVENTS:reasons.append('RECOVERY_RESERVE_REQUIRED')
+        return dict(mode='READ_ONLY_BROKER_SUBMISSION_REVIEW',read_only=True,journal_present=present,
+            client_order_id=client_order_id,account_sha256=self.account_digest,head_sha256=head,
+            payload_sha256=request['plan']['payload_sha256'] if request else None,evaluated_at=now,
+            lookup_clock_floor=floor,retained_rate_limit_until=deadline,wait_seconds=max(0,deadline-now),
+            status='BLOCKED' if reasons else 'LOCAL_MARKER_CHECKS_CLEAR',reasons=reasons,
+            capacity=self._capacity(requests,count),local_marker_checks_clear=not reasons,
+            capacity_reserved=False,admission_checked=False,sendable=False,routing_authorized=False,
+            transport_invoked=False,automatic_submission=False,automatic_retry=False,
+            broker_connected=False,broker_account_reconciled=False,ledger_applied=False,
+            live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
+            scope='Sampled local journal only. A clear review does not reserve capacity, check caller permission/risk/funds, approve a broker account or permit IO. Recheck current head/terms/admission with the checked marker and separately authorize any transport.')
+
     def begin_submission_checked(self,client_order_id,*,expected_head,expected_payload_sha256,admission):
         """One new durable attempt marker only; no transport or send permission.
 
@@ -303,7 +337,10 @@ class BrokerRequestJournal:
                 requests,broker_ids,count,previous=self._load(db)
                 if identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
                 request=requests[identity];state=request['lookup']
-                if admission is not None:now=lookup.clock(admission())
+                if admission is not None:
+                    sampled=lookup.clock(admission())
+                    if sampled<now:raise ValueError('BROKER_LOOKUP_CLOCK_REGRESSION')
+                    now=sampled
                 if callable(result):result=result(now)
                 if result is None:
                     kind='LOOKUP_BEGIN'
@@ -321,7 +358,7 @@ class BrokerRequestJournal:
                     if count>=MAX_EVENTS:raise ValueError('BROKER_JOURNAL_EVENT_CAP')
                 self._apply(requests,broker_ids,kind,body)
                 self._insert(db,count+1,kind,body,previous)
-                if admission is not None:lookup.clock(admission())
+                if admission is not None and lookup.clock(admission())<now:raise ValueError('BROKER_LOOKUP_CLOCK_REGRESSION')
                 db.commit()
                 return dict(**self._summary(identity,request),duplicate=False,lookup_token=body['token'],
                             hypothetical_lookup=dict(method='GET',url=lookup.LOOKUP_URL,query=dict(client_order_id=identity),sendable=False))
@@ -425,10 +462,14 @@ def submission_admission_fixture():
             retained=journal.lookup_request('nx_admission_fixture')
             return journal.begin_submission_checked('nx_admission_fixture',expected_head=retained['head_sha256'],
                 expected_payload_sha256=retained['plan']['payload_sha256'],admission=admission)
-        before=journal.path.read_bytes();revoked=False
+        before=journal.path.read_bytes();preflight=journal.submission_review('nx_admission_fixture',evaluated_at=1000)
+        preflight_passive=preflight['local_marker_checks_clear'] and journal.path.read_bytes()==before and not preflight['sendable'] and not preflight['capacity_reserved']
+        revoked=False
         try:begin(lambda:False)
         except ValueError:revoked=journal.path.read_bytes()==before
         marked=begin(lambda:1000);reserved=journal.recovery()['capacity']['recovery_slots_reserved']==2
+        marked_review=journal.submission_review('nx_admission_fixture',evaluated_at=1000)
+        marked_blocked='ORIGINAL_ID_RECOVERY_REQUIRED' in marked_review['reasons'] and not marked_review['local_marker_checks_clear']
         duplicate=False;before=journal.path.read_bytes()
         try:begin(lambda:1001)
         except ValueError as error:duplicate=str(error)=='BROKER_SUBMISSION_ALREADY_MARKED_LOOKUP_REQUIRED' and journal.path.read_bytes()==before
@@ -455,7 +496,19 @@ def submission_admission_fixture():
             try:limited.begin_submission_checked('nx_blocked_fixture',expected_head=reference['head_sha256'],expected_payload_sha256=other['payload_sha256'],admission=lambda:stamp)
             except ValueError as error:denials.append(str(error)==code and limited.path.read_bytes()==before)
         resumed=limited.begin_submission_checked('nx_blocked_fixture',expected_head=reference['head_sha256'],expected_payload_sha256=other['payload_sha256'],admission=lambda:1031)
+        clocks=BrokerRequestJournal(Path(directory)/'clocks.sqlite3','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+        clocks.prepare(original);clocks.mark_submission_uncertain('nx_admission_fixture')
+        clock_denials=[]
+        for finishing in (False,True):
+            before=clocks.path.read_bytes();samples=iter([1001,1001,1000] if finishing else [1000,1000,999])
+            try:
+                if finishing:clocks.finish_lookup_checked('nx_admission_fixture',ticket['lookup_token'],admission=lambda:next(samples),status_code=404)
+                else:clocks.begin_lookup_checked('nx_admission_fixture',admission=lambda:next(samples))
+            except ValueError as error:clock_denials.append(str(error)=='BROKER_LOOKUP_CLOCK_REGRESSION' and clocks.path.read_bytes()==before)
+            if not finishing:ticket=clocks.begin_lookup_checked('nx_admission_fixture',admission=lambda:1000)
         return dict(source='TEMPORARY_LOCAL_SUBMISSION_ADMISSION_FIXTURE',
+            preflight_passive_no_authority=preflight_passive,preflight_marked_requires_recovery=marked_blocked,
+            lookup_begin_clock_rollback=bool(clock_denials and clock_denials[0]),lookup_result_clock_rollback=len(clock_denials)==2 and clock_denials[1],
             retained_clock_rejected=bool(denials and denials[0]),rate_cooldown_rejected=len(denials)==2 and denials[1],rate_deadline_allows_marker_only=resumed['attempt_marker_commit_observed'] and not resumed['routing_authorized'],
             account_review_blocks_begin=account_block,marker_commit_observed=marked['attempt_marker_commit_observed'],recovery_pair_reserved=reserved,
             duplicate_begin_rejected=duplicate,revoked_admission_unchanged=revoked,
@@ -472,7 +525,10 @@ def fixture_report():
     with tempfile.TemporaryDirectory(prefix='nexus-broker-journal-') as temporary:
         path=Path(temporary)/'fixture.sqlite3';account='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
         journal=BrokerRequestJournal(path,account);journal.prepare(plan)
+        before=journal.path.read_bytes();preflight=journal.submission_review('nx_durable_fixture',evaluated_at=1000)
+        passive=journal.path.read_bytes()==before
         journal.mark_submission_uncertain('nx_durable_fixture')
+        after_review=journal.submission_review('nx_durable_fixture',evaluated_at=1000)
         unknown=BrokerRequestJournal(path,account).recovery()['requests'][0]['recovery_state']
         for i,(status,quantity,average) in enumerate((('partially_filled','1','99'),('pending_cancel','1','99'),('canceled','1','99'))):
             raw=dict(**plan['payload'],id='01234567-89ab-cdef-0123-456789abcdef',asset_class='crypto',
@@ -496,7 +552,7 @@ def fixture_report():
         try:pacing.finish_lookup('nx_durable_fixture',review['lookup_token'],evaluated_at=1039,status_code=404)
         except ValueError as exc:late_rejected=str(exc)=='BROKER_LOOKUP_PENDING_TOKEN_REQUIRED'
         if not late_rejected:raise ValueError('BROKER_FIXTURE_LATE_COMPLETION_NOT_FENCED')
-        return dict(mode='DISPOSABLE_DURABLE_BROKER_REQUEST_FIXTURE',passed=True,uncertain_recovery_state=unknown,
+        return dict(mode='DISPOSABLE_DURABLE_BROKER_REQUEST_FIXTURE',passed=True,submission_review=dict(read_only=True,passive=passive,clear_before_marker=preflight['local_marker_checks_clear'],recovery_required_after_marker='ORIGINAL_ID_RECOVERY_REQUIRED' in after_review['reasons'],sendable=False,routing_authorized=False,capacity_reserved=False),uncertain_recovery_state=unknown,
                     current_replay_duplicate=duplicate,recovered=recovered,lookup_recovery=dict(timeout_keeps_uncertainty=timeout['lookup_by_original_client_id_required'],rate_limit_next_allowed_at=limited['lookup']['next_allowed_at'],rate_limit_wait_seconds=30,attempts=limited['lookup']['attempts'],interruption_recorded=interrupted['interruption_recorded'],interruption_keeps_uncertainty=interrupted['lookup_by_original_client_id_required'],late_completion_rejected=late_rejected,attempts_after_interruption=interrupted['lookup']['attempts'],automatic_retry=False),broker_connected=False,ledger_applied=False,
                     limitations='Temporary injected observations and reopened connections; not broker integration, authenticated lookup, sustained operation or market execution.')
 

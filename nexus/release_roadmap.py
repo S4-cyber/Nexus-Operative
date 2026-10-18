@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.144.0'
+REVISION = '0.145.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -144,7 +144,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.144 commits each optional public-discovery request allowance before transport in a bounded local SQLite journal shared by cooperating Nexus processes using the same data root. Restart, toggle, concurrent first use, transport failure and lost return cannot restore a consumed slot. Passive status creates no storage. This is not provider-wide, host-wide or shared-IP coordination, and discovery remains research-only. The rough implementation baseline remains about40% (30–45%, low confidence) with0/9 fully accepted stages; this hardening does not close a major acceptance stage or authorize routing, funding or release.'
+CURRENT_HARDENING = 'v0.145 adds a passive local broker-marker preflight explaining preparation, original-ID recovery, account review, pending lookup, clock, cooldown and recovery-capacity blockers without reserving or granting admission. Checked lookup writes reject clock regression across lock admission and after insertion, rolling back while retaining unresolved recovery. The offline Accounts fixture shows the preflight distinction. The rough weighted implementation estimate remains about40% with30–45% judgment range and0/9 fully accepted stages; actual broker routing, funding/live/cloud and independent acceptance remain open. Preserves v0.144 durable shared-local discovery request allowances across cooperating processes/restarts; this is not provider-wide quota coordination.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -159,3 +159,69 @@ def test_lost_result_return_preserves_committed_observation_and_does_not_rearm(j
 def test_disposable_mandatory_step_fixture():
     r=module.fixture_report();assert r['passed'] and r['get_requests']==4 and r['stale_head_prevented_io']
     assert all(r[k] is False for k in module.FLAGS)
+
+
+@pytest.mark.parametrize('outcome',['pending','auth','cooldown','clock','capacity'])
+def test_shared_pacing_blocks_before_saved_vault_even_with_local_candidate(journal,vault,monkeypatch,tmp_path,outcome):
+    from nexus import paper_read_pacing as pacing_module
+    gate=pacing_module.PaperReadPacing(tmp_path/'pacing.sqlite3',ACCOUNT)
+    token=gate.begin(admission=lambda:1000);now=1060
+    if outcome!='pending':
+        gate.finish(token,admission=lambda:1000,status_code=401 if outcome=='auth' else 200)
+        if outcome=='cooldown':now=1059
+        if outcome=='clock':now=999
+        if outcome=='capacity':monkeypatch.setattr(pacing_module,'MAX_SESSIONS',1)
+    assert journal.lookup_review(evaluated_at=now)['selected_client_order_id']=='nx_fixture'
+    before=(journal.path.read_bytes(),gate.path.read_bytes());reader=Opener()
+    review=module.review_next(journal,expected_account_id=ACCOUNT,evaluated_at=now,pacing=gate)
+    assert not review['local_checks_clear'] and review['review_reasons']
+    with pytest.raises(ValueError,match='LOCAL_REVIEW_REQUIRED'):
+        module.recover_next_saved(journal,expected_account_id=ACCOUNT,confirm_read_only_paper=True,
+            opener=reader,wall_clock=lambda:now,elapsed_clock=lambda:50,pacing=gate)
+    assert vault.reads==0 and not reader.requests and before==(journal.path.read_bytes(),gate.path.read_bytes())
+
+
+def test_shared_review_preserves_missing_pacing_and_never_reserves_admission(journal,tmp_path):
+    from nexus.paper_read_pacing import PaperReadPacing
+    gate=PaperReadPacing(tmp_path/'absent'/'p.sqlite3',ACCOUNT)
+    r=module.review_next(journal,expected_account_id=ACCOUNT,evaluated_at=1000,pacing=gate)
+    assert r['local_checks_clear'] and not gate.path.parent.exists()
+    assert r['admission_reserved'] is False and all(r[k] is False for k in module.FLAGS)
+
+
+@pytest.mark.parametrize('kind',['foreign','wrong-type','corrupt'])
+def test_invalid_pacing_scope_or_content_denied_before_vault(journal,vault,tmp_path,kind):
+    from nexus.paper_read_pacing import PaperReadPacing
+    gate=PaperReadPacing(tmp_path/'p.sqlite3',OTHER if kind=='foreign' else ACCOUNT)
+    if kind=='wrong-type':gate=object()
+    if kind=='corrupt':gate.path.write_bytes(b'not a journal')
+    with pytest.raises((ValueError,sqlite3.Error)):
+        module.recover_next_saved(journal,expected_account_id=ACCOUNT,confirm_read_only_paper=True,wall_clock=lambda:1000,pacing=gate)
+    assert vault.reads==0
+
+
+def test_composed_review_rejects_request_append_between_snapshots(journal,tmp_path,monkeypatch):
+    from nexus.paper_read_pacing import PaperReadPacing
+    gate=PaperReadPacing(tmp_path/'p.sqlite3',ACCOUNT);original=gate.inspect;changed=False
+    def race():
+        nonlocal changed
+        if not changed:journal.prepare(plan(client_order_id='appended'));changed=True
+        return original()
+    monkeypatch.setattr(gate,'inspect',race)
+    with pytest.raises(ValueError,match='REVIEW_CHANGED'):
+        module.review_next(journal,expected_account_id=ACCOUNT,evaluated_at=1000,pacing=gate)
+    assert not gate.path.exists() and all(row['lookup']['attempts']==0 for row in journal.recovery()['requests'])
+
+
+def test_composed_review_rejects_pacing_append_between_snapshots(journal,tmp_path,monkeypatch):
+    from nexus.paper_read_pacing import PaperReadPacing
+    gate=PaperReadPacing(tmp_path/'p.sqlite3',ACCOUNT);original=gate.inspect;calls=0
+    def race():
+        nonlocal calls
+        calls+=1
+        if calls==2:gate.begin(admission=lambda:1000)
+        return original()
+    monkeypatch.setattr(gate,'inspect',race)
+    with pytest.raises(ValueError,match='REVIEW_CHANGED'):
+        module.review_next(journal,expected_account_id=ACCOUNT,evaluated_at=1000,pacing=gate)
+    assert gate.inspect()['pending_token'] is not None and all(row['lookup']['attempts']==0 for row in journal.recovery()['requests'])

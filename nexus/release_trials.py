@@ -368,7 +368,9 @@ def _pacing_trial():
         submission=submission_admission_fixture()
         from nexus.paper_recovery_step import fixture_report as recovery_step_fixture
         bounded_step=recovery_step_fixture()
-        return dict(bounded_recovery_step=bounded_step,submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        from nexus.paper_recovery_drill import fixture_report as crash_fixture
+        crash=crash_fixture()
+        return dict(bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -583,7 +585,12 @@ def _validate(profile, result):
             ('holds_reconciled', 'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing',
              'source_coverage_verified', 'fee_coverage_complete', 'ledger_applied', 'live_orders_enabled')), 'BALANCE_AUTHORITY')
     if profile == 'pacing':
+        from nexus.paper_recovery_drill import PHASES as CRASH_PHASES,CHECKS as CRASH_CHECKS
         from nexus.paper_recovery_step import FLAGS as RECOVERY_FLAGS
+        crash=result['bounded_recovery_crash_drill']
+        _require(crash['mode']=='DISPOSABLE_BOUNDED_RECOVERY_CRASH_DRILL' and crash['source']=='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE' and crash['passed'] is True and crash['forced_process_exits']==5 and crash['fresh_process_reviews']==10 and crash['precommit_rollback_sidecars_observed'] is True,'RECOVERY_CRASH_SCOPE')
+        _require([case['phase'] for case in crash['cases']]==list(CRASH_PHASES) and [case['injected_get_requests'] for case in crash['cases']]==[0,0,3,3,3] and all(all(case[k] is True for k in CRASH_CHECKS) for case in crash['cases']),'RECOVERY_CRASH_BOUNDARIES')
+        _require(all(crash[k] is False for k in (*RECOVERY_FLAGS,'actual_provider_access','actual_vault_access')),'RECOVERY_CRASH_AUTHORITY')
         step=result['bounded_recovery_step']
         _require(step['source']=='TEMPORARY_BOUNDED_RECOVERY_STEP_FIXTURE' and step['steps_performed']==2 and step['get_requests']==4 and all(step[k] is True for k in ('passed','first_request_selected','next_request_selected','cooldown_review_unchanged','stale_head_prevented_io')),'BOUNDED_RECOVERY_STEP')
         _require(all(step[k] is False for k in (*RECOVERY_FLAGS,'actual_provider_access','actual_vault_access')),'BOUNDED_RECOVERY_STEP_AUTHORITY')

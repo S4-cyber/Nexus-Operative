@@ -14,13 +14,36 @@ FLAGS=('automatic_continuation','automatic_retry','automatic_submission','ready_
        'live_orders_enabled','money_movement_enabled','release_approved')
 
 
-def _selection(journal,expected_account_id,wall_clock):
+def review_next(journal,*,expected_account_id,evaluated_at,pacing=None):
+    """Sample local request/pacing blocks without vault, provider or admission."""
     if type(journal) is not BrokerRequestJournal:raise ValueError('PAPER_RECOVERY_STEP_JOURNAL_REQUIRED')
     account=transport._uuid(expected_account_id)
     if journal.account_digest!=hashlib.sha256(account.encode()).hexdigest():raise ValueError('PAPER_RECOVERY_STEP_ACCOUNT_DISAGREEMENT')
-    chosen=journal.lookup_review(evaluated_at=wall_clock())
-    if chosen['selected_client_order_id'] is None:raise ValueError('PAPER_RECOVERY_STEP_LOCAL_REVIEW_REQUIRED')
-    return chosen
+    chosen=journal.lookup_review(evaluated_at=evaluated_at)
+    reasons=list(chosen['reasons']);state=None
+    if pacing is not None:
+        from nexus.paper_read_pacing import PaperReadPacing,MAX_SESSIONS
+        if type(pacing) is not PaperReadPacing or pacing.account!=account:raise ValueError('PAPER_RECOVERY_STEP_PACING_SCOPE')
+        state=pacing.inspect()
+        if state['pending_token'] is not None:reasons.append('PACING_PENDING_READ_REVIEW_REQUIRED')
+        if state['review_required']:reasons.append('PACING_AUTH_OR_REVIEW_REQUIRED')
+        if evaluated_at<state['last_evaluated_at']:reasons.append('PACING_CLOCK_REGRESSION')
+        if evaluated_at<state['next_allowed_at']:reasons.append('PACING_COOLDOWN_ACTIVE')
+        if state['sessions']>=MAX_SESSIONS:reasons.append('PACING_SESSION_CAP_REVIEW_REQUIRED')
+        # A sampled review never reserves either journal. Detect an append during
+        # composition, while actual admissions still recheck under write locks.
+        if (journal.lookup_review(evaluated_at=evaluated_at)!=chosen or pacing.inspect()!=state):
+            raise ValueError('PAPER_RECOVERY_STEP_REVIEW_CHANGED')
+    return dict(mode='PAPER_RECOVERY_STEP_REVIEW',read_only=True,selection=chosen,pacing_state=state,
+        local_checks_clear=not reasons,review_reasons=reasons,admission_reserved=False,
+        **{flag:False for flag in FLAGS},
+        limitations='Sampled local replay only; a candidate is not permission or a cross-journal reservation. Explicit reads still recheck clocks, keys, ownership, pacing and the exact request head. Pending reads never expire or reset automatically.')
+
+
+def _selection(journal,expected_account_id,wall_clock,pacing=None):
+    reviewed=review_next(journal,expected_account_id=expected_account_id,evaluated_at=wall_clock(),pacing=pacing)
+    if not reviewed['local_checks_clear']:raise ValueError('PAPER_RECOVERY_STEP_LOCAL_REVIEW_REQUIRED')
+    return reviewed['selection']
 
 
 def _result(chosen,result):
@@ -35,7 +58,7 @@ def recover_next(journal,api_key,api_secret,*,expected_account_id,confirm_read_o
                  opener=None,wall_clock=time.time,elapsed_clock=time.monotonic,
                  permission_check=lambda:True,credential_check=lambda:True,pacing=None):
     if confirm_read_only_paper is not True:raise ValueError('PAPER_RECOVERY_STEP_CONFIRMATION_REQUIRED')
-    chosen=_selection(journal,expected_account_id,wall_clock)
+    chosen=_selection(journal,expected_account_id,wall_clock,pacing)
     result=recover_original(journal,chosen['selected_client_order_id'],api_key,api_secret,
         expected_account_id=expected_account_id,confirm_read_only_paper=True,opener=opener,
         wall_clock=wall_clock,elapsed_clock=elapsed_clock,permission_check=permission_check,
@@ -46,7 +69,7 @@ def recover_next(journal,api_key,api_secret,*,expected_account_id,confirm_read_o
 def recover_next_saved(journal,*,expected_account_id,confirm_read_only_paper=False,
                        opener=None,wall_clock=time.time,elapsed_clock=time.monotonic,pacing=None):
     if confirm_read_only_paper is not True:raise ValueError('PAPER_RECOVERY_STEP_CONFIRMATION_REQUIRED')
-    chosen=_selection(journal,expected_account_id,wall_clock)
+    chosen=_selection(journal,expected_account_id,wall_clock,pacing)
     from nexus.paper_credentials import recover_saved
     result=recover_saved(journal,chosen['selected_client_order_id'],expected_account_id=expected_account_id,
         confirm_read_only_paper=True,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,
@@ -74,7 +97,8 @@ def main():
         if request_resolved==pacing_resolved:raise ValueError('PAPER_RECOVERY_STEP_DISTINCT_PATHS_REQUIRED')
         journal=BrokerRequestJournal(request_path,account)
         if args.review_only:
-            result=dict(selection=journal.lookup_review(evaluated_at=time.time()),pacing=pacing_status(expected_account_id=account,pacing_path=pacing_path),mode='PAPER_RECOVERY_STEP_REVIEW',read_only=True,**{flag:False for flag in FLAGS})
+            result=review_next(journal,expected_account_id=account,evaluated_at=time.time(),pacing=PaperReadPacing(pacing_path,account))
+            result['pacing']=pacing_status(expected_account_id=account,pacing_path=pacing_path)
         else:result=recover_next_saved(journal,expected_account_id=account,confirm_read_only_paper=True,pacing=PaperReadPacing(pacing_path,account))
     except (OSError,ValueError,TypeError,KeyError,sqlite3.Error,KeyboardInterrupt,EOFError,MemoryError,RecursionError):
         print('PAPER_RECOVERY_STEP_FAILED');return 2

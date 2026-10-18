@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.160.0 (pre-release).** An internal explicitly confirmed, durably paced three-GET reader observes an Alpaca US BTC/USD quote between stable paper-account reads. Saved-key mutation/readback fences and stale/redirect/body/clock checks apply. This is a source-only observation foundation, with no automatic retention, order-event benchmark binding, new UI/EXE command, provider acceptance or routing authority.
+**Current development build: 0.161.0 (pre-release).** Bounded private supplied-quote retention binds observations to exact original-request history prefixes, with full replay, duplicate reuse, stale-head/cap refusal and retained lost-ack evidence. This offline internal foundation does not capture automatically or establish source, decision/arrival timing, routing or provider acceptance.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

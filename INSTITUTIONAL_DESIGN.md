@@ -75,3 +75,6 @@ These are evaluated candidates, not installed dependencies or audited production
 7. Complete secure funding, separately governed live execution, encrypted durable cloud operation, independent security/risk review and owner acceptance under the existing full-1.0 gates. Personal deployment does not waive access or data requirements.
 
 Research is date-bound. Recheck vendor/broker terms and current upstream licenses before any integration. Progress estimates do not increase merely because this document, a local test or a version number exists.
+
+
+v0.161 adds private bounded supplied-quote retention against original request prefixes as a prerequisite to later TCA provenance. This does not verify source or map a latest quote to a decision/arrival event. No automatic benchmark, broker latency, native routing or strategy authority is introduced.

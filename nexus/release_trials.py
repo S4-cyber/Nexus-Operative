@@ -423,7 +423,8 @@ def _inspection_inventory_trial():
         try:inspect_account('fixture_key_only_123','fixture_secret_only_123',expected_account_id=account['id'],confirm_read_only_paper=True,opener=next_reader,wall_clock=lambda:1000,elapsed_clock=lambda:50,pacing=gate)
         except ValueError:asset_cooldown=next_reader.requests==0 and gate.path.read_bytes()==before
     from nexus.paper_quote_observation import fixture_report as quote_fixture
-    return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',btc_quote_observation=quote_fixture(),asset_rules_observation=asset_report,asset_get_requests=reader.requests,asset_shared_cooldown_checked=asset_cooldown,get_requests=requests,observations=reports, portable_roundtrips=len(exported), portable_tamper_rejected=tamper_rejected,
+    from nexus.paper_quote_store import fixture_report as quote_retention_fixture
+    return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',btc_quote_observation=quote_fixture(),btc_quote_retention=quote_retention_fixture(),asset_rules_observation=asset_report,asset_get_requests=reader.requests,asset_shared_cooldown_checked=asset_cooldown,get_requests=requests,observations=reports, portable_roundtrips=len(exported), portable_tamper_rejected=tamper_rejected,
         broker_connected=False,live_orders_enabled=False,
         limitations='Fixed response objects and clocks; no actual credentials, provider, rendered UI, account reconciliation or spendable funds.')
 
@@ -671,6 +672,11 @@ def _validate(profile, result):
         _require(quote['source']=='INJECTED_ALPACA_BTC_QUOTE_OBSERVATION_FIXTURE' and quote['passed'] is True and
             all(quote[k] is True for k in QUOTE_CHECKS),'BTC_QUOTE_OBSERVATION')
         _require(all(quote[k] is False for k in (*QUOTE_FLAGS,'actual_provider_access','actual_vault_access')),'BTC_QUOTE_AUTHORITY')
+        from nexus.paper_quote_store import CHECKS as RETENTION_CHECKS
+        retention=result['btc_quote_retention']
+        _require(retention['source']=='SYNTHETIC_ORIGINAL_REQUEST_QUOTE_RETENTION_FIXTURE' and retention['passed'] is True and
+            all(retention[k] is True for k in RETENTION_CHECKS),'BTC_QUOTE_RETENTION')
+        _require(all(retention[k] is False for k in (*QUOTE_FLAGS,'actual_provider_access','actual_vault_access')),'BTC_QUOTE_RETENTION_AUTHORITY')
         from nexus.paper_asset_rules import FLAGS
         asset=result['asset_rules_observation']
         _require(result['asset_get_requests']==3 and result['asset_shared_cooldown_checked'] is True and asset['asset']['min_order_size']=='0.0001' and asset['reported_fields_observed'] is True and asset['account_fields_double_checked'] is True,'ASSET_RULES_READER')

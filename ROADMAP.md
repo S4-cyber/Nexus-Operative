@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.160.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.161.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.160 adds an internal explicitly confirmed three-GET BTC/USD quote observation: paper account, fixed Alpaca US market-data endpoint, same paper account. Existing redirect/body/time/permission transport checks and mandatory private account-bound pacing apply; the generic paper URL allowlist is unchanged. Exchange nanoseconds remain exact while local receipt uses sampled seconds. Stale/future/crossed/malformed quotes, changed accounts and key revocation refuse. Final freshness is checked after durable pacing; blocked saved reads stay vault-silent. No automatic retention, original-order event binding, clock/source/fee/venue acceptance, UI/EXE command or routing is added. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.161 adds bounded private supplied-quote retention against exact original-request history prefixes. Full request and quote chains replay before append/review; later original-history additions preserve the prior binding, and changed heads, malformed observations, unsafe SQLite layouts, authority promotion and exhausted caps refuse without deleting evidence. Duplicate records reuse retained identity; revoked or changed post-commit inputs suppress acknowledgment while preserving committed history. This offline internal foundation adds no automatic capture, UI/EXE command, verified source/decision/arrival clocks, fees, routing or provider acceptance. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD
@@ -99,7 +99,7 @@ Validate the fresh native EXE, ordinary profile, saved-choice upgrade, outage an
 
 ## Next sequence
 
-1. Accept the explicitly confirmed fixed-host BTC quote observation on an authorized paper account and native Windows profile. Add bounded retained quote evidence and exact original-request/event-time bindings before deriving decision/arrival benchmarks; do not treat a latest quote, local clock or reported size as verified order arrival, executable liquidity or latency.
+1. Accept the explicitly confirmed fixed-host BTC quote observation on an authorized paper account and native Windows profile. Accept bounded private retained quotes and original-request prefix replay on authorized account/profile data; add exact original-event-time bindings before deriving decision/arrival benchmarks; do not treat a latest quote, local clock or reported size as verified order arrival, executable liquidity or latency.
 2. Accept the exact-head paper execution-quality review on authorized retained account history and native Windows builds. Add independently reviewed contemporaneous benchmark/arrival quote capture, original-event time binding, clock-domain evidence and verified fee links before net-cost or broker-latency claims; preserve unknown fees and include every retained fill.
 3. Verify all six EXE paper tools on standalone and installed Windows builds, including private exact-head quality review, unchanged input journals/benchmarks, unknown fees and unverified benchmark authority; preserve current-head/public account review, crypto, no default-data/UI startup and actual account/profile acceptance. Quality review requires v0.159+.
 4. Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.

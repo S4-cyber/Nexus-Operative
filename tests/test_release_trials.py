@@ -91,3 +91,15 @@ def test_pacing_fixture_reports_actual_retained_fences_without_provider_authorit
         with pytest.raises(ValueError, match='PACING_FENCES'): trials._validate('pacing', changed)
     for field in ('broker_wide_quota_verified', 'ready_for_routing'):
         with pytest.raises(ValueError, match='PACING_AUTHORITY'): trials._validate('pacing', dict(result, **{field:True}))
+
+
+def test_balance_trial_requires_both_accounting_and_negative_fences_without_spending_authority():
+    from nexus.broker_balance_review import fixture_report
+    result=fixture_report();trials._validate('balance',result)
+    for field in ('holds_reconciled','broker_account_reconciled','spendable_funds_verified','ready_for_routing',
+                  'source_coverage_verified','fee_coverage_complete','ledger_applied','live_orders_enabled'):
+        altered=copy.deepcopy(result);altered['review'][field]=True
+        with pytest.raises(ValueError,match='BALANCE_AUTHORITY'): trials._validate('balance',altered)
+    for field in ('missing_available_btc_is_unknown','cash_disagreement_detected'):
+        altered=copy.deepcopy(result);altered['negative_checks'][field]=False
+        with pytest.raises(ValueError,match='BALANCE_NEGATIVE_FENCES'): trials._validate('balance',altered)

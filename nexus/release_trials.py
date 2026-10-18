@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance')
 
 
 def _require(condition, code):
@@ -143,6 +143,9 @@ def _execute(profile):
         return benchmark(30)
     if profile == 'http': return _http_trial()
     if profile == 'pacing': return _pacing_trial()
+    if profile == 'balance':
+        from nexus.broker_balance_review import fixture_report
+        return fixture_report()
     if profile == 'activity':
         from nexus.broker_activity_review import fixture_report
         return fixture_report()
@@ -164,6 +167,16 @@ def _validate(profile, result):
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
+    if profile == 'balance':
+        reviewed = result['review']
+        _require(reviewed['balance_projection_evaluated'] is True and
+            reviewed['linked_history_review']['projection_matches_declared_balances'] is True and
+            reviewed['linked_history_review']['cash_path']['declared_path_consistency_ok'] is True, 'BALANCE_ACCOUNTING')
+        _require(all(result['negative_checks'].get(k) is True for k in ('missing_available_btc_is_unknown',
+            'cash_disagreement_detected')), 'BALANCE_NEGATIVE_FENCES')
+        _require(reviewed['status'] == 'REVIEW_REQUIRED' and all(reviewed[k] is False for k in
+            ('holds_reconciled', 'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing',
+             'source_coverage_verified', 'fee_coverage_complete', 'ledger_applied', 'live_orders_enabled')), 'BALANCE_AUTHORITY')
     if profile == 'pacing':
         _require(result['completed_sessions'] == 3 and result['replayed_events'] == 6, 'PACING_HISTORY')
         _require(all(result[name] is True for name in ('cooldown_enforced', 'retry_after_retained',

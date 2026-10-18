@@ -21,6 +21,9 @@ def test_real_http_process_starts_stopped_without_data_credentials_or_external_i
     assert report['untrusted_host_rejected'] and report['cross_origin_rejected'] and report['api_no_store']
     assert not report['proxy_headers_trusted']
     assert all(report['first_run_defaults'][key] is True for key in trials.FIRST_RUN_HTTP_CHECKS)
+    for field in ('default_data_not_created','private_files_unchanged','invalid_command_denied'):
+        altered=copy.deepcopy(report);altered['paper_tools_source'][field]=False
+        with pytest.raises(trials.ReleaseTrialError,match='HTTP_PAPER_TOOLS'):trials._validate('http',altered)
     rejected=json.loads(json.dumps(report));rejected['first_run_defaults']['saved_off_preserved']=False
     with pytest.raises(trials.ReleaseTrialError,match='HTTP_FIRST_RUN_DEFAULTS'):trials._validate('http',rejected)
     pacing = report['paper_pacing']

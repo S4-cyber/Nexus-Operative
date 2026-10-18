@@ -315,6 +315,8 @@ def _http_trial():
         server.should_exit = True; thread.join(timeout=10); listener.close()
     _require(not thread.is_alive(), 'HTTP_SHUTDOWN')
     result['graceful_shutdown'] = True
+    from tools.packaged_paper_tools_smoke import run as paper_tools_trial
+    result['paper_tools_source']=paper_tools_trial([sys.executable,str(Path(__file__).resolve().parents[1]/'portable'/'desktop.py')])
     return result
 
 
@@ -594,6 +596,10 @@ def _validate(profile, result):
         _require(result['target_validated'] is False, 'UNSUPPORTED_MARKET_SPEED_CLAIM')
     else: _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
+        from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS
+        tools=result['paper_tools_source']
+        _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and tools['tool_invocations']==5 and all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
+        _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
         _require(result['progress_estimate_scope_checked'] is True,'HTTP_PROGRESS_ASSESSMENT')
         _require(result['trial_readiness_passive_read'] is True,'HTTP_TRIAL_READINESS_READ')
         _require(result['found_markets_passive_read'] is True and result['found_markets_shared_budget_scope_checked'] is True,'HTTP_FOUND_MARKETS_READ')

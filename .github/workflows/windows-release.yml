@@ -76,6 +76,11 @@ jobs:
         run: |
           python -m PyInstaller --noconfirm --clean --onefile --name NexusOperative --collect-submodules nexus --collect-submodules uvicorn --collect-submodules fastapi --collect-submodules pydantic --collect-submodules webview --collect-submodules keyring --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan.on --add-data "dashboard;dashboard" portable/desktop.py
           if (!(Test-Path dist/NexusOperative.exe)) { throw 'EXE missing' }
+      - name: Verify standalone private paper tools without desktop startup
+        shell: pwsh
+        run: |
+          python tools/packaged_paper_tools_smoke.py --executable dist/NexusOperative.exe --output "$env:RUNNER_TEMP/nexus-installer-evidence/standalone-paper-tools.json"
+          if ($LASTEXITCODE -ne 0) { throw 'Standalone paper operator tools failed' }
       - name: Verify EXE starts
         shell: pwsh
         run: |

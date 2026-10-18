@@ -19,6 +19,8 @@ function Install-Nexus([string]$Label) {
     if (!(Test-Path "$installDir/NexusOperative.exe")) { throw 'Installed executable missing' }
 }
 Install-Nexus 'install'
+python tools/packaged_paper_tools_smoke.py --executable "$installDir/NexusOperative.exe" --output "$EvidenceDirectory/installed-paper-tools.json"
+if ($LASTEXITCODE -ne 0) { throw 'Installed paper operator tools failed' }
 python tools/installed_smoke.py --exe "$installDir/NexusOperative.exe" --data "$dataDir" --version $Version --setup-check first-run --output "$EvidenceDirectory/first-start.json"
 if ($LASTEXITCODE -ne 0) { throw 'First installed startup failed' }
 $journal = Join-Path $dataDir 'order_lifecycle.sqlite3'

@@ -41,7 +41,48 @@ def wait_for_ready(port, timeout=25):
             time.sleep(.15)
     return False
 
-def main():
+PAPER_TOOLS={
+    'activity':'nexus.paper_activity_acceptance_probe',
+    'account-review':'nexus.paper_account_evidence_review',
+    'recovery':'nexus.paper_recovery_step',
+}
+
+
+def _paper_tool(args):
+    """Explicit allowlist only; never initialize the desktop as a fallback."""
+    if args in (['--help'],['--paper-tool','list']):
+        import json
+        from nexus.release_roadmap import REVISION
+        print(json.dumps(dict(mode='NEXUS_PACKAGED_PAPER_TOOLS',version=REVISION,
+            commands={name:'--paper-tool '+name+' --help' for name in sorted(PAPER_TOOLS)},
+            default_data_created=False,desktop_started=False,automatic_read=False,
+            automatic_retry=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
+            scope='Explicit private paper diagnostics only. Activity/recovery reads require their own confirmation and saved Windows keys. Read-only reviews need no keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. No order submission or automatic continuation.'),sort_keys=True,indent=2))
+        return 0
+    if len(args)<2 or args[0]!='--paper-tool' or args[1] not in PAPER_TOOLS:
+        print('NEXUS_PAPER_TOOL_USAGE_ERROR',file=sys.stderr);return 2
+    import importlib
+    saved=sys.argv
+    try:
+        sys.argv=[saved[0],*args[2:]]
+        result=importlib.import_module(PAPER_TOOLS[args[1]]).main()
+        return result if type(result) is int and result in (0,2) else 2
+    except SystemExit as error:
+        return error.code if type(error.code) is int and error.code in (0,2) else 2
+    except (Exception,KeyboardInterrupt):
+        print('NEXUS_PAPER_TOOL_FAILED');return 2
+    finally:sys.argv=saved
+
+
+def main(argv=None):
+    args=list(sys.argv[1:] if argv is None else argv)
+    if args:
+        # Source-script entry also works without editable installation. Frozen
+        # tools use bundled imports, never add the installation folder to paths.
+        if not getattr(sys,'frozen',False):
+            root=installation_root()
+            if str(root) not in sys.path:sys.path.insert(0,str(root))
+        return _paper_tool(args)
     root, data = configure()
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
@@ -80,5 +121,5 @@ def main():
         worker.join(timeout=8)
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
 

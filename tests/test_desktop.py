@@ -40,5 +40,5 @@ def test_explicit_headless_mode_never_opens_browser_or_native_window(tmp_path,mo
     monkeypatch.setattr(desktop.threading,'Thread',Worker)
     monkeypatch.setattr(desktop.webbrowser,'open',lambda _:(_ for _ in ()).throw(AssertionError('UNEXPECTED_UI')))
     monkeypatch.setenv('NEXUS_HEADLESS_MODE','1');monkeypatch.setenv('NEXUS_BROWSER_MODE','1')
-    desktop.main()
+    desktop.main([])
     assert server.should_exit and calls==['start',('join',None),('join',8)]

@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 import sqlite3
 import stat
+import sys
 import time
 
 from nexus import alpaca_activity_normalizer as adapter
@@ -40,9 +41,11 @@ def _private_path(value):
     try:
         absolute = path.absolute()
         resolved = path.resolve()
+        protected=[ROOT]
+        if getattr(sys,'frozen',False):protected.append(Path(sys.executable).resolve().parent)
     except (OSError, RuntimeError):
         _fail()
-    if absolute.is_relative_to(ROOT) or resolved.is_relative_to(ROOT):
+    if any(absolute.is_relative_to(folder) or resolved.is_relative_to(folder) for folder in protected):
         _fail()
     return path, resolved
 

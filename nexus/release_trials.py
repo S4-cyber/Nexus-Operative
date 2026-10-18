@@ -598,7 +598,7 @@ def _validate(profile, result):
     if profile == 'http':
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS
         tools=result['paper_tools_source']
-        _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and tools['tool_invocations']==7 and all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
+        _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and tools['tool_invocations']==8 and all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
         _require(result['progress_estimate_scope_checked'] is True,'HTTP_PROGRESS_ASSESSMENT')
         _require(result['trial_readiness_passive_read'] is True,'HTTP_TRIAL_READINESS_READ')
@@ -739,7 +739,7 @@ def _validate(profile, result):
     if profile == 'reconciliation_acceptance':
         from nexus.paper_account_evidence_review import FLAGS as BUNDLE_FLAGS
         bundle=result['account_evidence_bundle']
-        _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
+        _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
         _require(all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY')
         _require(result['source']=='SYNTHETIC_LOCAL_ACCEPTED_RECONCILIATION_FIXTURE' and
             result['repeat_review_matches'] is True and result['journals_unchanged'] is True and

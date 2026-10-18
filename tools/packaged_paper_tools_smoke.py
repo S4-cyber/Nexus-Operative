@@ -9,7 +9,7 @@ import tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 CHECKS=('catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
-        'private_account_review_checked','private_files_unchanged','invalid_command_denied',
+        'private_account_review_checked','public_current_account_review_checked','private_files_unchanged','invalid_command_denied',
         'default_data_not_created')
 
 
@@ -89,15 +89,25 @@ def run(command):
         _require(observed['mode']=='PAPER_ACCOUNT_EVIDENCE_BUNDLE_REVIEW' and observed['local_request_terms_agree'] is True and
             observed['explicit_fills_reviewed']==2 and observed['gross_only_minus_observed']=={'USD':'0','BTC':'0'} and
             all(observed[k] is False for k in FLAGS),'ACCOUNT_REVIEW')
+        current_args=list(args)
+        for flag in ('--request-head','--activity-head'):
+            index=current_args.index(flag);del current_args[index:index+2]
+        public=_json_call(command,[*current_args,'--opening',str(opening),'--closing',str(closing),
+            '--use-current-heads','--public-summary'],env)
+        from nexus.paper_account_evidence_review import public_summary
+        _require(public==public_summary(observed),'PUBLIC_ACCOUNT_REVIEW')
+        encoded=json.dumps(public)
+        _require(all(value not in encoded for value in (account,str(root),options['expected_request_head'],
+            options['expected_activity_head'],'nx_accept_fixture','802','1000')),'PUBLIC_ACCOUNT_REVIEW')
         _require(_snapshot(private)==before,'PRIVATE_FILES_CHANGED')
         code,stdout,stderr=_call(command,['--paper-tool','__not_allowed__','PRIVATE_ARGUMENT_FIXTURE'],env)
         _require(code==2 and stdout=='' and stderr.strip()=='NEXUS_PAPER_TOOL_USAGE_ERROR','INVALID_COMMAND')
         _require(not default.exists() and not missing.exists(),'DEFAULT_DATA_CREATED')
         return dict(mode='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE',passed=True,**{k:True for k in CHECKS},
-            tool_invocations=7,provider_reads_requested=False,credential_reads_requested=False,
+            tool_invocations=8,provider_reads_requested=False,credential_reads_requested=False,
             live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
             native_windows_acceptance=False,
-            scope='Seven actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals and two supplied inventory manifests. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The encryption self-test retains no ciphertext, password or plaintext. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
+            scope='Eight actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals and two supplied inventory manifests. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The encryption self-test retains no ciphertext, password or plaintext. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
 
 
 class _Parser(argparse.ArgumentParser):
@@ -112,7 +122,7 @@ def main():
         report=run([str(args.executable.resolve())]);encoded=json.dumps(report,sort_keys=True,indent=2)+'\n'
         if args.output:args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(encoded,encoding='utf-8')
     except (Exception,KeyboardInterrupt) as error:
-        allowed={'COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW',
+        allowed={'COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW',
             'PRIVATE_FILES_CHANGED','INVALID_COMMAND','DEFAULT_DATA_CREATED','OUTPUT_CAP',
             'CHILD_FAILED','CHILD_JSON','CHILD_TIMEOUT','EXECUTABLE_REQUIRED'}
         code=str(error) if type(error) is ValueError and str(error) in {'PACKAGED_PAPER_TOOLS_'+k for k in allowed} else 'PACKAGED_PAPER_TOOLS_INTERNAL_ERROR'

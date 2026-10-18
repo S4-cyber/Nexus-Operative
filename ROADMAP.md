@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.156.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.157.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.156 exposes the existing password-authenticated portable-observation encryption utility through the packaged EXE. A real in-package AES-256-GCM/scrypt self-test proves round-trip, randomized ciphertext and wrong-password rejection without prompts, retained files, provider/vault access or authority. Standalone/installed smoke now executes seven child commands across five fixed tools. Exact v0.155 Windows/installer, safety/browser and security CI all passed. No plaintext deletion, password storage, account read, order or funding authority follows. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.157 simplifies offline account-evidence review with explicit current-local-head sampling followed by the same strict pinned replay and final head checks. An optional public summary includes only bounded diagnostic counts, agreement booleans and a gross-difference label; identifiers, balances, amounts, dates, paths, hashes and private reasons are omitted. Standalone/installed smoke now executes eight child commands across five fixed tools and compares the public current-head result with the private pinned review. No source attestation, atomic cross-database snapshot, automatic retry, account/order/funding authority or release approval follows. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD
@@ -99,7 +99,7 @@ Validate the fresh native EXE, ordinary profile, saved-choice upgrade, outage an
 
 ## Next sequence
 
-1. Verify all five EXE paper tools on standalone and installed Windows builds, including the real authenticated-encryption self-test, an ordinary-user private-profile seal/unseal round trip, account-probe status/confirmed-read paths, untouched private evidence, no default-data/UI startup, explicit confirmation and actual account/key/profile acceptance. Observation crypto requires v0.156+.
+1. Verify all five EXE paper tools on standalone and installed Windows builds, including agreement between private pinned and public current-head account reviews, omitted private fields, no automatic retry or default-data/UI startup, real authenticated-encryption self-test and ordinary-user private-profile seal/unseal and account/key acceptance. Public current-head review requires v0.157+.
 2. Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.
 3. Accept request-journal-derived activity collection on authorized Windows paper data, including changed heads during reads/retention/acceptance and lost returns; original observations and local hashes remain unverified, and no fee, funds or routing authority follows.
 4. Use the private combined account-evidence review on authorized retained paper data: bind original requests, accepted fills and opening/closing inventory to common heads, investigate term violations and gross-only differences, and obtain separate source/fee/hold/funds acceptance before any routing.

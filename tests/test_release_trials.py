@@ -211,6 +211,8 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
     for path,value,code in (
         (('account_evidence_bundle','changed_balance_difference_preserved'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
         (('account_evidence_bundle','zero_fee_records_not_promoted'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
+        (('account_evidence_bundle','current_head_review_matches'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
+        (('account_evidence_bundle','public_summary_checked'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
         (('account_evidence_bundle','ready_for_routing'),True,'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY'),
         (('journals_unchanged',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
         (('out_of_window_observations_rejected',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),

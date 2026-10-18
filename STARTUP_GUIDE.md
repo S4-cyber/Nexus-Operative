@@ -290,3 +290,15 @@ To create a separate plaintext copy later:
 `NexusOperative.exe --paper-tool observation-crypto unseal PRIVATE_OBSERVATION.nexusenc --output PRIVATE_OBSERVATION_REVIEW.json`
 
 Passwords are entered through hidden terminal prompts, are never accepted as arguments, and are not stored. Seal asks twice and requires at least 14 characters. Output paths must not already exist. The original is never deleted; protect or securely dispose of plaintext separately. Keep every input/output outside Git and the installation/source folder. This tool encrypts the supported portable observation profile only and grants no broker, account, order, funding, live or release authority.
+
+
+### Easier offline account review (v0.157+)
+
+You can ask the reviewer to use the current local journal fingerprints instead of copying them by hand. A fingerprint identifies the exact retained history being checked. This option still stops if the history changes; it never retries or contacts the broker.
+
+1. Use the existing `--paper-tool account-review --help` instructions to supply your account ID, four separate private journal paths and opening/closing observations. Keep them outside Git and the installation/source folder.
+2. Add `--use-current-heads` instead of both `--request-head` and `--activity-head`. Use the two manual fingerprints when you need the review to match fingerprints you recorded yourself; if either has changed, the review fails. You cannot combine these methods.
+3. Add `--public-summary` if you want a short diagnostic you can choose to share. It omits account/order IDs, balances, money amounts, dates, paths, fingerprints and private reasons. It still reveals activity counts and whether checks agree. Without this flag, the detailed output remains private financial information.
+4. Add `--opening-encrypted` / `--closing-encrypted` for encrypted observation copies. Passwords use hidden terminal prompts; reviews decrypt in memory without writing plaintext files. The public summary never prints the password or decrypted observation.
+
+The summary reports `NO_GROSS_DIFFERENCE`, `DIFFERENCES_PRESENT` or `NOT_EVALUATED`. These compare gross fills only: no difference does not mean zero fees, profit or money available to spend. An individual fill can still violate its original terms even when the gross balance matches. All results remain `REVIEW_REQUIRED` and grant no trading, funding or release permission. These optional operator diagnostics are not required first-run setup steps.

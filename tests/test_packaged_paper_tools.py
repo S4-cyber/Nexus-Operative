@@ -17,7 +17,7 @@ smoke=importlib.util.module_from_spec(spec);spec.loader.exec_module(smoke)
 
 def test_actual_source_child_smoke_covers_all_five_tools_without_default_data():
     r=smoke.run([sys.executable,str(ROOT/'portable/desktop.py')])
-    assert r['passed'] and r['tool_invocations']==7 and all(r[k] is True for k in smoke.CHECKS)
+    assert r['passed'] and r['tool_invocations']==8 and all(r[k] is True for k in smoke.CHECKS)
     assert not r['native_windows_acceptance'] and not r['provider_reads_requested'] and not r['credential_reads_requested']
     assert all(value not in json.dumps(r) for value in ('01234567-89ab-cdef-0123-456789abcdef','opening.json','private.sqlite3','802'))
 

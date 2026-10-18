@@ -14,6 +14,9 @@ ORDER='pf_0123456789abcdef_7_BUY'
 
 
 def fixtures(path,pending=True,missing_history=False):
+    if path=='/api/paper/forward/trial-readiness?hours=72':
+        from nexus.forward_trial_review import FLAGS
+        return dict(mode='READ_ONLY_PAPER_TRIAL_READINESS',read_only=True,hours=72,status='NO_RETAINED_HISTORY',history_present=False,review=None,after='2026-01-01T00:00:00Z',until='2026-01-04T00:00:00Z',quote_capacity=dict(retained=0,limit=100000,remaining=100000,estimated_additional_observations=51841,room_for_additional_requested_window=True),**{flag:False for flag in FLAGS})
     if path=='/api/research/found-markets':return dict(mode='BOUNDED_FOUND_MARKETS_RESEARCH',read_only=True,money_movement_enabled=False,paper_orders_enabled=False,live_orders_enabled=False,policy_changed=False,profitability_validated=False,selected=[],enabled=False,phase='STOPPED',fresh_summaries=0,catalog_candidates=0,requests_attempted=0,reason=None)
     if path=='/api/onboarding/tasks':return dict(checked_at=1000,summary='Automatic local observations; no execution permission.',items=[
         dict(necessity='BASELINE',id='engine',title='Use built-in research and AI',group='Start here',status='COMPLETE',checked=True,detail='Built-in numerical learning is included; no provider account is required.',tab='ai',target='counciltest'),
@@ -241,6 +244,9 @@ def run(output,channel=None):
                             expect(page.get_by_role('heading',name='Required for baseline paper operation',exact=True)).to_be_visible()
                             expect(page.get_by_role('heading',name='Optional improvements',exact=True)).to_be_visible()
                             expect(page.locator('#found-markets-enabled')).to_be_checked()
+                            page.locator('#trial-review').click()
+                            expect(page.locator('#trial-result')).to_contain_text('No retained observations')
+                            expect(page.locator('#trial-result')).to_contain_text('51841')
                             expect(page.locator('#startup-check-payment')).not_to_be_checked()
                             expect(page.locator('#startup-check-payment')).to_be_disabled()
                             page.locator('#release-roadmap-load').click()

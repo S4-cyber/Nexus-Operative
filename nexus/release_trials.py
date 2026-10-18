@@ -258,7 +258,7 @@ def _http_trial():
             time.sleep(.01)
         opener = build_opener(ProxyHandler({}))
         base = 'http://127.0.0.1:' + str(listener.getsockname()[1])
-        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/api/paper/portfolio', '/api/paper/forward', '/api/paper/forward/sessions', '/api/paper/forward/preflight', '/api/research/found-markets', '/api/execution/recovery', '/api/paper/forward/recovery', '/', '/portal'):
+        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/api/paper/portfolio', '/api/paper/forward', '/api/paper/forward/sessions', '/api/paper/forward/preflight', '/api/research/found-markets', '/api/paper/forward/trial-readiness', '/api/execution/recovery', '/api/paper/forward/recovery', '/', '/portal'):
             with opener.open(base + path, timeout=5) as response:
                 body = response.read(2 * 1024 * 1024)
                 _require(response.status == 200, 'HTTP_STATUS')
@@ -282,6 +282,8 @@ def _http_trial():
             responses['/api/execution/recovery']['status']=='NO_RETAINED_HISTORY' and
             responses['/api/paper/forward/recovery']['order_history_present'] is False,
             'PASSIVE_ORDER_RECOVERY_STARTUP')
+        trial=responses['/api/paper/forward/trial-readiness']
+        _require(trial['read_only'] is True and trial['status']=='NO_RETAINED_HISTORY' and trial['review'] is None and trial['quote_capacity']['estimated_additional_observations']==51841 and all(trial[k] is False for k in ('automatic_start','strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled','money_movement_enabled')), 'HTTP_TRIAL_READINESS_PASSIVE')
         found=responses['/api/research/found-markets']
         _require(found['enabled'] is False and found['selected']==[] and found['requests_attempted']==0 and found['policy_changed'] is False,'HTTP_FOUND_MARKETS_PASSIVE')
         preflight=responses['/api/paper/forward/preflight']
@@ -301,7 +303,7 @@ def _http_trial():
         _require(not any(attempts.values()), 'HTTP_PAPER_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, passive_forward_reads_preserved_missing_storage=True, **attempts,
-            paper_pacing=paper_pacing,first_run_defaults=first_run_defaults,read_only_preflight_preserved_stopped_gate=True,found_markets_passive_read=True,
+            paper_pacing=paper_pacing,first_run_defaults=first_run_defaults,read_only_preflight_preserved_stopped_gate=True,found_markets_passive_read=True,trial_readiness_passive_read=True,
             credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
             limitations='Real local source-process HTTP only; paper credential and provider seams are injected fixtures with temporary retained pacing. No rendered browser, Windows executable, actual provider, order or sustained market test.')
     finally:
@@ -461,6 +463,7 @@ def _validate(profile, result):
         _require(result['target_validated'] is False, 'UNSUPPORTED_MARKET_SPEED_CLAIM')
     else: _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
+        _require(result['trial_readiness_passive_read'] is True,'HTTP_TRIAL_READINESS_READ')
         _require(result['found_markets_passive_read'] is True,'HTTP_FOUND_MARKETS_READ')
         _require(result['read_only_preflight_preserved_stopped_gate'] is True,'HTTP_PREFLIGHT_GATE')
         _require(all(result['first_run_defaults'][key] is True for key in FIRST_RUN_HTTP_CHECKS),'HTTP_FIRST_RUN_DEFAULTS')

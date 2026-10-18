@@ -168,6 +168,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <button id="readinesscheck" data-help="Show which local research capabilities are available and which need setup or evidence. A readiness check does not activate trading.">Check What Works Now</button>
 <p class="sub" id="readinessresult" role="status" aria-live="polite">Offline research is available without setup. Run the check for detailed capabilities.</p>
 </section>
+<section class="card" aria-label="Paper Trial Readiness"><div class="label">Launch evidence // explicit read-only review</div><h2>Paper Trial Readiness</h2><p>Review retained observations before calling a paper trial successful. The minimum coverage window is 72 hours, with at least 95% qualifying declared-public coverage and no qualifying gap bridged beyond 10 seconds. Coverage is operational evidence; it cannot prove genuine market data, profitability, account reconciliation or release acceptance.</p><label>Recent window <select id="trial-hours" data-help="Choose how far back to review existing paper observations: one hour, one day, three days or seven days, ending at the server’s current UTC time. The minimum sustained coverage target is 72 hours. Selecting a window does not start collecting data or run the review."><option value="1">1 hour — diagnostic</option><option value="24">24 hours — diagnostic</option><option value="72" selected>72 hours — minimum trial window</option><option value="168">7 days</option></select></label><button id="trial-review" data-help="Read retained paper history and estimate remaining quote-storage room for another window at the policy cadence. No prices, account changes, repair or trading requests are made. Stop the session before final evidence review. Even a met coverage target is not launch or strategy approval.">Review Paper Trial</button><p id="trial-result" role="status" aria-live="polite">No trial reviewed. This review does not start Portal or Engage.</p></section>
 <section class="card" aria-label="Read-only release roadmap"><div class="label">Project continuity // read-only</div><h2>Roadmap to 1.0</h2><p class="sub">Review milestones, remaining acceptance work and the next development steps. This reference is bundled with Nexus and cannot be edited from PORTAL.</p><button id="release-roadmap-load" aria-controls="release-roadmap-content" data-help="Show the saved plan for the 1.0 release, including completed work and remaining checks. Viewing it does not change settings.">View Release Roadmap</button><div id="release-roadmap-content" class="monitor tiny" role="status" aria-live="polite">Select View Release Roadmap to load the bundled project reference.</div></section>
 </div>
 <div id="panel-help" class="tab-panel" role="tabpanel" aria-labelledby="tab-help" hidden><h2 class="workspace-title">Help</h2><p class="sub">Find beginner instructions and understand what each part of Nexus does.</p>
@@ -331,6 +332,31 @@ async function update(){
   }
  }catch(e){show('status',e.message==='PAPER_SETTINGS_REVIEW_REQUIRED'?'Paper settings need review in Risk. Research controls remain available; new paper entries are blocked.':'Local engine unavailable: '+e.message)}
 }
+// BEGIN TRIAL READINESS
+const trialReasons={SOURCE_LABELS_AND_HASHES_UNATTESTED:'Public-source labels and local hashes still need independent verification.',ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED:'Order accounting and strategy quality need separate acceptance.',EXECUTION_OWNERSHIP_NOT_CHECKED:'This review does not check another running execution owner.',REQUESTED_WINDOW_SHORTER_THAN_72_HOURS:'Select at least 72 hours for the sustained coverage target.',DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT:'Less than 95% of the selected window has qualifying declared-public coverage.',INJECTED_OBSERVATIONS_IN_WINDOW:'The window includes fixture/injected observations, not an accepted market run.',UNKNOWN_SOURCE_LABELS_IN_WINDOW:'Some observation source labels are unknown.',NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS:'A session is still active, interrupted or flagged for cleanup review.',RECORDED_ELIGIBILITY_FAILS_RETAINED_QUOTE_RECHECK:'Some previously eligible quotes fail the retained-data recheck.',NO_OBSERVATIONS_IN_WINDOW:'There are no observations in the selected window.'};
+let trialBusy=false;
+byId('trial-review').onclick=async()=>{
+ if(trialBusy)return;trialBusy=true;byId('trial-review').disabled=true;byId('trial-hours').disabled=true;
+ show('trial-result','Reviewing retained local evidence… No market requests or account changes are made.');
+ try{
+  const hours=Number(byId('trial-hours').value),data=await api('/api/paper/forward/trial-readiness?hours='+hours);
+  const flags=['source_attested','market_realism_authenticated','account_reconciled','broker_paper_accepted','strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled','money_movement_enabled','automatic_start','external_owner_checked'];
+  if(!data||data.mode!=='READ_ONLY_PAPER_TRIAL_READINESS'||data.read_only!==true||data.hours!==hours||!flags.every(k=>data[k]===false))throw Error('REVIEW');
+  const cap=data.quote_capacity;
+  if(!cap||![cap.retained,cap.limit,cap.remaining,cap.estimated_additional_observations].every(n=>Number.isSafeInteger(n)&&n>=0)||cap.retained>cap.limit||cap.remaining!==cap.limit-cap.retained||cap.room_for_additional_requested_window!==(cap.remaining>=cap.estimated_additional_observations))throw Error('REVIEW');
+  let text;
+  if(data.status==='NO_RETAINED_HISTORY'&&data.history_present===false&&data.review===null)text='No retained observations exist. Start Portal and separately Engage Paper only when you intend to run the experiment; this review starts neither.';
+  else{
+   const r=data.review;
+   if(data.status!=='REVIEW_REQUIRED'||data.history_present!==true||!r||r.mode!=='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW'||!flags.every(k=>r[k]===false)||typeof r.declared_coverage_target_met!=='boolean'||typeof r.coverage_fraction!=='string'||!/^0(?:\.[0-9]{1,6})?$|^1(?:\.0{1,6})?$/.test(r.coverage_fraction)||!Array.isArray(r.review_reasons)||r.review_reasons.length>10||!r.review_reasons.every(k=>Object.prototype.hasOwnProperty.call(trialReasons,k)))throw Error('REVIEW');
+   text='Retained review: '+(Number(r.coverage_fraction)*100).toFixed(2)+'% declared-public coverage. '+(r.declared_coverage_target_met?'The local declared coverage target is met; independent acceptance is still required.':'The local coverage target is not met.')+' Reasons: '+(r.review_reasons.length?r.review_reasons.map(k=>trialReasons[k]).join(' '):'none from this local check')+'. Stop for stable final evidence; hashes and source labels do not attest market truth.';
+  }
+  show('trial-result',text+' Quote storage: '+cap.remaining+' records remain; about '+cap.estimated_additional_observations+' additional records for another '+hours+' hours at policy cadence. '+(cap.room_for_additional_requested_window?'Quote-record room appears sufficient.':'Insufficient quote-record room for that additional window; review storage without deleting history.')+' This estimate reserves nothing and does not cover orders, IDs, sessions or disk capacity. UTC window: '+data.after+' to '+data.until+'.');
+ }catch(_){show('trial-result','Trial evidence could not be verified. History may be busy, oversized or need review. Retry after stopping the session; no files were repaired or previous results retained as current.');}
+ finally{trialBusy=false;byId('trial-review').disabled=false;byId('trial-hours').disabled=false;}
+};
+// END TRIAL READINESS
+
 // BEGIN FOUND MARKETS
 let foundBusy=false,foundControlBusy=false;
 async function refreshFoundMarkets(){

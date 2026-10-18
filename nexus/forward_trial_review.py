@@ -13,7 +13,7 @@ import math
 import re
 from pathlib import Path
 import sqlite3
-import stat
+import os
 import time
 
 from nexus import forward_evidence, forward_sessions
@@ -30,6 +30,13 @@ INJECTED='INJECTED_TRANSPORT_UNATTESTED'
 FLAGS=('source_attested','market_realism_authenticated','account_reconciled','broker_paper_accepted',
        'strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled',
        'money_movement_enabled','automatic_start','external_owner_checked')
+
+
+def existing_history(path):
+    from nexus.sqlite_journal_guard import check_existing
+    path=Path(path)
+    if os.path.lexists(str(path)+'-journal'):_fail()
+    return check_existing(path,1024*1024*1024,'TRIAL_')
 
 
 def _fail():raise ValueError('FORWARD_TRIAL_REVIEW_FAILED') from None
@@ -97,7 +104,7 @@ def _review(path, *, after, until):
     start,end=_window(after),_window(until)
     if not 0<end-start<=MAX_WINDOW_SECONDS:_fail()
     path=Path(path)
-    if path.is_symlink() or not stat.S_ISREG(path.stat().st_mode):_fail()
+    if not existing_history(path):raise FileNotFoundError('FORWARD_TRIAL_REVIEW_FAILED')
     deadline=time.monotonic()+20
     with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=5)) as db:
         db.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)

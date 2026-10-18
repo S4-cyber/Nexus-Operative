@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.139.0'
+REVISION = '0.140.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -79,6 +79,7 @@ PRODUCTION_USER_FLOW = (
 )
 NEXT = (
     'Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.',
+    'Collect and explicitly review retained public-feed paper observations using To Do Paper Trial Readiness; satisfy the72-hour/95% declared coverage diagnostic and obtain separate source, strategy, account, incident/recovery and independent acceptance. Passing local regression is not a launch-date estimate.',
     'Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.',
     'Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; exercise the repaired failed-reset durability boundary under native Windows storage faults and continue interrupted-acknowledgment recovery while preserving durable fencing.',
     'Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.',
@@ -96,7 +97,7 @@ NEXT = (
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
-                current_hardening=CURRENT_HARDENING,first_run_setup=dict(FIRST_RUN),
+                current_hardening=CURRENT_HARDENING,launch_assessment=dict(stage='EXPERIMENTAL_LOCAL_PAPER_PREPRODUCTION',full_release_date_established=False,percentage_complete_established=False,next_major_gate='CONNECTED_BROKER_PAPER_AND_SUSTAINED_TRIAL_ACCEPTANCE',minimum_coverage_window_hours=72,coverage_is_release_acceptance=False),first_run_setup=dict(FIRST_RUN),
                 opportunity_discovery=dict(implemented=True,scope='USD spot crypto research only',default_with_portal=True,burst_seconds=900,markets_per_burst=4,requests_per_hour_per_process=36,selected_market_limit=6,summary_limit=256,stored_in_process_memory=True,execution_integration=False,forecasts_validated=False),
                 production_user_flow=list(PRODUCTION_USER_FLOW),live_workflow_available=False,
                 delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
@@ -111,7 +112,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.139 adds optional Found Markets background discovery: four public USD spot markets per 15-minute burst,36 requests/hour/process,256 compact in-memory summaries and up to six fresh research selections. Deterministic council specialists screen24-hour, 30-day and 180-day historical windows. To Do separates baseline prerequisites from optional improvements and future connected features. Research rankings do not change the fixed BTC execution policy; trained forecast, multi-asset routing, real-source sustained validation and provider eligibility remain release work.'
+CURRENT_HARDENING = 'v0.140 brings the existing retained paper-trial coverage review into To Do and the installed API, with explicit recent windows, beginner explanations and quote-record capacity estimates. Both CLI and installed review reject retained rollback/WAL/shared-memory sidecars and unsafe file layouts before opening SQLite. A72-hour/95% declared operational coverage target is neither sustained-trial acceptance nor a strategy/source/account/broker approval. Secure funding, governed live execution, cloud and independent release acceptance remain unfinished.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

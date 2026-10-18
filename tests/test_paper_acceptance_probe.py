@@ -25,10 +25,46 @@ def test_real_pacing_saved_pair_and_inventory_are_bound_without_secrets(vault,tm
     assert result['local_pacing']['sessions']==1 and result['local_pacing']['events']==2
     assert result['local_pacing']['next_allowed_at']==1060
     assert all(result[k] is False for k in probe.FLAGS)
-    assert result['inventory_only'] and not result['open_order_terms_included']
+    assert not result['inventory_only'] and result['open_order_terms_included']
+    terms=result['reported_open_ioc_limit_terms']
+    assert terms['reported_rows']==result['portable_observation']['open_order_count']==0
+    assert terms['terms_complete'] and terms['remaining_buy_limit_principal_cap_usd']=='0'
+    assert terms['remaining_sell_quantity_btc']=='0'
+    scope=result['acceptance_record_scope']
+    assert scope['observation_manifest_sha256']==result['portable_observation']['manifest_sha256']
+    assert scope['open_order_terms_sha256']==terms['summary_sha256']
+    from nexus.alpaca_paper_contract import sha
+    assert result['acceptance_record_sha256']==sha(scope)
     encoded=json.dumps(result)
     assert all(value not in encoded for value in (KEY,SECRET,str(path)))
     assert len(list(path.parent.glob('*.sqlite3')))==1
+
+
+def test_probe_reports_allowlisted_open_terms_without_raw_order_identity(vault,tmp_path):
+    from test_paper_open_order_terms import order
+    save();path=tmp_path/'private'/'pacing.sqlite3'
+    buy=order(id='01234567-89ab-cdef-0123-456789abcde1',client_order_id='private_client_buy',
+        side='buy',qty='3',limit_price='100',filled_qty='0.5',filled_avg_price='99',status='pending_cancel')
+    sell=order(id='01234567-89ab-cdef-0123-456789abcde2',client_order_id='private_client_sell',
+        side='sell',qty='1',limit_price='110',filled_qty='0.5',filled_avg_price='111',status='partially_filled')
+    opener=Opener();opener.values[2]=[buy,sell]
+    result=run(path,opener)
+    terms=result['reported_open_ioc_limit_terms']
+    assert terms['reported_rows']==2 and terms['supported_unique_orders']==2 and terms['terms_complete']
+    assert terms['remaining_buy_limit_principal_cap_usd']=='250'
+    assert terms['remaining_sell_quantity_btc']=='0.5'
+    encoded=json.dumps(result)
+    assert all(value not in encoded for value in ('private_client_buy','private_client_sell',buy['id'],sell['id']))
+
+
+def test_probe_fails_closed_if_inspector_terms_are_not_count_bound(vault,tmp_path,monkeypatch):
+    save();path=tmp_path/'private'/'pacing.sqlite3';original=credentials.inspect_saved
+    def changed(**kwargs):
+        result=original(**kwargs)
+        result['open_order_terms']=dict(result['open_order_terms'],reported_rows=1)
+        return result
+    monkeypatch.setattr(credentials,'inspect_saved',changed)
+    with pytest.raises(ValueError,match='PAPER_ACCEPTANCE_PROBE_FAILED'):run(path)
 
 
 @pytest.mark.parametrize('value',[False,None,1,'true'])

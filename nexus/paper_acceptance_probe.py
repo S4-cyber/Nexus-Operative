@@ -2,7 +2,7 @@
 
 Uses only an already saved credential pair. No secret arguments, order/funding
 methods, automatic retries, cloud enrollment or acceptance/release authority.
-Successful stdout is a PRIVATE inventory-only observation and local pacing record.
+Successful stdout is a PRIVATE inventory/open-term observation and pacing record.
 """
 import argparse
 from pathlib import Path
@@ -11,7 +11,9 @@ import sqlite3
 import time
 
 from nexus import paper_credentials
+from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_inspection import _uuid
+from nexus import paper_open_order_terms as order_terms
 from nexus.paper_read_pacing import PaperReadPacing, MAX_SESSIONS
 from nexus import portable_paper_observation as portable
 
@@ -21,6 +23,9 @@ FLAGS=('broker_connected','broker_paper_accepted','source_attested','source_cove
        'ledger_applied','ready_for_routing','live_orders_enabled','money_movement_enabled',
        'automatic_retry','automatic_continuation','release_approved','cloud_deployed')
 FLAGS+=('provider_key_permissions_verified','windows_profile_accepted')
+TERMS_FIELDS=('mode','status','scope','reported_rows','supported_unique_orders','duplicate_rows_ignored',
+    'unsupported_rows','terms_complete','remaining_buy_limit_principal_cap_usd','remaining_sell_quantity_btc',
+    'normalized_terms_sha256','review_reasons',*order_terms.FLAGS,'summary_sha256')
 
 
 def _fail():raise ValueError('PAPER_ACCEPTANCE_PROBE_FAILED') from None
@@ -76,11 +81,24 @@ def probe(*, expected_account_id, pacing_path, confirm_read_only_paper=False,
           opener=None, wall_clock=time.time, elapsed_clock=time.monotonic):
     result,observation,pacing=_inspect_paced(expected_account_id=expected_account_id,pacing_path=pacing_path,
         confirm_read_only_paper=confirm_read_only_paper,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock)
+    try:
+        raw_terms=result['open_order_terms']
+        terms={key:raw_terms[key] for key in TERMS_FIELDS}
+        if (set(raw_terms)!=set(TERMS_FIELDS) or terms['reported_rows']!=observation['open_order_count'] or
+            terms['scope']!=order_terms.SCOPE or any(terms[flag] is not False for flag in order_terms.FLAGS) or
+            terms['summary_sha256']!=sha({key:value for key,value in terms.items() if key!='summary_sha256'})):_fail()
+    except (KeyError,TypeError,ValueError,OverflowError,AttributeError):_fail()
+    scope=dict(profile='nexus.paper-account-acceptance-record.v1',
+        observation_manifest_sha256=observation['manifest_sha256'],
+        open_order_terms_sha256=terms['summary_sha256'],account_sha256=pacing['account_sha256'],
+        pacing_before_head_sha256=pacing['before_head_sha256'],pacing_after_head_sha256=pacing['after_head_sha256'])
     return dict(mode='PAPER_ACCOUNT_ACCEPTANCE_PROBE',status='REVIEW_REQUIRED',read_completed=True,
         source=observation['source'],portable_observation=observation,local_pacing=pacing,
-        credential_pair_rechecked=True,inventory_only=True,open_order_terms_included=False,
+        reported_open_ioc_limit_terms=terms,acceptance_record_scope=scope,
+        acceptance_record_sha256=sha(scope),credential_pair_rechecked=True,
+        inventory_only=False,open_order_terms_included=True,
         **{flag:False for flag in FLAGS},
-        limitations='One explicitly confirmed fixed-host paper GET session with an already saved Windows pair, account-ID check and local durable pacing. Inventory excludes order terms. This is not provider/source coverage, fee/hold/account reconciliation, broker-wide quota, execution-owner, live/funding/cloud or release acceptance. Only this exact pacing journal coordinates cooperating callers; Portal reads using other/no journals do not share it. Failed calls may already have read remotely or retained a reservation/outcome; inspect retained state and never auto-retry/reset/delete it. No secrets/passwords/tokens/raw paths are included; keep this private report and journal outside Git.')
+        limitations='One explicitly confirmed fixed-host paper GET session with an already saved Windows pair, account-ID check and local durable pacing. The aggregate open IOC terms come from that same sequential read and are not verified provider holds, execution prices or complete order coverage. This is not provider/source coverage, fee/hold/account reconciliation, broker-wide quota, execution-owner, live/funding/cloud or release acceptance. Only this exact pacing journal coordinates cooperating callers; Portal reads using other/no journals do not share it. Failed calls may already have read remotely or retained a reservation/outcome; inspect retained state and never auto-retry/reset/delete it. No secrets/passwords/tokens/raw paths are included; keep this private report and journal outside Git.')
 
 
 class _Parser(argparse.ArgumentParser):

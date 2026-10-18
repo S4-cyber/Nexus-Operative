@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.120.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.121.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -35,8 +35,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_120_0.json`; exact new-source Windows trials must still run |
-| Windows packaging and data recovery | v0.117.0 verified; v0.120 source pending | Exact commit `81f080658e3a309099de6f98552b606006828197`: packaging39095648285/job117581727664, safety/browser39095648318/job117581407953 and security39095648336/job117581408158 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_121_0.json`; exact new-source Windows trials must still run |
+| Windows packaging and data recovery | v0.120.0 verified; v0.121 source pending | Exact commit `6df2fb0d07f7f5d8705201db63faa42d5edaa4b3`: packaging39097135970/job117585894114, safety/browser39097135957/job117585813629 and security39097135945/job117585813646 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |
@@ -96,7 +96,7 @@ Coverage unions clipped adjacent eligible public-labeled observations at most10 
 
 ## Operator paper-read acceptance tooling (v0.117)
 
-The explicit Windows source CLI in STARTUP_GUIDE.md provides one expected-account-bound saved-pair read with durable caller-selected pacing and a separate vault-silent local status mode. It generates private inventory/pacing evidence, not acceptance. Use the same persistent journal; other/no journals and hosts are not coordinated. Actual Windows/profile/key-scope/account/fee/hold/source acceptance still needs independent evidence. Credential/read failures may already have remote IO or retained success/uncertainty, so preserve state and never bypass pending/review/cooldown/cap blocks by resetting/deleting it. No broker orders, funding, live execution or cloud deployment were added.
+The explicit Windows source CLI in STARTUP_GUIDE.md provides one expected-account-bound saved-pair read with durable caller-selected pacing and a separate vault-silent local status mode. It generates a private content-bound inventory/open-IOC aggregate and pacing record, not acceptance. The portable observation nested inside it remains inventory-only. Use the same persistent journal; other/no journals and hosts are not coordinated. Actual Windows/profile/key-scope/account/fee/hold/source acceptance still needs independent evidence. Credential/read failures may already have remote IO or retained success/uncertainty, so preserve state and never bypass pending/review/cooldown/cap blocks by resetting/deleting it. No broker orders, funding, live execution or cloud deployment were added.
 
 
 ## v0.118 managed paper-read pacing in Accounts
@@ -141,3 +141,13 @@ Verified installer checkpoint advanced to v0.117, source81f080658e3a309099de6f98
 
 
 Final v0.120 validation:1,988 Python tests passed (one existing Starlette/httpx deprecation warning), ten Node controllers, Portal script syntax, compileall, pip check, fourteen offline release profiles and saved-evidence verification passed. Current source265 files/bd2114a32ade66f4f303c2cc3fa2a22236b53e1b4fcfb08a4b373558e9c2f559. Current tracked snapshot318 files passed artifact audit and Gitleaks with zero findings; exact-source full-history/security/native CI remains separate. API WAL regression proves both managed pacing actions return fixed no-store503 before additional vault/provider access and preserve the private file set. Cross-store preflight tests and the mandatory pacing profile cover unsupported layouts without automatic conversion/deletion; normal DELETE-mode recovery remains tested. No local rendered-browser or actual account/profile acceptance is claimed. Latest fully verified installer checkpoint is v0.117; new0.120 requires its own Windows/safety/security runs. Actual broker/profile/account/source/fee/hold, sustained real-feed, funding/live/cloud, independent security/risk and owner release gates stay open.
+
+## v0.121 content-bound paper-account acceptance record
+
+The source-only saved-pair probe now emits its existing portable inventory observation plus an exact allowlisted aggregate of the open BTC/USD IOC limit terms already returned by the same four-GET session. It adds no request, order action, retry, funding operation or runtime automation. The aggregate row count is bound to the portable manifest; all order authority flags must remain false; the terms summary digest and pacing before/after heads are bound in a new acceptance-record consistency digest. Raw broker/client order identities and extra provider fields are omitted. Unsupported or conflicting terms remain unknown rather than partially summed.
+
+This private record is operational review evidence only. Its hashes are not signatures or source attestation; principal caps and sell remainders are not verified provider holds, complete coverage, execution prices or spendable funds. The nested portable format remains inventory-only. Actual Windows owner-profile/key-scope/account reads, authenticated activity and correction coverage, verified execution/fee links, broker-wide pacing and cash/position/hold reconciliation remain necessary before broker-paper routing.
+
+Exact predecessor v0.120 source `6df2fb0d07f7f5d8705201db63faa42d5edaa4b3` passed packaging run39097135970/job117585894114, safety/browser39097135957/job117585813629 and security39097135945/job117585813646. Installer artifact12125600493 expires 2026-10-25T04:38:25Z; distribution artifact12124777952 expires 2026-11-17T04:38:20Z. These results do not establish v0.121 native acceptance or any actual broker/financial/cloud gate.
+
+v0.121 local evidence:1,990 Python cases, ten Node controllers, Portal syntax, compileall, pip check, all14 offline profiles and saved-evidence verification passed. Source fingerprint:265 files / `cf2c80b5c74e881bb6fc2eb297c72e93db38dbdce57645a45dcc7c30926beef5`; report SHA-256: `cf99ca96a76f5a130395b71460f776b9ba430a36db4e6a7fc420b5f9cd53f1f6`. Reachable artifact policy and checksum-pinned Gitleaks scans returned zero findings. New-source Windows/security/safety and every actual-account/financial/cloud/independent gate remain separate.

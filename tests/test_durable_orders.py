@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 from concurrent.futures import ThreadPoolExecutor
 import pytest
 from nexus.durable_orders import DurableOrderGateway
@@ -64,7 +65,8 @@ def test_corrupt_log_fails_closed(tmp_path):
 def test_sqlite_write_failure_does_not_acknowledge(tmp_path):
     path = tmp_path/'orders.sqlite3'
     g = DurableOrderGateway(path)
-    g.recovery_report()
+    # Explicit disposable schema fixture; observation no longer creates it.
+    with closing(g._connect()):pass
     with sqlite3.connect(path) as db:
         db.execute("CREATE TRIGGER fail_write BEFORE INSERT ON commands BEGIN SELECT RAISE(ABORT, 'disk failure'); END")
     with pytest.raises(sqlite3.Error):

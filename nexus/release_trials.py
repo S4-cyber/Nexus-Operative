@@ -60,7 +60,7 @@ def _http_trial():
             time.sleep(.01)
         opener = build_opener(ProxyHandler({}))
         base = 'http://127.0.0.1:' + str(listener.getsockname()[1])
-        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/api/paper/portfolio', '/api/paper/forward', '/api/paper/forward/sessions', '/', '/portal'):
+        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/api/paper/portfolio', '/api/paper/forward', '/api/paper/forward/sessions', '/api/execution/recovery', '/api/paper/forward/recovery', '/', '/portal'):
             with opener.open(base + path, timeout=5) as response:
                 body = response.read(2 * 1024 * 1024)
                 _require(response.status == 200, 'HTTP_STATUS')
@@ -80,6 +80,10 @@ def _http_trial():
         for name in ('broker_connected', 'live_orders_enabled', 'money_movement_enabled'):
             _require(status[name] is False, 'AUTHORITY_ENABLED')
         _require(responses['/api/roadmap']['read_only'] is True, 'ROADMAP_MUTABLE')
+        _require(responses['/api/execution/recovery']['journal_present'] is False and
+            responses['/api/execution/recovery']['status']=='NO_RETAINED_HISTORY' and
+            responses['/api/paper/forward/recovery']['order_history_present'] is False,
+            'PASSIVE_ORDER_RECOVERY_STARTUP')
         forward=responses['/api/paper/forward']
         _require(forward['enabled'] is False and forward['history']==[] and
             forward['storage_capacity']['sessions_retained']==forward['storage_capacity']['quote_observations_retained']==0 and

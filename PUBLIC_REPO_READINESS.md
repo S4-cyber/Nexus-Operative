@@ -58,3 +58,9 @@ The v0.111 application build39091596247/job117569331946 compiled and passed stan
 The preceding v0.112 commit938153c2469432ab6e5887491edfbb0f3337fec5 passed full reachable-history security39092253998/job117571286904:530 commits,1,591 blobs,319 paths,29,202,063 bytes, zero artifact/secret findings. This does not clear admin settings or historical non-Git surfaces.
 
 Forward-session polling now preserves missing evidence storage and reads existing history without schema initialization/migration. A combined forward status read shares one history/capacity transaction; runner state and order accounting are not an atomic combined view. Native CI and all owner/security/financial release gates remain separate.
+
+## Verified v0.113 checkpoint and v0.114 recovery follow-up
+
+Source52e3f9239961dcec6c1be53e0466b8040bcef7f2 passed packaging39092515629/job117572710958, safety/browser39092515768/job117572058444 and full-history security39092515674/job117572057319. The security audit covered531 commits/1,606 blobs/321 paths/29,824,994 bytes with zero artifact or detected-secret findings. The earlier passive-startup source fix is now covered by successful native CI. v0.113 installer artifact12123328272 is unexpired until2026-10-25T03:19:42Z; the v0.114 changes still need their own exact-source runs.
+
+Recovery/order/session inspection now avoids writable schema connections. Existing linked portfolio recovery uses a read-only attachment and the original full reconciliation governor; absent/corrupt/incomplete/nonregular/symlink evidence cannot be silently recreated by observation. Missing order history is explicitly unverified, not proof of a flat account. No provider/funds/cloud authority was added. Default-branch security PR#2 remains draft/open/unmerged; owner admin settings and historical non-Git review remain outstanding.

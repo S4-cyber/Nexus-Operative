@@ -10,11 +10,13 @@ def build(status,recovery,history):
              for s in history['sessions'] if s['requires_review']]
     provisional=status['enabled'] or status['ownership_held']
     actions=[]
+    if recovery.get('journal_present') is False:actions.append('ORDER_HISTORY_MISSING_VERIFY_SEPARATE_PORTFOLIO')
     if provisional:actions.append('STOP_AND_WAIT_FOR_ACTIVE_CYCLE_BEFORE_RECOVERY')
     if pending:actions.append('INSPECT_ORDERS_AND_EXPLICITLY_CANCEL_PENDING_REMAINDERS')
     if reviews:actions.append('RETAIN_AND_REVIEW_FLAGGED_SESSION_EVIDENCE')
     if positions and not status['enabled']:actions.append('REVIEW_HOLDINGS_AND_EXPLICITLY_START_EXIT_MONITORING_IF_APPROPRIATE')
     return dict(read_only=True,mode='FORWARD_OPERATOR_RECOVERY',provisional=provisional,
+                order_history_present=recovery.get('journal_present'),
                 runner_enabled=status['enabled'],ownership_held=status['ownership_held'],external_owner_checked=False,
                 pending_orders=pending,positions=positions,portfolio_reconciled=recovery['portfolio_reconciled'],
                 halted=recovery['halted'],session_reviews=reviews,sessions_examined=len(history['sessions']),

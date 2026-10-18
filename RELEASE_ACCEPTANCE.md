@@ -35,7 +35,7 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
 | Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_111_0.json`; exact new-source Windows trials must still run |
-| Windows packaging and data recovery | v0.109.0 verified; current source pending | Exact commit `2d2e25b0f6c8472591891abee3b053e86da83931`: packaging run39088186619/job117560452568 and safety/browser run39088186630/job117559084799 passed; newer source requires its own runs |
+| Windows packaging and data recovery | v0.113.0 verified; v0.114 source pending | Exact commit `52e3f9239961dcec6c1be53e0466b8040bcef7f2`: packaging39092515629/job117572710958 and safety/browser39092515768/job117572058444 passed; installer12123328272. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |

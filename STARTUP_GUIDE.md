@@ -113,3 +113,11 @@ Use each `--opening-encrypted` / `--closing-encrypted` flag only for that encryp
 ### Passive forward-session status
 
 Opening Portal and polling the stopped paper runner no longer creates a forward-history database. With no recorded sessions, history is empty and capacity shows unused space; that is not trading permission. Existing session history is read without schema migration or repair. If a history file is unreadable, corrupt or incomplete, diagnostics report unavailable instead of silently replacing it. Stop and preserve the evidence for review. Forward history and capacity displayed by one status request share a database snapshot; runner state and order accounting are separately sampled and can change during observation.
+
+### Inspect recovery without creating accounting
+
+Recovery and retained-order inspection now open existing local order history read-only. A missing journal stays missing; the recovery panel warns that empty results do not prove a flat account or absence of a separate portfolio. Unknown order IDs remain unavailable. Linked portfolio accounting must already exist and pass the same reconciliation checks; missing, corrupt or incompatible evidence is reported unavailable, without an automatic replacement or schema repair. Explicit paper initialization, trading and emergency halt remain separate actions. Inspection does not start or resume trading.
+
+### Verified Windows test checkpoint
+
+The verified v0.113.0 test installer is [available here](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39092515629/artifacts/12123328272), from exact source52e3f9239961dcec6c1be53e0466b8040bcef7f2. Its packaging, installed/reinstall/recovery/uninstall, regression/browser and security workflows passed. This artifact expires2026-10-25T03:19:42Z and may require GitHub sign-in. It is a prerelease test build, not the pending v0.114 source or1.0 acceptance. Future builds must be checked against their own source and workflow results.

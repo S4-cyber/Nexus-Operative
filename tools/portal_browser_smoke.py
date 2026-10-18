@@ -13,7 +13,7 @@ ORIGIN='http://nexus-ui.invalid'
 ORDER='pf_0123456789abcdef_7_BUY'
 
 
-def fixtures(path,pending=True):
+def fixtures(path,pending=True,missing_history=False):
     if path=='/api/onboarding/tasks':return dict(checked_at=1000,summary='Automatic local observations; no execution permission.',items=[
         dict(id='engine',title='Use built-in research and AI',group='Start here',status='COMPLETE',checked=True,detail='Built-in numerical learning is included; no provider account is required.',tab='ai',target='counciltest'),
         dict(id='budget',title='Save your virtual budget',group='Before a paper session',status='NEEDS_SETUP',checked=False,detail='Save virtual allocations in Risk; no money is deposited.',tab='risk',target='paperbudget'),
@@ -36,7 +36,9 @@ def fixtures(path,pending=True):
     if path=='/api/observer/status':return dict(active=False,cycles=0,last_error=None)
     if path.startswith('/api/observer/history'):return dict(events=[])
     if path=='/api/paper/forward/recovery':
-        return dict(provisional=False,runner_enabled=False,halted=False,
+        if missing_history:return dict(provisional=False,runner_enabled=False,halted=False,order_history_present=False,
+            pending_orders=[],positions={},session_reviews=[],sessions_examined=0)
+        return dict(provisional=False,runner_enabled=False,halted=False,order_history_present=True,
                     pending_orders=[dict(id=ORDER,side='BUY',status='SIMULATED_PARTIALLY_FILLED',simulated_filled_notional='49')] if pending else [],
                     positions={'BTC-USD':dict(quantity='0.49',entry='100')},
                     session_reviews=[dict(session='0123456789abcdef',reasons=['ORDER_CLEANUP_REQUIRES_REVIEW'])],sessions_examined=1)
@@ -87,7 +89,7 @@ def run(output,channel=None):
         try:
             for width,height in ((1280,900),(390,844),(320,568)):
                 context=browser.new_context(viewport=dict(width=width,height=height),service_workers='block')
-                page=context.new_page();errors=[];blocked=[];writes=[];state={'pending':True,'paper_saved':False};current_control=None
+                page=context.new_page();errors=[];blocked=[];writes=[];state={'pending':True,'paper_saved':False,'missing_history':False};current_control=None
                 page.add_init_script('''window.__helpEvents=[];for(const kind of ['pointerover','pointerout','scroll','focusin','focusout','blur'])document.addEventListener(kind,e=>{const c=e.target&&e.target.closest?e.target.closest('button,input,select,textarea'):null;window.__helpEvents.push({kind,id:c&&c.id,tag:c&&c.tagName,scrollY:window.scrollY});if(window.__helpEvents.length>60)window.__helpEvents.shift();},true);''')
                 page.on('pageerror',lambda error:errors.append(str(error)))
                 def route(request):
@@ -111,7 +113,7 @@ def run(output,channel=None):
                         if path=='/api/execution/intent/'+ORDER+'/cancel':
                             state['pending']=False;request.fulfill(json=dict(status='SIMULATED_CANCELLED'));return
                         blocked.append('UNEXPECTED_WRITE '+path);request.abort();return
-                    try:request.fulfill(json=fixtures(path,state['pending']))
+                    try:request.fulfill(json=fixtures(path,state['pending'],state['missing_history']))
                     except ValueError as exc:blocked.append(str(exc));request.abort()
                 page.route('**/*',route)
                 try:
@@ -131,6 +133,12 @@ def run(output,channel=None):
                     page.evaluate("() => renderEngineStatus({emergency_cut_state:'VERIFIED',emergency_cut_pending:false})")
                     expect(page.locator('#status')).to_contain_text('TRADING CUT VERIFIED')
                     page.evaluate("() => {halted=false;byId('reset-halt').hidden=true;renderEngineStatus({emergency_cut_state:'CLEAR',emergency_cut_pending:false});syncTradingControls()}")
+                    state['missing_history']=True
+                    page.locator('#forward-recovery').click()
+                    expect(page.locator('#forward-recovery-status')).to_contain_text('No order journal found')
+                    expect(page.locator('#forward-recovery-status')).to_contain_text('do not prove a flat account')
+                    expect(page.get_by_role('button',name='Cancel Pending Remainder')).to_have_count(0)
+                    state['missing_history']=False
                     page.locator('#forward-recovery').click()
                     expect(page.get_by_role('button',name='Cancel Pending Remainder')).to_have_count(1)
                     # Display account fixtures without activating PORTAL, observation or order IO.

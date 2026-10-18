@@ -103,6 +103,8 @@ def main():
                 # whether the runner's browser happened to load fast enough.
                 assert request(base,'/api/paper/portfolio')['initialized'] is False
                 assert not request(base,'/api/paper/forward')['enabled']
+                assert request(base,'/api/execution/recovery')['status']=='NO_RETAINED_HISTORY'
+                assert request(base,'/api/paper/forward/recovery')['order_history_present'] is False
                 assert not any((expected_data/name).exists() for name in accounting_names), 'Fresh startup initialized accounting'
             assert status['version']==args.version, status
             assert status['halted'] is args.expect_halted, status

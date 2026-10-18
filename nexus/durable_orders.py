@@ -8,7 +8,8 @@ import json
 import math
 import os
 import sqlite3
-from contextlib import closing
+import stat
+from contextlib import closing, contextmanager
 from pathlib import Path
 from nexus.order_gateway import OrderGateway
 from nexus.order_accounting import AccountingOrderGateway, MAX_ARCHIVED_INTENTS, MAX_ARCHIVE_BATCHES
@@ -42,6 +43,29 @@ class DurableOrderGateway:
             sequence INTEGER PRIMARY KEY, payload TEXT NOT NULL)''')
         db.execute('CREATE TABLE IF NOT EXISTS order_checkpoints(sequence INTEGER PRIMARY KEY,prefix_sha256 TEXT NOT NULL,state_json TEXT NOT NULL)')
         return db
+
+    @contextmanager
+    def _read_connection(self):
+        path=self._path()
+        if path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
+        try:observed=path.stat()
+        except FileNotFoundError:
+            yield None
+            return
+        if not stat.S_ISREG(observed.st_mode):raise ValueError('ORDER_HISTORY_REGULAR_FILE_REQUIRED')
+        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=10)) as db:
+            db.execute('BEGIN')
+            yield db
+
+    def _read_restore(self, db, *, compare_portfolio=False):
+        if db is None:
+            self.restore_diagnostics=dict(checkpoint_sequence=0,prefix_replayed=0,tail_replayed=0,cache_hit=False)
+            return AccountingOrderGateway(clock=lambda:0),0
+        gateway,count=self._restore(db)
+        if compare_portfolio and gateway.portfolio_linked:
+            portfolio=execution_portfolio.attach_read_only(db,self._path().parent/'paper_portfolio.sqlite3')
+            execution_portfolio.compare(portfolio,gateway.account)
+        return gateway,count
 
     def _restore(self, db):
         rows = db.execute('SELECT sequence,payload FROM commands ORDER BY sequence').fetchmany(MAX_RETAINED_COMMANDS+1)
@@ -198,11 +222,8 @@ class DurableOrderGateway:
         import copy,re
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
         prefix='pf_'+session_id+'_'
-        with closing(self._connect()) as db,db:
-            portfolio=execution_portfolio.attach(db,self._path().parent/'paper_portfolio.sqlite3')
-            db.execute('BEGIN')
-            gateway,_=self._restore(db)
-            if gateway.portfolio_linked:execution_portfolio.compare(portfolio,gateway.account)
+        with self._read_connection() as db:
+            gateway,_=self._read_restore(db,compare_portfolio=True)
         records={**gateway.archived_intents,**gateway.intents}
         matched={key:dict(order=copy.deepcopy(record),quote_events=[]) for key,record in records.items() if key.startswith(prefix)}
         for (oid,_),detail in gateway.quote_events.items():
@@ -211,9 +232,8 @@ class DurableOrderGateway:
 
     def order_report(self,client_order_id):
         import copy
-        with closing(self._connect()) as db,db:
-            db.execute('BEGIN')
-            gateway,_=self._restore(db)
+        with self._read_connection() as db:
+            gateway,_=self._read_restore(db)
             record=gateway.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             return dict(read_only=True,archived=client_order_id in gateway.archived_intents,
@@ -223,13 +243,10 @@ class DurableOrderGateway:
                         live_orders_enabled=False)
 
     def recovery_report(self):
-        with closing(self._connect()) as db, db:
-            portfolio=execution_portfolio.attach(db,self._path().parent/'paper_portfolio.sqlite3')
-            db.execute('BEGIN')
-            gateway, count = self._restore(db)
-            if gateway.portfolio_linked:
-                execution_portfolio.compare(portfolio,gateway.account)
-        return dict(mode='OFFLINE_ORDER_RECOVERY', status='REPLAY_VERIFIED',
+        with self._read_connection() as db:
+            present=db is not None
+            gateway,count=self._read_restore(db,compare_portfolio=True)
+        return dict(mode='OFFLINE_ORDER_RECOVERY', status='REPLAY_VERIFIED' if present else 'NO_RETAINED_HISTORY',journal_present=present,
                     commands=count, halted=gateway.halted,
                     orders=list(gateway.intents.values()),execution_terms=gateway.order_terms,
                     quote_model_events=len(gateway.quote_events), live_orders_enabled=False,
@@ -243,7 +260,7 @@ class DurableOrderGateway:
                                   archived_order_count=len(gateway.archived_intents),archived_order_limit=MAX_ARCHIVED_INTENTS,
                                   archive_batch_limit=MAX_ARCHIVE_BATCHES,batches=list(gateway.archive_batches.values()),
                                   command_history_deleted=False,physical_compaction=False),
-                    note='Reference notionals cannot establish quantities, positions or ownership.')
+                    note='Missing order history is not evidence of a flat account or absence of a separate portfolio. Reference notionals cannot establish quantities, positions or ownership. Read-only snapshots grant no execution permission.')
 
 
 gateway = DurableOrderGateway()

@@ -656,6 +656,7 @@ async function refreshForwardRecovery(){
  try{
   const d=await api('/api/paper/forward/recovery');
   show('forward-recovery-status',(d.provisional?'PROVISIONAL: stop and wait for the active cycle. ':'Local runner stopped. ')+
+   (d.order_history_present===false?'No order journal found. Empty results do not prove a flat account; inspect any separate portfolio. ':'')+
    d.pending_orders.length+' pending remainders; '+Object.keys(d.positions).length+' retained positions; '+d.session_reviews.length+' flagged sessions among '+d.sessions_examined+' examined. '+
    (Object.keys(d.positions).length&&!d.runner_enabled?'Holdings remain recorded; exit monitoring requires an explicit new session. ':'')+
    (d.halted?'Emergency halt remains active. ':''));

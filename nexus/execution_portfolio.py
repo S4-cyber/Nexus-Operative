@@ -1,6 +1,7 @@
 """Atomic SQLite bridge for explicitly linked offline execution accounting."""
 import re
 import time
+import stat
 from decimal import Decimal
 from nexus.paper_portfolio import create_schema, verify_ledger
 from nexus.portfolio_governor import require_safe_ledger
@@ -30,6 +31,17 @@ def attach(db, path):
     portfolio = AttachedPortfolio(db)
     create_schema(portfolio)
     return portfolio
+
+
+def attach_read_only(db, path):
+    """Compare an already linked ledger without creating/migrating its file."""
+    if path.is_symlink():raise ValueError('LINKED_PORTFOLIO_SYMLINK')
+    observed=path.stat()  # Missing/inaccessible linked accounting must fail, not recreate.
+    if not stat.S_ISREG(observed.st_mode):raise ValueError('LINKED_PORTFOLIO_REGULAR_FILE_REQUIRED')
+    db.execute('ATTACH DATABASE ? AS portfolio', (path.resolve().as_uri()+'?mode=ro',))
+    if db.execute('PRAGMA main.journal_mode').fetchone()[0]!='delete' or db.execute('PRAGMA portfolio.journal_mode').fetchone()[0]!='delete':
+        raise ValueError('ATOMIC_PORTFOLIO_REQUIRES_DELETE_JOURNALS')
+    return AttachedPortfolio(db)
 
 
 def link(portfolio, account):

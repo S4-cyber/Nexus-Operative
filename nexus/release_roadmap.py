@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.146.0'
+REVISION = '0.147.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -109,6 +109,7 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
+    'Accept the new confirmed paced paper BTC asset-field read on an authorized Windows paper account; independently review current minimum/increment semantics, stale metadata and account restrictions before any plan/routing integration. Reported asset fields do not prove entitlement or spending permission.',
     'Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.',
     'Collect and explicitly review retained public-feed paper observations using To Do Paper Trial Readiness; satisfy the72-hour/95% declared coverage diagnostic and obtain separate source, strategy, account, incident/recovery and independent acceptance. Passing local regression is not a launch-date estimate.',
     'Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.',
@@ -144,7 +145,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.146 links replayed original request terms and retained activity histories under explicit account/head references, rechecks both journals unchanged and checks individual fill identity, quantity/leaves and limit price. Matching aggregate averages cannot hide a bad individual fill. Accounts demonstrates this in temporary offline fixtures; no fills are inferred from cumulative averages and no fees, holds, funds, broker attestation or routing are approved. Shared-local discovery budgets and prior recovery fences remain. The rough implementation baseline stays about40% (30–45%, low confidence),0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.147 adds an explicitly confirmed paced paper BTC asset-field read: account/asset/account, fixed GET-only path, saved-key revocation/readback and shared managed cooldown. Accounts displays reported minimum size/increments/tradability without accepting semantics, entitlement or spending. Installed API smoke is explicitly headless and retains a one-shot three-second halt acknowledgment diagnostic; prior Windows145 pinned-recovery halt timeout is not yet declared resolved. Rough implementation remains about40% (30–45%, low confidence),0/9 fully accepted stages; actual broker-paper and independent/native acceptance remain open.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

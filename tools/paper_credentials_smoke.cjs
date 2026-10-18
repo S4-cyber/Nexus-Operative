@@ -2,7 +2,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),path=req
 const html=fs.readFileSync(path.join(__dirname,'../dashboard/portal_preview.html'),'utf8');
 const script=html.split('// BEGIN PAPER CREDENTIAL CONTROLS')[1].split('// END PAPER CREDENTIAL CONTROLS')[0];
 const elements=new Map();
-for(const id of ['paper-api-key','paper-api-secret','paper-account-expected','paper-credentials-save','paper-credentials-status','paper-account-inspect','paper-account-paced-inspect','paper-pacing-status','paper-credentials-remove','paper-observation-download'])elements.set(id,{value:'',disabled:false,listeners:{},addEventListener(kind,fn){this.listeners[kind]=fn;}});
+for(const id of ['paper-api-key','paper-api-secret','paper-account-expected','paper-credentials-save','paper-credentials-status','paper-account-inspect','paper-account-paced-inspect','paper-asset-rules','paper-pacing-status','paper-credentials-remove','paper-observation-download'])elements.set(id,{value:'',disabled:false,listeners:{},addEventListener(kind,fn){this.listeners[kind]=fn;}});
 const messages=[],requests=[],confirmations=[],downloads=[],revoked=[];
 let downloadFails=false;
 let accepted=true,pending=[];
@@ -104,7 +104,7 @@ const observed=enrich({mode:'READ_ONLY_PAPER_INSPECTION',checks:'OBSERVED_FIELDS
  const paced={...observed,durable_local_pacing:true,local_pacing:pacing};
  const flags=['broker_connected','broker_paper_accepted','source_attested','source_coverage_verified','broker_wide_quota_verified','account_reconciled','holds_reconciled','spendable_funds_verified','ledger_applied','ready_for_routing','live_orders_enabled','money_movement_enabled','automatic_retry','automatic_continuation','release_approved','cloud_deployed','provider_key_permissions_verified','windows_profile_accepted'];
  const status={mode:'PAPER_ACCEPTANCE_PACING_STATUS',status:'REVIEW_REQUIRED',read_only:true,journal_present:true,account_sha256:'a'.repeat(64),head_sha256:'c'.repeat(64),sessions:1,session_capacity_remaining:255,next_allowed_at:1060,pending_read:false,retained_review_block:false,suggested_action:'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ',limitations:'Local only',...Object.fromEntries(flags.map(k=>[k,false]))};
- for(const id of ['paper-account-paced-inspect','paper-pacing-status']){
+ for(const id of ['paper-account-paced-inspect','paper-asset-rules','paper-pacing-status']){
   const before=requests.length,consent=confirmations.length;
   button('paper-account-expected').value='';await button(id).onclick();
   button('paper-account-expected').value='bad-private-id';await button(id).onclick();
@@ -132,6 +132,16 @@ const observed=enrich({mode:'READ_ONLY_PAPER_INSPECTION',checks:'OBSERVED_FIELDS
  const removing=button('paper-credentials-remove').onclick();latePaced.resolve(paced);await operation;
  assert(!last().includes('Local pacing retained'));assert.equal(button('paper-observation-download').disabled,true);
  pending.shift().resolve(safeSetup(false));await removing;assert.match(last(),/No saved paper key pair/);
+
+ button('paper-account-expected').value=observed.account_id;
+ accepted=false;const beforeAsset=requests.length;await button('paper-asset-rules').onclick();assert.equal(requests.length,beforeAsset);accepted=true;
+ const assetReport={mode:'READ_ONLY_PAPER_ASSET_RULES',status:'REVIEW_REQUIRED',source:'INJECTED_UNATTESTED',account_id:observed.account_id,durable_local_pacing:true,local_pacing:pacing,reported_fields_observed:true,requests_completed:3,account_fields_double_checked:true,asset:{symbol:'BTC/USD',asset_class:'crypto',status:'active',tradable:true,fractionable:true,min_order_size:'0.0001',min_trade_increment:'0.0001',price_increment:'1'},review_reasons:[],...Object.fromEntries(['source_attested', 'asset_entitlement_verified', 'constraint_semantics_verified', 'metadata_freshness_verified', 'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing', 'broker_connected', 'ledger_applied', 'live_orders_enabled', 'money_movement_enabled', 'automatic_retry', 'release_approved'].map(k=>[k,false]))};
+ operation=button('paper-asset-rules').onclick();const assetPending=pending.shift();await button('paper-asset-rules').onclick();assert.equal(requests.length,beforeAsset+1);assert(requests.at(-1).url.endsWith('/asset-rules'));assert.deepEqual(requests.at(-1).body,{expected_account_id:observed.account_id,confirm_read_only_paper:true});assetPending.resolve(assetReport);await operation;
+ assert.match(last(),/Minimum size BTC 0.0001/);assert.match(last(),/not verified increment semantics/);assert.equal(button('paper-observation-download').disabled,true);
+ for(const change of [{ready_for_routing:true},{requests_completed:4},{account_id:'other'},{asset:{...assetReport.asset,min_order_size:'0'}},{review_reasons:['private-secret']}]){
+  operation=button('paper-asset-rules').onclick();pending.shift().resolve({...assetReport,...change});await operation;assert.match(last(),/could not be confirmed/);assert.doesNotMatch(last(),/private-secret|Minimum size BTC/);
+ }
+ operation=button('paper-asset-rules').onclick();const lateAsset=pending.shift();const removeAsset=button('paper-credentials-remove').onclick();lateAsset.resolve(assetReport);await operation;assert.doesNotMatch(last(),/Minimum size BTC/);pending.shift().resolve(safeSetup(false));await removeAsset;
 
  if(process.argv.includes('--export-fixture')){process.stdout.write(downloads[0].text);return;}
  console.log('Paper credentials: no automatic IO, explicit consent, cleared secrets, POST-only bodies, duplicate guards, removable pending reads, stale-result fencing, private allowlisted local downloads/URL cleanup and sanitized failures passed.');

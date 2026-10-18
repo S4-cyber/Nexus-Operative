@@ -17,6 +17,7 @@ from uuid import UUID
 from nexus.alpaca_paper_contract import number, text, sha
 
 ROOT = 'https://paper-api.alpaca.markets'
+ASSET_URL = ROOT + '/v2/assets/BTCUSD'
 URLS = (ROOT + '/v2/account', ROOT + '/v2/positions',
         ROOT + '/v2/orders?status=open&limit=129&direction=asc', ROOT + '/v2/account')
 MAX_BODY = 1024 * 1024
@@ -284,7 +285,7 @@ class _ReadSession:
         from nexus.broker_lookup_policy import LOOKUP_URL
         lookup_path = isinstance(url, str) and re.fullmatch(re.escape(LOOKUP_URL) + r'\?client_order_id=[A-Za-z0-9_-]{1,64}', url)
         from nexus.alpaca_activity_collection import is_activity_url
-        if lookup and not lookup_path or not lookup and url not in URLS and not is_activity_url(url):
+        if lookup and not lookup_path or not lookup and url not in URLS and url != ASSET_URL and not is_activity_url(url):
             _fail('PAPER_INSPECTION_PATH_DENIED')
         if self.requests >= 4:
             _fail('PAPER_INSPECTION_REQUEST_CAP')

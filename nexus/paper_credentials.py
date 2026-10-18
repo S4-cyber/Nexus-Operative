@@ -258,3 +258,19 @@ def collect_saved(orders, *, expected_account_id, after, until,
     if not credential_check():
         _fail('READ_REVOKED')
     return result
+
+
+def inspect_rules_saved(*,expected_account_id,confirm_read_only_paper=False,opener=None,
+                        wall_clock=time.time,elapsed_clock=time.monotonic,pacing=None):
+    """Explicit saved-pair asset read with mutation fence and final OS readback."""
+    if confirm_read_only_paper is not True:_fail('READ_CONFIRMATION_REQUIRED')
+    from nexus.paper_asset_rules import inspect_rules
+    from nexus.alpaca_paper_inspection import _uuid
+    expected_account_id=_uuid(expected_account_id)
+    epoch,raw,record=_capture()
+    result=inspect_rules(record['api_key'],record['api_secret'],expected_account_id=expected_account_id,
+        confirm_read_only_paper=True,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,
+        permission_check=lambda:_current(epoch),pacing=pacing)
+    current_epoch,current_raw,_=_capture()
+    if epoch!=current_epoch or raw!=current_raw or not _current(epoch):_fail('READ_REVOKED')
+    return result

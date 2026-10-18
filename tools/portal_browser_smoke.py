@@ -81,6 +81,11 @@ def paper_pacing_fixture():
         coordination_scope='EXACT_LOCAL_JOURNAL_ONLY_NOT_BROKER_WIDE_OR_DISTRIBUTED')
 
 
+def paper_asset_rules_fixture():
+    from nexus.paper_asset_rules import FLAGS
+    return dict(mode='READ_ONLY_PAPER_ASSET_RULES',status='REVIEW_REQUIRED',source='INJECTED_UNATTESTED',account_id=paper_observation_fixture()['account_id'],durable_local_pacing=True,local_pacing=paper_pacing_fixture(),reported_fields_observed=True,requests_completed=3,account_fields_double_checked=True,asset=dict(symbol='BTC/USD',asset_class='crypto',status='active',tradable=True,fractionable=True,min_order_size='0.0001',min_trade_increment='0.0001',price_increment='1'),review_reasons=[],**{k:False for k in FLAGS})
+
+
 def paper_pacing_status_fixture():
     from nexus.paper_acceptance_probe import FLAGS
     return dict(mode='PAPER_ACCEPTANCE_PACING_STATUS',status='REVIEW_REQUIRED',read_only=True,
@@ -125,7 +130,7 @@ def run(output,channel=None):
                         paper_base='/api/execution/alpaca-paper/local-credentials/'
                         if path.startswith(paper_base):
                             action=path[len(paper_base):]
-                            if action not in ('status','save','inspect','paced-inspect','pacing-status','remove'):
+                            if action not in ('status','save','inspect','paced-inspect','asset-rules','pacing-status','remove'):
                                 blocked.append('UNKNOWN_PAPER_ACTION');request.abort();return
                             if action=='save':state['paper_saved']=True
                             if action=='remove':state['paper_saved']=False
@@ -136,6 +141,10 @@ def run(output,channel=None):
                                         blocked.append('INVALID_PACED_BODY');request.abort();return
                                     result.update(durable_local_pacing=True,local_pacing=paper_pacing_fixture())
                                 request.fulfill(json=result);return
+                            if action=='asset-rules':
+                                if request.request.post_data_json!={'expected_account_id':paper_observation_fixture()['account_id'],'confirm_read_only_paper':True}:
+                                    blocked.append('INVALID_ASSET_RULES_BODY');request.abort();return
+                                request.fulfill(json=paper_asset_rules_fixture());return
                             if action=='pacing-status':
                                 if request.request.post_data_json!={'expected_account_id':paper_observation_fixture()['account_id']}:
                                     blocked.append('INVALID_PACING_STATUS_BODY');request.abort();return
@@ -333,6 +342,10 @@ def run(output,channel=None):
                     page.locator('#paper-account-paced-inspect').click()
                     expect(page.locator('#paper-credentials-result')).to_contain_text('Local pacing retained')
                     expect(page.locator('#paper-observation-download')).to_be_enabled()
+                    page.once('dialog',lambda dialog:dialog.accept())
+                    page.locator('#paper-asset-rules').click()
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('Minimum size BTC 0.0001')
+                    expect(page.locator('#paper-observation-download')).to_be_disabled()
                     page.locator('#paper-pacing-status').click()
                     expect(page.locator('#paper-credentials-result')).to_contain_text('1 / 256 sessions')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('No keys read or broker request')
@@ -341,7 +354,7 @@ def run(output,channel=None):
                     page.locator('#paper-credentials-remove').click()
                     expect(page.locator('#paper-credentials-result')).to_contain_text('No saved paper key pair')
                     expect(page.locator('#paper-observation-download')).to_be_disabled()
-                    if writes!=['/api/execution/alpaca-paper/local-credentials/'+action for action in ('status','save','inspect','paced-inspect','pacing-status','remove')]:
+                    if writes!=['/api/execution/alpaca-paper/local-credentials/'+action for action in ('status','save','inspect','paced-inspect','asset-rules','pacing-status','remove')]:
                         raise ValueError('UNEXPECTED_PAPER_CONTROL_WRITES')
                     page.mouse.move(0,0);expect(panel).to_be_hidden()
                     page.screenshot(path=str(output/f'paper-credentials-{width}x{height}.png'))

@@ -124,6 +124,9 @@ def _http_pacing_trial(base, root):
         missing = post('pacing-status', dict(expected_account_id=account_id))
         _require(missing['journal_present'] is False and not path.parent.exists(), 'HTTP_PAPER_MISSING_WRITE')
         post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=False), expected=503)
+        post('asset-rules', dict(expected_account_id=account_id,confirm_read_only_paper=False), expected=503)
+        post('asset-rules', dict(expected_account_id=account_id,confirm_read_only_paper=True,url='https://foreign.invalid'), expected=422)
+        post('asset-rules', dict(expected_account_id=account_id,confirm_read_only_paper=True),origin='https://foreign.invalid',expected=403)
         post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=True,pacing_path='forbidden'), expected=422)
         post('paced-inspect', dict(confirm_read_only_paper=True), expected=422)
         post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=True), origin='https://foreign.invalid', expected=403)
@@ -404,7 +407,16 @@ def _inspection_inventory_trial():
     tamper_rejected = False
     try: validate(tampered)
     except ValueError: tamper_rejected = True
-    return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',get_requests=requests,observations=reports, portable_roundtrips=len(exported), portable_tamper_rejected=tamper_rejected,
+    from nexus.paper_asset_rules import inspect_rules
+    from nexus.paper_read_pacing import PaperReadPacing
+    asset=dict(id='11234567-89ab-cdef-0123-456789abcdef',symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,fractionable=True,min_order_size='0.0001',min_trade_increment='0.0001',price_increment='1')
+    with tempfile.TemporaryDirectory(prefix='nexus-asset-trial-') as directory:
+        gate=PaperReadPacing(Path(directory)/'pacing.sqlite3',account['id']);reader=Opener(account,position);reader.values=iter([account,asset,dict(account)])
+        asset_report=inspect_rules('fixture_key_only_123','fixture_secret_only_123',expected_account_id=account['id'],confirm_read_only_paper=True,opener=reader,wall_clock=lambda:1000,elapsed_clock=lambda:50,pacing=gate)
+        next_reader=Opener(account,position);before=gate.path.read_bytes();asset_cooldown=False
+        try:inspect_account('fixture_key_only_123','fixture_secret_only_123',expected_account_id=account['id'],confirm_read_only_paper=True,opener=next_reader,wall_clock=lambda:1000,elapsed_clock=lambda:50,pacing=gate)
+        except ValueError:asset_cooldown=next_reader.requests==0 and gate.path.read_bytes()==before
+    return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',asset_rules_observation=asset_report,asset_get_requests=reader.requests,asset_shared_cooldown_checked=asset_cooldown,get_requests=requests,observations=reports, portable_roundtrips=len(exported), portable_tamper_rejected=tamper_rejected,
         broker_connected=False,live_orders_enabled=False,
         limitations='Fixed response objects and clocks; no actual credentials, provider, rendered UI, account reconciliation or spendable funds.')
 
@@ -520,6 +532,10 @@ def _validate(profile, result):
         _require(all(r['status']=='REVIEW_REQUIRED' and all(r[k] is False for k in flags)
             for r in (reviewed,boundary)), 'OBSERVATION_REVIEW_AUTHORITY')
     if profile == 'inspection_inventory':
+        from nexus.paper_asset_rules import FLAGS
+        asset=result['asset_rules_observation']
+        _require(result['asset_get_requests']==3 and result['asset_shared_cooldown_checked'] is True and asset['asset']['min_order_size']=='0.0001' and asset['reported_fields_observed'] is True and asset['account_fields_double_checked'] is True,'ASSET_RULES_READER')
+        _require(all(asset[k] is False for k in FLAGS),'ASSET_RULES_AUTHORITY')
         _require(result['get_requests'] == 12 and len(result['observations']) == 3, 'INVENTORY_READ_SCOPE')
         regular, foreign, missing = result['observations']
         _require(regular['observed_inventory'] == dict(cash='1000', non_marginable_buying_power='900',

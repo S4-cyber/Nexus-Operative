@@ -18,10 +18,34 @@ def request(base,path,method='GET',data=None):
         return raw if path=='/portal' else json.loads(raw)
 
 
+def verify_halt(base,output,fetch=request,clock=time.monotonic):
+    """One POST only. Preserve timing/state even if durable acknowledgment fails."""
+    started=clock();record=dict(mode='INSTALLED_HALT_ACK_DIAGNOSTIC',halt_acknowledged=False,
+        retry_attempted=False,transport_timeout_seconds=3,latency_acceptance=False)
+    try:
+        result=fetch(base,'/api/simulate/halt','POST')
+        assert result['halted'] is True
+        record['halt_acknowledged']=True
+    finally:
+        record['elapsed_seconds']=round(max(0,clock()-started),6)
+        # Status is a read-only memory snapshot, never a repeated cut/reset.
+        try:
+            state=fetch(base,'/api/status')
+            record['status_observed']=True
+            for key in ('halted','emergency_cut_pending','live_orders_enabled','money_movement_enabled'):
+                if type(state.get(key)) is bool:record[key]=state[key]
+            if state.get('emergency_cut_state') in ('CLEAR','PENDING','VERIFIED','UNCONFIRMED'):
+                record['emergency_cut_state']=state['emergency_cut_state']
+        except Exception:record['status_observed']=False
+        Path(output).write_text(json.dumps(record,indent=2),encoding='utf-8')
+    return record
+
+
 def launch_environment(data=None,default_data_root=None,environ=None):
     if (data is None)==(default_data_root is None):raise ValueError('CHOOSE_ONE_DATA_LAYOUT')
     env=dict(os.environ if environ is None else environ)
     env['NEXUS_BROWSER_MODE']='1'
+    env['NEXUS_HEADLESS_MODE']='1'
     if default_data_root is not None:
         root=Path(default_data_root).resolve()
         env['LOCALAPPDATA']=str(root)
@@ -155,11 +179,11 @@ def main():
             assert request(base,'/api/roadmap')['read_only']
             setup=verify_setup(base,args.setup_check) if args.setup_check else None
             restored=verify_recovery(base,json.loads(args.expected_recovery.read_text(encoding='utf-8'))) if args.expected_recovery else None
-            assert request(base,'/api/simulate/halt','POST')['halted']
+            halt_check=verify_halt(base,args.output.with_suffix('.halt.json'))
             assert (expected_data/'order_lifecycle.sqlite3').is_file(), 'Explicit halt did not use the expected data layout'
             assert request(base,'/api/execution/recovery')['halted']
             args.output.write_text(json.dumps(dict(version=args.version,initial_halted=status['halted'],
-                portal_served=True,forward_stopped=True,halt_persisted=True,restored_recovery=restored,setup_check=setup,
+                portal_served=True,forward_stopped=True,halt_persisted=True,headless_api_check=True,halt_acknowledgment=halt_check,restored_recovery=restored,setup_check=setup,
                 fresh_startup_preserved_missing_accounting=fresh_accounting,
                 expected_data_layout_verified_after_explicit_halt=True,
                 data_layout='DEFAULT_WINDOWS_APPDATA' if args.default_data_root else 'EXPLICIT_PORTABLE_DIRECTORY',

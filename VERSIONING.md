@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.146.0 (pre-release).** Cross-journal original-request and explicit-fill agreement checks, individual limit enforcement diagnostics and private report publication protection. No routing, funding or release permission.
+**Current development build: 0.147.0 (pre-release).** Explicit paced paper BTC asset observations, shared saved-key/cooldown checks, headless installed-API smoke and retained halt acknowledgment diagnostics. Reported rules are not accepted execution semantics; Windows halt-timeout acceptance remains open.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

@@ -58,6 +58,10 @@ def main():
         raise RuntimeError("Local PORTAL backend failed to start")
 
     try:
+        # API/install checks and explicitly headless local operation never spawn UI.
+        if os.environ.get('NEXUS_HEADLESS_MODE') == '1':
+            worker.join()
+            return
         # CI and systems without WebView2 can explicitly use the standard browser.
         if os.environ.get("NEXUS_BROWSER_MODE") == "1":
             webbrowser.open(url)

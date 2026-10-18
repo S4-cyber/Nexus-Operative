@@ -62,3 +62,32 @@ def test_saved_setup_acceptance_is_read_only():
         return dict(items=[dict(why='Built-in tools need no external paid account.',setup_scope='Included')])
     result=verify_setup('http://127.0.0.1','saved',fetch)
     assert result['saved_choices_verified'] and result['trading_stayed_stopped']
+
+
+def test_installed_api_smoke_explicitly_uses_headless_launch(tmp_path):
+    child,_=launch_environment(data=tmp_path/'data',environ={})
+    assert child['NEXUS_HEADLESS_MODE']=='1'
+
+
+def test_failed_halt_records_allowlisted_pending_status_without_retry(tmp_path):
+    import json
+    from tools.installed_smoke import verify_halt
+    calls=[];samples=iter([10,13]);out=tmp_path/'halt.json'
+    def fetch(base,path,method='GET'):
+        calls.append((path,method))
+        if method=='POST':raise TimeoutError('PRIVATE_TRANSPORT_DETAILS')
+        return dict(halted=True,emergency_cut_pending=True,emergency_cut_state='PENDING',live_orders_enabled=False,money_movement_enabled=False,private='PRIVATE_ACCOUNT')
+    with pytest.raises(TimeoutError):verify_halt('local',out,fetch,lambda:next(samples))
+    result=json.loads(out.read_text())
+    assert result['elapsed_seconds']==3 and not result['halt_acknowledged'] and result['emergency_cut_pending']
+    assert calls==[('/api/simulate/halt','POST'),('/api/status','GET')]
+    assert not result['retry_attempted'] and 'PRIVATE' not in out.read_text()
+
+
+def test_successful_halt_records_duration_without_claiming_latency_acceptance(tmp_path):
+    import json
+    from tools.installed_smoke import verify_halt
+    out=tmp_path/'halt.json';samples=iter([10,10.25])
+    result=verify_halt('local',out,lambda *args:dict(halted=True,emergency_cut_pending=False,emergency_cut_state='VERIFIED'),lambda:next(samples))
+    assert result['halt_acknowledged'] and result['elapsed_seconds']==0.25 and result['latency_acceptance'] is False
+    assert json.loads(out.read_text())==result

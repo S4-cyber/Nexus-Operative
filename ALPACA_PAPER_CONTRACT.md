@@ -399,6 +399,12 @@ The activity probe now requires `--acceptance-store PRIVATE_PATH` in addition to
 
 Each later successful probe appends an allowlisted v2 aggregate record only after the pacing session and activity receipt are durable. The record binds the exact prior/current heads and account digest. A crash between those commits is recoverable as an explicit unbound transition; a lost final result after acceptance commit replays the retained record. Status remains order-file/vault/network silent and never retries, repairs, resets or deletes. These sampled local head bindings coordinate only cooperating callers and do not prove provider causality, complete source coverage, valid fee associations, account reconciliation or broker-wide ownership.
 
+### v0.124 mandatory commit-boundary release evidence
+
+The source-fingerprinted release suite now has fifteen profiles. Its `activity_acceptance` profile builds disposable synthetic pacing, activity and acceptance journals and forces child-process death on both sides of the acceptance SQLite commit. Recovery must classify the pre-commit case as an unbound transition and replay exactly one bound transition after the committed case. A separate fresh process performs status replay with credential and external-network operations denied and verifies byte-for-byte journal preservation.
+
+This profile never loads an order snapshot, saved credential, provider response or real account. It validates local cooperating-journal commit-boundary behavior only. Every provider/source/coverage/fee/account/funds/routing/live/release authority field remains false, and the profile cannot substitute for an authorized private paper-account run.
+
 
 ## v0.119 local HTTP paper-read recovery acceptance
 

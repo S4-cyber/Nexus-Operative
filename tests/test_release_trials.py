@@ -138,6 +138,20 @@ def test_pacing_fixture_reports_actual_retained_fences_without_provider_authorit
         with pytest.raises(ValueError, match='PACING_AUTHORITY'): trials._validate('pacing', dict(result, **{field:True}))
 
 
+def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim_authority():
+    from nexus.paper_activity_acceptance_evidence import fixture_report
+    result=fixture_report();trials._validate('activity_acceptance',result)
+    for field in ('missing_status_created_nothing','precommit_death_retained_unbound_transition',
+                  'postcommit_death_replayed_bound_transition','fresh_process_journals_unchanged','fresh_process_vault_silent'):
+        changed=dict(result,**{field:False})
+        with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_RECOVERY'):trials._validate('activity_acceptance',changed)
+    for field in ('actual_provider_access','actual_vault_access','source_attested','activity_coverage_verified',
+                  'fee_execution_links_verified','broker_account_reconciled','spendable_funds_verified',
+                  'ready_for_routing','broker_connected','live_orders_enabled','money_movement_enabled','release_approved'):
+        changed=dict(result,**{field:True})
+        with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_AUTHORITY'):trials._validate('activity_acceptance',changed)
+
+
 def test_balance_trial_requires_both_accounting_and_negative_fences_without_spending_authority():
     from nexus.broker_balance_review import fixture_report
     result=fixture_report();trials._validate('balance',result)

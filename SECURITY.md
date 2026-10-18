@@ -91,3 +91,7 @@ The activity acceptance CLI reads a bounded regular single-link private order sn
 ## v0.123 private acceptance-history boundary
 
 The activity probe adds a third caller-selected private SQLite journal, distinct from pacing, activity and order paths. It stores account and cross-journal head digests plus aggregate acceptance hashes; those values can still be linkable financial metadata and are not anonymization. The scanner blocks standalone acceptance-history output and every retained SQLite journal. Keep them outside Git under OS ACL/disk protection. Replay detects tampering and unbound cooperating-journal transitions but does not attest provider source, causal ordering, complete activity/fee coverage, account holdings or permissions. Missing/legacy/unbound state is fail-closed review evidence and must not be erased to obtain another read.
+
+## v0.124 synthetic process-death evidence
+
+The fifteenth release profile contains only temporary synthetic local journals and returns bounded booleans/counts—no raw journal bytes, account identifier, credential, activity identity or retained head. Child processes deny credential and external-network access during fresh replay. A green result demonstrates the tested SQLite commit boundary only; it is not source attestation, broker acceptance, private-evidence publication approval or protection against noncooperating writers.

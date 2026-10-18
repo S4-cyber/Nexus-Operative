@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms', 'encrypted_observation')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'activity_acceptance', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms', 'encrypted_observation')
 PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
     'unconfirmed_read_denied', 'invalid_scope_denied', 'foreign_origin_denied',
     'inspection_inventory_validated', 'cooldown_prevented_transport',
@@ -339,6 +339,9 @@ def _inspection_inventory_trial():
 
 
 def _execute(profile):
+    if profile == 'activity_acceptance':
+        from nexus.paper_activity_acceptance_evidence import fixture_report
+        return fixture_report()
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -485,6 +488,17 @@ def _validate(profile, result):
             'explicit_owned_interruption_retained', 'interrupted_full_day_cooldown',
             'wal_read_rejected_before_sqlite','wal_write_rejected_before_conversion','wal_rejection_preserved_files')), 'PACING_FENCES')
         _require(result['broker_wide_quota_verified'] is False and result['ready_for_routing'] is False, 'PACING_AUTHORITY')
+    if profile == 'activity_acceptance':
+        _require(result['mode']=='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY' and
+            result['source']=='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE' and
+            result['accepted_transitions_after_commit']==1, 'ACTIVITY_ACCEPTANCE_SCOPE')
+        _require(all(result[name] is True for name in ('missing_status_created_nothing',
+            'precommit_death_retained_unbound_transition','postcommit_death_replayed_bound_transition',
+            'fresh_process_journals_unchanged','fresh_process_vault_silent')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
+        _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access','source_attested',
+            'activity_coverage_verified','fee_execution_links_verified','broker_account_reconciled',
+            'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled',
+            'money_movement_enabled','release_approved')), 'ACTIVITY_ACCEPTANCE_AUTHORITY')
     if profile == 'activity':
         reviewed = result['review']
         _require(reviewed['retained_batches'] == 2 and reviewed['retained_activities'] == 5

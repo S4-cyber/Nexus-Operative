@@ -110,3 +110,7 @@ The new source-only activity probe requires its order input, pacing journal and 
 ## v0.123 cross-journal private evidence boundary
 
 The activity probe now requires a separate private acceptance-history journal. It retains only account/head/aggregate digests and false-authority metadata, but these hashes can still link related financial observations. The public artifact scanner blocks its standalone mode and SQLite storage even when renamed. Preserve the acceptance, pacing and activity journals outside Git under OS protection; replay consistency is not provider/source/coverage attestation. Injected crash/lost-return tests do not constitute actual-account acceptance, and exact-source reachable-history scanning remains mandatory.
+
+## v0.124 public synthetic recovery evidence
+
+The new mandatory release profile publishes only synthetic fixture booleans, fixed scope labels and a transition count. Its disposable SQLite files, account identifier and head/receipt digests are not returned or committed. Vault and external-network attempts are denied during fresh replay. This makes the saved release report suitable for public source evidence while preserving the rule that any real paper-account input, journals and reports stay private and outside Git.

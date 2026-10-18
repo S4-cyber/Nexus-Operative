@@ -51,6 +51,7 @@ def test_record_replay_binds_both_head_transitions_and_duplicate_is_idempotent(t
     report=PaperActivityAcceptanceStore(store.path,ACCOUNT).inspect()
     assert not first['duplicate'] and duplicate['duplicate'] and before==store.path.read_bytes()
     assert report['records']==1 and report['last_record_sha256']==sha(value)
+    assert report['last_record_scope']==value
     assert report['pacing_bound_head_sha256']==admitted[0] and report['retention_bound_head_sha256']==admitted[1]
 
 
@@ -90,3 +91,4 @@ def test_distinct_second_transition_requires_exact_previous_heads(tmp_path):
     admitted=(second['pacing_after_head_sha256'],second['retention_after_head_sha256'])
     store.append(second,admission=lambda:admitted)
     report=store.inspect();assert report['records']==2 and report['last_record_sha256']==sha(second)
+    assert report['last_record_scope']==second

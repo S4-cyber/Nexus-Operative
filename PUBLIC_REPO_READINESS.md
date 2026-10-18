@@ -122,3 +122,9 @@ Release-trial failures are diagnostic-code-only. CI may identify a bounded profi
 ## v0.126 public synthetic file-set evidence
 
 The expanded process-death release profile computes local names, sizes and SHA-256 digests for synthetic SQLite main/rollback/WAL/shared-memory files only inside its temporary child. The checked-in report retains only fixed booleans, including that a rollback journal was actually observed and that the full expected file set stayed unchanged. Never add those local digests, database bytes, paths or any real-account journal to public evidence.
+
+## v0.127 private retained-content replay boundary
+
+The activity-acceptance report adds one aggregate boolean requiring fresh-process re-derivation of the latest accepted content from its private retained receipt. Public saved evidence contains no receipt, activity/order identity, account identifier, journal hash/path or collection timing. The status report is private operational evidence and all three journals remain outside Git. Exact v0.126 source `ef4ad3cab33b7fd34e3b9548494bc4692ac08969` passed security39114489845, safety/browser39114489881 and Windows39114489846 before this change; v0.127 needs its own scans and workflows.
+
+Final v0.127 local privacy checks found zero artifact-policy findings across the330-path proposed snapshot and542 fetched reachable commits/1,838 blobs. Checksum-pinned Gitleaks v8.24.3 found zero current-worktree and reachable-history findings. This does not cover deleted refs, Actions logs/artifacts, issues, external copies or native profile/disk controls; exact-source public security CI and owner-admin review remain open.

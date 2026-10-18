@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.126.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.127.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,8 +36,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_126_0.json`; exact new-source Windows trials must still run |
-| Windows packaging and data recovery | v0.125.0 verified; v0.126 source pending | Exact commit `9cbe10c54172178099e4854bef2092db5d064e42`: Windows39112809528, safety/browser39112809522 and security39112809521 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_127_0.json`; exact new-source Windows trials must still run |
+| Windows packaging and data recovery | v0.126.0 verified; v0.127 source pending | Exact commit `ef4ad3cab33b7fd34e3b9548494bc4692ac08969`: Windows39114489846, safety/browser39114489881 and security39114489845 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |
@@ -85,7 +85,7 @@ Public-repository hardening (v0.111) adds reachable-history artifact/secret chec
 
 ## Verify saved evidence before considering a release
 
-Run `python -m nexus.release_evidence validation/release_trials_0_126_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all fifteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check. If execution fails, the CLI emits only an allowlisted `RELEASE_TRIAL_*` code identifying the failing profile or timeout; child stderr, arbitrary exception text, paths and environment values remain suppressed.
+Run `python -m nexus.release_evidence validation/release_trials_0_127_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all fifteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check. If execution fails, the CLI emits only an allowlisted `RELEASE_TRIAL_*` code identifying the failing profile or timeout; child stderr, arbitrary exception text, paths and environment values remain suppressed.
 
 The safety workflow revalidates its saved report. Windows distribution creation runs and validates its own offline trials, includes `release-trial-evidence.json` in the distribution and hashes it in `artifact-manifest.json` alongside both binaries. Verify the manifest first, then verify the report from the exact source checkout. Matching hashes are not signatures, authenticated CI provenance or proof the workload actually ran. A self-consistent fabricated report remains possible; workflow results and independent acceptance still matter. A successful offline evidence check always retains production/native/provider/market/funds/release approval flags as false and cannot close the open gates above.
 
@@ -104,6 +104,8 @@ The explicit Windows source CLI in STARTUP_GUIDE.md provides one expected-accoun
 The source-only activity probe now retains a third private replay-validated acceptance journal. It baselines current pacing/activity heads before remote IO, marks legacy nonempty history unverified, and appends one v2 aggregate transition after both the paced session and activity receipt are durable. Status distinguishes missing history, legacy-only baselines, pacing uncertainty, fully replayed bindings and an unbound pacing/activity transition after crash or lost return. It reads no order snapshot, vault or provider and grants no admission. The binding is sampled local consistency for cooperating journals, not authenticated provider causality, complete activity/fee coverage, account reconciliation or permission. Preserve all three journals; no automatic retry, reset, repair or deletion exists.
 
 The v0.126 mandatory disposable profile expands the fresh-process immutability check from the three main database files to the complete expected cooperating file set: each main file plus its rollback journal, WAL and shared-memory sidecars. It requires an actual pre-commit rollback sidecar to be present, then compares names, sizes and SHA-256 digests before and after status. This proves the bounded synthetic status replay did not create, delete or change one of those files; it does not attest atomic filesystem sampling, actual-account data, provider coverage, credentials, reconciliation or routing safety.
+
+The v0.127 status replay also requires the latest accepted record to resolve to its exact retained receipt and re-derives its account-bound collection scope, account fields, collection observation and canonical order/activity input. A content mismatch is a separate review-required state even when the three final journal heads agree. The mandatory process-death profile requires this latest-content replay after commit. These local content hashes do not authenticate the provider, establish coverage or fee links, reconcile balances/holds/funds, or authorize routing.
 
 
 ## v0.118 managed paper-read pacing in Accounts

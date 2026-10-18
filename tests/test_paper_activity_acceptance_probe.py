@@ -1,6 +1,7 @@
 """Private activity acceptance composition with injected vault/HTTPS only."""
 import json
 import os
+import sqlite3
 import sys
 
 import pytest
@@ -166,7 +167,26 @@ def test_status_replays_both_journals_without_order_vault_or_network(vault,tmp_p
     assert result['read_only'] and result['retained_batches']==1 and result['retained_activities']==1
     assert not result['pending_read'] and result['session_capacity_remaining']>0
     assert result['cross_journal_recovery_state']=='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED'
+    assert all(result[name] is True for name in ('latest_accepted_receipt_replayed','latest_collection_scope_replayed',
+        'latest_account_fields_replayed','latest_collection_observation_replayed','latest_activity_input_replayed',
+        'latest_acceptance_record_replayed'))
     assert vault.reads==reads and before==(pacing.read_bytes(),activity.read_bytes(),acceptance.read_bytes())
+
+
+def test_status_detects_an_accepted_scope_that_does_not_match_its_retained_receipt(vault,tmp_path):
+    save();_,_,pacing,activity,acceptance=run(tmp_path)
+    with sqlite3.connect(acceptance) as db:
+        row=db.execute('SELECT body FROM records WHERE seq=1').fetchone()
+        body=json.loads(row[0]);body['scope']['activity_input_sha256']='0'*64
+        body['record_sha256']=probe.sha(body['scope'])
+        encoded=json.dumps(body,sort_keys=True,separators=(',',':'))
+        parent=db.execute('SELECT previous FROM records WHERE seq=1').fetchone()[0]
+        digest=probe.sha(dict(seq=1,body=body,previous=parent))
+        db.execute('UPDATE records SET body=?,digest=? WHERE seq=1',(encoded,digest))
+    result=probe.status(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,acceptance_store_path=acceptance)
+    assert result['cross_journal_heads_match'] and not result['latest_activity_input_replayed']
+    assert not result['latest_acceptance_record_replayed']
+    assert result['cross_journal_recovery_state']=='ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'
 
 
 def test_status_classifies_missing_and_legacy_baseline_without_creating_files(vault,tmp_path):

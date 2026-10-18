@@ -81,7 +81,7 @@ class PaperActivityAcceptanceStore:
         rows=db.execute('SELECT seq,body,previous,digest FROM records ORDER BY seq LIMIT ?',(MAX_RECORDS+2,)).fetchall()
         if not rows:_fail('BINDING_MISSING')
         if len(rows)>MAX_RECORDS+1:_fail('RECORD_CAP')
-        previous=ZERO;state=None;last_record_sha=None
+        previous=ZERO;state=None
         for index,(seq,encoded,parent,digest) in enumerate(rows):
             if not isinstance(encoded,str) or len(encoded.encode())>MAX_RECORD_BYTES:_fail('RECORD_CAP')
             try:body=json.loads(encoded)
@@ -100,7 +100,7 @@ class PaperActivityAcceptanceStore:
                 state=dict(head_sha256=digest,records=0,pacing_bound_head_sha256=body['baseline_pacing_head_sha256'],
                     retention_bound_head_sha256=body['baseline_retention_head_sha256'],
                     baseline_pacing_sessions=body['baseline_pacing_sessions'],baseline_retained_batches=body['baseline_retained_batches'],
-                    preexisting_history_unverified=expected,last_record_sha256=None)
+                    preexisting_history_unverified=expected,last_record_sha256=None,last_record_scope=None)
             else:
                 if not isinstance(body,dict) or set(body)!={'scope','record_sha256'}:_fail('PAYLOAD_INVALID')
                 scope=self._scope(body['scope']);record_sha=sha(scope)
@@ -109,8 +109,8 @@ class PaperActivityAcceptanceStore:
                     scope['retention_before_head_sha256']!=state['retention_bound_head_sha256']):_fail('CONTINUITY_DISAGREEMENT')
                 state.update(head_sha256=digest,records=index,
                     pacing_bound_head_sha256=scope['pacing_after_head_sha256'],
-                    retention_bound_head_sha256=scope['retention_after_head_sha256'],last_record_sha256=record_sha)
-                last_record_sha=record_sha
+                    retention_bound_head_sha256=scope['retention_after_head_sha256'],last_record_sha256=record_sha,
+                    last_record_scope=scope)
             previous=digest
         return state
 
@@ -120,6 +120,7 @@ class PaperActivityAcceptanceStore:
             return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=False,account_sha256=self.account_digest,
                 head_sha256=ZERO,records=0,pacing_bound_head_sha256=None,retention_bound_head_sha256=None,
                 baseline_pacing_sessions=0,baseline_retained_batches=0,preexisting_history_unverified=False,last_record_sha256=None,
+                last_record_scope=None,
                 automatic_retry=False,ready_for_routing=False)
         with closing(self._connect()[0]) as db:state=self._load(db)
         return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=True,account_sha256=self.account_digest,**state,

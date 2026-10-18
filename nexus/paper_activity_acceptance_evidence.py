@@ -11,6 +11,9 @@ import sys
 import tempfile
 
 from nexus.alpaca_paper_contract import sha
+from nexus import alpaca_activity_normalizer as adapter
+from nexus.activity_collection_evidence import SCHEMA, page_observation, validate
+from nexus.alpaca_activity_collection import PAGE_SIZE
 from nexus.broker_activity_store import BrokerActivityStore
 from nexus.paper_activity_acceptance_probe import status
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore, PROFILE
@@ -52,13 +55,21 @@ def _scope(root):
     pacing.finish(token,admission=lambda:1000,status_code=200)
     row=dict(id='20261017000000000::11234567-89ab-cdef-0123-000000000001',
         activity_type='FEE',status='executed',net_amount='-0.01',date='2026-10-16')
-    receipt=activity.retain([row],[],after=AFTER,until=UNTIL)
+    normalized=adapter.normalize([row],[],expected_account_id=ACCOUNT)
+    observed_at=1792281600
+    observation=validate(dict(schema=SCHEMA,declared_transport='INJECTED_UNATTESTED',
+        read_started_at=observed_at,read_completed_at=observed_at,
+        account_fields_sha256=sha(dict(fixture='process-death',kind='account')),
+        pages=[page_observation([row],normalized['normalized_activities'],after=AFTER,until=UNTIL,
+            request_cursor=None,requested_at=observed_at,received_at=observed_at)]),
+        dict(activities=normalized['normalized_activities']),after=AFTER,until=UNTIL)
+    receipt=activity.retain([row],[],after=AFTER,until=UNTIL,collection_observation=observation)
     after_pacing=pacing.inspect();after_activity=activity.inspect()
     scope=dict(profile=PROFILE,account_sha256=after_activity['account_sha256'],
-        collection_scope_sha256=sha(dict(fixture='process-death',kind='scope')),
-        account_fields_sha256=sha(dict(fixture='process-death',kind='account')),
-        collection_observation_sha256=sha(dict(fixture='process-death',kind='observation')),
-        activity_input_sha256=sha(dict(fixture='process-death',kind='input')),
+        collection_scope_sha256=sha(dict(account_sha256=after_activity['account_sha256'],after=AFTER,
+            until=UNTIL,direction='asc',page_size=PAGE_SIZE)),
+        account_fields_sha256=observation['account_fields_sha256'],
+        collection_observation_sha256=sha(observation),activity_input_sha256=normalized['input_sha256'],
         retained_receipt_sha256=receipt['receipt_id'],
         pacing_before_head_sha256=before_pacing['head_sha256'],pacing_after_head_sha256=after_pacing['head_sha256'],
         retention_before_head_sha256=before_activity['head_sha256'],retention_after_head_sha256=after_activity['head_sha256'])
@@ -112,7 +123,9 @@ root=Path(sys.argv[1]);paths=[root/name for name in ('pacing.sqlite3','activity.
 before=_sqlite_files_snapshot(root)
 result=status(expected_account_id=sys.argv[2],pacing_path=paths[0],activity_store_path=paths[1],acceptance_store_path=paths[2])
 after=_sqlite_files_snapshot(root)
-print(json.dumps({'recovery':result['cross_journal_recovery_state'],'heads_match':result['cross_journal_heads_match'],'records':result['accepted_transitions'],'unchanged':before==after,'rollback_journal_observed':any(name.endswith('-journal') for name,_,_ in before),**attempts}))
+print(json.dumps({'recovery':result['cross_journal_recovery_state'],'heads_match':result['cross_journal_heads_match'],
+ 'latest_content_replayed':result['latest_acceptance_record_replayed'],'records':result['accepted_transitions'],
+ 'unchanged':before==after,'rollback_journal_observed':any(name.endswith('-journal') for name,_,_ in before),**attempts}))
 '''
     child=subprocess.run([sys.executable,'-c',script,str(root),ACCOUNT],capture_output=True,text=True,timeout=20)
     if child.returncode!=0:raise ValueError('PAPER_ACTIVITY_ACCEPTANCE_EVIDENCE_RESTART')
@@ -137,7 +150,8 @@ def fixture_report():
         _die_at_commit(after_root,after_scope,'after')
         after=_fresh_status(after_root)
         after_bound=(after_acceptance.inspect()['records']==1 and
-            after['recovery']=='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED' and after['heads_match'] and after['records']==1)
+            after['recovery']=='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED' and after['heads_match'] and
+            after['latest_content_replayed'] and after['records']==1)
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
         rollback_observed=before['rollback_journal_observed'] is True
@@ -148,6 +162,7 @@ def fixture_report():
             postcommit_death_replayed_bound_transition=after_bound,
             precommit_rollback_journal_observed=rollback_observed,
             fresh_process_journals_unchanged=unchanged,fresh_process_vault_silent=silent,
+            postcommit_latest_content_replayed=after['latest_content_replayed'],
             accepted_transitions_after_commit=after['records'],
             actual_provider_access=False,actual_vault_access=False,source_attested=False,
             activity_coverage_verified=False,fee_execution_links_verified=False,

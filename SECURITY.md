@@ -103,3 +103,7 @@ The offline release CLI exposes only allowlisted `RELEASE_TRIAL_*` identifiers f
 ## v0.126 synthetic recovery file-set boundary
 
 The activity-acceptance release fixture fingerprints all expected cooperating SQLite main, rollback-journal, WAL and shared-memory files before and after fresh-process status. It requires an actual pre-commit rollback journal so the check cannot pass by observing main files alone. Only aggregate pass/fail booleans enter the public report; local names, paths, bytes and digests are not emitted. The fixture is temporary and synthetic, and this sampled comparison is not a general filesystem race defense or evidence about private broker data.
+
+## v0.127 latest accepted-content replay boundary
+
+Private cross-journal status now resolves the latest acceptance scope to its retained receipt and re-derives the account-bound collection scope, account-fields digest, collection-observation digest and canonical order/activity input digest. Matching journal heads no longer hide a content disagreement. The status path remains read-only and never opens the order input, credential vault or provider transport; any mismatch is review-required and cannot trigger repair, retry, reset or deletion. These hashes are local consistency evidence, not signatures, source attestation, complete activity/fee coverage, account reconciliation or routing authority.

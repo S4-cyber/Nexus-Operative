@@ -509,7 +509,7 @@ def _validate(profile, result):
         _require(all(result[name] is True for name in ('missing_status_created_nothing',
             'precommit_death_retained_unbound_transition','postcommit_death_replayed_bound_transition',
             'precommit_rollback_journal_observed','fresh_process_journals_unchanged',
-            'fresh_process_vault_silent')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
+            'fresh_process_vault_silent','postcommit_latest_content_replayed')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
         _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access','source_attested',
             'activity_coverage_verified','fee_execution_links_verified','broker_account_reconciled',
             'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled',

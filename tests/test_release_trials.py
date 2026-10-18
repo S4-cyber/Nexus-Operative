@@ -172,6 +172,7 @@ def test_pacing_fixture_reports_actual_retained_fences_without_provider_authorit
 def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim_authority():
     from nexus.paper_activity_acceptance_evidence import fixture_report
     result=fixture_report();trials._validate('activity_acceptance',result)
+    assert result['postcommit_latest_content_replayed'] is True
     for field in ('missing_status_created_nothing','precommit_death_retained_unbound_transition',
                   'postcommit_death_replayed_bound_transition','precommit_rollback_journal_observed',
                   'fresh_process_journals_unchanged','fresh_process_vault_silent'):

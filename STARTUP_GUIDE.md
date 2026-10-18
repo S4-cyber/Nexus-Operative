@@ -120,10 +120,20 @@ Recovery and retained-order inspection now open existing local order history rea
 
 ### Verified Windows test checkpoint
 
-The verified v0.113.0 test installer is [available here](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39092515629/artifacts/12123328272), from exact source52e3f9239961dcec6c1be53e0466b8040bcef7f2. Its packaging, installed/reinstall/recovery/uninstall, regression/browser and security workflows passed. This artifact expires2026-10-25T03:19:42Z and may require GitHub sign-in. It is a prerelease test build, not the pending v0.114 source or1.0 acceptance. Future builds must be checked against their own source and workflow results.
+The verified v0.114.0 test installer is [available here](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39094330857/artifacts/12124392206), from exact source7d132352f3ce559e94055e5d63c6f4a73e3e7f15. Its packaging, installed/reinstall/recovery/uninstall, regression/browser and security workflows passed. This artifact expires2026-10-25T03:49:34Z and may require GitHub sign-in. It is a prerelease test build, not the pending v0.116 source or1.0 acceptance. Future builds must be checked against their own source and workflow results.
 
 ### Check a saved offline trial report
 
 From the matching source checkout, run `python -m nexus.release_evidence validation/release_trials_0_115_0.json`. Success means every required offline profile still satisfies its checks and the report matches these exact source bytes. It does not rerun tests, prove the report is authentic, validate broker balances or approve1.0. Failure prints a fixed error and changes no account data. Regenerate trials from the reviewed source if the report is stale; do not hand-edit hashes to make it pass.
 
 New Windows distribution bundles include their own `release-trial-evidence.json`, covered by the artifact checksum manifest along with the EXE and installer. Source checkouts with different line endings also have different fingerprints. Treat the manifest as a consistency check, not a signature; verify workflow results and remaining acceptance gates separately.
+
+### Measure progress toward a sustained paper trial
+
+Use the existing Start Portal and Engage Paper controls only when you intend to run the local virtual-funds experiment. Keep the computer running; this is not cloud or broker execution. Stop the session before its final review. From a source checkout, inspect the retained history with an explicit UTC window:
+
+```text
+python -m nexus.forward_trial_review --history PRIVATE_PATH/paper_forward.sqlite3 --after 2026-10-18T00:00:00Z --until 2026-10-21T00:00:00Z
+```
+
+Replace the path and dates with your actual private history/window. The tool does not start anything or request prices. Missing history stays missing; damaged history is not repaired. It reports covered time, rejected/injected observations, uncovered time, longest gap and sessions needing review. Only adjacent eligible observations labeled as the built-in public reader, within one session and at most10 seconds apart, count toward declared coverage. Overlaps count once. A proposed72-hour/95% operational target is shown, but meeting it does not prove genuine data, uninterrupted runtime, strategy quality, account reconciliation or broker-paper acceptance. The output remains REVIEW_REQUIRED with every execution/release acceptance flag false. Keep the report private and outside Git. Review actual fee/hold/account and outage evidence independently.

@@ -42,7 +42,8 @@ def json_rule(raw):
     except (ValueError,UnicodeError,RecursionError):return None
     if not isinstance(value,dict):return None
     if value.get('profile')=='nexus.portable-paper-observation.v1' or value.get('mode') in (
-        'PORTABLE_OBSERVATION_RETAINED_ACTIVITY_REVIEW','HEAD_BOUND_RETAINED_GROSS_BALANCE_REVIEW','READ_ONLY_PAPER_INSPECTION'):
+        'PORTABLE_OBSERVATION_RETAINED_ACTIVITY_REVIEW','HEAD_BOUND_RETAINED_GROSS_BALANCE_REVIEW','READ_ONLY_PAPER_INSPECTION',
+        'RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW'):
         return 'PRIVATE_FINANCIAL_REPORT'
     return None
 

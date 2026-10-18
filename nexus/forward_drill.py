@@ -36,7 +36,13 @@ def _review(sessions):
         reviews.append(dict(session=session,orders_sha256=fingerprint(orders),
                             evidence_sha256=fingerprint(evidence),quote_observations=quotes['observations'],
                             modeled_buy_orders=1,modeled_sell_orders=1))
-    return dict(sessions=reviews,commands=report['commands'],account_sha256=fingerprint(report['execution_account']),
+    from nexus.forward_trial_review import review as coverage_review
+    from datetime import datetime,timezone
+    with r._read_db() as db:
+        start,end=db.execute('SELECT MIN(started_at),MAX(updated_at) FROM sessions').fetchone()
+    stamp=lambda value:datetime.fromtimestamp(value,timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    coverage=coverage_review(root/'paper_forward.sqlite3',after=stamp(start),until=stamp(end))
+    return dict(sessions=reviews,commands=report['commands'],account_sha256=fingerprint(report['execution_account']),coverage_review=coverage,
                 forward_stopped=True,ownership_released=True,halted=True,flat=True,portfolio_reconciled=True)
 
 

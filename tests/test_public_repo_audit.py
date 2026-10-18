@@ -96,3 +96,10 @@ def test_pr_security_uses_trusted_policy_full_history_and_checksum_pinned_scanne
     assert '--redact=100' in text and '--log-level fatal' in text
     assert '--ignore-gitleaks-allow' in text and '--gitleaks-ignore-path /dev/null' in text
     assert 'upload-artifact' not in text and "'Secret'" not in text and "'Match'" not in text
+
+
+def test_standalone_operational_trial_report_is_private_even_when_renamed(tmp_path):
+    root=repository(tmp_path)
+    commit(root,'ordinary.txt',json.dumps({'mode':'RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW','fixture':True}).encode())
+    result=audit.audit(root,history=True)
+    assert not result['passed'] and any(f['rule']=='PRIVATE_FINANCIAL_REPORT' for f in result['findings'])

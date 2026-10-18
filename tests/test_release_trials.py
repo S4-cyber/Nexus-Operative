@@ -193,3 +193,16 @@ def test_security_policy_files_are_bound_to_source_fingerprint(tmp_path):
         before=trials.source_digest(tmp_path);path=tmp_path/name;path.write_text('policy')
         added=trials.source_digest(tmp_path);assert before!=added
         path.write_text('updated policy');assert trials.source_digest(tmp_path)!=added
+
+
+def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_acceptance():
+    from pathlib import Path
+    from nexus.release_roadmap import REVISION
+    from nexus.forward_trial_review import FLAGS
+    path=Path(__file__).resolve().parents[1]/'validation'/('release_trials_'+REVISION.replace('.','_')+'.json')
+    result=json.loads(path.read_text())['profiles']['forward'];trials._validate('forward',result)
+    changed=copy.deepcopy(result);changed['recovered']['coverage_review']['declared_public_covered_seconds']='1'
+    with pytest.raises(ValueError,match='FORWARD_COVERAGE_SCOPE'):trials._validate('forward',changed)
+    for field in FLAGS:
+        changed=copy.deepcopy(result);changed['recovered']['coverage_review'][field]=True
+        with pytest.raises(ValueError,match='FORWARD_COVERAGE_AUTHORITY'):trials._validate('forward',changed)

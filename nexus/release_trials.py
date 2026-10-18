@@ -330,6 +330,12 @@ def _validate(profile, result):
                  and reviewed['ready_for_routing'] is False, 'ACTIVITY_AUTHORITY')
         _require(reviewed['review_reasons'] == ['ACTIVITY_COVERAGE_UNVERIFIED', 'FEE_LINK_AND_TIMING_UNVERIFIED'], 'ACTIVITY_CONSISTENCY')
     if profile == 'forward':
+        coverage=result['recovered']['coverage_review']
+        from nexus.forward_trial_review import FLAGS as COVERAGE_FLAGS
+        _require(coverage['status']=='REVIEW_REQUIRED' and coverage['injected_observations']==result['cycles'] and
+            coverage['declared_public_covered_seconds']=='0' and coverage['declared_coverage_target_met'] is False,
+            'FORWARD_COVERAGE_SCOPE')
+        _require(all(coverage[k] is False for k in COVERAGE_FLAGS),'FORWARD_COVERAGE_AUTHORITY')
         _require(result['rounds'] == 20 and len(result['recovered']['sessions']) == 20, 'FORWARD_SESSIONS')
         _require(result['recovered']['flat'] is True and result['recovered']['forward_stopped'] is True
                  and result['recovered']['portfolio_reconciled'] is True, 'FORWARD_RECOVERY')

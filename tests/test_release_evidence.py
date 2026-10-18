@@ -14,7 +14,7 @@ from nexus import release_evidence as evidence
 def report():
     # Reuse existing synthetic result data, explicitly rebinding test metadata.
     # This demonstrates why matching hashes alone are NOT execution attestation.
-    value=json.loads((evidence.ROOT/'validation/release_trials_0_114_0.json').read_text())
+    value=json.loads((evidence.ROOT/('validation/release_trials_'+evidence.REVISION.replace('.','_')+'.json')).read_text())
     value['version']=evidence.REVISION;value['source_fingerprint']=evidence.source_digest(evidence.ROOT)
     return value
 

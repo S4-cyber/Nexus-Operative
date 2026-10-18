@@ -246,12 +246,13 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         recovery='ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED' if pace['sessions'] or retained['retained_batches'] else 'NO_LOCAL_READ_HISTORY'
     elif (accepted['pacing_bound_head_sha256']!=pace['head_sha256'] or accepted['retention_bound_head_sha256']!=retained['head_sha256']):
         recovery='UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED'
+    elif accepted['preexisting_history_unverified']:
+        recovery='LEGACY_BASELINE_ONLY_REVIEW_REQUIRED'
     elif accepted['records'] and not replay['latest_acceptance_record_replayed']:
         recovery='ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'
     elif accepted['records'] and not historical['all_accepted_transitions_replayed']:
         recovery='ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'
     elif accepted['records']:recovery='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED'
-    elif accepted['preexisting_history_unverified']:recovery='LEGACY_BASELINE_ONLY_REVIEW_REQUIRED'
     else:recovery='NO_ACCEPTED_READ_TRANSITIONS'
     uncertain=recovery in ('PACING_UNCERTAINTY_REVIEW_REQUIRED','ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED','ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','LEGACY_BASELINE_ONLY_REVIEW_REQUIRED')
     return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_STATUS',status='REVIEW_REQUIRED',read_only=True,

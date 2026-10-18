@@ -9,6 +9,7 @@ import pytest
 from nexus import paper_reconciliation_acceptance as subject
 from nexus.paper_activity_acceptance_evidence import ACCOUNT, _scope
 from nexus.paper_observation_review import _fixture_observation
+from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 
 
 def prepared(tmp_path):
@@ -34,6 +35,10 @@ def test_complete_accepted_history_binds_exact_observations_and_head_without_wri
     options=prepared(tmp_path);before=snapshot(tmp_path);result=subject.review(**options)
     assert result['mode']=='PAPER_RECONCILIATION_ACCEPTANCE_REVIEW'
     assert result['complete_accepted_history_replayed'] is True
+    assert result['legacy_baseline_absent'] is True
+    assert result['complete_pacing_sessions_accepted'] is True
+    assert result['complete_retained_batches_accepted'] is True
+    assert result['complete_collection_observations_accepted'] is True
     assert result['journals_rechecked_unchanged'] is True
     assert result['accepted_transitions']==1
     assert result['activity_head_sha256']==options['expected_activity_head']
@@ -85,7 +90,8 @@ def test_any_journal_change_during_composition_is_rejected(tmp_path,monkeypatch)
 
 @pytest.mark.parametrize('field,value',[('cross_journal_recovery_state','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'),
     ('latest_acceptance_record_replayed',False),('all_accepted_transitions_replayed',False),
-    ('accepted_transitions',0)])
+    ('accepted_transitions',0),('preexisting_history_unverified',True),('sessions',2),
+    ('retained_batches',2),('retained_collection_observations',2)])
 def test_every_accepted_history_requirement_fails_closed(tmp_path,monkeypatch,field,value):
     options=prepared(tmp_path);actual=subject.acceptance_status(**dict(
         expected_account_id=options['expected_account_id'],pacing_path=options['pacing_path'],
@@ -94,6 +100,36 @@ def test_every_accepted_history_requirement_fails_closed(tmp_path,monkeypatch,fi
     monkeypatch.setattr(subject,'acceptance_status',lambda **kwargs:actual)
     with pytest.raises(ValueError,match='ACCEPTED_HISTORY_REQUIRED'):
         subject.review(**options)
+
+
+def test_accepted_tail_cannot_hide_unverified_legacy_baseline(tmp_path, monkeypatch):
+    pacing,activity,_,_= _scope(tmp_path)
+    (tmp_path/'acceptance.sqlite3').unlink()
+    acceptance=PaperActivityAcceptanceStore(tmp_path/'acceptance.sqlite3',ACCOUNT)
+    acceptance.bind(pacing_head=pacing.inspect()['head_sha256'],
+        retention_head=activity.inspect()['head_sha256'],pacing_sessions=1,retained_batches=1)
+    pacing,activity,acceptance,scope=_scope(tmp_path,2)
+    acceptance.append(scope,admission=lambda:(pacing.inspect()['head_sha256'],
+        activity.inspect()['head_sha256']))
+    state=subject.acceptance_status(expected_account_id=ACCOUNT,
+        pacing_path=tmp_path/'pacing.sqlite3',activity_store_path=tmp_path/'activity.sqlite3',
+        acceptance_store_path=tmp_path/'acceptance.sqlite3')
+    assert state['preexisting_history_unverified'] is True
+    assert state['accepted_transitions']==1 and state['sessions']==state['retained_batches']==2
+    assert state['all_accepted_transitions_replayed'] is True
+    assert state['cross_journal_recovery_state']=='LEGACY_BASELINE_ONLY_REVIEW_REQUIRED'
+    opening=_fixture_observation(ACCOUNT,'1000','0',1800000000,1800000001)
+    called=False
+    def forbidden(*args,**kwargs):
+        nonlocal called;called=True;raise AssertionError
+    monkeypatch.setattr(subject.paper_observation_review,'review',forbidden)
+    with pytest.raises(ValueError,match='ACCEPTED_HISTORY_REQUIRED'):
+        subject.review(expected_account_id=ACCOUNT,pacing_path=tmp_path/'pacing.sqlite3',
+            activity_store_path=tmp_path/'activity.sqlite3',
+            acceptance_store_path=tmp_path/'acceptance.sqlite3',
+            expected_activity_head=activity.inspect()['head_sha256'],
+            opening_observation=opening,closing_observation=opening)
+    assert called is False
 
 
 def test_cli_prints_private_review_but_never_writes_journals(tmp_path):
@@ -115,5 +151,8 @@ def test_release_fixture_is_repeatable_vault_and_provider_silent():
     assert result['passed'] and result['repeat_review_matches'] and result['journals_unchanged']
     assert result['unbound_history_rejected'] and result['private_scope_omitted']
     assert result['exact_activity_head_bound'] and result['complete_accepted_history_replayed']
+    assert result['legacy_baseline_absent'] and result['complete_pacing_sessions_accepted']
+    assert result['complete_retained_batches_accepted']
+    assert result['complete_collection_observations_accepted']
     assert result['observation_arithmetic_evaluated'] and 'review' not in result
     assert result['actual_provider_access'] is result['actual_vault_access'] is False

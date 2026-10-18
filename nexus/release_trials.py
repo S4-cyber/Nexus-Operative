@@ -525,6 +525,10 @@ def _validate(profile, result):
             'RECONCILIATION_ACCEPTANCE_REPLAY')
         _require(result['complete_accepted_history_replayed'] is True and
             result['exact_activity_head_bound'] is True and
+            result['legacy_baseline_absent'] is True and
+            result['complete_pacing_sessions_accepted'] is True and
+            result['complete_retained_batches_accepted'] is True and
+            result['complete_collection_observations_accepted'] is True and
             result['observation_arithmetic_evaluated'] is True,
             'RECONCILIATION_ACCEPTANCE_BINDING')
         _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access',

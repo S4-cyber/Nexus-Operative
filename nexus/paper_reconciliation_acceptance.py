@@ -22,11 +22,15 @@ def _fail(code):
 
 
 def _accepted(status):
-    """Require complete current/history replay, not merely matching tail heads."""
+    """Require every retained cooperating transition, not merely accepted tail replay."""
     return (
         status['cross_journal_recovery_state'] == 'BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED'
         and status['cross_journal_heads_match'] is True
         and status['accepted_transitions'] > 0
+        and status['preexisting_history_unverified'] is False
+        and status['accepted_transitions'] == status['sessions']
+        and status['accepted_transitions'] == status['retained_batches']
+        and status['accepted_transitions'] == status['retained_collection_observations']
         and status['replayed_accepted_transitions'] == status['accepted_transitions']
         and status['latest_acceptance_record_replayed'] is True
         and status['all_accepted_transitions_replayed'] is True
@@ -69,6 +73,9 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
     return dict(mode='PAPER_RECONCILIATION_ACCEPTANCE_REVIEW',
         status='REVIEW_REQUIRED', read_only=True, **scope, input_sha256=sha(scope),
         journals_rechecked_unchanged=True, complete_accepted_history_replayed=True,
+        legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
+        complete_retained_batches_accepted=True,
+        complete_collection_observations_accepted=True,
         acceptance_recovery_state=after['cross_journal_recovery_state'],
         observation_review=component,
         admission_reserved=False, source_attested=False,
@@ -124,12 +131,20 @@ def fixture_report():
             result['closing_manifest_sha256']==closing['manifest_sha256'])
         replayed=(result['complete_accepted_history_replayed'] is True and
             result['journals_rechecked_unchanged'] is True and result['accepted_transitions']==1)
+        complete=(result['legacy_baseline_absent'] is True and
+            result['complete_pacing_sessions_accepted'] is True and
+            result['complete_retained_batches_accepted'] is True and
+            result['complete_collection_observations_accepted'] is True)
         arithmetic=result['observation_review']['arithmetic_evaluated'] is True
         passed=(result == repeated and before == after and unbound_rejected and
-            exact_bound and replayed and arithmetic)
+            exact_bound and replayed and complete and arithmetic)
         return dict(passed=passed, repeat_review_matches=result == repeated,
             journals_unchanged=before == after, unbound_history_rejected=unbound_rejected,
             exact_activity_head_bound=exact_bound, complete_accepted_history_replayed=replayed,
+            legacy_baseline_absent=result['legacy_baseline_absent'],
+            complete_pacing_sessions_accepted=result['complete_pacing_sessions_accepted'],
+            complete_retained_batches_accepted=result['complete_retained_batches_accepted'],
+            complete_collection_observations_accepted=result['complete_collection_observations_accepted'],
             observation_arithmetic_evaluated=arithmetic, private_scope_omitted=True,
             source='SYNTHETIC_LOCAL_ACCEPTED_RECONCILIATION_FIXTURE',
             actual_provider_access=False, actual_vault_access=False,

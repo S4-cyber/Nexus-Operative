@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.145.0 (pre-release).** Passive broker-marker preflight and post-lock/post-insert lookup-clock rollback. Estimates remain rough and separate from acceptance; no routing, funding or release permission.
+**Current development build: 0.146.0 (pre-release).** Cross-journal original-request and explicit-fill agreement checks, individual limit enforcement diagnostics and private report publication protection. No routing, funding or release permission.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

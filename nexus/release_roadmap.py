@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.145.0'
+REVISION = '0.146.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -144,7 +144,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.145 adds a passive local broker-marker preflight explaining preparation, original-ID recovery, account review, pending lookup, clock, cooldown and recovery-capacity blockers without reserving or granting admission. Checked lookup writes reject clock regression across lock admission and after insertion, rolling back while retaining unresolved recovery. The offline Accounts fixture shows the preflight distinction. The rough weighted implementation estimate remains about40% with30–45% judgment range and0/9 fully accepted stages; actual broker routing, funding/live/cloud and independent acceptance remain open. Preserves v0.144 durable shared-local discovery request allowances across cooperating processes/restarts; this is not provider-wide quota coordination.'
+CURRENT_HARDENING = 'v0.146 links replayed original request terms and retained activity histories under explicit account/head references, rechecks both journals unchanged and checks individual fill identity, quantity/leaves and limit price. Matching aggregate averages cannot hide a bad individual fill. Accounts demonstrates this in temporary offline fixtures; no fills are inferred from cumulative averages and no fees, holds, funds, broker attestation or routing are approved. Shared-local discovery budgets and prior recovery fences remain. The rough implementation baseline stays about40% (30–45%, low confidence),0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

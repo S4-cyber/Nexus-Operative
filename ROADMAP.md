@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.145.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.146.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.145 adds a passive local broker-marker preflight explaining preparation, original-ID recovery, account review, pending lookup, clock, cooldown and recovery-capacity blockers without reserving or granting admission. Checked lookup writes reject clock regression across lock admission and after insertion, rolling back while retaining unresolved recovery. The offline Accounts fixture shows the preflight distinction. The rough weighted implementation estimate remains about40% with30–45% judgment range and0/9 fully accepted stages; actual broker routing, funding/live/cloud and independent acceptance remain open. Preserves v0.144 durable shared-local discovery request allowances across cooperating processes/restarts; this is not provider-wide quota coordination.
+Current hardening: v0.146 links replayed original request terms and retained activity histories under explicit account/head references, rechecks both journals unchanged and checks individual fill identity, quantity/leaves and limit price. Matching aggregate averages cannot hide a bad individual fill. Accounts demonstrates this in temporary offline fixtures; no fills are inferred from cumulative averages and no fees, holds, funds, broker attestation or routing are approved. Shared-local discovery budgets and prior recovery fences remain. The rough implementation baseline stays about40% (30–45%, low confidence),0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

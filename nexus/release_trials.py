@@ -451,7 +451,8 @@ def _execute(profile):
         return fixture_report()
     if profile == 'activity':
         from nexus.broker_activity_review import fixture_report
-        return fixture_report()
+        from nexus.broker_request_activity_review import fixture_report as link_fixture
+        result=fixture_report();result['request_activity_link']=link_fixture();return result
     raise ValueError('RELEASE_TRIAL_UNKNOWN_PROFILE')
 
 
@@ -609,6 +610,10 @@ def _validate(profile, result):
             'live_orders_enabled','money_movement_enabled','release_approved')),
             'RECONCILIATION_ACCEPTANCE_AUTHORITY')
     if profile == 'activity':
+        from nexus.broker_request_activity_review import FLAGS
+        linked=result['request_activity_link']
+        _require(linked['source']=='TEMPORARY_REQUEST_ACTIVITY_LINK_FIXTURE' and all(linked[k] is True for k in ('passed','original_request_linked','explicit_fills_checked','offsetting_bad_price_detected','journals_unchanged')), 'REQUEST_ACTIVITY_LINK')
+        _require(all(linked[k] is False for k in FLAGS),'REQUEST_ACTIVITY_AUTHORITY')
         reviewed = result['review']
         _require(reviewed['retained_batches'] == 2 and reviewed['retained_activities'] == 5
                  and reviewed['normalization_evaluated'] is True, 'ACTIVITY_MERGE')

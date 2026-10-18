@@ -282,10 +282,22 @@ def _pacing_trial():
         explicit_review = interrupted_state['last_outcome'] == 'INTERRUPTED_UNKNOWN' and interrupted_state['sessions'] == 1
         long_wait = denied(lambda:owned.begin(admission=lambda:87400), 'COOLDOWN')
         state = PaperReadPacing(path,account).inspect()
+        wal = PaperReadPacing(Path(directory)/'wal.sqlite3', account)
+        token = wal.begin(admission=lambda:1000)
+        wal.finish(token,admission=lambda:1000,status_code=200)
+        db = sqlite3.connect(wal.path)
+        try: _require(db.execute('PRAGMA journal_mode=WAL').fetchone()[0]=='wal', 'PACING_WAL_FIXTURE')
+        finally: db.close()
+        before = {p.name:p.read_bytes() for p in Path(directory).iterdir() if p.is_file()}
+        wal_read = denied(wal.inspect,'JOURNAL_MODE_REVIEW_REQUIRED')
+        wal_write = denied(lambda:wal.begin(admission=lambda:1060),'JOURNAL_MODE_REVIEW_REQUIRED')
+        no_sidecars = before == {p.name:p.read_bytes() for p in Path(directory).iterdir() if p.is_file()}
         return dict(passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
+            wal_read_rejected_before_sqlite=wal_read, wal_write_rejected_before_conversion=wal_write,
+            wal_rejection_preserved_files=no_sidecars,
             broker_wide_quota_verified=False, ready_for_routing=False,
             limitations='Disposable local journal policy only; no provider requests, actual rate-limit acceptance, distributed ownership or runtime default integration.')
 
@@ -470,7 +482,8 @@ def _validate(profile, result):
         _require(result['completed_sessions'] == 3 and result['replayed_events'] == 6, 'PACING_HISTORY')
         _require(all(result[name] is True for name in ('cooldown_enforced', 'retry_after_retained',
             'authentication_block_retained', 'pending_read_not_auto_released',
-            'explicit_owned_interruption_retained', 'interrupted_full_day_cooldown')), 'PACING_FENCES')
+            'explicit_owned_interruption_retained', 'interrupted_full_day_cooldown',
+            'wal_read_rejected_before_sqlite','wal_write_rejected_before_conversion','wal_rejection_preserved_files')), 'PACING_FENCES')
         _require(result['broker_wide_quota_verified'] is False and result['ready_for_routing'] is False, 'PACING_AUTHORITY')
     if profile == 'activity':
         reviewed = result['review']

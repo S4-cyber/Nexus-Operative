@@ -122,3 +122,24 @@ def test_passive_startup_routes_do_not_create_managed_journal(setup, vault):
     for route in ('/api/status', '/portal', '/api/onboarding/tasks'):
         assert client.get(route).status_code == 200
     assert vault.reads == 0 and not opener.requests and not path.parent.exists()
+
+
+def test_wal_pacing_blocks_both_portal_actions_before_vault_or_more_provider_reads(setup, vault):
+    import sqlite3
+    client, path, opener = setup
+    save()
+    assert post(client, 'paced-inspect', expected_account_id=ACCOUNT, confirm_read_only_paper=True).status_code == 200
+    db = sqlite3.connect(path)
+    try: assert db.execute('PRAGMA journal_mode=WAL').fetchone()[0] == 'wal'
+    finally: db.close()
+    before = {p.name:p.read_bytes() for p in path.parent.iterdir() if p.is_file()}
+    reads = vault.reads
+    for action in ('pacing-status', 'paced-inspect'):
+        data = dict(expected_account_id=ACCOUNT)
+        if action == 'paced-inspect': data['confirm_read_only_paper'] = True
+        response = post(client, action, **data)
+        assert response.status_code == 503 and response.headers['cache-control'] == 'no-store'
+        assert response.json() == {'detail':'PAPER_ONBOARDING_ACTION_UNAVAILABLE'}
+        assert all(value not in response.text for value in (KEY, SECRET, str(path)))
+    assert vault.reads == reads and len(opener.requests) == 4
+    assert {p.name:p.read_bytes() for p in path.parent.iterdir() if p.is_file()} == before

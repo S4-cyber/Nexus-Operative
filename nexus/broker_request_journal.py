@@ -15,6 +15,7 @@ import tempfile
 from uuid import UUID
 from nexus import alpaca_paper_contract as contract
 from nexus import broker_lookup_policy as lookup
+from nexus.sqlite_journal_guard import check_existing
 
 MAX_REQUESTS = 128
 MAX_EVENTS = 4096
@@ -57,9 +58,8 @@ class BrokerRequestJournal:
         self.account_digest = hashlib.sha256(account.encode()).hexdigest()
 
     def _check_path(self):
-        if self.path.is_symlink():raise ValueError('BROKER_JOURNAL_SYMLINK_NOT_ALLOWED')
-        if self.path.exists() and self.path.stat().st_size > MAX_DATABASE_BYTES:
-            raise ValueError('BROKER_JOURNAL_BYTE_CAP')
+        check_existing(self.path, MAX_DATABASE_BYTES, 'BROKER_JOURNAL_',
+            cap_code='BYTE_CAP', symlink_code='SYMLINK_NOT_ALLOWED')
 
     def _connect(self, write=False):
         self._check_path()
@@ -70,6 +70,7 @@ class BrokerRequestJournal:
                 fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
                 os.close(fd); new = True
             except FileExistsError:pass
+            self._check_path()
         db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=5)
         try:
             if write:

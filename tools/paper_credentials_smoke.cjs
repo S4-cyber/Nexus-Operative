@@ -125,7 +125,7 @@ const observed=enrich({mode:'READ_ONLY_PAPER_INSPECTION',checks:'OBSERVED_FIELDS
  }
  for(const change of [{private_extra:'private-secret'},{ready_for_routing:true},{pending_read:true},{sessions:257},{journal_present:false},{head_sha256:'private-secret'}]){
   operation=button('paper-pacing-status').onclick();pending.shift().resolve({...status,...change});await operation;
-  assert.match(last(),/could not be confirmed/);assert(!last().includes('private-secret'));
+  assert.match(last(),/could not be confirmed/);assert.match(last(),/local pacing history needs review/);assert.match(last(),/does not read keys/);assert(!last().includes('private-secret'));
  }
  operation=button('paper-pacing-status').onclick();pending.shift().resolve({...status,pending_read:true,suggested_action:'REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY'});await operation;assert.match(last(),/previous read is uncertain/);
  operation=button('paper-account-paced-inspect').onclick();const latePaced=pending.shift();

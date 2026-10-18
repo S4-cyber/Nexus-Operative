@@ -14,6 +14,7 @@ import sqlite3
 from nexus import alpaca_activity_normalizer as adapter
 from nexus.alpaca_activity_collection import _window
 from nexus.alpaca_paper_contract import canonical, sha
+from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.paper-activity-retention.v1'
 MAX_BATCHES = 128
@@ -56,8 +57,7 @@ class BrokerActivityStore:
         self.account_digest = hashlib.sha256(self.account.encode()).hexdigest()
 
     def _check_path(self):
-        if self.path.is_symlink(): _fail('SYMLINK')
-        if self.path.exists() and self.path.stat().st_size > MAX_DATABASE_BYTES: _fail('DATABASE_CAP')
+        check_existing(self.path, MAX_DATABASE_BYTES, 'BROKER_ACTIVITY_STORE_')
 
     def _connect(self, write=False):
         self._check_path(); new = False
@@ -67,6 +67,7 @@ class BrokerActivityStore:
                 descriptor = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
                 os.close(descriptor); new = True
             except FileExistsError: pass
+            self._check_path()
         db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=5)
         try:
             if write:

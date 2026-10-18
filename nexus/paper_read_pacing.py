@@ -17,6 +17,7 @@ import sqlite3
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus.broker_lookup_policy import classify, clock
+from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.paper-read-pacing.v1'
 MAX_SESSIONS = 256
@@ -37,12 +38,7 @@ class PaperReadPacing:
         self.account_digest = hashlib.sha256(self.account.encode()).hexdigest()
 
     def _path_check(self):
-        if self.path.is_symlink(): _fail('SYMLINK')
-        if self.path.exists():
-            info = self.path.stat()
-            if not stat.S_ISREG(info.st_mode): _fail('REGULAR_FILE_REQUIRED')
-            if info.st_nlink != 1: _fail('HARDLINK')
-            if info.st_size > MAX_DATABASE_BYTES: _fail('DATABASE_CAP')
+        check_existing(self.path, MAX_DATABASE_BYTES, 'PAPER_READ_PACING_')
 
     def _connect(self, write=False):
         self._path_check(); new = False
@@ -52,6 +48,7 @@ class PaperReadPacing:
                 fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
                 os.close(fd); new = True
             except FileExistsError: pass
+            self._path_check()
         db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=5)
         try:
             if write:

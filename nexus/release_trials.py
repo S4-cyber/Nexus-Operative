@@ -110,10 +110,20 @@ def _pacing_trial():
         pending = PaperReadPacing(Path(directory)/'pending.sqlite3', account)
         pending.begin(admission=lambda:1000)
         interrupted = denied(lambda:PaperReadPacing(pending.path,account).begin(admission=lambda:100000), 'PENDING_REVIEW')
+        owned = PaperReadPacing(Path(directory)/'owned.sqlite3', account)
+        with owned.ownership() as owner:
+            owned.begin(admission=lambda:1000, ownership=owner)
+        snapshot = owned.inspect()
+        owned.interrupt(snapshot['pending_token'], expected_head=snapshot['head_sha256'],
+            expected_account_id=account, confirm_interrupted=True, admission=lambda:1001)
+        interrupted_state = PaperReadPacing(owned.path,account).inspect()
+        explicit_review = interrupted_state['last_outcome'] == 'INTERRUPTED_UNKNOWN' and interrupted_state['sessions'] == 1
+        long_wait = denied(lambda:owned.begin(admission=lambda:87400), 'COOLDOWN')
         state = PaperReadPacing(path,account).inspect()
         return dict(passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
+            explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
             broker_wide_quota_verified=False, ready_for_routing=False,
             limitations='Disposable local journal policy only; no provider requests, actual rate-limit acceptance, distributed ownership or runtime default integration.')
 
@@ -157,7 +167,8 @@ def _validate(profile, result):
     if profile == 'pacing':
         _require(result['completed_sessions'] == 3 and result['replayed_events'] == 6, 'PACING_HISTORY')
         _require(all(result[name] is True for name in ('cooldown_enforced', 'retry_after_retained',
-            'authentication_block_retained', 'pending_read_not_auto_released')), 'PACING_FENCES')
+            'authentication_block_retained', 'pending_read_not_auto_released',
+            'explicit_owned_interruption_retained', 'interrupted_full_day_cooldown')), 'PACING_FENCES')
         _require(result['broker_wide_quota_verified'] is False and result['ready_for_routing'] is False, 'PACING_AUTHORITY')
     if profile == 'activity':
         reviewed = result['review']

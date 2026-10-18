@@ -154,6 +154,7 @@ class _ReadSession:
                 _fail('PAPER_INSPECTION_PACING_ACCOUNT_OR_TYPE')
             pacing.inspect()  # Corrupt/foreign history blocks all IO; missing stays missing.
         self.pacing = pacing
+        self.pacing_owner = None
         self.pacing_token = None
         self.pacing_finished = False
         self.key, self.secret = api_key, api_secret
@@ -174,14 +175,19 @@ class _ReadSession:
         try:
             self.checkpoint()
             if self.pacing is not None:
-                self.pacing_token = self.pacing.begin(admission=self.evaluated_at)
+                self.pacing_owner = self.pacing.ownership()
+                self.pacing_owner.__enter__()
+                self.pacing_token = self.pacing.begin(admission=self.evaluated_at, ownership=self.pacing_owner)
                 self.checkpoint()  # A lost/revoked acknowledgment never releases a reservation.
             if self.reader is None:
                 self.reader = build_opener(ProxyHandler({}), _NoRedirect())
             self.active = self.entered = True
             return self
         except BaseException as exc:
-            _lock.release()
+            try:
+                if self.pacing_owner is not None: self.pacing_owner.__exit__(None, None, None)
+            finally:
+                _lock.release()
             if isinstance(exc, Exception):
                 _sanitize(exc)
             raise
@@ -197,7 +203,10 @@ class _ReadSession:
             _sanitize(exc)
         finally:
             self.active = False
-            _lock.release()
+            try:
+                if self.pacing_owner is not None: self.pacing_owner.__exit__(None, None, None)
+            finally:
+                _lock.release()
 
     def _pacing_result(self, **outcome):
         if self.pacing is not None and not self.pacing_finished:
@@ -210,6 +219,8 @@ class _ReadSession:
 
     def checkpoint(self):
         try:
+            if self.pacing_owner is not None:
+                self.pacing_owner.validate()
             if self.permission_check() is not True:
                 _fail('PAPER_INSPECTION_PERMISSION_REVOKED')
             current = (self.wall_clock(), self.elapsed_clock())

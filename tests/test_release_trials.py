@@ -86,7 +86,7 @@ def test_unreadable_order_history_fails_closed_without_repair(tmp_path, monkeypa
 def test_pacing_fixture_reports_actual_retained_fences_without_provider_authority():
     result = trials._pacing_trial()
     trials._validate('pacing', result)
-    for field in ('cooldown_enforced', 'retry_after_retained', 'authentication_block_retained', 'pending_read_not_auto_released'):
+    for field in ('cooldown_enforced', 'retry_after_retained', 'authentication_block_retained', 'pending_read_not_auto_released', 'explicit_owned_interruption_retained', 'interrupted_full_day_cooldown'):
         changed = dict(result, **{field:False})
         with pytest.raises(ValueError, match='PACING_FENCES'): trials._validate('pacing', changed)
     for field in ('broker_wide_quota_verified', 'ready_for_routing'):

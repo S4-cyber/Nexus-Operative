@@ -237,7 +237,7 @@ def test_invalid_or_duplicate_positions_fail(positions):
 def test_open_orders_require_reservation_review_not_assumed_free_cash():
     result = inspect(Opener([account(), [], [{'private': SECRET}], account()]))
     assert result['open_order_count'] == 1
-    assert result['review_reasons'] == ['OPEN_ORDER_RESERVATIONS_REQUIRE_RECONCILIATION']
+    assert result['review_reasons'] == ['OPEN_ORDER_RESERVATIONS_REQUIRE_RECONCILIATION','OPEN_ORDER_TERMS_NOT_EVALUATED']
     assert SECRET not in json.dumps(result)
 
 

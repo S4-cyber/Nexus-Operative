@@ -161,3 +161,13 @@ def test_portable_observation_review_trial_rejects_boundary_or_authority_promoti
         'ready_for_routing','broker_connected','live_orders_enabled','automatic_retry','automatic_continuation'):
         changed=copy.deepcopy(result);changed['review'][field]=True
         with pytest.raises(ValueError,match='OBSERVATION_REVIEW_AUTHORITY'):trials._validate('observation_review',changed)
+
+
+def test_open_terms_trial_rejects_partial_totals_or_promoted_hold_authority():
+    from nexus.paper_open_order_terms import fixture_report, FLAGS
+    result=fixture_report();trials._validate('open_order_terms',result)
+    changed=copy.deepcopy(result);changed['unsupported']['remaining_buy_limit_principal_cap_usd']='250'
+    with pytest.raises(ValueError,match='OPEN_TERMS_UNKNOWN'):trials._validate('open_order_terms',changed)
+    for field in FLAGS:
+        changed=copy.deepcopy(result);changed['observed'][field]=True
+        with pytest.raises(ValueError,match='OPEN_TERMS_AUTHORITY'):trials._validate('open_order_terms',changed)

@@ -60,6 +60,8 @@ def paper_observation_fixture():
     result['reported_inventory_sha256'] = sha(result['observed_inventory'])
     result['observation_sha256'] = sha(dict(profile='nexus.paper-account-observation.v1', **{k:result[k] for k in
         ('account_fields_sha256','reported_inventory_sha256','position_count','open_order_count','source','read_timing')}))
+    from nexus.paper_open_order_terms import summarize
+    result['open_order_terms'] = summarize([],expected_account_id=result['account_id'])
     result['portable_observation'] = create(result)
     return result
 
@@ -258,6 +260,8 @@ def run(output,channel=None):
                     expect(page.locator('#paper-credentials-result')).to_contain_text('Reported cash USD 1000')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('BTC total 2 / available 1.9 / Unavailable difference 0.1')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('NOT a verified hold')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('Buy limit principal cap USD 0 / Sell remainder BTC 0')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('NOT verified holds or execution prices')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('Spendable funds NOT verified')
                     expect(page.locator('#paper-observation-download')).to_be_enabled()
                     page.once('dialog',lambda dialog:dialog.accept())

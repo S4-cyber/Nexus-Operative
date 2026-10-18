@@ -77,3 +77,6 @@ python -m nexus.paper_observation_review --activities history.db --account ACCOU
 ```
 
 It prints a private JSON report containing balance observations and retained activity details. Keep that output private. The tool changes no files or accounts and sends no provider requests. If an observed fill occurred during either sequential read, or the reads overlap, it refuses the gross balance calculation. Unknown totals stay unknown. A calculated difference is not profit or verified spendable funds; matching hashes and balances still need independent source, fee and hold reconciliation. The tool requires an already retained history and never creates a replacement to bypass a mismatch.
+
+
+After Read Paper Account Once, Accounts also reports supported open IOC limit terms: buy-limit principal and remaining sell quantity. These amounts are observations, not verified provider holds or the price a trade will receive. Pending cancellation still counts as open. Unsupported or conflicting orders make both totals unknown. Download Observation saves the inventory-only report; it does not include these order terms. Nothing in this read places orders or verifies spendable funds.

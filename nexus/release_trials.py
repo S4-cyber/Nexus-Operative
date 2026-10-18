@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms')
 
 
 def _require(condition, code):
@@ -165,6 +165,9 @@ def _inspection_inventory_trial():
 
 
 def _execute(profile):
+    if profile == 'open_order_terms':
+        from nexus.paper_open_order_terms import fixture_report
+        return fixture_report()
     if profile == 'observation_review':
         from nexus.paper_observation_review import fixture_report
         return fixture_report()
@@ -213,6 +216,18 @@ def _validate(profile, result):
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
+    if profile == 'open_order_terms':
+        from nexus.paper_open_order_terms import FLAGS
+        observed, unsupported = result['observed'], result['unsupported']
+        _require(observed['terms_complete'] is True and observed['reported_rows'] == 3 and
+            observed['supported_unique_orders'] == 2 and observed['duplicate_rows_ignored'] == 1 and
+            observed['remaining_buy_limit_principal_cap_usd'] == '250' and
+            observed['remaining_sell_quantity_btc'] == '0.5', 'OPEN_TERMS_ARITHMETIC')
+        _require(unsupported['terms_complete'] is False and unsupported['status'] == 'REVIEW_REQUIRED' and
+            unsupported['remaining_buy_limit_principal_cap_usd'] is None and
+            unsupported['remaining_sell_quantity_btc'] is None and unsupported['normalized_terms_sha256'] is None,
+            'OPEN_TERMS_UNKNOWN')
+        _require(all(all(r[k] is False for k in FLAGS) for r in (observed,unsupported)), 'OPEN_TERMS_AUTHORITY')
     if profile == 'observation_review':
         reviewed, boundary = result['review'], result['boundary_review']
         _require(reviewed['arithmetic_evaluated'] is True and reviewed['head_rechecked'] is True and

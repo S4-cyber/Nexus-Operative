@@ -17,8 +17,13 @@ const safeSetup=configured=>({configured,review_required:false,ready_for_routing
 const crypto=require('crypto');
 const canonical=value=>JSON.stringify(value&&typeof value==='object'?(Array.isArray(value)?value.map(v=>JSON.parse(canonical(v))):Object.fromEntries(Object.keys(value).sort().map(k=>[k,JSON.parse(canonical(value[k]))]))):value);
 const sha=value=>crypto.createHash('sha256').update(canonical(value)).digest('hex');
+function openTerms(changes={}){
+ const value={mode:'REPORTED_OPEN_IOC_LIMIT_TERMS',status:'TERMS_OBSERVED_SOURCE_UNVERIFIED',scope:'QUANTITY_BTC_USD_SIMPLE_IOC_LIMIT_TERMS_NOT_PROVIDER_HOLDS_OR_EXECUTION_PRICES',reported_rows:0,supported_unique_orders:0,duplicate_rows_ignored:0,unsupported_rows:0,terms_complete:true,remaining_buy_limit_principal_cap_usd:'0',remaining_sell_quantity_btc:'0',normalized_terms_sha256:'b'.repeat(64),review_reasons:[],...Object.fromEntries(['source_attested','order_coverage_verified','holds_reconciled','spendable_funds_verified','ready_for_routing','ledger_applied','broker_connected','live_orders_enabled'].map(k=>[k,false])),...changes};
+ value.summary_sha256=sha(value);return value;
+}
 function enrich(report){
  report={...report,source:'INJECTED_UNATTESTED',position_count:report.observed_inventory.scope_supported?(report.observed_inventory.btc_total==='0'?0:1):1,automatic_retry:false,account_fields_sha256:'a'.repeat(64),read_timing:{started_at:1000,completed_at:1000,elapsed_seconds:0}};
+ if(report.open_order_terms===undefined)report.open_order_terms=openTerms();
  report.reported_inventory_sha256=sha(report.observed_inventory);
  report.observation_sha256=sha({profile:'nexus.paper-account-observation.v1',account_fields_sha256:report.account_fields_sha256,reported_inventory_sha256:report.reported_inventory_sha256,position_count:report.position_count,open_order_count:report.open_order_count,source:report.source,read_timing:report.read_timing});
  const fields=['account_id','source','checks','observed_inventory','observed_usd_ceiling','position_count','open_order_count','account_fields_sha256','reported_inventory_sha256','read_timing','observation_sha256'];
@@ -43,7 +48,7 @@ const observed=enrich({mode:'READ_ONLY_PAPER_INSPECTION',checks:'OBSERVED_FIELDS
  operation=button('paper-account-inspect').onclick();assert.deepEqual(requests.at(-1).body,{confirm_read_only_paper:true,expected_account_id:'expected-id'});
  assert.equal(button('paper-account-inspect').disabled,true);assert.equal(button('paper-credentials-remove').disabled,false);
  await button('paper-account-inspect').onclick();assert.equal(requests.length,3);
- pending.shift().resolve(observed);await operation;assert.match(last(),/Observed USD ceiling 900/);assert.match(last(),/Reported cash USD 1000/);assert.match(last(),/BTC total 2 \/ available 1.9/);assert.match(last(),/Unavailable difference 0.1/);assert.match(last(),/NOT a verified hold/);assert.match(last(),/Spendable funds NOT verified/);
+ pending.shift().resolve(observed);await operation;assert.match(last(),/Observed USD ceiling 900/);assert.match(last(),/Reported cash USD 1000/);assert.match(last(),/BTC total 2 \/ available 1.9/);assert.match(last(),/Unavailable difference 0.1/);assert.match(last(),/NOT a verified hold/);assert.match(last(),/Spendable funds NOT verified/);assert.match(last(),/Buy limit principal cap USD 0 \/ Sell remainder BTC 0/);assert.match(last(),/NOT verified holds or execution prices/);
  assert.equal(button('paper-observation-download').disabled,false);
  accepted=false;button('paper-observation-download').onclick();assert.equal(downloads.length,0);accepted=true;
  const readsBeforeDownload=requests.length;button('paper-observation-download').onclick();
@@ -79,6 +84,18 @@ const observed=enrich({mode:'READ_ONLY_PAPER_INSPECTION',checks:'OBSERVED_FIELDS
  await operation;assert.match(last(),/Reported cash USD unknown/);assert.match(last(),/BTC total unknown \/ available unknown/);assert.match(last(),/Unavailable difference unknown/);
  operation=button('paper-account-inspect').onclick();pending.shift().resolve(enrich({...observed,observed_inventory:{...observed.observed_inventory,cash:'0',non_marginable_buying_power:'0',btc_total:'0',btc_available:'0',btc_unavailable_difference:'0'},observed_usd_ceiling:'0',observed_btc_available:'0'}));
  await operation;assert.match(last(),/BTC total 0 \/ available 0/);assert(!last().includes('BTC total unknown'));
+ operation=button('paper-account-inspect').onclick();pending.shift().resolve(enrich({...observed,open_order_count:2,checks:'REVIEW_REQUIRED',open_order_terms:openTerms({reported_rows:2,supported_unique_orders:2,remaining_buy_limit_principal_cap_usd:'250',remaining_sell_quantity_btc:'0.5'})}));await operation;
+ assert.match(last(),/Buy limit principal cap USD 250 \/ Sell remainder BTC 0.5/);
+ operation=button('paper-account-inspect').onclick();pending.shift().resolve(enrich({...observed,open_order_count:1,checks:'REVIEW_REQUIRED',open_order_terms:openTerms({reported_rows:1,unsupported_rows:1,terms_complete:false,status:'REVIEW_REQUIRED',remaining_buy_limit_principal_cap_usd:null,remaining_sell_quantity_btc:null,normalized_terms_sha256:null,review_reasons:['UNSUPPORTED_OR_INVALID_OPEN_ORDER_TERMS']})}));await operation;
+ assert.match(last(),/Buy limit principal cap USD unknown \/ Sell remainder BTC unknown/);
+ operation=button('paper-account-inspect').onclick();pending.shift().resolve(enrich({...observed,open_order_count:128,checks:'REVIEW_REQUIRED',open_order_terms:openTerms({reported_rows:128,supported_unique_orders:128,remaining_buy_limit_principal_cap_usd:'128000000000000000000000000'})}));await operation;
+ assert.match(last(),/Buy limit principal cap USD 128000000000000000000000000/);
+ operation=button('paper-account-inspect').onclick();pending.shift().resolve(enrich({...observed,open_order_count:1,checks:'REVIEW_REQUIRED',open_order_terms:openTerms({reported_rows:1,supported_unique_orders:1,remaining_buy_limit_principal_cap_usd:'0.'+'0'.repeat(35)+'1'})}));await operation;
+ assert(last().includes('Buy limit principal cap USD 0.'+'0'.repeat(35)+'1'));
+ for(const change of [{source_attested:true},{private_extra:'private-secret'},{reported_rows:1},{terms_complete:false},{remaining_buy_limit_principal_cap_usd:'private-secret'}]){
+  operation=button('paper-account-inspect').onclick();pending.shift().resolve({...observed,open_order_terms:{...observed.open_order_terms,...change}});await operation;
+  assert.match(last(),/could not be confirmed/);assert(!last().includes('private-secret'));assert.equal(button('paper-observation-download').disabled,true);
+ }
  operation=button('paper-account-inspect').onclick();button('paper-account-expected').listeners.input();pending.shift().resolve(observed);await operation;
  assert.equal(button('paper-observation-download').disabled,true,'input changed during read must not restore old export');assert.equal(button('paper-account-inspect').disabled,false);
  assert(confirmations.some(x=>x.includes('No broker request')));assert(confirmations.some(x=>x.includes('does not revoke keys')));

@@ -152,6 +152,9 @@ def _report(before, positions, orders, after, expected, source):
     cash = first['cash'] if first['currency'] == 'USD' else None
     buying = first['non_marginable_buying_power'] if first['currency'] == 'USD' else None
     ceiling = None if cash is None or buying is None else text(min(number(cash, zero=True), number(buying, zero=True)))
+    from nexus.paper_open_order_terms import summarize
+    order_terms = summarize(orders, expected_account_id=first['id'])
+    if not order_terms['terms_complete']: reasons.append('OPEN_ORDER_TERMS_NOT_EVALUATED')
     inventory = dict(cash=cash, non_marginable_buying_power=buying, btc_total=total_btc,
         btc_available=available, btc_unavailable_difference=unavailable, scope_supported=inventory_supported)
     return dict(mode='READ_ONLY_PAPER_INSPECTION', source=source, account_id=first['id'],
@@ -160,7 +163,7 @@ def _report(before, positions, orders, after, expected, source):
                 observed_btc_available=available, observed_inventory=inventory,
                 account_fields_sha256=sha(first), reported_inventory_sha256=sha(inventory),
                 fingerprint_scope='NORMALIZED_ACCOUNT_AND_REPORTED_INVENTORY_ONLY_NOT_RAW_SOURCE_ATTESTATION',
-                position_count=len(positions), open_order_count=len(orders),
+                position_count=len(positions), open_order_count=len(orders), open_order_terms=order_terms,
                 sequential_account_fields_stable=True, atomic_snapshot=False,
                 broker_account_reconciled=False, spendable_funds_verified=False,
                 ready_for_routing=False, ledger_applied=False, broker_connected=False,

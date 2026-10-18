@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.101.2 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.101.3 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -30,7 +30,7 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, nine Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_101_2.json`; exact new-source Windows trials must still run |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_101_3.json`; exact new-source Windows trials must still run |
 | Windows packaging and data recovery | Predecessor verified | v0.98 exact commit `65763dd5f9ed4b7367f064a1bf1b25023c114fa0` packaging run39075131403/job117521122766 succeeded; v0.99/new-source evidence tracked separately |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
@@ -54,3 +54,5 @@ Passive AI metadata is also tested under an injected Windows-only credential pol
 Optional AI credential controls (v0.101.2) now reject untrusted origin/peer before secret parsing, use bounded duplicate-free JSON without framework input echoes, return no-store fixed errors, and run explicit OS actions outside the event loop. They bind the exact checked built-in Windows backend, verify save/delete readback and treat absent removal idempotently. Invalid OS records cannot enable research. Tests inject all OS operations; these changes do not certify actual Windows profile/ACLs, provider validity, key revocation or cancellation of in-flight requests. Independent security review remains open.
 
 Credential failure trials also cover save/delete operations that change the injected OS store and then lose their acknowledgment. A failed reply is not proof of absence or rollback; an explicit retry performs fresh checks. No automatic deletion/rollback or retry is attempted. A concurrent ASGI trial verifies status stays responsive and vault-silent while an injected slow save is pending. This is local scheduling/failure evidence, not a hard timing guarantee or provider-key revocation test.
+
+Installer smoke contract correction (v0.101.3): fresh passive startup must preserve missing accounting files. The installed checker now verifies the expected journal path after its explicit Emergency Stop write, then checks halt recovery, rather than requiring startup to create the journal. Expected halted/restored history must exist before launch. Source-process CLI regression covers fresh startup plus halted restart and missing-history refusal; native installer/default-AppData/reinstall/backup/uninstall checks remain mandatory.

@@ -73,6 +73,10 @@ def main():
     args=parser.parse_args()
     if args.default_data_root is not None and os.name!='nt':parser.error('Default frozen Windows layout requires Windows')
     env,expected_data=launch_environment(args.data,args.default_data_root)
+    accounting_names=('order_lifecycle.sqlite3','paper_portfolio.sqlite3')
+    initial_accounting={name:(expected_data/name).is_file() for name in accounting_names}
+    if args.expect_halted or args.expected_recovery:
+        assert initial_accounting['order_lifecycle.sqlite3'], 'Expected retained order journal is missing'
     if args.data is not None:expected_data.mkdir(parents=True,exist_ok=True)
     else:args.default_data_root.mkdir(parents=True,exist_ok=True)
     with socket.socket() as sock:
@@ -90,7 +94,11 @@ def main():
                 except (OSError,urllib.error.URLError):
                     if time.monotonic()>deadline:raise RuntimeError('INSTALLED_START_TIMEOUT')
                     time.sleep(.25)
-            assert (expected_data/'order_lifecycle.sqlite3').is_file(), 'Expected data layout was not used'
+            # Passive fresh startup must not initialize accounting. Validate the
+            # actual data destination after the explicit halt below instead.
+            fresh_accounting=not any(initial_accounting.values())
+            if fresh_accounting:
+                assert not any((expected_data/name).exists() for name in accounting_names), 'Fresh startup initialized accounting'
             assert status['version']==args.version, status
             assert status['halted'] is args.expect_halted, status
             assert not status['portal_enabled'] and not status['live_orders_enabled'] and not status['broker_connected']
@@ -99,9 +107,12 @@ def main():
             assert request(base,'/api/roadmap')['read_only']
             restored=verify_recovery(base,json.loads(args.expected_recovery.read_text(encoding='utf-8'))) if args.expected_recovery else None
             assert request(base,'/api/simulate/halt','POST')['halted']
+            assert (expected_data/'order_lifecycle.sqlite3').is_file(), 'Explicit halt did not use the expected data layout'
             assert request(base,'/api/execution/recovery')['halted']
             args.output.write_text(json.dumps(dict(version=args.version,initial_halted=status['halted'],
                 portal_served=True,forward_stopped=True,halt_persisted=True,restored_recovery=restored,
+                fresh_startup_preserved_missing_accounting=fresh_accounting,
+                expected_data_layout_verified_after_explicit_halt=True,
                 data_layout='DEFAULT_WINDOWS_APPDATA' if args.default_data_root else 'EXPLICIT_PORTABLE_DIRECTORY',
                 scope='CI installed-process smoke; no native window, market feed or cross-version upgrade acceptance.'),indent=2),encoding='utf-8')
         finally:

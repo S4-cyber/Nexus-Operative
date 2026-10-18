@@ -84,3 +84,6 @@ v0.162 adds an explicit private capture/status path binding a fixed-host quote r
 
 
 v0.163 adds password-encrypted portable quote evidence with full request/quote/pacing replay in memory. It supports independent private content review without broker keys or plaintext database exports. Encryption and matching local chains do not authenticate source/clock/event/fee semantics, establish current account state or promote benchmarks/routing.
+
+
+v0.164 adds declared operation history and fixed request sequences to the existing shared local paper-read budget. It distinguishes inventory/asset/activity/original-ID/quote calls without inventing purposes for legacy data or changing cooldowns. Purpose-aware receipt refusal is a prerequisite to a reviewed central budget; it does not yet approve mixed histories, provider-wide/distributed pacing, streaming or order routing.

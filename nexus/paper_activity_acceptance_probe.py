@@ -278,8 +278,8 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
     pace=pacing.inspect();retained=store.inspect();accepted=acceptance.inspect()
     pending = pace['pending_token'] is not None
     scopes=acceptance.replay_scopes()
-    completed={(item['before_head_sha256'],item['after_head_sha256']) for item in pacing.completed_sessions()
-        if item['outcome']=='SUCCESS'}
+    completed={(item['before_head_sha256'],item['after_head_sha256']) for item in pacing.operation_history()
+        if item['outcome']=='SUCCESS' and item['operation'] in ('ACTIVITY_COLLECTION','LEGACY_UNSPECIFIED')}
     records={row['activity_id']:row for row in retained['normalized_activities']}
 
     def replay_scope(scope):

@@ -363,3 +363,8 @@ NexusOperative.exe --paper-tool quote-evidence review --source PRIVATE_COPY.nexu
 The public summary contains counts and local consistency only. Omit that flag for private IDs/heads; keep private stdout out of public logs. This checks the copied history, not the broker, current source state, profitability or trading readiness. It does not import or resume the copied databases. Never put encrypted account copies into the public repository.
 
 Keep quote-capture request, quote and pacing database paths separate from one another and from their SQLite sidecars (`-journal`, `-wal`, `-shm`) and pacing `.owner.lock`. v0.163.1 refuses those relationships before any saved-key or provider access.
+
+
+### Read-purpose counts in optional paper diagnostics (v0.164+)
+
+Pacing status now identifies which standard reader used the local budget: inventory, BTC asset rules, activity pages, original-ID recovery or BTC quote. A pending purpose means that read has an unknown outcome requiring review. Older sessions say LEGACY_UNSPECIFIED because their purpose was never recorded; Nexus does not guess or rewrite them. These counts need no keys/network and do not authorize trading. Each purpose shares the same selected journal's cooldown and limits. Changing readers or creating new journal paths must not be used to bypass provider limits. Mixed operations still need a separately accepted receipt/budget model. Existing status commands stay read-only; no extra startup checklist or setting is required.

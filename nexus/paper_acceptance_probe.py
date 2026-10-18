@@ -51,6 +51,9 @@ def pacing_status(*, expected_account_id, pacing_path):
         journal_present=gate.path.is_file(),account_sha256=state['account_sha256'],head_sha256=state['head_sha256'],
         sessions=state['sessions'],session_capacity_remaining=remaining,next_allowed_at=state['next_allowed_at'],
         pending_read=pending,retained_review_block=state['review_required'],suggested_action=action,
+        operation_counts=dict(state['operation_counts']),pending_operation=state['pending_operation'],
+        legacy_unspecified_sessions=state['operation_counts']['LEGACY_UNSPECIFIED'],
+        operation_identity_attested=False,mixed_operation_acceptance_verified=False,
         **{flag:False for flag in FLAGS},
         limitations='Local replay only, no vault/provider access or admission permission. Missing history does not prove no earlier read. Other/no journals and hosts are not coordinated. Never erase uncertain reads or cooldowns to bypass review.')
 

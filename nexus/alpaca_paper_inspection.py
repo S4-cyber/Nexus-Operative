@@ -177,12 +177,16 @@ class _ReadSession:
     """Private fixed-path GET session shared by account inspection and recovery."""
     def __init__(self, api_key, api_secret, *, confirm_read_only_paper=False,
                  opener=None, wall_clock=time.time, elapsed_clock=time.monotonic,
-                 permission_check=lambda: True, pacing=None, expected_account_id=None, expected_pacing_head=None):
+                 permission_check=lambda: True, pacing=None, expected_account_id=None, expected_pacing_head=None,operation=None):
         if confirm_read_only_paper is not True:
             _fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
         for value in (api_key, api_secret):
             if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
                 _fail('PAPER_INSPECTION_CREDENTIAL_FORMAT_INVALID')
+        from nexus.paper_read_pacing import OPERATIONS
+        if operation is not None and (type(operation) is not str or operation not in OPERATIONS):
+            _fail('PAPER_INSPECTION_OPERATION_INVALID')
+        self.operation=operation;self.request_kinds=[];self.operation_terminal_error=False
         if pacing is not None:
             from nexus.paper_read_pacing import PaperReadPacing
             if type(pacing) is not PaperReadPacing or expected_account_id is None or pacing.account != _uuid(expected_account_id):
@@ -217,7 +221,7 @@ class _ReadSession:
                 self.pacing_owner.__enter__()
                 if self.expected_pacing_head is not None and self.pacing.inspect()['head_sha256']!=self.expected_pacing_head:
                     _fail('PAPER_INSPECTION_PACING_HEAD_CHANGED')
-                self.pacing_token = self.pacing.begin(admission=self.evaluated_at, ownership=self.pacing_owner)
+                self.pacing_token = self.pacing.begin(admission=self.evaluated_at, ownership=self.pacing_owner,**({'operation':self.operation} if self.operation is not None else {}))
                 self.checkpoint()  # A lost/revoked acknowledgment never releases a reservation.
             if self.reader is None:
                 self.reader = build_opener(ProxyHandler({}), _NoRedirect())
@@ -235,6 +239,7 @@ class _ReadSession:
     def __exit__(self, kind, value, traceback):
         try:
             if kind is None:
+                self._operation_complete()
                 self.checkpoint()
                 self._pacing_result(status_code=200)
             if kind is not None and issubclass(kind, Exception):
@@ -249,6 +254,8 @@ class _ReadSession:
                 _lock.release()
 
     def _pacing_result(self, **outcome):
+        if outcome.get('status_code')==200:self._operation_complete()
+        if outcome.get('status_code')!=200:self.operation_terminal_error=True
         if self.pacing is not None and not self.pacing_finished:
             try:
                 self.pacing.finish(self.pacing_token, admission=self.evaluated_at, **outcome)
@@ -299,6 +306,35 @@ class _ReadSession:
         """Only the fixed Alpaca US BTC/USD data endpoint; no caller URL."""
         return self._get_checked(BTC_QUOTE_URL)
 
+    def _operation_patterns(self):
+        return {
+            'ACCOUNT_INVENTORY':(('ACCOUNT','POSITIONS','OPEN_ORDERS','ACCOUNT'),),
+            'BTC_ASSET_RULES':(('ACCOUNT','ASSET','ACCOUNT'),),
+            'BTC_QUOTE_OBSERVATION':(('ACCOUNT','QUOTE','ACCOUNT'),),
+            'ACTIVITY_COLLECTION':(('ACCOUNT','ACTIVITY_PAGE','ACCOUNT'),('ACCOUNT','ACTIVITY_PAGE','ACTIVITY_PAGE','ACCOUNT')),
+            'ORIGINAL_ID_RECOVERY':(('ACCOUNT','ORIGINAL_LOOKUP','ACCOUNT'),),
+        }[self.operation]
+
+    def _operation_request(self,url,lookup):
+        if self.operation is None:return
+        if self.operation_terminal_error:_fail('PAPER_INSPECTION_OPERATION_ALREADY_ENDED')
+        from nexus.alpaca_activity_collection import is_activity_url
+        kind=('ORIGINAL_LOOKUP' if lookup else 'ACCOUNT' if url==URLS[0] else
+            'POSITIONS' if url==URLS[1] else 'OPEN_ORDERS' if url==URLS[2] else
+            'ASSET' if url==ASSET_URL else 'QUOTE' if url==BTC_QUOTE_URL else
+            'ACTIVITY_PAGE' if is_activity_url(url) else 'UNKNOWN')
+        candidate=tuple([*self.request_kinds,kind])
+        if not any(p[:len(candidate)]==candidate for p in self._operation_patterns()):
+            _fail('PAPER_INSPECTION_OPERATION_PATH_SEQUENCE')
+        self.request_kinds.append(kind)
+
+    def _operation_complete(self):
+        if self.operation is None:return
+        kinds=tuple(self.request_kinds)
+        if (self.operation=='ORIGINAL_ID_RECOVERY' and self.operation_terminal_error and
+            kinds==('ACCOUNT','ORIGINAL_LOOKUP')):return
+        if kinds not in self._operation_patterns():_fail('PAPER_INSPECTION_OPERATION_INCOMPLETE')
+
     def _get_checked(self,url,*,lookup=False):
         """Shared bounded transport; callers above enforce their fixed paths."""
         if not self.active:
@@ -308,6 +344,7 @@ class _ReadSession:
         if self.requests >= 4:
             _fail('PAPER_INSPECTION_REQUEST_CAP')
         timeout = self.checkpoint()
+        self._operation_request(url,lookup)
         request = Request(url, method='GET', headers={
             'APCA-API-KEY-ID': self.key, 'APCA-API-SECRET-KEY': self.secret,
             'Accept': 'application/json', 'Accept-Encoding': 'identity',
@@ -398,7 +435,7 @@ def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
     # Validate authorization and credentials before even inspecting caller scope.
     session = _ReadSession(api_key, api_secret, confirm_read_only_paper=confirm_read_only_paper,
         opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
-        pacing=pacing, expected_account_id=expected_account_id)
+        pacing=pacing, expected_account_id=expected_account_id,operation='ACCOUNT_INVENTORY')
     expected = None if expected_account_id is None else _uuid(expected_account_id)
     with session:
         values = []

@@ -25,6 +25,8 @@ MAX_DATABASE_BYTES = 4 * 1024 * 1024
 MIN_COOLDOWN = 60
 INTERRUPTED_COOLDOWN = 86400
 ZERO = '0' * 64
+LEGACY_OPERATION='LEGACY_UNSPECIFIED'
+OPERATIONS=('ACCOUNT_INVENTORY','BTC_ASSET_RULES','ACTIVITY_COLLECTION','ORIGINAL_ID_RECOVERY','BTC_QUOTE_OBSERVATION')
 
 
 def _fail(code):
@@ -78,7 +80,7 @@ class PaperReadPacing:
         state = dict(head_sha256=ZERO, events=0, sessions=0, pending_token=None,
                      last_evaluated_at=0, next_allowed_at=0, review_required=False, last_outcome=None,
                      pending_owner_fenced=False, pending_owner_sha256=None, pending_before_head_sha256=None,
-                     completed_sessions=[], interruptions=0, last_interruption=None, last_interruption_head=None)
+                     completed_sessions=[], operation_sessions=[], interruptions=0, last_interruption=None, last_interruption_head=None)
         for index, (seq, encoded, parent, digest) in enumerate(rows):
             if not isinstance(encoded, str) or len(encoded.encode()) > 1024: _fail('EVENT_CAP')
             try: body = json.loads(encoded)
@@ -90,8 +92,9 @@ class PaperReadPacing:
             else:
                 if not isinstance(body, dict): _fail('PAYLOAD_INVALID')
                 kind = body.get('kind')
-                if kind == 'BEGIN' and set(body) in ({'kind', 'evaluated_at'}, {'kind', 'evaluated_at', 'owner_fenced', 'owner_sha256'}):
+                if kind == 'BEGIN' and set(body) in ({'kind', 'evaluated_at'}, {'kind', 'evaluated_at', 'owner_fenced', 'owner_sha256'}, {'kind','evaluated_at','owner_fenced','owner_sha256','operation'}):
                     if 'owner_fenced' in body and (body['owner_fenced'] is not True or not isinstance(body['owner_sha256'], str) or re.fullmatch(r'[0-9a-f]{64}', body['owner_sha256']) is None): _fail('OWNER_MARKER_INVALID')
+                    if 'operation' in body and (type(body['operation']) is not str or body['operation'] not in OPERATIONS):_fail('OPERATION_INVALID')
                     now = clock(body['evaluated_at'])
                     self._admit(state, now)
                     state['pending_token'] = digest
@@ -99,6 +102,9 @@ class PaperReadPacing:
                     state['pending_owner_fenced'] = body.get('owner_fenced', False)
                     state['pending_owner_sha256'] = body.get('owner_sha256')
                     state['sessions'] += 1
+                    state['operation_sessions'].append(dict(operation=body.get('operation',LEGACY_OPERATION),
+                        started_at=now,completed_at=None,before_head_sha256=state['pending_before_head_sha256'],
+                        begin_head_sha256=digest,after_head_sha256=None,outcome='PENDING_UNKNOWN'))
                 elif kind == 'RESULT' and set(body) == {'kind', 'evaluated_at', 'token', 'outcome', 'delay'}:
                     now = clock(body['evaluated_at'])
                     if state['pending_token'] is None or body['token'] != state['pending_token']: _fail('TOKEN_DISAGREEMENT')
@@ -106,6 +112,7 @@ class PaperReadPacing:
                     outcome, delay = body['outcome'], body['delay']
                     if outcome not in ('SUCCESS', 'NOT_FOUND', 'TIMEOUT', 'NETWORK_ERROR', 'RATE_LIMITED', 'SERVER_ERROR', 'AUTH_DENIED', 'REVIEW_REQUIRED'): _fail('OUTCOME_INVALID')
                     if type(delay) is not int or (outcome == 'RATE_LIMITED' and not 1 <= delay <= 86400) or (outcome != 'RATE_LIMITED' and delay != 0): _fail('DELAY_INVALID')
+                    state['operation_sessions'][-1].update(completed_at=now,after_head_sha256=digest,outcome=outcome)
                     state['pending_token'] = None
                     state['completed_sessions'].append(dict(before_head_sha256=state['pending_before_head_sha256'],
                         after_head_sha256=digest,outcome=outcome))
@@ -128,6 +135,7 @@ class PaperReadPacing:
                     state['pending_owner_sha256'] = None
                     state['next_allowed_at'] = max(state['next_allowed_at'], now + INTERRUPTED_COOLDOWN)
                     state['last_outcome'] = 'INTERRUPTED_UNKNOWN'
+                    state['operation_sessions'][-1].update(completed_at=now,after_head_sha256=digest,outcome='INTERRUPTED_UNKNOWN')
                     state['interruptions'] += 1
                     state['last_interruption'] = body
                     state['last_interruption_head'] = digest
@@ -152,11 +160,14 @@ class PaperReadPacing:
             state = dict(head_sha256=ZERO, events=0, sessions=0, pending_token=None,
                          last_evaluated_at=0, next_allowed_at=0, review_required=False, last_outcome=None,
                      pending_owner_fenced=False, pending_owner_sha256=None, pending_before_head_sha256=None,
-                     completed_sessions=[], interruptions=0, last_interruption=None, last_interruption_head=None)
+                     completed_sessions=[], operation_sessions=[], interruptions=0, last_interruption=None, last_interruption_head=None)
         else:
             with closing(self._connect()) as db: state = self._load(db)
-        public=dict(state);public.pop('pending_before_head_sha256');public.pop('completed_sessions')
+        public=dict(state);public.pop('pending_before_head_sha256');public.pop('completed_sessions');operations=public.pop('operation_sessions')
+        counts={kind:sum(r['operation']==kind for r in operations) for kind in (*OPERATIONS,LEGACY_OPERATION)}
         return dict(public, account_sha256=self.account_digest, max_gets_per_session=4,
+                    operation_counts=counts,pending_operation=None if state['pending_token'] is None else operations[-1]['operation'],
+                    operation_identity_attested=False,mixed_operation_acceptance_verified=False,
                     min_post_result_cooldown_seconds=MIN_COOLDOWN, automatic_retry=False,
                     broker_wide_quota_verified=False, ready_for_routing=False,
                     limitations='Only cooperating callers using this exact local journal are coordinated. No provider quota, distributed ownership, source attestation, automatic interrupted-read release or valid-tail-deletion protection.')
@@ -169,12 +180,23 @@ class PaperReadPacing:
             state=self._load(db)
         return tuple(dict(item) for item in state['completed_sessions'])
 
+    def operation_history(self):
+        """Read-only declared operation/outcome replay; legacy purpose stays unknown."""
+        self._path_check()
+        if not self.path.exists():return ()
+        with closing(self._connect()) as db:state=self._load(db)
+        return tuple(dict(item) for item in state['operation_sessions'])
+
     def ownership(self):
         """Local OS lease; runtime readers hold it through all IO and cleanup."""
         return _ReadOwnership(self)
 
-    def begin(self, *, admission, ownership=None):
+    def begin(self, *, admission, ownership=None, operation=None):
         """Internal callback samples permission/clock after lock and before commit."""
+        if operation is not None:
+            if type(operation) is not str or operation not in OPERATIONS:_fail('OPERATION_INVALID')
+            if ownership is None:_fail('OPERATION_OWNER_REQUIRED')
+            self._owned(ownership)
         with closing(self._connect(write=True)) as db:
             with db:
                 state = self._load(db)
@@ -184,6 +206,7 @@ class PaperReadPacing:
                 body = dict(kind='BEGIN', evaluated_at=now)
                 if ownership is not None:
                     body.update(owner_fenced=True, owner_sha256=ownership.identity())
+                if operation is not None:body['operation']=operation
                 token = self._append(db, state['events'] + 1, body, state['head_sha256'])
                 self._load(db)
                 if clock(admission()) < now: _fail('CLOCK_REGRESSION')
@@ -304,3 +327,66 @@ class _ReadOwnership:
     def __exit__(self, *args):
         fd, self.fd = self.fd, None
         if fd is not None: os.close(fd)
+
+
+OPERATION_CHECKS=('five_actual_readers_typed','one_shared_cooldown','legacy_not_relabelled',
+    'completed_outcomes_preserved','restart_replay_matches','status_read_only')
+OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
+    'actual_provider_access','actual_vault_access','ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')
+
+
+def typed_fixture_report():
+    """Actual five reader flows on one disposable local budget; injected IO only."""
+    import io,tempfile
+    from nexus import alpaca_paper_inspection as reader
+    from nexus.paper_asset_rules import inspect_rules
+    from nexus.alpaca_activity_collection import collect_activities
+    from nexus.broker_paper_recovery import recover_original
+    from nexus.paper_quote_observation import inspect_quote
+    from nexus.broker_request_journal import BrokerRequestJournal
+    from nexus.alpaca_paper_contract import preview
+    account='01234567-89ab-cdef-0123-456789abcdef';epoch=1792368000
+    raw_account=dict(id=account,currency='USD',status='ACTIVE',crypto_status='ACTIVE',account_blocked=False,
+        trading_blocked=False,trade_suspended_by_user=False,cash='1000',non_marginable_buying_power='900',
+        pending_transfer_in='0',pending_transfer_out='0',accrued_fees='0')
+    asset=dict(id='11234567-89ab-cdef-0123-456789abcdef',symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
+        fractionable=True,min_order_size='.5',min_trade_increment='.5',price_increment='.5')
+    quote={'quotes':{'BTC/USD':dict(bp='100',ap='101',bs='2',**{'as':'3'},t='2026-10-19T00:04:00.123456789Z')}}
+    class Response:
+        status=200;headers={'Content-Type':'application/json'}
+        def __init__(self,url,value):self.url=url;self.body=io.BytesIO(json.dumps(value).encode())
+        def geturl(self):return self.url
+        def read(self,size):return self.body.read(size)
+        def __enter__(self):return self
+        def __exit__(self,*args):self.body.close()
+    class Opener:
+        def __init__(self,values):self.values=iter(values);self.requests=[]
+        def open(self,request,timeout):self.requests.append(request);return Response(request.full_url,next(self.values))
+    with tempfile.TemporaryDirectory(prefix='nexus-typed-reads-') as directory:
+        gate=PaperReadPacing(Path(directory)/'pacing.sqlite3',account)
+        key='fixture_key_only_123';secret='fixture_secret_only_123'
+        def args(values,at):return dict(expected_account_id=account,confirm_read_only_paper=True,pacing=gate,
+            opener=Opener(values),wall_clock=lambda:at,elapsed_clock=lambda:50)
+        reader.inspect_account(key,secret,**args([raw_account,[],[],raw_account],epoch))
+        inspect_rules(key,secret,**args([raw_account,asset,raw_account],epoch+60))
+        collect_activities(key,secret,[],after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z',
+            **args([raw_account,[],raw_account],epoch+120))
+        journal=BrokerRequestJournal(Path(directory)/'requests.sqlite3',account)
+        plan=preview('nx_operation_fixture','BTC-USD','BUY','2','100',asset,metadata_at=1000,evaluated_at=1001)
+        journal.prepare(plan);journal.mark_submission_uncertain('nx_operation_fixture')
+        raw_order=dict(plan['payload'],id=asset['id'],asset_class='crypto',status='canceled',filled_qty='0',filled_avg_price=None,
+            updated_at='2026-10-19T00:03:00Z')
+        recover_original(journal,'nx_operation_fixture',key,secret,**args([raw_account,raw_order,raw_account],epoch+180))
+        inspect_quote(key,secret,**args([raw_account,quote,raw_account],epoch+241))
+        token=gate.begin(admission=lambda:epoch+301);gate.finish(token,admission=lambda:epoch+301,status_code=200)
+        before={p.name:p.read_bytes() for p in Path(directory).iterdir()};history=gate.operation_history();state=gate.inspect()
+        blocked=Opener([raw_account,[],[],raw_account]);cooldown=False
+        try:reader.inspect_account(key,secret,**dict(args([],epoch+302),opener=blocked))
+        except ValueError:cooldown=not blocked.requests and before=={p.name:p.read_bytes() for p in Path(directory).iterdir()}
+        checks=dict(five_actual_readers_typed=tuple(r['operation'] for r in history[:5])==OPERATIONS and all(state['operation_counts'][op]==1 for op in OPERATIONS),
+            one_shared_cooldown=cooldown,legacy_not_relabelled=history[-1]['operation']==LEGACY_OPERATION and state['operation_counts'][LEGACY_OPERATION]==1,
+            completed_outcomes_preserved=len(history)==6 and all(r['outcome']=='SUCCESS' for r in history),
+            restart_replay_matches=PaperReadPacing(gate.path,account).operation_history()==history,
+            status_read_only=before=={p.name:p.read_bytes() for p in Path(directory).iterdir()})
+        return dict(source='INJECTED_TYPED_PAPER_READ_BUDGET_FIXTURE',passed=all(checks.values()),**checks,
+            **{k:False for k in OPERATION_FLAGS})

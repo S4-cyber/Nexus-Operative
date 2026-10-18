@@ -84,7 +84,8 @@ def validate(value):
         state=pacing_validator._load(db)
     if dict(request=request_head,quote=quote_head,pacing=state['head_sha256'])!=value['heads']:_fail('HEAD_DISAGREEMENT')
     if (not records or any(r['profile']!=quotes.CAPTURE_PROFILE or r['pacing_scope_sha256']!=value['pacing_scope_sha256'] for r in records) or
-        state['pending_token'] is not None or state['review_required'] or state['interruptions'] or state['sessions']!=len(records)):_fail('UNBOUND_HISTORY')
+        state['pending_token'] is not None or state['review_required'] or state['interruptions'] or state['sessions']!=len(records) or
+        any(r['operation'] not in ('BTC_QUOTE_OBSERVATION','LEGACY_UNSPECIFIED') for r in state['operation_sessions'])):_fail('UNBOUND_HISTORY')
     bound=[dict(before_head_sha256=r['pacing_before_head_sha256'],after_head_sha256=r['pacing_after_head_sha256'],outcome='SUCCESS') for r in records]
     if bound!=state['completed_sessions']:_fail('PACING_BINDINGS')
     return dict(mode='PRIVATE_PAPER_QUOTE_BUNDLE_REVIEW',status='REVIEW_REQUIRED',read_only=True,

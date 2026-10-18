@@ -24,7 +24,7 @@ def inspect_rules(api_key,api_secret,*,expected_account_id,confirm_read_only_pap
                   permission_check=lambda:True,pacing=None):
     session=transport._ReadSession(api_key,api_secret,confirm_read_only_paper=confirm_read_only_paper,
         opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,permission_check=permission_check,
-        pacing=pacing,expected_account_id=expected_account_id)
+        pacing=pacing,expected_account_id=expected_account_id,operation='BTC_ASSET_RULES')
     account=transport._uuid(expected_account_id)
     with session:
         started=session.evaluated_at();before=transport._account(session.get(transport.URLS[0]))

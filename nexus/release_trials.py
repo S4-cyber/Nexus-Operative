@@ -322,7 +322,7 @@ def _http_trial():
 
 def _pacing_trial():
     """Fixed local reservation/cooldown fixture; no HTTP or credential access."""
-    from nexus.paper_read_pacing import PaperReadPacing
+    from nexus.paper_read_pacing import PaperReadPacing,typed_fixture_report
     account = '01234567-89ab-cdef-0123-456789abcdef'
     def denied(operation, reason):
         try: operation()
@@ -372,7 +372,7 @@ def _pacing_trial():
         bounded_step=recovery_step_fixture()
         from nexus.paper_recovery_drill import fixture_report as crash_fixture
         crash=crash_fixture()
-        return dict(bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        return dict(typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -742,6 +742,11 @@ def _validate(profile, result):
             ('holds_reconciled', 'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing',
              'source_coverage_verified', 'fee_coverage_complete', 'ledger_applied', 'live_orders_enabled')), 'BALANCE_AUTHORITY')
     if profile == 'pacing':
+        from nexus.paper_read_pacing import OPERATION_CHECKS,OPERATION_FLAGS
+        typed=result['typed_operations']
+        _require(typed['source']=='INJECTED_TYPED_PAPER_READ_BUDGET_FIXTURE' and typed['passed'] is True and
+            all(typed[k] is True for k in OPERATION_CHECKS),'TYPED_READ_OPERATIONS')
+        _require(all(typed[k] is False for k in OPERATION_FLAGS),'TYPED_READ_AUTHORITY')
         from nexus.paper_recovery_drill import PHASES as CRASH_PHASES,CHECKS as CRASH_CHECKS
         from nexus.paper_recovery_step import FLAGS as RECOVERY_FLAGS
         crash=result['bounded_recovery_crash_drill']

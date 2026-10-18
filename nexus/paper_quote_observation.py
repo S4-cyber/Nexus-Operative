@@ -70,7 +70,7 @@ def inspect_quote(api_key,api_secret,*,expected_account_id,confirm_read_only_pap
     if confirm_read_only_paper is not True:_fail('EXPLICIT_CONFIRMATION_REQUIRED')
     account=_scope(expected_account_id,pacing)
     session=reader._ReadSession(api_key,api_secret,confirm_read_only_paper=True,expected_account_id=account,
-        pacing=pacing,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,permission_check=permission_check,expected_pacing_head=expected_pacing_head)
+        pacing=pacing,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,permission_check=permission_check,expected_pacing_head=expected_pacing_head,operation='BTC_QUOTE_OBSERVATION')
     try:
         with session:
             first=reader._account(session.get(reader.URLS[0]))

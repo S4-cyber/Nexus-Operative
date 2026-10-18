@@ -16,7 +16,7 @@ def recover_original(journal, client_order_id, api_key, api_secret, *, expected_
     session = transport._ReadSession(api_key, api_secret,
         confirm_read_only_paper=confirm_read_only_paper, opener=opener,
         wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
-        pacing=pacing, expected_account_id=expected_account_id)
+        pacing=pacing, expected_account_id=expected_account_id,operation='ORIGINAL_ID_RECOVERY')
     expected = transport._uuid(expected_account_id)
     # Read-only before any network or write. No untracked/foreign lookup target.
     request = journal.lookup_request(client_order_id)

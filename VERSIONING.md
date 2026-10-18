@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.163.1 (pre-release).** Quote-capture now rejects any selected private journal path that aliases another journal's SQLite recovery sidecar or pacing-owner lock before credential or provider access. The v0.163 encrypted evidence behavior and all false-authority boundaries remain unchanged.
+**Current development build: 0.164.0 (pre-release).** Five standard paper readers enforce fixed request sequences and retain owner-fenced declared operation labels in local pacing. Status reports counts/pending purpose; legacy sessions stay unknown and mismatched receipt purposes refuse. Cooldowns/caps remain shared across purposes. The v0.163.1 sidecar/owner-lock alias refusal remains in place. No mixed-history/provider-wide budget acceptance, new default connection, routing or release authority is introduced.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

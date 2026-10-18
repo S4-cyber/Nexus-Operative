@@ -45,7 +45,8 @@ def _stores(expected_account_id,request_journal_path,quote_store_path,pacing_pat
 
 def _review(store,gate,scope,expected_request_head):
     before=gate.inspect();history=store.inspect(expected_request_head=expected_request_head)
-    sessions=gate.completed_sessions();records=history['records'];reasons=set()
+    sessions=gate.completed_sessions();operations=gate.operation_history();records=history['records'];reasons=set()
+    if any(r['operation'] not in ('BTC_QUOTE_OBSERVATION','LEGACY_UNSPECIFIED') for r in operations):reasons.add('PACING_OPERATION_DISAGREEMENT')
     if before['pending_token'] is not None:reasons.add('PENDING_READ_REQUIRES_REVIEW')
     if before['review_required'] or before['interruptions']:reasons.add('RETAINED_PACING_REVIEW_REQUIRED')
     if any(r['profile']!=quotes.CAPTURE_PROFILE for r in records):reasons.add('SUPPLIED_QUOTES_WITHOUT_CAPTURE_BINDING')
@@ -55,7 +56,7 @@ def _review(store,gate,scope,expected_request_head):
     if bindings!=list(sessions) or before['sessions']!=len(captured):reasons.add('UNBOUND_OR_DISAGREEING_PACING_SESSIONS')
     if not records and before['head_sha256']!=quotes.ZERO:reasons.add('PREEXISTING_UNBOUND_PACING_HISTORY')
     if (gate.inspect()!=before or store.inspect(expected_request_head=expected_request_head)!=history or
-        gate.completed_sessions()!=sessions):_fail('INPUTS_CHANGED_DURING_REVIEW')
+        gate.completed_sessions()!=sessions or gate.operation_history()!=operations):_fail('INPUTS_CHANGED_DURING_REVIEW')
     result=dict(mode='PAPER_QUOTE_CAPTURE_STATUS',status='REVIEW_REQUIRED',read_only=True,
         account_sha256=store.account,pacing_scope_sha256=scope,request_head_sha256=expected_request_head,
         quote_head_sha256=history['head_sha256'],pacing_head_sha256=before['head_sha256'],

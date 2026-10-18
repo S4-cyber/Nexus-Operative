@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.136.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.137.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,7 +36,7 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_136_0.json`; exact new-source Windows trials must still run |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_137_0.json`; exact new-source Windows trials must still run |
 | Windows packaging and data recovery | v0.130.0 verified; v0.131 source pending | Exact commit `ac9b9e8ebb40c033762fe2d6e4a466462deca94b`: Windows39134886278/job117697275954, safety/browser39134886222 and security39134886220 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
@@ -85,7 +85,7 @@ Public-repository hardening (v0.111) adds reachable-history artifact/secret chec
 
 ## Verify saved evidence before considering a release
 
-Run `python -m nexus.release_evidence validation/release_trials_0_136_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all sixteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check. If execution fails, the CLI emits only an allowlisted `RELEASE_TRIAL_*` code identifying the failing profile or timeout; child stderr, arbitrary exception text, paths and environment values remain suppressed.
+Run `python -m nexus.release_evidence validation/release_trials_0_137_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all sixteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check. If execution fails, the CLI emits only an allowlisted `RELEASE_TRIAL_*` code identifying the failing profile or timeout; child stderr, arbitrary exception text, paths and environment values remain suppressed.
 
 The safety workflow revalidates its saved report. Windows distribution creation runs and validates its own offline trials, includes `release-trial-evidence.json` in the distribution and hashes it in `artifact-manifest.json` alongside both binaries. Verify the manifest first, then verify the report from the exact source checkout. Matching hashes are not signatures, authenticated CI provenance or proof the workload actually ran. A self-consistent fabricated report remains possible; workflow results and independent acceptance still matter. A successful offline evidence check always retains production/native/provider/market/funds/release approval flags as false and cannot close the open gates above.
 
@@ -252,3 +252,9 @@ The settings Save control remains disabled until the initial read finishes, and 
 
 
 Final v0.136 local validation:2,142 Python tests passed with one existing Starlette/httpx deprecation warning; eleven actual Node controllers, Portal syntax, compileall, dependency consistency and generated-roadmap checks passed. Sixteen offline profiles plus saved-evidence verification matched 275 source files/3135f05773918b859b4eb873ad71d5035aede444c22224c45bd0c7c1bc06bf37; report SHA256 0c53ec6e91ea07c9d1deac9eb9e2a66b4e2f2bb2381c53a69544282005773671. The loopback HTTP corruption/recovery treatment passed all ten mandatory first-run/review checks. Tests prove unchanged rejected settings/enable attempts, explicit repair retaining OFF, entry veto before quote IO and a risk-reducing fixed-runner SELL with malformed budget; browser-controller failures do not echo private errors or submit trades. Exact-source Windows/security/safety/browser CI remains required. All examples are disposable; actual broker/market/profile/funds/live/cloud and independent/owner release acceptance remain open.
+
+## v0.137 emergency-reset durability restoration
+
+Acceptance requires an injected reset failure after the real intent unlink to return a sanitized 503, retain the process-local cut, keep the runner disengaged and recreate both `emergency_cut.intent` and the durable database halt. A new-process recovery read must treat the restored halt as cut. The failed request itself remains UNCONFIRMED and a later explicit reset is required; restoration never grants running permission. Existing intent, storage-contention, process-death, emergency-lane and cut/reset epoch tests must continue to pass. Native Windows storage-fault/power-loss acceptance, sustained CPU/feed pressure and broker cancellation remain unverified independent gates.
+
+Final v0.137 local validation:2,143 Python tests passed with one existing Starlette/httpx deprecation warning;79 focused emergency/settings tests, all eleven Node controllers, Portal syntax, compileall, pip check, generated-roadmap comparison and saved-evidence verification passed. Sixteen offline profiles matched275 source files/46ba012336a1277090c6ec8bf378dda04931d9a321c5ff25b319973b5ade1b19; report SHA256 af0c1cd2ed3e89e974f18f4eeac433a616e5cfd828159f97795651207c3c6f1c. Exact-source CI and independent native storage-fault acceptance remain required; no actual external authority or acceptance occurred.

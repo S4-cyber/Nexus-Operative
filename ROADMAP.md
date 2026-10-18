@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.136.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.137.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.136 rejects malformed, partial, duplicate and previously saved-but-missing paper settings instead of silently increasing an allowance through defaults. Budget reads and To Do share one validated snapshot; tier enabling validates within its write transaction, while OFF and risk-reducing exits remain available. Risk clears unverified form values and supports explicit repair without re-engagement. Empty untouched legacy settings and new-install presets remain supported; no trading or provider authority is added.
+Current hardening: v0.137 closes an emergency-reset durability window: if reset storage cleanup fails after the database reset or intent unlink, the coordinator conservatively re-establishes both the independent cut intent and durable database halt before returning an unconfirmed error. The process-local runner cut remains set and trading stays disengaged. Exact-source Windows storage-fault and sustained-load acceptance remain separate; runtime provider and funds authority are unchanged.
 
 ```mermaid
 flowchart TD
@@ -69,7 +69,7 @@ Validate the fresh native EXE, ordinary profile, saved-choice upgrade, outage an
 
 1. Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.
 2. Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.
-3. Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; extend independent cut-intent recovery, interrupted acknowledgments and storage-failure recovery while preserving durable fencing.
+3. Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; exercise the repaired failed-reset durability boundary under native Windows storage faults and continue interrupted-acknowledgment recovery while preserving durable fencing.
 4. Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.
 5. Extend linked quote-model stress and independently review cost, liquidity and expiry assumptions.
 6. Extend sustained-load admission and recovery; validate physical offload and long-run costs while preserving IDs and audit evidence.

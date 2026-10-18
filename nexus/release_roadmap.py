@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.136.0'
+REVISION = '0.137.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -74,7 +74,7 @@ FIRST_RUN = dict(goal='Open the EXE, Start Portal, then separately confirm Engag
 NEXT = (
     'Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.',
     'Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.',
-    'Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; extend independent cut-intent recovery, interrupted acknowledgments and storage-failure recovery while preserving durable fencing.',
+    'Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; exercise the repaired failed-reset durability boundary under native Windows storage faults and continue interrupted-acknowledgment recovery while preserving durable fencing.',
     'Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.',
     'Extend linked quote-model stress and independently review cost, liquidity and expiry assumptions.',
     'Extend sustained-load admission and recovery; validate physical offload and long-run costs while preserving IDs and audit evidence.',
@@ -102,7 +102,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.136 rejects malformed, partial, duplicate and previously saved-but-missing paper settings instead of silently increasing an allowance through defaults. Budget reads and To Do share one validated snapshot; tier enabling validates within its write transaction, while OFF and risk-reducing exits remain available. Risk clears unverified form values and supports explicit repair without re-engagement. Empty untouched legacy settings and new-install presets remain supported; no trading or provider authority is added.'
+CURRENT_HARDENING = 'v0.137 closes an emergency-reset durability window: if reset storage cleanup fails after the database reset or intent unlink, the coordinator conservatively re-establishes both the independent cut intent and durable database halt before returning an unconfirmed error. The process-local runner cut remains set and trading stays disengaged. Exact-source Windows storage-fault and sustained-load acceptance remain separate; runtime provider and funds authority are unchanged.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

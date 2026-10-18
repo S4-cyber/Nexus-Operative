@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.136.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.137.0",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -326,7 +326,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.136.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.137.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -949,6 +949,15 @@ def _complete_halt_reset(epoch):
             # Serialized with cut persistence; a newer queued cut writes after this reset.
             emergency_intent.clear(research_order_gateway._path())
         except (ValueError,OSError,sqlite3.Error):
+            # reset() may already have committed and clear() may have unlinked the
+            # intent before its directory sync fails. Re-establish both durable
+            # barriers before reporting the reset as unconfirmed. Each operation
+            # is attempted even if the other fails; the process-local cut remains.
+            try:
+                try:emergency_intent.persist(research_order_gateway._path())
+                finally:research_order_gateway.emergency_halt()
+            except (ValueError,OSError,sqlite3.Error,RuntimeError):
+                pass
             raise HTTPException(status_code=503,detail="HALT_RESET_STORAGE_UNAVAILABLE")
         with _cut_lock:
             interrupted=epoch!=_cut_epoch or bool(_cut_pending)

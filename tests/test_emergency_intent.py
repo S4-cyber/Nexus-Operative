@@ -45,7 +45,32 @@ def test_failed_intent_reset_retains_cut_and_explicit_retry_stays_disengaged(con
     assert reply.status_code==503 and 'PRIVATE' not in reply.text
     assert target.exists() and api._halted and r.status()['cut_requested']
     assert api.status()['emergency_cut_state']=='UNCONFIRMED'
-    assert api._recover_emergency_cut()==(True,False)
+    # A failed reset is rolled back to a durable halt, even when the intent
+    # itself was never removed. The current request still remains UNCONFIRMED.
+    assert api._recover_emergency_cut()==(True,True)
+    monkeypatch.setattr(intent,'clear',original)
+    assert c.post('/api/simulate/halt/reset',json={'confirm_reset':True}).status_code==200
+    assert not target.exists() and not r.status()['cut_requested'] and not r.status()['enabled']
+
+
+def test_reset_failure_after_intent_unlink_reestablishes_both_durable_barriers(control,monkeypatch):
+    c,g,r,*_=control
+    assert c.post('/api/simulate/halt').status_code==200
+    target=intent.path(g._path());original=intent.clear
+    calls=0
+    def unlink_then_fail(order):
+        nonlocal calls
+        calls+=1
+        original(order)
+        raise OSError('PRIVATE_DIRECTORY_SYNC')
+    monkeypatch.setattr(intent,'clear',unlink_then_fail)
+    reply=c.post('/api/simulate/halt/reset',json={'confirm_reset':True})
+    assert reply.status_code==503 and 'PRIVATE' not in reply.text and calls==1
+    assert target.read_bytes()==intent.RECORD
+    assert g.recovery_report()['halted']
+    assert api._halted and r.status()['cut_requested'] and not r.status()['enabled']
+    assert api.status()['emergency_cut_state']=='UNCONFIRMED'
+    assert api._recover_emergency_cut()==(True,True)
     monkeypatch.setattr(intent,'clear',original)
     assert c.post('/api/simulate/halt/reset',json={'confirm_reset':True}).status_code==200
     assert not target.exists() and not r.status()['cut_requested'] and not r.status()['enabled']

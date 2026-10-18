@@ -177,6 +177,33 @@ def _http_pacing_trial(base, root):
         portal._managed_path, credentials._vault, portal.inspect_saved = original_path, original_vault, original_inspect
 
 
+FIRST_RUN_HTTP_CHECKS=('new_install_preset_applied','only_settings_storage_created',
+    'no_trade_autostart','checklist_purposes_present','optional_connections_not_required','saved_off_preserved')
+
+
+def _http_defaults_trial(base,root):
+    """Actual default-configuration HTTP path; no engine, feed or order start."""
+    from urllib.request import build_opener,ProxyHandler,Request
+    opener=build_opener(ProxyHandler({}))
+    def call(path,data=None):
+        request=Request(base+path,data=None if data is None else json.dumps(data).encode(),
+            headers={'Origin':base,'Content-Type':'application/json'},method='GET' if data is None else 'PUT')
+        with opener.open(request,timeout=5) as response:return json.loads(response.read(256*1024))
+    settings=call('/api/paper/settings');tiers=call('/api/tiers/permissions')['tiers']
+    _require(settings['paper_budget']==10000 and {t['tier'] for t in tiers if t['enabled']}=={'terrestrial'},'HTTP_FIRST_RUN_PRESET')
+    _require(sorted(p.name for p in root.iterdir())==['portal_settings.sqlite3'],'HTTP_FIRST_RUN_ACCOUNT_CREATED')
+    items={row['id']:row for row in call('/api/onboarding/tasks')['items']}
+    _require(items['budget']['checked'] and items['tier']['checked'] and
+        items['portfolio']['status']=='ON_DEMAND' and not items['portfolio']['checked'],'HTTP_FIRST_RUN_CHECKS')
+    _require(all(type(row['why']) is str and len(row['why'])>30 and row['setup_scope'] for row in items.values()),'HTTP_FIRST_RUN_PURPOSES')
+    _require(all(items[k]['setup_scope'] in ('Optional','Future feature') for k in
+        ('external_ai','paper_read','payment','broker','cloud')),'HTTP_FIRST_RUN_OPTIONAL')
+    call('/api/tiers/terrestrial/permission',{'enabled':False});call('/api/paper/settings')
+    _require(not any(t['enabled'] for t in call('/api/tiers/permissions')['tiers']),'HTTP_FIRST_RUN_OFF_OVERWRITTEN')
+    _require(not call('/api/status')['portal_enabled'] and not call('/api/paper/forward')['enabled'], 'HTTP_FIRST_RUN_STARTED')
+    return {key:True for key in FIRST_RUN_HTTP_CHECKS}
+
+
 def _http_trial():
     """Real TCP/HTTP + ASGI lifespan, with external connections/vault access denied."""
     import socket
@@ -246,11 +273,13 @@ def _http_trial():
         _require('nexus' in responses['/portal'].lower() and 'url=/portal' in responses['/'], 'PORTAL_CONTENT')
         _require(not list(root.rglob('*')), 'READ_ONLY_STARTUP_WROTE_DATA')
         _require(not any(attempts.values()), 'UNEXPECTED_EXTERNAL_ACCESS')
+        first_run_defaults = _http_defaults_trial(base,root)
+        _require(not any(attempts.values()),'HTTP_FIRST_RUN_EXTERNAL_ACCESS')
         paper_pacing = _http_pacing_trial(base, root)
         _require(not any(attempts.values()), 'HTTP_PAPER_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, passive_forward_reads_preserved_missing_storage=True, **attempts,
-            paper_pacing=paper_pacing,
+            paper_pacing=paper_pacing,first_run_defaults=first_run_defaults,
             credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
             limitations='Real local source-process HTTP only; paper credential and provider seams are injected fixtures with temporary retained pacing. No rendered browser, Windows executable, actual provider, order or sustained market test.')
     finally:
@@ -410,6 +439,7 @@ def _validate(profile, result):
         _require(result['target_validated'] is False, 'UNSUPPORTED_MARKET_SPEED_CLAIM')
     else: _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
+        _require(all(result['first_run_defaults'][key] is True for key in FIRST_RUN_HTTP_CHECKS),'HTTP_FIRST_RUN_DEFAULTS')
         _require(result['passive_forward_reads_preserved_missing_storage'] is True,'HTTP_PASSIVE_FORWARD')
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')

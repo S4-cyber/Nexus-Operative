@@ -1,6 +1,7 @@
 """Durable per-tier research permission switches. No trade authority.
 
-All tiers default OFF. These limits only narrow the existing local
+Unused new installations select Terrestrial; Solar and Universal stay OFF.
+Existing settings and explicitly saved switches are preserved. These limits only narrow the existing local
 simulation gateway; they never override portfolio or global risk vetoes.
 """
 import sqlite3,threading,time
@@ -17,9 +18,10 @@ def _db():
     return db
 
 def current():
-    with _lock,closing(_db()) as db,db:
-        saved=dict(db.execute("SELECT tier,enabled FROM tier_permissions"))
-    config=load_settings()
+    with _lock:
+        config=load_settings()
+        with closing(_db()) as db,db:
+            saved=dict(db.execute("SELECT tier,enabled FROM tier_permissions"))
     return {"mode":"LOCAL_SIMULATED_RISK_PERMISSIONS",
         "tiers":[{"tier":tier,"enabled":saved.get(tier,0)==1,
                   "maximum_intent_fraction":float(frac),
@@ -28,7 +30,7 @@ def current():
                   "allocation_pct":config[tier+"_allocation"]}
                  for tier,frac in TIERS.items()],
         "live_orders_enabled":False,"broker_connected":False,
-        "note":"All switches start OFF. Limits apply only to new simulated entry intents. Existing risk vetoes remain stricter where relevant; no broker orders are created."}
+        "note":"New unused installations select Terrestrial. Saved switches are preserved; missing switches in existing installations stay OFF. Limits apply only to new simulated entry intents. Existing risk vetoes remain stricter where relevant; no broker orders are created."}
 
 def configure(tier,enabled):
     if tier not in TIERS or type(enabled) is not bool:

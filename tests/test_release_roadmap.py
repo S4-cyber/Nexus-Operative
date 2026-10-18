@@ -44,3 +44,12 @@ def test_product_roadmap_explicitly_tracks_funding_autonomy_and_final_acceptance
     stages['D9']['depends_on'].clear()
     assert len(snapshot()['delivery_stages'][-1]['depends_on'])==8
     assert 'Secure deposits and available-funds verification' in markdown()
+
+
+def test_minimal_first_run_is_a_bundled_goal_with_saved_choices_and_separate_engage():
+    setup=snapshot()['first_run_setup']
+    assert setup['virtual_budget_usd']==10000 and setup['default_entry_tier']=='terrestrial'
+    assert setup['collect_public_history'] and setup['built_in_models_included'] and setup['existing_choices_preserved']
+    assert not setup['paid_ai_required'] and not setup['external_account_required'] and not setup['starts_trading_automatically']
+    assert 'Minimal first-run setup' in markdown() and 'Optional and future boxes may stay unticked' in markdown()
+    setup['default_entry_tier']='universal';assert snapshot()['first_run_setup']['default_entry_tier']=='terrestrial'

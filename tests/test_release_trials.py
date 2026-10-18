@@ -20,6 +20,9 @@ def test_real_http_process_starts_stopped_without_data_credentials_or_external_i
     assert report['transport'] == 'REAL_LOOPBACK_TCP_HTTP'
     assert report['untrusted_host_rejected'] and report['cross_origin_rejected'] and report['api_no_store']
     assert not report['proxy_headers_trusted']
+    assert all(report['first_run_defaults'][key] is True for key in trials.FIRST_RUN_HTTP_CHECKS)
+    rejected=json.loads(json.dumps(report));rejected['first_run_defaults']['saved_off_preserved']=False
+    with pytest.raises(trials.ReleaseTrialError,match='HTTP_FIRST_RUN_DEFAULTS'):trials._validate('http',rejected)
     pacing = report['paper_pacing']
     assert all(pacing[k] is True for k in trials.PAPER_HTTP_CHECKS)
     assert pacing['injected_get_requests'] == 5
@@ -336,3 +339,9 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     for field in FLAGS:
         changed=copy.deepcopy(result);changed['recovered']['coverage_review'][field]=True
         with pytest.raises(ValueError,match='FORWARD_COVERAGE_AUTHORITY'):trials._validate('forward',changed)
+
+
+@pytest.mark.parametrize('field',trials.FIRST_RUN_HTTP_CHECKS)
+def test_http_first_run_acceptance_requires_each_scope_check(field):
+    result=http_report();result['first_run_defaults'][field]=False
+    with pytest.raises(trials.ReleaseTrialError,match='HTTP_FIRST_RUN_DEFAULTS'):trials._validate('http',result)

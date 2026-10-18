@@ -5,11 +5,13 @@ from nexus import app as backend
 from nexus.tier_permissions import current,configure,require_entry
 from nexus.tier_performance import tier_performance
 
-def test_all_tiers_off_by_default_and_caps_are_independent(tmp_path,monkeypatch):
+def test_new_install_terrestrial_preset_and_caps_are_independent(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
     policies=current()["tiers"]
     assert len(policies)==3
-    assert all(x["enabled"] is False for x in policies)
+    assert {x["tier"] for x in policies if x["enabled"]}=={"terrestrial"}
+    require_entry("terrestrial",10)
+    configure("terrestrial",False)
     with pytest.raises(ValueError,match="DISENGAGED"):
         require_entry("terrestrial",10)
     configure("solar",True)

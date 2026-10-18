@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.132.0'
+REVISION = '0.133.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -19,7 +19,7 @@ class Milestone:
 
 
 MILESTONES = (
-    Milestone('M1','Windows packaging and recovery','PARTIAL','Windows test, EXE startup and installer workflows; passive portfolio and forward-history/session/capacity reads preserve absent storage; existing state uses read-only transactions, combined forward polling shares one evidence snapshot; recovery/order/session reads use read-only journal replay and read-only linked-portfolio attachment, with missing history distinguished from flat-account proof; installed smoke explicitly exercises dashboard/recovery reads; durable order recovery; installed-process/reinstall/uninstall smoke and distribution checksum tooling; verified offline backup/new-directory restore tooling and fresh-process linked-ledger/quote-evidence recovery drill and installed-API restored-data smoke tooling with pinned prior-version fixture support and default Windows data-layout checks; documented beginner help for all PORTAL controls and isolated headless-browser acceptance tooling; seven named workspaces and an automatic read-only beginner startup checklist with saved-state observations and optional/future setup distinctions.','Exact-SHA v0.130.0 installer/reinstall/uninstall and pinned v0.64 data recovery steps passed; record clean-machine native-window, ordinary-user profile/ACL and prior-installer upgrade acceptance.'),
+    Milestone('M1','Windows packaging and recovery','PARTIAL','Windows test, EXE startup and installer workflows; passive portfolio and forward-history/session/capacity reads preserve absent storage; existing state uses read-only transactions, combined forward polling shares one evidence snapshot; recovery/order/session reads use read-only journal replay and read-only linked-portfolio attachment, with missing history distinguished from flat-account proof; installed smoke explicitly exercises dashboard/recovery reads; durable order recovery; installed-process/reinstall/uninstall smoke and distribution checksum tooling; verified offline backup/new-directory restore tooling and fresh-process linked-ledger/quote-evidence recovery drill and installed-API restored-data smoke tooling with pinned prior-version fixture support and default Windows data-layout checks; documented beginner help for all PORTAL controls and isolated headless-browser acceptance tooling; seven named workspaces, friendly To Do introduction and automatic read-only startup checks with a plain-language purpose and setup scope for every box; new unused settings receive an atomic $10,000 virtual budget and Terrestrial-only entry preset, preserved saved/OFF choices and on-Engage compatible virtual accounting remove redundant form setup.','Exact-SHA v0.130.0 installer/reinstall/uninstall and pinned v0.64 data recovery steps passed; record clean-machine native-window, ordinary-user profile/ACL and prior-installer upgrade acceptance.'),
     Milestone('M2','Market data and provenance','PARTIAL','Public observation, timestamp/gap checks, historical admission and source diagnostics; redirect-disabled public transport with exact response-URL checks; canonical compressed hub bars with cross-collector deduplication, conflict quarantine and hash-verified sealed datasets; bounded public candle collection selected by default on explicit Portal start, closed-boundary request coalescing, pre-network storage checks and receipt-time clock/stop fencing.','Independent provenance review; missing/revised/conflicting data and outage evidence.'),
     Milestone('M3','Decision speed and risk authority','PARTIAL','Bounded local research decision queue and retained-ID limits with invalid-clock rejection; disposable bounded linked-ledger burst timing, overflow/expiry and halt flushing; individual Terrestrial/Solar/Universal entry permissions; bounded per-product public quote request sharing with clock-fenced cache reuse and process-local transport/avoided-request diagnostics.','Measure full durable path under bursts; verify expiry, overload and permissions throughout autonomy.'),
     Milestone('M4','Order lifecycle and portfolio reconciliation','PARTIAL','Partial/full priced fills, fees, idempotency, cancellation, durable recovery; atomic opt-in paper-ledger linking, partial-position reconstruction, adverse quote-cost assumptions, post-lock runtime exchange/receipt freshness and expiry/stop checks, durable expiry, cleanup-failure pauses and forward process-death tests before/after fill commit.','Extend interruption/quote-path stress; independently review execution assumptions, existing-account migration and reconciliation.'),
@@ -34,7 +34,7 @@ MILESTONES = (
 # These are implementation/acceptance states, never permissions to move money.
 DELIVERY_STAGES = (
     dict(id='D1',title='Usable research application',status='FOUNDATION_IMPLEMENTED',
-         progress='Windows packaging, seven workspaces, beginner help, startup checklist, Matrix views and engine/throttle controls exist.',
+         progress='Windows packaging, seven workspaces, beginner help, Matrix views and engine/throttle controls exist. New unused installations receive recommended local paper defaults; To Do explains Start Portal, separate Engage, each check’s purpose and optional/future scope.',
          remaining='Clean-machine/native-window/profile and upgrade acceptance; keep startup and recovery dependable.',depends_on=[]),
     dict(id='D2',title='Learning models with defensible strategy evidence',status='PARTIAL',
          progress='Deduplicated local history, bounded public collection, trained numerical council, held-out and modeled cost checks exist.',
@@ -66,7 +66,13 @@ SETTINGS = (
     ('broad_refresh_seconds',5),('ranking_seconds',15),('ai_candidate_count',30),
     ('adaptive_acceleration',True),('autonomous_paper_first',True),
 )
+FIRST_RUN = dict(goal='Open the EXE, Start Portal, then separately confirm Engage Paper; no settings editing on a new unused installation.',
+    virtual_budget_usd=10000,default_entry_tier='terrestrial',research_product='BTC-USD',research_interval_seconds=3600,
+    research_bars=1000,collect_public_history=True,built_in_models_included=True,
+    external_account_required=False,paid_ai_required=False,starts_trading_automatically=False,
+    existing_choices_preserved=True,acceptance='Validate the fresh native EXE, ordinary profile, saved-choice upgrade, outage and recovery paths. Recommended defaults are not proven optimal returns.')
 NEXT = (
+    'Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.',
     'Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.',
     'Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; extend independent cut-intent recovery, interrupted acknowledgments and storage-failure recovery while preserving durable fencing.',
     'Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.',
@@ -83,7 +89,7 @@ NEXT = (
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
-                current_hardening=CURRENT_HARDENING,
+                current_hardening=CURRENT_HARDENING,first_run_setup=dict(FIRST_RUN),
                 delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
                 production_scope='Secure provider-held funding, governed autonomous execution and computer-off operation are product goals. All agreed production workflows require acceptance before 1.0; live activation always requires separate authorization.',
                 settings_scope='TARGET_DESIGN_NOT_EFFECTIVE_RUNTIME', settings=dict(SETTINGS), milestones=[asdict(m) for m in MILESTONES], next_steps=list(NEXT),
@@ -96,7 +102,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.132 rechecks recorded eligible quotes against retained feed fields, permissions, prices/spreads/jumps, receive/exchange freshness and exchange ordering under the exact admitted policy before counting forward-trial coverage. Contradictions break coverage and block the proposed target; recorded rejected quotes are never upgraded. This is same-source content replay, not market authentication. Matrix now preserves the owner distinction: one whole-account Singularity graph and a coordinated multi-point Fractal constellation with individual position histories, measured gaps and source labels.'
+CURRENT_HARDENING = 'v0.133 minimizes first-run local paper setup: new unused settings receive a transactional virtual-budget/Terrestrial preset; saved choices, OFF switches, accounting and stop history prevent automatic reselection. To Do introduces the engine/throttle workflow, explains every checkbox and labels optional/future work. Built-in learning and bounded public history remain preselected; no forms or external account are required for the fresh local paper path. Strategy, broker, sustained-market and release acceptance remain open.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():
@@ -110,6 +116,9 @@ def markdown():
     lines += [f"| {s['id']}: {s['title']} | {s['status']} | {s['progress']} | {s['remaining']} |" for s in d['delivery_stages']]
     lines += ['',d['production_scope']]
     lines += ['','## Standing target settings (verify actual runtime separately)','']+[f'- {key}: {value}' for key,value in SETTINGS]
+    lines += ['','## Minimal first-run setup','',FIRST_RUN['goal'],'',
+        'Defaults: $10,000 virtual budget; Terrestrial entry allowance; BTC hourly research with1,000 bars; bounded public-history collection and included numerical models. Solar/Universal, paid AI and provider accounts are optional. Existing settings, explicit OFF selections and retained accounting/stop history are preserved. Compatible unused virtual accounting is created only on confirmed Engage; sessions never restart automatically.',
+        '', 'Every To Do checkbox explains what it checks, why it matters and whether it is included, required for saving/paper configuration, created on Engage, optional or future work. Optional and future boxes may stay unticked.', '',FIRST_RUN['acceptance']]
     lines += ['','## Next sequence','']+[f'{i}. {step}' for i,step in enumerate(NEXT,1)]
     lines += ['','## Explicit expansion and cloud goals','']
     for goal in d['strategic_goals']:

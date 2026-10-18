@@ -24,9 +24,10 @@ const flush=()=>new Promise(setImmediate);
  context.selectWorkspaceTab('todo');assert.equal(calls.length,1);assert.equal(calls[0].path,'/api/onboarding/tasks');assert.equal(calls[0].options,undefined);
  await context.refreshStartupTasks();assert.equal(calls.length,1); // coalesce refreshes
  resolveRequest({checked_at:1000,summary:'Read only.',items:[
-  {id:'engine',title:'Built-in models',group:'Start',status:'COMPLETE',checked:true,detail:'A numerical learner is included; no external provider required.',tab:'ai',target:'counciltest'},
+  {id:'engine',title:'Built-in models',group:'Start',status:'COMPLETE',checked:true,detail:'A numerical learner is included; no external provider required.',why:'The built-in tools do not need a paid account.',setup_scope:'Included',tab:'ai',target:'counciltest'},
   {id:'payment',title:'<script>untrusted</script>',group:'Future',status:'UNAVAILABLE',checked:true,detail:'Payment is unavailable and unnecessary for local paper research.',tab:'accounts',target:'preview'}]});await flush();
  const all=[];function walk(node){all.push(node);for(const child of node.children)walk(child)}walk(byId('startup-tasks'));
+ assert.ok(all.some(x=>x.textContent==='Why: The built-in tools do not need a paid account.'));assert.ok(all.some(x=>x.textContent==='Included'));
  const checks=all.filter(x=>x.type==='checkbox');assert.equal(checks.length,2);assert.equal(checks[0].checked,true);assert.equal(checks[1].checked,false);
  assert.ok(checks.every(x=>x.disabled&&x.dataset.help.length>30));assert.ok(all.some(x=>x.textContent==='<script>untrusted</script>'));
  const open=all.find(x=>x.textContent==='Open AI');open.onclick();assert.equal(byId('panel-ai').hidden,false);assert.equal(focused,byId('counciltest'));assert.equal(calls.length,1);

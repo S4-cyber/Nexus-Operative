@@ -40,6 +40,7 @@ class PaperReadPacing:
         if self.path.is_symlink(): _fail('SYMLINK')
         if self.path.exists():
             info = self.path.stat()
+            if not stat.S_ISREG(info.st_mode): _fail('REGULAR_FILE_REQUIRED')
             if info.st_nlink != 1: _fail('HARDLINK')
             if info.st_size > MAX_DATABASE_BYTES: _fail('DATABASE_CAP')
 

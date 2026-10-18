@@ -137,3 +137,21 @@ python -m nexus.forward_trial_review --history PRIVATE_PATH/paper_forward.sqlite
 ```
 
 Replace the path and dates with your actual private history/window. The tool does not start anything or request prices. Missing history stays missing; damaged history is not repaired. It reports covered time, rejected/injected observations, uncovered time, longest gap and sessions needing review. Only adjacent eligible observations labeled as the built-in public reader, within one session and at most10 seconds apart, count toward declared coverage. Overlaps count once. A proposed72-hour/95% operational target is shown, but meeting it does not prove genuine data, uninterrupted runtime, strategy quality, account reconciliation or broker-paper acceptance. The output remains REVIEW_REQUIRED with every execution/release acceptance flag false. Keep the report private and outside Git. Review actual fee/hold/account and outage evidence independently.
+
+### Prepare an actual paper-account acceptance read on Windows
+
+This source-only tool uses the paper credential pair you already saved through Accounts. It never accepts keys on the command line or uses a plaintext key-file fallback. Use the exact expected paper-account UUID and one persistent pacing path outside the public source checkout. Replace YOU and ACCOUNT_UUID in these examples. First review local pacing without reading the vault or contacting the provider:
+
+```text
+python -m nexus.paper_acceptance_probe --expected-account ACCOUNT_UUID --pacing "C:\Users\YOU\NexusPrivate\paper-read-pacing.sqlite3" --pacing-status-only
+```
+
+A missing journal stays missing. Pending/review outcomes need operator review, not deletion or automatic reset. If you separately intend to make one read-only paper-account request session, run:
+
+```text
+python -m nexus.paper_acceptance_probe --expected-account ACCOUNT_UUID --pacing "C:\Users\YOU\NexusPrivate\paper-read-pacing.sqlite3" --confirm-read-only-paper
+```
+
+This explicitly allows the existing four fixed-host paper GETs and local pacing-journal writes. It creates no orders or transfers. Reuse that same journal: successful sessions retain at least60 seconds of cooldown; rate/authentication/interruption/cap conditions can require longer waits or review. Do not create another journal to bypass them. Portal reads that use no/different journal and other computers are not coordinated by this file; it does not establish broker-wide quotas or cloud ownership.
+
+Successful stdout is a **private inventory-only observation plus pacing evidence**, not broker-paper acceptance or verified spendable funds. It excludes open-order terms. Source coverage, provider key permissions, Windows profile acceptance, actual account/fee/hold reconciliation, routing/live/funding/cloud and release approval remain unverified. Failure may occur after remote reads, retained success or an uncertain pending reservation; check status and preserve the evidence instead of automatically retrying. The journal and report are plaintext; keep them outside Git in private OS-protected storage. This tool is not a newly verified installer feature. No actual provider or vault was used during development tests.

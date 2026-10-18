@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.111.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.112.0",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -324,7 +324,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.111.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.112.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -472,7 +472,9 @@ def paper_portfolio_integrity():
 
 @app.get("/api/paper/portfolio")
 def paper_portfolio():
-    return paper_portfolio_state()
+    try:return paper_portfolio_state()
+    except (ValueError,OSError,sqlite3.Error):
+        raise HTTPException(status_code=503,detail='PAPER_PORTFOLIO_UNAVAILABLE')
 
 @app.post("/api/paper/portfolio/init")
 def paper_portfolio_init(data:PortfolioInit):

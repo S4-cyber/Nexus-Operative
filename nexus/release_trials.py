@@ -60,7 +60,7 @@ def _http_trial():
             time.sleep(.01)
         opener = build_opener(ProxyHandler({}))
         base = 'http://127.0.0.1:' + str(listener.getsockname()[1])
-        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/', '/portal'):
+        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/api/paper/portfolio', '/', '/portal'):
             with opener.open(base + path, timeout=5) as response:
                 body = response.read(2 * 1024 * 1024)
                 _require(response.status == 200, 'HTTP_STATUS')
@@ -249,6 +249,8 @@ def _validate(profile, result):
         _require(all(all(r[k] is False for k in FLAGS) for r in (observed,unsupported)), 'OPEN_TERMS_AUTHORITY')
     if profile == 'observation_review':
         reviewed, boundary = result['review'], result['boundary_review']
+        _require(result['encrypted_pair_review_matches'] is True and result['decrypted_file_writes'] is False,
+            'OBSERVATION_REVIEW_ENCRYPTED_INPUTS')
         _require(reviewed['arithmetic_evaluated'] is True and reviewed['head_rechecked'] is True and
             result['stale_head_rejected'] is True, 'OBSERVATION_REVIEW_HEAD')
         _require(reviewed['sampled_balance_changes']['cash'] == '9.78011' and

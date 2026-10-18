@@ -98,6 +98,11 @@ def main():
             # actual data destination after the explicit halt below instead.
             fresh_accounting=not any(initial_accounting.values())
             if fresh_accounting:
+                # The launched browser can race this probe. Exercise the same
+                # automatic dashboard read explicitly rather than depend on
+                # whether the runner's browser happened to load fast enough.
+                assert request(base,'/api/paper/portfolio')['initialized'] is False
+                assert not request(base,'/api/paper/forward')['enabled']
                 assert not any((expected_data/name).exists() for name in accounting_names), 'Fresh startup initialized accounting'
             assert status['version']==args.version, status
             assert status['halted'] is args.expect_halted, status

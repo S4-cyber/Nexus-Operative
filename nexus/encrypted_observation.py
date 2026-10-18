@@ -96,16 +96,21 @@ class _Parser(argparse.ArgumentParser):
     def error(self,message):self.exit(2,'ENCRYPTED_OBSERVATION_USAGE_ERROR\n')
 
 
+def prompt_passphrase(label='Passphrase (not stored): '):
+    """Hidden terminal input only; refuse getpass's echoing fallback."""
+    with warnings.catch_warnings():
+        warnings.simplefilter('error',getpass.GetPassWarning)
+        return getpass.getpass(label)
+
+
 def main():
     parser=_Parser(description=__doc__)
     parser.add_argument('action',choices=('seal','unseal'));parser.add_argument('source');parser.add_argument('--output',required=True)
     args=parser.parse_args()
     try:
         raw=_read(args.source,portable.MAX_BYTES if args.action=='seal' else MAX_BYTES)
-        with warnings.catch_warnings():
-            warnings.simplefilter('error',getpass.GetPassWarning)
-            phrase=getpass.getpass('Passphrase (not stored): ')
-            if args.action=='seal' and phrase!=getpass.getpass('Repeat passphrase: '):_fail()
+        phrase=prompt_passphrase()
+        if args.action=='seal' and phrase!=prompt_passphrase('Repeat passphrase: '):_fail()
         payload=seal(raw,phrase) if args.action=='seal' else unseal(raw,phrase)+b'\n'
         _write_new(args.output,payload)
     except (OSError,ValueError,TypeError,EOFError,KeyboardInterrupt,MemoryError,getpass.GetPassWarning):

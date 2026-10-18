@@ -46,3 +46,9 @@ Official references: [visibility consequences](https://docs.github.com/en/reposi
 Development continues in 0.x. Public source, green scanners or encrypted copies do not close actual-provider/profile/fee/hold reconciliation, sustained market/strategy trials, independent security/risk review, governed funding/live execution, secure cloud operation or owner1.0 approval. Source-bound Windows packaging remains separate from Linux security tests.
 
 v0.109 source `2d2e25b0f6c8472591891abee3b053e86da83931` passed packaging39088186619/job117560452568 and safety39088186630/job117559084799. The v0.110 packaging run39088678287/job117561701859 failed with no reported steps and unavailable logs (404); the cause is unverified, and that installer is not a verified release. New v0.111 native packaging must complete separately.
+
+## v0.112 follow-up
+
+Encrypted observation pairs can be reviewed offline directly in memory with explicit per-input flags and hidden prompts, avoiding decrypted intermediate files. The successful report remains private plaintext stdout; retained SQLite storage and original downloads remain unencrypted. Main-policy adoption/admin/log review above remain outstanding.
+
+The v0.111 application build39091596247/job117569331946 compiled and passed standalone startup, then failed installed startup because the browser's automatic portfolio read created accounting storage. v0.112 makes that read non-initializing/read-only and strengthens installed smoke to exercise it explicitly. This is a source fix awaiting fresh native CI, not a verified installer claim.

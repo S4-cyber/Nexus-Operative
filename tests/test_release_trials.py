@@ -155,6 +155,9 @@ def test_portable_observation_review_trial_rejects_boundary_or_authority_promoti
     result=fixture_report();trials._validate('observation_review',result)
     changed=copy.deepcopy(result);changed['boundary_review']['arithmetic_evaluated']=True
     with pytest.raises(ValueError,match='OBSERVATION_REVIEW_BOUNDARY'):trials._validate('observation_review',changed)
+    for field,value in (('encrypted_pair_review_matches',False),('decrypted_file_writes',True)):
+        changed=copy.deepcopy(result);changed[field]=value
+        with pytest.raises(ValueError,match='OBSERVATION_REVIEW_ENCRYPTED_INPUTS'):trials._validate('observation_review',changed)
     changed=copy.deepcopy(result);changed['stale_head_rejected']=False
     with pytest.raises(ValueError,match='OBSERVATION_REVIEW_HEAD'):trials._validate('observation_review',changed)
     for field in ('admission_reserved','source_attested','source_coverage_verified','balance_instants_verified',

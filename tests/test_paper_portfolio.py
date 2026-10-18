@@ -52,3 +52,32 @@ def test_portfolio_endpoints_remain_paper_only(tmp_path,monkeypatch):
     assert c.get("/api/paper/portfolio").json()["simulation_only"] is True
     assert c.get("/api/strategy-branches").json()["live_execution_enabled"] is False
     assert c.get("/api/status").json()["live_orders_enabled"] is False
+
+
+
+def test_passive_state_and_http_do_not_initialize_missing_accounting(tmp_path,monkeypatch):
+    root=tmp_path/'absent';monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(root))
+    missing=state()
+    assert missing['initialized'] is False and missing['cash'] is None and missing['positions']==[]
+    assert not root.exists()
+    assert TestClient(app).get('/api/paper/portfolio').json()==missing
+    assert not root.exists()
+    initialize(1000)
+    path=root/'paper_portfolio.sqlite3';before=path.read_bytes()
+    assert state()['cash']==1000 and state()['initialized']
+    assert path.read_bytes()==before
+
+
+def test_passive_state_refuses_corrupt_or_incomplete_history_without_repair(tmp_path,monkeypatch):
+    import sqlite3
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));path=tmp_path/'paper_portfolio.sqlite3'
+    path.write_bytes(b'corrupt fixture');before=path.read_bytes()
+    with pytest.raises(sqlite3.Error):state()
+    response=TestClient(app).get('/api/paper/portfolio')
+    assert response.status_code==503 and response.json()=={'detail':'PAPER_PORTFOLIO_UNAVAILABLE'}
+    assert path.read_bytes()==before
+    path.unlink()
+    with sqlite3.connect(path) as db:db.execute('CREATE TABLE unrelated (value TEXT)')
+    before=path.read_bytes()
+    with pytest.raises(sqlite3.Error):state()
+    assert path.read_bytes()==before

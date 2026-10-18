@@ -4,6 +4,7 @@ Sequential read windows are uncertainty, never exact broker balance instants.
 No provider/vault access, default storage, accounting write or order authority.
 """
 import argparse
+import getpass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, localcontext
 import json
@@ -13,7 +14,7 @@ import sqlite3
 from nexus import alpaca_activity_normalizer as adapter
 from nexus import broker_activity_review, retained_balance_review
 from nexus.broker_activity_store import BrokerActivityStore
-from nexus.alpaca_paper_contract import sha, text
+from nexus.alpaca_paper_contract import canonical, sha, text
 from nexus import portable_paper_observation as portable
 
 POLICY = 'nexus.portable-observation-retained-review.v1'
@@ -163,6 +164,13 @@ def fixture_report():
         last = _fixture_observation(store.account,'1009.78011','0',epoch+3,epoch+3.5)
         scope = dict(expected_account_id=store.account,expected_head=store.inspect()['head_sha256'],opening_observation=first)
         result = review(store,closing_observation=last,**scope)
+        from nexus import encrypted_observation as envelope
+        import os
+        phrase = os.urandom(32).hex()
+        decoded = [portable.loads(envelope.unseal(envelope.seal(
+            canonical(value).encode(),phrase),phrase)) for value in (first,last)]
+        encrypted_result = review(store, expected_account_id=store.account,
+            expected_head=scope['expected_head'], opening_observation=decoded[0], closing_observation=decoded[1])
         boundary = review(store,closing_observation=_fixture_observation(store.account,'1009.78011','0',epoch+2,epoch+3),**scope)
         stale = False
         try: review(store,closing_observation=last,**dict(scope,expected_head='0'*64))
@@ -171,21 +179,35 @@ def fixture_report():
             stale = True
         return dict(passed=result['arithmetic_evaluated'] and not boundary['arithmetic_evaluated'] and stale,
             review=result,boundary_review=boundary,stale_head_rejected=stale,
+            encrypted_pair_review_matches=encrypted_result==result,decrypted_file_writes=False,
             source='FIXED_SYNTHETIC_PORTABLE_RETAINED_FIXTURE',broker_connected=False,live_orders_enabled=False)
 
 
-def _load_file(path):
-    with open(path,'rb') as stream: return portable.loads(stream.read(portable.MAX_BYTES+1))
+def _load_file(path, *, encrypted=False, label='Observation'):
+    # Explicit mode, never infer encryption from a suffix or retry as plaintext.
+    # Reuse bounded regular-file reads; no decrypted intermediate file is made.
+    from nexus import encrypted_observation as envelope
+    raw = envelope._read(path, envelope.MAX_BYTES if encrypted else portable.MAX_BYTES)
+    if encrypted:
+        raw = envelope.unseal(raw, envelope.prompt_passphrase(label+' passphrase (not stored): '))
+    return portable.loads(raw)
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message): self.exit(2, 'PAPER_OBSERVATION_REVIEW_USAGE_ERROR\n')
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Offline review of two private paper observations against retained activities. Prints a private diagnostic JSON report; never grants trading permission.')
+    parser = _Parser(description='Offline review of two private paper observations against retained activities. Prints private plaintext diagnostic JSON; encrypted inputs are decrypted in memory only. Never grants trading permission.')
     for name in ('activities','account','head','opening','closing'): parser.add_argument('--'+name,required=True)
+    for name in ('opening','closing'):
+        parser.add_argument('--'+name+'-encrypted',action='store_true',help='Read this input as an encrypted observation; prompt privately for its passphrase. No decrypted file is written.')
     args=parser.parse_args()
     try:
         result = review(BrokerActivityStore(args.activities,args.account), expected_account_id=args.account, expected_head=args.head,
-            opening_observation=_load_file(args.opening),closing_observation=_load_file(args.closing))
-    except (OSError,ValueError,sqlite3.Error):
+            opening_observation=_load_file(args.opening, encrypted=args.opening_encrypted, label='Opening'),
+            closing_observation=_load_file(args.closing, encrypted=args.closing_encrypted, label='Closing'))
+    except (OSError,ValueError,TypeError,sqlite3.Error,EOFError,KeyboardInterrupt,MemoryError,getpass.GetPassWarning):
         print('PAPER_OBSERVATION_REVIEW_FAILED');return 2
     print(json.dumps(result,sort_keys=True,indent=2));return 0
 

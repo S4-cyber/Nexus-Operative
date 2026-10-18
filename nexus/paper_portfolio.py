@@ -7,6 +7,7 @@ import os
 import sqlite3
 import threading
 import time
+from contextlib import closing
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from nexus.public_data import PRODUCTS
@@ -42,7 +43,21 @@ def create_schema(db):
     db.execute("""CREATE TABLE IF NOT EXISTS execution_fills (ledger_id INTEGER PRIMARY KEY, order_id TEXT NOT NULL, event_id TEXT NOT NULL, quantity TEXT NOT NULL, price TEXT NOT NULL, fee TEXT NOT NULL, UNIQUE(order_id,event_id))""")
 
 def state():
-    with LOCK,_connect() as db:
+    path=Path(os.environ.get("NEXUS_PORTABLE_DATA",str(Path.home()/".nexus-operative")))/'paper_portfolio.sqlite3'
+    with LOCK:
+        # Dashboard observation must not initialize/migrate accounting. Only an
+        # explicit command may create it; inaccessible/corrupt history is error.
+        if path.is_symlink():raise ValueError('PAPER_PORTFOLIO_SYMLINK')
+        try:path.stat()
+        except FileNotFoundError:
+            return {"mode":"LOCAL_PAPER_LEDGER","simulation_only":True,"live_orders_enabled":False,
+                "initialized":False,"initial_capital":None,"cash":None,"positions":[],"event_count":0}
+        return _read_state(path)
+
+
+def _read_state(path):
+    with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=10)) as db:
+        db.execute('BEGIN')
         meta=dict(db.execute("SELECT key,value FROM meta"))
         positions=[{"product":p,"quantity":float(D(q)),"entry":float(D(e))}
                    for p,q,e in db.execute("SELECT product,quantity,entry FROM positions ORDER BY product")]

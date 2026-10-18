@@ -97,3 +97,15 @@ python -m nexus.encrypted_observation unseal observation.nexusenc --output recov
 ```
 
 These source tools do not encrypt local databases or backups. Use a private directory and supported OS disk protection; never commit private data even when encrypted. No encryption result authenticates broker balances or starts trading. See SECURITY.md and PUBLIC_REPO_READINESS.md before changing repository visibility.
+
+### Review encrypted observations without making decrypted files
+
+Source users can supply encrypted observations directly to the existing offline review:
+
+```text
+python -m nexus.paper_observation_review --activities history.db --account ACCOUNT_UUID --head HISTORY_SHA256 --opening first.nexusenc --opening-encrypted --closing last.nexusenc --closing-encrypted
+```
+
+Use each `--opening-encrypted` / `--closing-encrypted` flag only for that encrypted input. Mixed plaintext/encrypted pairs are supported; suffixes are never auto-detected. Enter the respective passphrase at each hidden prompt, even if both copies use the same one. No password arguments, saved keys, automatic retries or decrypted intermediate files are used. Authentication and portable-profile validation precede review; account, retained-history head, read-window and reconciliation checks remain required. A failure prints only a fixed error, with no partial report.
+
+**The successful report printed to the terminal is private plaintext**, including account observations and activity details. Terminal history/scrollback, redirection, screen recording, process memory and OS swap can expose it; this feature does not configure their encryption or erase memory. Original files and the plaintext history database remain unchanged. Keep all private inputs and output outside Git. These are source tools, not newly verified installer features, and they grant no trading authority.

@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.135.0 (pre-release).** This milestone extends packaged first-run setup and saved-choice acceptance across restarts, reinstall and uninstall; actual Windows/native-profile evidence remains separate and production release is not approved.
+**Current development build: 0.136.0 (pre-release).** This milestone prevents damaged saved paper settings from silently falling back to larger defaults and provides explicit recovery while preserving disengagement and exits; no production acceptance or live authority is granted.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

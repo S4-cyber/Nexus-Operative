@@ -65,29 +65,50 @@ def _connect():
             raise
         return conn
 
+def _validate_settings(values):
+    if type(values) is not dict or set(values)!=set(DEFAULTS):
+        raise ValueError("Unexpected or missing paper setting")
+    budget=values['paper_budget']
+    allocations=[values[key] for key in ('terrestrial_allocation','solar_allocation','universal_allocation')]
+    if isinstance(budget,bool) or not isinstance(budget,(float,int)) or not (0<budget<=1000000):
+        raise ValueError('Invalid paper budget')
+    if any(isinstance(value,bool) or not isinstance(value,int) or not 0<=value<=100 for value in allocations):
+        raise ValueError('Invalid allocations')
+    if sum(allocations)!=100:raise ValueError('Tier allocations must total 100')
+
+
+def read_effective_settings(conn):
+    """Validate a complete saved set, or untouched legacy empty settings.
+
+    Also usable inside the tier write transaction. Never repair a malformed
+    value or silently replace it with a larger default spending allowance.
+    """
+    values=dict(DEFAULTS);seen=set()
+    if conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='configuration'").fetchone():
+        fields=tuple(DEFAULTS)
+        rows=conn.execute("SELECT key, CASE WHEN typeof(value)='text' AND length(value)<=128 THEN value ELSE NULL END FROM configuration WHERE key IN (?,?,?,?) LIMIT 5",fields).fetchall()
+        for key,raw in rows:
+            if key in seen or type(raw) is not str:raise ValueError('PAPER_SETTINGS_REVIEW_REQUIRED')
+            seen.add(key)
+            try:values[key]=json.loads(raw)
+            except (ValueError,TypeError,RecursionError):raise ValueError('PAPER_SETTINGS_REVIEW_REQUIRED') from None
+    if seen and seen!=set(DEFAULTS):raise ValueError('PAPER_SETTINGS_REVIEW_REQUIRED')
+    if not seen and conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='audit_events'").fetchone():
+        if conn.execute("SELECT 1 FROM audit_events WHERE event IN ('paper_settings_updated','new_install_paper_defaults') LIMIT 1").fetchone():
+            raise ValueError('PAPER_SETTINGS_REVIEW_REQUIRED')
+    try:_validate_settings(values)
+    except ValueError:raise ValueError('PAPER_SETTINGS_REVIEW_REQUIRED') from None
+    return values
+
+
 def load_settings():
     with closing(_connect()) as conn,conn:
-        values = dict(DEFAULTS)
-        for key, raw in conn.execute("SELECT key, value FROM configuration"):
-            if key in DEFAULTS:
-                try:
-                    values[key] = json.loads(raw)
-                except (ValueError, TypeError):
-                    pass
-        return values
+        conn.execute('BEGIN')
+        return read_effective_settings(conn)
+
 
 def save_settings(values):
-    allowed = set(DEFAULTS)
-    if set(values) != allowed:
-        raise ValueError("Unexpected or missing paper setting")
-    budget = values["paper_budget"]
-    allocations = [values[x] for x in ("terrestrial_allocation", "solar_allocation", "universal_allocation")]
-    if isinstance(budget, bool) or not isinstance(budget, (float, int)) or not (0 < budget <= 1000000):
-        raise ValueError("Invalid paper budget")
-    if any(isinstance(x, bool) or not isinstance(x, int) or x < 0 or x > 100 for x in allocations):
-        raise ValueError("Invalid allocations")
-    if sum(allocations) != 100:
-        raise ValueError("Tier allocations must total 100")
+    _validate_settings(values)
     with closing(_connect()) as conn,conn:
         for key, value in values.items():
             conn.execute("INSERT OR REPLACE INTO configuration(key,value) VALUES (?,?)", (key, json.dumps(value)))

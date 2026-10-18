@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.135.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.136.0",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -119,7 +119,8 @@ class PaperSettings(BaseModel):
 
 @app.get("/api/paper/settings")
 def paper_settings():
-    return {"simulation_only": True, **load_settings()}
+    try:return {"simulation_only": True, **load_settings()}
+    except (ValueError,OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="PAPER_SETTINGS_REVIEW_REQUIRED")
 
 @app.put("/api/paper/settings")
 def update_paper_settings(value: PaperSettings):
@@ -127,6 +128,7 @@ def update_paper_settings(value: PaperSettings):
         settings = save_settings(value.model_dump())
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="PAPER_SETTINGS_REVIEW_REQUIRED")
     return {"simulation_only": True, **settings}
 
 class PaperScenario(BaseModel):
@@ -324,7 +326,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.135.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.136.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -805,17 +807,20 @@ def tier_historical_performance(product:str="BTC-USD"):
 
 @app.get("/api/tiers/permissions")
 def tier_permission_state():
-    return tier_permissions_current()
+    try:return tier_permissions_current()
+    except (ValueError,OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="PAPER_SETTINGS_REVIEW_REQUIRED")
 
 @app.put("/api/tiers/{tier}/permission")
 def set_tier_permission(tier:str,cmd:TierPermissionCommand):
     if _halted and cmd.enabled:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
     try:return configure_tier_permission(tier,cmd.enabled)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+    except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="PAPER_SETTINGS_REVIEW_REQUIRED")
 
 @app.get("/api/tiers")
 def tiers():
-    return {"data_mode":"ILLUSTRATIVE", "updated_at":int(time.time()), "tiers":simulated_snapshot(),"tier_permissions":tier_permissions_current()["tiers"]}
+    try:return {"data_mode":"ILLUSTRATIVE", "updated_at":int(time.time()), "tiers":simulated_snapshot(),"tier_permissions":tier_permissions_current()["tiers"]}
+    except (ValueError,OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="PAPER_SETTINGS_REVIEW_REQUIRED")
 
 @app.post("/api/portal")
 def portal(cmd:PortalCommand):

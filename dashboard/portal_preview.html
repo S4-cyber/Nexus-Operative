@@ -78,7 +78,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <article class="card"><div class="label">Persistent research configuration</div><h2>Paper Budget & Allocations</h2><p class="sub">Stored locally; not a deposit or active portfolio instruction.</p>
 <div><label>Capital $ <input id="paperbudget" type="number" value="10000" min="1" max="1000000" data-help="Set the virtual research budget used to calculate allocation and entry limits. Save Allocations applies it locally; this is not a deposit or a change to an existing account balance."></label></div>
 <div><label>Terrestrial % <input id="terrapct" type="number" value="50" data-help="Set the percentage of the research budget assigned to Terrestrial. All three allocation percentages must total 100; Save Allocations applies the change."></label><label>Solar % <input id="solarpct" type="number" value="35" data-help="Set the percentage of the research budget assigned to Solar. This affects that tier’s local allocation cap after saving; it does not engage the tier."></label><label>Universal % <input id="univpct" type="number" value="15" data-help="Set the percentage of the research budget assigned to Universal. This affects that tier’s local allocation cap after saving; it does not engage the tier."></label></div>
-<button id="savepaper" data-help="Save the virtual budget and the three allocation percentages on this computer. Allocations must total 100. Saving neither moves money nor engages a risk tier.">Save Allocations</button><p class="sub" id="paperstatus">Allocations must total 100%.</p>
+<button id="savepaper" disabled data-help="Save the virtual budget and the three allocation percentages on this computer. Allocations must total 100. If saved settings need review, enter your intended values and save explicitly. Saving neither moves money nor engages a risk tier.">Save Allocations</button><p class="sub" id="paperstatus">Allocations must total 100%.</p>
 </article>
 <section class="card" id="risk-tier-controls"><h2>Risk Tier Engagement</h2><div class="actions" id="tier-engagement"></div><p class="sub" id="tier-permission-status">New installations select Terrestrial; saved switches are preserved. Selecting a tier does not start trading.</p></section>
 <section class="grid" id="tiers"></section>
@@ -323,7 +323,7 @@ async function update(){
   'No statistically defensible daily/minute profit projection; more independent forward-tested trades required.');
    card.append(h,num,p);root.append(card);
   }
- }catch(e){show('status','Local engine unavailable: '+e.message)}
+ }catch(e){show('status',e.message==='PAPER_SETTINGS_REVIEW_REQUIRED'?'Paper settings need review in Risk. Research controls remain available; new paper entries are blocked.':'Local engine unavailable: '+e.message)}
 }
 // BEGIN ENGINE CONTROLS
 let paperRunning=false,paperStateKnown=false,engageBusy=false;
@@ -627,8 +627,20 @@ byId('evidencehistory').onclick=async()=>{try{const d=await api('/api/market-evi
 byId('crossvenue').onclick=async()=>{try{const p=byId('publicpair').value;const d=await api('/api/public-quote/'+p+'/cross-venue');show('publicresult','CROSS-VENUE '+d.decision+' / '+(d.mid_divergence_bps===null?'N/A':d.mid_divergence_bps+' bps')+' / '+d.issues.join(', ')+' / NO LIVE ORDER AUTHORITY. Kraken tick timestamp unavailable.')}catch(e){show('publicresult','Cross-venue check failed: '+e.message)}};
 async function loadMarkets(){try{const d=await api('/api/markets');const root=byId('market-grid');root.replaceChildren();for(const p of d.providers){const c=document.createElement('div');c.className='market';c.textContent=p.name+' / '+p.connectivity+' / NO ORDERS';root.append(c)}}catch(e){show('market-grid',e.message)}}
 async function loadBranches(){try{const d=await api('/api/strategy-branches');const root=byId('researchbranches');root.className='grid';root.replaceChildren();for(const b of d.branches){const c=document.createElement('div');c.className='market';const title=document.createElement('strong');title.textContent=b.label;const p=document.createElement('p');p.className='sub';p.textContent=b.status+' / '+b.limitations;c.append(title,p);root.append(c)}}catch(e){show('researchbranches',e.message)}}
-async function loadPaper(){try{const d=await api('/api/paper/settings');byId('paperbudget').value=d.paper_budget;byId('terrapct').value=d.terrestrial_allocation;byId('solarpct').value=d.solar_allocation;byId('univpct').value=d.universal_allocation}catch(e){show('paperstatus',e.message)}}
-byId('savepaper').onclick=async()=>{try{await api('/api/paper/settings',{method:'PUT',headers:jsonHeaders,body:JSON.stringify({paper_budget:value('paperbudget'),terrestrial_allocation:value('terrapct'),solar_allocation:value('solarpct'),universal_allocation:value('univpct')})});show('paperstatus','Saved locally. No transfer or trade.')}catch(e){show('paperstatus',e.message)}};
+// BEGIN PAPER SETTINGS
+let paperSettingsSaving=false;byId('savepaper').disabled=true;
+async function loadPaper(){
+ try{const d=await api('/api/paper/settings');byId('paperbudget').value=d.paper_budget;byId('terrapct').value=d.terrestrial_allocation;byId('solarpct').value=d.solar_allocation;byId('univpct').value=d.universal_allocation}
+ catch(_){for(const id of ['paperbudget','terrapct','solarpct','univpct'])byId(id).value='';show('paperstatus','Saved paper settings could not be verified. Enter the virtual budget and allocations you want, then Save Allocations. Previous values were not replaced; no trading starts from saving.')}
+ finally{if(!paperSettingsSaving)byId('savepaper').disabled=false}
+}
+byId('savepaper').onclick=async()=>{
+ if(paperSettingsSaving||byId('savepaper').disabled)return;paperSettingsSaving=true;byId('savepaper').disabled=true;
+ try{await api('/api/paper/settings',{method:'PUT',headers:jsonHeaders,body:JSON.stringify({paper_budget:value('paperbudget'),terrestrial_allocation:value('terrapct'),solar_allocation:value('solarpct'),universal_allocation:value('univpct')})});show('paperstatus','Saved locally. No transfer or trade.');await update()}
+ catch(_){show('paperstatus','Settings were not confirmed. Check the virtual budget and percentages; they must total 100%. Your saved data was not reset.')}
+ finally{paperSettingsSaving=false;byId('savepaper').disabled=false}
+};
+// END PAPER SETTINGS
 byId('preview').onclick=async()=>{try{const d=await api('/api/funding/preview',{method:'POST',headers:jsonHeaders,body:JSON.stringify({amount:value('amount'),cadence:byId('cadence').value})});show('fundstatus','Preview $'+d.amount+' / '+d.cadence+' / NO TRANSFER')}catch(e){show('fundstatus',e.message)}};
 async function refreshPortfolio(){try{const s=await api('/api/paper/portfolio');show('paperledger',s.initialized?'Virtual cash $'+s.cash.toFixed(2)+' / '+s.positions.length+' positions / '+s.event_count+' ledger events':'Not initialized.')}catch(e){show('paperledger',e.message)}}
 async function portfolioCommand(endpoint,payload){try{await api(endpoint,{method:'POST',headers:jsonHeaders,body:JSON.stringify(payload)});await refreshPortfolio()}catch(e){show('paperledger','Paper command rejected: '+e.message)}}

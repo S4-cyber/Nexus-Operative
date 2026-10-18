@@ -178,7 +178,8 @@ def _http_pacing_trial(base, root):
 
 
 FIRST_RUN_HTTP_CHECKS=('new_install_preset_applied','only_settings_storage_created',
-    'no_trade_autostart','checklist_purposes_present','optional_connections_not_required','saved_off_preserved')
+    'no_trade_autostart','checklist_purposes_present','optional_connections_not_required','saved_off_preserved',
+    'corrupt_settings_read_rejected','corrupt_settings_enable_rejected','corrupt_settings_disengage_available','explicit_repair_kept_off')
 
 
 def _http_defaults_trial(base,root):
@@ -201,6 +202,20 @@ def _http_defaults_trial(base,root):
     call('/api/tiers/terrestrial/permission',{'enabled':False});call('/api/paper/settings')
     _require(not any(t['enabled'] for t in call('/api/tiers/permissions')['tiers']),'HTTP_FIRST_RUN_OFF_OVERWRITTEN')
     _require(not call('/api/status')['portal_enabled'] and not call('/api/paper/forward')['enabled'], 'HTTP_FIRST_RUN_STARTED')
+    # Disposable corruption/recovery fixture: never a user's configuration.
+    with sqlite3.connect(root/'portal_settings.sqlite3') as db:
+        db.execute("UPDATE configuration SET value='BROKEN_LOCAL_SETTINGS_FIXTURE' WHERE key='paper_budget'")
+    from urllib.error import HTTPError
+    before=(root/'portal_settings.sqlite3').read_bytes()
+    for path,payload,code in [('/api/paper/settings',None,503),('/api/tiers/solar/permission',{'enabled':True},422)]:
+        try:call(path,payload);_require(False,'HTTP_CORRUPT_SETTINGS_ACCEPTED')
+        except HTTPError as error:
+            _require(error.code==code and json.loads(error.read(4096))=={'detail':'PAPER_SETTINGS_REVIEW_REQUIRED'},'HTTP_CORRUPT_SETTINGS_SCOPE')
+    _require((root/'portal_settings.sqlite3').read_bytes()==before,'HTTP_CORRUPT_SETTINGS_REPAIRED')
+    off=call('/api/tiers/terrestrial/permission',{'enabled':False})
+    _require(off['enabled'] is False and off['settings_review_required'] is True,'HTTP_CORRUPT_SETTINGS_DISENGAGE')
+    call('/api/paper/settings',{key:settings[key] for key in ('paper_budget','terrestrial_allocation','solar_allocation','universal_allocation')})
+    _require(not any(t['enabled'] for t in call('/api/tiers/permissions')['tiers']),'HTTP_SETTINGS_REPAIR_REENGAGED')
     return {key:True for key in FIRST_RUN_HTTP_CHECKS}
 
 

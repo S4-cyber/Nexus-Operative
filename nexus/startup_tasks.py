@@ -4,7 +4,6 @@ Checkboxes describe configuration/capabilities, not strategy or release approval
 No network probe, payment, model training or automatic repair is performed.
 """
 from contextlib import closing
-import json
 import math
 import os
 from pathlib import Path
@@ -12,7 +11,7 @@ import sqlite3
 import time
 from nexus import market_hub as hub
 from nexus.onboard_council import ENGINE_VERSION
-from nexus.state import DEFAULTS
+from nexus.state import read_effective_settings
 from nexus.provider_research import status as ai_status
 
 
@@ -40,14 +39,15 @@ def checklist():
         'Folder access appears available; this is not a database health check or a test write.' if root.is_dir() and os.access(root,os.W_OK) else 'A writable data folder has not been confirmed. Review System Readiness below.', 'todo','readinesscheck')
     # Read only saved values: load_settings/current/state initialize databases.
     try:
-        saved=dict(_rows(root/'portal_settings.sqlite3',"SELECT key,value FROM configuration WHERE key IN ('paper_budget','terrestrial_allocation','solar_allocation','universal_allocation') LIMIT 4"))
-        values={**DEFAULTS,**{k:json.loads(v) for k,v in saved.items()}}
-        budget=values.get('paper_budget');alloc=[values.get(k+'_allocation') for k in ('terrestrial','solar','universal')]
-        valid=(type(budget) in (int,float) and math.isfinite(budget) and 0<budget<=1000000
-               and all(type(x) is int and 0<=x<=100 for x in alloc) and sum(alloc)==100)
-        state='COMPLETE' if valid else 'NEEDS_SETUP'
+        path=root/'portal_settings.sqlite3'
+        if path.exists():
+            with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=.25)) as db:
+                db.set_progress_handler(lambda:1,100000)
+                db.execute('BEGIN')
+                read_effective_settings(db)
+        state='COMPLETE'
     except (OSError,sqlite3.Error,ValueError,TypeError):state='UNKNOWN'
-    add('budget','Virtual budget is ready','Before a paper session',state,
+    add('budget','Virtual budget and allocations','Before a paper session',state,
         'The built-in starting budget is $10,000 virtual dollars, split 50% / 35% / 15%. Valid saved choices override these defaults. No save is needed to use defaults; change them in Risk if you want. No money is deposited.','risk','paperbudget')
     try:
         tiers=_rows(root/'portal_settings.sqlite3',"SELECT tier,enabled FROM tier_permissions LIMIT 4")

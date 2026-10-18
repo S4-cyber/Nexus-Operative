@@ -7,7 +7,7 @@ simulation gateway; they never override portfolio or global risk vetoes.
 import sqlite3,threading,time
 from contextlib import closing
 from decimal import Decimal
-from nexus.state import db_path,load_settings
+from nexus.state import db_path,load_settings,read_effective_settings
 
 TIERS={"terrestrial":Decimal("0.01"),"solar":Decimal("0.02"),"universal":Decimal("0.03")}
 _lock=threading.RLock()
@@ -36,8 +36,15 @@ def configure(tier,enabled):
     if tier not in TIERS or type(enabled) is not bool:
         raise ValueError("INVALID_TIER_PERMISSION")
     with _lock,closing(_db()) as db,db:
+        db.execute("BEGIN IMMEDIATE")
+        if enabled:read_effective_settings(db)
         db.execute("INSERT INTO tier_permissions(tier,enabled) VALUES(?,?) ON CONFLICT(tier) DO UPDATE SET enabled=excluded.enabled",(tier,int(enabled)))
-    return current()
+    try:return current()
+    except ValueError as exc:
+        if enabled or str(exc)!='PAPER_SETTINGS_REVIEW_REQUIRED':raise
+        return dict(mode='LOCAL_SIMULATED_RISK_PERMISSIONS_SETTINGS_REVIEW',tier=tier,enabled=False,
+            settings_review_required=True,live_orders_enabled=False,broker_connected=False,
+            note='This tier is OFF. Saved paper settings need review; no other tier limits are inferred.')
 
 def require_entry(tier,notional):
     if tier not in TIERS:raise ValueError("UNKNOWN_RISK_TIER")

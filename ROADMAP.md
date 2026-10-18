@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.148.1. Branch: `development/windows-portal-foundation`.
+Revision: 0.149.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.148.1 adds sampled request/pacing recovery review and blocks pending/auth/clock/cooldown/capacity faults before saved-key access. Five forced process exits cover request begin/result and pacing-result commits; ten fresh-process reviews preserve both journals, original uncertainty and attempt limits, without automatically retrying or clearing reservations. The disposable source drill is mandatory in offline release evidence. v0.148 security CI passed; Windows/browser remain pending at this checkpoint. Rough implementation remains about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.149 requires complete replayed pacing/activity acceptance history before composing original broker request terms with explicit retained fills. It rejects legacy, unbound, incomplete-cursor or changed cooperating journals and keeps every source, fee, hold, funds, routing, ledger and release authority false. The v0.148.1 shared recovery preflight and five-boundary crash drill remain intact; v0.148.1 Windows/browser CI is pending. Rough implementation remains about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

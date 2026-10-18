@@ -468,7 +468,9 @@ def _execute(profile):
     if profile == 'activity':
         from nexus.broker_activity_review import fixture_report
         from nexus.broker_request_activity_review import fixture_report as link_fixture
-        result=fixture_report();result['request_activity_link']=link_fixture();return result
+        from nexus.paper_request_activity_acceptance import fixture_report as accepted_link_fixture
+        result=fixture_report();result['request_activity_link']=link_fixture()
+        result['request_activity_acceptance']=accepted_link_fixture();return result
     raise ValueError('RELEASE_TRIAL_UNKNOWN_PROFILE')
 
 
@@ -643,6 +645,15 @@ def _validate(profile, result):
         linked=result['request_activity_link']
         _require(linked['source']=='TEMPORARY_REQUEST_ACTIVITY_LINK_FIXTURE' and all(linked[k] is True for k in ('passed','original_request_linked','explicit_fills_checked','offsetting_bad_price_detected','journals_unchanged')), 'REQUEST_ACTIVITY_LINK')
         _require(all(linked[k] is False for k in FLAGS),'REQUEST_ACTIVITY_AUTHORITY')
+        accepted=result['request_activity_acceptance']
+        from nexus.paper_request_activity_acceptance import FLAGS as ACCEPTED_FLAGS
+        _require(accepted['source']=='SYNTHETIC_LOCAL_ACCEPTED_REQUEST_FILL_FIXTURE' and
+            all(accepted[k] is True for k in ('passed','accepted_history_bound','original_request_linked',
+                'explicit_fills_checked','journals_unchanged','unbound_activity_rejected')),
+            'REQUEST_ACTIVITY_ACCEPTANCE')
+        _require(all(accepted[k] is False for k in ACCEPTED_FLAGS) and
+            accepted['actual_provider_access'] is accepted['actual_vault_access'] is False,
+            'REQUEST_ACTIVITY_ACCEPTANCE_AUTHORITY')
         reviewed = result['review']
         _require(reviewed['retained_batches'] == 2 and reviewed['retained_activities'] == 5
                  and reviewed['normalization_evaluated'] is True, 'ACTIVITY_MERGE')

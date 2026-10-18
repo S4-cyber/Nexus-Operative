@@ -188,6 +188,20 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
         with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_AUTHORITY'):trials._validate('activity_acceptance',changed)
 
 
+def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authority():
+    from nexus.paper_reconciliation_acceptance import fixture_report
+    result=fixture_report();trials._validate('reconciliation_acceptance',result)
+    for path,value,code in (
+        (('journals_unchanged',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
+        (('complete_accepted_history_replayed',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
+        (('broker_account_reconciled',),True,'RECONCILIATION_ACCEPTANCE_AUTHORITY')):
+        changed=copy.deepcopy(result);target=changed
+        for key in path[:-1]:target=target[key]
+        target[path[-1]]=value
+        with pytest.raises(ValueError,match=code):
+            trials._validate('reconciliation_acceptance',changed)
+
+
 def test_activity_acceptance_snapshot_covers_main_rollback_wal_and_shm_files(tmp_path):
     from nexus.paper_activity_acceptance_evidence import _sqlite_files_snapshot
     expected=[]

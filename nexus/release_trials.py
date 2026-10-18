@@ -16,7 +16,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'activity_acceptance', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms', 'encrypted_observation')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'activity_acceptance', 'reconciliation_acceptance', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms', 'encrypted_observation')
 PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
     'unconfirmed_read_denied', 'invalid_scope_denied', 'foreign_origin_denied',
     'inspection_inventory_validated', 'cooldown_prevented_transport',
@@ -356,6 +356,9 @@ def _execute(profile):
     if profile == 'activity_acceptance':
         from nexus.paper_activity_acceptance_evidence import fixture_report
         return fixture_report()
+    if profile == 'reconciliation_acceptance':
+        from nexus.paper_reconciliation_acceptance import fixture_report
+        return fixture_report()
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -515,6 +518,19 @@ def _validate(profile, result):
             'activity_coverage_verified','fee_execution_links_verified','broker_account_reconciled',
             'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled',
             'money_movement_enabled','release_approved')), 'ACTIVITY_ACCEPTANCE_AUTHORITY')
+    if profile == 'reconciliation_acceptance':
+        _require(result['source']=='SYNTHETIC_LOCAL_ACCEPTED_RECONCILIATION_FIXTURE' and
+            result['repeat_review_matches'] is True and result['journals_unchanged'] is True and
+            result['unbound_history_rejected'] is True and result['private_scope_omitted'] is True,
+            'RECONCILIATION_ACCEPTANCE_REPLAY')
+        _require(result['complete_accepted_history_replayed'] is True and
+            result['exact_activity_head_bound'] is True and
+            result['observation_arithmetic_evaluated'] is True,
+            'RECONCILIATION_ACCEPTANCE_BINDING')
+        _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access',
+            'broker_account_reconciled','spendable_funds_verified','ready_for_routing','broker_connected',
+            'live_orders_enabled','money_movement_enabled','release_approved')),
+            'RECONCILIATION_ACCEPTANCE_AUTHORITY')
     if profile == 'activity':
         reviewed = result['review']
         _require(reviewed['retained_batches'] == 2 and reviewed['retained_activities'] == 5

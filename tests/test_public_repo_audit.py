@@ -99,7 +99,8 @@ def test_pr_security_uses_trusted_policy_full_history_and_checksum_pinned_scanne
 
 
 @pytest.mark.parametrize('mode',['RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW','PAPER_ACCOUNT_ACCEPTANCE_PROBE','PAPER_ACCEPTANCE_PACING_STATUS',
-    'PAPER_ACTIVITY_ACCEPTANCE_PROBE','PAPER_ACTIVITY_ACCEPTANCE_STATUS','PAPER_ACTIVITY_ACCEPTANCE_HISTORY'])
+    'PAPER_ACTIVITY_ACCEPTANCE_PROBE','PAPER_ACTIVITY_ACCEPTANCE_STATUS','PAPER_ACTIVITY_ACCEPTANCE_HISTORY',
+    'PAPER_RECONCILIATION_ACCEPTANCE_REVIEW'])
 def test_standalone_operational_trial_report_is_private_even_when_renamed(tmp_path,mode):
     root=repository(tmp_path)
     commit(root,'ordinary.txt',json.dumps({'mode':mode,'fixture':True}).encode())

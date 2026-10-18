@@ -24,7 +24,7 @@ def encoded(value):return json.dumps(value,allow_nan=False).encode()
 
 def test_complete_result_revalidates_without_mutation_and_emits_only_scope_metadata(report):
     before=copy.deepcopy(report);summary=evidence.verify(encoded(report))
-    assert report==before and summary['passed'] and summary['profiles_verified']==15
+    assert report==before and summary['passed'] and summary['profiles_verified']==len(evidence.PROFILES)
     assert summary['mode']=='VERIFIED_OFFLINE_EVIDENCE_ONLY'
     assert summary['source_fingerprint']==report['source_fingerprint']
     assert all(summary[k] is False for k in evidence.FLAGS)

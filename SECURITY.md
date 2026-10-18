@@ -111,3 +111,7 @@ Private cross-journal status now resolves the latest acceptance scope to its ret
 ## v0.128 full accepted-history replay boundary
 
 Private status now obtains the acceptance scopes only through full validated acceptance-chain replay and checks every record against the exact retained receipt, canonical content and exact successful pacing/activity head transition. Only aggregate booleans and counts enter status or public synthetic release evidence; the scope list, receipts, identities, timings, journal paths and hashes remain private. An older-only disagreement is fail-closed even if the latest scope and all final heads match. Replay still cannot detect a coordinated valid rewrite, authenticate a provider or prove coverage, fee links, balances, holds, funds or routing authority. Never publish, erase or auto-repair the private journals.
+
+## v0.129 accepted reconciliation evidence boundary
+
+The sixteenth release profile composes only disposable synthetic accepted history with synthetic portable observations. Public evidence retains bounded booleans and false authority flags, not manifest/head/account values, journal bytes or paths. The standalone reconciliation output is a private financial report blocked by the artifact scanner even when renamed. Passing proves only the tested local exact-head and before/after replay fences; it does not establish provider source, activity/fee coverage, atomic balances, holds, spendable funds, broker acceptance or release approval.

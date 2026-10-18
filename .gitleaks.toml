@@ -1,0 +1,8 @@
+# Extend provider/default detectors. No directory or test-fixture exclusions.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Exact public documentation route phrase, not a credential"
+regexTarget = "secret"
+regexes = ['''^API/UI/default$''']

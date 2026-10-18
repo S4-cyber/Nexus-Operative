@@ -1,0 +1,73 @@
+"""Disposable Git histories; no actual credentials or repository changes."""
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+
+import pytest
+
+ROOT=Path(__file__).resolve().parents[1]
+spec=importlib.util.spec_from_file_location('public_audit',ROOT/'tools/public_repo_audit.py')
+audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
+
+
+def git(root,*args):return subprocess.run(['git','-C',str(root),*args],check=True,capture_output=True).stdout
+
+def repository(tmp_path):
+    git(tmp_path,'init');git(tmp_path,'config','user.name','Fixture');git(tmp_path,'config','user.email','fixture@example.invalid')
+    return tmp_path
+
+
+def commit(root,name,raw):
+    path=root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(raw)
+    git(root,'add','--',name);git(root,'commit','-m','fixture')
+    return path
+
+
+@pytest.mark.parametrize('name',['.env','.env.local','config.env','secrets/token.txt','storage/private.json','data/account.db','account.sqlite-wal','saved.db-journal','backup.zip','vault.key','saved.nexusenc','Nexus-Paper-Observation.json','nexus-backup-manifest.json'])
+def test_sensitive_path_policy(name):assert audit.path_rule(name)
+
+
+@pytest.mark.parametrize('name',['nexus/app.py','storage/README.txt','storage/.gitkeep','.env.example','validation/release_trials_0_110_0.json','SECURITY.md'])
+def test_allowed_public_source_names(name):assert audit.path_rule(name) is None
+
+
+def test_clean_full_history_and_no_content_echo(tmp_path):
+    root=repository(tmp_path);commit(root,'source.py',b'print("public")\n')
+    report=audit.audit(root,history=True)
+    assert report['passed'] and report['history_scanned'] and report['blobs_checked']==1
+    assert report['paths_checked']==1
+
+
+def test_removed_private_path_is_still_blocked(tmp_path):
+    root=repository(tmp_path);path=commit(root,'.env.local',b'not-a-real-secret')
+    path.unlink();git(root,'add','-u');git(root,'commit','-m','removed fixture')
+    report=audit.audit(root,history=True)
+    assert not report['passed'] and any(x['rule']=='ENVIRONMENT_FILE' for x in report['findings'])
+    assert 'not-a-real-secret' not in json.dumps(report)
+
+
+def test_private_blob_renamed_as_text_is_blocked(tmp_path):
+    root=repository(tmp_path);commit(root,'ordinary.txt',b'SQLite format 3\x00' + b'fixture')
+    report=audit.audit(root,history=True)
+    assert not report['passed'] and report['findings'][0]['rule']=='PRIVATE_BINARY_OR_KEY_CONTENT'
+
+
+def test_export_renamed_as_json_is_blocked_but_offline_fixture_report_is_allowed(tmp_path):
+    root=repository(tmp_path);commit(root,'ordinary.json',json.dumps({'profile':'nexus.portable-paper-observation.v1','private':'fixture'}).encode())
+    assert any(x['rule']=='PRIVATE_FINANCIAL_REPORT' for x in audit.audit(root,history=True)['findings'])
+    commit(root,'validation/report.json',json.dumps({'mode':'BOUNDED_OFFLINE_RELEASE_TRIALS','fixture':True}).encode())
+    assert not audit.audit(root,history=True)['passed']
+
+
+def test_required_ref_must_be_fetched_and_shallow_clone_is_not_a_pass(tmp_path):
+    root=repository(tmp_path);commit(root,'source.py',b'public')
+    with pytest.raises(ValueError,match='GIT_AUDIT_INCOMPLETE'):audit.audit(root,history=True,required_refs=['refs/remotes/origin/missing'])
+    head=git(root,'rev-parse','HEAD').strip();(root/'.git/shallow').write_bytes(head+b'\n')
+    with pytest.raises(ValueError,match='FULL_HISTORY_REQUIRED'):audit.audit(root,history=True)
+
+
+def test_renaming_same_blob_does_not_hide_a_private_historical_path(tmp_path):
+    root=repository(tmp_path);path=commit(root,'safe.txt',b'public')
+    path.rename(root/'.env');git(root,'add','-A');git(root,'commit','-m','fixture rename')
+    assert not audit.audit(root,history=True)['passed']

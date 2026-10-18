@@ -22,8 +22,9 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
+          persist-credentials: false
           ref: ${{ github.event_name == 'push' && github.sha || inputs.source_branch || 'development/windows-portal-foundation' }}
       - name: Bind push evidence to the triggering source commit
         shell: pwsh
@@ -33,8 +34,9 @@ jobs:
             throw 'Checked-out source does not match triggering push SHA'
           }
       - name: Check out pinned prior-version recovery fixture source
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
+          persist-credentials: false
           ref: 09bb7280cd2e654018d491db52e19660b2b8e180
           path: .upgrade-source
       - name: Require application source
@@ -43,7 +45,7 @@ jobs:
           if (!(Test-Path pyproject.toml) -or !(Test-Path portable/desktop.py)) {
             throw 'Nexus application source has not yet been imported. No EXE will be produced from placeholder code.'
           }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
           cache: pip
@@ -96,7 +98,7 @@ jobs:
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
           }
       - name: Upload standalone EXE
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: NexusOperative-Standalone-Windows
           path: dist/NexusOperative.exe
@@ -129,7 +131,7 @@ jobs:
           python -m nexus.artifact_manifest verify release/artifact-manifest.json release
           if ($LASTEXITCODE -ne 0) { throw 'Manifest verification failed' }
       - name: Upload distribution with source and checksum manifest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: NexusOperative-Windows-Distribution
           path: |
@@ -140,13 +142,13 @@ jobs:
           retention-days: 30
       - name: Preserve installer acceptance evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: NexusOperative-Installer-Smoke-Evidence
           path: ${{ runner.temp }}/nexus-installer-evidence
           if-no-files-found: warn
           retention-days: 30
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: NexusOperative-Windows-Installer
           path: release/NexusOperative-Setup-*.exe

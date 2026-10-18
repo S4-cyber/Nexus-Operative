@@ -57,3 +57,12 @@ v0.96 adds an internal original-order-ID recovery coordinator for future broker 
 v0.97: Check Broker Fee Fixture also displays a separate raw-activity example: explicit fills and unlinked fee debits, with coverage NOT verified. The other part of the example uses deliberately supplied fee links for arithmetic. Those agreeing amounts do not prove raw fees belong to particular trades or establish their posting times. Nothing is collected from a broker by this check, and no account changes. Real activity coverage, corrections, fee links and cash/position/hold reconciliation remain unfinished before broker-paper order routing.
 
 v0.98 adds an internal bounded activity collector for future integration, not a startup or Accounts action. It reads at most two pages within a specified past creation window and never automatically follows a continuation hint. “End observed” means a short response was seen; it does not prove trade/fee history is complete or funds are spendable. No activity rows/cursor are saved by this component. Routine runtime collection, verified coverage/fee links and cash/position/hold reconciliation remain unfinished before broker-paper order routing.
+
+
+## Keep a paper-account observation for review
+
+1. In Accounts, use Read Paper Account Once and confirm the read. This reports observations and grants no trading permission.
+2. After a successful read, select Download Observation and confirm that the file contains private account identity and balances. Save it somewhere private. The JSON contains no keys; it is not encrypted. A new read/setup action or changing the expected account clears the pending download.
+3. For source installations, check the file offline with `python -m nexus.portable_paper_observation Nexus-Paper-Observation.json`. A content-consistency result means its structure, arithmetic and fingerprints agree. It does not prove the provider source, current funds or permission to trade. The validator makes no provider request and changes no account.
+
+Unknown values stay unknown. Total BTC and available BTC are different observations, and their difference is not a verified hold. Keep the file as evidence for review; the application cannot import it to authorize funds or trading.

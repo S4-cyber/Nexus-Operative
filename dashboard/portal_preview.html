@@ -143,7 +143,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <div id="panel-accounts" class="tab-panel" role="tabpanel" aria-labelledby="tab-accounts" hidden><h2 class="workspace-title">Accounts</h2><p class="sub">Manage virtual balances and inspect future broker and funding options.</p>
 <section class="card"><div class="label">Optional Windows paper account reads</div><h2>Alpaca Paper: Read Only</h2><p class="sub">Save your own paper API key pair in Windows Credential Manager, separately from optional AI keys. Saving starts no requests. Nexus uses this pair only for explicit account reads; the provider's keys may have broader permissions outside Nexus. No orders, deposits or withdrawals are available here.</p>
 <div class="actions"><label>Paper API key <input id="paper-api-key" type="password" maxlength="256" autocomplete="off" spellcheck="false" data-help="Enter your Alpaca paper API key for the separate Windows credential store. Saving does not contact Alpaca or enable orders. Never put this key in chat or research fields."></label><label>Paper API secret <input id="paper-api-secret" type="password" maxlength="256" autocomplete="off" spellcheck="false" data-help="Enter the matching paper API secret. It is sent only to your local Nexus backend for Windows credential storage. The field clears after a save attempt; the help panel never reads it."></label><button id="paper-credentials-save" data-help="After confirmation, save or replace the paper key pair in Windows Credential Manager. This invalidates an older in-progress read, sends no broker request and does not enable trading.">Save Paper Keys Locally</button><button id="paper-credentials-status" data-help="Read the local Windows credential entry to check whether a valid paper pair is saved. This does not contact Alpaca, prove account access or authorize trading.">Check Saved Paper Setup</button></div>
-<div class="actions"><label>Expected paper account ID (optional) <input id="paper-account-expected" type="text" maxlength="36" autocomplete="off" spellcheck="false" placeholder="Optional account UUID" data-help="Optionally enter a known paper account UUID to reject a different account on the first read. Leaving this blank permits inspection of the saved pair's account; it still grants no trading permission."></label><button id="paper-account-inspect" data-help="Read reported cash, total BTC and available BTC once after confirmation. Total is the holding; available is the amount the provider reports as free. Unknown stays unknown. Differences are observations, not verified holds or spendable funds. No orders or automatic trading start.">Read Paper Account Once</button><button id="paper-credentials-remove" data-help="After confirmation, invalidate this process's in-progress paper reads and remove the saved paper key pair. This does not revoke keys at Alpaca, cancel broker orders or erase your virtual portfolio.">Remove Saved Paper Keys</button></div>
+<div class="actions"><label>Expected paper account ID (optional) <input id="paper-account-expected" type="text" maxlength="36" autocomplete="off" spellcheck="false" placeholder="Optional account UUID" data-help="Optionally enter a known paper account UUID to reject a different account on the first read. Leaving this blank permits inspection of the saved pair's account; it still grants no trading permission."></label><button id="paper-account-inspect" data-help="Read reported cash, total BTC and available BTC once after confirmation. Total is the holding; available is the amount the provider reports as free. Unknown stays unknown. Differences are observations, not verified holds or spendable funds. No orders or automatic trading start.">Read Paper Account Once</button><button id="paper-observation-download" disabled data-help="Download the latest successful paper observation as a JSON file for offline review. It contains private account identity and balances, but no credentials. Hashes check content consistency only; they do not prove authenticity, current funds or trading permission. New setup or read actions clear it.">Download Observation</button><button id="paper-credentials-remove" data-help="After confirmation, invalidate this process's in-progress paper reads and remove the saved paper key pair. This does not revoke keys at Alpaca, cancel broker orders or erase your virtual portfolio.">Remove Saved Paper Keys</button></div>
 <pre id="paper-credentials-result" class="monitor tiny" role="status" aria-live="polite">No paper credentials checked. Nothing connects or reads automatically. Broker order routing and funding remain unavailable.</pre></section>
 <section class="card"><div class="label">Paper accounting only</div><h2>Virtual Spot Portfolio</h2><p class="sub">Uses public bid/ask snapshots and locally stored virtual balances. Manual paper orders only. Not real holdings.</p>
 <div class="actions"><label>Initial virtual $ <input id="paperinit" type="number" value="10000" min="1" data-help="Choose the starting virtual cash for a new manual paper portfolio. Initialization is a one-time action and does not fund a real account."></label><button id="paperstart" data-help="Create the manual virtual portfolio with the chosen starting cash if one does not already exist. It does not overwrite an existing traded account.">Initialize Once</button><select id="paperproduct" data-help="Choose the market for the manual paper buy or sell controls. This selection does not change the experimental forward runner’s BTC-only policy."><option>BTC-USD</option><option>ETH-USD</option><option>SOL-USD</option></select><label>Notional $ <input id="paperorder" type="number" value="25" data-help="Set the requested dollar size of a manual paper buy. Fees, risk caps, available virtual cash and quote checks can still reject it."></label><label>Risk tier <select id="papertier" data-help="Choose which engaged risk tier must allow this manual paper buy. A disabled entry tier does not prevent selling an existing paper position."><option value="terrestrial">Terrestrial</option><option value="solar">Solar</option><option value="universal">Universal</option></select></label><button id="paperbuy" data-help="Model a manual buy in the selected virtual market using a public quote. Virtual cash and holdings change if all checks pass; no broker order is sent.">Paper Buy</button><button id="papersell" data-help="Model selling the entire manual paper holding in the selected market. It reduces virtual exposure and can operate even when the entry tier is off.">Paper Sell All</button><button id="paperreconcile" data-help="Compare the virtual portfolio’s recorded balances and holdings for consistency. It reports discrepancies rather than silently repairing them.">Reconcile</button><button id="paperaudit" data-help="Verify the retained paper ledger and its integrity checks. A failed audit requires review; it is not fixed by clicking this button.">Audit Ledger</button><button id="recoveryreport" data-help="Inspect the manual paper portfolio’s recovery condition and recommended next steps. Reading the report does not restore, reset or repair data.">Recovery Report</button><button id="snapshotbackup" data-help="Save a local snapshot of the manual paper portfolio for review or backup. The original remains in place; this does not start automation or transfer money.">Save Local Snapshot</button></div><p class="sub" id="paperledger">No portfolio loaded.</p></section>
@@ -388,10 +388,46 @@ byId('decision-benchmark').onclick=async()=>{try{
  }catch(e){show('decision-benchmark-result','Offline speed test unavailable: '+e.message)}
 };
 // BEGIN PAPER CREDENTIAL CONTROLS
+let paperObservationDownload=null,paperObservationEpoch=0;
+function clearPaperObservationDownload(){
+ paperObservationEpoch++;paperObservationDownload=null;byId('paper-observation-download').disabled=true;
+}
+function checkedPaperObservationDownload(result){
+ const saved=result.portable_observation;if(saved===undefined)return null;
+ const fields=['account_id','source','checks','observed_inventory','observed_usd_ceiling','position_count','open_order_count','account_fields_sha256','reported_inventory_sha256','read_timing','observation_sha256'];
+ const extra=['profile','observation_digest_scope','authority','limitations','manifest_sha256'];
+ const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));
+ const flags=['ready_for_routing','spendable_funds_verified','broker_account_reconciled','broker_connected','ledger_applied','live_orders_enabled','atomic_snapshot','automatic_retry','source_attested'];
+ if(!exact(saved,fields.concat(extra))||saved.profile!=='nexus.portable-paper-observation.v1'||
+    saved.observation_digest_scope!=='NORMALIZED_ACCOUNT_INVENTORY_COUNTS_SOURCE_LABEL_AND_SAMPLED_TIMING_ONLY'||
+    saved.limitations!=="Unverified sequential paper observation. Hashes check content consistency, not source authenticity, complete coverage, freshness, verified holds, spendable funds or trading permission. Account identity and balances are private financial information; share only with people you trust. No credentials or raw provider bodies included."||!exact(saved.authority,flags)||flags.some(key=>saved.authority[key]!==false)||
+    result.automatic_retry!==false||!['PAPER_HTTPS_READS','INJECTED_UNATTESTED'].includes(saved.source)||
+    !Number.isInteger(saved.position_count)||saved.position_count<0||saved.position_count>128)throw Error('Invalid portable observation');
+ for(const key of fields.filter(key=>!['observed_inventory','read_timing'].includes(key)))if(saved[key]!==result[key])throw Error('Export disagrees');
+ const inventoryKeys=['cash','non_marginable_buying_power','btc_total','btc_available','btc_unavailable_difference','scope_supported'];
+ if(!exact(saved.observed_inventory,inventoryKeys)||inventoryKeys.some(key=>saved.observed_inventory[key]!==result.observed_inventory[key]))throw Error('Export inventory disagrees');
+ const timingKeys=['started_at','completed_at','elapsed_seconds'];
+ if(!exact(saved.read_timing,timingKeys)||!exact(result.read_timing,timingKeys)||timingKeys.some(key=>typeof saved.read_timing[key]!=='string'||saved.read_timing[key].length>32||!/^-?[0-9]{1,13}(?:\.[0-9]{1,24})?(?:e[+-][0-9]{1,3})?$/.test(saved.read_timing[key])||!Number.isFinite(Number(saved.read_timing[key]))||Number(saved.read_timing[key])<0||Number(saved.read_timing[key])>1e12||Number(saved.read_timing[key])!==result.read_timing[key]))throw Error('Invalid timing');
+ const duration=Number(saved.read_timing.completed_at)-Number(saved.read_timing.started_at);
+ if(duration<0||saved.read_timing.elapsed_seconds>=20||Math.abs(duration-Number(saved.read_timing.elapsed_seconds))>2)throw Error('Invalid timing');
+ for(const key of ['account_fields_sha256','reported_inventory_sha256','observation_sha256','manifest_sha256'])if(typeof saved[key]!=='string'||!/^[0-9a-f]{64}$/.test(saved[key]))throw Error('Invalid fingerprint');
+ const output=JSON.stringify(saved,null,2);if(output.length>16384)throw Error('Export too large');return output;
+}
+function downloadPaperObservation(){
+ if(paperCredentialsBusy||!paperObservationDownload)return;
+ if(!window.confirm('Download this private account identity and balance observation? It contains no keys. Keep the file private. Hashes do not prove source authenticity, current funds or trading permission.'))return;
+ let url=null,link=null;
+ try{
+  url=URL.createObjectURL(new Blob([paperObservationDownload+'\n'],{type:'application/json;charset=utf-8'}));
+  link=document.createElement('a');link.href=url;link.download='Nexus-Paper-Observation.json';document.body.appendChild(link);link.click();
+ }catch(error){show('paper-credentials-result','Observation download could not be prepared. No new broker request or trading action was sent.');}
+ finally{if(link)link.remove();if(url)setTimeout(()=>URL.revokeObjectURL(url),1000);}
+}
 let paperCredentialsBusy=false,paperCredentialsRemoving=false,paperCredentialsGeneration=0;
 function paintPaperCredentialControls(){
  for(const id of ['paper-credentials-save','paper-credentials-status','paper-account-inspect'])byId(id).disabled=paperCredentialsBusy;
  byId('paper-credentials-remove').disabled=paperCredentialsRemoving;
+ byId('paper-observation-download').disabled=paperCredentialsBusy||paperObservationDownload===null;
 }
 async function paperCredentialAction(action){
  if(action==='remove'?paperCredentialsRemoving:paperCredentialsBusy)return;
@@ -410,6 +446,8 @@ async function paperCredentialAction(action){
   payload={confirm_read_only_paper:true};
   const expected=byId('paper-account-expected').value.trim();if(expected)payload.expected_account_id=expected;
  }
+ clearPaperObservationDownload();
+ const exportTicket=paperObservationEpoch;
  const ticket=++paperCredentialsGeneration;paperCredentialsBusy=true;
  if(action==='remove')paperCredentialsRemoving=true;paintPaperCredentialControls();
  show('paper-credentials-result',action==='inspect'?'Reading the paper account once. Trading remains disabled.':'Checking local paper credential action. No trading enabled.');
@@ -430,6 +468,8 @@ async function paperCredentialAction(action){
       (!inventory.scope_supported&&['btc_total','btc_available','btc_unavailable_difference'].some(key=>inventory[key]!==null))||
       (inventory.scope_supported&&inventory.btc_total===null)||
       ((inventory.btc_available===null)!==(inventory.btc_unavailable_difference===null)))throw Error('Invalid inspection');
+   const downloadable=checkedPaperObservationDownload(result);
+   paperObservationDownload=exportTicket===paperObservationEpoch?downloadable:null;
    const shown=value=>value??'unknown';
    show('paper-credentials-result',[
     'PAPER ACCOUNT OBSERVATION / '+result.checks+' / account '+result.account_id,
@@ -450,6 +490,9 @@ byId('paper-credentials-save').onclick=()=>paperCredentialAction('save');
 byId('paper-credentials-status').onclick=()=>paperCredentialAction('status');
 byId('paper-account-inspect').onclick=()=>paperCredentialAction('inspect');
 byId('paper-credentials-remove').onclick=()=>paperCredentialAction('remove');
+byId('paper-observation-download').onclick=downloadPaperObservation;
+byId('paper-account-expected').addEventListener('input',clearPaperObservationDownload);
+paintPaperCredentialControls();
 // END PAPER CREDENTIAL CONTROLS
 
 // BEGIN BROKER FEE CASH CHECK

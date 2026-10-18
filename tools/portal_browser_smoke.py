@@ -46,6 +46,24 @@ def fixtures(path,pending=True):
     raise ValueError('UNEXPECTED_BROWSER_FIXTURE_REQUEST: '+path)
 
 
+def paper_observation_fixture():
+    from nexus.portable_paper_observation import create, DIGEST_SCOPE
+    from nexus.alpaca_paper_contract import sha
+    result = dict(mode='READ_ONLY_PAPER_INSPECTION', source='INJECTED_UNATTESTED', checks='OBSERVED_FIELDS_COVERED',
+        account_id='01234567-89ab-cdef-0123-456789abcdef', observed_usd_ceiling='900', observed_btc_available='1.9',
+        position_count=1, open_order_count=0, ready_for_routing=False, spendable_funds_verified=False,
+        broker_account_reconciled=False, broker_connected=False, ledger_applied=False, live_orders_enabled=False,
+        atomic_snapshot=False, automatic_retry=False,
+        observed_inventory=dict(cash='1000',non_marginable_buying_power='900',btc_total='2',btc_available='1.9',btc_unavailable_difference='0.1',scope_supported=True),
+        account_fields_sha256='a'*64, read_timing=dict(started_at=1000.0,completed_at=1000.0,elapsed_seconds=0.0),
+        observation_digest_scope=DIGEST_SCOPE)
+    result['reported_inventory_sha256'] = sha(result['observed_inventory'])
+    result['observation_sha256'] = sha(dict(profile='nexus.paper-account-observation.v1', **{k:result[k] for k in
+        ('account_fields_sha256','reported_inventory_sha256','position_count','open_order_count','source','read_timing')}))
+    result['portable_observation'] = create(result)
+    return result
+
+
 def validate_geometry(data):
     if data['position']!='fixed' or data['background']!='rgb(0, 0, 0)' or data['color']!='rgb(230, 164, 255)':
         raise ValueError('HELP_BROWSER_STYLE_DISAGREEMENT')
@@ -86,7 +104,7 @@ def run(output,channel=None):
                             if action=='save':state['paper_saved']=True
                             if action=='remove':state['paper_saved']=False
                             if action=='inspect':
-                                request.fulfill(json=dict(mode='READ_ONLY_PAPER_INSPECTION',checks='OBSERVED_FIELDS_COVERED',account_id='01234567-89ab-cdef-0123-456789abcdef',observed_usd_ceiling='900',observed_btc_available='1.9',open_order_count=0,ready_for_routing=False,spendable_funds_verified=False,broker_account_reconciled=False,broker_connected=False,ledger_applied=False,live_orders_enabled=False,atomic_snapshot=False,observed_inventory=dict(cash='1000',non_marginable_buying_power='900',btc_total='2',btc_available='1.9',btc_unavailable_difference='0.1',scope_supported=True)));return
+                                request.fulfill(json=paper_observation_fixture());return
                             request.fulfill(json=dict(configured=state['paper_saved'],review_required=False,ready_for_routing=False));return
                         if path=='/api/execution/intent/'+ORDER+'/cancel':
                             state['pending']=False;request.fulfill(json=dict(status='SIMULATED_CANCELLED'));return
@@ -241,15 +259,26 @@ def run(output,channel=None):
                     expect(page.locator('#paper-credentials-result')).to_contain_text('BTC total 2 / available 1.9 / Unavailable difference 0.1')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('NOT a verified hold')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('Spendable funds NOT verified')
+                    expect(page.locator('#paper-observation-download')).to_be_enabled()
+                    page.once('dialog',lambda dialog:dialog.accept())
+                    with page.expect_download() as downloaded:
+                        page.locator('#paper-observation-download').click()
+                    download=downloaded.value
+                    if download.suggested_filename!='Nexus-Paper-Observation.json':raise ValueError('PAPER_DOWNLOAD_FILENAME')
+                    from nexus.portable_paper_observation import loads
+                    saved=loads(Path(download.path()).read_bytes())
+                    if saved!=paper_observation_fixture()['portable_observation']:raise ValueError('PAPER_DOWNLOAD_CONTENT')
+                    if len(writes)!=3:raise ValueError('PAPER_DOWNLOAD_UNEXPECTED_WRITE')
                     page.once('dialog',lambda dialog:dialog.accept())
                     page.locator('#paper-credentials-remove').click()
                     expect(page.locator('#paper-credentials-result')).to_contain_text('No saved paper key pair')
+                    expect(page.locator('#paper-observation-download')).to_be_disabled()
                     if writes!=['/api/execution/alpaca-paper/local-credentials/'+action for action in ('status','save','inspect','remove')]:
                         raise ValueError('UNEXPECTED_PAPER_CONTROL_WRITES')
                     page.mouse.move(0,0);expect(panel).to_be_hidden()
                     page.screenshot(path=str(output/f'paper-credentials-{width}x{height}.png'))
                     if errors or blocked:raise ValueError('HELP_BROWSER_PAGE_ERRORS: '+repr(errors+blocked))
-                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True,hub_readonly_views=True,workspace_tabs=7,automatic_startup_checks=True,tab_switch_preserves_inputs=True,paper_credential_controls=True,intercepted_paper_reads_only=True))
+                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True,hub_readonly_views=True,workspace_tabs=7,automatic_startup_checks=True,tab_switch_preserves_inputs=True,paper_credential_controls=True,portable_observation_download=True,offline_export_consistency_checked=True,intercepted_paper_reads_only=True))
                 except Exception as exc:
                     diagnostic=dict(viewport=dict(width=width,height=height),control=current_control,error=str(exc),page_errors=errors,blocked=blocked,
                                     events=page.evaluate('window.__helpEvents||[]'))

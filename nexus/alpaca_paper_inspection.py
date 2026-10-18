@@ -399,4 +399,6 @@ def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
             position_count=result['position_count'], open_order_count=result['open_order_count'],
             source=result['source'], read_timing=result['read_timing']))
         result['observation_digest_scope'] = 'NORMALIZED_ACCOUNT_INVENTORY_COUNTS_SOURCE_LABEL_AND_SAMPLED_TIMING_ONLY'
+        from nexus.portable_paper_observation import create
+        result['portable_observation'] = create(result)
         return result

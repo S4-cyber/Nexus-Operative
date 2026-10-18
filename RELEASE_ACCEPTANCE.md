@@ -34,8 +34,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_107_0.json`; exact new-source Windows trials must still run |
-| Windows packaging and data recovery | v0.105.0 verified; current source pending | Exact commit `dc29cd3e837fd899e07c71acc59e00e420fa1ee8`: packaging run39086062897/job117553237279 and safety/browser run39086062910/job117552774950 passed; newer source requires its own runs |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_108_0.json`; exact new-source Windows trials must still run |
+| Windows packaging and data recovery | v0.106.0 verified; current source pending | Exact commit `f87decc9b13285ebdb8c800fee06869cf623f5d3`: packaging run39086581707/job117555532477 and safety/browser run39086581661/job117554329890 passed; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |
@@ -72,3 +72,5 @@ Collection observations (v0.105) retain declared transport/page/cursor/time/cont
 Head-bound gross balance diagnostics (v0.106) use retained explicit fills with nanosecond grouping and sampled head rechecks. Fee residual matches remain unallocated arithmetic; gross funding excludes every fee obligation and cannot establish spending permission. Actual account/source/reconciliation and final release gates remain open.
 
 Separated inventory observation (v0.107) adds reported USD cash/non-margin buying power and total/available BTC to the existing explicitly confirmed read. Unknown currency prevents USD projection; missing availability stays unknown and unsupported holdings suppress BTC totals. The unavailable difference is not an authenticated hold. Normalized fingerprints and sampled read timing are not source attestations or complete account snapshots. The eleventh injected trial checks these distinctions; actual account/hold/spending and release acceptance remain open.
+
+Portable observation review (v0.108) adds explicit private JSON download plus bounded offline shape/arithmetic/fingerprint checks. A self-consistent rewritten manifest is still unverified; no signature, provider identity, freshness, activity completeness, hold, spendable-funds or routing acceptance is established. Browser/controller checks bind exported fields to the displayed read and clear stale exports; actual new-source rendered/native Windows validation remains required.

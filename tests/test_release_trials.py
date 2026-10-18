@@ -138,3 +138,11 @@ def test_inspection_inventory_trial_preserves_unknown_units_and_denies_authority
                   'ledger_applied','live_orders_enabled','atomic_snapshot'):
         changed=copy.deepcopy(result);changed['observations'][0][field]=True
         with pytest.raises(ValueError,match='INVENTORY_AUTHORITY'): trials._validate('inspection_inventory',changed)
+
+
+def test_inventory_trial_rejects_missing_or_corrupt_portable_evidence():
+    result=trials._inspection_inventory_trial();trials._validate('inspection_inventory',result)
+    changed=copy.deepcopy(result);changed['portable_tamper_rejected']=False
+    with pytest.raises(ValueError,match='INVENTORY_EXPORT_FENCES'):trials._validate('inspection_inventory',changed)
+    changed=copy.deepcopy(result);changed['observations'][0]['portable_observation']['manifest_sha256']='0'*64
+    with pytest.raises(ValueError,match='PAPER_OBSERVATION_INVALID'):trials._validate('inspection_inventory',changed)

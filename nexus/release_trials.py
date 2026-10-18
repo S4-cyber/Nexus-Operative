@@ -152,7 +152,14 @@ def _inspection_inventory_trial():
         reports.append(inspect_account('fixture_key_only_123','fixture_secret_only_123',confirm_read_only_paper=True,
             expected_account_id=account['id'],opener=opener,wall_clock=lambda:1000,elapsed_clock=lambda:50))
         requests+=opener.requests
-    return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',get_requests=requests,observations=reports,
+    from nexus.portable_paper_observation import loads, validate
+    from nexus.alpaca_paper_contract import canonical
+    exported = [loads(canonical(r['portable_observation']).encode()) for r in reports]
+    tampered = dict(exported[0], manifest_sha256='0'*64)
+    tamper_rejected = False
+    try: validate(tampered)
+    except ValueError: tamper_rejected = True
+    return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',get_requests=requests,observations=reports, portable_roundtrips=len(exported), portable_tamper_rejected=tamper_rejected,
         broker_connected=False,live_orders_enabled=False,
         limitations='Fixed response objects and clocks; no actual credentials, provider, rendered UI, account reconciliation or spendable funds.')
 
@@ -214,6 +221,9 @@ def _validate(profile, result):
         _require(all(r['source'] == 'INJECTED_UNATTESTED' and all(r[k] is False for k in
             ('ready_for_routing','spendable_funds_verified','broker_account_reconciled','broker_connected',
              'ledger_applied','live_orders_enabled','atomic_snapshot')) for r in result['observations']), 'INVENTORY_AUTHORITY')
+        _require(result['portable_roundtrips'] == 3 and result['portable_tamper_rejected'] is True, 'INVENTORY_EXPORT_FENCES')
+        from nexus.portable_paper_observation import create, validate
+        _require(all(validate(r['portable_observation']) == create(r) for r in result['observations']), 'INVENTORY_EXPORT_BINDING')
     if profile == 'retained_balance':
         reviewed = result['review']; gross = reviewed['gross_fill_review']
         _require(reviewed['arithmetic_evaluated'] is True and reviewed['head_rechecked'] is True and

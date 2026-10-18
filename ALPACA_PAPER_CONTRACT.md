@@ -385,6 +385,14 @@ The acceptance-record digest binds the portable observation manifest, aggregate 
 
 Exact v0.120 source `6df2fb0d07f7f5d8705201db63faa42d5edaa4b3` passed Windows packaging/install/reinstall/default/portable/pinned-recovery/uninstall, full safety/browser and reachable-history security workflows. The v0.120 installer artifact is `12125600493` and expires 2026-10-25T04:38:25Z. v0.121 requires its own exact-source workflows. No actual saved key, Windows owner profile, provider account, authenticated activity, fee/hold reconciliation, broker-wide pacing, routing, funding, live trading or cloud resource was used or accepted here.
 
+## v0.122 explicit paced private-activity acceptance record
+
+`paper_activity_acceptance_probe` composes the existing saved read-only pair, bounded activity collector, durable read pacing and replay-validated private activity retention. The caller supplies an exact account UUID, a closed creation window of at most one day, distinct pacing/store paths and a private bounded order-snapshot JSON path outside the source checkout. The order file must be a regular single-link stable file; validation happens before vault/network access. Explicit confirmation remains mandatory. The collector still performs only account/activity/account GETs on its fixed paper host, at most two100-row pages/four total requests, with no retries or automatic continuation.
+
+The private activity store retains normalized identities and receipt evidence, but stdout deliberately emits none of those identities. Its aggregate record binds the collection scope, stable account-fields digest, normalized-input digest, collection-observation digest, retained receipt, and before/after pacing/store heads. Counts, fee-debit totals and hashes are content-consistency diagnostics only. A separate status mode reads both journals without opening the order input, credential vault or provider. It cannot clear a pending read, cooldown, receipt or review block.
+
+An empty or short page is not proof of complete coverage; a two-page cap is not continuation authority. Creation time is not necessarily execution/fee posting time. Missing revisions, corrections, fee links, source attestation, broker-wide pacing and account/asset/hold/funds reconciliation remain blockers. Keep the order input, SQLite files and stdout report private and outside Git. No runtime route, PORTAL control, order adapter, transfer, live permission or cloud enrollment is added.
+
 
 ## v0.119 local HTTP paper-read recovery acceptance
 

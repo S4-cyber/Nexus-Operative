@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.121.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.122.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -35,8 +35,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_121_0.json`; exact new-source Windows trials must still run |
-| Windows packaging and data recovery | v0.120.0 verified; v0.121 source pending | Exact commit `6df2fb0d07f7f5d8705201db63faa42d5edaa4b3`: packaging39097135970/job117585894114, safety/browser39097135957/job117585813629 and security39097135945/job117585813646 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_122_0.json`; exact new-source Windows trials must still run |
+| Windows packaging and data recovery | v0.121.0 verified; v0.122 source pending | Exact commit `e6e6feb4165ff58e15b8976829aa42fd91e6e241`: Windows39100223221 rerun job117597675513, safety/browser39100223207 and security39100223254 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |
@@ -84,7 +84,7 @@ Public-repository hardening (v0.111) adds reachable-history artifact/secret chec
 
 ## Verify saved evidence before considering a release
 
-Run `python -m nexus.release_evidence validation/release_trials_0_120_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all fourteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check.
+Run `python -m nexus.release_evidence validation/release_trials_0_122_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all fourteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check.
 
 The safety workflow revalidates its saved report. Windows distribution creation runs and validates its own offline trials, includes `release-trial-evidence.json` in the distribution and hashes it in `artifact-manifest.json` alongside both binaries. Verify the manifest first, then verify the report from the exact source checkout. Matching hashes are not signatures, authenticated CI provenance or proof the workload actually ran. A self-consistent fabricated report remains possible; workflow results and independent acceptance still matter. A successful offline evidence check always retains production/native/provider/market/funds/release approval flags as false and cannot close the open gates above.
 
@@ -151,3 +151,11 @@ This private record is operational review evidence only. Its hashes are not sign
 Exact predecessor v0.120 source `6df2fb0d07f7f5d8705201db63faa42d5edaa4b3` passed packaging run39097135970/job117585894114, safety/browser39097135957/job117585813629 and security39097135945/job117585813646. Installer artifact12125600493 expires 2026-10-25T04:38:25Z; distribution artifact12124777952 expires 2026-11-17T04:38:20Z. These results do not establish v0.121 native acceptance or any actual broker/financial/cloud gate.
 
 v0.121 local evidence:1,990 Python cases, ten Node controllers, Portal syntax, compileall, pip check, all14 offline profiles and saved-evidence verification passed. Source fingerprint:265 files / `cf2c80b5c74e881bb6fc2eb297c72e93db38dbdce57645a45dcc7c30926beef5`; report SHA-256: `cf99ca96a76f5a130395b71460f776b9ba430a36db4e6a7fc420b5f9cd53f1f6`. Reachable artifact policy and checksum-pinned Gitleaks scans returned zero findings. New-source Windows/security/safety and every actual-account/financial/cloud/independent gate remain separate.
+
+## v0.122 paced private activity acceptance record
+
+The source-only activity acceptance command now binds one explicitly confirmed saved-pair collection to both its durable pacing transition and replay-validated local receipt. Inputs are an exact expected account, a caller-declared closed creation window, a bounded private order-snapshot JSON file and distinct private pacing/activity database paths outside the checkout. The existing collector remains fixed-host GET-only, two pages/four requests maximum, with no retry, automatic continuation, order action or money movement.
+
+The output excludes raw response rows, broker/client/activity IDs, cursors, paths and credentials. It binds only allowlisted aggregate counts, supplied fee totals, fixed review reasons and hashes for collection scope, stable account fields, normalized activity content, page observation, retained receipt and both before/after journal heads. Status-only replay opens neither the order input, vault nor provider. Injected tests cover one-page fees, explicit fill/order identities staying private, two-page truncation, unsafe input paths/files, cooldown/foreign history/cap admission, lost final credential acknowledgment and vault/network-silent status.
+
+This does not establish actual Windows Credential Manager/profile/ACL acceptance, provider source or complete activity/correction coverage, execution-linked fees, broker-wide pacing, holds/spendable funds, routing, funding, live operation or cloud deployment. Exact predecessor v0.121 passed its three GitHub workflows and published installer12126403156/distribution12126652347. v0.122 requires new exact-source security/safety/Windows evidence plus an authorized private-account run before any broker-paper acceptance claim.

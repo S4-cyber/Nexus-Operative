@@ -1,0 +1,210 @@
+"""Explicit, paced Windows paper-activity read with private local retention.
+
+Uses an already saved read-only credential pair and caller-selected private
+files outside the source checkout.  It emits only aggregate counts and content
+digests: broker/order/activity identities remain in the private input/store.
+"""
+import argparse
+import json
+import os
+from pathlib import Path
+import sqlite3
+import stat
+import time
+
+from nexus import alpaca_activity_normalizer as adapter
+from nexus import paper_credentials
+from nexus.alpaca_paper_contract import sha
+from nexus.alpaca_paper_inspection import _uuid
+from nexus.broker_activity_store import BrokerActivityStore, MAX_BATCHES
+from nexus.paper_acceptance_probe import FLAGS, ROOT
+from nexus.paper_read_pacing import PaperReadPacing, MAX_SESSIONS
+
+MAX_ORDER_FILE_BYTES = adapter.MAX_INPUT_BYTES
+COLLECTOR_FLAGS = ('collection_source_attested','automatic_continuation','automatic_retry',
+    'activity_coverage_verified','fee_coverage_complete','broker_account_reconciled',
+    'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled','ledger_applied')
+COLLECTOR_FLAGS += ('atomic_snapshot',)
+
+
+def _fail():
+    raise ValueError('PAPER_ACTIVITY_ACCEPTANCE_PROBE_FAILED') from None
+
+
+def _private_path(value):
+    path = Path(value)
+    try:
+        absolute = path.absolute()
+        resolved = path.resolve()
+    except (OSError, RuntimeError):
+        _fail()
+    if absolute.is_relative_to(ROOT) or resolved.is_relative_to(ROOT):
+        _fail()
+    return path, resolved
+
+
+def _orders(path, account):
+    path, _ = _private_path(path)
+    try:
+        observed = path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or not stat.S_ISREG(observed.st_mode) or
+            observed.st_nlink != 1 or not 1 <= observed.st_size <= MAX_ORDER_FILE_BYTES):
+            _fail()
+        with path.open('rb') as stream:
+            opened = os.fstat(stream.fileno())
+            if (opened.st_dev, opened.st_ino, opened.st_size) != (observed.st_dev, observed.st_ino, observed.st_size):
+                _fail()
+            raw = stream.read(MAX_ORDER_FILE_BYTES + 1)
+            closed = os.fstat(stream.fileno())
+        final = path.lstat()
+        if ((closed.st_dev, closed.st_ino, closed.st_size) != (opened.st_dev, opened.st_ino, opened.st_size) or
+            (final.st_dev, final.st_ino, final.st_size) != (observed.st_dev, observed.st_ino, observed.st_size)):
+            _fail()
+        def pairs(items):
+            result = {}
+            for key, value in items:
+                if key in result: _fail()
+                result[key] = value
+            return result
+        value = json.loads(raw.decode('utf-8'), object_pairs_hook=pairs,
+            parse_constant=lambda _: _fail())
+        _, order_map, _, _, duplicates = adapter.canonical_inputs([], value, expected_account_id=account)
+        return value, len(order_map), duplicates
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, RecursionError, MemoryError):
+        _fail()
+
+
+def _paths(expected_account_id, pacing_path, activity_store_path):
+    account = _uuid(expected_account_id)
+    pacing, pacing_resolved = _private_path(pacing_path)
+    activity, activity_resolved = _private_path(activity_store_path)
+    if pacing_resolved == activity_resolved:
+        _fail()
+    return account, PaperReadPacing(pacing, account), BrokerActivityStore(activity, account)
+
+
+def _pacing_summary(before, after):
+    return dict(account_sha256=after['account_sha256'],before_head_sha256=before['head_sha256'],
+        after_head_sha256=after['head_sha256'],events=after['events'],sessions=after['sessions'],
+        next_allowed_at=after['next_allowed_at'],
+        min_post_result_cooldown_seconds=after['min_post_result_cooldown_seconds'],
+        coordination_scope='EXACT_LOCAL_JOURNAL_ONLY_NOT_BROKER_WIDE_OR_DISTRIBUTED')
+
+
+def probe(*, expected_account_id, pacing_path, activity_store_path, orders_path, after, until,
+          confirm_read_only_paper=False, opener=None, wall_clock=time.time, elapsed_clock=time.monotonic):
+    if confirm_read_only_paper is not True:
+        _fail()
+    account, pacing, store = _paths(expected_account_id, pacing_path, activity_store_path)
+    order_path, order_resolved = _private_path(orders_path)
+    if order_resolved in (pacing.path.resolve(), store.path.resolve()):
+        _fail()
+    orders, unique_orders, duplicate_orders = _orders(order_path, account)
+    pacing_before = pacing.inspect(); store_before = store.inspect()
+    result = paper_credentials.collect_saved(orders, expected_account_id=account, after=after, until=until,
+        confirm_read_only_paper=True, opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock,
+        activity_store=store, pacing=pacing)
+    pacing_after = pacing.inspect(); store_after = store.inspect()
+    try:
+        if (pacing_after['sessions'] != pacing_before['sessions'] + 1 or
+            pacing_after['events'] != pacing_before['events'] + 2 or
+            pacing_after['pending_token'] is not None or pacing_after['review_required'] is not False or
+            pacing_after['last_outcome'] != 'SUCCESS'):
+            _fail()
+        if (store_after['retained_batches'] != store_before['retained_batches'] + 1 or
+            store_after['retained_collection_observations'] != store_before['retained_collection_observations'] + 1):
+            _fail()
+        if any(result[field] is not False for field in COLLECTOR_FLAGS):
+            _fail()
+        retention = result['local_retention']; normalization = result['activity_normalization']
+        observation = result['collection_observation']
+        if (retention['duplicate'] is not False or retention['head_sha256'] != store_after['head_sha256'] or
+            retention['receipt_id'] not in store_after['receipts'] or
+            store_after['receipts'][retention['receipt_id']]['collection_observation'] != observation or
+            sum(result['page_counts']) != result['rows_received'] or
+            normalization['duplicate_orders_ignored'] != duplicate_orders or
+            normalization['account_scope'] != 'CALLER_DECLARED_WITH_OPTIONAL_ROW_ID_CHECKS'):
+            _fail()
+        counts = dict(order_snapshots=unique_orders,rows_received=result['rows_received'],
+            normalized_activities=len(normalization['normalized_activities']),
+            executions=len(normalization['executions']),fee_debits=len(normalization['fee_debits']))
+        if counts['normalized_activities'] > counts['rows_received']:
+            _fail()
+        collection = dict(scope_sha256=result['scope_sha256'],account_fields_sha256=observation['account_fields_sha256'],
+            observation_sha256=sha(observation),page_count=len(observation['pages']),page_counts=list(result['page_counts']),
+            end_of_page_sequence_observed=result['end_of_page_sequence_observed'],
+            collection_limit_reached=result['collection_limit_reached'],continuation_required=not result['end_of_page_sequence_observed'],
+            activity_input_sha256=normalization['input_sha256'],counts=counts,
+            recognized_fee_debits=dict(normalization['recognized_fee_debits']),
+            review_reasons=list(normalization['review_reasons']))
+        retained = dict(account_sha256=store_after['account_sha256'],
+            before_head_sha256=store_before['head_sha256'],after_head_sha256=store_after['head_sha256'],
+            receipt_sha256=retention['receipt_id'],retained_batches=store_after['retained_batches'],
+            retained_activities=store_after['retained_activities'],
+            retained_collection_observations=store_after['retained_collection_observations'],
+            batch_capacity_remaining=MAX_BATCHES-store_after['retained_batches'])
+        pacing_summary = _pacing_summary(pacing_before, pacing_after)
+        scope = dict(profile='nexus.paper-activity-acceptance-record.v1',account_sha256=retained['account_sha256'],
+            collection_scope_sha256=collection['scope_sha256'],account_fields_sha256=collection['account_fields_sha256'],
+            collection_observation_sha256=collection['observation_sha256'],
+            activity_input_sha256=collection['activity_input_sha256'],retained_receipt_sha256=retained['receipt_sha256'],
+            retention_before_head_sha256=retained['before_head_sha256'],retention_after_head_sha256=retained['after_head_sha256'],
+            pacing_before_head_sha256=pacing_summary['before_head_sha256'],
+            pacing_after_head_sha256=pacing_summary['after_head_sha256'])
+        return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_PROBE',status='REVIEW_REQUIRED',read_completed=True,
+            source=result['source'],collection=collection,local_retention=retained,local_pacing=pacing_summary,
+            acceptance_record_scope=scope,acceptance_record_sha256=sha(scope),credential_pair_rechecked=True,
+            raw_activity_rows_included=False,raw_order_identities_included=False,
+            **{flag:False for flag in FLAGS},
+            limitations='One explicitly confirmed fixed-host paper GET session with an already saved Windows pair, exact account, caller-declared closed creation window, local durable pacing and replay-validated private activity retention. Counts and digests do not prove complete activity/fee coverage, source authenticity, posting times, execution links, broker-wide quota, reconciliation, spendable funds or routing authority. Raw activity/order identities stay in the private input/store and are intentionally omitted here. Only these exact local journals coordinate cooperating callers; failed calls may already have contacted the provider or committed a receipt. Inspect retained state and never auto-retry, reset or delete uncertain evidence. Keep the order input, report and journals outside Git.')
+    except (KeyError, TypeError, ValueError, OverflowError, AttributeError):
+        _fail()
+
+
+def status(*, expected_account_id, pacing_path, activity_store_path):
+    _, pacing, store = _paths(expected_account_id, pacing_path, activity_store_path)
+    pace = pacing.inspect(); retained = store.inspect()
+    pending = pace['pending_token'] is not None
+    return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_STATUS',status='REVIEW_REQUIRED',read_only=True,
+        pacing_journal_present=pacing.path.is_file(),activity_store_present=store.path.is_file(),
+        account_sha256=retained['account_sha256'],pacing_head_sha256=pace['head_sha256'],
+        retention_head_sha256=retained['head_sha256'],sessions=pace['sessions'],
+        session_capacity_remaining=max(0,MAX_SESSIONS-pace['sessions']),next_allowed_at=pace['next_allowed_at'],
+        pending_read=pending,retained_review_block=pace['review_required'],
+        retained_batches=retained['retained_batches'],retained_activities=retained['retained_activities'],
+        retained_collection_observations=retained['retained_collection_observations'],
+        batch_capacity_remaining=max(0,MAX_BATCHES-retained['retained_batches']),
+        suggested_action='REVIEW_RETAINED_PENDING_OR_COMMITTED_READ_NO_AUTOMATIC_RETRY' if pending or pace['review_required'] else 'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ',
+        **{flag:False for flag in FLAGS},
+        limitations='Local replay only: no order file, vault or provider access and no admission permission. Missing history does not prove no earlier read. Other journals/hosts are not coordinated. Never erase uncertain reads, receipts or cooldowns to bypass review.')
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message):
+        self.exit(2, 'PAPER_ACTIVITY_ACCEPTANCE_PROBE_USAGE_ERROR\n')
+
+
+def main():
+    parser = _Parser(description=__doc__)
+    parser.add_argument('--expected-account', required=True);parser.add_argument('--pacing', required=True)
+    parser.add_argument('--activity-store', required=True);parser.add_argument('--orders')
+    parser.add_argument('--after');parser.add_argument('--until')
+    parser.add_argument('--confirm-read-only-paper', action='store_true')
+    parser.add_argument('--status-only', action='store_true', help='Replay local journals only; never read orders, credentials or provider data.')
+    args = parser.parse_args()
+    try:
+        if args.status_only:
+            if args.confirm_read_only_paper or any(value is not None for value in (args.orders,args.after,args.until)): _fail()
+            result = status(expected_account_id=args.expected_account,pacing_path=args.pacing,activity_store_path=args.activity_store)
+        else:
+            if None in (args.orders,args.after,args.until): _fail()
+            result = probe(expected_account_id=args.expected_account,pacing_path=args.pacing,
+                activity_store_path=args.activity_store,orders_path=args.orders,after=args.after,until=args.until,
+                confirm_read_only_paper=args.confirm_read_only_paper)
+    except (OSError, ValueError, TypeError, KeyError, sqlite3.Error, MemoryError, RecursionError, KeyboardInterrupt):
+        print('PAPER_ACTIVITY_ACCEPTANCE_PROBE_FAILED');return 2
+    print(json.dumps(result,sort_keys=True));return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

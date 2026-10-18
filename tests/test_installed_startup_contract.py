@@ -15,7 +15,10 @@ pytestmark=pytest.mark.skipif(os.name=='nt',reason='Native Windows workflow uses
 
 def launcher(tmp_path):
     shim=tmp_path/'source-launcher'
-    shim.write_text('#!'+sys.executable+'\nimport os,uvicorn\nuvicorn.run("nexus.app:app",host="127.0.0.1",port=int(os.environ["NEXUS_PORT"]),log_level="error")\n')
+    source_root=Path(__file__).resolve().parents[1]
+    shim.write_text('#!'+sys.executable+'\nimport os,sys,uvicorn\n'
+        f'sys.path.insert(0,{str(source_root)!r})\n'
+        'uvicorn.run("nexus.app:app",host="127.0.0.1",port=int(os.environ["NEXUS_PORT"]),log_level="error")\n')
     shim.chmod(0o700)
     return shim
 

@@ -102,3 +102,7 @@ Final v0.120 validation:1,988 Python tests passed (one existing Starlette/httpx 
 ## v0.121 private acceptance-record boundary
 
 The enlarged source-CLI acceptance record uses an exact allowlist and omits raw broker/client order identities, keys, secrets, paths, tokens and arbitrary provider fields. Its open-IOC aggregate is derived from the existing bounded read; no extra request or order/funding path exists. The record remains blocked by the existing private-artifact mode scanner. Keep stdout and pacing SQLite outside the repository. Local current-worktree and reachable fetched-history scans found zero secret/artifact-policy findings after generated caches were excluded; exact new-source GitHub security CI remains required after publication.
+
+## v0.122 private activity evidence boundary
+
+The new source-only activity probe requires its order input, pacing journal and activity store to resolve outside the source checkout. It emits aggregate counts/digests only and never copies raw activity/order identities, cursors, response rows or paths into stdout. Both activity output modes are blocked by the content scanner and all retained SQLite files remain blocked by path/content rules. Keep order snapshots, reports and journals private; hashes can still be linkable financial metadata and are not anonymization. Injected tests use temporary files and fake credentials/provider responses only. Exact-source reachable-history scanning remains mandatory before publication.

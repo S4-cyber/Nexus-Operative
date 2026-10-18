@@ -11,13 +11,14 @@ from nexus.paper_activity_acceptance_evidence import ACCOUNT, _scope
 from nexus.paper_observation_review import _fixture_observation
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 
+EPOCH = 1792195200  # 2026-10-17T00:00:00Z
 
 def prepared(tmp_path):
     pacing, activity, acceptance, scope = _scope(tmp_path)
     acceptance.append(scope, admission=lambda:(pacing.inspect()['head_sha256'],
         activity.inspect()['head_sha256']))
-    opening = _fixture_observation(ACCOUNT,'1000','0',1800000000,1800000001)
-    closing = _fixture_observation(ACCOUNT,'1000','0',1800000002,1800000003)
+    opening = _fixture_observation(ACCOUNT,'1000','0',EPOCH+100,EPOCH+101)
+    closing = _fixture_observation(ACCOUNT,'1000','0',EPOCH+102,EPOCH+103)
     options = dict(expected_account_id=ACCOUNT,
         pacing_path=tmp_path/'pacing.sqlite3',
         activity_store_path=tmp_path/'activity.sqlite3',
@@ -40,6 +41,9 @@ def test_complete_accepted_history_binds_exact_observations_and_head_without_wri
     assert result['complete_retained_batches_accepted'] is True
     assert result['complete_collection_observations_accepted'] is True
     assert result['all_collection_cursor_sequences_complete'] is True
+    assert result['declared_collection_windows_cover_observation_envelope'] is True
+    assert result['requested_window_boundaries_verified'] is False
+    assert len(result['declared_collection_window_union_sha256']) == 64
     assert result['journals_rechecked_unchanged'] is True
     assert result['accepted_transitions']==1
     assert result['activity_head_sha256']==options['expected_activity_head']
@@ -181,5 +185,59 @@ def test_release_fixture_is_repeatable_vault_and_provider_silent():
     assert result['complete_retained_batches_accepted']
     assert result['complete_collection_observations_accepted']
     assert result['all_collection_cursor_sequences_complete']
+    assert result['out_of_window_observations_rejected']
+    assert result['declared_windows_cover_observation_envelope']
+    assert result['requested_window_boundaries_verified'] is False
     assert result['observation_arithmetic_evaluated'] and 'review' not in result
     assert result['actual_provider_access'] is result['actual_vault_access'] is False
+
+
+@pytest.mark.parametrize('times', [(-10,-9,-8,-7),(86400,86401,86402,86403),
+    (-1,1,2,3),(86397,86398,86399,86401)])
+def test_outside_or_partial_declared_envelope_fails_before_arithmetic(tmp_path, monkeypatch, times):
+    options=prepared(tmp_path)
+    options['opening_observation']=_fixture_observation(ACCOUNT,'1000','0',EPOCH+times[0],EPOCH+times[1])
+    options['closing_observation']=_fixture_observation(ACCOUNT,'1000','0',EPOCH+times[2],EPOCH+times[3])
+    monkeypatch.setattr(subject.paper_observation_review,'review',lambda *a,**k:pytest.fail('scope must be checked before arithmetic'))
+    before=snapshot(tmp_path)
+    with pytest.raises(ValueError,match='DECLARED_WINDOWS_DO_NOT_COVER_OBSERVATION_ENVELOPE'):
+        subject.review(**options)
+    assert snapshot(tmp_path)==before
+
+
+def coverage(windows, start='1792195201', end='1792281599'):
+    receipts={str(i):dict(after=a,until=b) for i,(a,b) in enumerate(windows)}
+    scopes=[dict(retained_receipt_sha256=str(i)) for i in range(len(windows))]
+    first=dict(read_timing=dict(started_at=start,completed_at=start))
+    last=dict(read_timing=dict(started_at=end,completed_at=end))
+    return subject._declared_window_coverage(receipts,scopes,first,last)
+
+
+def test_adjacent_overlapping_duplicate_windows_union_without_false_gaps():
+    full=[('2026-10-17T00:00:00Z','2026-10-18T00:00:00Z')]
+    adjacent=[('2026-10-17T00:00:00Z','2026-10-17T12:00:00Z'),
+        ('2026-10-17T12:00:00Z','2026-10-18T00:00:00Z')]
+    overlapping=adjacent+[('2026-10-17T10:00:00Z','2026-10-17T14:00:00Z')]
+    assert coverage(full)==coverage(adjacent)==coverage(overlapping)==coverage(list(reversed(overlapping))*2)
+
+
+def test_outer_hull_does_not_hide_an_interior_gap():
+    with pytest.raises(ValueError,match='DECLARED_WINDOWS_DO_NOT_COVER_OBSERVATION_ENVELOPE'):
+        coverage([('2026-10-17T00:00:00Z','2026-10-17T12:00:00Z'),
+            ('2026-10-17T12:00:01Z','2026-10-18T00:00:00Z')])
+
+
+def test_declared_geometry_keeps_exact_nanoseconds_and_boundary_authority_unverified():
+    windows=[('2026-10-17T00:00:00Z','2026-10-18T00:00:00Z')]
+    assert coverage(windows,'1792195200','1792281600')
+    for start,end in [('1792195199.999999999','1792281599'),('1792195201','1792281600.000000001')]:
+        with pytest.raises(ValueError,match='DECLARED_WINDOWS_DO_NOT_COVER_OBSERVATION_ENVELOPE'):
+            coverage(windows,start,end)
+
+
+def test_missing_accepted_receipt_cannot_be_replaced_with_an_unaccepted_window():
+    observation=dict(read_timing=dict(started_at='1792195201',completed_at='1792195201'))
+    closing=dict(read_timing=dict(started_at='1792195202',completed_at='1792195202'))
+    with pytest.raises(ValueError,match='ACCEPTED_RECEIPT_CHANGED'):
+        subject._declared_window_coverage({'other':dict(after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z')},
+            [dict(retained_receipt_sha256='accepted')],observation,closing)

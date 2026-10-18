@@ -193,7 +193,10 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
     result=fixture_report();trials._validate('reconciliation_acceptance',result)
     for path,value,code in (
         (('journals_unchanged',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
+        (('out_of_window_observations_rejected',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
         (('complete_accepted_history_replayed',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
+        (('declared_windows_cover_observation_envelope',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
+        (('requested_window_boundaries_verified',),True,'RECONCILIATION_ACCEPTANCE_AUTHORITY'),
         (('broker_account_reconciled',),True,'RECONCILIATION_ACCEPTANCE_AUTHORITY')):
         changed=copy.deepcopy(result);target=changed
         for key in path[:-1]:target=target[key]

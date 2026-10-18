@@ -523,6 +523,7 @@ def _validate(profile, result):
             result['repeat_review_matches'] is True and result['journals_unchanged'] is True and
             result['unbound_history_rejected'] is True and
             result['continuation_required_history_rejected'] is True and
+            result['out_of_window_observations_rejected'] is True and
             result['private_scope_omitted'] is True,
             'RECONCILIATION_ACCEPTANCE_REPLAY')
         _require(result['complete_accepted_history_replayed'] is True and
@@ -532,9 +533,10 @@ def _validate(profile, result):
             result['complete_retained_batches_accepted'] is True and
             result['complete_collection_observations_accepted'] is True and
             result['all_collection_cursor_sequences_complete'] is True and
+            result['declared_windows_cover_observation_envelope'] is True and
             result['observation_arithmetic_evaluated'] is True,
             'RECONCILIATION_ACCEPTANCE_BINDING')
-        _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access',
+        _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access','requested_window_boundaries_verified',
             'broker_account_reconciled','spendable_funds_verified','ready_for_routing','broker_connected',
             'live_orders_enabled','money_movement_enabled','release_approved')),
             'RECONCILIATION_ACCEPTANCE_AUTHORITY')

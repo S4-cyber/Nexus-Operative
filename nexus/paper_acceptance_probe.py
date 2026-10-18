@@ -50,7 +50,7 @@ def pacing_status(*, expected_account_id, pacing_path):
         limitations='Local replay only, no vault/provider access or admission permission. Missing history does not prove no earlier read. Other/no journals and hosts are not coordinated. Never erase uncertain reads or cooldowns to bypass review.')
 
 
-def probe(*, expected_account_id, pacing_path, confirm_read_only_paper=False,
+def _inspect_paced(*, expected_account_id, pacing_path, confirm_read_only_paper=False,
           opener=None, wall_clock=time.time, elapsed_clock=time.monotonic):
     if confirm_read_only_paper is not True:_fail()
     # Real acceptance data/journals belong outside the public source checkout.
@@ -69,6 +69,13 @@ def probe(*, expected_account_id, pacing_path, confirm_read_only_paper=False,
         after_head_sha256=after['head_sha256'],events=after['events'],sessions=after['sessions'],
         next_allowed_at=after['next_allowed_at'],min_post_result_cooldown_seconds=after['min_post_result_cooldown_seconds'],
         coordination_scope='EXACT_LOCAL_JOURNAL_ONLY_NOT_BROKER_WIDE_OR_DISTRIBUTED')
+    return result,observation,pacing
+
+
+def probe(*, expected_account_id, pacing_path, confirm_read_only_paper=False,
+          opener=None, wall_clock=time.time, elapsed_clock=time.monotonic):
+    result,observation,pacing=_inspect_paced(expected_account_id=expected_account_id,pacing_path=pacing_path,
+        confirm_read_only_paper=confirm_read_only_paper,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock)
     return dict(mode='PAPER_ACCOUNT_ACCEPTANCE_PROBE',status='REVIEW_REQUIRED',read_completed=True,
         source=observation['source'],portable_observation=observation,local_pacing=pacing,
         credential_pair_rechecked=True,inventory_only=True,open_order_terms_included=False,

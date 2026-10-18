@@ -68,6 +68,21 @@ def paper_observation_fixture():
     return result
 
 
+def paper_pacing_fixture():
+    return dict(account_sha256='a'*64,before_head_sha256='b'*64,after_head_sha256='c'*64,
+        events=2,sessions=1,next_allowed_at=1060,min_post_result_cooldown_seconds=60,
+        coordination_scope='EXACT_LOCAL_JOURNAL_ONLY_NOT_BROKER_WIDE_OR_DISTRIBUTED')
+
+
+def paper_pacing_status_fixture():
+    from nexus.paper_acceptance_probe import FLAGS
+    return dict(mode='PAPER_ACCEPTANCE_PACING_STATUS',status='REVIEW_REQUIRED',read_only=True,
+        journal_present=True,account_sha256='a'*64,head_sha256='c'*64,sessions=1,
+        session_capacity_remaining=255,next_allowed_at=1060,pending_read=False,retained_review_block=False,
+        suggested_action='RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ',
+        limitations='Local replay only, no vault or provider access.',**{flag:False for flag in FLAGS})
+
+
 def validate_geometry(data):
     if data['position']!='fixed' or data['background']!='rgb(0, 0, 0)' or data['color']!='rgb(230, 164, 255)':
         raise ValueError('HELP_BROWSER_STYLE_DISAGREEMENT')
@@ -103,12 +118,21 @@ def run(output,channel=None):
                         paper_base='/api/execution/alpaca-paper/local-credentials/'
                         if path.startswith(paper_base):
                             action=path[len(paper_base):]
-                            if action not in ('status','save','inspect','remove'):
+                            if action not in ('status','save','inspect','paced-inspect','pacing-status','remove'):
                                 blocked.append('UNKNOWN_PAPER_ACTION');request.abort();return
                             if action=='save':state['paper_saved']=True
                             if action=='remove':state['paper_saved']=False
-                            if action=='inspect':
-                                request.fulfill(json=paper_observation_fixture());return
+                            if action in ('inspect','paced-inspect'):
+                                result=paper_observation_fixture()
+                                if action=='paced-inspect':
+                                    if request.request.post_data_json!={'expected_account_id':result['account_id'],'confirm_read_only_paper':True}:
+                                        blocked.append('INVALID_PACED_BODY');request.abort();return
+                                    result.update(durable_local_pacing=True,local_pacing=paper_pacing_fixture())
+                                request.fulfill(json=result);return
+                            if action=='pacing-status':
+                                if request.request.post_data_json!={'expected_account_id':paper_observation_fixture()['account_id']}:
+                                    blocked.append('INVALID_PACING_STATUS_BODY');request.abort();return
+                                request.fulfill(json=paper_pacing_status_fixture());return
                             request.fulfill(json=dict(configured=state['paper_saved'],review_required=False,ready_for_routing=False));return
                         if path=='/api/execution/intent/'+ORDER+'/cancel':
                             state['pending']=False;request.fulfill(json=dict(status='SIMULATED_CANCELLED'));return
@@ -281,16 +305,25 @@ def run(output,channel=None):
                     saved=loads(Path(download.path()).read_bytes())
                     if saved!=paper_observation_fixture()['portable_observation']:raise ValueError('PAPER_DOWNLOAD_CONTENT')
                     if len(writes)!=3:raise ValueError('PAPER_DOWNLOAD_UNEXPECTED_WRITE')
+                    page.locator('#paper-account-expected').fill(paper_observation_fixture()['account_id'])
+                    page.once('dialog',lambda dialog:dialog.accept())
+                    page.locator('#paper-account-paced-inspect').click()
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('Local pacing retained')
+                    expect(page.locator('#paper-observation-download')).to_be_enabled()
+                    page.locator('#paper-pacing-status').click()
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('1 / 256 sessions')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('No keys read or broker request')
+                    expect(page.locator('#paper-observation-download')).to_be_disabled()
                     page.once('dialog',lambda dialog:dialog.accept())
                     page.locator('#paper-credentials-remove').click()
                     expect(page.locator('#paper-credentials-result')).to_contain_text('No saved paper key pair')
                     expect(page.locator('#paper-observation-download')).to_be_disabled()
-                    if writes!=['/api/execution/alpaca-paper/local-credentials/'+action for action in ('status','save','inspect','remove')]:
+                    if writes!=['/api/execution/alpaca-paper/local-credentials/'+action for action in ('status','save','inspect','paced-inspect','pacing-status','remove')]:
                         raise ValueError('UNEXPECTED_PAPER_CONTROL_WRITES')
                     page.mouse.move(0,0);expect(panel).to_be_hidden()
                     page.screenshot(path=str(output/f'paper-credentials-{width}x{height}.png'))
                     if errors or blocked:raise ValueError('HELP_BROWSER_PAGE_ERRORS: '+repr(errors+blocked))
-                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True,hub_readonly_views=True,workspace_tabs=7,automatic_startup_checks=True,tab_switch_preserves_inputs=True,paper_credential_controls=True,portable_observation_download=True,offline_export_consistency_checked=True,intercepted_paper_reads_only=True))
+                    reports.append(dict(width=width,height=height,controls_hovered=tested,hover_sent_writes=False,keyboard_escape=True,private_value_isolated=True,matrix_modes=True,matrix_adjustment_inspection=True,hub_readonly_views=True,workspace_tabs=7,automatic_startup_checks=True,tab_switch_preserves_inputs=True,paper_credential_controls=True,managed_read_pacing_controls=True,portable_observation_download=True,offline_export_consistency_checked=True,intercepted_paper_reads_only=True))
                 except Exception as exc:
                     diagnostic=dict(viewport=dict(width=width,height=height),control=current_control,error=str(exc),page_errors=errors,blocked=blocked,
                                     events=page.evaluate('window.__helpEvents||[]'))

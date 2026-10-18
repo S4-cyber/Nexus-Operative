@@ -4,14 +4,15 @@ import json
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
-from nexus import paper_credentials
+from nexus import paper_credentials, paper_portal_probe
 from nexus.alpaca_paper_inspection import PaperInspectionError
 
 BASE = '/api/execution/alpaca-paper/local-credentials'
 MAX_BODY = 2048
 HEADERS = {'Cache-Control': 'no-store', 'Pragma': 'no-cache'}
 FIELDS = {'save': {'api_key', 'api_secret', 'confirm_store'}, 'remove': {'confirm_remove'},
-          'status': set(), 'inspect': {'confirm_read_only_paper', 'expected_account_id'}}
+          'status': set(), 'inspect': {'confirm_read_only_paper', 'expected_account_id'},
+          'paced-inspect': {'confirm_read_only_paper','expected_account_id'}, 'pacing-status': {'expected_account_id'}}
 
 
 def _reply(data, status=200):
@@ -54,7 +55,8 @@ def register(app, local_gate):
                 return _reply({'detail': 'PAPER_ONBOARDING_BODY_INVALID'}, 422)
             try:
                 operation = {'save': paper_credentials.install, 'remove': paper_credentials.remove,
-                             'status': paper_credentials.status, 'inspect': paper_credentials.inspect_saved}[action]
+                             'status': paper_credentials.status, 'inspect': paper_credentials.inspect_saved,
+                             'paced-inspect':paper_portal_probe.inspect_saved,'pacing-status':paper_portal_probe.status}[action]
                 result = await asyncio.to_thread(operation, **data)
                 return _reply(result)
             except (paper_credentials.PaperVaultError, PaperInspectionError):

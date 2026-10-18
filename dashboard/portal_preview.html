@@ -143,7 +143,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <div id="panel-accounts" class="tab-panel" role="tabpanel" aria-labelledby="tab-accounts" hidden><h2 class="workspace-title">Accounts</h2><p class="sub">Manage virtual balances and inspect future broker and funding options.</p>
 <section class="card"><div class="label">Optional Windows paper account reads</div><h2>Alpaca Paper: Read Only</h2><p class="sub">Save your own paper API key pair in Windows Credential Manager, separately from optional AI keys. Saving starts no requests. Nexus uses this pair only for explicit account reads; the provider's keys may have broader permissions outside Nexus. No orders, deposits or withdrawals are available here.</p>
 <div class="actions"><label>Paper API key <input id="paper-api-key" type="password" maxlength="256" autocomplete="off" spellcheck="false" data-help="Enter your Alpaca paper API key for the separate Windows credential store. Saving does not contact Alpaca or enable orders. Never put this key in chat or research fields."></label><label>Paper API secret <input id="paper-api-secret" type="password" maxlength="256" autocomplete="off" spellcheck="false" data-help="Enter the matching paper API secret. It is sent only to your local Nexus backend for Windows credential storage. The field clears after a save attempt; the help panel never reads it."></label><button id="paper-credentials-save" data-help="After confirmation, save or replace the paper key pair in Windows Credential Manager. This invalidates an older in-progress read, sends no broker request and does not enable trading.">Save Paper Keys Locally</button><button id="paper-credentials-status" data-help="Read the local Windows credential entry to check whether a valid paper pair is saved. This does not contact Alpaca, prove account access or authorize trading.">Check Saved Paper Setup</button></div>
-<div class="actions"><label>Expected paper account ID (optional) <input id="paper-account-expected" type="text" maxlength="36" autocomplete="off" spellcheck="false" placeholder="Optional account UUID" data-help="Optionally enter a known paper account UUID to reject a different account on the first read. Leaving this blank permits inspection of the saved pair's account; it still grants no trading permission."></label><button id="paper-account-inspect" data-help="Read cash, total/free BTC and open buy/sell limit orders once after confirmation. Unknown stays unknown. Buy principal uses the remaining quantity and maximum buy price; sell remainder is the quantity still open. These are not verified holds, spendable funds or execution prices. No orders or automatic trading start.">Read Paper Account Once</button><button id="paper-observation-download" disabled data-help="Download the latest inventory observation as JSON for offline review. It contains private account identity and balances, but no keys or open-order terms. Hashes check content consistency only; they do not prove authenticity, current funds or trading permission. New setup/read actions clear it.">Download Observation</button><button id="paper-credentials-remove" data-help="After confirmation, invalidate this process's in-progress paper reads and remove the saved paper key pair. This does not revoke keys at Alpaca, cancel broker orders or erase your virtual portfolio.">Remove Saved Paper Keys</button></div>
+<div class="actions"><label>Expected paper account ID (required for paced reads) <input id="paper-account-expected" type="text" maxlength="36" autocomplete="off" spellcheck="false" placeholder="Paper account UUID" data-help="Enter the expected paper account UUID for a durable paced read or pacing review. The original one-time read can still omit it. A different account is rejected; this field grants no trading permission."></label><button id="paper-account-inspect" data-help="Read cash, total/free BTC and open buy/sell limit orders once after confirmation. Unknown stays unknown. Buy principal uses the remaining quantity and maximum buy price; sell remainder is the quantity still open. These are not verified holds, spendable funds or execution prices. No orders or automatic trading start.">Read Paper Account Once</button><button id="paper-account-paced-inspect" data-help="Confirm one paper-account read using a persistent local pacing journal bound to the expected account UUID. Success retains at least a 60-second cooldown. Pending or blocked reads need review; nothing retries or starts trading automatically.">Read Paper with Pacing</button><button id="paper-pacing-status" data-help="Review this account’s managed local pacing history without reading saved keys or contacting Alpaca. A missing journal stays missing. Pending, blocked or full history is not automatically cleared; other journals and computers are not coordinated.">Review Read Pacing</button><button id="paper-observation-download" disabled data-help="Download the latest inventory observation as JSON for offline review. It contains private account identity and balances, but no keys or open-order terms. Hashes check content consistency only; they do not prove authenticity, current funds or trading permission. New setup/read actions clear it.">Download Observation</button><button id="paper-credentials-remove" data-help="After confirmation, invalidate this process's in-progress paper reads and remove the saved paper key pair. This does not revoke keys at Alpaca, cancel broker orders or erase your virtual portfolio.">Remove Saved Paper Keys</button></div>
 <pre id="paper-credentials-result" class="monitor tiny" role="status" aria-live="polite">No paper credentials checked. Nothing connects or reads automatically. Broker order routing and funding remain unavailable.</pre></section>
 <section class="card"><div class="label">Paper accounting only</div><h2>Virtual Spot Portfolio</h2><p class="sub">Uses public bid/ask snapshots and locally stored virtual balances. Manual paper orders only. Not real holdings.</p>
 <div class="actions"><label>Initial virtual $ <input id="paperinit" type="number" value="10000" min="1" data-help="Choose the starting virtual cash for a new manual paper portfolio. Initialization is a one-time action and does not fund a real account."></label><button id="paperstart" data-help="Create the manual virtual portfolio with the chosen starting cash if one does not already exist. It does not overwrite an existing traded account.">Initialize Once</button><select id="paperproduct" data-help="Choose the market for the manual paper buy or sell controls. This selection does not change the experimental forward runner’s BTC-only policy."><option>BTC-USD</option><option>ETH-USD</option><option>SOL-USD</option></select><label>Notional $ <input id="paperorder" type="number" value="25" data-help="Set the requested dollar size of a manual paper buy. Fees, risk caps, available virtual cash and quote checks can still reject it."></label><label>Risk tier <select id="papertier" data-help="Choose which engaged risk tier must allow this manual paper buy. A disabled entry tier does not prevent selling an existing paper position."><option value="terrestrial">Terrestrial</option><option value="solar">Solar</option><option value="universal">Universal</option></select></label><button id="paperbuy" data-help="Model a manual buy in the selected virtual market using a public quote. Virtual cash and holdings change if all checks pass; no broker order is sent.">Paper Buy</button><button id="papersell" data-help="Model selling the entire manual paper holding in the selected market. It reduces virtual exposure and can operate even when the entry tier is off.">Paper Sell All</button><button id="paperreconcile" data-help="Compare the virtual portfolio’s recorded balances and holdings for consistency. It reports discrepancies rather than silently repairing them.">Reconcile</button><button id="paperaudit" data-help="Verify the retained paper ledger and its integrity checks. A failed audit requires review; it is not fixed by clicking this button.">Audit Ledger</button><button id="recoveryreport" data-help="Inspect the manual paper portfolio’s recovery condition and recommended next steps. Reading the report does not restore, reset or repair data.">Recovery Report</button><button id="snapshotbackup" data-help="Save a local snapshot of the manual paper portfolio for review or backup. The original remains in place; this does not start automation or transfer money.">Save Local Snapshot</button></div><p class="sub" id="paperledger">No portfolio loaded.</p></section>
@@ -388,6 +388,32 @@ byId('decision-benchmark').onclick=async()=>{try{
  }catch(e){show('decision-benchmark-result','Offline speed test unavailable: '+e.message)}
 };
 // BEGIN PAPER CREDENTIAL CONTROLS
+function checkedPaperPacing(value){
+ const keys=['account_sha256','before_head_sha256','after_head_sha256','events','sessions','next_allowed_at','min_post_result_cooldown_seconds','coordination_scope'];
+ if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==keys.length||keys.some(k=>!Object.hasOwn(value,k))||
+    ['account_sha256','before_head_sha256','after_head_sha256'].some(k=>typeof value[k]!=='string'||! /^[0-9a-f]{64}$/.test(value[k]))||
+    !Number.isInteger(value.sessions)||value.sessions<1||value.sessions>256||value.events!==2*value.sessions||
+    typeof value.next_allowed_at!=='number'||!Number.isFinite(value.next_allowed_at)||value.next_allowed_at<0||value.next_allowed_at>1e12||
+    value.min_post_result_cooldown_seconds!==60||value.coordination_scope!=='EXACT_LOCAL_JOURNAL_ONLY_NOT_BROKER_WIDE_OR_DISTRIBUTED')throw Error('Invalid pacing');
+ return value;
+}
+function checkedPaperPacingStatus(value){
+ const flags=['broker_connected','broker_paper_accepted','source_attested','source_coverage_verified','broker_wide_quota_verified','account_reconciled','holds_reconciled','spendable_funds_verified','ledger_applied','ready_for_routing','live_orders_enabled','money_movement_enabled','automatic_retry','automatic_continuation','release_approved','cloud_deployed','provider_key_permissions_verified','windows_profile_accepted'];
+ const keys=['mode','status','read_only','journal_present','account_sha256','head_sha256','sessions','session_capacity_remaining','next_allowed_at','pending_read','retained_review_block','suggested_action','limitations',...flags];
+ const actions={REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY:'A previous read is uncertain. Preserve the history for review; do not automatically retry.',REVIEW_RETAINED_BLOCK_NO_AUTOMATIC_RESET:'A retained block needs review. Do not reset or replace the journal.',SESSION_HISTORY_CAP_REVIEW_NO_DELETION:'Read history is full. Preserve it for review; do not delete it to bypass the limit.',RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ:'Observe the retained cooldown before separately confirming one read.'};
+ if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==keys.length||keys.some(k=>!Object.hasOwn(value,k))||
+    value.mode!=='PAPER_ACCEPTANCE_PACING_STATUS'||value.status!=='REVIEW_REQUIRED'||value.read_only!==true||flags.some(k=>value[k]!==false)||
+    ['journal_present','pending_read','retained_review_block'].some(k=>typeof value[k]!=='boolean')||
+    ['account_sha256','head_sha256'].some(k=>typeof value[k]!=='string'||! /^[0-9a-f]{64}$/.test(value[k]))||
+    !Number.isInteger(value.sessions)||value.sessions<0||value.sessions>256||value.session_capacity_remaining!==256-value.sessions||
+    typeof value.next_allowed_at!=='number'||!Number.isFinite(value.next_allowed_at)||value.next_allowed_at<0||value.next_allowed_at>1e12||
+    typeof value.limitations!=='string'||value.limitations.length>1024||!Object.hasOwn(actions,value.suggested_action))throw Error('Invalid pacing status');
+ const expectedAction=value.pending_read?'REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY':value.retained_review_block?'REVIEW_RETAINED_BLOCK_NO_AUTOMATIC_RESET':value.session_capacity_remaining===0?'SESSION_HISTORY_CAP_REVIEW_NO_DELETION':'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ';
+ if(value.suggested_action!==expectedAction||(!value.journal_present&&(value.sessions!==0||value.pending_read||value.retained_review_block||value.next_allowed_at!==0)))throw Error('Inconsistent pacing status');
+ return (value.journal_present?'Managed local read history: ':'No managed local read history. Missing does not prove no earlier request. ')+value.sessions+' / 256 sessions; '+
+  (value.next_allowed_at?'recorded cooldown ends '+new Date(value.next_allowed_at*1000).toISOString()+'. ':'No recorded cooldown. ')+actions[value.suggested_action]+
+  ' No keys read or broker request made by this check. Other/no journals and computers are not coordinated. No trading permission.';
+}
 let paperObservationDownload=null,paperObservationEpoch=0;
 function clearPaperObservationDownload(){
  paperObservationEpoch++;paperObservationDownload=null;byId('paper-observation-download').disabled=true;
@@ -447,7 +473,7 @@ function downloadPaperObservation(){
 }
 let paperCredentialsBusy=false,paperCredentialsRemoving=false,paperCredentialsGeneration=0;
 function paintPaperCredentialControls(){
- for(const id of ['paper-credentials-save','paper-credentials-status','paper-account-inspect'])byId(id).disabled=paperCredentialsBusy;
+ for(const id of ['paper-credentials-save','paper-credentials-status','paper-account-inspect','paper-account-paced-inspect','paper-pacing-status'])byId(id).disabled=paperCredentialsBusy;
  byId('paper-credentials-remove').disabled=paperCredentialsRemoving;
  byId('paper-observation-download').disabled=paperCredentialsBusy||paperObservationDownload===null;
 }
@@ -463,6 +489,14 @@ async function paperCredentialAction(action){
  }else if(action==='remove'){
   if(!window.confirm('Remove the saved paper key pair and invalidate in-progress local reads? This does not revoke keys at Alpaca or cancel broker orders.'))return;
   payload={confirm_remove:true};byId('paper-api-key').value='';byId('paper-api-secret').value='';
+ }else if(action==='paced-inspect'||action==='pacing-status'){
+  const expected=byId('paper-account-expected').value.trim();
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(expected)){show('paper-credentials-result','Enter the expected paper account UUID before a paced read or pacing review.');return;}
+  payload={expected_account_id:expected};
+  if(action==='paced-inspect'){
+   if(!window.confirm('Read this expected paper account once using saved keys and retain a managed local pacing journal? Success keeps at least a 60-second cooldown; pending or blocked outcomes require review. Other journals or computers are not coordinated. No orders, transfers or trading start.'))return;
+   payload.confirm_read_only_paper=true;
+  }
  }else if(action==='inspect'){
   if(!window.confirm('Read your Alpaca paper account, positions and open orders once using the saved keys? This sends no orders and does not verify spendable funds.'))return;
   payload={confirm_read_only_paper:true};
@@ -472,11 +506,17 @@ async function paperCredentialAction(action){
  const exportTicket=paperObservationEpoch;
  const ticket=++paperCredentialsGeneration;paperCredentialsBusy=true;
  if(action==='remove')paperCredentialsRemoving=true;paintPaperCredentialControls();
- show('paper-credentials-result',action==='inspect'?'Reading the paper account once. Trading remains disabled.':'Checking local paper credential action. No trading enabled.');
+ show('paper-credentials-result',(action==='inspect'||action==='paced-inspect')?'Reading the paper account once. Trading remains disabled.':action==='pacing-status'?'Reviewing retained local pacing only. No keys or broker request.':'Checking local paper credential action. No trading enabled.');
  try{
   const result=await api('/api/execution/alpaca-paper/local-credentials/'+action,{method:'POST',headers:jsonHeaders,body:JSON.stringify(payload)});
   if(ticket!==paperCredentialsGeneration)return;
-  if(action==='inspect'){
+  if(action==='pacing-status'){
+   show('paper-credentials-result',checkedPaperPacingStatus(result));
+  }else if(action==='inspect'||action==='paced-inspect'){
+   if(action==='paced-inspect'){
+    if(result.account_id!==payload.expected_account_id||result.durable_local_pacing!==true)throw Error('Invalid paced read');
+    checkedPaperPacing(result.local_pacing);
+   }
    const inventory=result.observed_inventory;
    const amount=value=>value===null||(typeof value==='string'&&/^(?:0|[1-9][0-9]{0,12})(?:\.[0-9]{1,18})?$/.test(value)&&Number(value)<=1e12);
    const fields=['cash','non_marginable_buying_power','btc_total','btc_available','btc_unavailable_difference'];
@@ -500,6 +540,7 @@ async function paperCredentialAction(action){
     'BTC total '+shown(inventory.btc_total)+' / available '+shown(inventory.btc_available)+' / Unavailable difference '+shown(inventory.btc_unavailable_difference),
     'Observed USD ceiling '+shown(result.observed_usd_ceiling)+' / Open orders '+result.open_order_count,
     termText,
+    ...(action==='paced-inspect'?['Local pacing retained. Success cooldown is at least 60 seconds; only this managed journal coordinates cooperating readers. No broker-wide quota or cloud ownership is verified.']:[]),
     'Total means reported holdings. Available is reported free quantity. The difference is NOT a verified hold.',
     'Unknown amounts stay unknown. Sequential reads, not an atomic snapshot. Spendable funds NOT verified. No trading permission.'
    ].join('\n'));
@@ -507,12 +548,14 @@ async function paperCredentialAction(action){
    if(typeof result.configured!=='boolean'||result.ready_for_routing!==false)throw Error('Invalid setup');
    show('paper-credentials-result',(result.configured?'Paper key pair saved locally.':'No saved paper key pair.')+(result.review_required?' Local review required before reads.':'')+' No broker request started. No trading permission.');
   }
- }catch(error){if(ticket===paperCredentialsGeneration)show('paper-credentials-result','Paper action could not be confirmed. Check Windows vault availability, then retry local setup or removal. No trading permission.');}
+ }catch(error){if(ticket===paperCredentialsGeneration)show('paper-credentials-result',(action==='paced-inspect'||action==='pacing-status')?'Paper action could not be confirmed. Review retained read pacing and Windows vault availability. A failed read may already have contacted the provider; do not automatically retry, reset or delete its history. No trading permission.':'Paper action could not be confirmed. Check Windows vault availability, then retry local setup or removal. No trading permission.');}
  finally{if(action==='remove')paperCredentialsRemoving=false;if(ticket===paperCredentialsGeneration)paperCredentialsBusy=false;paintPaperCredentialControls();}
 }
 byId('paper-credentials-save').onclick=()=>paperCredentialAction('save');
 byId('paper-credentials-status').onclick=()=>paperCredentialAction('status');
 byId('paper-account-inspect').onclick=()=>paperCredentialAction('inspect');
+byId('paper-account-paced-inspect').onclick=()=>paperCredentialAction('paced-inspect');
+byId('paper-pacing-status').onclick=()=>paperCredentialAction('pacing-status');
 byId('paper-credentials-remove').onclick=()=>paperCredentialAction('remove');
 byId('paper-observation-download').onclick=downloadPaperObservation;
 byId('paper-account-expected').addEventListener('input',clearPaperObservationDownload);

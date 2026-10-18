@@ -2,7 +2,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),path=req
 const html=fs.readFileSync(path.join(__dirname,'../dashboard/portal_preview.html'),'utf8');
 const script=html.split('// BEGIN PAPER CREDENTIAL CONTROLS')[1].split('// END PAPER CREDENTIAL CONTROLS')[0];
 const elements=new Map();
-for(const id of ['paper-api-key','paper-api-secret','paper-account-expected','paper-credentials-save','paper-credentials-status','paper-account-inspect','paper-credentials-remove','paper-observation-download'])elements.set(id,{value:'',disabled:false,listeners:{},addEventListener(kind,fn){this.listeners[kind]=fn;}});
+for(const id of ['paper-api-key','paper-api-secret','paper-account-expected','paper-credentials-save','paper-credentials-status','paper-account-inspect','paper-account-paced-inspect','paper-pacing-status','paper-credentials-remove','paper-observation-download'])elements.set(id,{value:'',disabled:false,listeners:{},addEventListener(kind,fn){this.listeners[kind]=fn;}});
 const messages=[],requests=[],confirmations=[],downloads=[],revoked=[];
 let downloadFails=false;
 let accepted=true,pending=[];
@@ -99,6 +99,40 @@ const observed=enrich({mode:'READ_ONLY_PAPER_INSPECTION',checks:'OBSERVED_FIELDS
  operation=button('paper-account-inspect').onclick();button('paper-account-expected').listeners.input();pending.shift().resolve(observed);await operation;
  assert.equal(button('paper-observation-download').disabled,true,'input changed during read must not restore old export');assert.equal(button('paper-account-inspect').disabled,false);
  assert(confirmations.some(x=>x.includes('No broker request')));assert(confirmations.some(x=>x.includes('does not revoke keys')));
+
+ const pacing={account_sha256:'a'.repeat(64),before_head_sha256:'b'.repeat(64),after_head_sha256:'c'.repeat(64),events:2,sessions:1,next_allowed_at:1060,min_post_result_cooldown_seconds:60,coordination_scope:'EXACT_LOCAL_JOURNAL_ONLY_NOT_BROKER_WIDE_OR_DISTRIBUTED'};
+ const paced={...observed,durable_local_pacing:true,local_pacing:pacing};
+ const flags=['broker_connected','broker_paper_accepted','source_attested','source_coverage_verified','broker_wide_quota_verified','account_reconciled','holds_reconciled','spendable_funds_verified','ledger_applied','ready_for_routing','live_orders_enabled','money_movement_enabled','automatic_retry','automatic_continuation','release_approved','cloud_deployed','provider_key_permissions_verified','windows_profile_accepted'];
+ const status={mode:'PAPER_ACCEPTANCE_PACING_STATUS',status:'REVIEW_REQUIRED',read_only:true,journal_present:true,account_sha256:'a'.repeat(64),head_sha256:'c'.repeat(64),sessions:1,session_capacity_remaining:255,next_allowed_at:1060,pending_read:false,retained_review_block:false,suggested_action:'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ',limitations:'Local only',...Object.fromEntries(flags.map(k=>[k,false]))};
+ for(const id of ['paper-account-paced-inspect','paper-pacing-status']){
+  const before=requests.length,consent=confirmations.length;
+  button('paper-account-expected').value='';await button(id).onclick();
+  button('paper-account-expected').value='bad-private-id';await button(id).onclick();
+  assert.equal(requests.length,before);assert.equal(confirmations.length,consent);assert.match(last(),/expected paper account UUID/);
+ }
+ button('paper-account-expected').value=observed.account_id;
+ accepted=false;const before=requests.length;await button('paper-account-paced-inspect').onclick();assert.equal(requests.length,before);accepted=true;
+ operation=button('paper-account-paced-inspect').onclick();
+ assert.equal(requests.at(-1).url.split('/').at(-1),'paced-inspect');assert.deepEqual(requests.at(-1).body,{expected_account_id:observed.account_id,confirm_read_only_paper:true});
+ assert.equal(button('paper-pacing-status').disabled,true);assert.equal(button('paper-credentials-remove').disabled,false);
+ pending.shift().resolve(paced);await operation;assert.match(last(),/Local pacing retained/);assert.equal(button('paper-observation-download').disabled,false);
+ const consent=confirmations.length;
+ operation=button('paper-pacing-status').onclick();assert.deepEqual(requests.at(-1).body,{expected_account_id:observed.account_id});assert.equal(confirmations.length,consent);
+ pending.shift().resolve(status);await operation;assert.match(last(),/1 \/ 256 sessions/);assert.match(last(),/No keys read or broker request/);assert.equal(button('paper-observation-download').disabled,true);
+ for(const change of [{local_pacing:{...pacing,private_extra:'private-secret'}},{local_pacing:{...pacing,events:3}},{local_pacing:{...pacing,min_post_result_cooldown_seconds:0}},{durable_local_pacing:false},{account_id:'11234567-89ab-cdef-0123-456789abcdef'}]){
+  operation=button('paper-account-paced-inspect').onclick();pending.shift().resolve({...paced,...change});await operation;
+  assert.match(last(),/could not be confirmed/);assert(!last().includes('private-secret'));assert.equal(button('paper-observation-download').disabled,true);
+ }
+ for(const change of [{private_extra:'private-secret'},{ready_for_routing:true},{pending_read:true},{sessions:257},{journal_present:false},{head_sha256:'private-secret'}]){
+  operation=button('paper-pacing-status').onclick();pending.shift().resolve({...status,...change});await operation;
+  assert.match(last(),/could not be confirmed/);assert(!last().includes('private-secret'));
+ }
+ operation=button('paper-pacing-status').onclick();pending.shift().resolve({...status,pending_read:true,suggested_action:'REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY'});await operation;assert.match(last(),/previous read is uncertain/);
+ operation=button('paper-account-paced-inspect').onclick();const latePaced=pending.shift();
+ const removing=button('paper-credentials-remove').onclick();latePaced.resolve(paced);await operation;
+ assert(!last().includes('Local pacing retained'));assert.equal(button('paper-observation-download').disabled,true);
+ pending.shift().resolve(safeSetup(false));await removing;assert.match(last(),/No saved paper key pair/);
+
  if(process.argv.includes('--export-fixture')){process.stdout.write(downloads[0].text);return;}
  console.log('Paper credentials: no automatic IO, explicit consent, cleared secrets, POST-only bodies, duplicate guards, removable pending reads, stale-result fencing, private allowlisted local downloads/URL cleanup and sanitized failures passed.');
 })().catch(error=>{console.error(error);process.exit(1);});

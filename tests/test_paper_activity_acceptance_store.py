@@ -94,3 +94,12 @@ def test_distinct_second_transition_requires_exact_previous_heads(tmp_path):
     assert report['last_record_scope']==second
     assert store.replay_scopes()==(first,second)
     assert 'record_scopes' not in report
+
+
+@pytest.mark.parametrize('verdict',[False,1])
+def test_optional_input_guard_rolls_back_new_record_before_commit(tmp_path,verdict):
+    value=scope();store=bound(tmp_path,value);before=store.path.read_bytes()
+    admitted=(value['pacing_after_head_sha256'],value['retention_after_head_sha256'])
+    with pytest.raises(ValueError,match='INPUT_REVOKED'):
+        store.append(value,admission=lambda:admitted,precommit_check=lambda:verdict)
+    assert store.inspect()['records']==0 and store.path.read_bytes()==before

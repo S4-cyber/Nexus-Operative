@@ -150,7 +150,7 @@ class PaperActivityAcceptanceStore:
                 state=self._load(db)
             return state
 
-    def append(self,scope,*,admission):
+    def append(self,scope,*,admission,precommit_check=lambda:True):
         scope=self._scope(scope);record_sha=sha(scope)
         with closing(self._connect(write=True)[0]) as db:
             with db:
@@ -163,6 +163,7 @@ class PaperActivityAcceptanceStore:
                     state['retention_bound_head_sha256']!=scope['retention_before_head_sha256']):_fail('CONTINUITY_DISAGREEMENT')
                 head=self._insert(db,state['records']+1,dict(scope=scope,record_sha256=record_sha),state['head_sha256'])
                 self._load(db)
+                if precommit_check() is not True:_fail('INPUT_REVOKED')
             # A changed post-commit sample loses the acknowledgment but retains
             # the record so status/replay can show the exact uncertain boundary.
             if admission()!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')

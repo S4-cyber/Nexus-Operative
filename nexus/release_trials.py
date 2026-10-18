@@ -425,6 +425,74 @@ def _inspection_inventory_trial():
         limitations='Fixed response objects and clocks; no actual credentials, provider, rendered UI, account reconciliation or spendable funds.')
 
 
+
+def _request_collection_trial():
+    """Release child only: disposable journals plus injected OS/HTTPS seams."""
+    import io
+    from nexus import paper_credentials as credentials,paper_activity_acceptance_probe as probe
+    from nexus.paper_request_activity_acceptance import _fixture
+    from nexus.broker_activity_store import _raw
+    from nexus.broker_request_journal import BrokerRequestJournal
+    account='01234567-89ab-cdef-0123-456789abcdef'
+    saved=None;vault_reads=0;gets=0
+    class Vault:
+        def get_password(self,*args):
+            nonlocal vault_reads
+            vault_reads+=1;return saved
+        def set_password(self,*args):
+            nonlocal saved
+            saved=args[-1]
+    raw_account=dict(id=account,currency='USD',status='ACTIVE',crypto_status='ACTIVE',
+        account_blocked=False,trading_blocked=False,trade_suspended_by_user=False,
+        cash='1000',non_marginable_buying_power='900',pending_transfer_in='0',pending_transfer_out='0',accrued_fees='0')
+    class Response:
+        status=200;headers={'Content-Type':'application/json'}
+        def __init__(self,url,value):self.url=url;self.body=io.BytesIO(json.dumps(value).encode())
+        def geturl(self):return self.url
+        def read(self,size):return self.body.read(size)
+        def __enter__(self):return self
+        def __exit__(self,*args):self.body.close()
+    original_vault=credentials._vault;epoch=credentials._epoch;blocked=credentials._blocked
+    try:
+        credentials._vault=lambda:Vault()
+        credentials.install('fixture_key_only_123','fixture_secret_only_123',confirm_store=True)
+        with tempfile.TemporaryDirectory(prefix='nexus-request-collection-') as directory:
+            root=Path(directory);source=root/'source';source.mkdir();options,activity=_fixture(source)
+            rows=[_raw(row) for row in activity.inspect()['normalized_activities']]
+            from nexus.alpaca_paper_inspection import URLS
+            class Reader:
+                def open(self,request,timeout):
+                    nonlocal gets
+                    _require(request.get_method()=='GET' and request.data is None,'REQUEST_COLLECTION_METHOD')
+                    gets+=1
+                    return Response(request.full_url,raw_account if request.full_url==URLS[0] else rows)
+            dest=root/'collected';args=dict(expected_account_id=account,
+                request_journal_path=options['request_journal_path'],expected_request_head=options['expected_request_head'],
+                pacing_path=dest/'pacing.sqlite3',activity_store_path=dest/'activity.sqlite3',acceptance_store_path=dest/'acceptance.sqlite3',
+                after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z',confirm_read_only_paper=True,
+                opener=Reader(),wall_clock=lambda:1792368000,elapsed_clock=lambda:50)
+            before=Path(options['request_journal_path']).read_bytes();result=probe.probe(**args)
+            request_unchanged=Path(options['request_journal_path']).read_bytes()==before
+            status=probe.status(**{k:args[k] for k in ('expected_account_id','pacing_path','activity_store_path','acceptance_store_path')})
+            journal=BrokerRequestJournal(options['request_journal_path'],account)
+            plan=journal.lookup_request('nx_accept_fixture')['plan'];plan['payload']['client_order_id']='new_prepared'
+            from nexus.alpaca_paper_contract import sha
+            plan['payload_sha256']=sha(plan['payload']);journal.prepare(plan)
+            reads_before=vault_reads;gets_before=gets;stale=False
+            try:probe.probe(**args)
+            except ValueError:stale=vault_reads==reads_before and gets==gets_before
+            checks=dict(request_head_bound=result['order_input']['request_head_sha256']==options['expected_request_head'] and result['order_input']['request_head_rechecked'],
+                original_orders_derived=result['collection']['counts']['order_snapshots']==1,
+                two_explicit_fills_retained=result['collection']['counts']['executions']==2,
+                acceptance_replayed=status['all_accepted_transitions_replayed'] and status['accepted_transitions']==1,
+                request_journal_unchanged=request_unchanged,stale_head_denied_before_vault_and_io=stale,
+                manual_order_file_not_created=not list(root.rglob('orders.json')))
+            return dict(source='SYNTHETIC_RETAINED_REQUEST_ACTIVITY_COLLECTION_FIXTURE',passed=all(checks.values()),
+                **checks,injected_get_requests=gets,actual_provider_access=False,actual_vault_access=False,
+                **{flag:False for flag in probe.FLAGS})
+    finally:credentials._vault=original_vault;credentials._epoch=epoch;credentials._blocked=blocked
+
+
 def _execute(profile):
     if profile == 'activity_acceptance':
         from nexus.paper_activity_acceptance_evidence import fixture_report
@@ -462,7 +530,7 @@ def _execute(profile):
         return fixture_report()
     if profile == 'collection':
         from nexus.activity_collection_evidence import fixture_report
-        return fixture_report()
+        result=fixture_report();result['request_derived_collection']=_request_collection_trial();return result
     if profile == 'balance':
         from nexus.broker_balance_review import fixture_report
         return fixture_report()
@@ -572,6 +640,10 @@ def _validate(profile, result):
             and all(gross[k] is False for k in ('fee_posting_interval_verified','fee_debits_allocated_to_interval','fee_execution_links_verified',
                 'fee_reserved_funding_verified')), 'RETAINED_BALANCE_AUTHORITY')
     if profile == 'collection':
+        from nexus.paper_activity_acceptance_probe import FLAGS as REQUEST_COLLECTION_FLAGS
+        linked=result['request_derived_collection']
+        _require(linked['source']=='SYNTHETIC_RETAINED_REQUEST_ACTIVITY_COLLECTION_FIXTURE' and linked['injected_get_requests']==3 and all(linked[k] is True for k in ('passed','request_head_bound','original_orders_derived','two_explicit_fills_retained','acceptance_replayed','request_journal_unchanged','stale_head_denied_before_vault_and_io','manual_order_file_not_created')),'REQUEST_DERIVED_COLLECTION')
+        _require(all(linked[k] is False for k in (*REQUEST_COLLECTION_FLAGS,'actual_provider_access','actual_vault_access')),'REQUEST_DERIVED_COLLECTION_AUTHORITY')
         _require(result['get_requests'] == 4 and result['retained_activities'] == 200 and
             result['retained_observations'] == 1 and result['retained_pages'] == 2, 'COLLECTION_RETENTION')
         _require(result['page_cap_reported'] is True and result['cursor_chain_preserved'] is True, 'COLLECTION_SCOPE')

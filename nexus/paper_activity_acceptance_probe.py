@@ -7,6 +7,7 @@ digests: broker/order/activity identities remain in the private input/store.
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import sqlite3
 import stat
@@ -76,6 +77,29 @@ def _orders(path, account):
         _fail()
 
 
+
+def _request_orders(path,account,head):
+    """Derive only allowlisted observed snapshots; no guessed order identities."""
+    from nexus.broker_request_journal import BrokerRequestJournal
+    if type(head) is not str or re.fullmatch('[0-9a-f]{64}',head) is None:_fail()
+    journal=BrokerRequestJournal(path,account);retained=journal.recovery()
+    if retained['head_sha256']!=head:_fail()
+    orders=[]
+    for row in retained['requests']:
+        if row['lookup']['pending'] or row['lookup']['review_blocked']:_fail()
+        if not row['submission_attempt_marked']:continue
+        snapshot=row['snapshot']
+        if snapshot is None:_fail()
+        orders.append({k:snapshot[k] for k in ('broker_order_id','client_order_id','symbol','side',
+            'status','filled_quantity','average_fill_price','updated_at')})
+    _,order_map,_,_,duplicates=adapter.canonical_inputs([],orders,expected_account_id=account)
+    if not order_map or duplicates:_fail()
+    # Full repeated replay also detects concurrent metadata/content changes that
+    # do not merely append between the first read and canonicalization.
+    if journal.recovery()!=retained:_fail()
+    return orders,len(order_map),duplicates
+
+
 def _paths(expected_account_id, pacing_path, activity_store_path, acceptance_store_path):
     account = _uuid(expected_account_id)
     pacing, pacing_resolved = _private_path(pacing_path)
@@ -95,15 +119,22 @@ def _pacing_summary(before, after):
         coordination_scope='EXACT_LOCAL_JOURNAL_ONLY_NOT_BROKER_WIDE_OR_DISTRIBUTED')
 
 
-def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_store_path, orders_path, after, until,
-          confirm_read_only_paper=False, opener=None, wall_clock=time.time, elapsed_clock=time.monotonic):
+def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_store_path, orders_path=None, after, until,
+          confirm_read_only_paper=False, opener=None, wall_clock=time.time, elapsed_clock=time.monotonic,
+          request_journal_path=None,expected_request_head=None):
     if confirm_read_only_paper is not True:
         _fail()
     account, pacing, store, acceptance = _paths(expected_account_id,pacing_path,activity_store_path,acceptance_store_path)
-    order_path, order_resolved = _private_path(orders_path)
-    if order_resolved in (pacing.path.resolve(),store.path.resolve(),acceptance.path.resolve()):
-        _fail()
-    orders, unique_orders, duplicate_orders = _orders(order_path, account)
+    request_mode=request_journal_path is not None
+    if (orders_path is None)==(not request_mode) or (not request_mode and expected_request_head is not None):_fail()
+    order_path,order_resolved=_private_path(request_journal_path if request_mode else orders_path)
+    if order_resolved in (pacing.path.resolve(),store.path.resolve(),acceptance.path.resolve()):_fail()
+    orders,unique_orders,duplicate_orders=(_request_orders(order_path,account,expected_request_head)
+        if request_mode else _orders(order_path,account))
+    def input_guard():
+        if request_mode and _request_orders(order_path,account,expected_request_head)!=(orders,unique_orders,duplicate_orders):_fail()
+        return True
+    input_guard()
     pacing_before = pacing.inspect(); store_before = store.inspect()
     acceptance.bind(pacing_head=pacing_before['head_sha256'],retention_head=store_before['head_sha256'],
         pacing_sessions=pacing_before['sessions'],retained_batches=store_before['retained_batches'])
@@ -113,7 +144,8 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
         acceptance_before['records']>=MAX_RECORDS):_fail()
     result = paper_credentials.collect_saved(orders, expected_account_id=account, after=after, until=until,
         confirm_read_only_paper=True, opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock,
-        activity_store=store, pacing=pacing)
+        activity_store=store, pacing=pacing,**({'input_guard':input_guard} if request_mode else {}))
+    input_guard()
     pacing_after = pacing.inspect(); store_after = store.inspect()
     try:
         if (pacing_after['sessions'] != pacing_before['sessions'] + 1 or
@@ -161,12 +193,19 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
             retention_before_head_sha256=retained['before_head_sha256'],retention_after_head_sha256=retained['after_head_sha256'],
             pacing_before_head_sha256=pacing_summary['before_head_sha256'],
             pacing_after_head_sha256=pacing_summary['after_head_sha256'])
-        accepted=acceptance.append(scope,admission=lambda:(pacing.inspect()['head_sha256'],store.inspect()['head_sha256']))
+        def admission():
+            input_guard()
+            return pacing.inspect()['head_sha256'],store.inspect()['head_sha256']
+        accepted=acceptance.append(scope,admission=admission,**({'precommit_check':input_guard} if request_mode else {}))
+        input_guard()
         acceptance_after=acceptance.inspect()
         if (accepted['duplicate'] is not False or accepted['record_sha256']!=sha(scope) or
             accepted['head_sha256']!=acceptance_after['head_sha256']):_fail()
         return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_PROBE',status='REVIEW_REQUIRED',read_completed=True,
             source=result['source'],collection=collection,local_retention=retained,local_pacing=pacing_summary,
+            order_input=dict(source='RETAINED_REQUEST_OBSERVATIONS' if request_mode else 'PRIVATE_SUPPLIED_ORDER_FILE',
+                request_head_sha256=expected_request_head if request_mode else None,request_head_rechecked=request_mode,
+                source_attested=False,request_head_persisted_in_acceptance_record=False),
             acceptance_history=dict(before_head_sha256=acceptance_before['head_sha256'],
                 after_head_sha256=acceptance_after['head_sha256'],records=acceptance_after['records'],
                 record_capacity_remaining=MAX_RECORDS-acceptance_after['records'],
@@ -294,18 +333,21 @@ def main():
     parser = _Parser(description=__doc__)
     parser.add_argument('--expected-account', required=True);parser.add_argument('--pacing', required=True)
     parser.add_argument('--activity-store', required=True);parser.add_argument('--acceptance-store',required=True);parser.add_argument('--orders')
+    parser.add_argument('--request-journal');parser.add_argument('--request-head')
     parser.add_argument('--after');parser.add_argument('--until')
     parser.add_argument('--confirm-read-only-paper', action='store_true')
     parser.add_argument('--status-only', action='store_true', help='Replay local journals only; never read orders, credentials or provider data.')
     args = parser.parse_args()
     try:
         if args.status_only:
-            if args.confirm_read_only_paper or any(value is not None for value in (args.orders,args.after,args.until)): _fail()
+            if args.confirm_read_only_paper or any(value is not None for value in (args.orders,args.request_journal,args.request_head,args.after,args.until)): _fail()
             result = status(expected_account_id=args.expected_account,pacing_path=args.pacing,activity_store_path=args.activity_store,acceptance_store_path=args.acceptance_store)
         else:
-            if None in (args.orders,args.after,args.until): _fail()
+            if None in (args.after,args.until) or (args.orders is None)==(args.request_journal is None):_fail()
+            if (args.request_journal is None)!=(args.request_head is None):_fail()
             result = probe(expected_account_id=args.expected_account,pacing_path=args.pacing,
                 activity_store_path=args.activity_store,orders_path=args.orders,after=args.after,until=args.until,
+                request_journal_path=args.request_journal,expected_request_head=args.request_head,
                 acceptance_store_path=args.acceptance_store,
                 confirm_read_only_paper=args.confirm_read_only_paper)
     except (OSError, ValueError, TypeError, KeyError, sqlite3.Error, MemoryError, RecursionError, KeyboardInterrupt):

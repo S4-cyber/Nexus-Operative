@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.112.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.113.0",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -324,7 +324,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.112.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.113.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -586,7 +586,7 @@ def paper_forward_recovery(limit:int=20):
 
 @app.get("/api/paper/forward")
 def paper_forward_status():
-    try:return {**paper_forward_runner.status(),"history":paper_forward_runner.history(),"storage_capacity":paper_forward_runner.storage_capacity()}
+    try:return {**paper_forward_runner.status(),**paper_forward_runner.diagnostics()}
     except (OSError,sqlite3.Error,ValueError):raise HTTPException(status_code=503,detail="FORWARD_DIAGNOSTICS_UNAVAILABLE")
 
 @app.post("/api/paper/forward/start")

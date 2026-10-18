@@ -73,7 +73,7 @@ def main():
     args=parser.parse_args()
     if args.default_data_root is not None and os.name!='nt':parser.error('Default frozen Windows layout requires Windows')
     env,expected_data=launch_environment(args.data,args.default_data_root)
-    accounting_names=('order_lifecycle.sqlite3','paper_portfolio.sqlite3')
+    accounting_names=('order_lifecycle.sqlite3','paper_portfolio.sqlite3','paper_forward.sqlite3')
     initial_accounting={name:(expected_data/name).is_file() for name in accounting_names}
     if args.expect_halted or args.expected_recovery:
         assert initial_accounting['order_lifecycle.sqlite3'], 'Expected retained order journal is missing'

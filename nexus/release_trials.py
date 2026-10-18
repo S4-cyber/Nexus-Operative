@@ -60,7 +60,7 @@ def _http_trial():
             time.sleep(.01)
         opener = build_opener(ProxyHandler({}))
         base = 'http://127.0.0.1:' + str(listener.getsockname()[1])
-        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/api/paper/portfolio', '/', '/portal'):
+        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/api/paper/portfolio', '/api/paper/forward', '/api/paper/forward/sessions', '/', '/portal'):
             with opener.open(base + path, timeout=5) as response:
                 body = response.read(2 * 1024 * 1024)
                 _require(response.status == 200, 'HTTP_STATUS')
@@ -80,11 +80,15 @@ def _http_trial():
         for name in ('broker_connected', 'live_orders_enabled', 'money_movement_enabled'):
             _require(status[name] is False, 'AUTHORITY_ENABLED')
         _require(responses['/api/roadmap']['read_only'] is True, 'ROADMAP_MUTABLE')
+        forward=responses['/api/paper/forward']
+        _require(forward['enabled'] is False and forward['history']==[] and
+            forward['storage_capacity']['sessions_retained']==forward['storage_capacity']['quote_observations_retained']==0 and
+            responses['/api/paper/forward/sessions']['sessions']==[], 'PASSIVE_FORWARD_STARTUP')
         _require('nexus' in responses['/portal'].lower() and 'url=/portal' in responses['/'], 'PORTAL_CONTENT')
         _require(not list(root.rglob('*')), 'READ_ONLY_STARTUP_WROTE_DATA')
         _require(not any(attempts.values()), 'UNEXPECTED_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
-            endpoints_checked=list(responses), startup_data_files=0, **attempts,
+            endpoints_checked=list(responses), startup_data_files=0, passive_forward_reads_preserved_missing_storage=True, **attempts,
             credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
             limitations='Real local source-process HTTP only. No rendered browser, Windows executable, actual provider, order or sustained market test.')
     finally:
@@ -226,6 +230,7 @@ def _validate(profile, result):
         _require(result['target_validated'] is False, 'UNSUPPORTED_MARKET_SPEED_CLAIM')
     else: _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
+        _require(result['passive_forward_reads_preserved_missing_storage'] is True,'HTTP_PASSIVE_FORWARD')
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')

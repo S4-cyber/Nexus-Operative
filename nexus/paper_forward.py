@@ -12,7 +12,7 @@ import threading
 import time
 import uuid
 from collections import deque
-from contextlib import closing
+from contextlib import closing, contextmanager
 from datetime import datetime
 from decimal import Decimal, ROUND_DOWN
 from pathlib import Path
@@ -65,6 +65,19 @@ class PaperForwardRunner:
             state TEXT NOT NULL,policy_json TEXT NOT NULL,counts_json TEXT NOT NULL,last_json TEXT NOT NULL)""")
         forward_evidence.schema(db)
         return db
+
+    @contextmanager
+    def _read_db(self):
+        """Observe existing evidence without creating storage or migrating it."""
+        path=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))/'paper_forward.sqlite3'
+        if path.is_symlink():raise ValueError('FORWARD_HISTORY_SYMLINK')
+        try:path.stat()
+        except FileNotFoundError:
+            yield None
+            return
+        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=10)) as db:
+            db.execute('BEGIN')
+            yield db
 
     def _record(self,decision,reason,**extra):
         observed=self.clock()
@@ -384,8 +397,8 @@ class PaperForwardRunner:
     def evidence_report(self,session_id):
         import re
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
-        with closing(self._db()) as db,db:
-            db.execute('BEGIN')
+        with self._read_db() as db:
+            if db is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
             session=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(session_id,)).fetchone()
             if session is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
             quotes=forward_evidence.review(db,session_id)
@@ -410,8 +423,8 @@ class PaperForwardRunner:
 
     def sessions(self,limit=20):
         if type(limit) is not int or not 1<=limit<=100:raise ValueError('INVALID_SESSION_HISTORY_LIMIT')
-        with closing(self._db()) as db:
-            rows=db.execute('SELECT id,started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions ORDER BY started_at DESC,rowid DESC LIMIT ?',(limit,)).fetchall()
+        with self._read_db() as db:
+            rows=[] if db is None else db.execute('SELECT id,started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions ORDER BY started_at DESC,rowid DESC LIMIT ?',(limit,)).fetchall()
         results=[]
         for sid,started,updated,state,policy,counts,last in rows:
             policy,counts,last=forward_sessions.parse(started,updated,state,policy,counts,last)
@@ -435,8 +448,13 @@ class PaperForwardRunner:
         return build(self.status(),self.orders.recovery_report(),history)
 
     def storage_capacity(self):
-        with closing(self._db()) as db,db:
-            db.execute('BEGIN')
+        with self._read_db() as db:
+            return self._capacity_snapshot(db)
+
+    @staticmethod
+    def _capacity_snapshot(db):
+        sessions=quotes=0
+        if db is not None:
             sessions=db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]
             quotes=db.execute('SELECT COUNT(*) FROM forward_quotes').fetchone()[0]
         sessions_left=max(0,SESSION_LIMIT-sessions);quotes_left=max(0,forward_evidence.LIMIT-quotes)
@@ -452,8 +470,20 @@ class PaperForwardRunner:
                     scope='Storage admission diagnostics only; does not grant execution permission or guarantee future exit evidence capacity. Back up and review limits; never delete retained evidence to admit a run.')
 
     def history(self):
-        with closing(self._db()) as db:
-            return [forward_sessions.event(row[0]) for row in db.execute('SELECT detail FROM cycles ORDER BY id DESC LIMIT 30')]
+        with self._read_db() as db:
+            return self._history_snapshot(db)
+
+    @staticmethod
+    def _history_snapshot(db):
+        return [] if db is None else [forward_sessions.event(row[0]) for row in db.execute('SELECT detail FROM cycles ORDER BY id DESC LIMIT 30')]
+
+    def diagnostics(self):
+        # Only these SQLite observations share a transaction. In-memory runner
+        # status and the separate order ledger are not an atomic combined view.
+        with self._read_db() as db:
+            capacity=self._capacity_snapshot(db)
+            history=self._history_snapshot(db)
+        return dict(history=history,storage_capacity=capacity)
 
 
 runner=PaperForwardRunner()

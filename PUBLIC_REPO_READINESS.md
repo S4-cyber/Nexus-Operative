@@ -52,3 +52,9 @@ v0.109 source `2d2e25b0f6c8472591891abee3b053e86da83931` passed packaging3908818
 Encrypted observation pairs can be reviewed offline directly in memory with explicit per-input flags and hidden prompts, avoiding decrypted intermediate files. The successful report remains private plaintext stdout; retained SQLite storage and original downloads remain unencrypted. Main-policy adoption/admin/log review above remain outstanding.
 
 The v0.111 application build39091596247/job117569331946 compiled and passed standalone startup, then failed installed startup because the browser's automatic portfolio read created accounting storage. v0.112 makes that read non-initializing/read-only and strengthens installed smoke to exercise it explicitly. This is a source fix awaiting fresh native CI, not a verified installer claim.
+
+## v0.113 follow-up
+
+The preceding v0.112 commit938153c2469432ab6e5887491edfbb0f3337fec5 passed full reachable-history security39092253998/job117571286904:530 commits,1,591 blobs,319 paths,29,202,063 bytes, zero artifact/secret findings. This does not clear admin settings or historical non-Git surfaces.
+
+Forward-session polling now preserves missing evidence storage and reads existing history without schema initialization/migration. A combined forward status read shares one history/capacity transaction; runner state and order accounting are not an atomic combined view. Native CI and all owner/security/financial release gates remain separate.

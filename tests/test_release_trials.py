@@ -98,6 +98,37 @@ def test_nonzero_child_failure_is_sanitized_and_never_reported_as_passed(monkeyp
     assert 'SECRET' not in str(error.value)
 
 
+def test_release_trial_failure_diagnostics_allow_only_fixed_codes():
+    assert trials._safe_failure_code(trials.ReleaseTrialError('RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED')) == \
+        'RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED'
+    for error in (ValueError('RELEASE_TRIAL_SECRET_MUST_NOT_ESCAPE'), OSError('C:/private/account.sqlite3'),
+                  KeyError('credential-name')):
+        assert trials._safe_failure_code(error) == 'RELEASE_TRIAL_INTERNAL_ERROR'
+
+
+def test_release_trial_timeout_is_profile_specific_and_sanitized(monkeypatch):
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], kwargs['timeout'], stderr='SECRET_MUST_NOT_ESCAPE')
+    monkeypatch.setattr(trials.subprocess, 'run', timeout)
+    with pytest.raises(ValueError, match='^RELEASE_TRIAL_FORWARD_CHILD_TIMEOUT$') as error:
+        trials.run()
+    assert 'SECRET' not in str(error.value)
+
+
+@pytest.mark.parametrize(('error','expected'), [
+    (trials.ReleaseTrialError('RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED'),
+     'Release trials failed: RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED\n'),
+    (OSError('C:/private/account.sqlite3 SECRET_MUST_NOT_ESCAPE'),
+     'Release trials failed: RELEASE_TRIAL_INTERNAL_ERROR\n'),
+])
+def test_release_trial_cli_emits_only_sanitized_failure_codes(monkeypatch, capsys, error, expected):
+    monkeypatch.setattr(trials, 'run', lambda: (_ for _ in ()).throw(error))
+    monkeypatch.setattr(sys, 'argv', ['release_trials'])
+    with pytest.raises(SystemExit) as stopped:
+        trials.main()
+    assert stopped.value.code == 1 and capsys.readouterr().err == expected
+
+
 @pytest.mark.parametrize('has_intent', [False, True])
 def test_missing_order_history_is_inspected_without_creating_it(tmp_path, monkeypatch, has_intent):
     from nexus import app as api, emergency_intent

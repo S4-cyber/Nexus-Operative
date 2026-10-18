@@ -95,3 +95,7 @@ The activity probe adds a third caller-selected private SQLite journal, distinct
 ## v0.124 synthetic process-death evidence
 
 The fifteenth release profile contains only temporary synthetic local journals and returns bounded booleans/counts—no raw journal bytes, account identifier, credential, activity identity or retained head. Child processes deny credential and external-network access during fresh replay. A green result demonstrates the tested SQLite commit boundary only; it is not source attestation, broker acceptance, private-evidence publication approval or protection against noncooperating writers.
+
+## v0.125 release-failure diagnostics
+
+The offline release CLI exposes only allowlisted `RELEASE_TRIAL_*` identifiers for a profile child failure, validation failure or bounded child timeout. Raw child stderr/stdout, arbitrary exception text, file paths, environment values and credential material are never copied into the diagnostic. Unknown `ValueError`, `OSError`, subprocess and key failures collapse to `RELEASE_TRIAL_INTERNAL_ERROR`; operators must inspect private runner evidence rather than weakening the sanitizer.

@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import sqlite3
 import subprocess
 import sys
@@ -21,10 +22,23 @@ PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
     'inspection_inventory_validated', 'cooldown_prevented_transport',
     'removal_completed_during_read', 'revoked_read_returned_no_observation',
     'pending_history_preserved', 'fresh_process_preserved_pending_history')
+SAFE_FAILURE_CODE = re.compile(r'RELEASE_TRIAL_[A-Z0-9_]+\Z')
+
+
+class ReleaseTrialError(ValueError):
+    """Fixed-code release failure safe to expose in public CI output."""
 
 
 def _require(condition, code):
-    if not condition: raise ValueError('RELEASE_TRIAL_' + code)
+    if not condition: raise ReleaseTrialError('RELEASE_TRIAL_' + code)
+
+
+def _safe_failure_code(error):
+    """Return only a fixed release-trial code; never child stderr or paths."""
+    value = str(error)
+    if isinstance(error, ReleaseTrialError) and SAFE_FAILURE_CODE.fullmatch(value):
+        return value
+    return 'RELEASE_TRIAL_INTERNAL_ERROR'
 
 
 def _pacing_restart_review(path):
@@ -546,11 +560,14 @@ def run():
             env = {**os.environ, 'NEXUS_PORTABLE_DATA': str(directory)}
             expression = 'import json; from nexus.release_trials import _execute; print(json.dumps(_execute(' + repr(profile) + '),allow_nan=False))'
             started = time.perf_counter()
-            child = subprocess.run([sys.executable, '-c', expression], cwd=root, env=env,
-                                   capture_output=True, text=True, timeout=240)
+            try:
+                child = subprocess.run([sys.executable, '-c', expression], cwd=root, env=env,
+                                       capture_output=True, text=True, timeout=240)
+            except subprocess.TimeoutExpired:
+                raise ReleaseTrialError('RELEASE_TRIAL_' + profile.upper() + '_CHILD_TIMEOUT') from None
             _require(child.returncode == 0, profile.upper() + '_CHILD_FAILED')
             try: result = json.loads(child.stdout)
-            except ValueError: raise ValueError('RELEASE_TRIAL_INVALID_CHILD_REPORT') from None
+            except ValueError: raise ReleaseTrialError('RELEASE_TRIAL_INVALID_CHILD_REPORT') from None
             _validate(profile, result)
             results[profile] = result; timings[profile] = round(time.perf_counter()-started, 3)
     _require(source_digest(root) == source, 'SOURCE_CHANGED_DURING_RUN')
@@ -573,8 +590,9 @@ def main():
             args.output.parent.mkdir(parents=True, exist_ok=True); args.output.write_text(encoded, encoding='utf-8')
         print(encoded, end='')
     except (ValueError, OSError, subprocess.SubprocessError, KeyError) as error:
-        # Raw child stderr/environment/credential values are never included in errors.
-        parser.exit(1, 'Release trials failed: ' + type(error).__name__ + '\n')
+        # Only allowlisted fixed codes are emitted. Raw child stderr,
+        # exception text, paths, environment and credential values stay hidden.
+        parser.exit(1, 'Release trials failed: ' + _safe_failure_code(error) + '\n')
 
 
 if __name__ == '__main__': main()

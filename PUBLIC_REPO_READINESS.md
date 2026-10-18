@@ -114,3 +114,7 @@ The activity probe now requires a separate private acceptance-history journal. I
 ## v0.124 public synthetic recovery evidence
 
 The new mandatory release profile publishes only synthetic fixture booleans, fixed scope labels and a transition count. Its disposable SQLite files, account identifier and head/receipt digests are not returned or committed. Vault and external-network attempts are denied during fresh replay. This makes the saved release report suitable for public source evidence while preserving the rule that any real paper-account input, journals and reports stay private and outside Git.
+
+## v0.125 public failure-diagnostic boundary
+
+Release-trial failures are diagnostic-code-only. CI may identify a bounded profile child failure or timeout through an allowlisted `RELEASE_TRIAL_*` value, but must not echo child stderr, arbitrary exception messages, paths, environment values or private account material into public logs. Unknown failures collapse to one fixed internal-error code.

@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.163.0 (pre-release).** The eighth EXE paper tool, quote-evidence, creates a separately password-encrypted snapshot of exact request/quote/pacing history and replays it entirely in memory on another machine. Thirteen child-command checks cover all tools. Source journals stay unchanged; no import, source/currentness/clock/funds authority, routing or provider acceptance is introduced.
+**Current development build: 0.163.1 (pre-release).** Quote-capture now rejects any selected private journal path that aliases another journal's SQLite recovery sidecar or pacing-owner lock before credential or provider access. The v0.163 encrypted evidence behavior and all false-authority boundaries remain unchanged.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

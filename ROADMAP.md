@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.163.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.163.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.163 adds an encrypted portable quote-evidence copy and full offline replay of original request, quote and pacing chains. A separate AES256-GCM format with fixed scrypt cost, random salt/nonce, strict bounded schema and 20MiB plaintext cap protects the selected snapshot; review decrypts into memory without broker keys or database import. Exact heads, historical prefixes, one-quote-per-session bindings and input changes are checked; output never overwrites source or reserved sidecars. Eight EXE tools now undergo thirteen child commands. Encryption protects copied bytes under the password, not broker/source identity, currentness, clocks, decision/arrival timing, fees, funds or routing. Actual native/provider acceptance remains open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.163.1 closes a quote-capture path-preflight gap: selected request, quote and pacing journals may not alias another selected journal's SQLite rollback/WAL/shared-memory sidecar or the pacing ownership file. These relationships now fail before credential or provider access instead of surfacing after a confirmed read. The v0.163 encrypted portable full-chain evidence behavior and all false-authority boundaries remain unchanged. Exact-source Windows/browser/security and actual provider/profile acceptance remain required. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

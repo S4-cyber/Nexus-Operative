@@ -361,3 +361,5 @@ NexusOperative.exe --paper-tool quote-evidence review --source PRIVATE_COPY.nexu
 ```
 
 The public summary contains counts and local consistency only. Omit that flag for private IDs/heads; keep private stdout out of public logs. This checks the copied history, not the broker, current source state, profitability or trading readiness. It does not import or resume the copied databases. Never put encrypted account copies into the public repository.
+
+Keep quote-capture request, quote and pacing database paths separate from one another and from their SQLite sidecars (`-journal`, `-wal`, `-shm`) and pacing `.owner.lock`. v0.163.1 refuses those relationships before any saved-key or provider access.

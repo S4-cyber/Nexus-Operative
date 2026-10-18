@@ -27,6 +27,14 @@ def _fail(code):raise ValueError('PAPER_QUOTE_CAPTURE_'+code)
 def _stores(expected_account_id,request_journal_path,quote_store_path,pacing_path):
     resolved=[_private_path(p)[1] for p in (request_journal_path,quote_store_path,pacing_path)]
     if len(set(resolved))!=3:_fail('DISTINCT_PATHS_REQUIRED')
+    # Reject paths that occupy another selected SQLite recovery file or the
+    # pacing ownership file before a provider read can be attempted.
+    companions=[]
+    for path in resolved:
+        companions.append({path.with_name(path.name+suffix) for suffix in ('-journal','-wal','-shm')})
+    companions[2].add(resolved[2].with_name(resolved[2].name+'.owner.lock'))
+    if any(selected in companions[index] for index in range(3) for selected in resolved if selected!=resolved[index]):
+        _fail('RELATED_PATHS_REQUIRED_DISTINCT')
     store=quotes.PaperQuoteStore(quote_store_path,expected_account_id,request_journal_path)
     gate=PaperReadPacing(pacing_path,expected_account_id)
     # Bind the selected local scope, not a portable path, file attestation,

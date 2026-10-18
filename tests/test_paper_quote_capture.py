@@ -41,7 +41,8 @@ def test_explicit_saved_capture_and_restart_status(vault,tmp_path):
     assert all(x not in json.dumps(r) for x in (KEY,SECRET,'cash','limit_price',str(tmp_path)))
 
 
-@pytest.mark.parametrize('change',('confirmation','request_head','quote_head','pacing_head','unknown_request','alias','source_path','capacity','corrupt'))
+@pytest.mark.parametrize('change',('confirmation','request_head','quote_head','pacing_head','unknown_request','alias',
+    'pacing_owner_alias','quote_rollback_alias','request_wal_alias','source_path','capacity','corrupt'))
 def test_denial_before_vault_or_network_or_file_creation(vault,tmp_path,monkeypatch,change):
     save();store,a=args(tmp_path)
     if change=='confirmation':a['confirm_read_only_paper']=False
@@ -50,6 +51,9 @@ def test_denial_before_vault_or_network_or_file_creation(vault,tmp_path,monkeypa
     if change=='pacing_head':a['expected_pacing_head']='f'*64
     if change=='unknown_request':a['client_order_id']='nx_unknown'
     if change=='alias':a['pacing_path']=store.path
+    if change=='pacing_owner_alias':a['quote_store_path']=Path(str(a['pacing_path'])+'.owner.lock')
+    if change=='quote_rollback_alias':a['pacing_path']=Path(str(a['quote_store_path'])+'-journal')
+    if change=='request_wal_alias':a['quote_store_path']=Path(str(a['request_journal_path'])+'-wal')
     if change=='source_path':a['quote_store_path']=Path(subject.__file__).parent/'capture.sqlite3'
     if change=='capacity':monkeypatch.setattr(quotes,'MAX_RECORDS',0)
     if change=='corrupt':store.path.write_bytes(b'PRIVATE CORRUPT')

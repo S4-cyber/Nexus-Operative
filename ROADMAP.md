@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.157.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.158.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.157 simplifies offline account-evidence review with explicit current-local-head sampling followed by the same strict pinned replay and final head checks. An optional public summary includes only bounded diagnostic counts, agreement booleans and a gross-difference label; identifiers, balances, amounts, dates, paths, hashes and private reasons are omitted. Standalone/installed smoke now executes eight child commands across five fixed tools and compares the public current-head result with the private pinned review. No source attestation, atomic cross-database snapshot, automatic retry, account/order/funding authority or release approval follows. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.158 records a public-source institutional development strategy and adds original bounded BTC/USD supplied execution-quality arithmetic: signed benchmark shortfall, delay/spread/residual decomposition, explicit USD fee assumptions and separate unfilled opportunity cost. Matching executions deduplicate; conflicting IDs, overfills, crossed quotes and invalid nanosecond ordering refuse. Missing fees and unfilled marks remain unknown. The capacity release profile now requires separate synthetic quality checks without claiming broker latency, causal impact, profit or routing. C++ candidates remain uninstalled and council output advisory. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD
@@ -99,26 +99,35 @@ Validate the fresh native EXE, ordinary profile, saved-choice upgrade, outage an
 
 ## Next sequence
 
-1. Verify all five EXE paper tools on standalone and installed Windows builds, including agreement between private pinned and public current-head account reviews, omitted private fields, no automatic retry or default-data/UI startup, real authenticated-encryption self-test and ordinary-user private-profile seal/unseal and account/key acceptance. Public current-head review requires v0.157+.
-2. Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.
-3. Accept request-journal-derived activity collection on authorized Windows paper data, including changed heads during reads/retention/acceptance and lost returns; original observations and local hashes remain unverified, and no fee, funds or routing authority follows.
-4. Use the private combined account-evidence review on authorized retained paper data: bind original requests, accepted fills and opening/closing inventory to common heads, investigate term violations and gross-only differences, and obtain separate source/fee/hold/funds acceptance before any routing.
-5. Accept bounded next-request recovery on an authorized Windows paper account with real retained request history, exact-head races, shared pacing, interruptions and original-ID outcomes. A local candidate is not permission; never auto-loop, clear uncertainty, resubmit or promote account/funds acceptance from read success.
-6. Accept the new confirmed paced paper BTC asset-field read on an authorized Windows paper account; independently review current minimum/increment semantics, stale metadata and account restrictions before any plan/routing integration. Reported asset fields do not prove entitlement or spending permission.
-7. Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.
-8. Collect and explicitly review retained public-feed paper observations using To Do Paper Trial Readiness; satisfy the72-hour/95% declared coverage diagnostic and obtain separate source, strategy, account, incident/recovery and independent acceptance. Passing local regression is not a launch-date estimate.
-9. Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.
-10. Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; exercise the repaired failed-reset durability boundary under native Windows storage faults and continue interrupted-acknowledgment recovery while preserving durable fencing.
-11. Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.
-12. Extend linked quote-model stress and independently review cost, liquidity and expiry assumptions.
-13. Extend sustained-load admission and recovery; validate physical offload and long-run costs while preserving IDs and audit evidence.
-14. Validate the opt-in BTC paper runner across sustained public feeds, outages and restart; integrate broader research-backed admission.
-15. Validate sustained local candidate refresh and independent walk-forward/cost evidence and reviewed optional local-weight runtime upgrades; never promote learned output automatically.
-16. Integrate the checked submission marker with a separately authorized paper-only transport; recheck permission after marker acknowledgment and before IO, recover by original ID after uncertain/lost acknowledgment, and accept real-account fill/fee/hold reconciliation before routing or policy promotion.
-17. Validate the explicit Windows paper credential/read controls in a real authorized paper account and review scoped-secret lifecycle; accept the journal-bound original-ID recovery coordinator against authorized paper data, then accept the bounded activity collector against authorized paper data, validate bounded local retention and implement authenticated source coverage and verified fee associations/timing, broker-wide pacing and cash/position/hold reconciliation before provider-paper routing; finish forward, packaging and independent release acceptance.
-18. Validate Found Markets on sustained real public feeds, missing data, outages and shared-IP budgets; add licensed/authorized asset connectors, leakage-free walk-forward cost evidence, calibrated forecasts, portfolio diversification and governed policy integration before any discovery-to-order route.
-19. Expand markets incrementally through verified data, legal eligibility, cost and paper-evidence gates.
-20. Evaluate free-tier computer-off hosting and secure headless operation without assuming anonymous hosting, free unlimited compute or automatic paid upgrades.
+1. Review INSTITUTIONAL_DESIGN.md and bind the offline execution-quality diagnostic to authorized exact-head paper-account evidence: contemporaneous benchmark/arrival quotes, explicit priced fills, clock-domain review and verified fee links. Then measure net execution costs and full-path latency before routing-policy or native C++ promotion.
+2. Verify all five EXE paper tools on standalone and installed Windows builds, including agreement between private pinned and public current-head account reviews, omitted private fields, no automatic retry or default-data/UI startup, real authenticated-encryption self-test and ordinary-user private-profile seal/unseal and account/key acceptance. Public current-head review requires v0.157+.
+3. Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.
+4. Accept request-journal-derived activity collection on authorized Windows paper data, including changed heads during reads/retention/acceptance and lost returns; original observations and local hashes remain unverified, and no fee, funds or routing authority follows.
+5. Use the private combined account-evidence review on authorized retained paper data: bind original requests, accepted fills and opening/closing inventory to common heads, investigate term violations and gross-only differences, and obtain separate source/fee/hold/funds acceptance before any routing.
+6. Accept bounded next-request recovery on an authorized Windows paper account with real retained request history, exact-head races, shared pacing, interruptions and original-ID outcomes. A local candidate is not permission; never auto-loop, clear uncertainty, resubmit or promote account/funds acceptance from read success.
+7. Accept the new confirmed paced paper BTC asset-field read on an authorized Windows paper account; independently review current minimum/increment semantics, stale metadata and account restrictions before any plan/routing integration. Reported asset fields do not prove entitlement or spending permission.
+8. Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.
+9. Collect and explicitly review retained public-feed paper observations using To Do Paper Trial Readiness; satisfy the72-hour/95% declared coverage diagnostic and obtain separate source, strategy, account, incident/recovery and independent acceptance. Passing local regression is not a launch-date estimate.
+10. Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.
+11. Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; exercise the repaired failed-reset durability boundary under native Windows storage faults and continue interrupted-acknowledgment recovery while preserving durable fencing.
+12. Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.
+13. Extend linked quote-model stress and independently review cost, liquidity and expiry assumptions.
+14. Extend sustained-load admission and recovery; validate physical offload and long-run costs while preserving IDs and audit evidence.
+15. Validate the opt-in BTC paper runner across sustained public feeds, outages and restart; integrate broader research-backed admission.
+16. Validate sustained local candidate refresh and independent walk-forward/cost evidence and reviewed optional local-weight runtime upgrades; never promote learned output automatically.
+17. Integrate the checked submission marker with a separately authorized paper-only transport; recheck permission after marker acknowledgment and before IO, recover by original ID after uncertain/lost acknowledgment, and accept real-account fill/fee/hold reconciliation before routing or policy promotion.
+18. Validate the explicit Windows paper credential/read controls in a real authorized paper account and review scoped-secret lifecycle; accept the journal-bound original-ID recovery coordinator against authorized paper data, then accept the bounded activity collector against authorized paper data, validate bounded local retention and implement authenticated source coverage and verified fee associations/timing, broker-wide pacing and cash/position/hold reconciliation before provider-paper routing; finish forward, packaging and independent release acceptance.
+19. Validate Found Markets on sustained real public feeds, missing data, outages and shared-IP budgets; add licensed/authorized asset connectors, leakage-free walk-forward cost evidence, calibrated forecasts, portfolio diversification and governed policy integration before any discovery-to-order route.
+20. Expand markets incrementally through verified data, legal eligibility, cost and paper-evidence gates.
+21. Evaluate free-tier computer-off hosting and secure headless operation without assuming anonymous hosting, free unlimited compute or automatic paid upgrades.
+
+## Institutional design strategy
+
+See [INSTITUTIONAL_DESIGN.md](INSTITUTIONAL_DESIGN.md) for the dated public-source comparison of AIM/PORT/EMSX, FlexTRADER, Charles River, Iress, Tbricks, quantitative execution research, IBKR and licensed C++ candidates.
+
+Implemented: original bounded offline BTC/USD execution-quality arithmetic with explicit unknown costs, duplicate/conflict checks, nanosecond input ordering and a synthetic release fixture. Planned: exact-head accepted paper-evidence integration, event-driven adapters, cost-aware expiring proposals, shared account reservations, measured route selection and selective native acceleration.
+
+Council research remains advisory. Independent deterministic risk/stop checks and one execution owner per account are the target execution design. No proprietary code import, native C++ execution core, nanosecond broker-fill claim, broker routing, guaranteed growth or automatic policy promotion is implemented.
 
 ## Explicit expansion and cloud goals
 

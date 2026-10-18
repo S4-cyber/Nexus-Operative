@@ -562,7 +562,8 @@ def _execute(profile):
         return run()
     if profile == 'capacity':
         from nexus.durable_benchmark import benchmark
-        return benchmark(30)
+        from nexus.execution_quality import fixture_report
+        result=benchmark(30);result['execution_quality']=fixture_report();return result
     if profile == 'http': return _http_trial()
     if profile == 'pacing': return _pacing_trial()
     if profile == 'inspection_inventory': return _inspection_inventory_trial()
@@ -588,6 +589,11 @@ def _validate(profile, result):
     _require(profile in PROFILES and isinstance(result, dict), 'RESULT_SHAPE')
     # Each profile has explicit acceptance assertions; process exit 0 alone is insufficient.
     if profile == 'capacity':
+        from nexus.execution_quality import CHECKS as QUALITY_CHECKS, FLAGS as QUALITY_FLAGS
+        quality=result['execution_quality']
+        _require(quality['source']=='SYNTHETIC_EXECUTION_QUALITY_FIXTURE' and quality['passed'] is True and
+            all(quality[k] is True for k in QUALITY_CHECKS),'EXECUTION_QUALITY')
+        _require(all(quality[k] is False for k in QUALITY_FLAGS),'EXECUTION_QUALITY_AUTHORITY')
         _require(len(result['treatments']) == 4, 'CAPACITY_TREATMENTS')
         _require(all(t['accounting_consistent'] is True and t['broker_orders'] == 0 and t['cycles'] == 30
                      for t in result['treatments']), 'CAPACITY_ACCOUNTING')

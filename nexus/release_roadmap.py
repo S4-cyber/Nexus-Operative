@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.157.0'
+REVISION = '0.158.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -109,6 +109,7 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
+    'Review INSTITUTIONAL_DESIGN.md and bind the offline execution-quality diagnostic to authorized exact-head paper-account evidence: contemporaneous benchmark/arrival quotes, explicit priced fills, clock-domain review and verified fee links. Then measure net execution costs and full-path latency before routing-policy or native C++ promotion.',
     'Verify all five EXE paper tools on standalone and installed Windows builds, including agreement between private pinned and public current-head account reviews, omitted private fields, no automatic retry or default-data/UI startup, real authenticated-encryption self-test and ordinary-user private-profile seal/unseal and account/key acceptance. Public current-head review requires v0.157+.',
     'Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.',
     'Accept request-journal-derived activity collection on authorized Windows paper data, including changed heads during reads/retention/acceptance and lost returns; original observations and local hashes remain unverified, and no fee, funds or routing authority follows.',
@@ -138,6 +139,11 @@ def snapshot():
                 current_hardening=CURRENT_HARDENING,progress_estimate=progress_estimate(),launch_assessment=dict(stage='EXPERIMENTAL_LOCAL_PAPER_PREPRODUCTION',full_release_date_established=False,percentage_complete_established=False,rough_engineering_estimate_available=True,next_major_gate='CONNECTED_BROKER_PAPER_AND_SUSTAINED_TRIAL_ACCEPTANCE',minimum_coverage_window_hours=72,coverage_is_release_acceptance=False),first_run_setup=dict(FIRST_RUN),
                 opportunity_discovery=dict(implemented=True,scope='USD spot crypto research only',default_with_portal=True,burst_seconds=900,markets_per_burst=4,requests_per_hour_shared_local_data_root=36,durable_request_admissions=True,provider_or_ip_wide_budget_verified=False,selected_market_limit=6,summary_limit=256,stored_in_process_memory=True,execution_integration=False,forecasts_validated=False),
                 production_user_flow=list(PRODUCTION_USER_FLOW),live_workflow_available=False,
+                institutional_design=dict(document='INSTITUTIONAL_DESIGN.md',status='PUBLIC_DESIGN_REVIEW_OFFLINE_FOUNDATION',
+                    execution_quality='BOUNDED_SUPPLIED_BTC_USD_SHORTFALL_DIAGNOSTIC',council_role='ADVISORY_OUTSIDE_EXECUTION_LOOP',
+                    target_executor='DETERMINISTIC_SHARED_ACCOUNT_RISK_AND_SINGLE_EXECUTION_OWNER',
+                    native_cpp_core_implemented=False,nanosecond_execution_verified=False,proprietary_code_imported=False,
+                    automatic_policy_promotion=False,order_routing_enabled=False),
                 delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
                 production_scope='Secure provider-held funding, governed autonomous execution and computer-off operation are product goals. All agreed production workflows require acceptance before 1.0; live activation always requires separate authorization.',
                 settings_scope='TARGET_DESIGN_NOT_EFFECTIVE_RUNTIME', settings=dict(SETTINGS), milestones=[asdict(m) for m in MILESTONES], next_steps=list(NEXT),
@@ -150,7 +156,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.157 simplifies offline account-evidence review with explicit current-local-head sampling followed by the same strict pinned replay and final head checks. An optional public summary includes only bounded diagnostic counts, agreement booleans and a gross-difference label; identifiers, balances, amounts, dates, paths, hashes and private reasons are omitted. Standalone/installed smoke now executes eight child commands across five fixed tools and compares the public current-head result with the private pinned review. No source attestation, atomic cross-database snapshot, automatic retry, account/order/funding authority or release approval follows. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.158 records a public-source institutional development strategy and adds original bounded BTC/USD supplied execution-quality arithmetic: signed benchmark shortfall, delay/spread/residual decomposition, explicit USD fee assumptions and separate unfilled opportunity cost. Matching executions deduplicate; conflicting IDs, overfills, crossed quotes and invalid nanosecond ordering refuse. Missing fees and unfilled marks remain unknown. The capacity release profile now requires separate synthetic quality checks without claiming broker latency, causal impact, profit or routing. C++ candidates remain uninstalled and council output advisory. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():
@@ -176,6 +182,10 @@ def markdown():
         'Defaults: $10,000 virtual budget; Terrestrial entry allowance; BTC hourly research with1,000 bars; bounded public-history collection and included numerical models. Solar/Universal, paid AI and provider accounts are optional. Existing settings, explicit OFF selections and retained accounting/stop history are preserved. Compatible unused virtual accounting is created only on confirmed Engage; sessions never restart automatically.',
         '', 'Every To Do checkbox explains what it checks, why it matters and whether it is included, required for saving/paper configuration, created on Engage, optional or future work. Optional and future boxes may stay unticked.', '',FIRST_RUN['acceptance']]
     lines += ['','## Next sequence','']+[f'{i}. {step}' for i,step in enumerate(NEXT,1)]
+    lines += ['','## Institutional design strategy','',
+        'See [INSTITUTIONAL_DESIGN.md](INSTITUTIONAL_DESIGN.md) for the dated public-source comparison of AIM/PORT/EMSX, FlexTRADER, Charles River, Iress, Tbricks, quantitative execution research, IBKR and licensed C++ candidates.',
+        '', 'Implemented: original bounded offline BTC/USD execution-quality arithmetic with explicit unknown costs, duplicate/conflict checks, nanosecond input ordering and a synthetic release fixture. Planned: exact-head accepted paper-evidence integration, event-driven adapters, cost-aware expiring proposals, shared account reservations, measured route selection and selective native acceleration.',
+        '', 'Council research remains advisory. Independent deterministic risk/stop checks and one execution owner per account are the target execution design. No proprietary code import, native C++ execution core, nanosecond broker-fill claim, broker routing, guaranteed growth or automatic policy promotion is implemented.']
     lines += ['','## Explicit expansion and cloud goals','']
     for goal in d['strategic_goals']:
         lines += [f"- {goal['id']}: {goal['title']} — {goal['status']}. {goal['goal']}"]

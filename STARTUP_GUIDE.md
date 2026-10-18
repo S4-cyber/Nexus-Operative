@@ -302,3 +302,10 @@ You can ask the reviewer to use the current local journal fingerprints instead o
 4. Add `--opening-encrypted` / `--closing-encrypted` for encrypted observation copies. Passwords use hidden terminal prompts; reviews decrypt in memory without writing plaintext files. The public summary never prints the password or decrypted observation.
 
 The summary reports `NO_GROSS_DIFFERENCE`, `DIFFERENCES_PRESENT` or `NOT_EVALUATED`. These compare gross fills only: no difference does not mean zero fees, profit or money available to spend. An individual fill can still violate its original terms even when the gross balance matches. All results remain `REVIEW_REQUIRED` and grant no trading, funding or release permission. These optional operator diagnostics are not required first-run setup steps.
+
+
+### Institutional mechanics, simple personal operation
+
+See [INSTITUTIONAL_DESIGN.md](INSTITUTIONAL_DESIGN.md) for our public research and staged execution strategy. The intended experience stays simple: supported account, risk choice, Portal checks and separate Engage. The complexity belongs behind those controls.
+
+The new offline execution-quality diagnostic checks whether supplied executions were better or worse than the price benchmark when a decision was made. It separates waiting, spread, later price differences, explicit fees and unfilled quantities. Unknown fees stay unknown. A negative cost comparison is not profit, and nanosecond event timestamps do not imply nanosecond broker fills. `python -m nexus.execution_quality` runs a synthetic self-test only; this is not a new EXE paper-tool command, mandatory setup task or trading permission. Actual broker-evidence/UI integration and measured routing remain future work.

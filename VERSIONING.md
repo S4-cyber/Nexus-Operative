@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.157.0 (pre-release).** The offline account-evidence reviewer supports explicitly sampled current journal fingerprints and an allowlisted public diagnostic summary. Pinned private review remains available; changed histories fail without retry, and the public output omits identifiers, amounts, dates, paths, hashes and private reasons. Native packaging and real account acceptance remain separate.
+**Current development build: 0.158.0 (pre-release).** Institutional public-design research is preserved in INSTITUTIONAL_DESIGN.md and the read-only roadmap. An original bounded offline execution-quality diagnostic separates decision/arrival/spread/residual costs, explicit supplied fees and unfilled opportunity cost. No broker, learned-policy, native C++ or live authority is added; exact-source CI and actual paper acceptance remain required.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

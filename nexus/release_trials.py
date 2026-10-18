@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection')
 
 
 def _require(condition, code):
@@ -143,6 +143,9 @@ def _execute(profile):
         return benchmark(30)
     if profile == 'http': return _http_trial()
     if profile == 'pacing': return _pacing_trial()
+    if profile == 'collection':
+        from nexus.activity_collection_evidence import fixture_report
+        return fixture_report()
     if profile == 'balance':
         from nexus.broker_balance_review import fixture_report
         return fixture_report()
@@ -167,6 +170,12 @@ def _validate(profile, result):
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
+    if profile == 'collection':
+        _require(result['get_requests'] == 4 and result['retained_activities'] == 200 and
+            result['retained_observations'] == 1 and result['retained_pages'] == 2, 'COLLECTION_RETENTION')
+        _require(result['page_cap_reported'] is True and result['cursor_chain_preserved'] is True, 'COLLECTION_SCOPE')
+        _require(all(result[k] is False for k in ('source_attested', 'activity_coverage_verified',
+            'ready_for_routing', 'automatic_continuation')), 'COLLECTION_AUTHORITY')
     if profile == 'balance':
         reviewed = result['review']
         _require(reviewed['balance_projection_evaluated'] is True and

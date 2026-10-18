@@ -69,10 +69,12 @@ def collect_activities(api_key, api_secret, orders, *, expected_account_id, afte
         pacing=pacing, expected_account_id=expected_account_id)
     account = adapter._uuid(expected_account_id)
     if activity_store is not None:
-        from nexus.broker_activity_store import BrokerActivityStore
+        from nexus.broker_activity_store import BrokerActivityStore, MAX_BATCHES
         if type(activity_store) is not BrokerActivityStore or activity_store.account != account:
             _fail('RETENTION_ACCOUNT_OR_TYPE')
-        activity_store.inspect()  # Missing state stays missing; corrupt history blocks IO.
+        retained = activity_store.inspect()  # Missing stays missing; corrupt history blocks IO.
+        if retained['retained_batches'] >= MAX_BATCHES:
+            _fail('RETENTION_BATCH_CAP_REVIEW')
     _, end = _window(after, until)
     # Snapshot caller terms once, before network work. Scalars are immutable;
     # validate the bounded copy again rather than borrowing a caller's live list.
@@ -86,14 +88,19 @@ def collect_activities(api_key, api_secret, orders, *, expected_account_id, afte
         if end > started: _fail('FUTURE_CREATION_WINDOW')
         before = transport._account(session.get(transport.URLS[0]))
         if before['id'] != account: _fail('ACCOUNT_ID_DISAGREEMENT')
-        rows = []; page_counts = []; seen = set(); cursor = None; end_observed = False
+        rows = []; page_counts = []; page_observations = []; seen = set(); cursor = None; end_observed = False
         report = None
         for _ in range(PAGE_LIMIT):
+            requested = session.evaluated_at()
             page = session.get(activity_url(after, until, cursor))
+            received = session.evaluated_at()
             if not isinstance(page, list) or len(page) > PAGE_SIZE: _fail('PAGE_SHAPE_OR_CAP')
             # Validate a page and the full accumulated set before admitting any
             # next request. This also rejects overlapping-ID conflicts.
             report = adapter.normalize(rows + page, frozen_orders, expected_account_id=account)
+            from nexus.activity_collection_evidence import page_observation
+            page_observations.append(page_observation(page, report['normalized_activities'], after=after, until=until,
+                request_cursor=cursor, requested_at=requested, received_at=received))
             ids = [adapter._id(row.get('id')) for row in page]
             if ids and ids[-1] in seen: _fail('CURSOR_NO_PROGRESS')
             rows.extend(page); page_counts.append(len(page)); seen.update(ids)
@@ -106,12 +113,17 @@ def collect_activities(api_key, api_secret, orders, *, expected_account_id, afte
         if before != after_account: _fail('ACCOUNT_CHANGED_DURING_READ')
         if credential_check() is not True: _fail('CREDENTIALS_CHANGED')
         completed = session.evaluated_at()
+        from nexus.activity_collection_evidence import SCHEMA, validate
+        observation = dict(schema=SCHEMA, declared_transport='INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_READS',
+            read_started_at=started, read_completed_at=completed, account_fields_sha256=sha(before), pages=page_observations)
+        observation = validate(observation, dict(activities=report['normalized_activities']), after=after, until=until)
         retention = None
         if activity_store is not None:
             def admission():
                 session.checkpoint()
                 return credential_check() is True
-            retention = activity_store.retain(rows, frozen_orders, after=after, until=until, admission=admission)
+            retention = activity_store.retain(rows, frozen_orders, after=after, until=until, admission=admission,
+                                              collection_observation=observation)
             # A post-commit fault may lose the return, never the retained receipt.
             if admission() is not True: _fail('CREDENTIALS_CHANGED')
             completed = session.evaluated_at()
@@ -123,7 +135,7 @@ def collect_activities(api_key, api_secret, orders, *, expected_account_id, afte
                     end_of_page_sequence_observed=end_observed, collection_limit_reached=not end_observed,
                     continuation_hint=None if end_observed else dict(scope_sha256=sha(scope), page_token=cursor),
                     activity_normalization=report, account_fields_double_checked=True, atomic_snapshot=False,
-                    local_retention=retention,
+                    local_retention=retention, collection_observation=observation, collection_source_attested=False,
                     automatic_continuation=False, automatic_retry=False, activity_coverage_verified=False,
                     fee_coverage_complete=False, broker_account_reconciled=False, spendable_funds_verified=False,
                     ready_for_routing=False, broker_connected=False, live_orders_enabled=False, ledger_applied=False,

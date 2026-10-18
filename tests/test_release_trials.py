@@ -103,3 +103,12 @@ def test_balance_trial_requires_both_accounting_and_negative_fences_without_spen
     for field in ('missing_available_btc_is_unknown','cash_disagreement_detected'):
         altered=copy.deepcopy(result);altered['negative_checks'][field]=False
         with pytest.raises(ValueError,match='BALANCE_NEGATIVE_FENCES'): trials._validate('balance',altered)
+
+
+def test_collection_trial_keeps_page_cap_and_cursor_evidence_without_coverage_authority():
+    from nexus.activity_collection_evidence import fixture_report
+    result=fixture_report();trials._validate('collection',result)
+    for field in ('source_attested','activity_coverage_verified','ready_for_routing','automatic_continuation'):
+        with pytest.raises(ValueError,match='COLLECTION_AUTHORITY'): trials._validate('collection',dict(result,**{field:True}))
+    with pytest.raises(ValueError,match='COLLECTION_SCOPE'): trials._validate('collection',dict(result,cursor_chain_preserved=False))
+    with pytest.raises(ValueError,match='COLLECTION_RETENTION'): trials._validate('collection',dict(result,retained_pages=1))

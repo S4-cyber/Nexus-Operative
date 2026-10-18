@@ -64,6 +64,14 @@ def review(store):
             reasons.add('MERGED_ACTIVITY_INPUT_LIMIT_OR_DISAGREEMENT')
         else:
             reasons.update(normalization['review_reasons'])
+    observations = [r['collection_observation'] for r in retained['receipts'].values() if 'collection_observation' in r]
+    if observations: reasons.add('COLLECTION_OBSERVATIONS_NOT_SOURCE_ATTESTATIONS')
+    observation_review = dict(retained_observations=len(observations),
+        batches_without_observations=len(retained['receipts'])-len(observations),
+        declared_transports=sorted({r['declared_transport'] for r in observations}),
+        retained_pages=sum(len(r['pages']) for r in observations),
+        short_last_page_observed=sum(len(r['pages'][-1]['activity_ids']) < 100 for r in observations),
+        source_attested=False, activity_coverage_verified=False, automatic_continuation=False)
     components = []; gaps = []
     for start, end in sorted(windows):
         if not components or start > components[-1]['until']:
@@ -81,6 +89,7 @@ def review(store):
         ambiguous_order_ids=ambiguous, snapshot_revision_order_ids=sorted(set(regressed)),
         snapshot_selection='REPORTED_UPDATED_AT_DIAGNOSTIC_ONLY',
         normalization_evaluated=normalization is not None, activity_normalization=normalization,
+        collection_observation_review=observation_review,
         requested_window_review=dict(scope='CALLER_DECLARED_CREATION_WINDOWS_ONLY',
             unique_windows=len(windows), components=components, gaps_between_requested_windows=gaps,
             boundary_semantics_verified=False, activity_coverage_verified=False),

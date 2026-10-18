@@ -105,7 +105,7 @@ class BrokerActivityStore:
             if index == 0:
                 if body != dict(schema=SCHEMA, account_sha256=self.account_digest): _fail('ACCOUNT_OR_SCHEMA')
             else:
-                if not isinstance(body, dict) or set(body) != {'after', 'until', 'orders', 'activity_ids', 'new_activities', 'receipt_id'}: _fail('PAYLOAD_INVALID')
+                if not isinstance(body, dict) or set(body) not in ({'after', 'until', 'orders', 'activity_ids', 'new_activities', 'receipt_id'}, {'after', 'until', 'orders', 'activity_ids', 'new_activities', 'receipt_id', 'collection_observation'}): _fail('PAYLOAD_INVALID')
                 _window(body['after'], body['until'])
                 ids = body['activity_ids']; added = body['new_activities']
                 if not isinstance(ids, list) or len(ids) > MAX_ACTIVITIES or ids != sorted(set(ids)): _fail('IDENTITY_LIST_INVALID')
@@ -121,14 +121,20 @@ class BrokerActivityStore:
                         [dict(order, symbol='BTC/USD') for order in body['orders']], self.account)
                 except (KeyError, TypeError, AttributeError): _fail('PAYLOAD_INVALID')
                 if data != dict(orders=body['orders'], activities=selected): _fail('NONCANONICAL_INPUT')
-                identity = sha(dict(account_sha256=self.account_digest, after=body['after'], until=body['until'], **data))
+                observation = {}
+                if 'collection_observation' in body:
+                    from nexus.activity_collection_evidence import validate
+                    checked = validate(body['collection_observation'], data, after=body['after'], until=body['until'])
+                    if checked != body['collection_observation']: _fail('NONCANONICAL_OBSERVATION')
+                    observation = dict(collection_observation=checked)
+                identity = sha(dict(account_sha256=self.account_digest, after=body['after'], until=body['until'], **data, **observation))
                 if body['receipt_id'] != identity or identity in receipts: _fail('RECEIPT_ID_DISAGREEMENT')
                 for order in data['orders']:
                     oid = order['broker_order_id']; binding = (order['client_order_id'], order['side'])
                     if oid in bindings and bindings[oid] != binding: _fail('ORDER_BINDING_CONFLICT')
                     if binding[0] in clients and clients[binding[0]] != oid: _fail('CLIENT_BINDING_CONFLICT')
                     bindings[oid] = binding; clients[binding[0]] = oid
-                receipts[identity] = dict(after=body['after'], until=body['until'], activity_ids=ids, orders=data['orders'])
+                receipts[identity] = dict(after=body['after'], until=body['until'], activity_ids=ids, orders=data['orders'], **observation)
             previous = digest
         return activities, receipts, previous, total
 
@@ -148,13 +154,14 @@ class BrokerActivityStore:
     def _report(self, activities, receipts, head):
         return dict(mode='UNATTESTED_LOCAL_PAPER_ACTIVITY_RETENTION', account_sha256=self.account_digest,
             head_sha256=head, retained_batches=len(receipts), retained_activities=len(activities),
-            receipts=receipts, normalized_activities=[activities[key] for key in sorted(activities)],
+            retained_collection_observations=sum('collection_observation' in r for r in receipts.values()),
+            collection_source_attested=False, receipts=receipts, normalized_activities=[activities[key] for key in sorted(activities)],
             source='SUPPLIED_UNATTESTED', activity_coverage_verified=False, fee_coverage_complete=False,
             broker_account_reconciled=False, spendable_funds_verified=False, ledger_applied=False,
             broker_connected=False, ready_for_routing=False, live_orders_enabled=False, automatic_continuation=False,
             limitations='Local integrity replay only; no source attestation, complete coverage, verified fee links, posting instants, resume permission or protection from valid-tail deletion. No eviction or repair.')
 
-    def retain(self, activities, orders, *, after, until, admission=lambda: True):
+    def retain(self, activities, orders, *, after, until, admission=lambda: True, collection_observation=None):
         """Commit a validated batch atomically; exact replay appends nothing.
 
         Internal admission hook is rechecked under the write lock and before commit.
@@ -162,7 +169,11 @@ class BrokerActivityStore:
         """
         _window(after, until)
         data = _inputs(activities, orders, self.account)
-        identity = sha(dict(account_sha256=self.account_digest, after=after, until=until, **data))
+        observation = {}
+        if collection_observation is not None:
+            from nexus.activity_collection_evidence import validate
+            observation = dict(collection_observation=validate(collection_observation, data, after=after, until=until))
+        identity = sha(dict(account_sha256=self.account_digest, after=after, until=until, **data, **observation))
         with closing(self._connect(write=True)) as db:
             with db:
                 retained, receipts, head, total = self._load(db)
@@ -176,7 +187,7 @@ class BrokerActivityStore:
                     if key in retained and retained[key] != record: _fail('ACTIVITY_CONFLICT')
                     if key not in retained: added.append(record)
                 body = dict(after=after, until=until, orders=data['orders'],
-                    activity_ids=[r['activity_id'] for r in data['activities']], new_activities=added, receipt_id=identity)
+                    activity_ids=[r['activity_id'] for r in data['activities']], new_activities=added, receipt_id=identity, **observation)
                 if total + len(canonical(body).encode()) > MAX_RETAINED_BYTES: _fail('RETAINED_BYTE_CAP')
                 head = self._insert(db, len(receipts) + 1, body, head)
                 self._load(db)  # Revalidate cross-batch identity/binding and all caps before acknowledgment.

@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.104.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.105.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -23,6 +23,7 @@ The trial command uses separate temporary child-process data roots and never sta
 | Retained activity merge | Two synthetic partial-fill batches, evolving order snapshots and unlinked fee debits through real temporary retention/replay/review | Combined explicit fills agree with supplied order quantities/prices; coverage and fee-link flags stay unverified | Actual broker activity completeness, correction semantics, fee links or reconciled spending |
 | Local paper-read pacing | Temporary account-bound journals, fixed-clock success/rate/auth/pending outcomes, owned interruption/full-day cooldown and fresh-instance replay | Local cooldown and review blocks remain retained | Actual provider quotas, default runtime adoption, owner-profile recovery acceptance or distributed ownership |
 | Combined supplied balance review | Explicit linked-fill/fee cash path against supplied total cash/BTC, separate availability/open terms, missing-availability and cash-mismatch negative controls | Supplied arithmetic and review conditions remain distinct from permissions | Authenticated source/order/activity/fee coverage, actual provider holds, reconciled account or spendable funds |
+| Collection observation retention | Four injected GETs, two full activity pages, actual normalization/atomic receipt/restart review with preserved cursor chain and page cap | Bounded page observations survive local retention without duplicating global activity payloads | Actual account/source attestation, pagination completeness, corrected records, execution-linked fees or spendable funds |
 | HTTP startup/shutdown | Actual loopback TCP server/lifespan and status, roadmap, To Do, root redirect markup and Portal HTML requests | Fresh source-process startup stays stopped, creates no accounting data and performs no external connection/vault access during checked reads; server shuts down | Rendered browser interaction, installed Windows desktop behavior, existing-account migration or actual provider access |
 
 The HTTP trial denies/counts non-loopback connections and keyring operations in its disposable child. It checks the actual Portal asset separately from root meta-refresh markup. Other trial profiles use the established injected/scripted fixtures; these are not claimed to have a system-wide network sandbox. Sample counts and modeled liquidity are explicit. Zero exit alone does not certify a profile. No trial grants order, funding, model promotion, resume or release authority.
@@ -32,8 +33,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_104_0.json`; exact new-source Windows trials must still run |
-| Windows packaging and data recovery | v0.102.0 verified; current source pending | Exact commit `baa86cd70d13d076d53d12a0c637d5a99ab41a0b`: packaging run39084650863/job117548572314 and safety/browser run39084650876/job117548572309 passed; newer source requires its own runs |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_105_0.json`; exact new-source Windows trials must still run |
+| Windows packaging and data recovery | v0.103.0 verified; current source pending | Exact commit `909259e516d91fc9bab44ce5ef514de84f3ee176`: packaging run39085154378/job117550190315 and safety/browser run39085154354/job117550035630 passed; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |
@@ -64,3 +65,5 @@ Shared local pacing (v0.102) is optional/internal and has no default runtime pat
 Owned interruption (v0.103) adds explicit local account/head/token/OS-ownership-fenced review with an unknown outcome and full-day cooldown. Legacy unowned pending reads and completed auth/review blocks remain blocked; source/profile/account quota and independent recovery acceptance are still open. The operation never resumes automatically or clears uncertain original-order evidence.
 
 Combined supplied balance review (v0.104) never closes the account/hold/spending gate. It compares total holdings separately from availability and open IOC term caps, with no network/storage/runtime registration. All actual broker coverage and financial reconciliation acceptance remains open.
+
+Collection observations (v0.105) retain declared transport/page/cursor/time/content metadata inside atomic activity receipts. A transport label is not a durable source attestation; short pages, successful reads and hashes never establish complete coverage or order authority. Failed/incomplete collections do not write partial observations; absence of a receipt is not proof of no read attempt.

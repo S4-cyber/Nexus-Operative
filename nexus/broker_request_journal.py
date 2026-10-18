@@ -199,7 +199,21 @@ class BrokerRequestJournal:
                     submission_attempt_marked=request['uncertain'],lookup=dict(attempts=request['lookup']['attempts'],attempt_limit=lookup.MAX_LOOKUPS_PER_REQUEST,pending=request['lookup']['pending'] is not None,next_allowed_at=request['lookup']['next_at'],review_blocked=request['lookup']['blocked'],interruptions=request['lookup']['interruptions'],last_outcome=request['lookup']['last_outcome']),automatic_retry=False,sendable=False,
                     broker_connected=False,ledger_applied=False,broker_account_reconciled=False)
 
-    def _write(self, kind, body):
+    @staticmethod
+    def _recovery_reserve(requests):
+        # Protect a next original-ID lookup begin/result pair for each unresolved
+        # attempt. A pending lookup already consumed begin and needs one result.
+        return sum(1 if r['lookup']['pending'] else 2 for r in requests.values()
+            if r['uncertain'] and not ((r['tracker'].status()['latest'] or {}).get('terminal',False)))
+
+    @classmethod
+    def _capacity(cls,requests,count):
+        remaining=max(0,MAX_EVENTS-count);reserved=cls._recovery_reserve(requests)
+        return dict(event_slots_remaining=remaining,recovery_slots_reserved=reserved,
+            ordinary_event_slots_remaining=max(0,remaining-reserved),recovery_reserve_deficit=max(0,reserved-remaining),
+            scope='Local event headroom only; no byte/disk/provider quota guarantee, reservation ownership, order routing or resubmission permission.')
+
+    def _write(self, kind, body, *, expected_head=None, expected_payload_sha256=None, admission=None):
         if kind!='PREPARE' and not self.path.exists():
             raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         with closing(self._connect(write=True)) as db:
@@ -207,6 +221,12 @@ class BrokerRequestJournal:
                 requests,broker_ids,count,previous=self._load(db)
                 identity=body['payload']['client_order_id'] if kind=='PREPARE' else body['client_order_id']
                 existing=requests.get(identity)
+                if expected_head is not None:
+                    if previous!=expected_head:raise ValueError('BROKER_SUBMISSION_HEAD_CHANGED')
+                    if not existing or existing['plan']['payload_sha256']!=expected_payload_sha256:raise ValueError('BROKER_SUBMISSION_TERMS_CHANGED')
+                    if existing['uncertain']:raise ValueError('BROKER_SUBMISSION_ALREADY_MARKED_LOOKUP_REQUIRED')
+                    if any(r['lookup']['blocked'] for r in requests.values()):raise ValueError('BROKER_SUBMISSION_ACCOUNT_REVIEW_REQUIRED')
+                admitted=lookup.clock(admission()) if admission is not None else None
                 if any(r['lookup']['pending'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_PENDING_REVIEW_REQUIRED')
                 duplicate=False
                 if kind=='PREPARE' and existing:
@@ -221,8 +241,14 @@ class BrokerRequestJournal:
                     duplicate=contract.normalize(raw,existing['plan']['payload'])==existing['tracker'].status()['latest']
                 if not duplicate:
                     if count>=MAX_EVENTS:raise ValueError('BROKER_JOURNAL_EVENT_CAP')
+                    reserved_before=self._recovery_reserve(requests)
                     self._apply(requests,broker_ids,kind,body)
+                    reserved_after=self._recovery_reserve(requests)
+                    # A terminal observation releases its own reserve. Preserve
+                    # that cleanup path even when older history has a deficit.
+                    if count+1+reserved_after>MAX_EVENTS and reserved_after>=reserved_before:raise ValueError('BROKER_JOURNAL_RECOVERY_RESERVE')
                     self._insert(db,count+1,kind,body,previous)
+                if admission is not None and lookup.clock(admission())<admitted:raise ValueError('BROKER_SUBMISSION_CLOCK_REGRESSION')
                 db.commit()  # Never acknowledge a request/observation before its commit returns.
                 return dict(**self._summary(identity,requests[identity]),duplicate=duplicate)
             except BaseException:db.rollback();raise
@@ -232,6 +258,21 @@ class BrokerRequestJournal:
     def mark_submission_uncertain(self, client_order_id):
         self._identity(client_order_id)
         return self._write('SUBMISSION_UNCERTAIN',dict(client_order_id=client_order_id))
+
+    def begin_submission_checked(self,client_order_id,*,expected_head,expected_payload_sha256,admission):
+        """One new durable attempt marker only; no transport or send permission.
+
+        Check caller admission after SQLite write ownership and before commit.
+        Lost return/duplicate calls must use original-ID recovery, never resend.
+        """
+        self._identity(client_order_id)
+        if not callable(admission):raise ValueError('BROKER_SUBMISSION_ADMISSION_REQUIRED')
+        for value in (expected_head,expected_payload_sha256):
+            if type(value) is not str or re.fullmatch('[0-9a-f]{64}',value) is None:raise ValueError('BROKER_SUBMISSION_REFERENCE_INVALID')
+        result=self._write('SUBMISSION_UNCERTAIN',dict(client_order_id=client_order_id),
+            expected_head=expected_head,expected_payload_sha256=expected_payload_sha256,admission=admission)
+        return dict(**result,attempt_marker_commit_observed=True,transport_invoked=False,
+            routing_authorized=False,live_orders_enabled=False)
 
     @staticmethod
     def _identity(value):
@@ -256,7 +297,8 @@ class BrokerRequestJournal:
                 if result is None:
                     kind='LOOKUP_BEGIN'
                     # Keep a completion slot; ordinary writes are fenced while pending.
-                    if count+2>MAX_EVENTS:raise ValueError('BROKER_JOURNAL_LOOKUP_COMPLETION_RESERVE')
+                    others={key:value for key,value in requests.items() if key!=identity}
+                    if count+2+self._recovery_reserve(others)>MAX_EVENTS:raise ValueError('BROKER_JOURNAL_LOOKUP_COMPLETION_RESERVE')
                     token=contract.sha(dict(account=self.account_digest,client_order_id=identity,attempt=state['attempts']+1,evaluated_at=now))
                     body=dict(client_order_id=identity,token=token,evaluated_at=now)
                 else:
@@ -354,10 +396,52 @@ class BrokerRequestJournal:
         else:
             with closing(self._connect()) as db:requests,_,count,head=self._load(db)
         return dict(mode='DISCONNECTED_DURABLE_BROKER_REQUEST_DIAGNOSTIC',requests=[self._summary(k,v) for k,v in requests.items()],
-                    retained_events=count,head_sha256=head,automatic_resume=False,automatic_submission=False,
+                    retained_events=count,head_sha256=head,capacity=self._capacity(requests,count),automatic_resume=False,automatic_submission=False,
                     broker_connected=False,live_orders_enabled=False,ledger_applied=False,
                     limits=dict(requests=MAX_REQUESTS,events=MAX_EVENTS,database_bytes=MAX_DATABASE_BYTES),
                     scope='Caller-supplied paper account and order observations only. Hash-chain replay is local consistency, not broker attestation, encryption, account reconciliation or proof against tail deletion.')
+
+
+def submission_admission_fixture():
+    """Disposable composition; no transport, credentials or runtime path."""
+    asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,fractionable=True,
+        min_order_size='.5',min_trade_increment='.5',price_increment='.5')
+    original=contract.preview('nx_admission_fixture','BTC-USD','BUY','2','100',asset,metadata_at=1000,evaluated_at=1001)
+    with tempfile.TemporaryDirectory(prefix='nexus-submission-admission-') as directory:
+        journal=BrokerRequestJournal(Path(directory)/'request.sqlite3','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+        journal.prepare(original)
+        def begin(admission):
+            retained=journal.lookup_request('nx_admission_fixture')
+            return journal.begin_submission_checked('nx_admission_fixture',expected_head=retained['head_sha256'],
+                expected_payload_sha256=retained['plan']['payload_sha256'],admission=admission)
+        before=journal.path.read_bytes();revoked=False
+        try:begin(lambda:False)
+        except ValueError:revoked=journal.path.read_bytes()==before
+        marked=begin(lambda:1000);reserved=journal.recovery()['capacity']['recovery_slots_reserved']==2
+        duplicate=False;before=journal.path.read_bytes()
+        try:begin(lambda:1001)
+        except ValueError as error:duplicate=str(error)=='BROKER_SUBMISSION_ALREADY_MARKED_LOOKUP_REQUIRED' and journal.path.read_bytes()==before
+        ticket=journal.begin_lookup('nx_admission_fixture',evaluated_at=1001)
+        completion=journal.recovery()['capacity']['recovery_slots_reserved']==1
+        raw=dict(**original['payload'],id='01234567-89ab-cdef-0123-456789abcdef',asset_class='crypto',
+            status='filled',filled_qty='2',filled_avg_price='99',updated_at='2026-10-17T18:00:00+00:00')
+        journal.finish_lookup('nx_admission_fixture',ticket['lookup_token'],evaluated_at=1002,status_code=200,response=raw)
+        state=BrokerRequestJournal(journal.path,'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa').recovery()
+        blocked=BrokerRequestJournal(Path(directory)/'blocked.sqlite3','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+        blocked.prepare(original);blocked.mark_submission_uncertain('nx_admission_fixture')
+        token=blocked.begin_lookup('nx_admission_fixture',evaluated_at=1000)['lookup_token']
+        blocked.finish_lookup('nx_admission_fixture',token,evaluated_at=1001,status_code=401)
+        other=contract.preview('nx_blocked_fixture','BTC-USD','BUY','2','100',asset,metadata_at=1000,evaluated_at=1001)
+        blocked.prepare(other);reference=blocked.lookup_request('nx_blocked_fixture');before=blocked.path.read_bytes();account_block=False
+        try:blocked.begin_submission_checked('nx_blocked_fixture',expected_head=reference['head_sha256'],expected_payload_sha256=other['payload_sha256'],admission=lambda:1002)
+        except ValueError as error:account_block=str(error)=='BROKER_SUBMISSION_ACCOUNT_REVIEW_REQUIRED' and blocked.path.read_bytes()==before
+        return dict(source='TEMPORARY_LOCAL_SUBMISSION_ADMISSION_FIXTURE',
+            account_review_blocks_begin=account_block,marker_commit_observed=marked['attempt_marker_commit_observed'],recovery_pair_reserved=reserved,
+            duplicate_begin_rejected=duplicate,revoked_admission_unchanged=revoked,
+            pending_lookup_completion_reserved=completion,terminal_lookup_releases_reserve=state['capacity']['recovery_slots_reserved']==0,
+            reopened_terminal_observation=state['requests'][0]['recovery_state']=='OBSERVED_TERMINAL_RECONCILIATION_REQUIRED',
+            transport_invoked=False,routing_authorized=False,broker_connected=False,ledger_applied=False,
+            broker_account_reconciled=False,live_orders_enabled=False,money_movement_enabled=False,release_approved=False)
 
 
 def fixture_report():

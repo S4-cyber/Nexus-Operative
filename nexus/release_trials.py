@@ -359,7 +359,9 @@ def _pacing_trial():
         wal_read = denied(wal.inspect,'JOURNAL_MODE_REVIEW_REQUIRED')
         wal_write = denied(lambda:wal.begin(admission=lambda:1060),'JOURNAL_MODE_REVIEW_REQUIRED')
         no_sidecars = before == {p.name:p.read_bytes() for p in Path(directory).iterdir() if p.is_file()}
-        return dict(passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        from nexus.broker_request_journal import submission_admission_fixture
+        submission=submission_admission_fixture()
+        return dict(submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -559,6 +561,9 @@ def _validate(profile, result):
             ('holds_reconciled', 'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing',
              'source_coverage_verified', 'fee_coverage_complete', 'ledger_applied', 'live_orders_enabled')), 'BALANCE_AUTHORITY')
     if profile == 'pacing':
+        submission=result['submission_admission']
+        _require(submission['source']=='TEMPORARY_LOCAL_SUBMISSION_ADMISSION_FIXTURE' and all(submission[k] is True for k in ('account_review_blocks_begin','marker_commit_observed','recovery_pair_reserved','duplicate_begin_rejected','revoked_admission_unchanged','pending_lookup_completion_reserved','terminal_lookup_releases_reserve','reopened_terminal_observation')),'SUBMISSION_ADMISSION_FENCES')
+        _require(all(submission[k] is False for k in ('transport_invoked','routing_authorized','broker_connected','ledger_applied','broker_account_reconciled','live_orders_enabled','money_movement_enabled','release_approved')),'SUBMISSION_ADMISSION_AUTHORITY')
         _require(result['completed_sessions'] == 3 and result['replayed_events'] == 6, 'PACING_HISTORY')
         _require(all(result[name] is True for name in ('cooldown_enforced', 'retry_after_retained',
             'authentication_block_retained', 'pending_read_not_auto_released',

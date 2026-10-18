@@ -119,10 +119,12 @@ def test_bad_found_identity_rolls_back_and_preserves_pending_ticket(journal):
     assert request(journal)['lookup']['review_blocked']
 
 
-def test_completion_capacity_is_reserved_and_current_duplicate_survives_a_full_journal(journal,monkeypatch):
+def test_completion_capacity_preserves_other_requests_and_duplicates_at_ordinary_exhaustion(journal,monkeypatch):
     count=journal.recovery()['retained_events'];monkeypatch.setattr(module,'MAX_EVENTS',count+1)
     with pytest.raises(ValueError,match='COMPLETION_RESERVE'):journal.begin_lookup('nx_fixture',evaluated_at=1000)
-    monkeypatch.setattr(module,'MAX_EVENTS',count+2)
+    monkeypatch.setattr(module,'MAX_EVENTS',count+3)
+    with pytest.raises(ValueError,match='COMPLETION_RESERVE'):journal.begin_lookup('nx_fixture',evaluated_at=1000)
+    monkeypatch.setattr(module,'MAX_EVENTS',count+4)
     token=journal.begin_lookup('nx_fixture',evaluated_at=1000)['lookup_token']
     with pytest.raises(ValueError,match='PENDING_REVIEW_REQUIRED'):journal.prepare(plan())
     journal.finish_lookup('nx_fixture',token,evaluated_at=1001,status_code=404)

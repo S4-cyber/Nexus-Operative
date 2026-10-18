@@ -113,7 +113,7 @@ def test_completion_and_interruption_race_has_only_one_committed_winner(journal)
 
 
 def test_completion_reserve_also_admits_explicit_interruption_at_capacity(journal,monkeypatch):
-    count=journal.recovery()['retained_events'];monkeypatch.setattr(module,'MAX_EVENTS',count+2)
+    count=journal.recovery()['retained_events'];monkeypatch.setattr(module,'MAX_EVENTS',count+4)
     review=pending(journal);interrupt(journal,review)
     assert journal.recovery()['retained_events']==count+2
     assert interrupt(journal,review)['duplicate']

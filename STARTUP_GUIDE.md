@@ -124,7 +124,7 @@ The verified v0.114.0 test installer is [available here](https://github.com/S4-c
 
 ### Check a saved offline trial report
 
-From the matching source checkout, run `python -m nexus.release_evidence validation/release_trials_0_118_0.json`. Success means every required offline profile still satisfies its checks and the report matches these exact source bytes. It does not rerun tests, prove the report is authentic, validate broker balances or approve1.0. Failure prints a fixed error and changes no account data. Regenerate trials from the reviewed source if the report is stale; do not hand-edit hashes to make it pass.
+From the matching source checkout, run `python -m nexus.release_evidence validation/release_trials_0_119_0.json`. Success means every required offline profile still satisfies its checks and the report matches these exact source bytes. It does not rerun tests, prove the report is authentic, validate broker balances or approve1.0. Failure prints a fixed error and changes no account data. Regenerate trials from the reviewed source if the report is stale; do not hand-edit hashes to make it pass.
 
 New Windows distribution bundles include their own `release-trial-evidence.json`, covered by the artifact checksum manifest along with the EXE and installer. Source checkouts with different line endings also have different fingerprints. Treat the manifest as a consistency check, not a signature; verify workflow results and remaining acceptance gates separately.
 

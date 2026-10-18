@@ -16,10 +16,151 @@ import tempfile
 import time
 
 PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms', 'encrypted_observation')
+PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
+    'unconfirmed_read_denied', 'invalid_scope_denied', 'foreign_origin_denied',
+    'inspection_inventory_validated', 'cooldown_prevented_transport',
+    'removal_completed_during_read', 'revoked_read_returned_no_observation',
+    'pending_history_preserved', 'fresh_process_preserved_pending_history')
 
 
 def _require(condition, code):
     if not condition: raise ValueError('RELEASE_TRIAL_' + code)
+
+
+def _pacing_restart_review(path):
+    """Disposable child only: replay fixture history with network/vault denied."""
+    from nexus import paper_portal_probe, paper_credentials
+    attempts = dict(external_connections=0, credential_operations=0)
+    def audit(event, args):
+        if event == 'socket.connect':
+            attempts['external_connections'] += 1
+            raise RuntimeError('RELEASE_TRIAL_RESTART_NETWORK_DENIED')
+    def denied():
+        attempts['credential_operations'] += 1
+        raise RuntimeError('RELEASE_TRIAL_RESTART_VAULT_DENIED')
+    sys.addaudithook(audit)
+    paper_credentials._vault = denied
+    path = Path(path); before = path.read_bytes()
+    paper_portal_probe._managed_path = lambda account: path
+    result = paper_portal_probe.status(expected_account_id='01234567-89ab-cdef-0123-456789abcdef')
+    _require(result['pending_read'] is True and result['sessions'] == 2 and
+        result['next_allowed_at'] == 1060 and result['suggested_action'] ==
+        'REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY', 'HTTP_RESTART_PENDING')
+    _require(path.read_bytes() == before and not any(attempts.values()), 'HTTP_RESTART_SIDE_EFFECT')
+    return dict(preserved=True, sessions=result['sessions'], **attempts)
+
+
+def _http_pacing_trial(base, root):
+    """Actual Portal HTTP actions; temporary storage and injected OS/HTTPS seams."""
+    import io
+    import threading
+    from urllib.request import Request, build_opener, ProxyHandler
+    from urllib.error import HTTPError
+    from nexus import paper_portal_probe as portal, paper_credentials as credentials
+    from nexus.alpaca_paper_inspection import URLS
+    from nexus.portable_paper_observation import validate, FLAGS
+    from nexus.paper_acceptance_probe import FLAGS as STATUS_FLAGS
+    account_id = '01234567-89ab-cdef-0123-456789abcdef'
+    key, secret = 'fixture_key_only_123', 'fixture_secret_only_123'
+    path = root/'managed-paper-read-fixture'/'pacing.sqlite3'
+    original_path, original_vault, original_inspect = portal._managed_path, credentials._vault, portal.inspect_saved
+    started, resume = threading.Event(), threading.Event()
+    workers = []; outcomes = []; now = [1000]; blocking = [False]
+    state = dict(saved=None, reads=0, writes=0, deletes=0, requests=0, closed=0)
+    def post(action, payload, *, origin=base, expected=200):
+        request = Request(base+'/api/execution/alpaca-paper/local-credentials/'+action,
+            data=json.dumps(payload).encode(), headers={'Content-Type':'application/json','Origin':origin}, method='POST')
+        try: response = build_opener(ProxyHandler({})).open(request, timeout=15)
+        except HTTPError as error: response = error
+        with response:
+            raw = response.read(2*1024*1024)
+            _require(response.status == expected and response.headers.get('Cache-Control') == 'no-store', 'HTTP_PAPER_STATUS')
+        _require(key.encode() not in raw and secret.encode() not in raw, 'HTTP_PAPER_SECRET_ECHO')
+        return json.loads(raw)
+    class Vault:
+        def get_password(self, service, account):
+            _require((service, account) == (credentials.SERVICE, credentials.ACCOUNT), 'HTTP_VAULT_SCOPE')
+            state['reads'] += 1; return state['saved']
+        def set_password(self, service, account, value):
+            _require((service, account) == (credentials.SERVICE, credentials.ACCOUNT), 'HTTP_VAULT_SCOPE')
+            state['writes'] += 1; state['saved'] = value
+        def delete_password(self, service, account):
+            _require((service, account) == (credentials.SERVICE, credentials.ACCOUNT), 'HTTP_VAULT_SCOPE')
+            state['deletes'] += 1; state['saved'] = None
+    account = dict(id=account_id, currency='USD', status='ACTIVE', crypto_status='ACTIVE',
+        account_blocked=False, trading_blocked=False, trade_suspended_by_user=False,
+        cash='1000', non_marginable_buying_power='900', pending_transfer_in='0',
+        pending_transfer_out='0', accrued_fees='0')
+    class Response:
+        status=200; headers={'Content-Type':'application/json'}
+        def __init__(self, url, value): self.url=url; self.body=io.BytesIO(json.dumps(value).encode())
+        def geturl(self): return self.url
+        def read(self, size): return self.body.read(size)
+        def __enter__(self): return self
+        def __exit__(self, *args): self.body.close(); state['closed'] += 1
+    class Opener:
+        def open(self, request, timeout):
+            _require(request.get_method() == 'GET' and request.full_url in URLS, 'HTTP_PAPER_GET_SCOPE')
+            state['requests'] += 1
+            if blocking[0]:
+                started.set(); _require(resume.wait(10), 'HTTP_PAPER_REMOVAL_WAIT')
+            return Response(request.full_url, account if request.full_url == URLS[0] else [])
+    try:
+        portal._managed_path = lambda account: path
+        missing = post('pacing-status', dict(expected_account_id=account_id))
+        _require(missing['journal_present'] is False and not path.parent.exists(), 'HTTP_PAPER_MISSING_WRITE')
+        post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=False), expected=503)
+        post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=True,pacing_path='forbidden'), expected=422)
+        post('paced-inspect', dict(confirm_read_only_paper=True), expected=422)
+        post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=True), origin='https://foreign.invalid', expected=403)
+        _require(not path.parent.exists(), 'HTTP_PAPER_DENIAL_WRITE')
+        fixture_vault = Vault(); credentials._vault = lambda: fixture_vault
+        portal.inspect_saved = lambda **kw: original_inspect(**kw,opener=Opener(),wall_clock=lambda:now[0],elapsed_clock=lambda:50)
+        saved = post('save', dict(api_key=key,api_secret=secret,confirm_store=True))
+        _require(saved['configured'] is True and saved['ready_for_routing'] is False, 'HTTP_PAPER_SAVE')
+        payload = dict(expected_account_id=account_id,confirm_read_only_paper=True)
+        observed = post('paced-inspect', payload)
+        portable = validate(observed['portable_observation'])
+        _require(observed['durable_local_pacing'] is True and portable['account_id'] == account_id and
+            portable['source'] == 'INJECTED_UNATTESTED' and observed['ready_for_routing'] is False and
+            all(observed[flag] is False for flag in FLAGS) and
+            observed['local_pacing']['sessions'] == 1 and observed['local_pacing']['next_allowed_at'] == 1060 and
+            state['requests'] == state['closed'] == 4, 'HTTP_PAPER_INSPECTION')
+        before = path.read_bytes()
+        post('paced-inspect', payload, expected=503)
+        _require(state['requests'] == 4 and path.read_bytes() == before, 'HTTP_PAPER_COOLDOWN')
+        now[0] = 1060; blocking[0] = True
+        def read():
+            try: outcomes.append(post('paced-inspect', payload, expected=503))
+            except Exception: outcomes.append(None)
+        worker = threading.Thread(target=read, daemon=True); workers.append(worker); worker.start()
+        _require(started.wait(10), 'HTTP_PAPER_READ_NOT_STARTED')
+        removed = post('remove', dict(confirm_remove=True))
+        _require(removed['configured'] is False and worker.is_alive() and state['saved'] is None and
+            state['writes'] == state['deletes'] == 1, 'HTTP_PAPER_REMOVAL')
+        resume.set(); worker.join(20)
+        _require(not worker.is_alive() and outcomes == [{'detail':'PAPER_ONBOARDING_ACTION_UNAVAILABLE'}] and
+            state['requests'] == state['closed'] == 5, 'HTTP_PAPER_REVOKED_RESULT')
+        credentials._vault = original_vault  # Status must work with the actual denied vault again.
+        before = path.read_bytes()
+        pending = post('pacing-status', dict(expected_account_id=account_id))
+        _require(pending['pending_read'] is True and pending['sessions'] == 2 and
+            pending['next_allowed_at'] == 1060 and all(pending[flag] is False for flag in STATUS_FLAGS) and
+            path.read_bytes() == before, 'HTTP_PAPER_PENDING')
+        expression = 'import json,sys; from nexus.release_trials import _pacing_restart_review; print(json.dumps(_pacing_restart_review(sys.argv[1])))'
+        child = subprocess.run([sys.executable,'-c',expression,str(path)],capture_output=True,text=True,timeout=25)
+        _require(child.returncode == 0, 'HTTP_PAPER_RESTART_FAILED')
+        restarted = json.loads(child.stdout)
+        _require(restarted == dict(preserved=True,sessions=2,external_connections=0,credential_operations=0) and
+            path.read_bytes() == before, 'HTTP_PAPER_RESTART_RESULT')
+        return dict(**{flag:True for flag in PAPER_HTTP_CHECKS}, injected_get_requests=state['requests'],
+            actual_vault_access=False, actual_broker_access=False, ready_for_routing=False,
+            live_orders_enabled=False, money_movement_enabled=False, release_approved=False,
+            scope='REAL_LOOPBACK_HTTP_INJECTED_VAULT_AND_PAPER_TRANSPORT_TEMPORARY_JOURNAL')
+    finally:
+        resume.set()
+        for worker in workers: worker.join(20)
+        portal._managed_path, credentials._vault, portal.inspect_saved = original_path, original_vault, original_inspect
 
 
 def _http_trial():
@@ -91,10 +232,13 @@ def _http_trial():
         _require('nexus' in responses['/portal'].lower() and 'url=/portal' in responses['/'], 'PORTAL_CONTENT')
         _require(not list(root.rglob('*')), 'READ_ONLY_STARTUP_WROTE_DATA')
         _require(not any(attempts.values()), 'UNEXPECTED_EXTERNAL_ACCESS')
+        paper_pacing = _http_pacing_trial(base, root)
+        _require(not any(attempts.values()), 'HTTP_PAPER_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, passive_forward_reads_preserved_missing_storage=True, **attempts,
+            paper_pacing=paper_pacing,
             credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
-            limitations='Real local source-process HTTP only. No rendered browser, Windows executable, actual provider, order or sustained market test.')
+            limitations='Real local source-process HTTP only; paper credential and provider seams are injected fixtures with temporary retained pacing. No rendered browser, Windows executable, actual provider, order or sustained market test.')
     finally:
         server.should_exit = True; thread.join(timeout=10); listener.close()
     _require(not thread.is_alive(), 'HTTP_SHUTDOWN')
@@ -239,6 +383,12 @@ def _validate(profile, result):
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
         _require(all(result[k] is True for k in ('untrusted_host_rejected','cross_origin_rejected','api_no_store')) and result['proxy_headers_trusted'] is False,'HTTP_BOUNDARY_POLICY')
+        paper = result['paper_pacing']
+        _require(all(paper[k] is True for k in PAPER_HTTP_CHECKS), 'HTTP_PAPER_FENCES')
+        _require(type(paper['injected_get_requests']) is int and paper['injected_get_requests'] == 5 and
+            paper['scope'] == 'REAL_LOOPBACK_HTTP_INJECTED_VAULT_AND_PAPER_TRANSPORT_TEMPORARY_JOURNAL', 'HTTP_PAPER_SCOPE')
+        _require(all(paper[k] is False for k in ('actual_vault_access','actual_broker_access','ready_for_routing',
+            'live_orders_enabled','money_movement_enabled','release_approved')), 'HTTP_PAPER_AUTHORITY')
     if profile == 'encrypted_observation':
         _require(all(result[k] is True for k in ('roundtrip_matches','wrong_password_rejected','ciphertext_randomized')), 'ENCRYPTED_OBSERVATION_CRYPTO')
         _require(result['kdf'] == 'SCRYPT_N131072_R8_P1' and result['cipher'] == 'AES256GCM_RANDOM_NONCE12_SALT16', 'ENCRYPTED_OBSERVATION_POLICY')

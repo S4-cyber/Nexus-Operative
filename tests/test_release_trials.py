@@ -20,6 +20,48 @@ def test_real_http_process_starts_stopped_without_data_credentials_or_external_i
     assert report['transport'] == 'REAL_LOOPBACK_TCP_HTTP'
     assert report['untrusted_host_rejected'] and report['cross_origin_rejected'] and report['api_no_store']
     assert not report['proxy_headers_trusted']
+    pacing = report['paper_pacing']
+    assert all(pacing[k] is True for k in trials.PAPER_HTTP_CHECKS)
+    assert pacing['injected_get_requests'] == 5
+    assert pacing['actual_vault_access'] is pacing['actual_broker_access'] is False
+    assert pacing['ready_for_routing'] is pacing['live_orders_enabled'] is False
+    assert pacing['money_movement_enabled'] is pacing['release_approved'] is False
+
+
+def http_report():
+    from pathlib import Path
+    from nexus.release_roadmap import REVISION
+    return json.loads((Path(__file__).resolve().parents[1]/'validation'/
+        ('release_trials_'+REVISION.replace('.', '_')+'.json')).read_text())['profiles']['http']
+
+
+@pytest.mark.parametrize('field', trials.PAPER_HTTP_CHECKS)
+def test_http_acceptance_requires_every_paper_pacing_fence(field):
+    result = http_report()
+    result['paper_pacing'][field] = False
+    with pytest.raises(ValueError, match='HTTP_PAPER_FENCES'): trials._validate('http', result)
+
+
+@pytest.mark.parametrize('field', ['actual_vault_access','actual_broker_access','ready_for_routing',
+    'live_orders_enabled','money_movement_enabled','release_approved'])
+def test_http_paper_fixtures_cannot_claim_actual_provider_or_financial_authority(field):
+    result = http_report()
+    result['paper_pacing'][field] = True
+    with pytest.raises(ValueError, match='HTTP_PAPER_AUTHORITY'): trials._validate('http', result)
+
+
+@pytest.mark.parametrize('value', [True, 4, 6, '5'])
+def test_http_paper_evidence_requires_exact_injected_request_count(value):
+    result = http_report()
+    result['paper_pacing']['injected_get_requests'] = value
+    with pytest.raises(ValueError, match='HTTP_PAPER_SCOPE'): trials._validate('http', result)
+
+
+def test_http_paper_evidence_cannot_be_missing_or_relabelled_as_broker_io():
+    result = http_report(); result.pop('paper_pacing')
+    with pytest.raises(KeyError): trials._validate('http', result)
+    result = http_report(); result['paper_pacing']['scope'] = 'ACTUAL_BROKER'
+    with pytest.raises(ValueError, match='HTTP_PAPER_SCOPE'): trials._validate('http', result)
 
 
 @pytest.mark.parametrize('profile', trials.PROFILES)

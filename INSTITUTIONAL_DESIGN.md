@@ -78,3 +78,6 @@ Research is date-bound. Recheck vendor/broker terms and current upstream license
 
 
 v0.161 adds private bounded supplied-quote retention against original request prefixes as a prerequisite to later TCA provenance. This does not verify source or map a latest quote to a decision/arrival event. No automatic benchmark, broker latency, native routing or strategy authority is introduced.
+
+
+v0.162 adds an explicit private capture/status path binding a fixed-host quote read to a successful local pacing transition and original-request prefix. This is a prerequisite for provenance review; latest-quote capture still does not identify a decision/order-arrival event, verify clock domains or authorize execution-quality benchmarks/routing.

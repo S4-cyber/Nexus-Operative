@@ -9,7 +9,7 @@ import tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 CHECKS=('catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
-        'private_account_review_checked','public_current_account_review_checked','private_execution_quality_checked','private_files_unchanged','invalid_command_denied',
+        'private_account_review_checked','public_current_account_review_checked','private_execution_quality_checked','private_quote_status_checked','unconfirmed_quote_read_denied','private_files_unchanged','invalid_command_denied',
         'default_data_not_created')
 
 
@@ -54,7 +54,7 @@ def run(command):
         env=dict(os.environ,NEXUS_PORTABLE_DATA=str(default),NEXUS_HEADLESS_MODE='1',NEXUS_BROWSER_MODE='1')
         catalog=_json_call(command,['--paper-tool','list'],env)
         _require(catalog['mode']=='NEXUS_PACKAGED_PAPER_TOOLS' and catalog['version']==REVISION and
-            set(catalog['commands'])=={'account-probe','activity','account-review','observation-crypto','quality-review','recovery'} and all(catalog[k] is False for k in
+            set(catalog['commands'])=={'account-probe','activity','account-review','observation-crypto','quality-review','quote-capture','recovery'} and all(catalog[k] is False for k in
             ('default_data_created','desktop_started','automatic_read','automatic_retry','broker_connected','live_orders_enabled','money_movement_enabled')),'CATALOG')
         encrypted=_json_call(command,['--paper-tool','observation-crypto','self-test'],env)
         _require(encrypted['passed'] is True and encrypted['roundtrip_matches'] is True and
@@ -83,6 +83,9 @@ def run(command):
         epoch=_instant_ns('2026-10-17T18:00:00Z');benchmark=private/'benchmark.json'
         benchmark.write_text(canonical(dict(decision_mid='100',decision_at_ns=epoch-1,arrival_bid='99',arrival_ask='101',
             arrival_at_ns=epoch,end_at_ns=epoch+3_000_000_000,unfilled_mark=None)),encoding='utf-8')
+        from nexus.paper_quote_capture import _fixture as quote_fixture,FLAGS as QUOTE_FLAGS
+        quote_options,quote_checks=quote_fixture(private/'quote-capture')
+        _require(quote_checks['passed'] is True,'QUOTE_FIXTURE')
         before=_snapshot(private)
         args=['--paper-tool','account-review']
         for name,key in (('expected-account','expected_account_id'),('request-journal','request_journal_path'),
@@ -111,15 +114,24 @@ def run(command):
             reviewed['activity_head_sha256']==options['expected_activity_head'] and q['unique_fills']==2 and
             q['fill_vwap']=='99' and q['signed_gross_shortfall_usd']=='-2' and q['signed_shortfall_with_supplied_fees_usd'] is None and
             all(reviewed[k] is False for k in QUALITY_FLAGS),'QUALITY_REVIEW')
+        quote_args=['--paper-tool','quote-capture']
+        for flag,key in (('expected-account','expected_account_id'),('request-journal','request_journal_path'),
+                         ('quote-store','quote_store_path'),('pacing','pacing_path'),('request-head','expected_request_head')):
+            quote_args+=['--'+flag,str(quote_options[key])]
+        quoted=_json_call(command,[*quote_args,'--status-only'],env)
+        _require(quoted['mode']=='PAPER_QUOTE_CAPTURE_STATUS' and quoted['local_capture_history_agreement'] is True and
+            quoted['retained_quotes']==1 and quoted['retained_pacing_sessions']==1 and all(quoted[k] is False for k in QUOTE_FLAGS),'QUOTE_STATUS')
+        code,stdout,stderr=_call(command,quote_args,env)
+        _require(code==2 and stdout.strip()=='PAPER_QUOTE_CAPTURE_FAILED' and not stderr,'UNCONFIRMED_QUOTE_READ')
         _require(_snapshot(private)==before,'PRIVATE_FILES_CHANGED')
         code,stdout,stderr=_call(command,['--paper-tool','__not_allowed__','PRIVATE_ARGUMENT_FIXTURE'],env)
         _require(code==2 and stdout=='' and stderr.strip()=='NEXUS_PAPER_TOOL_USAGE_ERROR','INVALID_COMMAND')
         _require(not default.exists() and not missing.exists(),'DEFAULT_DATA_CREATED')
         return dict(mode='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE',passed=True,**{k:True for k in CHECKS},
-            tool_invocations=9,provider_reads_requested=False,credential_reads_requested=False,
+            tool_invocations=11,provider_reads_requested=False,credential_reads_requested=False,
             live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
             native_windows_acceptance=False,
-            scope='Nine actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The encryption self-test retains no ciphertext, password or plaintext. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
+            scope='Eleven actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The encryption self-test retains no ciphertext, password or plaintext. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
 
 
 class _Parser(argparse.ArgumentParser):

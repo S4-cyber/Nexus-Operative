@@ -177,7 +177,7 @@ class _ReadSession:
     """Private fixed-path GET session shared by account inspection and recovery."""
     def __init__(self, api_key, api_secret, *, confirm_read_only_paper=False,
                  opener=None, wall_clock=time.time, elapsed_clock=time.monotonic,
-                 permission_check=lambda: True, pacing=None, expected_account_id=None):
+                 permission_check=lambda: True, pacing=None, expected_account_id=None, expected_pacing_head=None):
         if confirm_read_only_paper is not True:
             _fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
         for value in (api_key, api_secret):
@@ -188,6 +188,9 @@ class _ReadSession:
             if type(pacing) is not PaperReadPacing or expected_account_id is None or pacing.account != _uuid(expected_account_id):
                 _fail('PAPER_INSPECTION_PACING_ACCOUNT_OR_TYPE')
             pacing.inspect()  # Corrupt/foreign history blocks all IO; missing stays missing.
+        if expected_pacing_head is not None and (pacing is None or type(expected_pacing_head) is not str or re.fullmatch(r'[0-9a-f]{64}',expected_pacing_head) is None):
+            _fail('PAPER_INSPECTION_PACING_HEAD_INVALID')
+        self.expected_pacing_head=expected_pacing_head
         self.pacing = pacing
         self.pacing_owner = None
         self.pacing_token = None
@@ -212,6 +215,8 @@ class _ReadSession:
             if self.pacing is not None:
                 self.pacing_owner = self.pacing.ownership()
                 self.pacing_owner.__enter__()
+                if self.expected_pacing_head is not None and self.pacing.inspect()['head_sha256']!=self.expected_pacing_head:
+                    _fail('PAPER_INSPECTION_PACING_HEAD_CHANGED')
                 self.pacing_token = self.pacing.begin(admission=self.evaluated_at, ownership=self.pacing_owner)
                 self.checkpoint()  # A lost/revoked acknowledgment never releases a reservation.
             if self.reader is None:

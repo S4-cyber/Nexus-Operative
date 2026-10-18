@@ -280,15 +280,32 @@ def inspect_rules_saved(*,expected_account_id,confirm_read_only_paper=False,open
 def inspect_quote_saved(*,expected_account_id,confirm_read_only_paper=False,pacing=None,opener=None,
                         wall_clock=time.time,elapsed_clock=time.monotonic):
     """Internal explicit fixed-host quote observation; no Portal route/startup read."""
+    return _consume_quote_saved(expected_account_id=expected_account_id,confirm_read_only_paper=confirm_read_only_paper,
+        pacing=pacing,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock)
+
+
+def _consume_quote_saved(*,expected_account_id,confirm_read_only_paper=False,pacing=None,opener=None,
+                         wall_clock=time.time,elapsed_clock=time.monotonic,consumer=None,permission_check=lambda:True,expected_pacing_head=None):
+    """Keep saved-pair fencing through an internal private retention consumer."""
     if confirm_read_only_paper is not True:_fail('READ_CONFIRMATION_REQUIRED')
     from nexus.paper_quote_observation import inspect_quote,_scope
     from nexus.broker_lookup_policy import clock
-    account=_scope(expected_account_id,pacing)  # Invalid/corrupt scope refuses before vault access.
-    pacing._admit(pacing.inspect(),clock(wall_clock()))  # Passive preview, not a reservation; begin rechecks under ownership.
+    account=_scope(expected_account_id,pacing)
+    pacing._admit(pacing.inspect(),clock(wall_clock()))
+    if permission_check() is not True:_fail('READ_REVOKED')
+    if expected_pacing_head is not None and pacing.inspect()['head_sha256']!=expected_pacing_head:_fail('READ_REVOKED')
     epoch,raw,record=_capture()
+    def current():return _current(epoch) and permission_check() is True
+    def rechecked():
+        if not current():_fail('READ_REVOKED')
+        current_epoch,current_raw,_=_capture()
+        if epoch!=current_epoch or raw!=current_raw or not current():_fail('READ_REVOKED')
+        return True
     result=inspect_quote(record['api_key'],record['api_secret'],expected_account_id=account,
         confirm_read_only_paper=True,pacing=pacing,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,
-        permission_check=lambda:_current(epoch))
-    current_epoch,current_raw,_=_capture()
-    if epoch!=current_epoch or raw!=current_raw or not _current(epoch):_fail('READ_REVOKED')
-    return result
+        permission_check=current,expected_pacing_head=expected_pacing_head)
+    rechecked()
+    if consumer is None:return result
+    retained=consumer(result,rechecked)
+    rechecked()
+    return retained

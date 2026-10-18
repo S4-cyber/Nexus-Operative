@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.161.0'
+REVISION = '0.162.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -109,9 +109,9 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
-    'Accept the explicitly confirmed fixed-host BTC quote observation on an authorized paper account and native Windows profile. Accept bounded private retained quotes and original-request prefix replay on authorized account/profile data; add exact original-event-time bindings before deriving decision/arrival benchmarks; do not treat a latest quote, local clock or reported size as verified order arrival, executable liquidity or latency.',
+    'Accept the separately confirmed EXE quote-capture and offline status on authorized paper-account/native-profile history. Preserve one quote per successful retained pacing transition, original-request prefixes and interruption blocks; add a reviewed typed central read budget and exact original-event-time bindings before deriving decision/arrival benchmarks; do not treat a latest quote, local clock or reported size as verified order arrival, executable liquidity or latency.',
     'Accept the exact-head paper execution-quality review on authorized retained account history and native Windows builds. Add independently reviewed contemporaneous benchmark/arrival quote capture, original-event time binding, clock-domain evidence and verified fee links before net-cost or broker-latency claims; preserve unknown fees and include every retained fill.',
-    'Verify all six EXE paper tools on standalone and installed Windows builds, including private exact-head quality review, unchanged input journals/benchmarks, unknown fees and unverified benchmark authority; preserve current-head/public account review, crypto, no default-data/UI startup and actual account/profile acceptance. Quality review requires v0.159+.',
+    'Verify all seven EXE paper tools on standalone and installed Windows builds, including private exact-head quality review, unchanged input journals/benchmarks, unknown fees and unverified benchmark authority; preserve current-head/public account review, crypto, no default-data/UI startup and actual account/profile acceptance. Quality review requires v0.159+; quote-capture requires v0.162+ and explicit confirmation for a read.',
     'Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.',
     'Accept request-journal-derived activity collection on authorized Windows paper data, including changed heads during reads/retention/acceptance and lost returns; original observations and local hashes remain unverified, and no fee, funds or routing authority follows.',
     'Use the private combined account-evidence review on authorized retained paper data: bind original requests, accepted fills and opening/closing inventory to common heads, investigate term violations and gross-only differences, and obtain separate source/fee/hold/funds acceptance before any routing.',
@@ -157,7 +157,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.161 adds bounded private supplied-quote retention against exact original-request history prefixes. Full request and quote chains replay before append/review; later original-history additions preserve the prior binding, and changed heads, malformed observations, unsafe SQLite layouts, authority promotion and exhausted caps refuse without deleting evidence. Duplicate records reuse retained identity; revoked or changed post-commit inputs suppress acknowledgment while preserving committed history. This offline internal foundation adds no automatic capture, UI/EXE command, verified source/decision/arrival clocks, fees, routing or provider acceptance. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.162 adds a separately confirmed saved-pair quote-capture command and vault/network-silent offline status. Capture preflights private paths, exact request/quote/pacing heads, original terms, capacity and cooldown before keys; verifies the selected pacing head under local read ownership; and retains a v2 quote binding to one successful pacing transition. Key/history changes fence retention and acknowledgment. Complete local replay reports unbound reads without retry, deletion or invented receipts. Seven EXE tools are exercised by eleven child commands; actual native/provider acceptance remains open. No automatic start, decision/arrival benchmark, source/clock/fee/funds authority or routing. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

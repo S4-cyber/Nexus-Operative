@@ -18,6 +18,8 @@ from nexus.paper_activity_acceptance_probe import _private_path
 from nexus.sqlite_journal_guard import check_existing
 
 PROFILE='nexus.paper-request-quote-retention.v1'
+CAPTURE_PROFILE='nexus.paper-request-quote-retention.v2'
+CAPTURE_KEYS=('pacing_scope_sha256','pacing_before_head_sha256','pacing_after_head_sha256')
 ZERO='0'*64
 MAX_RECORDS=128
 MAX_RECORD_BYTES=8192
@@ -92,8 +94,15 @@ class PaperQuoteStore:
         return dict(heads=heads,prepared=prepared,plans={k:v['plan'] for k,v in requests.items()})
 
     def _binding(self,body,requests):
-        if type(body) is not dict or set(body)!={'profile','account_sha256','request_head_sha256','client_order_id','plan_sha256','payload_sha256','observation'}:_fail('RECORD_INVALID')
-        if body['profile']!=PROFILE or body['account_sha256']!=self.account:_fail('ACCOUNT_OR_SCHEMA')
+        if type(body) is not dict:_fail('RECORD_INVALID')
+        expected={'profile','account_sha256','request_head_sha256','client_order_id','plan_sha256','payload_sha256','observation'}
+        if body.get('profile')==CAPTURE_PROFILE:
+            expected.update(CAPTURE_KEYS)
+            for key in CAPTURE_KEYS:_head(body.get(key))
+            if body['pacing_before_head_sha256']==body['pacing_after_head_sha256']:_fail('CAPTURE_TRANSITION_MISSING')
+        elif body.get('profile')!=PROFILE:_fail('ACCOUNT_OR_SCHEMA')
+        if set(body)!=expected:_fail('RECORD_INVALID')
+        if body['account_sha256']!=self.account:_fail('ACCOUNT_OR_SCHEMA')
         head=_head(body['request_head_sha256']);identity=body['client_order_id']
         if type(identity) is not str or re.fullmatch('[A-Za-z0-9_-]{1,64}',identity) is None:_fail('CLIENT_ID')
         plan=requests['plans'].get(identity)
@@ -166,7 +175,7 @@ class PaperQuoteStore:
             input_scope='SUPPLIED_UNATTESTED_OBSERVATIONS_BOUND_TO_LOCAL_ORIGINAL_REQUEST_PREFIXES',
             **{k:False for k in observation.FLAGS})
 
-    def retain(self,value,*,client_order_id,expected_request_head,expected_quote_head,precommit_check=lambda:True):
+    def retain(self,value,*,client_order_id,expected_request_head,expected_quote_head,precommit_check=lambda:True,capture_binding=None):
         self._check();_head(expected_quote_head)
         scope=_observation(value,self.account);requests=self._requests(expected_request_head)
         if type(client_order_id) is not str:_fail('CLIENT_ID')
@@ -174,6 +183,9 @@ class PaperQuoteStore:
         if plan is None:_fail('ORIGINAL_REQUEST_REQUIRED')
         body=dict(profile=PROFILE,account_sha256=self.account,request_head_sha256=expected_request_head,
             client_order_id=client_order_id,plan_sha256=sha(plan),payload_sha256=plan['payload_sha256'],observation=scope)
+        if capture_binding is not None:
+            if type(capture_binding) is not dict or set(capture_binding)!=set(CAPTURE_KEYS):_fail('CAPTURE_BINDING_INVALID')
+            body.update(capture_binding,profile=CAPTURE_PROFILE)
         self._binding(body,requests)
         # Missing storage stays absent on stale expected heads or revoked input.
         current=self.inspect(expected_request_head=expected_request_head)

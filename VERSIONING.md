@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.161.0 (pre-release).** Bounded private supplied-quote retention binds observations to exact original-request history prefixes, with full replay, duplicate reuse, stale-head/cap refusal and retained lost-ack evidence. This offline internal foundation does not capture automatically or establish source, decision/arrival timing, routing or provider acceptance.
+**Current development build: 0.162.0 (pre-release).** The seventh EXE paper tool, quote-capture, separately confirms one saved-pair read and private retention. Offline status replays original requests, quote bindings and pacing without keys or provider calls. Eleven child-command checks cover all tools. No automatic capture, verified decision/arrival/source/clock/funds authority, routing or broker acceptance is introduced.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

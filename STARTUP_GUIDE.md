@@ -325,3 +325,22 @@ The current tool does not independently capture/attest these quotes or link fees
 An internal confirmed paper quote reader now observes BTC/USD bid/ask data between two paper-account identity checks. It rejects stale quotes, changed accounts and revoked saved keys, and shares the existing private read cooldown. Quote sizes are reported values, not a promise that your order can fill; timestamps do not prove broker arrival or latency.
 
 This is developer/acceptance groundwork. It adds no setup checkbox, button or EXE command, and does not fetch data at startup or retain quote files automatically. Automatic retained benchmarks, order-time binding and a separately accepted streaming feed are still future work. Existing Portal, Engage, emergency-cut and beginner-help behavior stays the same.
+
+
+### Optional private quote acceptance diagnostic (v0.162+)
+
+This advanced diagnostic helps review an already retained paper request. It is not needed for local virtual paper startup and does not start trading. Use a private folder outside the installation/repository and the same selected quote-capture pacing history each time. Do not use an accepted-activity pacing journal or rotate paths to bypass cooldown.
+
+First review without contacting Alpaca or reading saved keys:
+
+```powershell
+NexusOperative.exe --paper-tool quote-capture --expected-account ACCOUNT_UUID --request-journal PRIVATE_REQUESTS --quote-store PRIVATE_QUOTES --pacing PRIVATE_QUOTE_PACING --request-head REQUEST_SHA256 --status-only
+```
+
+Status reports retained heads and any unbound history. A missing quote/pacing history has a64-zero head; absence does not prove that no earlier read occurred elsewhere. Review all problems before continuing; no reset/repair is provided. If this exact account/read has been authorized, add the three exact status heads and original client ID, omit `--status-only`, and separately confirm one read:
+
+```powershell
+NexusOperative.exe --paper-tool quote-capture --expected-account ACCOUNT_UUID --request-journal PRIVATE_REQUESTS --quote-store PRIVATE_QUOTES --pacing PRIVATE_QUOTE_PACING --request-head REQUEST_SHA256 --quote-head QUOTE_SHA256 --pacing-head PACING_SHA256 --client-order-id ORIGINAL_CLIENT_ID --confirm-read-only-paper
+```
+
+This uses the already saved Windows paper-key pair; never put keys/passwords on the command line. It reads the account, one fixed BTC/USD quote and the account again, then retains a bounded private observation. The provider read is GET-only; local pacing and quote files are written. Failures may already have retained a read or quote: run status, preserve history and do not automatically retry. Retention/read success does not establish provider acceptance or authorize orders. Source, decision/arrival timing, fees/funds and 1.0 acceptance remain unverified. Private output is not for Git or public logs, and this quote store does not encrypt its files.

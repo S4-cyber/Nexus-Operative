@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.106.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.115.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -34,8 +34,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_111_0.json`; exact new-source Windows trials must still run |
-| Windows packaging and data recovery | v0.113.0 verified; v0.114 source pending | Exact commit `52e3f9239961dcec6c1be53e0466b8040bcef7f2`: packaging39092515629/job117572710958 and safety/browser39092515768/job117572058444 passed; installer12123328272. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_115_0.json`; exact new-source Windows trials must still run |
+| Windows packaging and data recovery | v0.113.0 verified; v0.115 source pending | Exact commit `52e3f9239961dcec6c1be53e0466b8040bcef7f2`: packaging39092515629/job117572710958 and safety/browser39092515768/job117572058444 passed; installer12123328272. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |
@@ -80,3 +80,9 @@ Portable observation/activity comparison (v0.109) binds two validated manifests 
 Reported open-order terms (v0.110) add bounded simple quantity IOC-limit summaries to the existing confirmed reader/Accounts display. Pending-cancel remainders stay open for review; unsupported, conflicting, complex or over-budget inputs suppress both aggregate totals. Principal caps and sell remainders never authenticate provider holds, fees, execution prices or spendable funds. The inventory-only portable format is unchanged and excludes order terms; actual broker/source/hold/routing acceptance remains open.
 
 Public-repository hardening (v0.111) adds reachable-history artifact/secret checks, pinned and unprivileged CI, nonpersistent checkout credentials, trusted PR policy isolation and optional authenticated encrypted observation copies. The bootstrap scan passed, but GitHub admin settings, default-branch baseline adoption, historical logs/artifacts/deleted refs and native ACL/disk encryption remain unverified owner gates. PUBLIC_REPO_READINESS.md records publication scope; publication does not approve1.0 or live trading.
+
+## Verify saved evidence before considering a release
+
+Run `python -m nexus.release_evidence validation/release_trials_0_115_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all fourteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check.
+
+The safety workflow revalidates its saved report. Windows distribution creation runs and validates its own offline trials, includes `release-trial-evidence.json` in the distribution and hashes it in `artifact-manifest.json` alongside both binaries. Verify the manifest first, then verify the report from the exact source checkout. Matching hashes are not signatures, authenticated CI provenance or proof the workload actually ran. A self-consistent fabricated report remains possible; workflow results and independent acceptance still matter. A successful offline evidence check always retains production/native/provider/market/funds/release approval flags as false and cannot close the open gates above.

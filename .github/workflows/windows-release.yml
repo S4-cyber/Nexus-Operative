@@ -126,7 +126,11 @@ jobs:
           $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
           $sourceCommit = git rev-parse HEAD
           Copy-Item dist/NexusOperative.exe release/NexusOperative.exe
-          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe"
+          python -m nexus.release_trials --output release/release-trial-evidence.json
+          if ($LASTEXITCODE -ne 0) { throw 'Distribution offline trials failed' }
+          python -m nexus.release_evidence release/release-trial-evidence.json
+          if ($LASTEXITCODE -ne 0) { throw 'Distribution evidence validation failed' }
+          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe" release/release-trial-evidence.json
           if ($LASTEXITCODE -ne 0) { throw 'Manifest creation failed' }
           python -m nexus.artifact_manifest verify release/artifact-manifest.json release
           if ($LASTEXITCODE -ne 0) { throw 'Manifest verification failed' }
@@ -138,6 +142,7 @@ jobs:
             release/NexusOperative.exe
             release/NexusOperative-Setup-*.exe
             release/artifact-manifest.json
+            release/release-trial-evidence.json
           if-no-files-found: error
           retention-days: 30
       - name: Preserve installer acceptance evidence

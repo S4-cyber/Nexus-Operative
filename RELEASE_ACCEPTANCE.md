@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.122.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.123.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -35,8 +35,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_122_0.json`; exact new-source Windows trials must still run |
-| Windows packaging and data recovery | v0.121.0 verified; v0.122 source pending | Exact commit `e6e6feb4165ff58e15b8976829aa42fd91e6e241`: Windows39100223221 rerun job117597675513, safety/browser39100223207 and security39100223254 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_123_0.json`; exact new-source Windows trials must still run |
+| Windows packaging and data recovery | v0.122.0 verified; v0.123 source pending | Exact commit `f84445224eb5c4e29317b0b5c4fa2f6ba06a52da`: Windows39103868702/job117605499902, safety/browser39103868682/job117605499514 and security39103868771/job117605500036 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |
@@ -84,7 +84,7 @@ Public-repository hardening (v0.111) adds reachable-history artifact/secret chec
 
 ## Verify saved evidence before considering a release
 
-Run `python -m nexus.release_evidence validation/release_trials_0_122_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all fourteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check.
+Run `python -m nexus.release_evidence validation/release_trials_0_123_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all fourteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check.
 
 The safety workflow revalidates its saved report. Windows distribution creation runs and validates its own offline trials, includes `release-trial-evidence.json` in the distribution and hashes it in `artifact-manifest.json` alongside both binaries. Verify the manifest first, then verify the report from the exact source checkout. Matching hashes are not signatures, authenticated CI provenance or proof the workload actually ran. A self-consistent fabricated report remains possible; workflow results and independent acceptance still matter. A successful offline evidence check always retains production/native/provider/market/funds/release approval flags as false and cannot close the open gates above.
 
@@ -97,6 +97,10 @@ Coverage unions clipped adjacent eligible public-labeled observations at most10 
 ## Operator paper-read acceptance tooling (v0.117)
 
 The explicit Windows source CLI in STARTUP_GUIDE.md provides one expected-account-bound saved-pair read with durable caller-selected pacing and a separate vault-silent local status mode. It generates a private content-bound inventory/open-IOC aggregate and pacing record, not acceptance. The portable observation nested inside it remains inventory-only. Use the same persistent journal; other/no journals and hosts are not coordinated. Actual Windows/profile/key-scope/account/fee/hold/source acceptance still needs independent evidence. Credential/read failures may already have remote IO or retained success/uncertainty, so preserve state and never bypass pending/review/cooldown/cap blocks by resetting/deleting it. No broker orders, funding, live execution or cloud deployment were added.
+
+## Cross-journal activity acceptance recovery (v0.123)
+
+The source-only activity probe now retains a third private replay-validated acceptance journal. It baselines current pacing/activity heads before remote IO, marks legacy nonempty history unverified, and appends one v2 aggregate transition after both the paced session and activity receipt are durable. Status distinguishes missing history, legacy-only baselines, pacing uncertainty, fully replayed bindings and an unbound pacing/activity transition after crash or lost return. It reads no order snapshot, vault or provider and grants no admission. The binding is sampled local consistency for cooperating journals, not authenticated provider causality, complete activity/fee coverage, account reconciliation or permission. Preserve all three journals; no automatic retry, reset, repair or deletion exists.
 
 
 ## v0.118 managed paper-read pacing in Accounts

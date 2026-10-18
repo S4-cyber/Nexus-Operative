@@ -106,3 +106,7 @@ The enlarged source-CLI acceptance record uses an exact allowlist and omits raw 
 ## v0.122 private activity evidence boundary
 
 The new source-only activity probe requires its order input, pacing journal and activity store to resolve outside the source checkout. It emits aggregate counts/digests only and never copies raw activity/order identities, cursors, response rows or paths into stdout. Both activity output modes are blocked by the content scanner and all retained SQLite files remain blocked by path/content rules. Keep order snapshots, reports and journals private; hashes can still be linkable financial metadata and are not anonymization. Injected tests use temporary files and fake credentials/provider responses only. Exact-source reachable-history scanning remains mandatory before publication.
+
+## v0.123 cross-journal private evidence boundary
+
+The activity probe now requires a separate private acceptance-history journal. It retains only account/head/aggregate digests and false-authority metadata, but these hashes can still link related financial observations. The public artifact scanner blocks its standalone mode and SQLite storage even when renamed. Preserve the acceptance, pacing and activity journals outside Git under OS protection; replay consistency is not provider/source/coverage attestation. Injected crash/lost-return tests do not constitute actual-account acceptance, and exact-source reachable-history scanning remains mandatory.

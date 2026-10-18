@@ -393,6 +393,12 @@ The private activity store retains normalized identities and receipt evidence, b
 
 An empty or short page is not proof of complete coverage; a two-page cap is not continuation authority. Creation time is not necessarily execution/fee posting time. Missing revisions, corrections, fee links, source attestation, broker-wide pacing and account/asset/hold/funds reconciliation remain blockers. Keep the order input, SQLite files and stdout report private and outside Git. No runtime route, PORTAL control, order adapter, transfer, live permission or cloud enrollment is added.
 
+### v0.123 cross-journal acceptance recovery
+
+The activity probe now requires `--acceptance-store PRIVATE_PATH` in addition to distinct `--pacing`, `--activity-store` and `--orders` paths. The local status form also requires that path. All four paths must be mutually distinct and outside the source checkout. The new bounded replay-validated journal first baselines the current pacing/activity heads before credential or provider access. A baseline over legacy retained activity or pacing history stays marked unverified rather than retroactively claiming acceptance.
+
+Each later successful probe appends an allowlisted v2 aggregate record only after the pacing session and activity receipt are durable. The record binds the exact prior/current heads and account digest. A crash between those commits is recoverable as an explicit unbound transition; a lost final result after acceptance commit replays the retained record. Status remains order-file/vault/network silent and never retries, repairs, resets or deletes. These sampled local head bindings coordinate only cooperating callers and do not prove provider causality, complete source coverage, valid fee associations, account reconciliation or broker-wide ownership.
+
 
 ## v0.119 local HTTP paper-read recovery acceptance
 

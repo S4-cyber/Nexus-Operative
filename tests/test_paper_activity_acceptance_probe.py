@@ -8,6 +8,7 @@ import pytest
 from nexus import paper_activity_acceptance_probe as probe
 from nexus import paper_credentials as credentials
 from nexus.broker_activity_store import BrokerActivityStore
+from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 from nexus.paper_read_pacing import PaperReadPacing
 from test_alpaca_activity_collection import START, END, NOW, fee
 from test_alpaca_activity_normalizer import inputs as fill_inputs
@@ -27,20 +28,21 @@ def vault(monkeypatch):
 def paths(tmp_path, orders=None):
     source = tmp_path/'private'/'orders.json';source.parent.mkdir()
     source.write_text(json.dumps([] if orders is None else orders),encoding='utf-8')
-    return source,tmp_path/'private'/'pacing.sqlite3',tmp_path/'private'/'activity.sqlite3'
+    return source,tmp_path/'private'/'pacing.sqlite3',tmp_path/'private'/'activity.sqlite3',tmp_path/'private'/'acceptance.sqlite3'
 
 
 def run(tmp_path, opener=None, orders=None, at=NOW, **changes):
-    source,pacing,activity=paths(tmp_path,orders)
+    source,pacing,activity,acceptance=paths(tmp_path,orders)
     args=dict(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,
+        acceptance_store_path=acceptance,
         orders_path=source,after=START,until=END,confirm_read_only_paper=True,
         opener=opener or Opener([account(),[fee()],account()]),wall_clock=lambda:at,elapsed_clock=lambda:50)
     args.update(changes)
-    return probe.probe(**args),source,pacing,activity
+    return probe.probe(**args),source,pacing,activity,acceptance
 
 
 def test_saved_pair_read_binds_pacing_collection_and_private_retention(vault,tmp_path):
-    save();opener=Opener([account(),[fee()],account()]);result,source,pacing,activity=run(tmp_path,opener)
+    save();opener=Opener([account(),[fee()],account()]);result,source,pacing,activity,acceptance=run(tmp_path,opener)
     assert len(opener.requests)==3 and result['status']=='REVIEW_REQUIRED' and result['read_completed']
     assert result['collection']['counts']==dict(order_snapshots=0,rows_received=1,
         normalized_activities=1,executions=0,fee_debits=1)
@@ -56,11 +58,12 @@ def test_saved_pair_read_binds_pacing_collection_and_private_retention(vault,tmp
     assert result['raw_activity_rows_included'] is result['raw_order_identities_included'] is False
     assert PaperReadPacing(pacing,ACCOUNT).inspect()['last_outcome']=='SUCCESS'
     assert BrokerActivityStore(activity,ACCOUNT).inspect()['retained_activities']==1
+    assert PaperActivityAcceptanceStore(acceptance,ACCOUNT).inspect()['records']==1
 
 
 def test_fill_and_order_identities_remain_private_while_counts_and_digest_are_bound(vault,tmp_path):
     save();rows,orders=fill_inputs();row=rows[0]
-    opener=Opener([account(),[row],account()]);result,source,_,activity=run(tmp_path,opener,orders)
+    opener=Opener([account(),[row],account()]);result,source,_,activity,_=run(tmp_path,opener,orders)
     assert result['collection']['counts']['order_snapshots']==2
     assert result['collection']['counts']['executions']==1
     encoded=json.dumps(result)
@@ -74,7 +77,7 @@ def test_fill_and_order_identities_remain_private_while_counts_and_digest_are_bo
 def test_two_full_pages_report_bounded_continuation_without_exposing_cursor(vault,tmp_path):
     from test_alpaca_activity_collection import page
     save();first,second=page(),page(101)
-    result,_,_,_=run(tmp_path,Opener([account(),first,second,account()]))
+    result,_,_,_,_=run(tmp_path,Opener([account(),first,second,account()]))
     assert result['collection']['page_counts']==[100,100]
     assert result['collection']['collection_limit_reached'] and result['collection']['continuation_required']
     encoded=json.dumps(result)
@@ -82,21 +85,32 @@ def test_two_full_pages_report_bounded_continuation_without_exposing_cursor(vaul
 
 
 def test_confirmation_paths_and_order_file_fail_before_vault_or_network(vault,tmp_path):
-    source,pacing,activity=paths(tmp_path);opener=Opener()
+    source,pacing,activity,acceptance=paths(tmp_path);opener=Opener()
     with pytest.raises(ValueError):
         probe.probe(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,
+            acceptance_store_path=acceptance,
             orders_path=source,after=START,until=END,confirm_read_only_paper=False,opener=opener)
     assert vault.reads==0 and not opener.requests and not pacing.exists() and not activity.exists()
     public=probe.ROOT/'private-orders.json'
     with pytest.raises(ValueError):
         probe.probe(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,
+            acceptance_store_path=acceptance,
             orders_path=public,after=START,until=END,confirm_read_only_paper=True,opener=opener)
-    assert vault.reads==0 and not opener.requests
+    assert vault.reads==0 and not opener.requests and not acceptance.exists()
+
+
+def test_all_private_paths_must_be_distinct_before_vault_or_network(vault,tmp_path):
+    source,pacing,activity,acceptance=paths(tmp_path);opener=Opener()
+    with pytest.raises(ValueError):
+        probe.probe(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,
+            acceptance_store_path=activity,orders_path=source,after=START,until=END,
+            confirm_read_only_paper=True,opener=opener)
+    assert vault.reads==0 and not opener.requests and not activity.exists()
 
 
 @pytest.mark.parametrize('kind',['duplicate-json','symlink','hardlink','directory'])
 def test_unsafe_order_input_is_rejected_before_vault_or_network(vault,tmp_path,kind):
-    source,pacing,activity=paths(tmp_path);opener=Opener()
+    source,pacing,activity,acceptance=paths(tmp_path);opener=Opener()
     if kind=='duplicate-json':source.write_text('[{"a":1,"a":2}]',encoding='utf-8')
     elif kind=='symlink':
         if os.name=='nt':pytest.skip('No Windows symlink privilege assumed')
@@ -106,43 +120,71 @@ def test_unsafe_order_input_is_rejected_before_vault_or_network(vault,tmp_path,k
     else:source.unlink();source.mkdir()
     with pytest.raises(ValueError):
         probe.probe(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,
+            acceptance_store_path=acceptance,
             orders_path=source,after=START,until=END,confirm_read_only_paper=True,opener=opener)
     assert vault.reads==0 and not opener.requests
 
 
 def test_cooldown_foreign_history_and_store_cap_block_before_provider(vault,tmp_path,monkeypatch):
-    save();result,source,pacing,activity=run(tmp_path)
+    save();result,source,pacing,activity,acceptance=run(tmp_path)
     before_pacing=pacing.read_bytes();before_activity=activity.read_bytes();opener=Opener()
     with pytest.raises(ValueError):
         probe.probe(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,
+            acceptance_store_path=acceptance,
             orders_path=source,after=START,until=END,confirm_read_only_paper=True,
             opener=opener,wall_clock=lambda:NOW+59,elapsed_clock=lambda:50)
     assert not opener.requests and pacing.read_bytes()==before_pacing and activity.read_bytes()==before_activity
     foreign=tmp_path/'foreign.sqlite3';PaperReadPacing(foreign,OTHER).begin(admission=lambda:NOW)
     with pytest.raises(ValueError):
         probe.probe(expected_account_id=ACCOUNT,pacing_path=foreign,activity_store_path=tmp_path/'fresh.db',
+            acceptance_store_path=tmp_path/'fresh-acceptance.db',
             orders_path=source,after=START,until=END,confirm_read_only_paper=True,opener=opener)
     assert not opener.requests
     monkeypatch.setattr('nexus.broker_activity_store.MAX_BATCHES',1)
     with pytest.raises(ValueError):
         probe.probe(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,
-            orders_path=source,after=START,until=END,confirm_read_only_paper=True,
-            opener=opener,wall_clock=lambda:NOW+60,elapsed_clock=lambda:50)
+            acceptance_store_path=acceptance,orders_path=source,after=START,until=END,
+            confirm_read_only_paper=True,opener=opener,wall_clock=lambda:NOW+60,elapsed_clock=lambda:50)
     assert not opener.requests
 
 
+def test_acceptance_history_capacity_blocks_before_vault_or_provider(vault,tmp_path,monkeypatch):
+    source,pacing,activity,acceptance=paths(tmp_path);opener=Opener()
+    monkeypatch.setattr(probe,'MAX_RECORDS',0)
+    with pytest.raises(ValueError):
+        probe.probe(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,
+            acceptance_store_path=acceptance,orders_path=source,after=START,until=END,
+            confirm_read_only_paper=True,opener=opener)
+    assert vault.reads==0 and not opener.requests and acceptance.exists()
+
+
 def test_status_replays_both_journals_without_order_vault_or_network(vault,tmp_path):
-    save();_,source,pacing,activity=run(tmp_path)
-    before=(pacing.read_bytes(),activity.read_bytes());reads=vault.reads
+    save();_,source,pacing,activity,acceptance=run(tmp_path)
+    before=(pacing.read_bytes(),activity.read_bytes(),acceptance.read_bytes());reads=vault.reads
     source.unlink()
-    result=probe.status(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity)
+    result=probe.status(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,acceptance_store_path=acceptance)
     assert result['read_only'] and result['retained_batches']==1 and result['retained_activities']==1
     assert not result['pending_read'] and result['session_capacity_remaining']>0
-    assert vault.reads==reads and before==(pacing.read_bytes(),activity.read_bytes())
+    assert result['cross_journal_recovery_state']=='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED'
+    assert vault.reads==reads and before==(pacing.read_bytes(),activity.read_bytes(),acceptance.read_bytes())
+
+
+def test_status_classifies_missing_and_legacy_baseline_without_creating_files(vault,tmp_path):
+    source,pacing,activity,acceptance=paths(tmp_path);source.unlink()
+    empty=probe.status(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,acceptance_store_path=acceptance)
+    assert empty['cross_journal_recovery_state']=='NO_LOCAL_READ_HISTORY' and not acceptance.exists()
+    gate=PaperReadPacing(pacing,ACCOUNT);token=gate.begin(admission=lambda:NOW)
+    gate.finish(token,admission=lambda:NOW,status_code=200)
+    missing=probe.status(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,acceptance_store_path=acceptance)
+    assert missing['cross_journal_recovery_state']=='ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED'
+    PaperActivityAcceptanceStore(acceptance,ACCOUNT).bind(pacing_head=gate.inspect()['head_sha256'],
+        retention_head=BrokerActivityStore(activity,ACCOUNT).inspect()['head_sha256'],pacing_sessions=1,retained_batches=0)
+    legacy=probe.status(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,acceptance_store_path=acceptance)
+    assert legacy['cross_journal_recovery_state']=='LEGACY_BASELINE_ONLY_REVIEW_REQUIRED'
 
 
 def test_lost_final_credential_confirmation_emits_no_report_but_retains_reviewable_state(vault,tmp_path,monkeypatch):
-    save();source,pacing,activity=paths(tmp_path);opener=Opener([account(),[fee()],account()])
+    save();source,pacing,activity,acceptance=paths(tmp_path);opener=Opener([account(),[fee()],account()])
     original=credentials._capture;calls=[]
     def changed():
         value=original();calls.append(1)
@@ -151,16 +193,20 @@ def test_lost_final_credential_confirmation_emits_no_report_but_retains_reviewab
     monkeypatch.setattr(credentials,'_capture',changed)
     with pytest.raises(ValueError):
         probe.probe(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,
+            acceptance_store_path=acceptance,
             orders_path=source,after=START,until=END,confirm_read_only_paper=True,
             opener=opener,wall_clock=lambda:NOW,elapsed_clock=lambda:50)
     assert PaperReadPacing(pacing,ACCOUNT).inspect()['last_outcome']=='SUCCESS'
     assert BrokerActivityStore(activity,ACCOUNT).inspect()['retained_collection_observations']==1
+    assert PaperActivityAcceptanceStore(acceptance,ACCOUNT).inspect()['records']==0
+    recovered=probe.status(expected_account_id=ACCOUNT,pacing_path=pacing,activity_store_path=activity,acceptance_store_path=acceptance)
+    assert recovered['cross_journal_recovery_state']=='UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED'
 
 
 def test_cli_errors_are_fixed_and_status_does_not_require_private_order_file(vault,tmp_path,monkeypatch,capsys):
-    source,pacing,activity=paths(tmp_path);source.unlink()
+    source,pacing,activity,acceptance=paths(tmp_path);source.unlink()
     monkeypatch.setattr(sys,'argv',['tool','--expected-account',ACCOUNT,'--pacing',str(pacing),
-        '--activity-store',str(activity),'--status-only'])
+        '--activity-store',str(activity),'--acceptance-store',str(acceptance),'--status-only'])
     assert probe.main()==0
     data=json.loads(capsys.readouterr().out);assert data['mode']=='PAPER_ACTIVITY_ACCEPTANCE_STATUS'
     monkeypatch.setattr(sys,'argv',['tool','--api-secret','private-mistake'])

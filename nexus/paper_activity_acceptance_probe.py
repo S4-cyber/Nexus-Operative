@@ -7,6 +7,7 @@ digests: broker/order/activity identities remain in the private input/store.
 import argparse
 import json
 import os
+import hashlib
 import re
 from pathlib import Path
 import sqlite3
@@ -78,14 +79,9 @@ def _orders(path, account):
 
 
 
-def _request_orders(path,account,head):
-    """Derive only allowlisted observed snapshots; no guessed order identities."""
-    from nexus.broker_request_journal import BrokerRequestJournal
-    if type(head) is not str or re.fullmatch('[0-9a-f]{64}',head) is None:_fail()
-    journal=BrokerRequestJournal(path,account);retained=journal.recovery()
-    if retained['head_sha256']!=head:_fail()
+def _request_order_values(rows,account):
     orders=[]
-    for row in retained['requests']:
+    for row in rows:
         if row['lookup']['pending'] or row['lookup']['review_blocked']:_fail()
         if not row['submission_attempt_marked']:continue
         snapshot=row['snapshot']
@@ -94,10 +90,27 @@ def _request_orders(path,account,head):
             'status','filled_quantity','average_fill_price','updated_at')})
     _,order_map,_,_,duplicates=adapter.canonical_inputs([],orders,expected_account_id=account)
     if not order_map or duplicates:_fail()
-    # Full repeated replay also detects concurrent metadata/content changes that
-    # do not merely append between the first read and canonicalization.
-    if journal.recovery()!=retained:_fail()
     return orders,len(order_map),duplicates
+
+
+def _request_orders(path,account,head):
+    """Derive only allowlisted observed snapshots; no guessed order identities."""
+    from nexus.broker_request_journal import BrokerRequestJournal
+    if type(head) is not str or re.fullmatch('[0-9a-f]{64}',head) is None:_fail()
+    journal=BrokerRequestJournal(path,account);retained=journal.recovery()
+    if retained['head_sha256']!=head:_fail()
+    result=_request_order_values(retained['requests'],account)
+    if journal.recovery()!=retained:_fail()
+    return result
+
+
+def _request_orders_digest(orders,account,*,canonical_orders=False):
+    # Canonical receipt orders have already passed full activity-store replay.
+    if not canonical_orders:
+        _,order_map,_,_,_=adapter.canonical_inputs([],orders,expected_account_id=account)
+        orders=list(order_map.values())
+    return sha(dict(account_sha256=hashlib.sha256(account.encode()).hexdigest(),
+        orders=sorted(orders,key=lambda row:row['broker_order_id'])))
 
 
 def _paths(expected_account_id, pacing_path, activity_store_path, acceptance_store_path):
@@ -193,6 +206,10 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
             retention_before_head_sha256=retained['before_head_sha256'],retention_after_head_sha256=retained['after_head_sha256'],
             pacing_before_head_sha256=pacing_summary['before_head_sha256'],
             pacing_after_head_sha256=pacing_summary['after_head_sha256'])
+        if request_mode:
+            from nexus.paper_activity_acceptance_store import REQUEST_PROFILE
+            scope.update(profile=REQUEST_PROFILE,request_head_sha256=expected_request_head,
+                request_orders_sha256=_request_orders_digest(orders,account))
         def admission():
             input_guard()
             return pacing.inspect()['head_sha256'],store.inspect()['head_sha256']
@@ -205,7 +222,7 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
             source=result['source'],collection=collection,local_retention=retained,local_pacing=pacing_summary,
             order_input=dict(source='RETAINED_REQUEST_OBSERVATIONS' if request_mode else 'PRIVATE_SUPPLIED_ORDER_FILE',
                 request_head_sha256=expected_request_head if request_mode else None,request_head_rechecked=request_mode,
-                source_attested=False,request_head_persisted_in_acceptance_record=False),
+                source_attested=False,request_head_persisted_in_acceptance_record=request_mode),
             acceptance_history=dict(before_head_sha256=acceptance_before['head_sha256'],
                 after_head_sha256=acceptance_after['head_sha256'],records=acceptance_after['records'],
                 record_capacity_remaining=MAX_RECORDS-acceptance_after['records'],
@@ -255,6 +272,9 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
             result['retention_transition_replayed']=(
                 receipt['retention_before_head_sha256']==scope['retention_before_head_sha256'] and
                 receipt['retention_after_head_sha256']==scope['retention_after_head_sha256'])
+        if 'request_orders_sha256' in scope:
+            result['request_order_input_replayed']=(receipt is not None and
+                scope['request_orders_sha256']==_request_orders_digest(receipt['orders'],expected_account_id,canonical_orders=True))
         result['pacing_transition_replayed']=(scope['pacing_before_head_sha256'],
             scope['pacing_after_head_sha256']) in completed
         result['accepted_transition_replayed']=all(value for key,value in result.items()
@@ -267,7 +287,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         latest_account_fields_replayed=False,latest_collection_observation_replayed=False,
         latest_collection_cursor_sequence_complete=False,
         latest_activity_input_replayed=False,latest_pacing_transition_replayed=False,
-        latest_retention_transition_replayed=False,latest_acceptance_record_replayed=False)
+        latest_retention_transition_replayed=False,latest_request_order_input_replayed=None,latest_acceptance_record_replayed=False)
     if latest is not None and replayed:
         current=replayed[-1]
         replay.update({f'latest_{key}':value for key,value in current.items()
@@ -276,6 +296,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
             accepted['last_record_sha256']==sha(latest) and
             latest['pacing_after_head_sha256']==pace['head_sha256'] and
             latest['retention_after_head_sha256']==retained['head_sha256'])
+    request_bound_count=sum('request_head_sha256' in scope for scope in scopes)
     historical=dict(replayed_accepted_transitions=sum(item['accepted_transition_replayed'] for item in replayed),
         all_accepted_receipts_replayed=bool(replayed) and all(item['accepted_receipt_replayed'] for item in replayed),
         all_collection_scopes_replayed=bool(replayed) and all(item['collection_scope_replayed'] for item in replayed),
@@ -302,7 +323,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
     elif accepted['records']:recovery='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED'
     else:recovery='NO_ACCEPTED_READ_TRANSITIONS'
     uncertain=recovery in ('PACING_UNCERTAINTY_REVIEW_REQUIRED','ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED','ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_COLLECTION_CONTINUATION_REQUIRED','LEGACY_BASELINE_ONLY_REVIEW_REQUIRED')
-    return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_STATUS',status='REVIEW_REQUIRED',read_only=True,
+    return dict(request_bound_transitions=request_bound_count,request_origin_history_verified=False,mode='PAPER_ACTIVITY_ACCEPTANCE_STATUS',status='REVIEW_REQUIRED',read_only=True,
         pacing_journal_present=pacing.path.is_file(),activity_store_present=store.path.is_file(),acceptance_store_present=acceptance.path.is_file(),
         account_sha256=retained['account_sha256'],pacing_head_sha256=pace['head_sha256'],
         retention_head_sha256=retained['head_sha256'],sessions=pace['sessions'],

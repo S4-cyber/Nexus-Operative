@@ -39,7 +39,7 @@ def test_retained_orders_remove_manual_file_and_produce_replayable_acceptance(tm
     assert result['collection']['counts']['order_snapshots']==1 and result['collection']['counts']['executions']==2
     assert result['order_input']['source']=='RETAINED_REQUEST_OBSERVATIONS' and result['order_input']['request_head_rechecked']
     assert result['order_input']['request_head_sha256']==args['expected_request_head']
-    assert result['order_input']['request_head_persisted_in_acceptance_record'] is False
+    assert result['order_input']['request_head_persisted_in_acceptance_record'] is True
     assert journal.path.read_bytes()==before and not list(tmp_path.glob('**/orders.json'))
     state=probe.status(**{k:args[k] for k in ('expected_account_id','pacing_path','activity_store_path','acceptance_store_path')})
     assert state['all_accepted_transitions_replayed'] and state['accepted_transitions']==1

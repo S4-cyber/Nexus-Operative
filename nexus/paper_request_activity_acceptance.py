@@ -48,6 +48,33 @@ def _complete(value):
     )
 
 
+
+def _request_origins(journal,store,acceptance_path,account,expected_head):
+    """Re-derive v3 request inputs from historical prefixes, never current guesses."""
+    from nexus.paper_activity_acceptance_store import REQUEST_PROFILE
+    from nexus.paper_activity_acceptance_probe import _request_order_values,_request_orders_digest
+    scopes=PaperActivityAcceptanceStore(acceptance_path,account).replay_scopes()
+    bound=[scope for scope in scopes if scope['profile']==REQUEST_PROFILE]
+    legacy=len(scopes)-len(bound);prefix_count=0
+    if bound:
+        prefixes=journal.observations_at_heads([scope['request_head_sha256'] for scope in bound])
+        if (prefixes['missing_heads'] or prefixes['current_head_sha256']!=expected_head or
+            prefixes['complete_current_tail_replayed'] is not True):_fail('HISTORICAL_REQUEST_PREFIX_REQUIRED')
+        retained=store.inspect();prefix_count=len(prefixes['observations_by_head'])
+        for scope in bound:
+            rows=prefixes['observations_by_head'][scope['request_head_sha256']]
+            receipt=retained['receipts'].get(scope['retained_receipt_sha256'])
+            try:orders,_,_=_request_order_values(rows,account)
+            except (ValueError,TypeError,KeyError):_fail('HISTORICAL_REQUEST_INPUT_DISAGREEMENT')
+            if (receipt is None or
+                _request_orders_digest(orders,account)!=scope['request_orders_sha256'] or
+                _request_orders_digest(receipt['orders'],account,canonical_orders=True)!=scope['request_orders_sha256']):
+                _fail('HISTORICAL_REQUEST_INPUT_DISAGREEMENT')
+    return dict(request_origin_bound_transitions=len(bound),legacy_unbound_request_transitions=legacy,
+        retained_request_origin_prefixes_replayed=prefix_count,
+        all_retained_request_origins_bound=bool(bound) and legacy==0)
+
+
 def review(*, expected_account_id, request_journal_path, pacing_path,
            activity_store_path, acceptance_store_path,
            expected_request_head, expected_activity_head):
@@ -62,6 +89,7 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
 
     journal = BrokerRequestJournal(request_journal_path, expected_account_id)
     store = BrokerActivityStore(activity_store_path, expected_account_id)
+    origins=_request_origins(journal,store,acceptance_store_path,expected_account_id,expected_request_head)
     component = request_review.review(journal, store,
         expected_request_head=expected_request_head,
         expected_activity_head=expected_activity_head)
@@ -83,7 +111,7 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
         accepted_transitions=after['accepted_transitions'],
         request_activity_review_sha256=component['input_sha256'])
     return dict(mode='PAPER_REQUEST_ACTIVITY_ACCEPTANCE_REVIEW',
-        status='REVIEW_REQUIRED', read_only=True, **scope, input_sha256=sha(scope),
+        status='REVIEW_REQUIRED', read_only=True, **scope, input_sha256=sha(scope),**origins,
         journals_rechecked_unchanged=True, complete_accepted_history_replayed=True,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
         complete_retained_batches_accepted=True,

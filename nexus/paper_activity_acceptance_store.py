@@ -18,12 +18,14 @@ from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.paper-activity-acceptance-history.v1'
 PROFILE = 'nexus.paper-activity-acceptance-record.v2'
+REQUEST_PROFILE = 'nexus.paper-activity-acceptance-record.v3'
 MAX_RECORDS = 128
 MAX_DATABASE_BYTES = 4 * 1024 * 1024
 MAX_RECORD_BYTES = 4096
 ZERO = '0' * 64
 HEAD_KEYS = ('pacing_before_head_sha256','pacing_after_head_sha256',
     'retention_before_head_sha256','retention_after_head_sha256')
+REQUEST_KEYS = {'request_head_sha256','request_orders_sha256'}
 SCOPE_KEYS = {'profile','account_sha256','collection_scope_sha256','account_fields_sha256',
     'collection_observation_sha256','activity_input_sha256','retained_receipt_sha256',*HEAD_KEYS}
 
@@ -70,9 +72,10 @@ class PaperActivityAcceptanceStore:
         db.execute('INSERT INTO records VALUES (?,?,?,?)',(seq,encoded,previous,digest));return digest
 
     def _scope(self,value):
-        if not isinstance(value,dict) or set(value)!=SCOPE_KEYS or value['profile']!=PROFILE or value['account_sha256']!=self.account_digest:
-            _fail('SCOPE_INVALID')
-        for key in SCOPE_KEYS-{'profile'}:_head(value[key])
+        if not isinstance(value,dict):_fail('SCOPE_INVALID')
+        expected=(SCOPE_KEYS if value.get('profile')==PROFILE else SCOPE_KEYS|REQUEST_KEYS if value.get('profile')==REQUEST_PROFILE else None)
+        if expected is None or set(value)!=expected or value['account_sha256']!=self.account_digest:_fail('SCOPE_INVALID')
+        for key in expected-{'profile'}:_head(value[key])
         if (value['pacing_before_head_sha256']==value['pacing_after_head_sha256'] or
             value['retention_before_head_sha256']==value['retention_after_head_sha256']):_fail('TRANSITION_MISSING')
         return value

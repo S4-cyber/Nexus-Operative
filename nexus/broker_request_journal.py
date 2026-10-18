@@ -395,6 +395,29 @@ class BrokerRequestJournal:
             return dict(token=token,**outcome,response=response if outcome['outcome']=='FOUND' else None)
         return self._lookup_write(client_order_id,lookup.clock(admission()),result,admission=admission)
 
+    def observations_at_heads(self,heads):
+        """Read selected historical prefixes after validating the complete tail."""
+        if type(heads) not in (tuple,list) or len(heads)>128:raise ValueError('BROKER_PREFIX_HEADS_INVALID')
+        if any(type(h) is not str or re.fullmatch('[0-9a-f]{64}',h) is None for h in heads):raise ValueError('BROKER_PREFIX_HEADS_INVALID')
+        wanted=set(heads);self._check_path();found={};current=ZERO;present=self.path.exists()
+        if present:
+            with closing(self._connect()) as db:
+                db.execute('BEGIN')
+                _,_,_,current=self._load(db)
+                rows=db.execute('SELECT seq,kind,body,digest FROM events ORDER BY seq LIMIT ?',(MAX_EVENTS+1,)).fetchall()
+                requests={};broker_ids={}
+                for seq,kind,encoded,digest in rows:
+                    if seq>1:self._apply(requests,broker_ids,kind,json.loads(encoded))
+                    if digest in wanted:
+                        found[digest]=[self._summary(identity,r) for identity,r in sorted(requests.items())]
+        return dict(mode='READ_ONLY_REQUEST_OBSERVATION_PREFIXES',read_only=True,
+            account_sha256=self.account_digest,current_head_sha256=current,
+            observations_by_head=found,missing_heads=sorted(wanted-set(found)),
+            complete_current_tail_replayed=present,admission_reserved=False,
+            source_attested=False,automatic_retry=False,ready_for_routing=False,
+            broker_connected=False,ledger_applied=False,live_orders_enabled=False,
+            limitations='Bounded historical local replay only; complete current tail is validated in the same read transaction. Prefix hashes are not source signatures, encryption, valid-tail deletion/ABA protection or permission. Actual IDs and reports are private; no writes or missing-state initialization.')
+
     def lookup_review(self,*,evaluated_at):
         """Passive bounded next-lookup selection; no reservation, vault or IO."""
         now=lookup.clock(evaluated_at);self._check_path();requests={};count=0;head=ZERO

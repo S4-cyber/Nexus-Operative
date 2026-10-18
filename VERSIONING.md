@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.151.0 (pre-release).** Confirmed paper-activity collection can derive observed orders from an exact retained request head, removing the manual order-file step. Request guards fence reads and commits; no order submission or financial authority.
+**Current development build: 0.152.0 (pre-release).** Persist request-origin heads/order digests in v3 activity acceptance records and re-derive them from historical request prefixes after full current-tail validation. Existing v2 records remain readable without invented origin bindings.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

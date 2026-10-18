@@ -66,6 +66,8 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
         **scope,input_sha256=sha(scope),journals_rechecked_unchanged=True,
         complete_accepted_history_replayed=True,component_heads_agree=True,
         local_request_terms_agree=request_result['local_request_activity_agreement'],
+        **{k:request_result[k] for k in ('request_origin_bound_transitions','legacy_unbound_request_transitions',
+            'retained_request_origin_prefixes_replayed','all_retained_request_origins_bound')},
         original_requests_reviewed=len(rows),explicit_fills_reviewed=sum(row['explicit_fill_count'] for row in rows),
         request_agreement_blockers=request_result['request_activity_review']['agreement_blockers'],
         inventory_arithmetic_evaluated=pair['arithmetic_evaluated'],

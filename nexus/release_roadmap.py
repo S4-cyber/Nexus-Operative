@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.151.0'
+REVISION = '0.152.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -109,6 +109,7 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
+    'Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.',
     'Accept request-journal-derived activity collection on authorized Windows paper data, including changed heads during reads/retention/acceptance and lost returns; original observations and local hashes remain unverified, and no fee, funds or routing authority follows.',
     'Use the private combined account-evidence review on authorized retained paper data: bind original requests, accepted fills and opening/closing inventory to common heads, investigate term violations and gross-only differences, and obtain separate source/fee/hold/funds acceptance before any routing.',
     'Accept bounded next-request recovery on an authorized Windows paper account with real retained request history, exact-head races, shared pacing, interruptions and original-ID outcomes. A local candidate is not permission; never auto-loop, clear uncertainty, resubmit or promote account/funds acceptance from read success.',
@@ -148,7 +149,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.151 removes the manual order-file requirement from explicit paper-activity collection: callers may supply a private original-request journal and exact head. Observed original IDs are derived without guessing; missing/pending/review-blocked snapshots refuse before keys. Read, retention and acceptance guards recheck the source head, preserving committed evidence on lost returns. Existing file input remains supported; no automatic reads or orders are enabled. v0.148.1 Windows/browser/security CI passed with a verified installer. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.152 persists the request head and canonical order-input digest in new request-derived activity acceptance records. A read-only bounded historical-prefix reader validates the complete current request tail in one snapshot before returning requested observations; acceptance review re-derives every recorded origin against its exact retained receipt, including fresh-process replay after later appends. Existing v2 records are preserved and labelled without origin bindings. No source/fee/hold/funds or routing authority follows. v0.151 security CI passed; Windows/browser remain pending. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

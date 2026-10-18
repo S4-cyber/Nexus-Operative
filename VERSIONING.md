@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.154.0 (pre-release).** Allowlisted paper tools can run from the EXE before desktop/data startup. Standalone/installed CI checks cover private offline review and missing-state diagnostics; actual Windows validation remains required.
+**Current development build: 0.155.0 (pre-release).** The packaged EXE allowlist now includes the explicit paper account probe alongside activity, account review and recovery. Missing-history status remains vault/network/storage silent; confirmed reads still require the saved Windows pair, exact account and durable pacing. Exact-source Windows validation remains required.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

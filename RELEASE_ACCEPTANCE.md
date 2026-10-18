@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.154.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.155.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -499,3 +499,12 @@ All v0.152 request-origin binding/prefix and earlier stop/key/recovery/cost chec
 
 
 Final v0.154 combined-source validation: 2,425 Python tests passed with one existing Starlette/httpx deprecation warning. All fourteen actual Node controllers, Portal script syntax, compileall, dependency consistency and generated-roadmap comparison passed. Sixteen offline profiles and saved-evidence verification matched 304 source files/0d2aff962649d2860a31aad71ddadcfc0b3e3835d5964e177c59985e5b883cd9; report SHA256 b77d58782697ea6d578a93fd10d06e69a670eee8bd72a09f743c70193b445959. The mandatory source HTTP profile now includes five real source-entry child commands, private-file/no-default-data checks and false authority assertions; this is not a frozen/native Windows pass. Preserved concurrent v0.153 parent60b40fed42f0e93ed880ca33c4a73187cd6f922c request-aware status, its tests, documentation and saved report. Verified all390 parent blobs plus its 302-file source fingerprint/c3b55c85dd30d1e442ba3185060b6c2b077df81ddbacb98c3ce500663efb59c6 before integrating; this EXE batch is v0.154 instead of overwriting published0.153. The proposed393-file snapshot passed artifact audit and Gitleaks with zero findings; final documentation bytes are rescanned before publication. This is not full remote-history/deleted-ref/non-Git privacy clearance. Parent v0.153 security39162755479 succeeded; browser/safety39162755526 remained running and Windows39162755498 pending at the latest check. New exact-source Windows CI must verify both standalone and installed paper tools, existing install/reinstall/recovery and browser/security workflows. Earlier verified v0.148.1 EXEs do not have the new command dispatch. No actual provider/vault/account access, financial order, sustained market, native-window/profile/ACL, funding/live/cloud, profitability or independent/owner1.0 acceptance is claimed. Rough implementation remains about40% (30–45% low-confidence judgment range),0/9 fully accepted major stages.
+
+
+## v0.155 packaged account acceptance probe
+
+`NexusOperative.exe --paper-tool account-probe --expected-account UUID --pacing PRIVATE_PACING --pacing-status-only` must replay missing or retained local pacing without starting the desktop, reading the vault, contacting the provider or creating missing storage. Replacing status-only with `--confirm-read-only-paper` is an explicit private operation using the saved pair and existing four fixed GETs. Private results and journals remain outside the public repository.
+
+The catalogue must contain exactly account-probe, activity, account-review and recovery. Standalone and installed smoke evidence must show six bounded invocations, unchanged private fixtures, no default-data/UI startup and false broker/funding/live/release flags. This is packaging acceptance only; actual account, source, fee, hold, funds, native-profile and independent acceptance remain open.
+
+Final v0.155 local validation: 2,425 Python tests passed with one existing Starlette/httpx deprecation warning. All fourteen actual Node controllers, Portal script syntax, compileall, dependency consistency and generated-roadmap comparison passed. Sixteen offline profiles and saved-evidence verification matched 304 source files/f273a28d6a594036273616656b7e8db5eb6b811c81051df49c521812d4c51055; report SHA256 230c0052ecc0dda946cba5f2965d81415bf38b1af6b08b1785b68fa2567d551d. Exact-source v0.155 Windows, safety/browser and security workflows remain required; no actual account, credentials, orders, funds, market trial or release approval is claimed.

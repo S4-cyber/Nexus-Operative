@@ -546,3 +546,10 @@ The explicit local `paper_activity_acceptance_probe --status-only` path may incl
 This status path reads no Windows credential, order file or provider endpoint, reserves no pacing and performs no repair/retry. Matching local histories are not provider signatures, source/activity/fee coverage, hold/funds reconciliation, broker-wide pacing or routing authority. Release evidence now requires warm, later-append and fresh-process request-aware status replay while all authority flags remain false. No UI or automatic runtime path was added.
 
 Final v0.153 local validation: 2,410 Python tests passed with one existing warning, all fourteen Node controllers and the sixteen-profile saved-evidence verifier passed. Evidence matched 302 source files/c3b55c85dd30d1e442ba3185060b6c2b077df81ddbacb98c3ce500663efb59c6; report SHA256 49066bd96665c0a33461844e36acaee54a9b4e8a8b65a0a26f81cd4647729d1e. This remains local synthetic consistency evidence only; exact-source CI and all actual-account, market, Windows-profile and independent acceptance gates remain open.
+
+
+## v0.155 packaged account acceptance probe
+
+The v0.155+ packaged allowlist adds `--paper-tool account-probe`, mapping only to the existing explicit `paper_acceptance_probe` CLI. Its `--pacing-status-only` path is vault/network silent and preserves absent storage. A confirmed probe retains the fixed four GETs, saved-key epoch/readback, exact account identity, durable local pacing and content-bound portable inventory/open-IOC summary. It does not attest provider source, activity/fee coverage, holds, funds, routing or release readiness.
+
+The public smoke requests status only, so it cannot read a key or provider. Standalone and installed Windows workflows must prove the four-command catalogue and six bounded child invocations before this source is a verified package. Actual authorized paper-account/profile acceptance remains a separate private operation; keep its journals and output outside Git and never infer order permission from a successful read.

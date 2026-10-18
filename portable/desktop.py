@@ -43,6 +43,7 @@ def wait_for_ready(port, timeout=25):
 
 PAPER_TOOLS={
     'activity':'nexus.paper_activity_acceptance_probe',
+    'account-probe':'nexus.paper_acceptance_probe',
     'account-review':'nexus.paper_account_evidence_review',
     'recovery':'nexus.paper_recovery_step',
 }
@@ -57,7 +58,7 @@ def _paper_tool(args):
             commands={name:'--paper-tool '+name+' --help' for name in sorted(PAPER_TOOLS)},
             default_data_created=False,desktop_started=False,automatic_read=False,
             automatic_retry=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
-            scope='Explicit private paper diagnostics only. Activity/recovery reads require their own confirmation and saved Windows keys. Read-only reviews need no keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. No order submission or automatic continuation.'),sort_keys=True,indent=2))
+            scope='Explicit private paper diagnostics only. Account/activity/recovery reads require their own confirmation and saved Windows keys. Read-only status/reviews need no keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. No order submission or automatic continuation.'),sort_keys=True,indent=2))
         return 0
     if len(args)<2 or args[0]!='--paper-tool' or args[1] not in PAPER_TOOLS:
         print('NEXUS_PAPER_TOOL_USAGE_ERROR',file=sys.stderr);return 2

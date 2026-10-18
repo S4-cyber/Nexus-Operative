@@ -273,3 +273,11 @@ def test_fixture_report_is_disposable_and_keeps_all_authority_false():
     report=review.fixture_report()
     assert report['passed'] and not report['broker_connected'] and not report['live_orders_enabled']
     assert not report['review']['ready_for_routing']
+
+
+def test_non_usd_account_cash_cannot_enter_usd_reconciliation():
+    value=data();account_fields(value,currency='EUR')
+    result=run(value)
+    assert not result['balance_projection_evaluated'] and result['linked_history_review'] is None
+    assert result['observed_inventory']['reported_cash'] is result['observed_inventory']['reported_non_marginable_buying_power'] is None
+    assert not result['spendable_funds_verified']

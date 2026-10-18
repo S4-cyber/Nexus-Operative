@@ -86,7 +86,7 @@ def run(output,channel=None):
                             if action=='save':state['paper_saved']=True
                             if action=='remove':state['paper_saved']=False
                             if action=='inspect':
-                                request.fulfill(json=dict(mode='READ_ONLY_PAPER_INSPECTION',checks='OBSERVED_FIELDS_COVERED',account_id='01234567-89ab-cdef-0123-456789abcdef',observed_usd_ceiling='900',observed_btc_available='1.9',open_order_count=0,ready_for_routing=False,spendable_funds_verified=False));return
+                                request.fulfill(json=dict(mode='READ_ONLY_PAPER_INSPECTION',checks='OBSERVED_FIELDS_COVERED',account_id='01234567-89ab-cdef-0123-456789abcdef',observed_usd_ceiling='900',observed_btc_available='1.9',open_order_count=0,ready_for_routing=False,spendable_funds_verified=False,broker_account_reconciled=False,broker_connected=False,ledger_applied=False,live_orders_enabled=False,atomic_snapshot=False,observed_inventory=dict(cash='1000',non_marginable_buying_power='900',btc_total='2',btc_available='1.9',btc_unavailable_difference='0.1',scope_supported=True)));return
                             request.fulfill(json=dict(configured=state['paper_saved'],review_required=False,ready_for_routing=False));return
                         if path=='/api/execution/intent/'+ORDER+'/cancel':
                             state['pending']=False;request.fulfill(json=dict(status='SIMULATED_CANCELLED'));return
@@ -237,6 +237,9 @@ def run(output,channel=None):
                     page.once('dialog',lambda dialog:dialog.accept())
                     page.locator('#paper-account-inspect').click()
                     expect(page.locator('#paper-credentials-result')).to_contain_text('Observed USD ceiling 900')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('Reported cash USD 1000')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('BTC total 2 / available 1.9 / Unavailable difference 0.1')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('NOT a verified hold')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('Spendable funds NOT verified')
                     page.once('dialog',lambda dialog:dialog.accept())
                     page.locator('#paper-credentials-remove').click()

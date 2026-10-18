@@ -106,6 +106,8 @@ def review(orders, executions, fees, *, expected_account_id, opening_balances, o
     if len({r['client_order_id'] for r in order_map.values()}) != len(order_map): _fail('CLIENT_ID_CONFLICT')
     summary = inspection._report(account_before, positions, open_orders, account_after, expected, 'SUPPLIED_UNATTESTED')
     account = inspection._account(account_before)
+    reported_cash = summary['observed_inventory']['cash']
+    reported_buying_power = summary['observed_inventory']['non_marginable_buying_power']
     reasons = set(summary['review_reasons']) | {'ACCOUNT_SNAPSHOT_SOURCE_UNVERIFIED',
         'ACTIVITY_AND_FEE_COVERAGE_UNVERIFIED', 'ORDER_HOLD_POLICY_UNVERIFIED', 'SEQUENTIAL_SNAPSHOT_NOT_ATOMIC'}
     total_btc = Decimal(0)
@@ -155,23 +157,23 @@ def review(orders, executions, fees, *, expected_account_id, opening_balances, o
                        for r in open_map.values() if r['snapshot']['side'] == 'buy'), Decimal(0))
         sell_quantity = sum((contract.number(r['remaining_quantity'], zero=True)
                              for r in open_map.values() if r['snapshot']['side'] == 'sell'), Decimal(0))
-        if account['cash'] is not None and buy_cap > contract.number(account['cash'], zero=True):
+        if reported_cash is not None and buy_cap > contract.number(reported_cash, zero=True):
             reasons.add('BUY_LIMIT_PRINCIPAL_CAP_EXCEEDS_REPORTED_CASH')
         if total_btc is not None and sell_quantity > total_btc:
             reasons.add('SELL_REMAINDERS_EXCEED_REPORTED_TOTAL_BTC')
         if unavailable_btc is not None and unavailable_btc != sell_quantity:
             reasons.add('OBSERVED_BTC_UNAVAILABLE_DIFFERS_FROM_SELL_REMAINDERS')
     projected = None
-    if account['cash'] is not None and total_btc is not None:
+    if reported_cash is not None and total_btc is not None:
         projected = broker_cash_path.analyze_and_project(
             [dict(r, symbol='BTC/USD') for r in order_map.values()],
             [dict(r, product='BTC-USD') for r in execution_map.values()], list(fee_map.values()),
             opening_balances={k:contract.text(v) for k,v in opening.items()}, opening_at=start.isoformat(),
-            observed_balances={'USD':account['cash'], 'BTC':contract.text(total_btc)}, observed_at=end.isoformat(),
+            observed_balances={'USD':reported_cash, 'BTC':contract.text(total_btc)}, observed_at=end.isoformat(),
             fee_coverage_complete=fee_coverage_complete)
         reasons.update(projected['reasons']); reasons.update(projected['cash_path']['reasons'])
     else: reasons.add('BALANCE_PROJECTION_NOT_EVALUATED')
-    inventory = dict(reported_cash=account['cash'], reported_non_marginable_buying_power=account['non_marginable_buying_power'],
+    inventory = dict(reported_cash=reported_cash, reported_non_marginable_buying_power=reported_buying_power,
         reported_total_btc=None if total_btc is None else contract.text(total_btc),
         reported_available_btc=None if available_btc is None else contract.text(available_btc),
         observed_unavailable_btc=None if unavailable_btc is None else contract.text(unavailable_btc))

@@ -5,7 +5,7 @@ Durable local pacing is optional and requires an explicit account/path journal.
 Injected transports are trusted test seams and never attest a broker account.
 """
 import json
-from decimal import Decimal
+from decimal import Decimal, localcontext
 import math
 import re
 import threading
@@ -14,7 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, HTTPRedirectHandler, ProxyHandler, build_opener
 from uuid import UUID
 
-from nexus.alpaca_paper_contract import number, text
+from nexus.alpaca_paper_contract import number, text, sha
 
 ROOT = 'https://paper-api.alpaca.markets'
 URLS = (ROOT + '/v2/account', ROOT + '/v2/positions',
@@ -83,18 +83,58 @@ def _account(raw):
     return result
 
 
+def _collection_rows(rows, account_id):
+    if not isinstance(rows, list):
+        _fail('PAPER_INSPECTION_COLLECTION_INVALID')
+    if len(rows) > MAX_ITEMS:
+        _fail('PAPER_INSPECTION_COLLECTION_CAP_REVIEW')
+    if not all(isinstance(item, dict) for item in rows):
+        _fail('PAPER_INSPECTION_COLLECTION_INVALID')
+    for item in rows:
+        if item.get('account_id') is not None and _uuid(item['account_id']) != account_id:
+            _fail('PAPER_INSPECTION_COLLECTION_ACCOUNT_DISAGREEMENT')
+
+
+def _position_inventory(positions):
+    reasons = []
+    available = '0'; total_btc = '0'; inventory_supported = True
+    seen_btc = False
+    for position in positions:
+        if position.get('symbol') not in ('BTC/USD', 'BTCUSD') or position.get('asset_class') != 'crypto' or position.get('side') != 'long':
+            reasons.append('UNSUPPORTED_POSITION_REVIEW')
+            inventory_supported = False
+            continue
+        if seen_btc:
+            _fail('PAPER_INSPECTION_DUPLICATE_BTC_POSITION')
+        seen_btc = True
+        quantity = number(position.get('qty'), zero=True)
+        total_btc = text(quantity)
+        if position.get('qty_available') is None:
+            available = None
+            reasons.append('POSITION_AVAILABILITY_MISSING')
+        else:
+            qty_available = number(position['qty_available'], zero=True)
+            if qty_available > quantity:
+                _fail('PAPER_INSPECTION_POSITION_AVAILABILITY_INVALID')
+            available = text(qty_available)
+    if not inventory_supported:
+        total_btc = available = None
+    unavailable = None
+    if total_btc is not None and available is not None:
+        with localcontext() as context:
+            context.prec = 80
+            unavailable = text(number(total_btc, zero=True)-number(available, zero=True))
+    return total_btc, available, unavailable, inventory_supported, reasons
+
+
 def _report(before, positions, orders, after, expected, source):
     first, last = _account(before), _account(after)
     if first['id'] != last['id'] or expected is not None and first['id'] != expected:
         _fail('PAPER_INSPECTION_ACCOUNT_ID_CHANGED')
     if first != last:
         _fail('PAPER_INSPECTION_ACCOUNT_CHANGED_DURING_READ')
-    if not isinstance(positions, list) or not isinstance(orders, list):
-        _fail('PAPER_INSPECTION_COLLECTION_INVALID')
-    if len(positions) > MAX_ITEMS or len(orders) > MAX_ITEMS:
-        _fail('PAPER_INSPECTION_COLLECTION_CAP_REVIEW')
-    if not all(isinstance(item, dict) for item in positions + orders):
-        _fail('PAPER_INSPECTION_COLLECTION_INVALID')
+    _collection_rows(positions, first['id'])
+    _collection_rows(orders, first['id'])
     reasons = []
     if any(first[f] != v for f, v in (('currency', 'USD'), ('status', 'ACTIVE'), ('crypto_status', 'ACTIVE'))):
         reasons.append('ACCOUNT_CURRENCY_OR_STATUS_REVIEW')
@@ -105,32 +145,22 @@ def _report(before, positions, orders, after, expected, source):
         reasons.append('ACCOUNT_FUNDS_FIELDS_INCOMPLETE')
     if any(first[f] is not None and number(first[f], zero=True) != 0 for f in fields[2:]):
         reasons.append('PENDING_TRANSFERS_OR_FEES_REVIEW')
-    available = '0'
-    seen_btc = False
-    for position in positions:
-        if position.get('symbol') not in ('BTC/USD', 'BTCUSD') or position.get('asset_class') != 'crypto' or position.get('side') != 'long':
-            reasons.append('UNSUPPORTED_POSITION_REVIEW')
-            continue
-        if seen_btc:
-            _fail('PAPER_INSPECTION_DUPLICATE_BTC_POSITION')
-        seen_btc = True
-        quantity = number(position.get('qty'), zero=True)
-        if position.get('qty_available') is None:
-            available = None
-            reasons.append('POSITION_AVAILABILITY_MISSING')
-        else:
-            qty_available = number(position['qty_available'], zero=True)
-            if qty_available > quantity:
-                _fail('PAPER_INSPECTION_POSITION_AVAILABILITY_INVALID')
-            available = text(qty_available)
+    total_btc, available, unavailable, inventory_supported, position_reasons = _position_inventory(positions)
+    reasons.extend(position_reasons)
     if orders:
         reasons.append('OPEN_ORDER_RESERVATIONS_REQUIRE_RECONCILIATION')
-    cash, buying = first['cash'], first['non_marginable_buying_power']
+    cash = first['cash'] if first['currency'] == 'USD' else None
+    buying = first['non_marginable_buying_power'] if first['currency'] == 'USD' else None
     ceiling = None if cash is None or buying is None else text(min(number(cash, zero=True), number(buying, zero=True)))
+    inventory = dict(cash=cash, non_marginable_buying_power=buying, btc_total=total_btc,
+        btc_available=available, btc_unavailable_difference=unavailable, scope_supported=inventory_supported)
     return dict(mode='READ_ONLY_PAPER_INSPECTION', source=source, account_id=first['id'],
                 checks='REVIEW_REQUIRED' if reasons else 'OBSERVED_FIELDS_COVERED',
                 review_reasons=sorted(set(reasons)), observed_usd_ceiling=ceiling,
-                observed_btc_available=available, position_count=len(positions), open_order_count=len(orders),
+                observed_btc_available=available, observed_inventory=inventory,
+                account_fields_sha256=sha(first), reported_inventory_sha256=sha(inventory),
+                fingerprint_scope='NORMALIZED_ACCOUNT_AND_REPORTED_INVENTORY_ONLY_NOT_RAW_SOURCE_ATTESTATION',
+                position_count=len(positions), open_order_count=len(orders),
                 sequential_account_fields_stable=True, atomic_snapshot=False,
                 broker_account_reconciled=False, spendable_funds_verified=False,
                 ready_for_routing=False, ledger_applied=False, broker_connected=False,
@@ -356,7 +386,17 @@ def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
                 normalized = _account(value)
                 if expected is not None and normalized['id'] != expected:
                     _fail('PAPER_INSPECTION_ACCOUNT_ID_CHANGED')
+            if url in URLS[1:3]:
+                _collection_rows(value, normalized['id'])
+                if url == URLS[1]: _position_inventory(value)
             values.append(value)
         result = _report(*values, expected, 'INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_READS')
-        session.checkpoint()
+        completed = session.evaluated_at()
+        result['read_timing'] = dict(started_at=session.start[0], completed_at=completed,
+                                    elapsed_seconds=session.previous[1]-session.start[1])
+        result['observation_sha256'] = sha(dict(profile='nexus.paper-account-observation.v1',
+            account_fields_sha256=result['account_fields_sha256'], reported_inventory_sha256=result['reported_inventory_sha256'],
+            position_count=result['position_count'], open_order_count=result['open_order_count'],
+            source=result['source'], read_timing=result['read_timing']))
+        result['observation_digest_scope'] = 'NORMALIZED_ACCOUNT_INVENTORY_COUNTS_SOURCE_LABEL_AND_SAMPLED_TIMING_ONLY'
         return result

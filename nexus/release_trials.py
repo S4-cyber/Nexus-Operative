@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory')
 
 
 def _require(condition, code):
@@ -128,6 +128,35 @@ def _pacing_trial():
             limitations='Disposable local journal policy only; no provider requests, actual rate-limit acceptance, distributed ownership or runtime default integration.')
 
 
+def _inspection_inventory_trial():
+    """Actual reader, injected objects/keys only; no provider or vault access."""
+    import io
+    from nexus.alpaca_paper_inspection import inspect_account
+    account = dict(id='01234567-89ab-cdef-0123-456789abcdef',currency='USD',status='ACTIVE',crypto_status='ACTIVE',
+        account_blocked=False,trading_blocked=False,trade_suspended_by_user=False,cash='1000',
+        non_marginable_buying_power='900',pending_transfer_in='0',pending_transfer_out='0',accrued_fees='0')
+    position = dict(symbol='BTCUSD',asset_class='crypto',side='long',qty='2',qty_available='1.9')
+    class Response:
+        status=200;headers={'Content-Type':'application/json'}
+        def __init__(self,url,value): self.url=url;self.body=io.BytesIO(json.dumps(value).encode())
+        def geturl(self): return self.url
+        def read(self,size): return self.body.read(size)
+        def __enter__(self): return self
+        def __exit__(self,*args): self.body.close()
+    class Opener:
+        def __init__(self,a,p): self.values=iter([a,[p],[],dict(a)]);self.requests=0
+        def open(self,request,timeout): self.requests+=1;return Response(request.full_url,next(self.values))
+    reports=[];requests=0
+    for a,p in ((account,position),(dict(account,currency='EUR'),position),(account,dict(position,qty_available=None))):
+        opener=Opener(a,p)
+        reports.append(inspect_account('fixture_key_only_123','fixture_secret_only_123',confirm_read_only_paper=True,
+            expected_account_id=account['id'],opener=opener,wall_clock=lambda:1000,elapsed_clock=lambda:50))
+        requests+=opener.requests
+    return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',get_requests=requests,observations=reports,
+        broker_connected=False,live_orders_enabled=False,
+        limitations='Fixed response objects and clocks; no actual credentials, provider, rendered UI, account reconciliation or spendable funds.')
+
+
 def _execute(profile):
     if profile == 'forward':
         from nexus.forward_drill import run
@@ -143,6 +172,7 @@ def _execute(profile):
         return benchmark(30)
     if profile == 'http': return _http_trial()
     if profile == 'pacing': return _pacing_trial()
+    if profile == 'inspection_inventory': return _inspection_inventory_trial()
     if profile == 'retained_balance':
         from nexus.retained_balance_review import fixture_report
         return fixture_report()
@@ -173,6 +203,17 @@ def _validate(profile, result):
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
+    if profile == 'inspection_inventory':
+        _require(result['get_requests'] == 12 and len(result['observations']) == 3, 'INVENTORY_READ_SCOPE')
+        regular, foreign, missing = result['observations']
+        _require(regular['observed_inventory'] == dict(cash='1000', non_marginable_buying_power='900',
+            btc_total='2', btc_available='1.9', btc_unavailable_difference='0.1', scope_supported=True), 'INVENTORY_AMOUNTS')
+        _require(foreign['observed_inventory']['cash'] is None and foreign['observed_usd_ceiling'] is None and
+            missing['observed_inventory']['btc_available'] is None and missing['observed_inventory']['btc_unavailable_difference'] is None,
+            'INVENTORY_UNKNOWN_FIELDS')
+        _require(all(r['source'] == 'INJECTED_UNATTESTED' and all(r[k] is False for k in
+            ('ready_for_routing','spendable_funds_verified','broker_account_reconciled','broker_connected',
+             'ledger_applied','live_orders_enabled','atomic_snapshot')) for r in result['observations']), 'INVENTORY_AUTHORITY')
     if profile == 'retained_balance':
         reviewed = result['review']; gross = reviewed['gross_fill_review']
         _require(reviewed['arithmetic_evaluated'] is True and reviewed['head_rechecked'] is True and

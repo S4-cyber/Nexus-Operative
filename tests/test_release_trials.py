@@ -126,3 +126,15 @@ def test_retained_balance_trial_rejects_stale_or_authorized_gross_fee_inference(
     for field in ('fee_debits_allocated_to_interval','fee_execution_links_verified','fee_reserved_funding_verified'):
         changed=copy.deepcopy(result);changed['review']['gross_fill_review'][field]=True
         with pytest.raises(ValueError,match='RETAINED_BALANCE_AUTHORITY'): trials._validate('retained_balance',changed)
+
+
+def test_inspection_inventory_trial_preserves_unknown_units_and_denies_authority():
+    result=trials._inspection_inventory_trial();trials._validate('inspection_inventory',result)
+    changed=copy.deepcopy(result);changed['observations'][1]['observed_inventory']['cash']='1000'
+    with pytest.raises(ValueError,match='INVENTORY_UNKNOWN_FIELDS'): trials._validate('inspection_inventory',changed)
+    changed=copy.deepcopy(result);changed['observations'][2]['observed_inventory']['btc_available']='2'
+    with pytest.raises(ValueError,match='INVENTORY_UNKNOWN_FIELDS'): trials._validate('inspection_inventory',changed)
+    for field in ('ready_for_routing','spendable_funds_verified','broker_account_reconciled','broker_connected',
+                  'ledger_applied','live_orders_enabled','atomic_snapshot'):
+        changed=copy.deepcopy(result);changed['observations'][0][field]=True
+        with pytest.raises(ValueError,match='INVENTORY_AUTHORITY'): trials._validate('inspection_inventory',changed)

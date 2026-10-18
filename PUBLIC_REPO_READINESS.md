@@ -1,0 +1,48 @@
+# Public repository readiness — owner handoff
+
+Publication is **not yet cleared for an unconditional visibility change**. Repository-side hardening and scoped scans are implemented; the owner-only checks below remain. No visibility change or history rewrite was performed.
+
+## Verified scope
+
+The private repository was inspected at source `66ba32cd9e0d809799c89c805a09439b7b42a265`. Trusted security bootstrap `deb70a8ef176b43448a7d361120a38116bbf2abc` passed [security run39090533663](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39090533663), job117566120158:
+
+| Check | Observed result |
+| --- | --- |
+| Reachable main/development history | Full fetch, required refs present; shallow scans refused |
+| Historical artifact/content audit | 1,537 blobs, 310 unique paths, 27,576,983 bytes; zero prohibited artifacts |
+| Gitleaks default/provider patterns plus decoding | Zero secret findings |
+| False-positive handling | Exact public documentation token `API/UI/default` only; no folder/test exclusions |
+| Current source policy | Runtime DBs, keys, backups, encrypted private copies and portable account reports excluded/blocked; renamed SQLite/encrypted/private-report files checked by content |
+| CI token/dependency policy | Immutable official Action SHAs, checksum-pinned scanner, contents-read permission, checkout credential persistence disabled, trusted policy separate from scanned PR source |
+
+Those numbers are a source-bound checkpoint, not a certificate for later commits or every possible personal-data pattern. The final current tracked-source snapshot also passed 296 paths/blobs and zero secret findings; the final development push runs the same full-history check again. Source inline allow comments and repo ignore fingerprints cannot bypass the trusted scan. Scan reports containing secret/match values are never uploaded; public logs contain only bounded counts and rule/commit/line/file hashes. Historical deleted refs, logs/artifacts, releases, issue/PR attachments, author emails and external copies are outside that scan.
+
+## Encryption and private-data handling
+
+| Material | Current protection | Required handling |
+| --- | --- | --- |
+| API key pairs/research key | Exact Windows Credential Manager backend; no plaintext file fallback | Keep provider secrets out of Git/Actions; revoke/rotate at provider if exposed |
+| Local SQLite account/history/settings | Plaintext application data | Private OS directory/account and supported disk encryption; never commit |
+| Offline recovery bundles | Plaintext verified copies | Private storage/disk protection; never publish |
+| Ordinary inventory download | Plaintext private account/balance JSON | Keep private; encrypt an optional copy if needed |
+| New optional `.nexusenc` copy | AES-256-GCM, fresh salt/nonce, fixed scrypt derivation and hidden prompts | Keep the passphrase separate; do not publish even encrypted private records |
+| Public source/synthetic fixtures | Intentionally readable | No real credentials, banking details or account records |
+
+The encrypted-copy tool does not delete the original plaintext, change database formats, configure Windows ACLs/disk encryption, save/recover passwords or start trades. Wrong passwords/tampering yield no plaintext output. Failed file IO can leave a partial new output; existing files are never overwritten. See SECURITY.md and STARTUP_GUIDE.md.
+
+The application now also rejects non-loopback peers, untrusted/duplicate Host headers and mismatched/duplicate Origin headers before reading bodies or running routes. Cross-site browser requests are rejected, API replies use no-store, and the desktop launcher disables proxy-header trust. This is a local boundary, not cloud authentication or protection against a compromised local account. Never expose this development API through a public reverse proxy.
+
+## Required owner checks before publication
+
+1. Review the [security-only default-branch draft PR #2](https://github.com/S4-cyber/Nexus-Operative/pull/2) and apply its baseline to main. It changes eight security/policy files, without merging application code. Its trusted branch push passed [security run39090918862](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39090918862); the PR check39090920582 correctly refuses the not-yet-installed main policy. SECURITY.md requires review before merging to main. The updated baseline push with inline/ignore bypasses disabled passed security run39091414120; its PR run39091416134 remains blocked on uninstalled main policy. PR checks deliberately refuse uninstalled/untrusted base policy during this one-time bootstrap; review the trusted branch-push scan instead, then retain strict trusted-base checks for future PRs.
+2. In GitHub, verify branch protections/rulesets and required security/test/code-owner checks, restrict bypasses, use two-factor authentication, set read-only workflow permissions and require approval for outside-contributor workflows. Do not send secrets or write tokens to fork workflows. Enable secret scanning/push protection wherever available and check Dependabot alerts. Recheck rules after visibility changes; GitHub warns that push rulesets are disabled when making a repository public.
+3. Review historical Actions logs/artifacts, releases, PR/issue attachments, commit metadata and deleted refs for private information. The connected API cannot provide blanket clearance for these surfaces or inspect/change the admin settings. If a real secret is found, revoke/rotate it before a reviewed cleanup plan. Do not erase accounting evidence or rewrite Git history automatically.
+4. Keep runtime/private data outside Git after publication, including encrypted copies. Ordinary downloads/databases remain plaintext unless protected separately.
+
+Official references: [visibility consequences](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility), [Actions secure use](https://docs.github.com/en/actions/reference/security/secure-use), [secret scanning/push protection](https://docs.github.com/en/code-security/getting-started/quickstart-for-securing-your-repository).
+
+## Release status
+
+Development continues in 0.x. Public source, green scanners or encrypted copies do not close actual-provider/profile/fee/hold reconciliation, sustained market/strategy trials, independent security/risk review, governed funding/live execution, secure cloud operation or owner1.0 approval. Source-bound Windows packaging remains separate from Linux security tests.
+
+v0.109 source `2d2e25b0f6c8472591891abee3b053e86da83931` passed packaging39088186619/job117560452568 and safety39088186630/job117559084799. The v0.110 packaging run39088678287/job117561701859 failed with no reported steps and unavailable logs (404); the cause is unverified, and that installer is not a verified release. New v0.111 native packaging must complete separately.

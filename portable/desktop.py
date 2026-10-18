@@ -51,7 +51,7 @@ def main():
     url = f"http://127.0.0.1:{port}/portal"
     print("Nexus Operative — LOCAL PAPER SIMULATION ONLY")
     print("Data:", data)
-    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, access_log=False, log_level="warning"))
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, access_log=False, log_level="warning", proxy_headers=False))
     worker = threading.Thread(target=server.run, daemon=True)
     worker.start()
     if not wait_for_ready(port):
@@ -77,3 +77,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

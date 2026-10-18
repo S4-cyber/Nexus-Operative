@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms', 'encrypted_observation')
 
 
 def _require(condition, code):
@@ -51,7 +51,7 @@ def _http_trial():
     root = Path(os.environ['NEXUS_PORTABLE_DATA'])
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listener.bind(('127.0.0.1', 0)); listener.listen(32)
-    server = uvicorn.Server(uvicorn.Config(app, log_level='critical', access_log=False))
+    server = uvicorn.Server(uvicorn.Config(app, log_level='critical', access_log=False, proxy_headers=False))
     thread = threading.Thread(target=lambda: server.run(sockets=[listener]), daemon=True)
     thread.start(); started = time.monotonic(); responses = {}
     try:
@@ -65,6 +65,16 @@ def _http_trial():
                 body = response.read(2 * 1024 * 1024)
                 _require(response.status == 200, 'HTTP_STATUS')
                 responses[path] = json.loads(body) if path.startswith('/api/') else body.decode('utf-8')
+        from urllib.request import Request
+        from urllib.error import HTTPError
+        for headers in ({'Host':'rebinding.example'},{'Origin':'https://foreign.example'}):
+            try:
+                with opener.open(Request(base+'/api/status',headers=headers),timeout=5):
+                    _require(False,'HTTP_UNTRUSTED_ADMITTED')
+            except HTTPError as error:
+                _require(error.code==403 and error.headers.get('Cache-Control')=='no-store','HTTP_BOUNDARY')
+        with opener.open(base+'/api/status',timeout=5) as response:
+            _require(response.headers.get('Cache-Control')=='no-store','HTTP_PRIVATE_CACHE')
         status = responses['/api/status']
         _require(status['portal_enabled'] is False, 'ENGINE_AUTOSTART')
         for name in ('broker_connected', 'live_orders_enabled', 'money_movement_enabled'):
@@ -75,7 +85,7 @@ def _http_trial():
         _require(not any(attempts.values()), 'UNEXPECTED_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, **attempts,
-            credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',
+            credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
             limitations='Real local source-process HTTP only. No rendered browser, Windows executable, actual provider, order or sustained market test.')
     finally:
         server.should_exit = True; thread.join(timeout=10); listener.close()
@@ -165,6 +175,9 @@ def _inspection_inventory_trial():
 
 
 def _execute(profile):
+    if profile == 'encrypted_observation':
+        from nexus.encrypted_observation import fixture_report
+        return fixture_report()
     if profile == 'open_order_terms':
         from nexus.paper_open_order_terms import fixture_report
         return fixture_report()
@@ -216,6 +229,12 @@ def _validate(profile, result):
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
+        _require(all(result[k] is True for k in ('untrusted_host_rejected','cross_origin_rejected','api_no_store')) and result['proxy_headers_trusted'] is False,'HTTP_BOUNDARY_POLICY')
+    if profile == 'encrypted_observation':
+        _require(all(result[k] is True for k in ('roundtrip_matches','wrong_password_rejected','ciphertext_randomized')), 'ENCRYPTED_OBSERVATION_CRYPTO')
+        _require(result['kdf'] == 'SCRYPT_N131072_R8_P1' and result['cipher'] == 'AES256GCM_RANDOM_NONCE12_SALT16', 'ENCRYPTED_OBSERVATION_POLICY')
+        _require(all(result[k] is False for k in ('password_saved','vault_accessed','external_connections','original_plaintext_deleted',
+            'output_file_writes','ready_for_routing','live_orders_enabled')), 'ENCRYPTED_OBSERVATION_AUTHORITY')
     if profile == 'open_order_terms':
         from nexus.paper_open_order_terms import FLAGS
         observed, unsupported = result['observed'], result['unsupported']
@@ -316,8 +335,9 @@ def source_digest(root):
     """Fingerprint executed source and test inputs; excludes generated reports/docs."""
     root = Path(root); entries = []
     paths = set(root.glob('nexus/*.py')) | set(root.glob('tests/*.py')) | set(root.glob('tools/*.py')) | set(root.glob('tools/*.cjs'))
-    paths |= set(root.glob('.github/workflows/*.yml'))
+    paths |= set(root.glob('.github/workflows/*.yml')) | set(root.glob('portable/*.py'))
     paths |= {root/'pyproject.toml', root/'dashboard/portal_preview.html', root/'installer/NexusOperative.iss'}
+    paths |= {root/name for name in ('.gitignore','.gitleaks.toml','.github/CODEOWNERS','.github/dependabot.yml') if (root/name).is_file()}
     for path in sorted(paths):
         entries.append((path.relative_to(root).as_posix(), hashlib.sha256(path.read_bytes()).hexdigest()))
     return dict(files=len(entries), sha256=hashlib.sha256(json.dumps(entries, separators=(',', ':')).encode()).hexdigest())

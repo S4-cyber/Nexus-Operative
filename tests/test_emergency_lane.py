@@ -39,7 +39,7 @@ def test_emergency_cut_and_status_bypass_saturated_general_workers(lane,monkeypa
             def block_general():general_entered.set();assert release.wait(5)
             general=loop.run_in_executor(None,block_general)
             await until(general_entered.is_set)
-        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=api.app),base_url='http://testserver') as client:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=api.app),base_url='http://127.0.0.1') as client:
             feed=asyncio.create_task(client.get('/api/public-quote/BTC-USD'))
             try:
                 await until(feed_entered.is_set)
@@ -65,7 +65,7 @@ def test_repeated_cut_requests_share_one_cleanup_job_and_no_reset_window(lane,mo
     def slow_cut():calls.append(threading.current_thread().name);entered.set();assert release.wait(5);return original()
     monkeypatch.setattr(g,'emergency_halt',slow_cut)
     async def exercise():
-        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=api.app),base_url='http://testserver') as client:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=api.app),base_url='http://127.0.0.1') as client:
             cuts=[asyncio.create_task(client.post('/api/simulate/halt')) for _ in range(20)]
             try:
                 await until(lambda:entered.is_set() and api._cut_epoch==before+20)

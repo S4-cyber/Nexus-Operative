@@ -98,6 +98,7 @@ def audit(repo, *, history=False, required_refs=()):
         if child.poll() is None:child.kill();child.wait()
     return dict(mode='PUBLIC_REPOSITORY_ARTIFACT_AUDIT',passed=not findings,history_scanned=history,
         paths_checked=len(paths),blobs_checked=blobs,bytes_checked=total,findings=findings,
+        commits_checked=int(_git(repo,'rev-list','--count','--all').strip()) if history else None,
         limitations='Reachable fetched refs only. Not a secret detector, source attestation, privacy guarantee or review of deleted refs, Actions logs/artifacts, issues or external copies.')
 
 

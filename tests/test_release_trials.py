@@ -18,6 +18,8 @@ def test_real_http_process_starts_stopped_without_data_credentials_or_external_i
     assert report['passed'] and report['graceful_shutdown'] and report['startup_engine_stopped']
     assert report['external_connections'] == report['credential_operations'] == report['startup_data_files'] == 0
     assert report['transport'] == 'REAL_LOOPBACK_TCP_HTTP'
+    assert report['untrusted_host_rejected'] and report['cross_origin_rejected'] and report['api_no_store']
+    assert not report['proxy_headers_trusted']
 
 
 @pytest.mark.parametrize('profile', trials.PROFILES)
@@ -171,3 +173,20 @@ def test_open_terms_trial_rejects_partial_totals_or_promoted_hold_authority():
     for field in FLAGS:
         changed=copy.deepcopy(result);changed['observed'][field]=True
         with pytest.raises(ValueError,match='OPEN_TERMS_AUTHORITY'):trials._validate('open_order_terms',changed)
+
+
+def test_encrypted_observation_profile_cannot_claim_password_storage_or_replaced_originals():
+    from nexus.encrypted_observation import fixture_report
+    result=fixture_report();trials._validate('encrypted_observation',result)
+    for field in ('password_saved','original_plaintext_deleted','vault_accessed','external_connections','ready_for_routing','live_orders_enabled'):
+        changed=copy.deepcopy(result);changed[field]=True
+        with pytest.raises(ValueError,match='ENCRYPTED_OBSERVATION_AUTHORITY'):trials._validate('encrypted_observation',changed)
+
+
+def test_security_policy_files_are_bound_to_source_fingerprint(tmp_path):
+    for directory in ('nexus','tests','tools','.github/workflows','dashboard','installer'):(tmp_path/directory).mkdir(parents=True,exist_ok=True)
+    for name in ('pyproject.toml','dashboard/portal_preview.html','installer/NexusOperative.iss'):(tmp_path/name).write_text('fixture')
+    for name in ('.gitignore','.gitleaks.toml','.github/CODEOWNERS','.github/dependabot.yml'):
+        before=trials.source_digest(tmp_path);path=tmp_path/name;path.write_text('policy')
+        added=trials.source_digest(tmp_path);assert before!=added
+        path.write_text('updated policy');assert trials.source_digest(tmp_path)!=added

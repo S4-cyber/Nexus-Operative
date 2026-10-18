@@ -71,3 +71,28 @@ def test_renaming_same_blob_does_not_hide_a_private_historical_path(tmp_path):
     root=repository(tmp_path);path=commit(root,'safe.txt',b'public')
     path.rename(root/'.env');git(root,'add','-A');git(root,'commit','-m','fixture rename')
     assert not audit.audit(root,history=True)['passed']
+
+
+def test_current_workflows_have_immutable_actions_and_no_privileged_secret_contexts():
+    import re
+    workflows=list((ROOT/'.github/workflows').glob('*.yml'))
+    assert workflows
+    for path in workflows:
+        text=path.read_text()
+        assert 'pull_request_target' not in text and 'secrets.' not in text
+        assert 'contents: read' in text
+        uses=re.findall(r'uses:\s*([^\s#]+)',text)
+        assert uses and all(re.fullmatch(r'actions/[a-z-]+@[0-9a-f]{40}',item) for item in uses)
+        blocks=re.split(r'\n      - ',text)
+        for block in blocks:
+            if 'uses: actions/checkout@' in block:assert 'persist-credentials: false' in block
+
+
+def test_pr_security_uses_trusted_policy_full_history_and_checksum_pinned_scanner():
+    text=(ROOT/'.github/workflows/public-repo-security.yml').read_text()
+    assert 'fetch-depth: 0' in text and 'github.event.pull_request.base.sha || github.sha' in text
+    assert 'python3 policy/tools/public_repo_audit.py --repository scan --history' in text
+    assert 'sha256sum --check --strict' in text and "--log-opts='--all'" in text
+    assert '--redact=100' in text and '--log-level fatal' in text
+    assert '--ignore-gitleaks-allow' in text and '--gitleaks-ignore-path /dev/null' in text
+    assert 'upload-artifact' not in text and "'Secret'" not in text and "'Match'" not in text

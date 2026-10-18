@@ -80,3 +80,20 @@ It prints a private JSON report containing balance observations and retained act
 
 
 After Read Paper Account Once, Accounts also reports supported open IOC limit terms: buy-limit principal and remaining sell quantity. These amounts are observations, not verified provider holds or the price a trade will receive. Pending cancellation still counts as open. Unsupported or conflicting orders make both totals unknown. Download Observation saves the inventory-only report; it does not include these order terms. Nothing in this read places orders or verifies spendable funds.
+
+
+## Keep private exports encrypted and outside the public repository
+
+The ordinary inventory download is plaintext. Source users can create a password-encrypted copy with:
+
+```text
+python -m nexus.encrypted_observation seal Nexus-Paper-Observation.json --output observation.nexusenc
+```
+
+Enter a long unique random passphrase at the hidden prompts. Do not put it in command arguments, scripts, environment files, Git or alongside the encrypted copy. No password/key is saved or recoverable. The tool refuses an echoing prompt fallback, never overwrites an existing file, and leaves the original download in place. Keep that original private too. To deliberately recover a new private plaintext file:
+
+```text
+python -m nexus.encrypted_observation unseal observation.nexusenc --output recovered.json
+```
+
+These source tools do not encrypt local databases or backups. Use a private directory and supported OS disk protection; never commit private data even when encrypted. No encryption result authenticates broker balances or starts trading. See SECURITY.md and PUBLIC_REPO_READINESS.md before changing repository visibility.

@@ -36,7 +36,7 @@ def test_reject_bad_vault_keys(monkeypatch):
 
 def test_cross_origin_and_untrusted_browser_requests_rejected(monkeypatch):
     monkeypatch.setattr(vault,"_vault",lambda:DummyVault())
-    client=TestClient(app,base_url="http://127.0.0.1:8000")
+    client=TestClient(app,base_url="http://127.0.0.1:8000",client=("testclient",50000))
     key="sk-test-only-placeholder-not-real-1234567"
     bad=client.post("/api/paper/ai-provider/vault/connect",json={"api_key":key})
     assert bad.status_code==403
@@ -56,3 +56,4 @@ def test_local_ui_key_controls_do_not_auto_send(monkeypatch):
     assert "Windows Credential Manager" in html
     assert "window.confirm(" in html
     assert "key saved in local" not in html.lower() or "No model requests sent" in html
+

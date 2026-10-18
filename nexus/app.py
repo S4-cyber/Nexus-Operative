@@ -67,7 +67,7 @@ async def application_lifespan(application):
                 try:await asyncio.to_thread(observer.stop)
                 finally:await asyncio.to_thread(refresh_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.137.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.138.0",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -326,7 +326,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.137.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.138.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -590,6 +590,13 @@ def paper_forward_recovery(limit:int=20):
 def paper_forward_status():
     try:return {**paper_forward_runner.status(),**paper_forward_runner.diagnostics()}
     except (OSError,sqlite3.Error,ValueError):raise HTTPException(status_code=503,detail="FORWARD_DIAGNOSTICS_UNAVAILABLE")
+
+@app.get("/api/paper/forward/preflight")
+def paper_forward_preflight(tier:str='terrestrial'):
+    from nexus.forward_preflight import build,TIERS
+    if tier not in TIERS:raise HTTPException(status_code=422,detail='INVALID_PREFLIGHT_TIER')
+    try:return build(research_order_gateway,paper_forward_runner,tier=tier,portal_active=not _paused,halted=_halted)
+    except (ValueError,OSError,sqlite3.Error):raise HTTPException(status_code=503,detail='PAPER_PREFLIGHT_UNAVAILABLE')
 
 @app.post("/api/paper/forward/start")
 def paper_forward_start(data:PaperForwardStart):

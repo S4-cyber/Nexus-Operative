@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.137.0'
+REVISION = '0.138.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -71,6 +71,12 @@ FIRST_RUN = dict(goal='Open the EXE, Start Portal, then separately confirm Engag
     research_bars=1000,collect_public_history=True,built_in_models_included=True,
     external_account_required=False,paid_ai_required=False,starts_trading_automatically=False,
     existing_choices_preserved=True,acceptance='Validate the fresh native EXE, ordinary profile, saved-choice upgrade, outage and recovery paths. Recommended defaults are not proven optimal returns.')
+PRODUCTION_USER_FLOW = (
+    'Install and open Nexus with included intelligence and practical defaults.',
+    'Securely authorize and fund an account through the financial provider; bank linking where required stays in the provider-hosted flow. Not implemented.',
+    'Choose a risk allowance that limits the engine; returns are not guaranteed.',
+    'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
+)
 NEXT = (
     'Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.',
     'Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.',
@@ -90,6 +96,7 @@ def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
                 current_hardening=CURRENT_HARDENING,first_run_setup=dict(FIRST_RUN),
+                production_user_flow=list(PRODUCTION_USER_FLOW),live_workflow_available=False,
                 delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
                 production_scope='Secure provider-held funding, governed autonomous execution and computer-off operation are product goals. All agreed production workflows require acceptance before 1.0; live activation always requires separate authorization.',
                 settings_scope='TARGET_DESIGN_NOT_EFFECTIVE_RUNTIME', settings=dict(SETTINGS), milestones=[asdict(m) for m in MILESTONES], next_steps=list(NEXT),
@@ -102,7 +109,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.137 closes an emergency-reset durability window: if reset storage cleanup fails after the database reset or intent unlink, the coordinator conservatively re-establishes both the independent cut intent and durable database halt before returning an unconfirmed error. The process-local runner cut remains set and trading stays disengaged. Exact-source Windows storage-fault and sustained-load acceptance remain separate; runtime provider and funds authority are unchanged.'
+CURRENT_HARDENING = 'v0.138 explains each startup component in terms of the autonomous trading engine and adds a read-only local check before Engage confirmation. It checks current local admission conditions without preparing accounting, contacting providers or granting permission; actual start repeats admission. Secure provider funding, learned-model execution, broker routing and cloud operation remain unfinished.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():
@@ -116,6 +123,8 @@ def markdown():
     lines += [f"| {s['id']}: {s['title']} | {s['status']} | {s['progress']} | {s['remaining']} |" for s in d['delivery_stages']]
     lines += ['',d['production_scope']]
     lines += ['','## Standing target settings (verify actual runtime separately)','']+[f'- {key}: {value}' for key,value in SETTINGS]
+    lines += ['','## Intended production experience','']+[f'{i}. {step}' for i,step in enumerate(PRODUCTION_USER_FLOW,1)]
+    lines += ['','Bank authorization, real funding and live execution are future work. Built-in numerical intelligence is included; external AI is optional. The current fixed BTC paper policy executes trades; learned council output remains advisory.','']
     lines += ['','## Minimal first-run setup','',FIRST_RUN['goal'],'',
         'Defaults: $10,000 virtual budget; Terrestrial entry allowance; BTC hourly research with1,000 bars; bounded public-history collection and included numerical models. Solar/Universal, paid AI and provider accounts are optional. Existing settings, explicit OFF selections and retained accounting/stop history are preserved. Compatible unused virtual accounting is created only on confirmed Engage; sessions never restart automatically.',
         '', 'Every To Do checkbox explains what it checks, why it matters and whether it is included, required for saving/paper configuration, created on Engage, optional or future work. Optional and future boxes may stay unticked.', '',FIRST_RUN['acceptance']]

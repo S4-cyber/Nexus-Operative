@@ -233,7 +233,7 @@ def run(output,channel=None):
                             expect(page.locator('#aiconnectorstatus')).to_contain_text('No vault lookup')
                         if workspace=='todo':
                             expect(page.locator('#startup-summary')).to_contain_text('Checked ')
-                            expect(page.get_by_role('heading',name='Your research engine, ready to explore')).to_be_visible()
+                            expect(page.get_by_role('heading',name='Your autonomous trading engine')).to_be_visible()
                             expect(page.locator('#startup-tasks')).to_contain_text('Why:')
                             expect(page.locator('#startup-check-engine')).to_be_checked()
                             expect(page.locator('#startup-check-payment')).not_to_be_checked()

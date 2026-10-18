@@ -29,7 +29,9 @@ def test_fresh_setup_check_has_no_network_writes_or_required_payments(local,monk
     assert items['payment']['status']=='UNAVAILABLE' and items['broker']['status']=='UNAVAILABLE'
     assert not items['portfolio']['checked'] and items['portfolio']['status']=='ON_DEMAND'
     assert items['budget']['checked'] and 'No save is needed' in items['budget']['detail']
-    assert all(len(x['why'])>30 and x['setup_scope'] for x in report['items'])
+    assert all(len(x['why'])>30 and len(x['trading_role'])>5 and x['setup_scope'] for x in report['items'])
+    assert report['product_goal']=='AUTONOMOUS_TRADING_ENGINE'
+    assert report['paper_workflow_available'] is True and report['live_workflow_available'] is False
     assert not report['starts_automatically'] and not report['live_orders_enabled']
     assert len({x['id'] for x in report['items']})==len(report['items'])
 

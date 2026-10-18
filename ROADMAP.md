@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.137.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.138.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.137 closes an emergency-reset durability window: if reset storage cleanup fails after the database reset or intent unlink, the coordinator conservatively re-establishes both the independent cut intent and durable database halt before returning an unconfirmed error. The process-local runner cut remains set and trading stays disengaged. Exact-source Windows storage-fault and sustained-load acceptance remain separate; runtime provider and funds authority are unchanged.
+Current hardening: v0.138 explains each startup component in terms of the autonomous trading engine and adds a read-only local check before Engage confirmation. It checks current local admission conditions without preparing accounting, contacting providers or granting permission; actual start repeats admission. Secure provider funding, learned-model execution, broker routing and cloud operation remain unfinished.
 
 ```mermaid
 flowchart TD
@@ -54,6 +54,16 @@ Secure provider-held funding, governed autonomous execution and computer-off ope
 - ai_candidate_count: 30
 - adaptive_acceleration: True
 - autonomous_paper_first: True
+
+## Intended production experience
+
+1. Install and open Nexus with included intelligence and practical defaults.
+2. Securely authorize and fund an account through the financial provider; bank linking where required stays in the provider-hosted flow. Not implemented.
+3. Choose a risk allowance that limits the engine; returns are not guaranteed.
+4. Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.
+
+Bank authorization, real funding and live execution are future work. Built-in numerical intelligence is included; external AI is optional. The current fixed BTC paper policy executes trades; learned council output remains advisory.
+
 
 ## Minimal first-run setup
 

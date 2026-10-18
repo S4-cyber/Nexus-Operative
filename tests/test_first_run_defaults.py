@@ -101,5 +101,5 @@ def test_first_run_explanations_do_not_make_optional_connections_required(local)
     assert items['portfolio']['status']=='ON_DEMAND' and not items['portfolio']['checked']
     assert all(items[k]['setup_scope'] in ('Optional','Future feature') for k in ('external_ai','paper_read','payment','broker','cloud'))
     html=(Path(__file__).resolve().parents[1]/'dashboard/portal_preview.html').read_text()
-    assert 'Welcome to Nexus' in html and 'Your research engine, ready to explore' in html
+    assert 'Welcome to Nexus' in html and 'Your autonomous trading engine' in html
     assert 'No need to tick these boxes yourself' in html

@@ -23,6 +23,8 @@ MAX_EVENT_BYTES = 4096
 MAX_DATABASE_BYTES = 64 * 1024 * 1024
 ZERO = '0' * 64
 SCHEMA = 'nexus.alpaca-paper-request-journal.v1'
+ADMISSION_PROFILE = 'nexus.paper-submission-admission.v1'
+ADMISSION_SCOPE = 'CALLER_WALL_SECONDS_NOT_SEND_OR_ARRIVAL'
 
 
 def _plan(value):
@@ -107,6 +109,9 @@ class BrokerRequestJournal:
                 if kind!='BIND' or body!=dict(schema=SCHEMA,account_sha256=self.account_digest):
                     raise ValueError('BROKER_JOURNAL_ACCOUNT_OR_SCHEMA_DISAGREEMENT')
             else:
+                if kind=='SUBMISSION_UNCERTAIN' and isinstance(body,dict) and 'admission' in body:
+                    if not isinstance(body['admission'],dict) or body['admission'].get('expected_head_sha256')!=parent:
+                        raise ValueError('BROKER_SUBMISSION_ADMISSION_HEAD_DISAGREEMENT')
                 if kind=='LOOKUP_INTERRUPTED' and (not isinstance(body,dict) or body.get('expected_head')!=parent):
                     raise ValueError('BROKER_LOOKUP_REVIEW_HEAD_DISAGREEMENT')
                 self._apply(requests,broker_ids,kind,body)
@@ -123,18 +128,29 @@ class BrokerRequestJournal:
             identity=plan['payload']['client_order_id']
             if identity in requests:raise ValueError('BROKER_JOURNAL_DUPLICATE_PREPARE')
             if len(requests)>=MAX_REQUESTS:raise ValueError('BROKER_JOURNAL_REQUEST_CAP')
-            requests[identity]=dict(plan=plan,tracker=contract.SnapshotTracker(plan),uncertain=False,lookup=dict(attempts=0,pending=None,last_at=0,next_at=0,blocked=False,last_result=None,last_outcome=None,interruptions=0,last_interruption=None))
+            requests[identity]=dict(plan=plan,tracker=contract.SnapshotTracker(plan),uncertain=False,submission_admission=None,lookup=dict(attempts=0,pending=None,last_at=0,next_at=0,blocked=False,last_result=None,last_outcome=None,interruptions=0,last_interruption=None))
             return
         if kind in ('LOOKUP_BEGIN','LOOKUP_RESULT','LOOKUP_INTERRUPTED'):
             self._apply_lookup(requests,broker_ids,kind,body)
             return
-        if kind not in ('SUBMISSION_UNCERTAIN','OBSERVE') or set(body)!=({'client_order_id'} if kind=='SUBMISSION_UNCERTAIN' else {'client_order_id','response'}):
+        shapes=({'client_order_id'},{'client_order_id','admission'}) if kind=='SUBMISSION_UNCERTAIN' else ({'client_order_id','response'},)
+        if kind not in ('SUBMISSION_UNCERTAIN','OBSERVE') or set(body) not in shapes:
             raise ValueError('BROKER_JOURNAL_EVENT_INVALID')
         identity=body['client_order_id']
         if not isinstance(identity,str) or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         request=requests[identity]
         if kind=='SUBMISSION_UNCERTAIN':
             if request['uncertain']:raise ValueError('BROKER_JOURNAL_DUPLICATE_ATTEMPT')
+            if 'admission' in body:
+                marker=body['admission']
+                if (type(marker) is not dict or set(marker)!={'profile','clock_scope','evaluated_at','expected_head_sha256','payload_sha256'} or
+                    marker['profile']!=ADMISSION_PROFILE or marker['clock_scope']!=ADMISSION_SCOPE or
+                    type(marker['expected_head_sha256']) is not str or re.fullmatch('[0-9a-f]{64}',marker['expected_head_sha256']) is None or
+                    marker['payload_sha256']!=request['plan']['payload_sha256']):
+                    raise ValueError('BROKER_SUBMISSION_ADMISSION_INVALID')
+                self._submission_time(requests,marker['evaluated_at'])
+                if any(r['lookup']['blocked'] for r in requests.values()):raise ValueError('BROKER_SUBMISSION_ACCOUNT_REVIEW_REQUIRED')
+                request['submission_admission']=dict(marker)
             request['uncertain']=True
             return
         if not request['uncertain']:raise ValueError('BROKER_JOURNAL_NO_ATTEMPT_BOUNDARY')
@@ -150,7 +166,7 @@ class BrokerRequestJournal:
         identity=body.get('client_order_id')
         if not isinstance(identity,str) or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         request=requests[identity]; state=request['lookup']; now=lookup.clock(body.get('evaluated_at'))
-        if now<max(r['lookup']['last_at'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_CLOCK_REGRESSION')
+        if now<self._clock_floor(requests):raise ValueError('BROKER_LOOKUP_CLOCK_REGRESSION')
         if kind=='LOOKUP_INTERRUPTED':
             if set(body)!={'client_order_id','token','evaluated_at','expected_head','confirm_interrupted'} or body['confirm_interrupted'] is not True:
                 raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
@@ -196,7 +212,7 @@ class BrokerRequestJournal:
         state=('OBSERVED_TERMINAL_RECONCILIATION_REQUIRED' if latest['terminal'] else 'OBSERVED_NONTERMINAL_REVIEW_REQUIRED') if latest else ('SUBMISSION_UNKNOWN_LOOKUP_REQUIRED' if request['uncertain'] else 'PREPARED_UNSENT_DIAGNOSTIC')
         return dict(client_order_id=identity,payload_sha256=request['plan']['payload_sha256'],
                     recovery_state=state,snapshot=latest,lookup_by_original_client_id_required=request['uncertain'] and not latest,
-                    submission_attempt_marked=request['uncertain'],lookup=dict(attempts=request['lookup']['attempts'],attempt_limit=lookup.MAX_LOOKUPS_PER_REQUEST,pending=request['lookup']['pending'] is not None,next_allowed_at=request['lookup']['next_at'],review_blocked=request['lookup']['blocked'],interruptions=request['lookup']['interruptions'],last_outcome=request['lookup']['last_outcome']),automatic_retry=False,sendable=False,
+                    submission_attempt_marked=request['uncertain'],submission_admission=None if request['submission_admission'] is None else dict(request['submission_admission']),lookup=dict(attempts=request['lookup']['attempts'],attempt_limit=lookup.MAX_LOOKUPS_PER_REQUEST,pending=request['lookup']['pending'] is not None,next_allowed_at=request['lookup']['next_at'],review_blocked=request['lookup']['blocked'],interruptions=request['lookup']['interruptions'],last_outcome=request['lookup']['last_outcome']),automatic_retry=False,sendable=False,
                     broker_connected=False,ledger_applied=False,broker_account_reconciled=False)
 
     @staticmethod
@@ -214,9 +230,13 @@ class BrokerRequestJournal:
             scope='Local event headroom only; no byte/disk/provider quota guarantee, reservation ownership, order routing or resubmission permission.')
 
     @staticmethod
+    def _clock_floor(requests):
+        return max((max(r['lookup']['last_at'],(r['submission_admission'] or {}).get('evaluated_at',0)) for r in requests.values()),default=0)
+
+    @staticmethod
     def _submission_time(requests,value):
         now=lookup.clock(value)
-        if now<max((r['lookup']['last_at'] for r in requests.values()),default=0):raise ValueError('BROKER_SUBMISSION_CLOCK_REGRESSION')
+        if now<BrokerRequestJournal._clock_floor(requests):raise ValueError('BROKER_SUBMISSION_CLOCK_REGRESSION')
         # Conservative reuse of a known retained rate-limit block, not proof of
         # provider-wide POST quotas. Terminal observations/cleanup remain allowed.
         deadline=max((r['lookup']['next_at'] for r in requests.values()
@@ -238,6 +258,9 @@ class BrokerRequestJournal:
                     if existing['uncertain']:raise ValueError('BROKER_SUBMISSION_ALREADY_MARKED_LOOKUP_REQUIRED')
                     if any(r['lookup']['blocked'] for r in requests.values()):raise ValueError('BROKER_SUBMISSION_ACCOUNT_REVIEW_REQUIRED')
                 admitted=self._submission_time(requests,admission()) if admission is not None else None
+                if kind=='SUBMISSION_UNCERTAIN' and expected_head is not None:
+                    body=dict(body,admission=dict(profile=ADMISSION_PROFILE,clock_scope=ADMISSION_SCOPE,evaluated_at=admitted,
+                        expected_head_sha256=previous,payload_sha256=expected_payload_sha256))
                 if any(r['lookup']['pending'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_PENDING_REVIEW_REQUIRED')
                 duplicate=False
                 if kind=='PREPARE' and existing:
@@ -281,7 +304,7 @@ class BrokerRequestJournal:
         if present:
             with closing(self._connect()) as db:requests,_,count,head=self._load(db)
         request=requests.get(client_order_id);reasons=[]
-        floor=max((r['lookup']['last_at'] for r in requests.values()),default=0)
+        floor=self._clock_floor(requests)
         deadline=max((r['lookup']['next_at'] for r in requests.values()
             if r['lookup']['last_outcome']=='RATE_LIMITED'),default=0)
         if not request:reasons.append('REQUEST_NOT_PREPARED')
@@ -425,7 +448,7 @@ class BrokerRequestJournal:
         if present:
             with closing(self._connect()) as db:requests,_,count,head=self._load(db)
         reasons=[];eligible=[];terminal=exhausted=prepared=0
-        floor=max((r['lookup']['last_at'] for r in requests.values()),default=0)
+        floor=self._clock_floor(requests)
         deadline=max((r['lookup']['next_at'] for r in requests.values()),default=0)
         if any(r['lookup']['pending'] for r in requests.values()):reasons.append('PENDING_LOOKUP_REVIEW_REQUIRED')
         if any(r['lookup']['blocked'] for r in requests.values()):reasons.append('ACCOUNT_LOOKUP_REVIEW_REQUIRED')
@@ -529,6 +552,13 @@ def submission_admission_fixture():
         try:begin(lambda:False)
         except ValueError:revoked=journal.path.read_bytes()==before
         marked=begin(lambda:1000);reserved=journal.recovery()['capacity']['recovery_slots_reserved']==2
+        marker=marked['submission_admission'];cold=BrokerRequestJournal(journal.path,'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+        marker_replayed=cold.recovery()['requests'][0]['submission_admission']==marker and marker==dict(
+            profile=ADMISSION_PROFILE,clock_scope=ADMISSION_SCOPE,evaluated_at=1000,
+            expected_head_sha256=preflight['head_sha256'],payload_sha256=original['payload_sha256'])
+        marker_bytes=journal.path.read_bytes();marker_clock_blocked=False
+        try:cold.begin_lookup('nx_admission_fixture',evaluated_at=999)
+        except ValueError as error:marker_clock_blocked=str(error)=='BROKER_LOOKUP_CLOCK_REGRESSION' and journal.path.read_bytes()==marker_bytes
         marked_review=journal.submission_review('nx_admission_fixture',evaluated_at=1000)
         marked_blocked='ORIGINAL_ID_RECOVERY_REQUIRED' in marked_review['reasons'] and not marked_review['local_marker_checks_clear']
         duplicate=False;before=journal.path.read_bytes()
@@ -542,6 +572,7 @@ def submission_admission_fixture():
         state=BrokerRequestJournal(journal.path,'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa').recovery()
         blocked=BrokerRequestJournal(Path(directory)/'blocked.sqlite3','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
         blocked.prepare(original);blocked.mark_submission_uncertain('nx_admission_fixture')
+        legacy_untimed=blocked.recovery()['requests'][0]['submission_admission'] is None
         token=blocked.begin_lookup('nx_admission_fixture',evaluated_at=1000)['lookup_token']
         blocked.finish_lookup('nx_admission_fixture',token,evaluated_at=1001,status_code=401)
         other=contract.preview('nx_blocked_fixture','BTC-USD','BUY','2','100',asset,metadata_at=1000,evaluated_at=1001)
@@ -568,6 +599,7 @@ def submission_admission_fixture():
             except ValueError as error:clock_denials.append(str(error)=='BROKER_LOOKUP_CLOCK_REGRESSION' and clocks.path.read_bytes()==before)
             if not finishing:ticket=clocks.begin_lookup_checked('nx_admission_fixture',admission=lambda:1000)
         return dict(source='TEMPORARY_LOCAL_SUBMISSION_ADMISSION_FIXTURE',
+            admission_marker_replayed=marker_replayed,admission_clock_floor_retained=marker_clock_blocked,legacy_marker_untimed=legacy_untimed,
             preflight_passive_no_authority=preflight_passive,preflight_marked_requires_recovery=marked_blocked,
             lookup_begin_clock_rollback=bool(clock_denials and clock_denials[0]),lookup_result_clock_rollback=len(clock_denials)==2 and clock_denials[1],
             retained_clock_rejected=bool(denials and denials[0]),rate_cooldown_rejected=len(denials)==2 and denials[1],rate_deadline_allows_marker_only=resumed['attempt_marker_commit_observed'] and not resumed['routing_authorized'],

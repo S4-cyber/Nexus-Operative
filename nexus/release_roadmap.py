@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.164.0'
+REVISION = '0.165.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -109,6 +109,7 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
+    'Accept retained checked-admission samples on authorized native paper histories, including full prefix replay and later cross-request clock regression. Keep older markers untimed. Independently review actual send/arrival event capture, clock domains and contemporaneous quotes before creating execution benchmarks; admission is not proof of transport or broker arrival.',
     'Accept the separately confirmed EXE quote-capture, offline status and encrypted full-chain evidence review on authorized paper-account/native-profile history. Preserve one quote per successful retained pacing transition, original-request prefixes and interruption blocks; accept the new declared-operation history, review central budget coordination and a complete mixed-operation receipt model, and add exact original-event-time bindings before deriving decision/arrival benchmarks; do not treat a latest quote, local clock or reported size as verified order arrival, executable liquidity or latency.',
     'Accept the exact-head paper execution-quality review on authorized retained account history and native Windows builds. Add independently reviewed contemporaneous benchmark/arrival quote capture, original-event time binding, clock-domain evidence and verified fee links before net-cost or broker-latency claims; preserve unknown fees and include every retained fill.',
     'Verify all eight EXE paper tools on standalone and installed Windows builds, including private exact-head quality review, unchanged input journals/benchmarks, unknown fees and unverified benchmark authority; preserve current-head/public account review, crypto, no default-data/UI startup and actual account/profile acceptance. Quality review requires v0.159+; quote-capture requires v0.162+ and explicit confirmation for a read; encrypted full-chain quote evidence requires v0.163+ and a hidden password, with actual native/private-volume/ACL recovery acceptance still required.',
@@ -157,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.164 preserves the v0.163.1 sidecar/owner-lock alias preflight fix and records owner-fenced declared read purposes and enforces fixed request sequences for inventory, asset rules, activity collection, original-ID recovery and BTC quotes. Wrong paths and incomplete/premature success refuse; outcomes, interrupted uncertainty, shared cooldowns and caps remain retained. Read-only status exposes fixed counts and pending purpose; older sessions remain LEGACY_UNSPECIFIED without rewriting. Quote/bundle and activity reviews reject mismatched typed receipt purposes while retaining legacy uncertainty. Mandatory offline evidence exercises all five actual reader flows on one local budget. This is groundwork for central budgeting, not provider-wide quotas, distributed ownership, approved mixed histories, source/timing/funds authority or routing. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.165 retains checked submission admission samples with the exact preceding request head and immutable payload digest. Replay validates the new marker and preserves older untimed markers without inference. Retained admission samples now fence clock regression in later checked submissions, original-ID lookup and passive reviews across restarts and requests. The original admission sample is caller wall-clock seconds, not send/arrival time, synchronized time or a latency benchmark. v0.164 read-purpose sequences and the v0.163.1 related-path fix remain intact. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner acceptance remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

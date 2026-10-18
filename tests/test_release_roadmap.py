@@ -70,6 +70,14 @@ def test_rough_progress_is_weighted_scoped_reproducible_and_separate_from_accept
     assert 'Rough implementation progress' in markdown() and 'about 40%' in markdown()
 
 
+def test_discovery_roadmap_scopes_durable_budget_without_provider_claim():
+    discovery=snapshot()['opportunity_discovery']
+    assert discovery['requests_per_hour_shared_local_data_root']==36
+    assert discovery['durable_request_admissions'] is True
+    assert discovery['provider_or_ip_wide_budget_verified'] is False
+    assert discovery['execution_integration'] is False
+
+
 def test_actual_progress_controller():
     import shutil,subprocess,pytest
     node=shutil.which('node')

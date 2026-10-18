@@ -1,18 +1,22 @@
 """Bounded public discovery and deterministic council research, never order admission.
 
-No credentials, account IO or persistent history. At most four markets/two
+No credentials, account IO or persistent market history. At most four markets/two
 history requests each per 15-minute burst plus one catalog. Six fresh prospects,
-256 rolling summaries, 36 requests/hour/process. Stop fences publication.
+256 rolling summaries, 36 requests/hour across cooperating local processes.
+Stop fences publication.
 """
 import copy
 from datetime import datetime,timezone
 import json
 import math
+import os
+from pathlib import Path
 import re
 import threading
 import time
 from urllib.parse import urlencode
 from urllib.request import Request,HTTPRedirectHandler,build_opener
+from nexus.found_market_budget import SharedRequestBudget
 from nexus.market_universe import parse as parse_catalog,PATTERN,URL,MAX_RESPONSE_BYTES
 
 INTERVAL=900
@@ -93,9 +97,16 @@ def council_screen(hourly,daily,now):
     return result
 
 
+def _shared_budget_admit(admission):
+    root=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))
+    return SharedRequestBudget(root/'found_market_request_budget.sqlite3').admit(admission)
+
+
 class FoundMarkets:
-    def __init__(self,transport=None,clock=None,wall=None):
+    def __init__(self,transport=None,clock=None,wall=None,budget=None):
+        public_transport=transport is None
         self.transport=transport or public_get;self.clock=clock or time.monotonic;self.wall=wall or time.time
+        self._budget=_shared_budget_admit if public_transport and budget is None else budget
         self._lock=threading.RLock();self._cycle=threading.Lock();self._stop=threading.Event();self._stop.set()
         self._thread=None;self._admission=lambda:False;self._generation=0;self._rows={};self._requests=[]
         self._next=0;self._cursor=0;self._phase='STOPPED';self._reason=None;self._catalog_count=0
@@ -127,11 +138,13 @@ class FoundMarkets:
                 reason=self._reason,selection_current=current,worker_alive=bool(self._thread and self._thread.is_alive()),cycle_active=self._cycle.locked(),
                 interval_seconds=INTERVAL,batch_limit=BATCH,selection_limit=SELECTED,summary_limit=RETAINED,
                 hourly_request_limit=HOURLY_REQUESTS,requests_attempted=self._attempts,bursts=self._bursts,
+                request_budget_scope='SHARED_COOPERATING_LOCAL_DATA_ROOT' if self._budget else 'INJECTED_PROCESS_ONLY',
+                provider_or_ip_wide_budget_verified=False,
                 catalog_candidates=self._catalog_count,summaries_retained=len(self._rows),fresh_summaries=len(fresh),
                 selected=chosen,reviewed=sorted(fresh,key=lambda r:r['product'])[:RETAINED],
                 source='coinbase_exchange_public',source_scope='USD spot crypto only; other asset classes need connectors',
                 council_implementation='DETERMINISTIC_DISCOVERY_SPECIALISTS_NOT_TRAINED_FORECAST',
-                persistence='BOUNDED_PROCESS_MEMORY_ONLY_RESCAN_AFTER_RESTART',
+                persistence='SUMMARIES_IN_BOUNDED_PROCESS_MEMORY; REQUEST_ADMISSIONS_DURABLE_WHEN_PUBLIC',
                 source_transport='INJECTED_FIXTURE' if self.transport is not public_get else 'PUBLIC_HTTP',
                 paper_orders_enabled=False,live_orders_enabled=False,money_movement_enabled=False,
                 policy_changed=False,profitability_validated=False,
@@ -162,6 +175,9 @@ class FoundMarkets:
             if self._stop.is_set() or generation!=self._generation or not self._admission():raise ValueError('STOPPED')
             now,_=self._times();self._requests=[t for t in self._requests if 0<=now-t<3600]
             if len(self._requests)>=HOURLY_REQUESTS:raise ValueError('REQUEST_BUDGET')
+            if self._budget:
+                admit=self._budget.admit if hasattr(self._budget,'admit') else self._budget
+                admit(lambda:self._times()[1])
             self._requests.append(now);self._attempts+=1
         return self.transport(url)
 

@@ -287,7 +287,7 @@ def _http_trial():
         trial=responses['/api/paper/forward/trial-readiness']
         _require(trial['read_only'] is True and trial['status']=='NO_RETAINED_HISTORY' and trial['review'] is None and trial['quote_capacity']['estimated_additional_observations']==51841 and all(trial[k] is False for k in ('automatic_start','strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled','money_movement_enabled')), 'HTTP_TRIAL_READINESS_PASSIVE')
         found=responses['/api/research/found-markets']
-        _require(found['enabled'] is False and found['selected']==[] and found['requests_attempted']==0 and found['policy_changed'] is False,'HTTP_FOUND_MARKETS_PASSIVE')
+        _require(found['enabled'] is False and found['selected']==[] and found['requests_attempted']==0 and found['policy_changed'] is False and found['request_budget_scope']=='SHARED_COOPERATING_LOCAL_DATA_ROOT' and found['provider_or_ip_wide_budget_verified'] is False,'HTTP_FOUND_MARKETS_PASSIVE')
         preflight=responses['/api/paper/forward/preflight']
         _require(preflight['read_only'] is True and preflight['blockers']==['PORTAL_STOPPED'] and
             preflight['local_checks_clear'] is False and all(preflight[k] is False for k in
@@ -305,7 +305,7 @@ def _http_trial():
         _require(not any(attempts.values()), 'HTTP_PAPER_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, passive_forward_reads_preserved_missing_storage=True, **attempts,
-            paper_pacing=paper_pacing,first_run_defaults=first_run_defaults,read_only_preflight_preserved_stopped_gate=True,found_markets_passive_read=True,trial_readiness_passive_read=True,progress_estimate_scope_checked=True,
+            paper_pacing=paper_pacing,first_run_defaults=first_run_defaults,read_only_preflight_preserved_stopped_gate=True,found_markets_passive_read=True,found_markets_shared_budget_scope_checked=True,trial_readiness_passive_read=True,progress_estimate_scope_checked=True,
             credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
             limitations='Real local source-process HTTP only; paper credential and provider seams are injected fixtures with temporary retained pacing. No rendered browser, Windows executable, actual provider, order or sustained market test.')
     finally:
@@ -469,7 +469,7 @@ def _validate(profile, result):
     if profile == 'http':
         _require(result['progress_estimate_scope_checked'] is True,'HTTP_PROGRESS_ASSESSMENT')
         _require(result['trial_readiness_passive_read'] is True,'HTTP_TRIAL_READINESS_READ')
-        _require(result['found_markets_passive_read'] is True,'HTTP_FOUND_MARKETS_READ')
+        _require(result['found_markets_passive_read'] is True and result['found_markets_shared_budget_scope_checked'] is True,'HTTP_FOUND_MARKETS_READ')
         _require(result['read_only_preflight_preserved_stopped_gate'] is True,'HTTP_PREFLIGHT_GATE')
         _require(all(result['first_run_defaults'][key] is True for key in FIRST_RUN_HTTP_CHECKS),'HTTP_FIRST_RUN_DEFAULTS')
         _require(result['passive_forward_reads_preserved_missing_storage'] is True,'HTTP_PASSIVE_FORWARD')

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.143.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.144.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.143 adds a source-controlled weighted engineering progress baseline: about40% implementation with a broad30–45% judgment range, distinct from0/9 fully accepted major stages. To Do displays the same read-only estimate and scope. Checked broker attempt markers now also respect retained account rate-limit cooldowns and lookup-clock floors before and after insertion. Discovery remains atomic and research-only; no estimate, marker or test authorizes routing, funding or release.
+Current hardening: v0.144 commits each optional public-discovery request allowance before transport in a bounded local SQLite journal shared by cooperating Nexus processes using the same data root. Restart, toggle, concurrent first use, transport failure and lost return cannot restore a consumed slot. Passive status creates no storage. This is not provider-wide, host-wide or shared-IP coordination, and discovery remains research-only. The rough implementation baseline remains about40% (30–45%, low confidence) with0/9 fully accepted stages; this hardening does not close a major acceptance stage or authorize routing, funding or release.
 
 ```mermaid
 flowchart TD

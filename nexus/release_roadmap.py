@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.143.0'
+REVISION = '0.144.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -130,7 +130,7 @@ def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
                 current_hardening=CURRENT_HARDENING,progress_estimate=progress_estimate(),launch_assessment=dict(stage='EXPERIMENTAL_LOCAL_PAPER_PREPRODUCTION',full_release_date_established=False,percentage_complete_established=False,rough_engineering_estimate_available=True,next_major_gate='CONNECTED_BROKER_PAPER_AND_SUSTAINED_TRIAL_ACCEPTANCE',minimum_coverage_window_hours=72,coverage_is_release_acceptance=False),first_run_setup=dict(FIRST_RUN),
-                opportunity_discovery=dict(implemented=True,scope='USD spot crypto research only',default_with_portal=True,burst_seconds=900,markets_per_burst=4,requests_per_hour_per_process=36,selected_market_limit=6,summary_limit=256,stored_in_process_memory=True,execution_integration=False,forecasts_validated=False),
+                opportunity_discovery=dict(implemented=True,scope='USD spot crypto research only',default_with_portal=True,burst_seconds=900,markets_per_burst=4,requests_per_hour_shared_local_data_root=36,durable_request_admissions=True,provider_or_ip_wide_budget_verified=False,selected_market_limit=6,summary_limit=256,stored_in_process_memory=True,execution_integration=False,forecasts_validated=False),
                 production_user_flow=list(PRODUCTION_USER_FLOW),live_workflow_available=False,
                 delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
                 production_scope='Secure provider-held funding, governed autonomous execution and computer-off operation are product goals. All agreed production workflows require acceptance before 1.0; live activation always requires separate authorization.',
@@ -144,7 +144,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.143 adds a source-controlled weighted engineering progress baseline: about40% implementation with a broad30–45% judgment range, distinct from0/9 fully accepted major stages. To Do displays the same read-only estimate and scope. Checked broker attempt markers now also respect retained account rate-limit cooldowns and lookup-clock floors before and after insertion. Discovery remains atomic and research-only; no estimate, marker or test authorizes routing, funding or release.'
+CURRENT_HARDENING = 'v0.144 commits each optional public-discovery request allowance before transport in a bounded local SQLite journal shared by cooperating Nexus processes using the same data root. Restart, toggle, concurrent first use, transport failure and lost return cannot restore a consumed slot. Passive status creates no storage. This is not provider-wide, host-wide or shared-IP coordination, and discovery remains research-only. The rough implementation baseline remains about40% (30–45%, low confidence) with0/9 fully accepted stages; this hardening does not close a major acceptance stage or authorize routing, funding or release.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.142.0 (pre-release).** Checked single-attempt broker submission markers and per-request event recovery reserves. Transport, broker account reconciliation and routing remain disconnected/unaccepted.
+**Current development build: 0.143.0 (pre-release).** Rough weighted implementation estimates with separate acceptance status, plus retained rate-limit/clock checks for disconnected broker submission markers. No routing, funding or release permission implied.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

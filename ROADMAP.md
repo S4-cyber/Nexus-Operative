@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.142.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.143.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: Includes v0.141 atomic Found Markets refresh publication and withheld selections after failures/stops until a complete fenced refresh succeeds. v0.142 hardens the disconnected broker handoff: a head/terms-bound single-attempt marker checks caller admission after SQLite write ownership and before commit, while unresolved attempts retain event headroom for a next original-ID lookup pair. Other requests cannot consume that headroom, pending lookups retain completion capacity and terminal observations can reduce historical deficits. This is not a transport, account/funds approval or routing permission; actual broker-paper execution and acceptance remain open.
+Current hardening: v0.143 adds a source-controlled weighted engineering progress baseline: about40% implementation with a broad30–45% judgment range, distinct from0/9 fully accepted major stages. To Do displays the same read-only estimate and scope. Checked broker attempt markers now also respect retained account rate-limit cooldowns and lookup-clock floors before and after insertion. Discovery remains atomic and research-only; no estimate, marker or test authorizes routing, funding or release.
 
 ```mermaid
 flowchart TD
@@ -46,6 +46,28 @@ flowchart TD
 | D9: 1.0 production release | BLOCKED | The project remains a 0.x prerelease with source-controlled acceptance gates. | All agreed production workflows, including secure funding and governed autonomous execution, must be implemented and accepted; complete testing, reconciliation, security/risk review, recovery/runbooks, cloud acceptance for the agreed scope and explicit owner release approval. A release never activates live trading by itself. |
 
 Secure provider-held funding, governed autonomous execution and computer-off operation are product goals. All agreed production workflows require acceptance before 1.0; live activation always requires separate authorization.
+
+## Rough implementation progress — not release acceptance
+
+As of 2026-10-18: about 40% of the full agreed implementation scope (rough range 30–45%; low confidence). 0/9 major stages fully accepted. No release date established.
+
+Manual relative-scope weights multiplied by rough implementation estimates; overall rounded to the nearest5 percentage points. Estimates include foundations and partial work, not independently accepted operations. They are not measured task/hour completion or time remaining. Reusable foundations can contribute to unfinished integrations. The range is judgment, not a statistical confidence interval.
+
+| Stage | Relative scope weight | Rough implementation | Acceptance |
+| --- | --- | --- | --- |
+| D1: Usable research application | 10% | 85% | OPEN |
+| D2: Learning models with defensible strategy evidence | 15% | 55% | OPEN |
+| D3: Autonomous paper trading | 15% | 70% | OPEN |
+| D4: Connected broker paper trading | 20% | 35% | OPEN |
+| D5: Secure deposits and available-funds verification | 10% | 0% | OPEN |
+| D6: Governed autonomous live trading | 10% | 10% | OPEN |
+| D7: Secure computer-off operation and shared Matrix hub | 10% | 10% | OPEN |
+| D8: Speed, resilience and independent acceptance | 5% | 35% | OPEN |
+| D9: 1.0 production release | 5% | 0% | OPEN |
+
+Reassess after meaningful integration, acceptance or scope changes; no automatic increase for versions, patches or passing test counts. Estimates may decrease. Report occasionally in development updates.
+
+Assessment basis: commit `b2a9bc6da241bb8c7f0e1dfe1b2ed6b251bf467c`; exact weighted index 38.0 before rounding. This is an assessment, not an independently measured completion percentage or permission.
 
 ## Standing target settings (verify actual runtime separately)
 

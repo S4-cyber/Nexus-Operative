@@ -115,3 +115,33 @@ def test_retained_account_review_blocks_another_checked_submission(store):
     with pytest.raises(ValueError,match='ACCOUNT_REVIEW_REQUIRED'):
         store.begin_submission_checked('second',expected_head=retained['head_sha256'],expected_payload_sha256=retained['plan']['payload_sha256'],admission=lambda:pytest.fail('Blocked account invoked admission'))
     assert store.path.read_bytes()==before
+
+
+@pytest.mark.parametrize('now,reason',[(1000,'CLOCK_REGRESSION'),(1020,'ACCOUNT_COOLDOWN_ACTIVE')])
+def test_retained_lookup_clock_and_rate_limit_fence_another_checked_marker(store,now,reason):
+    store.prepare(plan(client_order_id='second'));begin(store)
+    token=store.begin_lookup('nx_fixture',evaluated_at=1000)['lookup_token']
+    store.finish_lookup('nx_fixture',token,evaluated_at=1001,status_code=429,retry_after='30')
+    retained=store.lookup_request('second');before=store.path.read_bytes()
+    with pytest.raises(ValueError,match=reason):
+        store.begin_submission_checked('second',expected_head=retained['head_sha256'],expected_payload_sha256=retained['plan']['payload_sha256'],admission=lambda:now)
+    assert store.path.read_bytes()==before
+
+
+def test_checked_marker_can_resume_at_rate_deadline_but_never_becomes_send_permission(store):
+    store.prepare(plan(client_order_id='second'));begin(store)
+    token=store.begin_lookup('nx_fixture',evaluated_at=1000)['lookup_token']
+    store.finish_lookup('nx_fixture',token,evaluated_at=1001,status_code=429,retry_after='30')
+    retained=store.lookup_request('second')
+    result=store.begin_submission_checked('second',expected_head=retained['head_sha256'],expected_payload_sha256=retained['plan']['payload_sha256'],admission=lambda:1031)
+    assert result['attempt_marker_commit_observed'] and not result['routing_authorized'] and not result['sendable']
+
+
+def test_post_insert_clock_cannot_cross_back_into_retained_rate_block(store):
+    store.prepare(plan(client_order_id='second'));begin(store)
+    token=store.begin_lookup('nx_fixture',evaluated_at=1000)['lookup_token']
+    store.finish_lookup('nx_fixture',token,evaluated_at=1001,status_code=429,retry_after='30')
+    retained=store.lookup_request('second');before=store.path.read_bytes();samples=iter([1031,1030])
+    with pytest.raises(ValueError):
+        store.begin_submission_checked('second',expected_head=retained['head_sha256'],expected_payload_sha256=retained['plan']['payload_sha256'],admission=lambda:next(samples))
+    assert store.path.read_bytes()==before

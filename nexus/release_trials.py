@@ -278,6 +278,8 @@ def _http_trial():
         for name in ('broker_connected', 'live_orders_enabled', 'money_movement_enabled'):
             _require(status[name] is False, 'AUTHORITY_ENABLED')
         _require(responses['/api/roadmap']['read_only'] is True, 'ROADMAP_MUTABLE')
+        progress=responses['/api/roadmap']['progress_estimate']
+        _require(progress['implementation_estimate_percent']==40 and progress['fully_accepted_stages']==0 and sum(row['weight_percent'] for row in progress['stages'])==100 and all(progress[k] is False for k in ('release_ready','release_approved','live_orders_enabled','money_movement_enabled')),'HTTP_PROGRESS_SCOPE')
         _require(responses['/api/execution/recovery']['journal_present'] is False and
             responses['/api/execution/recovery']['status']=='NO_RETAINED_HISTORY' and
             responses['/api/paper/forward/recovery']['order_history_present'] is False,
@@ -303,7 +305,7 @@ def _http_trial():
         _require(not any(attempts.values()), 'HTTP_PAPER_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, passive_forward_reads_preserved_missing_storage=True, **attempts,
-            paper_pacing=paper_pacing,first_run_defaults=first_run_defaults,read_only_preflight_preserved_stopped_gate=True,found_markets_passive_read=True,trial_readiness_passive_read=True,
+            paper_pacing=paper_pacing,first_run_defaults=first_run_defaults,read_only_preflight_preserved_stopped_gate=True,found_markets_passive_read=True,trial_readiness_passive_read=True,progress_estimate_scope_checked=True,
             credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
             limitations='Real local source-process HTTP only; paper credential and provider seams are injected fixtures with temporary retained pacing. No rendered browser, Windows executable, actual provider, order or sustained market test.')
     finally:
@@ -465,6 +467,7 @@ def _validate(profile, result):
         _require(result['target_validated'] is False, 'UNSUPPORTED_MARKET_SPEED_CLAIM')
     else: _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
+        _require(result['progress_estimate_scope_checked'] is True,'HTTP_PROGRESS_ASSESSMENT')
         _require(result['trial_readiness_passive_read'] is True,'HTTP_TRIAL_READINESS_READ')
         _require(result['found_markets_passive_read'] is True,'HTTP_FOUND_MARKETS_READ')
         _require(result['read_only_preflight_preserved_stopped_gate'] is True,'HTTP_PREFLIGHT_GATE')
@@ -562,7 +565,7 @@ def _validate(profile, result):
              'source_coverage_verified', 'fee_coverage_complete', 'ledger_applied', 'live_orders_enabled')), 'BALANCE_AUTHORITY')
     if profile == 'pacing':
         submission=result['submission_admission']
-        _require(submission['source']=='TEMPORARY_LOCAL_SUBMISSION_ADMISSION_FIXTURE' and all(submission[k] is True for k in ('account_review_blocks_begin','marker_commit_observed','recovery_pair_reserved','duplicate_begin_rejected','revoked_admission_unchanged','pending_lookup_completion_reserved','terminal_lookup_releases_reserve','reopened_terminal_observation')),'SUBMISSION_ADMISSION_FENCES')
+        _require(submission['source']=='TEMPORARY_LOCAL_SUBMISSION_ADMISSION_FIXTURE' and all(submission[k] is True for k in ('retained_clock_rejected','rate_cooldown_rejected','rate_deadline_allows_marker_only','account_review_blocks_begin','marker_commit_observed','recovery_pair_reserved','duplicate_begin_rejected','revoked_admission_unchanged','pending_lookup_completion_reserved','terminal_lookup_releases_reserve','reopened_terminal_observation')),'SUBMISSION_ADMISSION_FENCES')
         _require(all(submission[k] is False for k in ('transport_invoked','routing_authorized','broker_connected','ledger_applied','broker_account_reconciled','live_orders_enabled','money_movement_enabled','release_approved')),'SUBMISSION_ADMISSION_AUTHORITY')
         _require(result['completed_sessions'] == 3 and result['replayed_events'] == 6, 'PACING_HISTORY')
         _require(all(result[name] is True for name in ('cooldown_enforced', 'retry_after_retained',

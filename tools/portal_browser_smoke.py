@@ -26,7 +26,9 @@ def fixtures(path,pending=True,missing_history=False):
     if path=='/api/matrix/hub/refresh':return dict(phase='STOPPED',reason=None,configuration=None,polls=0,poll_limit=60,fits=0,fit_limit=8,unchanged_skips=0,cycle_active=False)
     if path=='/api/matrix/hub':return dict(bars=300,conflicts=0,database_bytes=32768,database_byte_limit=134217728,artifact_bytes=8192,artifact_byte_limit=33554432)
     if path.startswith('/api/matrix/hub/signal?'):return dict(decision='ABSTAIN_STALE_OR_FUTURE_DATA',model_content_sha256='a'*64,forecast_as_of=1000,age_seconds=999999,forecasts=[])
-    if path=='/api/roadmap':return dict(revision='0.86.0',branch='development/windows-portal-foundation',delivery_stages=[dict(id='D5',title='Secure deposits',status='NOT_IMPLEMENTED',progress='Preview only.',remaining='Reconcile spendable funds.'),dict(id='D9',title='1.0 production release',status='BLOCKED',progress='Prerelease.',remaining='Independent acceptance.')],production_scope='Separate live authorization required.',milestones=[],strategic_goals=[],next_steps=['Validate sustained paper operation.'],supporting_track='Cloud planned.',speed_target='No broker speed validation.',resume='Read source roadmap.')
+    if path=='/api/roadmap':
+        from nexus.release_roadmap import progress_estimate
+        return dict(progress_estimate=progress_estimate(),read_only=True,revision='0.86.0',branch='development/windows-portal-foundation',delivery_stages=[dict(id='D5',title='Secure deposits',status='NOT_IMPLEMENTED',progress='Preview only.',remaining='Reconcile spendable funds.'),dict(id='D9',title='1.0 production release',status='BLOCKED',progress='Prerelease.',remaining='Independent acceptance.')],production_scope='Separate live authorization required.',milestones=[],strategic_goals=[],next_steps=['Validate sustained paper operation.'],supporting_track='Cloud planned.',speed_target='No broker speed validation.',resume='Read source roadmap.')
     if path=='/api/execution/alpaca-paper/fee-projection-fixture':return dict(input_consistency_ok=True,reasons=[],projected_balances=dict(USD='1009.78011',BTC='0'),fees_by_asset=dict(BTC='0.001',USD='0.10989'),cash_path=dict(declared_path_consistency_ok=True),activity_normalization=dict(status='REVIEW_REQUIRED',fee_coverage_complete=False,executions=[{},{}],fee_debits=[{},{}]))
     if path=='/api/execution/alpaca-paper/request-recovery-fixture':return dict(passed=True,current_replay_duplicate=True,lookup_recovery=dict(attempts=2,rate_limit_wait_seconds=30,interruption_recorded=True,late_completion_rejected=True),recovered=dict(retained_events=6,requests=[dict(snapshot=dict(filled_quantity='1'))]))
     if path=='/api/public-data/efficiency':return dict(read_only=True,requests=12,transport_attempts=4,cache_hits=6,shared_returns=2,transport_failures=0,wait_timeouts=0,active_requests=0,active_request_limit=3,mean_successful_transport_ms=120)
@@ -250,6 +252,8 @@ def run(output,channel=None):
                             expect(page.locator('#startup-check-payment')).not_to_be_checked()
                             expect(page.locator('#startup-check-payment')).to_be_disabled()
                             page.locator('#release-roadmap-load').click()
+                            expect(page.locator('#release-progress-summary')).to_contain_text('About 40%')
+                            expect(page.locator('#release-progress-summary')).to_contain_text('0/9 major stages fully accepted')
                             expect(page.locator('#release-roadmap-content')).to_contain_text('D5 / Secure deposits / NOT_IMPLEMENTED')
                             expect(page.locator('#release-roadmap-content')).to_contain_text('D9 / 1.0 production release / BLOCKED')
                             page.mouse.move(0,0)

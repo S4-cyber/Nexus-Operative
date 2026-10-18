@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.142.0'
+REVISION = '0.143.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -62,6 +62,37 @@ DELIVERY_STAGES = (
          remaining='All agreed production workflows, including secure funding and governed autonomous execution, must be implemented and accepted; complete testing, reconciliation, security/risk review, recovery/runbooks, cloud acceptance for the agreed scope and explicit owner release approval. A release never activates live trading by itself.',depends_on=['D1','D2','D3','D4','D5','D6','D7','D8']),
 )
 
+# Human engineering estimates; reassess on substantial integration/evidence or
+# scope changes. Weights are relative scope, not measured hours or permission.
+PROGRESS_BASELINE = (
+    ('D1',10,85),('D2',15,55),('D3',15,70),('D4',20,35),
+    ('D5',10,0),('D6',10,10),('D7',10,10),('D8',5,35),('D9',5,0),
+)
+
+
+def progress_estimate():
+    stages={row['id']:row for row in DELIVERY_STAGES}
+    assert {row[0] for row in PROGRESS_BASELINE}==set(stages)
+    assert len(PROGRESS_BASELINE)==len(stages) and sum(row[1] for row in PROGRESS_BASELINE)==100
+    assert all(type(weight) is int and weight>0 and type(done) is int and 0<=done<=100 for _,weight,done in PROGRESS_BASELINE)
+    weighted=sum(weight*done for _,weight,done in PROGRESS_BASELINE)
+    rounded=((weighted+250)//500)*5
+    accepted=sum(row['status']=='ACCEPTED' for row in DELIVERY_STAGES)
+    return dict(method='WEIGHTED_ENGINEERING_ESTIMATE_V1',as_of='2026-10-18',
+        basis_commit='b2a9bc6da241bb8c7f0e1dfe1b2ed6b251bf467c',
+        scope='Full agreed1.0: desktop, intelligence, local/broker paper, secure funding, governed live execution, cloud and independent/owner acceptance.',
+        implementation_estimate_percent=rounded,uncertainty_low_percent=30,uncertainty_high_percent=45,
+        confidence='LOW',weighted_index_percent=weighted/100,weights_total=100,
+        fully_accepted_stages=accepted,total_stages=len(DELIVERY_STAGES),
+        release_ready=False,release_approved=False,live_orders_enabled=False,money_movement_enabled=False,
+        estimated_release_date=None,
+        methodology='Manual relative-scope weights multiplied by rough implementation estimates; overall rounded to the nearest5 percentage points. Estimates include foundations and partial work, not independently accepted operations. They are not measured task/hour completion or time remaining. Reusable foundations can contribute to unfinished integrations. The range is judgment, not a statistical confidence interval.',
+        update_policy='Reassess after meaningful integration, acceptance or scope changes; no automatic increase for versions, patches or passing test counts. Estimates may decrease. Report occasionally in development updates.',
+        stages=[dict(id=identity,title=stages[identity]['title'],weight_percent=weight,
+            implementation_estimate_percent=done,acceptance_status='ACCEPTED' if stages[identity]['status']=='ACCEPTED' else 'OPEN',
+            basis=stages[identity]['progress'],remaining=stages[identity]['remaining']) for identity,weight,done in PROGRESS_BASELINE])
+
+
 SETTINGS = (
     ('broad_refresh_seconds',5),('ranking_seconds',15),('ai_candidate_count',30),
     ('adaptive_acceleration',True),('autonomous_paper_first',True),
@@ -98,7 +129,7 @@ NEXT = (
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
-                current_hardening=CURRENT_HARDENING,launch_assessment=dict(stage='EXPERIMENTAL_LOCAL_PAPER_PREPRODUCTION',full_release_date_established=False,percentage_complete_established=False,next_major_gate='CONNECTED_BROKER_PAPER_AND_SUSTAINED_TRIAL_ACCEPTANCE',minimum_coverage_window_hours=72,coverage_is_release_acceptance=False),first_run_setup=dict(FIRST_RUN),
+                current_hardening=CURRENT_HARDENING,progress_estimate=progress_estimate(),launch_assessment=dict(stage='EXPERIMENTAL_LOCAL_PAPER_PREPRODUCTION',full_release_date_established=False,percentage_complete_established=False,rough_engineering_estimate_available=True,next_major_gate='CONNECTED_BROKER_PAPER_AND_SUSTAINED_TRIAL_ACCEPTANCE',minimum_coverage_window_hours=72,coverage_is_release_acceptance=False),first_run_setup=dict(FIRST_RUN),
                 opportunity_discovery=dict(implemented=True,scope='USD spot crypto research only',default_with_portal=True,burst_seconds=900,markets_per_burst=4,requests_per_hour_per_process=36,selected_market_limit=6,summary_limit=256,stored_in_process_memory=True,execution_integration=False,forecasts_validated=False),
                 production_user_flow=list(PRODUCTION_USER_FLOW),live_workflow_available=False,
                 delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
@@ -113,7 +144,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'Includes v0.141 atomic Found Markets refresh publication and withheld selections after failures/stops until a complete fenced refresh succeeds. v0.142 hardens the disconnected broker handoff: a head/terms-bound single-attempt marker checks caller admission after SQLite write ownership and before commit, while unresolved attempts retain event headroom for a next original-ID lookup pair. Other requests cannot consume that headroom, pending lookups retain completion capacity and terminal observations can reduce historical deficits. This is not a transport, account/funds approval or routing permission; actual broker-paper execution and acceptance remain open.'
+CURRENT_HARDENING = 'v0.143 adds a source-controlled weighted engineering progress baseline: about40% implementation with a broad30–45% judgment range, distinct from0/9 fully accepted major stages. To Do displays the same read-only estimate and scope. Checked broker attempt markers now also respect retained account rate-limit cooldowns and lookup-clock floors before and after insertion. Discovery remains atomic and research-only; no estimate, marker or test authorizes routing, funding or release.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():
@@ -126,6 +157,12 @@ def markdown():
     lines += ['','## Product milestones: funding, autonomy and final release','','| Stage | Status | Built so far | Still required |','| --- | --- | --- | --- |']
     lines += [f"| {s['id']}: {s['title']} | {s['status']} | {s['progress']} | {s['remaining']} |" for s in d['delivery_stages']]
     lines += ['',d['production_scope']]
+    estimate=d['progress_estimate']
+    lines += ['','## Rough implementation progress — not release acceptance','',
+        f"As of {estimate['as_of']}: about {estimate['implementation_estimate_percent']}% of the full agreed implementation scope (rough range {estimate['uncertainty_low_percent']}–{estimate['uncertainty_high_percent']}%; low confidence). {estimate['fully_accepted_stages']}/{estimate['total_stages']} major stages fully accepted. No release date established.",'',estimate['methodology'],'',
+        '| Stage | Relative scope weight | Rough implementation | Acceptance |','| --- | --- | --- | --- |']
+    lines += [f"| {row['id']}: {row['title']} | {row['weight_percent']}% | {row['implementation_estimate_percent']}% | {row['acceptance_status']} |" for row in estimate['stages']]
+    lines += ['',estimate['update_policy'],'',f"Assessment basis: commit `{estimate['basis_commit']}`; exact weighted index {estimate['weighted_index_percent']} before rounding. This is an assessment, not an independently measured completion percentage or permission."]
     lines += ['','## Standing target settings (verify actual runtime separately)','']+[f'- {key}: {value}' for key,value in SETTINGS]
     lines += ['','## Intended production experience','']+[f'{i}. {step}' for i,step in enumerate(PRODUCTION_USER_FLOW,1)]
     lines += ['','Bank authorization, real funding and live execution are future work. Built-in numerical intelligence is included; external AI is optional. The current fixed BTC paper policy executes trades; learned council output remains advisory.','']

@@ -213,6 +213,17 @@ class BrokerRequestJournal:
             ordinary_event_slots_remaining=max(0,remaining-reserved),recovery_reserve_deficit=max(0,reserved-remaining),
             scope='Local event headroom only; no byte/disk/provider quota guarantee, reservation ownership, order routing or resubmission permission.')
 
+    @staticmethod
+    def _submission_time(requests,value):
+        now=lookup.clock(value)
+        if now<max((r['lookup']['last_at'] for r in requests.values()),default=0):raise ValueError('BROKER_SUBMISSION_CLOCK_REGRESSION')
+        # Conservative reuse of a known retained rate-limit block, not proof of
+        # provider-wide POST quotas. Terminal observations/cleanup remain allowed.
+        deadline=max((r['lookup']['next_at'] for r in requests.values()
+            if r['lookup']['last_outcome']=='RATE_LIMITED'),default=0)
+        if now<deadline:raise ValueError('BROKER_SUBMISSION_ACCOUNT_COOLDOWN_ACTIVE')
+        return now
+
     def _write(self, kind, body, *, expected_head=None, expected_payload_sha256=None, admission=None):
         if kind!='PREPARE' and not self.path.exists():
             raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
@@ -226,7 +237,7 @@ class BrokerRequestJournal:
                     if not existing or existing['plan']['payload_sha256']!=expected_payload_sha256:raise ValueError('BROKER_SUBMISSION_TERMS_CHANGED')
                     if existing['uncertain']:raise ValueError('BROKER_SUBMISSION_ALREADY_MARKED_LOOKUP_REQUIRED')
                     if any(r['lookup']['blocked'] for r in requests.values()):raise ValueError('BROKER_SUBMISSION_ACCOUNT_REVIEW_REQUIRED')
-                admitted=lookup.clock(admission()) if admission is not None else None
+                admitted=self._submission_time(requests,admission()) if admission is not None else None
                 if any(r['lookup']['pending'] for r in requests.values()):raise ValueError('BROKER_LOOKUP_PENDING_REVIEW_REQUIRED')
                 duplicate=False
                 if kind=='PREPARE' and existing:
@@ -248,7 +259,7 @@ class BrokerRequestJournal:
                     # that cleanup path even when older history has a deficit.
                     if count+1+reserved_after>MAX_EVENTS and reserved_after>=reserved_before:raise ValueError('BROKER_JOURNAL_RECOVERY_RESERVE')
                     self._insert(db,count+1,kind,body,previous)
-                if admission is not None and lookup.clock(admission())<admitted:raise ValueError('BROKER_SUBMISSION_CLOCK_REGRESSION')
+                if admission is not None and self._submission_time(requests,admission())<admitted:raise ValueError('BROKER_SUBMISSION_CLOCK_REGRESSION')
                 db.commit()  # Never acknowledge a request/observation before its commit returns.
                 return dict(**self._summary(identity,requests[identity]),duplicate=duplicate)
             except BaseException:db.rollback();raise
@@ -435,7 +446,17 @@ def submission_admission_fixture():
         blocked.prepare(other);reference=blocked.lookup_request('nx_blocked_fixture');before=blocked.path.read_bytes();account_block=False
         try:blocked.begin_submission_checked('nx_blocked_fixture',expected_head=reference['head_sha256'],expected_payload_sha256=other['payload_sha256'],admission=lambda:1002)
         except ValueError as error:account_block=str(error)=='BROKER_SUBMISSION_ACCOUNT_REVIEW_REQUIRED' and blocked.path.read_bytes()==before
+        limited=BrokerRequestJournal(Path(directory)/'limited.sqlite3','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+        limited.prepare(original);limited.prepare(other);limited.mark_submission_uncertain('nx_admission_fixture')
+        token=limited.begin_lookup('nx_admission_fixture',evaluated_at=1000)['lookup_token']
+        limited.finish_lookup('nx_admission_fixture',token,evaluated_at=1001,status_code=429,retry_after='30')
+        reference=limited.lookup_request('nx_blocked_fixture');before=limited.path.read_bytes();denials=[]
+        for stamp,code in ((1000,'BROKER_SUBMISSION_CLOCK_REGRESSION'),(1020,'BROKER_SUBMISSION_ACCOUNT_COOLDOWN_ACTIVE')):
+            try:limited.begin_submission_checked('nx_blocked_fixture',expected_head=reference['head_sha256'],expected_payload_sha256=other['payload_sha256'],admission=lambda:stamp)
+            except ValueError as error:denials.append(str(error)==code and limited.path.read_bytes()==before)
+        resumed=limited.begin_submission_checked('nx_blocked_fixture',expected_head=reference['head_sha256'],expected_payload_sha256=other['payload_sha256'],admission=lambda:1031)
         return dict(source='TEMPORARY_LOCAL_SUBMISSION_ADMISSION_FIXTURE',
+            retained_clock_rejected=bool(denials and denials[0]),rate_cooldown_rejected=len(denials)==2 and denials[1],rate_deadline_allows_marker_only=resumed['attempt_marker_commit_observed'] and not resumed['routing_authorized'],
             account_review_blocks_begin=account_block,marker_commit_observed=marked['attempt_marker_commit_observed'],recovery_pair_reserved=reserved,
             duplicate_begin_rejected=duplicate,revoked_admission_unchanged=revoked,
             pending_lookup_completion_reserved=completion,terminal_lookup_releases_reserve=state['capacity']['recovery_slots_reserved']==0,

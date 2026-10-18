@@ -53,3 +53,26 @@ def test_minimal_first_run_is_a_bundled_goal_with_saved_choices_and_separate_eng
     assert not setup['paid_ai_required'] and not setup['external_account_required'] and not setup['starts_trading_automatically']
     assert 'Minimal first-run setup' in markdown() and 'Optional and future boxes may stay unticked' in markdown()
     setup['default_entry_tier']='universal';assert snapshot()['first_run_setup']['default_entry_tier']=='terrestrial'
+
+
+def test_rough_progress_is_weighted_scoped_reproducible_and_separate_from_acceptance():
+    data=snapshot()['progress_estimate'];rows=data['stages']
+    assert {r['id'] for r in rows}=={r['id'] for r in snapshot()['delivery_stages']}
+    assert sum(r['weight_percent'] for r in rows)==100
+    weighted=sum(r['weight_percent']*r['implementation_estimate_percent'] for r in rows)/100
+    assert weighted==data['weighted_index_percent']==38
+    assert data['implementation_estimate_percent']==40 and data['uncertainty_low_percent']<=40<=data['uncertainty_high_percent']
+    assert data['fully_accepted_stages']==0 and data['total_stages']==9 and all(r['acceptance_status']=='OPEN' for r in rows)
+    assert all(data[k] is False for k in ('release_ready','release_approved','live_orders_enabled','money_movement_enabled'))
+    assert data['estimated_release_date'] is None and data['confidence']=='LOW'
+    rows[0]['implementation_estimate_percent']=100;rows.clear()
+    assert snapshot()['progress_estimate']['stages'][0]['implementation_estimate_percent']==85
+    assert 'Rough implementation progress' in markdown() and 'about 40%' in markdown()
+
+
+def test_actual_progress_controller():
+    import shutil,subprocess,pytest
+    node=shutil.which('node')
+    if not node:pytest.skip('Node required for actual controller')
+    result=subprocess.run([node,str(Path(__file__).resolve().parents[1]/'tools/release_progress_smoke.cjs')],capture_output=True,text=True,timeout=15)
+    assert result.returncode==0,result.stderr

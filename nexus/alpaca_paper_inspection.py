@@ -18,6 +18,7 @@ from nexus.alpaca_paper_contract import number, text, sha
 
 ROOT = 'https://paper-api.alpaca.markets'
 ASSET_URL = ROOT + '/v2/assets/BTCUSD'
+BTC_QUOTE_URL = 'https://data.alpaca.markets/v1beta3/crypto/us/latest/quotes?symbols=BTC%2FUSD'
 URLS = (ROOT + '/v2/account', ROOT + '/v2/positions',
         ROOT + '/v2/orders?status=open&limit=129&direction=asc', ROOT + '/v2/account')
 MAX_BODY = 1024 * 1024
@@ -287,6 +288,18 @@ class _ReadSession:
         from nexus.alpaca_activity_collection import is_activity_url
         if lookup and not lookup_path or not lookup and url not in URLS and url != ASSET_URL and not is_activity_url(url):
             _fail('PAPER_INSPECTION_PATH_DENIED')
+        return self._get_checked(url,lookup=lookup)
+
+    def get_btc_quote(self):
+        """Only the fixed Alpaca US BTC/USD data endpoint; no caller URL."""
+        return self._get_checked(BTC_QUOTE_URL)
+
+    def _get_checked(self,url,*,lookup=False):
+        """Shared bounded transport; callers above enforce their fixed paths."""
+        if not self.active:
+            _fail('PAPER_INSPECTION_SESSION_NOT_ACTIVE')
+        if self.pacing_finished:
+            _fail('PAPER_INSPECTION_PACING_SESSION_FINISHED')
         if self.requests >= 4:
             _fail('PAPER_INSPECTION_REQUEST_CAP')
         timeout = self.checkpoint()

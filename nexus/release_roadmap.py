@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.159.0'
+REVISION = '0.160.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -109,6 +109,7 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
+    'Accept the explicitly confirmed fixed-host BTC quote observation on an authorized paper account and native Windows profile. Add bounded retained quote evidence and exact original-request/event-time bindings before deriving decision/arrival benchmarks; do not treat a latest quote, local clock or reported size as verified order arrival, executable liquidity or latency.',
     'Accept the exact-head paper execution-quality review on authorized retained account history and native Windows builds. Add independently reviewed contemporaneous benchmark/arrival quote capture, original-event time binding, clock-domain evidence and verified fee links before net-cost or broker-latency claims; preserve unknown fees and include every retained fill.',
     'Verify all six EXE paper tools on standalone and installed Windows builds, including private exact-head quality review, unchanged input journals/benchmarks, unknown fees and unverified benchmark authority; preserve current-head/public account review, crypto, no default-data/UI startup and actual account/profile acceptance. Quality review requires v0.159+.',
     'Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.',
@@ -156,7 +157,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.159 derives execution-quality inputs from exact-head locally accepted paper-request/activity/pacing/acceptance journals. All retained priced fills of one original order are included; no interval cherry-picking, cumulative-average pricing or invented fee links. Journals replay before and after; changed heads, original-term disagreement, malformed benchmarks or promoted component authority refuse without retry. Supplied benchmark quotes and clock domains remain unverified and fee-inclusive totals unknown. The six-tool EXE catalogue and standalone/installed nine-command smoke cover the private review without desktop/default-data startup. Actual source/account/fees/latency/routing acceptance remains open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.160 adds an internal explicitly confirmed three-GET BTC/USD quote observation: paper account, fixed Alpaca US market-data endpoint, same paper account. Existing redirect/body/time/permission transport checks and mandatory private account-bound pacing apply; the generic paper URL allowlist is unchanged. Exchange nanoseconds remain exact while local receipt uses sampled seconds. Stale/future/crossed/malformed quotes, changed accounts and key revocation refuse. Final freshness is checked after durable pacing; blocked saved reads stay vault-silent. No automatic retention, original-order event binding, clock/source/fee/venue acceptance, UI/EXE command or routing is added. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

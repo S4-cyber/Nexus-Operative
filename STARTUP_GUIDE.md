@@ -318,3 +318,10 @@ The optional `quality-review` tool compares all retained priced fills of one ori
 First verify the EXE catalogue version, then run `NexusOperative.exe --paper-tool quality-review --help`. Supply the account ID, four private journal paths, exact current request/activity fingerprints, the original client order ID and a separate private benchmark JSON. The benchmark must contain exactly `decision_mid`, `decision_at_ns`, `arrival_bid`, `arrival_ask`, `arrival_at_ns`, `end_at_ns` and `unfilled_mark`. Prices are decimal strings; timestamps are integer nanoseconds in a supplied common clock domain. Use null for an unavailable unfilled mark. No fee field is accepted or guessed. The source equivalent is `python -m nexus.paper_execution_quality_review --help`.
 
 The current tool does not independently capture/attest these quotes or link fees, so fee-inclusive totals remain unknown and the comparison does not establish profit or actual broker latency. Detailed output is private financial information; keep it, the benchmark and every journal outside Git and the installation/source folder. This command has no public-summary switch. It never reads a provider/key, submits orders, changes balances or initializes the desktop. These diagnostics are optional acceptance tools, not required beginner setup.
+
+
+### Quote evidence development checkpoint (v0.160)
+
+An internal confirmed paper quote reader now observes BTC/USD bid/ask data between two paper-account identity checks. It rejects stale quotes, changed accounts and revoked saved keys, and shares the existing private read cooldown. Quote sizes are reported values, not a promise that your order can fill; timestamps do not prove broker arrival or latency.
+
+This is developer/acceptance groundwork. It adds no setup checkbox, button or EXE command, and does not fetch data at startup or retain quote files automatically. Automatic retained benchmarks, order-time binding and a separately accepted streaming feed are still future work. Existing Portal, Engage, emergency-cut and beginner-help behavior stays the same.

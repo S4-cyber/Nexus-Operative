@@ -275,3 +275,20 @@ def inspect_rules_saved(*,expected_account_id,confirm_read_only_paper=False,open
     current_epoch,current_raw,_=_capture()
     if epoch!=current_epoch or raw!=current_raw or not _current(epoch):_fail('READ_REVOKED')
     return result
+
+
+def inspect_quote_saved(*,expected_account_id,confirm_read_only_paper=False,pacing=None,opener=None,
+                        wall_clock=time.time,elapsed_clock=time.monotonic):
+    """Internal explicit fixed-host quote observation; no Portal route/startup read."""
+    if confirm_read_only_paper is not True:_fail('READ_CONFIRMATION_REQUIRED')
+    from nexus.paper_quote_observation import inspect_quote,_scope
+    from nexus.broker_lookup_policy import clock
+    account=_scope(expected_account_id,pacing)  # Invalid/corrupt scope refuses before vault access.
+    pacing._admit(pacing.inspect(),clock(wall_clock()))  # Passive preview, not a reservation; begin rechecks under ownership.
+    epoch,raw,record=_capture()
+    result=inspect_quote(record['api_key'],record['api_secret'],expected_account_id=account,
+        confirm_read_only_paper=True,pacing=pacing,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,
+        permission_check=lambda:_current(epoch))
+    current_epoch,current_raw,_=_capture()
+    if epoch!=current_epoch or raw!=current_raw or not _current(epoch):_fail('READ_REVOKED')
+    return result

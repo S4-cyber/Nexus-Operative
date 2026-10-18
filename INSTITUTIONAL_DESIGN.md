@@ -52,6 +52,8 @@ Run `python -m nexus.execution_quality` for a synthetic self-test containing onl
 
 The v0.159 companion `nexus/paper_execution_quality_review.py` now binds this arithmetic to exact-head locally accepted request/activity/pacing/acceptance histories. It derives all retained priced fills for one original request, checks original terms and repeats journal replay. `--paper-tool quality-review` makes the private review available in v0.159+ EXEs without desktop startup. Benchmark quotes and clock/event timing remain supplied/unverified; retained fees stay unlinked and all fee-inclusive results unknown. This is a local evidence bridge, not actual broker acceptance or automatic routing. Independently accepted quote capture and verified fee associations remain the next step.
 
+The v0.160 internal quote-observation reader now offers a separately confirmed, mandatory-paced three-GET account/Alpaca-US-quote/account sequence with saved-key mutation/readback fences, source timestamp preservation and final freshness checks. It is a source-only acceptance primitive: no new UI/EXE command, automatic retention, original order-event binding, benchmark attestation or routing. It deliberately shares the existing60-second local read cooldown, so it is not a high-frequency feed. Bounded retained evidence and independently accepted event/time/fee bindings remain next.
+
 ## C++ and open-source candidates
 
 | Candidate | Publicly reviewed license | Evaluation before adoption |

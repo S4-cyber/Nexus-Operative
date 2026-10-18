@@ -12,7 +12,7 @@ from nexus.broker_lookup_policy import LOOKUP_URL
 def recover_original(journal, client_order_id, api_key, api_secret, *, expected_account_id,
                      confirm_read_only_paper=False, opener=None, wall_clock=time.time,
                      elapsed_clock=time.monotonic, permission_check=lambda: True,
-                     credential_check=lambda: True, pacing=None):
+                     credential_check=lambda: True, pacing=None, expected_request_head=None):
     session = transport._ReadSession(api_key, api_secret,
         confirm_read_only_paper=confirm_read_only_paper, opener=opener,
         wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
@@ -20,10 +20,12 @@ def recover_original(journal, client_order_id, api_key, api_secret, *, expected_
     expected = transport._uuid(expected_account_id)
     # Read-only before any network or write. No untracked/foreign lookup target.
     request = journal.lookup_request(client_order_id)
+    if expected_request_head is not None and request['head_sha256']!=expected_request_head:
+        transport._fail('PAPER_RECOVERY_SELECTION_HEAD_CHANGED')
     if request['account_sha256'] != hashlib.sha256(expected.encode()).hexdigest():
         transport._fail('PAPER_RECOVERY_ACCOUNT_SCOPE_DISAGREEMENT')
     with session:
-        ticket = journal.begin_lookup_checked(client_order_id, admission=session.evaluated_at)
+        ticket = journal.begin_lookup_checked(client_order_id, admission=session.evaluated_at,expected_head=expected_request_head)
         before = transport._account(session.get(transport.URLS[0]))
         if before['id'] != expected:
             transport._fail('PAPER_RECOVERY_ACCOUNT_ID_DISAGREEMENT')

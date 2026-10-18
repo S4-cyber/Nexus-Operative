@@ -220,7 +220,7 @@ def inspect_saved(*, confirm_read_only_paper=False, expected_account_id=None,
 
 def recover_saved(journal, client_order_id, *, expected_account_id,
                   confirm_read_only_paper=False, opener=None, wall_clock=time.time,
-                  elapsed_clock=time.monotonic, pacing=None):
+                  elapsed_clock=time.monotonic, pacing=None, expected_request_head=None):
     """Internal opt-in original-ID recovery; no application endpoint/default path."""
     if confirm_read_only_paper is not True:
         _fail('READ_CONFIRMATION_REQUIRED')
@@ -232,7 +232,7 @@ def recover_saved(journal, client_order_id, *, expected_account_id,
     result = recover_original(journal, client_order_id, record['api_key'], record['api_secret'],
         expected_account_id=expected_account_id, confirm_read_only_paper=True, opener=opener,
         wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch),
-        credential_check=credential_check, pacing=pacing)
+        credential_check=credential_check, pacing=pacing,expected_request_head=expected_request_head)
 
     if not credential_check():
         _fail('READ_REVOKED')

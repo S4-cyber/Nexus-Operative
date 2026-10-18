@@ -366,7 +366,9 @@ def _pacing_trial():
         no_sidecars = before == {p.name:p.read_bytes() for p in Path(directory).iterdir() if p.is_file()}
         from nexus.broker_request_journal import submission_admission_fixture
         submission=submission_admission_fixture()
-        return dict(submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        from nexus.paper_recovery_step import fixture_report as recovery_step_fixture
+        bounded_step=recovery_step_fixture()
+        return dict(bounded_recovery_step=bounded_step,submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -581,6 +583,10 @@ def _validate(profile, result):
             ('holds_reconciled', 'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing',
              'source_coverage_verified', 'fee_coverage_complete', 'ledger_applied', 'live_orders_enabled')), 'BALANCE_AUTHORITY')
     if profile == 'pacing':
+        from nexus.paper_recovery_step import FLAGS as RECOVERY_FLAGS
+        step=result['bounded_recovery_step']
+        _require(step['source']=='TEMPORARY_BOUNDED_RECOVERY_STEP_FIXTURE' and step['steps_performed']==2 and step['get_requests']==4 and all(step[k] is True for k in ('passed','first_request_selected','next_request_selected','cooldown_review_unchanged','stale_head_prevented_io')),'BOUNDED_RECOVERY_STEP')
+        _require(all(step[k] is False for k in (*RECOVERY_FLAGS,'actual_provider_access','actual_vault_access')),'BOUNDED_RECOVERY_STEP_AUTHORITY')
         submission=result['submission_admission']
         _require(submission['source']=='TEMPORARY_LOCAL_SUBMISSION_ADMISSION_FIXTURE' and all(submission[k] is True for k in ('preflight_passive_no_authority','preflight_marked_requires_recovery','lookup_begin_clock_rollback','lookup_result_clock_rollback','retained_clock_rejected','rate_cooldown_rejected','rate_deadline_allows_marker_only','account_review_blocks_begin','marker_commit_observed','recovery_pair_reserved','duplicate_begin_rejected','revoked_admission_unchanged','pending_lookup_completion_reserved','terminal_lookup_releases_reserve','reopened_terminal_observation')),'SUBMISSION_ADMISSION_FENCES')
         _require(all(submission[k] is False for k in ('transport_invoked','routing_authorized','broker_connected','ledger_applied','broker_account_reconciled','live_orders_enabled','money_movement_enabled','release_approved')),'SUBMISSION_ADMISSION_AUTHORITY')

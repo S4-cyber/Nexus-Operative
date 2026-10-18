@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.147.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.148.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.147 adds an explicitly confirmed paced paper BTC asset-field read: account/asset/account, fixed GET-only path, saved-key revocation/readback and shared managed cooldown. Accounts displays reported minimum size/increments/tradability without accepting semantics, entitlement or spending. Installed API smoke is explicitly headless and retains a one-shot three-second halt acknowledgment diagnostic; prior Windows145 pinned-recovery halt timeout is not yet declared resolved. Rough implementation remains about40% (30–45%, low confidence),0/9 fully accepted stages; actual broker-paper and independent/native acceptance remain open.
+Current hardening: v0.148 adds one explicitly confirmed next-request recovery step: passive deterministic selection, exact head rechecks before IO/under write ownership, saved-key fencing and at most one original-ID lookup. Prepared, terminal and exhausted requests are skipped without deletion; global pending/auth/clock/cooldown/capacity blocks stop selection. A private source CLI offers vault-silent local review and a separately confirmed paced read, without a background loop or resubmission. All v0.147 Windows/browser/security CI passed. Rough implementation remains about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD
@@ -99,21 +99,22 @@ Validate the fresh native EXE, ordinary profile, saved-choice upgrade, outage an
 
 ## Next sequence
 
-1. Accept the new confirmed paced paper BTC asset-field read on an authorized Windows paper account; independently review current minimum/increment semantics, stale metadata and account restrictions before any plan/routing integration. Reported asset fields do not prove entitlement or spending permission.
-2. Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.
-3. Collect and explicitly review retained public-feed paper observations using To Do Paper Trial Readiness; satisfy the72-hour/95% declared coverage diagnostic and obtain separate source, strategy, account, incident/recovery and independent acceptance. Passing local regression is not a launch-date estimate.
-4. Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.
-5. Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; exercise the repaired failed-reset durability boundary under native Windows storage faults and continue interrupted-acknowledgment recovery while preserving durable fencing.
-6. Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.
-7. Extend linked quote-model stress and independently review cost, liquidity and expiry assumptions.
-8. Extend sustained-load admission and recovery; validate physical offload and long-run costs while preserving IDs and audit evidence.
-9. Validate the opt-in BTC paper runner across sustained public feeds, outages and restart; integrate broader research-backed admission.
-10. Validate sustained local candidate refresh and independent walk-forward/cost evidence and reviewed optional local-weight runtime upgrades; never promote learned output automatically.
-11. Integrate the checked submission marker with a separately authorized paper-only transport; recheck permission after marker acknowledgment and before IO, recover by original ID after uncertain/lost acknowledgment, and accept real-account fill/fee/hold reconciliation before routing or policy promotion.
-12. Validate the explicit Windows paper credential/read controls in a real authorized paper account and review scoped-secret lifecycle; accept the journal-bound original-ID recovery coordinator against authorized paper data, then accept the bounded activity collector against authorized paper data, validate bounded local retention and implement authenticated source coverage and verified fee associations/timing, broker-wide pacing and cash/position/hold reconciliation before provider-paper routing; finish forward, packaging and independent release acceptance.
-13. Validate Found Markets on sustained real public feeds, missing data, outages and shared-IP budgets; add licensed/authorized asset connectors, leakage-free walk-forward cost evidence, calibrated forecasts, portfolio diversification and governed policy integration before any discovery-to-order route.
-14. Expand markets incrementally through verified data, legal eligibility, cost and paper-evidence gates.
-15. Evaluate free-tier computer-off hosting and secure headless operation without assuming anonymous hosting, free unlimited compute or automatic paid upgrades.
+1. Accept bounded next-request recovery on an authorized Windows paper account with real retained request history, exact-head races, shared pacing, interruptions and original-ID outcomes. A local candidate is not permission; never auto-loop, clear uncertainty, resubmit or promote account/funds acceptance from read success.
+2. Accept the new confirmed paced paper BTC asset-field read on an authorized Windows paper account; independently review current minimum/increment semantics, stale metadata and account restrictions before any plan/routing integration. Reported asset fields do not prove entitlement or spending permission.
+3. Accept the minimal first-run path on a fresh Windows profile: no settings edits, clear checkbox purposes, optional connections excluded, preserved saved/OFF choices, separate Engage consent and independent emergency cut.
+4. Collect and explicitly review retained public-feed paper observations using To Do Paper Trial Readiness; satisfy the72-hour/95% declared coverage diagnostic and obtain separate source, strategy, account, incident/recovery and independent acceptance. Passing local regression is not a launch-date estimate.
+5. Measure shared quote intake and the full feed-to-decision path under concurrent readers, failures and sustained real feeds.
+6. Extend emergency-control acceptance to sustained feeds and CPU/event-loop pressure; exercise the repaired failed-reset durability boundary under native Windows storage faults and continue interrupted-acknowledgment recovery while preserving durable fencing.
+7. Validate linked-ledger recovery, risk vetoes and reconciliation under repeated interruption.
+8. Extend linked quote-model stress and independently review cost, liquidity and expiry assumptions.
+9. Extend sustained-load admission and recovery; validate physical offload and long-run costs while preserving IDs and audit evidence.
+10. Validate the opt-in BTC paper runner across sustained public feeds, outages and restart; integrate broader research-backed admission.
+11. Validate sustained local candidate refresh and independent walk-forward/cost evidence and reviewed optional local-weight runtime upgrades; never promote learned output automatically.
+12. Integrate the checked submission marker with a separately authorized paper-only transport; recheck permission after marker acknowledgment and before IO, recover by original ID after uncertain/lost acknowledgment, and accept real-account fill/fee/hold reconciliation before routing or policy promotion.
+13. Validate the explicit Windows paper credential/read controls in a real authorized paper account and review scoped-secret lifecycle; accept the journal-bound original-ID recovery coordinator against authorized paper data, then accept the bounded activity collector against authorized paper data, validate bounded local retention and implement authenticated source coverage and verified fee associations/timing, broker-wide pacing and cash/position/hold reconciliation before provider-paper routing; finish forward, packaging and independent release acceptance.
+14. Validate Found Markets on sustained real public feeds, missing data, outages and shared-IP budgets; add licensed/authorized asset connectors, leakage-free walk-forward cost evidence, calibrated forecasts, portfolio diversification and governed policy integration before any discovery-to-order route.
+15. Expand markets incrementally through verified data, legal eligibility, cost and paper-evidence gates.
+16. Evaluate free-tier computer-off hosting and secure headless operation without assuming anonymous hosting, free unlimited compute or automatic paid upgrades.
 
 ## Explicit expansion and cloud goals
 

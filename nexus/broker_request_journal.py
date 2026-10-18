@@ -329,12 +329,13 @@ class BrokerRequestJournal:
         # Validation and append share one locked replay; extras are stripped there.
         return self._write('OBSERVE',dict(client_order_id=client_order_id,response=response))
 
-    def _lookup_write(self, identity, now, result=None, admission=None):
+    def _lookup_write(self, identity, now, result=None, admission=None, expected_head=None):
         self._identity(identity);lookup.clock(now)
         if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         with closing(self._connect(write=True)) as db:
             try:
                 requests,broker_ids,count,previous=self._load(db)
+                if expected_head is not None and previous!=expected_head:raise ValueError('BROKER_LOOKUP_HEAD_CHANGED')
                 if identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
                 request=requests[identity];state=request['lookup']
                 if admission is not None:
@@ -381,9 +382,10 @@ class BrokerRequestJournal:
         return dict(plan=json.loads(contract.canonical(requests[client_order_id]['plan'])),
                     account_sha256=self.account_digest,head_sha256=head)
 
-    def begin_lookup_checked(self, client_order_id, *, admission):
+    def begin_lookup_checked(self, client_order_id, *, admission, expected_head=None):
         """Internal runtime hook: sample permission/time again under write admission."""
-        return self._lookup_write(client_order_id,lookup.clock(admission()),admission=admission)
+        if expected_head is not None and (type(expected_head) is not str or re.fullmatch('[0-9a-f]{64}',expected_head) is None):raise ValueError('BROKER_LOOKUP_HEAD_INVALID')
+        return self._lookup_write(client_order_id,lookup.clock(admission()),admission=admission,**({'expected_head':expected_head} if expected_head is not None else {}))
 
     def finish_lookup_checked(self, client_order_id, token, *, admission, status_code=None,
                               transport_error=None, retry_after=None, response=None):
@@ -392,6 +394,42 @@ class BrokerRequestJournal:
                                     retry_after=retry_after,evaluated_at=now)
             return dict(token=token,**outcome,response=response if outcome['outcome']=='FOUND' else None)
         return self._lookup_write(client_order_id,lookup.clock(admission()),result,admission=admission)
+
+    def lookup_review(self,*,evaluated_at):
+        """Passive bounded next-lookup selection; no reservation, vault or IO."""
+        now=lookup.clock(evaluated_at);self._check_path();requests={};count=0;head=ZERO
+        present=self.path.exists()
+        if present:
+            with closing(self._connect()) as db:requests,_,count,head=self._load(db)
+        reasons=[];eligible=[];terminal=exhausted=prepared=0
+        floor=max((r['lookup']['last_at'] for r in requests.values()),default=0)
+        deadline=max((r['lookup']['next_at'] for r in requests.values()),default=0)
+        if any(r['lookup']['pending'] for r in requests.values()):reasons.append('PENDING_LOOKUP_REVIEW_REQUIRED')
+        if any(r['lookup']['blocked'] for r in requests.values()):reasons.append('ACCOUNT_LOOKUP_REVIEW_REQUIRED')
+        if now<floor:reasons.append('LOOKUP_CLOCK_REGRESSION')
+        if now<deadline:reasons.append('LOOKUP_COOLDOWN_ACTIVE')
+        for identity,r in requests.items():
+            if not r['uncertain']:prepared+=1;continue
+            if r['lookup']['pending']:continue
+            latest=r['tracker'].status()['latest']
+            if latest and latest['terminal']:terminal+=1;continue
+            if r['lookup']['attempts']>=lookup.MAX_LOOKUPS_PER_REQUEST:exhausted+=1;continue
+            eligible.append((r['lookup']['next_at'],r['lookup']['attempts'],identity))
+        if not eligible:reasons.append('NO_ELIGIBLE_UNRESOLVED_REQUEST')
+        if eligible and count+2+self._recovery_reserve({k:r for k,r in requests.items() if k!=min(eligible)[2]})>MAX_EVENTS:reasons.append('LOOKUP_RECOVERY_HEADROOM_REQUIRED')
+        selected=min(eligible)[2] if eligible and not reasons else None
+        return dict(mode='PAPER_RECOVERY_SELECTION',read_only=True,journal_present=present,
+            account_sha256=self.account_digest,head_sha256=head,evaluated_at=now,
+            status='LOCAL_CANDIDATE_SELECTED' if selected else 'REVIEW_REQUIRED',
+            selected_client_order_id=selected,eligible_requests=len(eligible),
+            skipped_prepared=prepared,skipped_terminal=terminal,skipped_attempt_cap=exhausted,
+            next_allowed_at=deadline,wait_seconds=max(0,deadline-now),reasons=reasons,
+            selection_policy='EARLIEST_RETAINED_DUE_TIME_THEN_ATTEMPTS_THEN_CLIENT_ID',
+            capacity=self._capacity(requests,count),lookup_admitted=False,admission_reserved=False,
+            automatic_continuation=False,automatic_retry=False,automatic_submission=False,
+            broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
+            ready_for_routing=False,release_approved=False,
+            scope='Sampled local next-lookup choice only; skipped terminal/exhausted requests still need reconciliation/review. A candidate reserves nothing and grants no provider/trading permission. One separately confirmed read must recheck the exact head under write ownership.')
 
     def pending_lookup(self):
         """Read-only review snapshot; no timeout inference, IO admission or repair."""
@@ -553,7 +591,8 @@ def fixture_report():
         except ValueError as exc:late_rejected=str(exc)=='BROKER_LOOKUP_PENDING_TOKEN_REQUIRED'
         if not late_rejected:raise ValueError('BROKER_FIXTURE_LATE_COMPLETION_NOT_FENCED')
         from nexus.broker_request_activity_review import fixture_report as link_fixture
-        return dict(mode='DISPOSABLE_DURABLE_BROKER_REQUEST_FIXTURE',passed=True,activity_link_review=link_fixture(),submission_review=dict(read_only=True,passive=passive,clear_before_marker=preflight['local_marker_checks_clear'],recovery_required_after_marker='ORIGINAL_ID_RECOVERY_REQUIRED' in after_review['reasons'],sendable=False,routing_authorized=False,capacity_reserved=False),uncertain_recovery_state=unknown,
+        from nexus.paper_recovery_step import fixture_report as step_fixture
+        return dict(mode='DISPOSABLE_DURABLE_BROKER_REQUEST_FIXTURE',passed=True,bounded_recovery_step=step_fixture(),activity_link_review=link_fixture(),submission_review=dict(read_only=True,passive=passive,clear_before_marker=preflight['local_marker_checks_clear'],recovery_required_after_marker='ORIGINAL_ID_RECOVERY_REQUIRED' in after_review['reasons'],sendable=False,routing_authorized=False,capacity_reserved=False),uncertain_recovery_state=unknown,
                     current_replay_duplicate=duplicate,recovered=recovered,lookup_recovery=dict(timeout_keeps_uncertainty=timeout['lookup_by_original_client_id_required'],rate_limit_next_allowed_at=limited['lookup']['next_allowed_at'],rate_limit_wait_seconds=30,attempts=limited['lookup']['attempts'],interruption_recorded=interrupted['interruption_recorded'],interruption_keeps_uncertainty=interrupted['lookup_by_original_client_id_required'],late_completion_rejected=late_rejected,attempts_after_interruption=interrupted['lookup']['attempts'],automatic_retry=False),broker_connected=False,ledger_applied=False,
                     limitations='Temporary injected observations and reopened connections; not broker integration, authenticated lookup, sustained operation or market execution.')
 

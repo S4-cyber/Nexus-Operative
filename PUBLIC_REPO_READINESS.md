@@ -1,6 +1,6 @@
 # Public repository readiness — owner handoff
 
-Publication is **not yet cleared for an unconditional visibility change**. Repository-side hardening and scoped scans are implemented; the owner-only checks below remain. No visibility change or history rewrite was performed.
+GitHub was observed **public** after the v0.111 application push; the owner changed visibility during this audit. The assistant did not change visibility or rewrite history. Repository-side hardening and scoped scans are implemented, but the owner-only checks below remain and must now be completed on the public repository. This is not an unconditional security clearance.
 
 ## Verified scope
 
@@ -32,7 +32,7 @@ The encrypted-copy tool does not delete the original plaintext, change database 
 
 The application now also rejects non-loopback peers, untrusted/duplicate Host headers and mismatched/duplicate Origin headers before reading bodies or running routes. Cross-site browser requests are rejected, API replies use no-store, and the desktop launcher disables proxy-header trust. This is a local boundary, not cloud authentication or protection against a compromised local account. Never expose this development API through a public reverse proxy.
 
-## Required owner checks before publication
+## Outstanding owner checks (repository now public)
 
 1. Review the [security-only default-branch draft PR #2](https://github.com/S4-cyber/Nexus-Operative/pull/2) and apply its baseline to main. It changes eight security/policy files, without merging application code. Its trusted branch push passed [security run39090918862](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39090918862); the PR check39090920582 correctly refuses the not-yet-installed main policy. SECURITY.md requires review before merging to main. The updated baseline push with inline/ignore bypasses disabled passed security run39091414120; its PR run39091416134 remains blocked on uninstalled main policy. PR checks deliberately refuse uninstalled/untrusted base policy during this one-time bootstrap; review the trusted branch-push scan instead, then retain strict trusted-base checks for future PRs.
 2. In GitHub, verify branch protections/rulesets and required security/test/code-owner checks, restrict bypasses, use two-factor authentication, set read-only workflow permissions and require approval for outside-contributor workflows. Do not send secrets or write tokens to fork workflows. Enable secret scanning/push protection wherever available and check Dependabot alerts. Recheck rules after visibility changes; GitHub warns that push rulesets are disabled when making a repository public.

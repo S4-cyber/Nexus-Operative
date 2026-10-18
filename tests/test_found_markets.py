@@ -73,6 +73,52 @@ def test_stop_during_request_fences_publication_and_future_requests(worker):
     w.step();assert len(calls)==2
 
 
+def test_later_market_failure_cannot_publish_partial_burst(worker):
+    w,clock,calls=worker;original=w.transport
+    def fail_second_market(url):
+        if len(calls)==3:raise OSError('private upstream detail')
+        return original(url)
+    w.transport=fail_second_market
+    result=w.step()
+    assert len(calls)==3 and result['summaries_retained']==0 and result['reviewed']==[]
+    assert result['selected']==[] and not result['selection_current']
+    assert result['reason']=='SOURCE_OR_BUDGET_REVIEW_REQUIRED'
+
+
+def test_failed_refresh_hides_prior_shortlist_until_complete_burst(worker):
+    w,clock,calls=worker;original=w.transport
+    first=w.step();assert first['selection_current'] and first['selected']
+    retained=dict(w._rows)
+    clock[0]+=900;clock[1]+=900;w._next=0
+    w.transport=lambda url: (_ for _ in ()).throw(OSError('private failure')) if url==fm.URL else original(url)
+    failed=w.step()
+    assert w._rows==retained and failed['reviewed'] and failed['selected']==[] and not failed['selection_current']
+    w.transport=original;clock[0]+=900;clock[1]+=900;w._next=0
+    recovered=w.step()
+    assert recovered['selection_current'] and recovered['selected'] and recovered['reason'] is None
+
+
+def test_empty_catalog_cannot_revalidate_prior_shortlist(worker):
+    w,clock,calls=worker;w.step()
+    clock[0]+=900;clock[1]+=900;w._next=0;w.transport=lambda _:[]
+    result=w.step()
+    assert result['catalog_candidates']==0 and result['reviewed']
+    assert result['selected']==[] and not result['selection_current']
+    assert result['reason']=='SOURCE_OR_BUDGET_REVIEW_REQUIRED'
+
+
+def test_stop_after_first_market_cannot_publish_partial_burst(worker):
+    w,clock,calls=worker;original=w.transport
+    def stop_on_second_market(url):
+        value=original(url)
+        if len(calls)==4:w.stop()
+        return value
+    w.transport=stop_on_second_market
+    result=w.step()
+    assert len(calls)==4 and result['summaries_retained']==0 and result['reviewed']==[]
+    assert result['selected']==[] and not result['selection_current'] and not result['enabled']
+
+
 def test_duplicate_or_malformed_prices_are_rejected():
     rows=history(3600)
     for value in (True,'NaN','Infinity','0','1e-300'):

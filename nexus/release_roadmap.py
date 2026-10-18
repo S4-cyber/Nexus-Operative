@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.140.0'
+REVISION = '0.141.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -112,7 +112,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.140 brings the existing retained paper-trial coverage review into To Do and the installed API, with explicit recent windows, beginner explanations and quote-record capacity estimates. Both CLI and installed review reject retained rollback/WAL/shared-memory sidecars and unsafe file layouts before opening SQLite. A72-hour/95% declared operational coverage target is neither sustained-trial acceptance nor a strategy/source/account/broker approval. Secure funding, governed live execution, cloud and independent release acceptance remain unfinished.'
+CURRENT_HARDENING = 'v0.141 makes each bounded Found Markets refresh atomic and fail-closed. Candidate summaries are staged until the entire burst passes a final stop, generation and Portal-admission fence. Stop, clock, request-budget, empty-catalog or source failure withholds all selections until a later complete burst succeeds; retained prior summaries remain diagnostic only. Discovery stays research-only and cannot change the fixed BTC execution policy. Sustained real-source validation, shared-IP budgets, trained forecasts, multi-asset routing and provider eligibility remain release work.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

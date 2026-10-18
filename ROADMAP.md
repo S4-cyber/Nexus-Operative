@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.140.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.141.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.140 brings the existing retained paper-trial coverage review into To Do and the installed API, with explicit recent windows, beginner explanations and quote-record capacity estimates. Both CLI and installed review reject retained rollback/WAL/shared-memory sidecars and unsafe file layouts before opening SQLite. A72-hour/95% declared operational coverage target is neither sustained-trial acceptance nor a strategy/source/account/broker approval. Secure funding, governed live execution, cloud and independent release acceptance remain unfinished.
+Current hardening: v0.141 makes each bounded Found Markets refresh atomic and fail-closed. Candidate summaries are staged until the entire burst passes a final stop, generation and Portal-admission fence. Stop, clock, request-budget, empty-catalog or source failure withholds all selections until a later complete burst succeeds; retained prior summaries remain diagnostic only. Discovery stays research-only and cannot change the fixed BTC execution policy. Sustained real-source validation, shared-IP budgets, trained forecasts, multi-asset routing and provider eligibility remain release work.
 
 ```mermaid
 flowchart TD

@@ -99,7 +99,7 @@ class FoundMarkets:
         self._lock=threading.RLock();self._cycle=threading.Lock();self._stop=threading.Event();self._stop.set()
         self._thread=None;self._admission=lambda:False;self._generation=0;self._rows={};self._requests=[]
         self._next=0;self._cursor=0;self._phase='STOPPED';self._reason=None;self._catalog_count=0
-        self._bursts=0;self._attempts=0;self._anchor=None
+        self._bursts=0;self._attempts=0;self._anchor=None;self._selection_ready=False
 
     def _times(self):
         with self._lock:
@@ -116,13 +116,15 @@ class FoundMarkets:
             try:
                 mono,wall=self._times()
                 fresh=[copy.deepcopy(r) for r in self._rows.values() if 0<=mono-r['observed_mono']<TTL]
-            except ValueError:fresh=[]
+            except ValueError:
+                fresh=[];self._selection_ready=False;self._reason='SOURCE_OR_BUDGET_REVIEW_REQUIRED'
             for row in fresh:row.pop('observed_mono',None)
             prospects=[r for r in fresh if any(h['eligible_for_research'] for h in r['horizons'])]
             prospects.sort(key=lambda r:(-max(h['score'] for h in r['horizons'] if h['eligible_for_research']),r['product']))
-            chosen=prospects[:SELECTED]
+            current=self._selection_ready and not self._stop.is_set() and self._reason is None
+            chosen=prospects[:SELECTED] if current else []
             return dict(mode='BOUNDED_FOUND_MARKETS_RESEARCH',read_only=True,enabled=not self._stop.is_set(),phase=self._phase,
-                reason=self._reason,worker_alive=bool(self._thread and self._thread.is_alive()),cycle_active=self._cycle.locked(),
+                reason=self._reason,selection_current=current,worker_alive=bool(self._thread and self._thread.is_alive()),cycle_active=self._cycle.locked(),
                 interval_seconds=INTERVAL,batch_limit=BATCH,selection_limit=SELECTED,summary_limit=RETAINED,
                 hourly_request_limit=HOURLY_REQUESTS,requests_attempted=self._attempts,bursts=self._bursts,
                 catalog_candidates=self._catalog_count,summaries_retained=len(self._rows),fresh_summaries=len(fresh),
@@ -140,15 +142,15 @@ class FoundMarkets:
             if not admission():raise ValueError('PORTAL_REQUIRED')
             if not self._stop.is_set():return self.status()
             if self._cycle.locked() or (self._thread and self._thread.is_alive()):raise ValueError('DISCOVERY_FINISHING')
-            self._admission=admission;self._generation+=1;self._phase='WAITING';self._reason=None;self._stop.clear()
+            self._admission=admission;self._generation+=1;self._phase='WAITING';self._reason=None;self._selection_ready=False;self._stop.clear()
             self._thread=threading.Thread(target=self._run,name='nexus-found-markets',daemon=True)
             try:self._thread.start()
-            except RuntimeError:self._stop.set();self._phase='STOPPED';raise
+            except RuntimeError:self._stop.set();self._phase='STOPPED';self._selection_ready=False;raise
             return self.status()
 
     def stop(self,reason='USER_STOP'):
         with self._lock:
-            self._stop.set();self._generation+=1;self._phase='STOPPED';self._reason=reason
+            self._stop.set();self._generation+=1;self._phase='STOPPED';self._reason=reason;self._selection_ready=False
         return self.status()
 
     def shutdown(self):
@@ -175,6 +177,7 @@ class FoundMarkets:
             with self._lock:
                 if self._stop.is_set() or generation!=self._generation or not self._admission():raise ValueError('STOPPED')
                 self._catalog_count=len(symbols)
+                if not symbols:raise ValueError('EMPTY_CATALOG')
                 # Revisit expired prior leaders before exploring the rotating catalog.
                 old=sorted((r for r in self._rows.values() if any(h['eligible_for_research'] for h in r['horizons'])),
                     key=lambda r:-max(h['score'] for h in r['horizons'] if h['eligible_for_research']))
@@ -183,6 +186,7 @@ class FoundMarkets:
                     product=symbols[self._cursor%len(symbols)];self._cursor+=1
                     if product not in chosen and (product not in self._rows or now-self._rows[product]['observed_mono']>=TTL):chosen.append(product)
                     if len(chosen)>=BATCH:break
+            staged=[]
             for product in chosen:
                 histories={}
                 for g in (3600,86400):
@@ -191,17 +195,17 @@ class FoundMarkets:
                     stamp=lambda t:datetime.fromtimestamp(t,timezone.utc).isoformat()
                     url=URL+'/'+product+'/candles?'+urlencode(dict(granularity=g,start=stamp(end-240*g),end=stamp(end)))
                     histories[g]=bars(self._get(url,generation),g,self.wall())
-                with self._lock:
-                    mono,sample_wall=self._times()
-                    if self._stop.is_set() or generation!=self._generation or not self._admission():raise ValueError('STOPPED')
-                    row=dict(product=product,observed_at=sample_wall,observed_mono=mono,
-                        horizons=council_screen(histories[3600],histories[86400],sample_wall),execution_allowed=False)
-                    self._rows[product]=row
-                    while len(self._rows)>RETAINED:del self._rows[min(self._rows,key=lambda p:self._rows[p]['observed_mono'])]
+                mono,sample_wall=self._times()
+                staged.append(dict(product=product,observed_at=sample_wall,observed_mono=mono,
+                    horizons=council_screen(histories[3600],histories[86400],sample_wall),execution_allowed=False))
             with self._lock:
-                if generation==self._generation and not self._stop.is_set():self._bursts+=1;self._phase='WAITING'
+                if self._stop.is_set() or generation!=self._generation or not self._admission():raise ValueError('STOPPED')
+                for row in staged:self._rows[row['product']]=row
+                while len(self._rows)>RETAINED:del self._rows[min(self._rows,key=lambda p:self._rows[p]['observed_mono'])]
+                self._bursts+=1;self._phase='WAITING';self._selection_ready=True
         except (ValueError,OSError,TypeError,KeyError,OverflowError):
             with self._lock:
+                self._selection_ready=False
                 if not self._stop.is_set():self._phase='WAITING';self._reason='SOURCE_OR_BUDGET_REVIEW_REQUIRED'
         finally:self._cycle.release()
         return self.status()
@@ -212,7 +216,7 @@ class FoundMarkets:
                 self.step()
                 if self._stop.wait(1):break
         except Exception:
-            with self._lock:self._stop.set();self._phase='STOPPED';self._reason='WORKER_REVIEW_REQUIRED'
+            with self._lock:self._stop.set();self._phase='STOPPED';self._reason='WORKER_REVIEW_REQUIRED';self._selection_ready=False
 
 
 worker=FoundMarkets()

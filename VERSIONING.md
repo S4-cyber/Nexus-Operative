@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.149.0 (pre-release).** Complete accepted pacing/activity history can now be required before original broker request terms and explicit fills are compared. The v0.148.1 shared recovery preflight and crash drill remain intact. This is private read-only local consistency evidence, not provider source, fee/hold/funds, routing or release authority.
+**Current development build: 0.150.0 (pre-release).** One private offline review binds original requests, accepted activity and opening/closing inventory evidence to the same journal heads. Gross differences remain separate from fee, hold, source and spendable-funds acceptance.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

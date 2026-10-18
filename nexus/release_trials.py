@@ -431,7 +431,8 @@ def _execute(profile):
         return fixture_report()
     if profile == 'reconciliation_acceptance':
         from nexus.paper_reconciliation_acceptance import fixture_report
-        return fixture_report()
+        from nexus.paper_account_evidence_review import fixture_report as bundle_fixture
+        result=fixture_report();result['account_evidence_bundle']=bundle_fixture();return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -619,6 +620,10 @@ def _validate(profile, result):
             'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled',
             'money_movement_enabled','release_approved')), 'ACTIVITY_ACCEPTANCE_AUTHORITY')
     if profile == 'reconciliation_acceptance':
+        from nexus.paper_account_evidence_review import FLAGS as BUNDLE_FLAGS
+        bundle=result['account_evidence_bundle']
+        _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
+        _require(all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY')
         _require(result['source']=='SYNTHETIC_LOCAL_ACCEPTED_RECONCILIATION_FIXTURE' and
             result['repeat_review_matches'] is True and result['journals_unchanged'] is True and
             result['unbound_history_rejected'] is True and

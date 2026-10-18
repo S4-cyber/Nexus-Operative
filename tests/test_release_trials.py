@@ -204,8 +204,11 @@ def test_request_activity_acceptance_is_mandatory_in_activity_profile():
 
 def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authority():
     from nexus.paper_reconciliation_acceptance import fixture_report
-    result=fixture_report();trials._validate('reconciliation_acceptance',result)
+    result=trials._execute('reconciliation_acceptance');trials._validate('reconciliation_acceptance',result)
     for path,value,code in (
+        (('account_evidence_bundle','changed_balance_difference_preserved'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
+        (('account_evidence_bundle','zero_fee_records_not_promoted'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
+        (('account_evidence_bundle','ready_for_routing'),True,'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY'),
         (('journals_unchanged',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
         (('out_of_window_observations_rejected',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
         (('complete_accepted_history_replayed',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),

@@ -1,0 +1,57 @@
+name: Public repository security
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: public-security-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  reachable-history-and-secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Fetch scanned source and all reachable branch/tag history
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          path: scan
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch trusted audit policy separately from pull request code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          path: policy
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - name: Require an installed trusted policy
+        run: |
+          test -f policy/tools/public_repo_audit.py && test -f policy/.gitleaks.toml || { echo 'Trusted base policy is not installed. Owner review/bootstrap required; PR code will not be used as policy.'; exit 1; }
+      - name: Audit private artifacts in current and reachable historical objects
+        run: python3 policy/tools/public_repo_audit.py --repository scan --history --require-ref refs/remotes/origin/main --require-ref refs/remotes/origin/development/windows-portal-foundation
+      - name: Install checksum-pinned Gitleaks
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto '=https' --tlsv1.2 --retry 2 --output "$RUNNER_TEMP/gitleaks.tar.gz" https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz
+          echo '9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c  '"$RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+      - name: Scan all fetched history without logging secret values
+        shell: bash
+        run: |
+          set +e
+          "$RUNNER_TEMP/gitleaks" git scan --config policy/.gitleaks.toml --log-opts='--all' --max-decode-depth 2 --redact=100 --no-banner --log-level fatal --report-format json --report-path "$RUNNER_TEMP/gitleaks-report.json"
+          result=$?
+          set -e
+          python3 - "$RUNNER_TEMP/gitleaks-report.json" <<'PY'
+          import hashlib, json, pathlib, sys
+          path=pathlib.Path(sys.argv[1])
+          if not path.is_file():
+              print('Secret scan report unavailable; scan is incomplete.')
+              raise SystemExit(2)
+          else:
+              rows=json.loads(path.read_text())
+              print(json.dumps({'secret_findings':len(rows),'locations':[{'rule':r['RuleID'],'commit':r.get('Commit'),'line':r['StartLine'],'file_sha256':hashlib.sha256(r['File'].encode()).hexdigest()} for r in rows]},sort_keys=True))
+          PY
+          exit "$result"

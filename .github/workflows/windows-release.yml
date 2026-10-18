@@ -16,8 +16,9 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
+          persist-credentials: false
           ref: ${{ inputs.source_branch || 'development/windows-portal-foundation' }}
       - name: Require application source
         shell: pwsh
@@ -25,7 +26,7 @@ jobs:
           if (!(Test-Path pyproject.toml) -or !(Test-Path portable/desktop.py)) {
             throw 'Nexus application source has not yet been imported. No EXE will be produced from placeholder code.'
           }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
           cache: pip
@@ -78,7 +79,7 @@ jobs:
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
           }
       - name: Upload standalone EXE
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: NexusOperative-Standalone-Windows
           path: dist/NexusOperative.exe
@@ -94,7 +95,7 @@ jobs:
           Copy-Item dist/NexusOperative.exe release/NexusOperative/NexusOperative.exe
           & $iscc installer/NexusOperative.iss
           if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: NexusOperative-Windows-Installer
           path: release/NexusOperative-Setup-*.exe

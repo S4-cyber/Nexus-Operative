@@ -1,6 +1,7 @@
 """Bounded GET-only paper reader shared by explicit inspection and recovery.
 
-No credential storage, environment lookup, order methods, journal writes or retries.
+No credential storage, environment lookup, order methods or retries.
+Durable local pacing is optional and requires an explicit account/path journal.
 Injected transports are trusted test seams and never attest a broker account.
 """
 import json
@@ -141,12 +142,20 @@ class _ReadSession:
     """Private fixed-path GET session shared by account inspection and recovery."""
     def __init__(self, api_key, api_secret, *, confirm_read_only_paper=False,
                  opener=None, wall_clock=time.time, elapsed_clock=time.monotonic,
-                 permission_check=lambda: True):
+                 permission_check=lambda: True, pacing=None, expected_account_id=None):
         if confirm_read_only_paper is not True:
             _fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
         for value in (api_key, api_secret):
             if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
                 _fail('PAPER_INSPECTION_CREDENTIAL_FORMAT_INVALID')
+        if pacing is not None:
+            from nexus.paper_read_pacing import PaperReadPacing
+            if type(pacing) is not PaperReadPacing or expected_account_id is None or pacing.account != _uuid(expected_account_id):
+                _fail('PAPER_INSPECTION_PACING_ACCOUNT_OR_TYPE')
+            pacing.inspect()  # Corrupt/foreign history blocks all IO; missing stays missing.
+        self.pacing = pacing
+        self.pacing_token = None
+        self.pacing_finished = False
         self.key, self.secret = api_key, api_secret
         self.injected = opener is not None
         self.reader = opener
@@ -164,6 +173,9 @@ class _ReadSession:
             _fail('PAPER_INSPECTION_BUSY')
         try:
             self.checkpoint()
+            if self.pacing is not None:
+                self.pacing_token = self.pacing.begin(admission=self.evaluated_at)
+                self.checkpoint()  # A lost/revoked acknowledgment never releases a reservation.
             if self.reader is None:
                 self.reader = build_opener(ProxyHandler({}), _NoRedirect())
             self.active = self.entered = True
@@ -175,10 +187,26 @@ class _ReadSession:
             raise
 
     def __exit__(self, kind, value, traceback):
-        self.active = False
-        _lock.release()
-        if kind is not None and issubclass(kind, Exception):
-            _sanitize(value)
+        try:
+            if kind is None:
+                self.checkpoint()
+                self._pacing_result(status_code=200)
+            if kind is not None and issubclass(kind, Exception):
+                _sanitize(value)
+        except Exception as exc:
+            _sanitize(exc)
+        finally:
+            self.active = False
+            _lock.release()
+
+    def _pacing_result(self, **outcome):
+        if self.pacing is not None and not self.pacing_finished:
+            try:
+                self.pacing.finish(self.pacing_token, admission=self.evaluated_at, **outcome)
+            except Exception as exc:
+                _sanitize(exc)  # Storage faults must never enter the HTTP retry/outcome branch.
+            self.pacing_finished = True
+            self.checkpoint()
 
     def checkpoint(self):
         try:
@@ -207,6 +235,8 @@ class _ReadSession:
     def get(self, url, *, lookup=False):
         if not self.active:
             _fail('PAPER_INSPECTION_SESSION_NOT_ACTIVE')
+        if self.pacing_finished:
+            _fail('PAPER_INSPECTION_PACING_SESSION_FINISHED')
         from nexus.broker_lookup_policy import LOOKUP_URL
         lookup_path = isinstance(url, str) and re.fullmatch(re.escape(LOOKUP_URL) + r'\?client_order_id=[A-Za-z0-9_-]{1,64}', url)
         from nexus.alpaca_activity_collection import is_activity_url
@@ -226,8 +256,10 @@ class _ReadSession:
                 if response.geturl() != url:
                     _fail('PAPER_INSPECTION_RESPONSE_URL_CHANGED')
                 if response.status != 200:
+                    outcome = self._outcome(response.status, response.headers)
+                    self._pacing_result(**outcome)
                     if lookup:
-                        return self._outcome(response.status, response.headers)
+                        return outcome
                     _fail('PAPER_INSPECTION_HTTP_STATUS_REVIEW')
                 if response.headers.get('Content-Type', '').split(';')[0].strip().lower() != 'application/json':
                     _fail('PAPER_INSPECTION_CONTENT_TYPE_INVALID')
@@ -257,16 +289,20 @@ class _ReadSession:
                 self.checkpoint()
                 if exc.geturl() != url:
                     _fail('PAPER_INSPECTION_RESPONSE_URL_CHANGED')
+                outcome = self._outcome(exc.code, exc.headers)
+                self._pacing_result(**outcome)
                 if lookup:
-                    return self._outcome(exc.code, exc.headers)
+                    return outcome
             finally:
                 exc.close()
             _sanitize(exc)
         except (TimeoutError, URLError, OSError) as exc:
+            self.checkpoint()
+            timed_out = isinstance(exc, TimeoutError) or isinstance(getattr(exc, 'reason', None), TimeoutError)
+            outcome = dict(transport_error='TIMEOUT' if timed_out else 'NETWORK_ERROR')
+            self._pacing_result(**outcome)
             if lookup:
-                self.checkpoint()
-                timed_out = isinstance(exc, TimeoutError) or isinstance(getattr(exc, 'reason', None), TimeoutError)
-                return dict(transport_error='TIMEOUT' if timed_out else 'NETWORK_ERROR')
+                return outcome
             _sanitize(exc)
 
     def _outcome(self, code, headers):
@@ -294,11 +330,12 @@ def _sanitize(exc):
 
 def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
                     expected_account_id=None, opener=None, wall_clock=time.time,
-                    elapsed_clock=time.monotonic, permission_check=lambda: True):
+                    elapsed_clock=time.monotonic, permission_check=lambda: True, pacing=None):
     """Four bounded account GETs after explicit authorization; no order methods."""
     # Validate authorization and credentials before even inspecting caller scope.
     session = _ReadSession(api_key, api_secret, confirm_read_only_paper=confirm_read_only_paper,
-        opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check)
+        opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
+        pacing=pacing, expected_account_id=expected_account_id)
     expected = None if expected_account_id is None else _uuid(expected_account_id)
     with session:
         values = []

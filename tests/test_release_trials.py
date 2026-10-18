@@ -81,3 +81,13 @@ def test_unreadable_order_history_fails_closed_without_repair(tmp_path, monkeypa
     monkeypatch.setattr(api, 'paper_forward_runner', Runner())
     assert api._recover_emergency_cut() == (True, False)
     assert cuts == [True] and target._path().read_bytes() == before
+
+
+def test_pacing_fixture_reports_actual_retained_fences_without_provider_authority():
+    result = trials._pacing_trial()
+    trials._validate('pacing', result)
+    for field in ('cooldown_enforced', 'retry_after_retained', 'authentication_block_retained', 'pending_read_not_auto_released'):
+        changed = dict(result, **{field:False})
+        with pytest.raises(ValueError, match='PACING_FENCES'): trials._validate('pacing', changed)
+    for field in ('broker_wide_quota_verified', 'ready_for_routing'):
+        with pytest.raises(ValueError, match='PACING_AUTHORITY'): trials._validate('pacing', dict(result, **{field:True}))

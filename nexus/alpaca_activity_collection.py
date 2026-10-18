@@ -63,9 +63,10 @@ def is_activity_url(url):
 def collect_activities(api_key, api_secret, orders, *, expected_account_id, after, until,
                        confirm_read_only_paper=False, opener=None, wall_clock=time.time,
                        elapsed_clock=time.monotonic, permission_check=lambda: True,
-                       credential_check=lambda: True, activity_store=None):
+                       credential_check=lambda: True, activity_store=None, pacing=None):
     session = transport._ReadSession(api_key, api_secret, confirm_read_only_paper=confirm_read_only_paper,
-        opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check)
+        opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
+        pacing=pacing, expected_account_id=expected_account_id)
     account = adapter._uuid(expected_account_id)
     if activity_store is not None:
         from nexus.broker_activity_store import BrokerActivityStore

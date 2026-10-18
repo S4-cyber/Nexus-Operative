@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing')
 
 
 def _require(condition, code):
@@ -84,6 +84,40 @@ def _http_trial():
     return result
 
 
+def _pacing_trial():
+    """Fixed local reservation/cooldown fixture; no HTTP or credential access."""
+    from nexus.paper_read_pacing import PaperReadPacing
+    account = '01234567-89ab-cdef-0123-456789abcdef'
+    def denied(operation, reason):
+        try: operation()
+        except ValueError as error:
+            _require(str(error) == 'PAPER_READ_PACING_' + reason, 'PACING_DENIAL_REASON')
+            return True
+        raise ValueError('RELEASE_TRIAL_PACING_DENIAL_MISSING')
+    with tempfile.TemporaryDirectory(prefix='nexus-pacing-trial-') as directory:
+        path = Path(directory)/'pacing.sqlite3'
+        gate = PaperReadPacing(path, account)
+        token = gate.begin(admission=lambda:1000)
+        gate.finish(token, admission=lambda:1000, status_code=200)
+        gate = PaperReadPacing(path, account)
+        cooldown = denied(lambda:gate.begin(admission=lambda:1059), 'COOLDOWN')
+        token = gate.begin(admission=lambda:1060)
+        gate.finish(token, admission=lambda:1060, status_code=429, retry_after='120')
+        rate_limit = denied(lambda:PaperReadPacing(path,account).begin(admission=lambda:1179), 'COOLDOWN')
+        token = gate.begin(admission=lambda:1180)
+        gate.finish(token, admission=lambda:1180, status_code=401)
+        auth = denied(lambda:PaperReadPacing(path,account).begin(admission=lambda:100000), 'BLOCKED_REVIEW')
+        pending = PaperReadPacing(Path(directory)/'pending.sqlite3', account)
+        pending.begin(admission=lambda:1000)
+        interrupted = denied(lambda:PaperReadPacing(pending.path,account).begin(admission=lambda:100000), 'PENDING_REVIEW')
+        state = PaperReadPacing(path,account).inspect()
+        return dict(passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+            replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
+            authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
+            broker_wide_quota_verified=False, ready_for_routing=False,
+            limitations='Disposable local journal policy only; no provider requests, actual rate-limit acceptance, distributed ownership or runtime default integration.')
+
+
 def _execute(profile):
     if profile == 'forward':
         from nexus.forward_drill import run
@@ -98,6 +132,7 @@ def _execute(profile):
         from nexus.durable_benchmark import benchmark
         return benchmark(30)
     if profile == 'http': return _http_trial()
+    if profile == 'pacing': return _pacing_trial()
     if profile == 'activity':
         from nexus.broker_activity_review import fixture_report
         return fixture_report()
@@ -119,6 +154,11 @@ def _validate(profile, result):
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
+    if profile == 'pacing':
+        _require(result['completed_sessions'] == 3 and result['replayed_events'] == 6, 'PACING_HISTORY')
+        _require(all(result[name] is True for name in ('cooldown_enforced', 'retry_after_retained',
+            'authentication_block_retained', 'pending_read_not_auto_released')), 'PACING_FENCES')
+        _require(result['broker_wide_quota_verified'] is False and result['ready_for_routing'] is False, 'PACING_AUTHORITY')
     if profile == 'activity':
         reviewed = result['review']
         _require(reviewed['retained_batches'] == 2 and reviewed['retained_activities'] == 5

@@ -1,5 +1,5 @@
 #define AppName "Nexus Operative"
-#define AppVersion "0.101.3"
+#define AppVersion "0.102.0"
 [Setup]
 AppId={{BFCE93A2-A6EF-42E1-B641-DC51B2B6A7C0}
 AppName={#AppName}
@@ -7,7 +7,7 @@ AppVersion={#AppVersion}
 DefaultDirName={localappdata}\Programs\Nexus Operative
 DefaultGroupName=Nexus Operative
 OutputDir=..\release
-OutputBaseFilename=NexusOperative-Setup-0.101.3
+OutputBaseFilename=NexusOperative-Setup-0.102.0
 PrivilegesRequired=lowest
 Compression=lzma2
 SolidCompression=yes

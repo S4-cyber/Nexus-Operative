@@ -199,7 +199,7 @@ def _capture():
 
 
 def inspect_saved(*, confirm_read_only_paper=False, expected_account_id=None,
-                  opener=None, wall_clock=time.time, elapsed_clock=time.monotonic):
+                  opener=None, wall_clock=time.time, elapsed_clock=time.monotonic, pacing=None):
     """One explicitly confirmed read. Keep secrets out of all returned records.
 
     Local mutation epochs fence IO checkpoints. Final OS readback also rejects a
@@ -211,7 +211,7 @@ def inspect_saved(*, confirm_read_only_paper=False, expected_account_id=None,
     epoch, raw, record = _capture()
     result = inspect_account(record['api_key'], record['api_secret'], confirm_read_only_paper=True,
         expected_account_id=expected_account_id, opener=opener, wall_clock=wall_clock,
-        elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch))
+        elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch), pacing=pacing)
     current_epoch, current_raw, _ = _capture()
     if epoch != current_epoch or raw != current_raw or not _current(epoch):
         _fail('READ_REVOKED')
@@ -220,7 +220,7 @@ def inspect_saved(*, confirm_read_only_paper=False, expected_account_id=None,
 
 def recover_saved(journal, client_order_id, *, expected_account_id,
                   confirm_read_only_paper=False, opener=None, wall_clock=time.time,
-                  elapsed_clock=time.monotonic):
+                  elapsed_clock=time.monotonic, pacing=None):
     """Internal opt-in original-ID recovery; no application endpoint/default path."""
     if confirm_read_only_paper is not True:
         _fail('READ_CONFIRMATION_REQUIRED')
@@ -232,7 +232,7 @@ def recover_saved(journal, client_order_id, *, expected_account_id,
     result = recover_original(journal, client_order_id, record['api_key'], record['api_secret'],
         expected_account_id=expected_account_id, confirm_read_only_paper=True, opener=opener,
         wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch),
-        credential_check=credential_check)
+        credential_check=credential_check, pacing=pacing)
 
     if not credential_check():
         _fail('READ_REVOKED')
@@ -241,7 +241,7 @@ def recover_saved(journal, client_order_id, *, expected_account_id,
 
 def collect_saved(orders, *, expected_account_id, after, until,
                   confirm_read_only_paper=False, opener=None, wall_clock=time.time,
-                  elapsed_clock=time.monotonic, activity_store=None):
+                  elapsed_clock=time.monotonic, activity_store=None, pacing=None):
     """Internal one-shot activity collection; no runtime route or automatic start."""
     if confirm_read_only_paper is not True:
         _fail('READ_CONFIRMATION_REQUIRED')
@@ -254,7 +254,7 @@ def collect_saved(orders, *, expected_account_id, after, until,
         expected_account_id=expected_account_id, after=after, until=until,
         confirm_read_only_paper=True, opener=opener, wall_clock=wall_clock,
         elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch),
-        credential_check=credential_check, activity_store=activity_store)
+        credential_check=credential_check, activity_store=activity_store, pacing=pacing)
     if not credential_check():
         _fail('READ_REVOKED')
     return result

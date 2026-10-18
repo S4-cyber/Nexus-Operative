@@ -32,13 +32,20 @@ def run(store,**changes):
     scope.update(changes);return store.review_balances(**scope)
 
 
-def test_gross_residual_can_match_fees_without_verifying_posting_or_links(tmp_path):
+def test_date_only_fee_residual_is_not_promoted_to_interval_evidence(tmp_path):
     store=target(tmp_path);before=store.path.read_bytes();result=run(store);gross=result['gross_fill_review']
     assert result['arithmetic_evaluated'] and result['head_rechecked']
     assert gross['gross_execution_ending_balances']=={'USD':'1009.89','BTC':'0.001'}
     assert gross['gross_minus_supplied_observed']=={'USD':'0.10989','BTC':'0.001'}
-    assert gross['residual_equals_retained_fee_debits']=={'USD':True,'BTC':True}
-    assert gross['fee_debits_allocated_to_interval'] is gross['fee_execution_links_verified'] is gross['fee_reserved_funding_verified'] is False
+    assert gross['residual_equals_all_retained_fee_debits']=={'USD':True,'BTC':True}
+    assert gross['all_retained_unallocated_fee_debits']=={'USD':'0.10989','BTC':'0.001'}
+    assert gross['residual_equals_exact_interval_fee_debits']=={'USD':None,'BTC':None}
+    assert gross['exact_interval_fee_debits']=={'USD':'0','BTC':'0'}
+    assert gross['date_only_fee_records_by_asset']=={'USD':1,'BTC':1}
+    assert gross['exact_interval_fee_records_by_asset']=={'USD':0,'BTC':0}
+    assert gross['exact_fee_records_outside_interval_by_asset']=={'USD':0,'BTC':0}
+    assert gross['fee_temporal_scope_complete_by_asset']=={'USD':False,'BTC':False}
+    assert gross['fee_posting_interval_verified'] is gross['fee_debits_allocated_to_interval'] is gross['fee_execution_links_verified'] is gross['fee_reserved_funding_verified'] is False
     assert result['status']=='REVIEW_REQUIRED' and 'FEE_DEBITS_NOT_ALLOCATED_TO_EXECUTIONS_OR_INTERVAL' in result['review_reasons']
     for flag in ('admission_reserved','atomic_snapshot','source_coverage_verified','fee_coverage_complete',
                  'fee_execution_links_verified','holds_reconciled','broker_account_reconciled','spendable_funds_verified',
@@ -54,7 +61,8 @@ def test_absent_fee_records_stay_unknown_instead_of_zero_coverage(tmp_path):
     rows,orders=source();store=BrokerActivityStore(tmp_path/'activities.db',ACCOUNT)
     store.retain(rows[:2],orders,after=START,until=END)
     result=run(store,observed_balances={'USD':'1009.89','BTC':'0.001'})
-    assert result['gross_fill_review']['residual_equals_retained_fee_debits']=={'USD':None,'BTC':None}
+    assert result['gross_fill_review']['residual_equals_all_retained_fee_debits']=={'USD':None,'BTC':None}
+    assert result['gross_fill_review']['residual_equals_exact_interval_fee_debits']=={'USD':None,'BTC':None}
     assert result['gross_fill_review']['retained_fee_records_by_asset']=={'USD':0,'BTC':0}
     assert not result['fee_coverage_complete']
 
@@ -63,13 +71,38 @@ def test_single_asset_fee_does_not_assert_other_asset_zero_fee(tmp_path):
     rows,orders=source();store=BrokerActivityStore(tmp_path/'activities.db',ACCOUNT)
     store.retain(rows[:3],orders,after=START,until=END)
     result=run(store,observed_balances={'USD':'1009.89','BTC':'0'})
-    assert result['gross_fill_review']['residual_equals_retained_fee_debits']=={'USD':None,'BTC':True}
+    assert result['gross_fill_review']['residual_equals_all_retained_fee_debits']=={'USD':None,'BTC':True}
+    assert result['gross_fill_review']['residual_equals_exact_interval_fee_debits']=={'USD':None,'BTC':None}
 
 
 def test_different_observed_balance_reports_signed_residual_without_forcing_fee_match(tmp_path):
     result=run(target(tmp_path),observed_balances={'USD':'1010','BTC':'1'})
     assert result['gross_fill_review']['gross_minus_supplied_observed']=={'USD':'-0.11','BTC':'-0.999'}
-    assert result['gross_fill_review']['residual_equals_retained_fee_debits']=={'USD':False,'BTC':False}
+    assert result['gross_fill_review']['residual_equals_all_retained_fee_debits']=={'USD':False,'BTC':False}
+    assert result['gross_fill_review']['residual_equals_exact_interval_fee_debits']=={'USD':None,'BTC':None}
+
+
+def test_exact_timestamped_fees_can_be_filtered_without_claiming_provider_posting(tmp_path):
+    rows,orders=source();rows[2]['date']='2026-10-17T18:00:01.000000001Z';rows[3]['date']='2026-10-17T18:00:02.000000001Z'
+    store=BrokerActivityStore(tmp_path/'activities.db',ACCOUNT);store.retain(rows,orders,after=START,until=END)
+    gross=run(store)['gross_fill_review']
+    assert gross['residual_equals_exact_interval_fee_debits']=={'USD':True,'BTC':True}
+    assert gross['exact_interval_fee_debits']=={'USD':'0.10989','BTC':'0.001'}
+    assert gross['exact_interval_fee_records_by_asset']=={'USD':1,'BTC':1}
+    assert gross['date_only_fee_records_by_asset']=={'USD':0,'BTC':0}
+    assert gross['exact_fee_records_outside_interval_by_asset']=={'USD':0,'BTC':0}
+    assert gross['fee_temporal_scope_complete_by_asset']=={'USD':True,'BTC':True}
+    assert not gross['fee_posting_interval_verified'] and not gross['fee_execution_links_verified']
+
+
+def test_out_of_interval_exact_fee_timestamp_stays_unallocated(tmp_path):
+    rows,orders=source();rows[2]['date']='2026-10-17T18:00:01Z';rows[3]['date']='2026-10-17T18:00:04Z'
+    store=BrokerActivityStore(tmp_path/'activities.db',ACCOUNT);store.retain(rows,orders,after=START,until=END)
+    gross=run(store)['gross_fill_review']
+    assert gross['exact_interval_fee_records_by_asset']=={'USD':0,'BTC':1}
+    assert gross['exact_fee_records_outside_interval_by_asset']=={'USD':1,'BTC':0}
+    assert gross['fee_temporal_scope_complete_by_asset']=={'USD':False,'BTC':True}
+    assert gross['residual_equals_exact_interval_fee_debits']=={'USD':None,'BTC':True}
 
 
 def test_missing_history_inspection_never_initializes_state(tmp_path):
@@ -212,7 +245,8 @@ def test_empty_supplied_receipt_keeps_fee_absence_unknown(tmp_path):
     store=BrokerActivityStore(tmp_path/'activities.db',ACCOUNT);store.retain([],[],after=START,until=END)
     result=run(store,observed_balances={'USD':'1000','BTC':'0'})
     assert result['arithmetic_evaluated'] and result['gross_fill_review']['executions']==0
-    assert result['gross_fill_review']['residual_equals_retained_fee_debits']=={'USD':None,'BTC':None}
+    assert result['gross_fill_review']['residual_equals_all_retained_fee_debits']=={'USD':None,'BTC':None}
+    assert result['gross_fill_review']['residual_equals_exact_interval_fee_debits']=={'USD':None,'BTC':None}
     assert not result['source_coverage_verified']
 
 

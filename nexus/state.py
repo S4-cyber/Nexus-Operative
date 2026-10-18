@@ -6,6 +6,7 @@ Each connection is short-lived so a CLI, desktop app or tests can use the same d
 import json
 import os
 import sqlite3
+import threading
 import time
 from pathlib import Path
 from contextlib import contextmanager, closing
@@ -19,6 +20,7 @@ DEFAULTS = {
 }
 
 _settings_root = ContextVar('nexus_isolated_settings_root', default=None)
+_connect_lock = threading.RLock()
 
 @contextmanager
 def isolated_settings(directory):
@@ -33,32 +35,35 @@ def db_path():
     return directory / "portal_settings.sqlite3"
 
 def _connect():
-    path=db_path()
-    # Only a genuinely new settings file and unused paper directory receive the
-    # first-run preset. Existing settings, off switches and accounting win.
-    fresh=not os.path.lexists(path) and not any(os.path.lexists(path.parent/name)
-        for name in ('emergency_cut.intent',*(base+suffix for base in
-            ('portal_settings.sqlite3','paper_portfolio.sqlite3','order_lifecycle.sqlite3','paper_forward.sqlite3')
-            for suffix in ('','-journal','-wal','-shm'))))
-    conn = sqlite3.connect(path, timeout=5)
-    try:
-        if fresh:
-            conn.execute('BEGIN IMMEDIATE')
-            fresh=not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' LIMIT 1").fetchone()
-        conn.execute("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
-        conn.execute("CREATE TABLE IF NOT EXISTS audit_events (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER NOT NULL, event TEXT NOT NULL)")
-        if fresh:
-            conn.executemany('INSERT INTO configuration(key,value) VALUES(?,?)',
-                             [(key,json.dumps(value)) for key,value in DEFAULTS.items()])
-            conn.execute("CREATE TABLE tier_permissions (tier TEXT PRIMARY KEY, enabled INTEGER NOT NULL CHECK(enabled IN (0,1)))")
-            conn.executemany('INSERT INTO tier_permissions VALUES(?,?)',
-                             [('terrestrial',1),('solar',0),('universal',0)])
-            conn.execute('INSERT INTO audit_events(time,event) VALUES(?,?)',
-                         (int(time.time()),'new_install_paper_defaults'))
-    except BaseException:
-        conn.close()
-        raise
-    return conn
+    # Keep creation detection through the seed commit in one local critical
+    # section. Otherwise a second thread can observe SQLite's newly created
+    # empty file, install tables first and make every caller skip the preset.
+    with _connect_lock:
+        path=db_path()
+        fresh=not os.path.lexists(path) and not any(os.path.lexists(path.parent/name)
+            for name in ('emergency_cut.intent',*(base+suffix for base in
+                ('portal_settings.sqlite3','paper_portfolio.sqlite3','order_lifecycle.sqlite3','paper_forward.sqlite3')
+                for suffix in ('','-journal','-wal','-shm'))))
+        conn = sqlite3.connect(path, timeout=5)
+        try:
+            if fresh:
+                conn.execute('BEGIN IMMEDIATE')
+                fresh=not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' LIMIT 1").fetchone()
+            conn.execute("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+            conn.execute("CREATE TABLE IF NOT EXISTS audit_events (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER NOT NULL, event TEXT NOT NULL)")
+            if fresh:
+                conn.executemany('INSERT INTO configuration(key,value) VALUES(?,?)',
+                                 [(key,json.dumps(value)) for key,value in DEFAULTS.items()])
+                conn.execute("CREATE TABLE tier_permissions (tier TEXT PRIMARY KEY, enabled INTEGER NOT NULL CHECK(enabled IN (0,1)))")
+                conn.executemany('INSERT INTO tier_permissions VALUES(?,?)',
+                                 [('terrestrial',1),('solar',0),('universal',0)])
+                conn.execute('INSERT INTO audit_events(time,event) VALUES(?,?)',
+                             (int(time.time()),'new_install_paper_defaults'))
+            conn.commit()
+        except BaseException:
+            conn.close()
+            raise
+        return conn
 
 def load_settings():
     with closing(_connect()) as conn,conn:

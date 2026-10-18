@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.133.0'
+REVISION = '0.134.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -102,7 +102,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.133 minimizes first-run local paper setup: new unused settings receive a transactional virtual-budget/Terrestrial preset; saved choices, OFF switches, accounting and stop history prevent automatic reselection. To Do introduces the engine/throttle workflow, explains every checkbox and labels optional/future work. Built-in learning and bounded public history remain preselected; no forms or external account are required for the fresh local paper path. Strategy, broker, sustained-market and release acceptance remain open.'
+CURRENT_HARDENING = 'v0.134 separates all-retained fee residual arithmetic from exact selected-interval filtering. Date-only, partially timestamped or out-of-interval fee sets remain unknown for interval comparison; even complete exact timestamps do not verify provider posting, source coverage, execution links or funds. It also commits the v0.133 first-run seed before releasing the local creation lock so concurrent reads cannot all skip the preset; cross-process ownership remains a separate acceptance gate.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

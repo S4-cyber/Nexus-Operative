@@ -158,3 +158,7 @@ Verified v0.130 checkpoint: exact source ac9b9e8ebb40c033762fe2d6e4a466462deca94
 
 
 Final v0.131 local validation:2,052 Python tests passed with one existing Starlette/httpx deprecation warning; ten Node controllers, Portal syntax, compileall, pip check and generated-roadmap comparison passed. Sixteen offline release profiles plus saved-evidence verification matched272 source files/73f2dbfd8caf2daf83a70fa2a2711918f23954a86f69f4e054d09353584bec1b; report SHA2561961ebe3053529b2ff52cda1e96fa139d9eb7bf3ac2300c68adcf9fb9ff5bd83. The337-file proposed snapshot passed artifact audit and checksum-pinned Gitleaks v8.24.3 with zero findings; this local scan is not new-commit full-history clearance. Exact-source Windows/security/safety/browser CI remains required. New tests use private temporary synthetic data only; no actual credential/provider/account/market/funds/live/cloud acceptance occurred. Latest fully verified installer checkpoint remains0.130; all financial, sustained-market, cloud, native-profile, independent and owner1.0 gates remain open.
+
+## v0.134 retained fee temporal scope
+
+Public evidence now prevents date-only, partially timestamped or out-of-window retained fee records from producing an exact-interval residual conclusion. The all-retained numerical match remains explicitly unallocated. Exact filtering leaves provider posting, coverage, linking, funding and routing authority false. Tests use temporary synthetic data only and retain no private identities.

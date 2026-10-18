@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.133.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.134.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,7 +36,7 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, ten Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_133_0.json`; exact new-source Windows trials must still run |
+| Integrated local trials | Bounded offline trials passed | Source-fingerprinted Linux report in `validation/release_trials_0_134_0.json`; exact new-source Windows trials must still run |
 | Windows packaging and data recovery | v0.130.0 verified; v0.131 source pending | Exact commit `ac9b9e8ebb40c033762fe2d6e4a466462deca94b`: Windows39134886278/job117697275954, safety/browser39134886222 and security39134886220 passed. Clean-machine native-window/profile and prior-installer acceptance remain separate; newer source requires its own runs |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
@@ -85,7 +85,7 @@ Public-repository hardening (v0.111) adds reachable-history artifact/secret chec
 
 ## Verify saved evidence before considering a release
 
-Run `python -m nexus.release_evidence validation/release_trials_0_129_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all sixteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check. If execution fails, the CLI emits only an allowlisted `RELEASE_TRIAL_*` code identifying the failing profile or timeout; child stderr, arbitrary exception text, paths and environment values remain suppressed.
+Run `python -m nexus.release_evidence validation/release_trials_0_134_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all sixteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check. If execution fails, the CLI emits only an allowlisted `RELEASE_TRIAL_*` code identifying the failing profile or timeout; child stderr, arbitrary exception text, paths and environment values remain suppressed.
 
 The safety workflow revalidates its saved report. Windows distribution creation runs and validates its own offline trials, includes `release-trial-evidence.json` in the distribution and hashes it in `artifact-manifest.json` alongside both binaries. Verify the manifest first, then verify the report from the exact source checkout. Matching hashes are not signatures, authenticated CI provenance or proof the workload actually ran. A self-consistent fabricated report remains possible; workflow results and independent acceptance still matter. A successful offline evidence check always retains production/native/provider/market/funds/release approval flags as false and cannot close the open gates above.
 
@@ -211,3 +211,11 @@ First-run acceptance includes atomic fresh presets, concurrent first reads, roll
 
 
 Final v0.133 local validation:2,097 Python tests passed with one existing Starlette/httpx deprecation warning; all ten Node controllers, complete Portal syntax, compileall, dependency consistency and generated-roadmap comparison passed. Sixteen offline profiles plus saved-evidence verification matched 273 source files/d2e7c882fcc24167aa5e1390854f7489e196bedd65d2c0ffd4a39669d10a2796; report SHA256 c3e36bd7ecb21d4aca07122b14abbe7725b460e2ed3c06a8172650fd9a373052. The actual loopback HTTP default-setup treatment passed all six required checks; its passive-startup phase still creates zero files, while the later settings GET creates only configuration. Local rendered-browser acceptance remains unavailable because Chromium is absent; intercepted Windows/browser, packaging, clean native profile and existing-choice upgrade acceptance remain required for this exact source. No actual broker/market/provider/vault/funding/live/cloud operation or release approval occurred.
+
+## v0.134 retained fee temporal scope
+
+The retained gross-fill review now keeps all-retained residual arithmetic explicitly unallocated and returns unknown exact-interval comparison unless every retained fee for the asset is exactly timestamped inside `(opening, observed]`. Exact filtering retains all false provider/source/link/funding/routing/live authority flags. The release profile requires date-only non-promotion and a separate exact synthetic timestamp check; no actual provider/account evidence is claimed.
+
+The full-suite run also reproduced and fixed a local concurrent first-read race in v0.133 default seeding. The settings creator now commits the atomic preset before releasing the local lock; repeated concurrency tests require exactly one preset and audit event, while the injected write failure still rolls back every table. Cross-process/native-profile acceptance remains open.
+
+Final v0.134 local validation:2,099 Python tests, ten Node controller smokes, Portal syntax, compileall, pip check, roadmap and diff checks passed. All16 profiles and saved-evidence verification matched273 source files/`190047675b7b3d515e7b77c59064e6df1516c12eb6bfd52b3cc8fd65978dc3d4`; report SHA-256:`348362d8e919a9020d299640604ca7d3ba55a0056d3aedc426a4272aa2f85019`. The341-file snapshot and reachable history passed artifact audit and Gitleaks. Exact-commit Windows/security/safety/browser results remain pending.

@@ -13,7 +13,7 @@ from nexus.broker_activity_store import BrokerActivityStore
 from nexus.broker_fee_projection import balances
 from nexus.alpaca_paper_contract import number, text, sha
 
-POLICY = 'nexus.retained-gross-fill-residual-review.v1'
+POLICY = 'nexus.retained-gross-fill-residual-review.v2'
 MAX_SAMPLES = 20
 
 
@@ -21,14 +21,29 @@ def _fail(code):
     raise ValueError('RETAINED_BALANCE_REVIEW_' + code)
 
 
-def _gross_review(records, opening, observed):
+def _time_key(value):
+    """Order a canonical UTC instant without rounding its nanoseconds."""
+    base, separator, fraction = value[:-6].partition('.')
+    return base, (fraction if separator else '').ljust(9, '0')
+
+
+def _gross_review(records, opening, observed, start, end):
     current = dict(opening); minimum = dict(opening); groups = defaultdict(list)
     fees = {'USD':Decimal(0), 'BTC':Decimal(0)}; fee_counts = dict(USD=0, BTC=0)
+    exact_fees = {'USD':Decimal(0), 'BTC':Decimal(0)}
+    exact_counts = dict(USD=0, BTC=0); date_counts = dict(USD=0, BTC=0)
+    outside_counts = dict(USD=0, BTC=0)
+    start_key, end_key = _time_key(start), _time_key(end)
     for row in records:
         if row['kind'] == 'FILL': groups[row['occurred_at']].append(row)
         else:
-            fees[row['asset']] += number(row['amount'], zero=True)
-            fee_counts[row['asset']] += 1
+            asset = row['asset']; amount = number(row['amount'], zero=True)
+            fees[asset] += amount; fee_counts[asset] += 1
+            reported = row['reported_date']
+            if 'T' not in reported: date_counts[asset] += 1
+            elif start_key < _time_key(reported) <= end_key:
+                exact_fees[asset] += amount; exact_counts[asset] += 1
+            else: outside_counts[asset] += 1
     covered = True; shortfalls = []; events = 0
     for at, rows in sorted(groups.items()):
         debit = {'USD':Decimal(0), 'BTC':Decimal(0)}; credit = dict(debit)
@@ -47,6 +62,7 @@ def _gross_review(records, opening, observed):
             current[asset] += credit[asset] - debit[asset]
             minimum[asset] = min(minimum[asset], current[asset])
     residual = {k:current[k]-observed[k] for k in ('USD','BTC')}
+    complete = {k:fee_counts[k] > 0 and exact_counts[k] == fee_counts[k] for k in fees}
     return dict(gross_execution_ending_balances={k:text(v) for k,v in current.items()},
         gross_minus_supplied_observed={k:text(v) for k,v in residual.items()},
         gross_only_debits_covered=covered, gross_only_minimum_group_end_balances={k:text(v) for k,v in minimum.items()},
@@ -54,12 +70,17 @@ def _gross_review(records, opening, observed):
         equal_nanosecond_groups=sum(len(rows)>1 for rows in groups.values()),
         gross_only_shortfalls=shortfalls, gross_only_shortfall_events=events, shortfall_sample_limit=MAX_SAMPLES,
         shortfall_samples_truncated=events>len(shortfalls),
-        retained_unallocated_fee_debits={k:text(v) for k,v in fees.items()}, retained_fee_records_by_asset=fee_counts,
-        residual_equals_retained_fee_debits={k:None if fee_counts[k]==0 else residual[k]==fees[k] for k in fees},
-        fee_scope='ALL_RETAINED_UNALLOCATED_DEBITS_NOT_VERIFIED_INTERVAL_POSTINGS',
+        all_retained_unallocated_fee_debits={k:text(v) for k,v in fees.items()}, retained_fee_records_by_asset=fee_counts,
+        residual_equals_all_retained_fee_debits={k:None if fee_counts[k]==0 else residual[k]==fees[k] for k in fees},
+        exact_interval_fee_debits={k:text(v) for k,v in exact_fees.items()},
+        exact_interval_fee_records_by_asset=exact_counts, date_only_fee_records_by_asset=date_counts,
+        exact_fee_records_outside_interval_by_asset=outside_counts, fee_temporal_scope_complete_by_asset=complete,
+        residual_equals_exact_interval_fee_debits={k:residual[k]==exact_fees[k] if complete[k] else None for k in fees},
+        fee_scope='EXACT_TIMESTAMP_FILTERED_OR_ALL_RETAINED_UNALLOCATED_DEBITS_NEITHER_VERIFIES_PROVIDER_POSTING',
         arithmetic_scope='EXPLICIT_GROSS_FILLS_ONLY_FEES_NEVER_SPENT_OR_ALLOCATED',
         time_scope='CANONICAL_UTC_UP_TO_NANOSECONDS_EQUAL_INSTANT_DEBITS_REQUIRE_PRE_GROUP_FUNDS',
-        fee_debits_allocated_to_interval=False, fee_execution_links_verified=False, fee_reserved_funding_verified=False)
+        fee_posting_interval_verified=False, fee_debits_allocated_to_interval=False,
+        fee_execution_links_verified=False, fee_reserved_funding_verified=False)
 
 
 def _review_snapshot(retained, *, account, expected_head, opening, observed, start, end):
@@ -83,7 +104,7 @@ def _review_snapshot(retained, *, account, expected_head, opening, observed, sta
         if not outside and not any(at > end for at in latest_times):
             with localcontext() as context:
                 context.prec = 80
-                arithmetic = _gross_review(records, opening, observed)
+                arithmetic = _gross_review(records, opening, observed, start, end)
             if not arithmetic['gross_only_debits_covered']: reasons.add('GROSS_ONLY_FUNDING_SHORTFALL')
             if any(Decimal(v)<0 for v in arithmetic['gross_execution_ending_balances'].values()):
                 reasons.add('NEGATIVE_GROSS_EXECUTION_ENDING_BALANCE')
@@ -98,7 +119,7 @@ def _review_snapshot(retained, *, account, expected_head, opening, observed, sta
         holds_reconciled=False, broker_account_reconciled=False, spendable_funds_verified=False,
         ledger_applied=False, ready_for_routing=False, broker_connected=False, live_orders_enabled=False,
         automatic_retry=False, automatic_continuation=False,
-        limitations='Read-only diagnostic of one retained head plus supplied TOTAL balances. Gross fills omit all fee obligations; a passing gross path is not spendable funding. Residual equality with unallocated fee debits cannot verify associations, fee posting times, selected-interval completeness or settled balances. No guessed fee links, date-to-instant conversion, cancellation, account write, reservation or resume permission. Final head recheck is a sample only, not protection from later changes, rewritten hashes or valid-tail deletion.')
+        limitations='Read-only diagnostic of one retained head plus supplied TOTAL balances. Gross fills omit all fee obligations; a passing gross path is not spendable funding. All-retained residual equality is explicitly unallocated. Exact fee timestamps permit filtering only when every retained fee for an asset is inside the selected interval; neither form verifies provider posting, source completeness, associations or settled balances. No guessed fee links, date-to-instant conversion, cancellation, account write, reservation or resume permission. Final head recheck is a sample only, not protection from later changes, rewritten hashes or valid-tail deletion.')
 
 
 def review(store, *, expected_account_id, expected_head, opening_balances, opening_at,
@@ -150,7 +171,22 @@ def fixture_report():
         except ValueError as error:
             if str(error) != 'RETAINED_BALANCE_REVIEW_HEAD_DISAGREEMENT': raise
             stale_rejected = True
-        passed = (result['arithmetic_evaluated'] and arithmetic['gross_only_debits_covered']
-                  and all(arithmetic['residual_equals_retained_fee_debits'].values()))
-        return dict(passed=passed and stale_rejected,stale_head_rejected=stale_rejected,review=result,source='FIXED_SYNTHETIC_RETAINED_REST_FIXTURE',
+        date_only_not_promoted = (arithmetic['residual_equals_all_retained_fee_debits'] == {'USD':True,'BTC':True}
+            and arithmetic['residual_equals_exact_interval_fee_debits'] == {'USD':None,'BTC':None})
+        exact_records = []
+        for record in records:
+            copy = dict(record)
+            if copy['kind'] == 'CFEE': copy['reported_date'] = '2026-10-17T18:00:01Z'
+            if copy['kind'] == 'FEE': copy['reported_date'] = '2026-10-17T18:00:02Z'
+            exact_records.append(copy)
+        exact_store = BrokerActivityStore(Path(directory)/'exact-activities.db',store.account)
+        exact_store.retain([_raw(r) for r in exact_records], data['orders'], after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z')
+        exact = exact_store.review_balances(expected_account_id=exact_store.account,
+            expected_head=exact_store.inspect()['head_sha256'], opening_balances=data['opening_balances'],
+            opening_at=data['opening_at'], observed_balances=data['observed_balances'], observed_at=data['observed_at'])
+        exact_timestamped_compared = exact['gross_fill_review']['residual_equals_exact_interval_fee_debits'] == {'USD':True,'BTC':True}
+        passed = result['arithmetic_evaluated'] and arithmetic['gross_only_debits_covered'] and date_only_not_promoted and exact_timestamped_compared
+        return dict(passed=passed and stale_rejected,stale_head_rejected=stale_rejected,
+                    date_only_fee_residual_not_promoted=date_only_not_promoted,
+                    exact_timestamped_fee_residual_compared=exact_timestamped_compared,review=result,source='FIXED_SYNTHETIC_RETAINED_REST_FIXTURE',
                     broker_connected=False,live_orders_enabled=False)

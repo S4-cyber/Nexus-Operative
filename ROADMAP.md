@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.133.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.134.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.133 minimizes first-run local paper setup: new unused settings receive a transactional virtual-budget/Terrestrial preset; saved choices, OFF switches, accounting and stop history prevent automatic reselection. To Do introduces the engine/throttle workflow, explains every checkbox and labels optional/future work. Built-in learning and bounded public history remain preselected; no forms or external account are required for the fresh local paper path. Strategy, broker, sustained-market and release acceptance remain open.
+Current hardening: v0.134 separates all-retained fee residual arithmetic from exact selected-interval filtering. Date-only, partially timestamped or out-of-interval fee sets remain unknown for interval comparison; even complete exact timestamps do not verify provider posting, source coverage, execution links or funds. It also commits the v0.133 first-run seed before releasing the local creation lock so concurrent reads cannot all skip the preset; cross-process ownership remains a separate acceptance gate.
 
 ```mermaid
 flowchart TD

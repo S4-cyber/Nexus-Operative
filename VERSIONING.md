@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.133.0 (pre-release).** This milestone simplifies first-run paper defaults and explains every To Do check; it does not declare broker, financial, cloud or production acceptance.
+**Current development build: 0.134.0 (pre-release).** This milestone prevents date-only or out-of-interval retained fees from being promoted into interval-residual evidence while preserving explicitly unallocated arithmetic diagnostics; it does not declare broker, financial, cloud or production acceptance.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

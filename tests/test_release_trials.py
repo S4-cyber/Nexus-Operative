@@ -249,11 +249,16 @@ def test_retained_balance_trial_rejects_stale_or_authorized_gross_fee_inference(
     result=fixture_report();trials._validate('retained_balance',result)
     changed=copy.deepcopy(result);changed['stale_head_rejected']=False
     with pytest.raises(ValueError,match='RETAINED_BALANCE_FENCES'): trials._validate('retained_balance',changed)
+    for field in ('date_only_fee_residual_not_promoted','exact_timestamped_fee_residual_compared'):
+        changed=copy.deepcopy(result);changed[field]=False
+        with pytest.raises(ValueError,match='RETAINED_BALANCE_ARITHMETIC'): trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result);changed['review']['gross_fill_review']['residual_equals_exact_interval_fee_debits']={'USD':True,'BTC':True}
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_ARITHMETIC'): trials._validate('retained_balance',changed)
     for field in ('source_coverage_verified','fee_coverage_complete','fee_execution_links_verified','holds_reconciled',
                   'broker_account_reconciled','spendable_funds_verified','ready_for_routing','ledger_applied','live_orders_enabled','admission_reserved'):
         changed=copy.deepcopy(result);changed['review'][field]=True
         with pytest.raises(ValueError,match='RETAINED_BALANCE_AUTHORITY'): trials._validate('retained_balance',changed)
-    for field in ('fee_debits_allocated_to_interval','fee_execution_links_verified','fee_reserved_funding_verified'):
+    for field in ('fee_posting_interval_verified','fee_debits_allocated_to_interval','fee_execution_links_verified','fee_reserved_funding_verified'):
         changed=copy.deepcopy(result);changed['review']['gross_fill_review'][field]=True
         with pytest.raises(ValueError,match='RETAINED_BALANCE_AUTHORITY'): trials._validate('retained_balance',changed)
 

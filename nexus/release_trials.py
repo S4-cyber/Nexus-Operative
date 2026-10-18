@@ -506,11 +506,14 @@ def _validate(profile, result):
             result['stale_head_rejected'] is True, 'RETAINED_BALANCE_FENCES')
         _require(gross['executions'] == 2 and gross['execution_groups'] == 2 and
             gross['gross_execution_ending_balances'] == {'USD':'1009.89','BTC':'0.001'} and
-            gross['residual_equals_retained_fee_debits'] == {'USD':True,'BTC':True}, 'RETAINED_BALANCE_ARITHMETIC')
+            gross['residual_equals_all_retained_fee_debits'] == {'USD':True,'BTC':True} and
+            gross['residual_equals_exact_interval_fee_debits'] == {'USD':None,'BTC':None} and
+            result['date_only_fee_residual_not_promoted'] is True and
+            result['exact_timestamped_fee_residual_compared'] is True, 'RETAINED_BALANCE_ARITHMETIC')
         _require(reviewed['status'] == 'REVIEW_REQUIRED' and all(reviewed[k] is False for k in
             ('source_coverage_verified', 'fee_coverage_complete', 'fee_execution_links_verified', 'holds_reconciled',
              'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing', 'ledger_applied', 'live_orders_enabled', 'admission_reserved'))
-            and all(gross[k] is False for k in ('fee_debits_allocated_to_interval','fee_execution_links_verified',
+            and all(gross[k] is False for k in ('fee_posting_interval_verified','fee_debits_allocated_to_interval','fee_execution_links_verified',
                 'fee_reserved_funding_verified')), 'RETAINED_BALANCE_AUTHORITY')
     if profile == 'collection':
         _require(result['get_requests'] == 4 and result['retained_activities'] == 200 and

@@ -50,6 +50,8 @@ It deduplicates matching execution identities, rejects conflicts/overfills/cross
 
 Run `python -m nexus.execution_quality` for a synthetic self-test containing only aggregate pass/fail checks. Real detailed review output contains private amounts and must stay outside Git; repository artifact checks reject its report mode. This fixture is also mandatory in the existing sixteen-profile release suite, separately from timed capacity treatments. No runtime dependency or copied institutional code was added.
 
+The v0.159 companion `nexus/paper_execution_quality_review.py` now binds this arithmetic to exact-head locally accepted request/activity/pacing/acceptance histories. It derives all retained priced fills for one original request, checks original terms and repeats journal replay. `--paper-tool quality-review` makes the private review available in v0.159+ EXEs without desktop startup. Benchmark quotes and clock/event timing remain supplied/unverified; retained fees stay unlinked and all fee-inclusive results unknown. This is a local evidence bridge, not actual broker acceptance or automatic routing. Independently accepted quote capture and verified fee associations remain the next step.
+
 ## C++ and open-source candidates
 
 | Candidate | Publicly reviewed license | Evaluation before adoption |
@@ -63,7 +65,7 @@ These are evaluated candidates, not installed dependencies or audited production
 ## Ordered development and acceptance
 
 1. **Implemented foundation:** supplied execution-quality arithmetic and repeatable synthetic checks; verify exact-source Windows/security/browser workflows.
-2. **Next:** accept actual paper-account journals, explicit fills, synchronized benchmark observations and fee associations. Bind the quality review to the exact account/order/data heads; do not substitute historical candles for executable quotes.
+2. **Next:** accept the new exact-head journal/fill bridge on authorized paper-account data and native Windows profiles, then accept synchronized contemporaneous benchmark observations and fee associations. Bind the quality review to the exact account/order/data heads; do not substitute historical candles for executable quotes.
 3. Add a bounded event-driven market/order adapter with sequence-gap detection, duplicates/out-of-order replay and reconnect/crash recovery. Respect shared provider budgets and preserve emergency-stop independence.
 4. Add cost-aware, expiring policy proposals and portfolio-wide reservations; prove that multiple research paths cannot overspend, exceed exposure or duplicate an original order. Keep policies advisory until independent review and authorized paper integration.
 5. Compare one eligible execution path with alternatives using net shortfall, completion, rejects and tail latency. Add smart routing and slicing only if measured costs/capacity justify them; aggressive activity must not bypass cancellation/stop headroom.

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.158.0'
+REVISION = '0.159.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -109,8 +109,8 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
-    'Review INSTITUTIONAL_DESIGN.md and bind the offline execution-quality diagnostic to authorized exact-head paper-account evidence: contemporaneous benchmark/arrival quotes, explicit priced fills, clock-domain review and verified fee links. Then measure net execution costs and full-path latency before routing-policy or native C++ promotion.',
-    'Verify all five EXE paper tools on standalone and installed Windows builds, including agreement between private pinned and public current-head account reviews, omitted private fields, no automatic retry or default-data/UI startup, real authenticated-encryption self-test and ordinary-user private-profile seal/unseal and account/key acceptance. Public current-head review requires v0.157+.',
+    'Accept the exact-head paper execution-quality review on authorized retained account history and native Windows builds. Add independently reviewed contemporaneous benchmark/arrival quote capture, original-event time binding, clock-domain evidence and verified fee links before net-cost or broker-latency claims; preserve unknown fees and include every retained fill.',
+    'Verify all six EXE paper tools on standalone and installed Windows builds, including private exact-head quality review, unchanged input journals/benchmarks, unknown fees and unverified benchmark authority; preserve current-head/public account review, crypto, no default-data/UI startup and actual account/profile acceptance. Quality review requires v0.159+.',
     'Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.',
     'Accept request-journal-derived activity collection on authorized Windows paper data, including changed heads during reads/retention/acceptance and lost returns; original observations and local hashes remain unverified, and no fee, funds or routing authority follows.',
     'Use the private combined account-evidence review on authorized retained paper data: bind original requests, accepted fills and opening/closing inventory to common heads, investigate term violations and gross-only differences, and obtain separate source/fee/hold/funds acceptance before any routing.',
@@ -140,7 +140,7 @@ def snapshot():
                 opportunity_discovery=dict(implemented=True,scope='USD spot crypto research only',default_with_portal=True,burst_seconds=900,markets_per_burst=4,requests_per_hour_shared_local_data_root=36,durable_request_admissions=True,provider_or_ip_wide_budget_verified=False,selected_market_limit=6,summary_limit=256,stored_in_process_memory=True,execution_integration=False,forecasts_validated=False),
                 production_user_flow=list(PRODUCTION_USER_FLOW),live_workflow_available=False,
                 institutional_design=dict(document='INSTITUTIONAL_DESIGN.md',status='PUBLIC_DESIGN_REVIEW_OFFLINE_FOUNDATION',
-                    execution_quality='BOUNDED_SUPPLIED_BTC_USD_SHORTFALL_DIAGNOSTIC',council_role='ADVISORY_OUTSIDE_EXECUTION_LOOP',
+                    execution_quality='EXACT_HEAD_LOCAL_ACCEPTED_PAPER_FILLS_SUPPLIED_UNVERIFIED_BENCHMARK',council_role='ADVISORY_OUTSIDE_EXECUTION_LOOP',
                     target_executor='DETERMINISTIC_SHARED_ACCOUNT_RISK_AND_SINGLE_EXECUTION_OWNER',
                     native_cpp_core_implemented=False,nanosecond_execution_verified=False,proprietary_code_imported=False,
                     automatic_policy_promotion=False,order_routing_enabled=False),
@@ -156,7 +156,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.158 records a public-source institutional development strategy and adds original bounded BTC/USD supplied execution-quality arithmetic: signed benchmark shortfall, delay/spread/residual decomposition, explicit USD fee assumptions and separate unfilled opportunity cost. Matching executions deduplicate; conflicting IDs, overfills, crossed quotes and invalid nanosecond ordering refuse. Missing fees and unfilled marks remain unknown. The capacity release profile now requires separate synthetic quality checks without claiming broker latency, causal impact, profit or routing. C++ candidates remain uninstalled and council output advisory. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.159 derives execution-quality inputs from exact-head locally accepted paper-request/activity/pacing/acceptance journals. All retained priced fills of one original order are included; no interval cherry-picking, cumulative-average pricing or invented fee links. Journals replay before and after; changed heads, original-term disagreement, malformed benchmarks or promoted component authority refuse without retry. Supplied benchmark quotes and clock domains remain unverified and fee-inclusive totals unknown. The six-tool EXE catalogue and standalone/installed nine-command smoke cover the private review without desktop/default-data startup. Actual source/account/fees/latency/routing acceptance remains open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():
@@ -184,7 +184,7 @@ def markdown():
     lines += ['','## Next sequence','']+[f'{i}. {step}' for i,step in enumerate(NEXT,1)]
     lines += ['','## Institutional design strategy','',
         'See [INSTITUTIONAL_DESIGN.md](INSTITUTIONAL_DESIGN.md) for the dated public-source comparison of AIM/PORT/EMSX, FlexTRADER, Charles River, Iress, Tbricks, quantitative execution research, IBKR and licensed C++ candidates.',
-        '', 'Implemented: original bounded offline BTC/USD execution-quality arithmetic with explicit unknown costs, duplicate/conflict checks, nanosecond input ordering and a synthetic release fixture. Planned: exact-head accepted paper-evidence integration, event-driven adapters, cost-aware expiring proposals, shared account reservations, measured route selection and selective native acceleration.',
+        '', 'Implemented: original bounded offline BTC/USD execution-quality arithmetic plus private exact-head locally accepted request/fill derivation and repeat journal replay. Quotes/clocks remain supplied and unverified; fees stay unlinked and all-cost totals unknown. Planned: independently accepted quote/fee/event-time bindings, event-driven adapters, cost-aware proposals, shared reservations, measured routing and selective native acceleration.',
         '', 'Council research remains advisory. Independent deterministic risk/stop checks and one execution owner per account are the target execution design. No proprietary code import, native C++ execution core, nanosecond broker-fill claim, broker routing, guaranteed growth or automatic policy promotion is implemented.']
     lines += ['','## Explicit expansion and cloud goals','']
     for goal in d['strategic_goals']:

@@ -563,7 +563,9 @@ def _execute(profile):
     if profile == 'capacity':
         from nexus.durable_benchmark import benchmark
         from nexus.execution_quality import fixture_report
-        result=benchmark(30);result['execution_quality']=fixture_report();return result
+        from nexus.paper_execution_quality_review import fixture_report as paper_quality_fixture
+        result=benchmark(30);result['execution_quality']=fixture_report()
+        result['paper_execution_quality']=paper_quality_fixture();return result
     if profile == 'http': return _http_trial()
     if profile == 'pacing': return _pacing_trial()
     if profile == 'inspection_inventory': return _inspection_inventory_trial()
@@ -594,6 +596,11 @@ def _validate(profile, result):
         _require(quality['source']=='SYNTHETIC_EXECUTION_QUALITY_FIXTURE' and quality['passed'] is True and
             all(quality[k] is True for k in QUALITY_CHECKS),'EXECUTION_QUALITY')
         _require(all(quality[k] is False for k in QUALITY_FLAGS),'EXECUTION_QUALITY_AUTHORITY')
+        from nexus.paper_execution_quality_review import CHECKS as PAPER_QUALITY_CHECKS, FLAGS as PAPER_QUALITY_FLAGS
+        paper=result['paper_execution_quality']
+        _require(paper['source']=='SYNTHETIC_ACCEPTED_PAPER_EXECUTION_QUALITY_FIXTURE' and paper['passed'] is True and
+            all(paper[k] is True for k in PAPER_QUALITY_CHECKS),'PAPER_EXECUTION_QUALITY')
+        _require(all(paper[k] is False for k in PAPER_QUALITY_FLAGS),'PAPER_EXECUTION_QUALITY_AUTHORITY')
         _require(len(result['treatments']) == 4, 'CAPACITY_TREATMENTS')
         _require(all(t['accounting_consistent'] is True and t['broker_orders'] == 0 and t['cycles'] == 30
                      for t in result['treatments']), 'CAPACITY_ACCOUNTING')
@@ -604,7 +611,7 @@ def _validate(profile, result):
     if profile == 'http':
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS
         tools=result['paper_tools_source']
-        _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and tools['tool_invocations']==8 and all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
+        _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and tools['tool_invocations']==9 and all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
         _require(result['progress_estimate_scope_checked'] is True,'HTTP_PROGRESS_ASSESSMENT')
         _require(result['trial_readiness_passive_read'] is True,'HTTP_TRIAL_READINESS_READ')

@@ -9,7 +9,7 @@ import tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 CHECKS=('catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
-        'private_account_review_checked','public_current_account_review_checked','private_files_unchanged','invalid_command_denied',
+        'private_account_review_checked','public_current_account_review_checked','private_execution_quality_checked','private_files_unchanged','invalid_command_denied',
         'default_data_not_created')
 
 
@@ -54,7 +54,7 @@ def run(command):
         env=dict(os.environ,NEXUS_PORTABLE_DATA=str(default),NEXUS_HEADLESS_MODE='1',NEXUS_BROWSER_MODE='1')
         catalog=_json_call(command,['--paper-tool','list'],env)
         _require(catalog['mode']=='NEXUS_PACKAGED_PAPER_TOOLS' and catalog['version']==REVISION and
-            set(catalog['commands'])=={'account-probe','activity','account-review','observation-crypto','recovery'} and all(catalog[k] is False for k in
+            set(catalog['commands'])=={'account-probe','activity','account-review','observation-crypto','quality-review','recovery'} and all(catalog[k] is False for k in
             ('default_data_created','desktop_started','automatic_read','automatic_retry','broker_connected','live_orders_enabled','money_movement_enabled')),'CATALOG')
         encrypted=_json_call(command,['--paper-tool','observation-crypto','self-test'],env)
         _require(encrypted['passed'] is True and encrypted['roundtrip_matches'] is True and
@@ -79,6 +79,10 @@ def run(command):
         private=root/'private';private.mkdir();options=_fixture(private)
         opening=private/'opening.json';closing=private/'closing.json'
         opening.write_text(canonical(options['opening_observation']),encoding='utf-8');closing.write_text(canonical(options['closing_observation']),encoding='utf-8')
+        from nexus.paper_execution_quality_review import _instant_ns, FLAGS as QUALITY_FLAGS
+        epoch=_instant_ns('2026-10-17T18:00:00Z');benchmark=private/'benchmark.json'
+        benchmark.write_text(canonical(dict(decision_mid='100',decision_at_ns=epoch-1,arrival_bid='99',arrival_ask='101',
+            arrival_at_ns=epoch,end_at_ns=epoch+3_000_000_000,unfilled_mark=None)),encoding='utf-8')
         before=_snapshot(private)
         args=['--paper-tool','account-review']
         for name,key in (('expected-account','expected_account_id'),('request-journal','request_journal_path'),
@@ -99,15 +103,23 @@ def run(command):
         encoded=json.dumps(public)
         _require(all(value not in encoded for value in (account,str(root),options['expected_request_head'],
             options['expected_activity_head'],'nx_accept_fixture','802','1000')),'PUBLIC_ACCOUNT_REVIEW')
+        quality_args=list(args);quality_args[1]='quality-review'
+        reviewed=_json_call(command,[*quality_args,'--client-order-id','nx_accept_fixture','--benchmark',str(benchmark)],env)
+        q=reviewed['execution_quality']
+        _require(reviewed['mode']=='PAPER_EXECUTION_QUALITY_REVIEW' and reviewed['all_retained_original_fills_included'] is True and
+            reviewed['journals_rechecked_unchanged'] is True and reviewed['request_head_sha256']==options['expected_request_head'] and
+            reviewed['activity_head_sha256']==options['expected_activity_head'] and q['unique_fills']==2 and
+            q['fill_vwap']=='99' and q['signed_gross_shortfall_usd']=='-2' and q['signed_shortfall_with_supplied_fees_usd'] is None and
+            all(reviewed[k] is False for k in QUALITY_FLAGS),'QUALITY_REVIEW')
         _require(_snapshot(private)==before,'PRIVATE_FILES_CHANGED')
         code,stdout,stderr=_call(command,['--paper-tool','__not_allowed__','PRIVATE_ARGUMENT_FIXTURE'],env)
         _require(code==2 and stdout=='' and stderr.strip()=='NEXUS_PAPER_TOOL_USAGE_ERROR','INVALID_COMMAND')
         _require(not default.exists() and not missing.exists(),'DEFAULT_DATA_CREATED')
         return dict(mode='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE',passed=True,**{k:True for k in CHECKS},
-            tool_invocations=8,provider_reads_requested=False,credential_reads_requested=False,
+            tool_invocations=9,provider_reads_requested=False,credential_reads_requested=False,
             live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
             native_windows_acceptance=False,
-            scope='Eight actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals and two supplied inventory manifests. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The encryption self-test retains no ciphertext, password or plaintext. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
+            scope='Nine actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The encryption self-test retains no ciphertext, password or plaintext. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
 
 
 class _Parser(argparse.ArgumentParser):
@@ -122,7 +134,7 @@ def main():
         report=run([str(args.executable.resolve())]);encoded=json.dumps(report,sort_keys=True,indent=2)+'\n'
         if args.output:args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(encoded,encoding='utf-8')
     except (Exception,KeyboardInterrupt) as error:
-        allowed={'COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW',
+        allowed={'COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW','QUALITY_REVIEW',
             'PRIVATE_FILES_CHANGED','INVALID_COMMAND','DEFAULT_DATA_CREATED','OUTPUT_CAP',
             'CHILD_FAILED','CHILD_JSON','CHILD_TIMEOUT','EXECUTABLE_REQUIRED'}
         code=str(error) if type(error) is ValueError and str(error) in {'PACKAGED_PAPER_TOOLS_'+k for k in allowed} else 'PACKAGED_PAPER_TOOLS_INTERNAL_ERROR'

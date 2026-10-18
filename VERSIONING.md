@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.158.0 (pre-release).** Institutional public-design research is preserved in INSTITUTIONAL_DESIGN.md and the read-only roadmap. An original bounded offline execution-quality diagnostic separates decision/arrival/spread/residual costs, explicit supplied fees and unfilled opportunity cost. No broker, learned-policy, native C++ or live authority is added; exact-source CI and actual paper acceptance remain required.
+**Current development build: 0.159.0 (pre-release).** A private read-only execution-quality review now derives all retained priced fills and original terms from exact-head accepted paper history, then replays the journals again. The EXE allowlist includes quality-review; benchmark quotes and clocks remain supplied/unverified, and all fee-inclusive results stay unknown. No provider, routing or live authority is added; exact-source native CI and actual account acceptance remain required.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

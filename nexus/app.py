@@ -50,6 +50,7 @@ from nexus.advisory_benchmark import benchmark as advisory_contract_benchmark
 from nexus.provider_research import status as provider_research_status
 from nexus.onboarding import inventory as local_capability_inventory
 from nexus import credential_vault, emergency_intent
+from nexus.found_markets import worker as found_market_worker
 from nexus.ai_evidence_preview import build as ai_evidence_preview, authorize_preview as ai_authorize_preview
 from nexus.safety_benchmark import benchmark as safety_benchmark
 from nexus.portfolio_governor import audit_portfolio
@@ -65,9 +66,11 @@ async def application_lifespan(application):
             try:await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
             finally:
                 try:await asyncio.to_thread(observer.stop)
-                finally:await asyncio.to_thread(refresh_worker.shutdown)
+                finally:
+                    try:await asyncio.to_thread(refresh_worker.shutdown)
+                    finally:await asyncio.to_thread(found_market_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.138.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.139.0",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -110,6 +113,7 @@ class PortalCommand(BaseModel):
     granularity: int = Field(default=3600)
     limit: int = Field(default=1000,ge=240,le=1000)
     collect_public_history: bool = True
+    discover_markets: bool = False
 
 class PaperSettings(BaseModel):
     paper_budget: float = Field(gt=0, le=1000000)
@@ -176,7 +180,7 @@ def run_safety_benchmark():
 @app.get("/api/onboarding/tasks")
 def onboarding_tasks():
     from nexus.startup_tasks import checklist
-    return checklist()
+    return checklist(portal_active=not _paused)
 
 @app.get("/api/onboarding/readiness")
 def onboarding_readiness():
@@ -326,7 +330,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.138.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.139.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -829,6 +833,21 @@ def tiers():
     try:return {"data_mode":"ILLUSTRATIVE", "updated_at":int(time.time()), "tiers":simulated_snapshot(),"tier_permissions":tier_permissions_current()["tiers"]}
     except (ValueError,OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="PAPER_SETTINGS_REVIEW_REQUIRED")
 
+class FoundMarketControl(BaseModel):
+    enabled: bool
+
+@app.get('/api/research/found-markets')
+def found_market_status():
+    return found_market_worker.status()
+
+@app.post('/api/research/found-markets/control')
+def found_market_control(cmd:FoundMarketControl):
+    with _engine_control_lock:
+        if not cmd.enabled:return found_market_worker.stop()
+        if _paused:raise HTTPException(status_code=409,detail='START_PORTAL_FIRST')
+        try:return found_market_worker.start(lambda:not _paused)
+        except (ValueError,OSError,RuntimeError):raise HTTPException(status_code=409,detail='DISCOVERY_FINISHING_OR_UNAVAILABLE')
+
 @app.post("/api/portal")
 def portal(cmd:PortalCommand):
     global _paused
@@ -845,8 +864,12 @@ def portal(cmd:PortalCommand):
                     observer.start()
                     refresh_worker.start(cmd.product,cmd.granularity,cmd.limit,
                         admission=lambda:not _paused,collect_public_history=cmd.collect_public_history)
+                    if cmd.discover_markets:
+                        try:found_market_worker.start(lambda:not _paused)
+                        except (ValueError,OSError,RuntimeError):found_market_worker.stop('OPTIONAL_DISCOVERY_UNAVAILABLE')
                 except (ValueError,OSError,sqlite3.Error,RuntimeError):
                     _paused=True
+                    found_market_worker.stop('PORTAL_START_FAILED')
                     try:refresh_worker.stop('PORTAL_START_FAILED')
                     finally:observer.stop()
                     raise HTTPException(status_code=503,detail="RESEARCH_START_FAILED_ENGINE_OFF")
@@ -854,7 +877,9 @@ def portal(cmd:PortalCommand):
                 try:paper_forward_runner.stop('PORTAL_PAUSE')
                 finally:
                     try:observer.stop()
-                    finally:refresh_worker.stop('PORTAL_PAUSE')
+                    finally:
+                        try:refresh_worker.stop('PORTAL_PAUSE')
+                        finally:found_market_worker.stop('PORTAL_PAUSE')
             audit('portal_resumed' if cmd.enabled else 'portal_paused')
             return status()
 

@@ -14,10 +14,12 @@ ORDER='pf_0123456789abcdef_7_BUY'
 
 
 def fixtures(path,pending=True,missing_history=False):
+    if path=='/api/research/found-markets':return dict(mode='BOUNDED_FOUND_MARKETS_RESEARCH',read_only=True,money_movement_enabled=False,paper_orders_enabled=False,live_orders_enabled=False,policy_changed=False,profitability_validated=False,selected=[],enabled=False,phase='STOPPED',fresh_summaries=0,catalog_candidates=0,requests_attempted=0,reason=None)
     if path=='/api/onboarding/tasks':return dict(checked_at=1000,summary='Automatic local observations; no execution permission.',items=[
-        dict(id='engine',title='Use built-in research and AI',group='Start here',status='COMPLETE',checked=True,detail='Built-in numerical learning is included; no provider account is required.',tab='ai',target='counciltest'),
-        dict(id='budget',title='Save your virtual budget',group='Before a paper session',status='NEEDS_SETUP',checked=False,detail='Save virtual allocations in Risk; no money is deposited.',tab='risk',target='paperbudget'),
-        dict(id='payment',title='Link payment or a bank account',group='Future connections',status='UNAVAILABLE',checked=False,detail='Payment linking is not implemented and is not needed for offline research.',tab='accounts',target='preview')])
+        dict(necessity='BASELINE',id='engine',title='Use built-in research and AI',group='Start here',status='COMPLETE',checked=True,detail='Built-in numerical learning is included; no provider account is required.',tab='ai',target='counciltest'),
+        dict(necessity='BASELINE',id='budget',title='Save your virtual budget',group='Before a paper session',status='NEEDS_SETUP',checked=False,detail='Save virtual allocations in Risk; no money is deposited.',tab='risk',target='paperbudget'),
+        dict(necessity='OPTIONAL',id='found_markets',title='Found Markets',group='Optional research',status='OPTIONAL',checked=False,detail='Bounded public discovery selects research prospects without changing trades.',tab='todo',target='found-markets-enabled'),
+        dict(necessity='FUTURE',id='payment',title='Link payment or a bank account',group='Future connections',status='UNAVAILABLE',checked=False,detail='Payment linking is not implemented and is not needed for offline research.',tab='accounts',target='preview')])
     if path=='/api/matrix/hub/refresh':return dict(phase='STOPPED',reason=None,configuration=None,polls=0,poll_limit=60,fits=0,fit_limit=8,unchanged_skips=0,cycle_active=False)
     if path=='/api/matrix/hub':return dict(bars=300,conflicts=0,database_bytes=32768,database_byte_limit=134217728,artifact_bytes=8192,artifact_byte_limit=33554432)
     if path.startswith('/api/matrix/hub/signal?'):return dict(decision='ABSTAIN_STALE_OR_FUTURE_DATA',model_content_sha256='a'*64,forecast_as_of=1000,age_seconds=999999,forecasts=[])
@@ -236,6 +238,9 @@ def run(output,channel=None):
                             expect(page.get_by_role('heading',name='Your autonomous trading engine')).to_be_visible()
                             expect(page.locator('#startup-tasks')).to_contain_text('Why:')
                             expect(page.locator('#startup-check-engine')).to_be_checked()
+                            expect(page.get_by_role('heading',name='Required for baseline paper operation',exact=True)).to_be_visible()
+                            expect(page.get_by_role('heading',name='Optional improvements',exact=True)).to_be_visible()
+                            expect(page.locator('#found-markets-enabled')).to_be_checked()
                             expect(page.locator('#startup-check-payment')).not_to_be_checked()
                             expect(page.locator('#startup-check-payment')).to_be_disabled()
                             page.locator('#release-roadmap-load').click()

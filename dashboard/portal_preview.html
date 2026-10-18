@@ -159,7 +159,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 </div>
 <div id="panel-todo" class="tab-panel" role="tabpanel" aria-labelledby="tab-todo" hidden><h2 class="workspace-title">To Do</h2><p class="sub">Set up your automated trading engine. Each check explains its job, what Nexus can verify today and which connections are still being developed.</p>
 <section class="card" aria-label="Welcome to Nexus"><div class="label">Welcome // autonomous trading is the goal</div><h2>Your autonomous trading engine</h2><p>Nexus is being built to watch markets, use intelligence to evaluate opportunities, enforce your risk allowances, and manage trades automatically after you engage. Built-in numerical intelligence is included; additional AI services are optional.</p><h3>The production experience we are building</h3><ol class="beginner-steps"><li><strong>Install and open Nexus.</strong> Included components and sensible defaults reduce setup work.</li><li><strong>Securely connect and fund a trading account.</strong> The planned flow uses the selected financial provider’s secure authorization and funding pages, where bank linking is required. Bank funding is not implemented in this build; do not enter bank passwords or card details here.</li><li><strong>Select your risk allowance.</strong> Tell the engine what it may spend and which entry tiers it may use. Intelligence must stay within these limits.</li><li><strong>Engage.</strong> The goal is one clear action after required setup: automatic startup checks, then governed automated trading. Disengage pauses trading; Emergency Stop cuts execution independently.</li></ol><h3>Use the automated paper engine today</h3><p>Keep the ready-made virtual budget and Terrestrial allowance, or change them in Risk. Choose Start Portal to run market observation and bounded learning, then Engage Paper. Nexus checks local setup, asks for confirmation and runs the fixed BTC paper experiment. Compatible unused virtual accounting is prepared automatically. No bank account, deposit or paid AI is needed for this local practice.</p><p class="sub">Today’s built-in council studies data and provides research; the fixed BTC policy makes simulated trading decisions. Learned council signals and optional AI do not yet direct orders. Validated intelligence-driven policies, connected execution, funding and computer-off operation remain release work. Existing choices and recovery blockers are preserved.</p><div class="actions"><button data-open-tab="portal" data-help="Open the trading command center. Start Portal runs observation and learning; Engage Paper checks local setup and asks before starting the virtual experiment. Opening this tab starts neither.">Open Portal</button><button data-open-tab="accounts" data-help="Review virtual accounts and the connection roadmap. Bank linking and live funding are not implemented; this navigation does not connect a provider, collect bank credentials or transfer money.">Account Setup Plan</button></div></section>
-<section class="card" aria-label="Automatic startup checklist"><div class="label">Start here // checked by Nexus</div><h2>Your setup checklist</h2><p>No need to tick these boxes yourself. Each component has a job in the automated trading workflow: intelligence, market inputs, risk limits, accounting, execution or continuity. Nexus shows what is available, what starts when you engage, and what is optional. Unticked optional or future features do not mean the machine is broken. If an existing account or saved choice needs review, follow that row instead of resetting it.</p><p class="sub">Boxes are read-only: Nexus ticks them from current local observations. A tick means only the check described on that row passed. It does not approve a strategy, prove connectivity or start trading. Checks are refreshed when you open this tab or choose Refresh Checklist.</p><button id="startup-refresh" data-help="Recheck local setup observations and refresh the automatic boxes. This reads saved state only; it does not contact exchanges, connect AI, train models, move money or start trading.">Refresh Checklist</button><p id="startup-summary" role="status" aria-live="polite">Open this tab to check setup. No setup has been verified yet.</p><div id="startup-tasks"></div></section>
+<section class="card" aria-label="Automatic startup checklist"><div class="label">Start here // checked by Nexus</div><h2>Your setup checklist</h2><p>No need to tick these boxes yourself. Each component has a job in the automated trading workflow: intelligence, market inputs, risk limits, accounting, execution or continuity. Nexus shows what is available, what starts when you engage, and what is optional. Required baseline checks appear first, followed by optional improvements and future connected features. Unticked optional or future features do not mean the machine is broken. If an existing account or saved choice needs review, follow that row instead of resetting it.</p><p class="sub">Boxes are read-only: Nexus ticks them from current local observations. A tick means only the check described on that row passed. It does not approve a strategy, prove connectivity or start trading. Checks are refreshed when you open this tab or choose Refresh Checklist.</p><button id="startup-refresh" data-help="Recheck local setup observations and refresh the automatic boxes. This reads saved state only; it does not contact exchanges, connect AI, train models, move money or start trading.">Refresh Checklist</button><p id="startup-summary" role="status" aria-live="polite">Open this tab to check setup. No setup has been verified yet.</p><div id="startup-tasks"></div></section>
+<section class="card" aria-label="Found Markets"><div class="label">Optional improvement // background research</div><h2>Found Markets</h2><p>Let Nexus explore supported public markets in short bursts and automatically shortlist promising research areas. The discovery council compares historical trends, data quality, approximate turnover and downside risk across 24-hour, 30-day and 180-day lookbacks. These are research scores, not predictions or trade approvals.</p><label><input type="checkbox" id="found-markets-enabled" checked data-help="Include optional public-market discovery when Start Portal runs. While Portal is active, changing this switch starts or stops this research worker. It reviews up to four markets per 15-minute burst, at most 36 requests per hour in this process, and selects up to six fresh research prospects. This cannot change trading markets, risk allowances or the fixed BTC policy."> Search for new markets with Portal</label><button id="found-markets-refresh" data-help="Read the current discovery status and research shortlist. This does not fetch market data, restart a burst, change settings or start trades.">Refresh Found Markets</button><p id="found-markets-status" role="status" aria-live="polite">Selected by default for the next Start Portal; no search runs while Portal is off. Optional: baseline paper trading works without discovery.</p><div id="found-markets-list"></div><p class="tiny">Source today: public USD spot crypto. Other asset classes need data connectors. Up to 256 compact summaries stay in process memory; a restart clears them. Stale evidence leaves the shortlist. Spread, fees, holdout performance, account eligibility and execution integration still need validation.</p></section>
 <section class="card" aria-label="First-run readiness">
 <div class="label">Plug-and-play // no account needed</div>
 <h2>System Readiness</h2>
@@ -236,7 +237,7 @@ function selectWorkspaceTab(name,focus=false){
  // Clear any description belonging to a now-hidden control.
  document.dispatchEvent(new Event('scroll'));
  if(name==='portal'){const canvas=byId('matrix-account-chart');if(canvas&&typeof renderAccountMatrix==='function')renderAccountMatrix();}
- if(name==='todo')refreshStartupTasks();
+ if(name==='todo'){refreshStartupTasks();if(typeof refreshFoundMarkets==='function')refreshFoundMarkets();}
  if(name==='research'&&typeof localRefreshControl==='function')localRefreshControl('status');
 }
 for(const [i,name] of workspaceNames.entries()){
@@ -256,8 +257,13 @@ async function refreshStartupTasks(){
  // Previous ticks are not current evidence while a new read is pending or failed.
  byId('startup-tasks').replaceChildren();show('startup-summary','Checking saved local setup…');
  try{
-  const report=await api('/api/onboarding/tasks');const root=byId('startup-tasks');let group=null;
-  for(const task of report.items){
+  const report=await api('/api/onboarding/tasks');const root=byId('startup-tasks');let group=null,necessity=null;
+  const sections=['BASELINE','OPTIONAL','FUTURE'];
+  const sectionName=task=>sections.includes(task.necessity)?task.necessity:'FUTURE';
+  const ordered=[...report.items].sort((a,b)=>sections.indexOf(sectionName(a))-sections.indexOf(sectionName(b)));
+  for(const task of ordered){
+   const section=sectionName(task);
+   if(necessity!==section){necessity=section;group=null;const title=document.createElement('h2');title.textContent={BASELINE:'Required for baseline paper operation',OPTIONAL:'Optional improvements',FUTURE:'Future connected features — not required today'}[section];root.append(title);const explanation=document.createElement('p');explanation.textContent={BASELINE:'These components support the current paper engine. Defaults and automatic accounting reduce manual setup; the check on each row has a limited scope.',OPTIONAL:'These additions expand research or convenience. Unticked boxes do not block baseline paper trading.',FUTURE:'Funding, broker execution and computer-off operation are still being built. They are not prerequisites for the local paper experiment.'}[section];root.append(explanation);}
    if(group!==task.group){group=task.group;const title=document.createElement('h3');title.textContent=group;root.append(title);}
    const row=document.createElement('div');row.className='startup-row';const check=document.createElement('input');
    check.type='checkbox';check.id='startup-check-'+task.id;check.checked=task.checked===true&&task.status==='COMPLETE';check.disabled=true;check.dataset.help='Nexus checks this box automatically from local observations. '+(task.why?task.why+' ':'')+task.detail;
@@ -325,6 +331,35 @@ async function update(){
   }
  }catch(e){show('status',e.message==='PAPER_SETTINGS_REVIEW_REQUIRED'?'Paper settings need review in Risk. Research controls remain available; new paper entries are blocked.':'Local engine unavailable: '+e.message)}
 }
+// BEGIN FOUND MARKETS
+let foundBusy=false,foundControlBusy=false;
+async function refreshFoundMarkets(){
+ if(foundBusy)return;foundBusy=true;byId('found-markets-refresh').disabled=true;byId('found-markets-list').replaceChildren();
+ try{
+  const data=await api('/api/research/found-markets');
+  if(!data||data.mode!=='BOUNDED_FOUND_MARKETS_RESEARCH'||data.read_only!==true||data.money_movement_enabled!==false||data.paper_orders_enabled!==false||data.live_orders_enabled!==false||data.policy_changed!==false||data.profitability_validated!==false||!Array.isArray(data.selected)||data.selected.length>6||!data.selected.every(row=>row&&/^[A-Z0-9]{2,18}-USD$/.test(row.product)&&row.execution_allowed===false&&Array.isArray(row.horizons)&&row.horizons.length===3&&row.horizons.every(h=>h&&['short','medium','long'].includes(h.horizon)&&typeof h.eligible_for_research==='boolean'&&(h.score===null||typeof h.score==='number'&&Number.isFinite(h.score)&&h.score>=0&&h.score<=100))))throw Error('REVIEW');
+  const root=byId('found-markets-list');root.replaceChildren();
+  show('found-markets-status',(data.enabled?'Research enabled':'Research stopped')+' · '+data.phase+' · '+data.fresh_summaries+' fresh summaries / '+data.catalog_candidates+' catalog candidates · '+data.requests_attempted+' request attempts this process. '+(['SOURCE_OR_BUDGET_REVIEW_REQUIRED','WORKER_REVIEW_REQUIRED'].includes(data.reason)?'Source or resource review needed. ':'')+'Selections are research only; trading permissions stay separate.');
+  if(!data.selected.length){const p=document.createElement('p');p.textContent='No fresh candidates passed the research screens. Nexus will not fill the shortlist with unverified opportunities.';root.append(p);}
+  for(const row of data.selected){
+   const item=document.createElement('p');const horizons=Array.isArray(row.horizons)?row.horizons:[];
+   item.textContent=String(row.product)+' — '+horizons.map(h=>String(h.horizon)+': '+(h.eligible_for_research===true?'research score '+String(h.score):'not selected ('+(Array.isArray(h.reasons)?h.reasons.join(', '):'review')+')')).join(' · ');root.append(item);
+  }
+ }catch(_){byId('found-markets-list').replaceChildren();show('found-markets-status','Discovery could not be verified. No previous selections are shown as current. Baseline paper controls remain separate.');}
+ finally{foundBusy=false;byId('found-markets-refresh').disabled=false;}
+}
+byId('found-markets-refresh').onclick=refreshFoundMarkets;
+byId('found-markets-enabled').onchange=async()=>{
+ if(foundControlBusy)return;
+ if(!portalActive){show('found-markets-status',byId('found-markets-enabled').checked?'Selected for next Start Portal.':'Optional discovery is off; baseline paper operation is available.');return;}
+ foundControlBusy=true;byId('found-markets-enabled').disabled=true;
+ try{await api('/api/research/found-markets/control',{method:'POST',headers:jsonHeaders,body:JSON.stringify({enabled:byId('found-markets-enabled').checked===true})});await refreshFoundMarkets();await refreshStartupTasks();}
+ catch(_){show('found-markets-status','Discovery change was not confirmed. Refresh status and retry; paper execution was not changed.');}
+ finally{foundControlBusy=false;byId('found-markets-enabled').disabled=false;}
+};
+setInterval(()=>{if(!byId('panel-todo').hidden)refreshFoundMarkets();},15000);
+// END FOUND MARKETS
+
 // BEGIN ENGINE CONTROLS
 let paperRunning=false,paperStateKnown=false,engageBusy=false;
 function renderEngineStatus(status){
@@ -340,7 +375,7 @@ function syncTradingControls(){
 }
 byId('activate').onclick=async()=>{
  const button=byId('activate');button.disabled=true;
- try{await api('/api/portal',{method:'POST',headers:jsonHeaders,body:JSON.stringify({enabled:!portalActive,product:byId('hub-product').value,granularity:Number(byId('hub-interval').value),limit:Math.min(1000,Number(byId('hub-window').value)),collect_public_history:byId('hub-refresh-public').checked===true})});await update();await localRefreshControl('status');await refreshForward();if(portalActive)refreshAccountMatrix(true)}
+ try{await api('/api/portal',{method:'POST',headers:jsonHeaders,body:JSON.stringify({enabled:!portalActive,product:byId('hub-product').value,granularity:Number(byId('hub-interval').value),limit:Math.min(1000,Number(byId('hub-window').value)),collect_public_history:byId('hub-refresh-public').checked===true,discover_markets:byId('found-markets-enabled').checked===true})});await update();await localRefreshControl('status');await refreshForward();if(portalActive)refreshAccountMatrix(true)}
  catch(e){show('status','Portal change unconfirmed: '+e.message);await refreshForward()}
  finally{button.disabled=false}
 };

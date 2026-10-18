@@ -26,12 +26,14 @@ def _rows(path, sql):
             raise
 
 
-def checklist():
+def checklist(*,portal_active=False):
     root=Path(os.environ.get('NEXUS_PORTABLE_DATA', str(Path.home()/'.nexus-operative')))
     items=[]
     def add(key,title,group,status,detail,tab,target):
         items.append(dict(id=key,title=title,group=group,status=status,checked=status=='COMPLETE',
                           detail=('Nexus could not read this setup state. Try again or review recovery. ' if status=='UNKNOWN' else '')+detail,tab=tab,target=target))
+    add('portal','Start Portal before engaging','Engine foundation','COMPLETE' if portal_active else 'NEEDS_SETUP',
+        'Start Portal turns on observation and the engine services. It does not engage trades. Once the engine is on, choose Engage Paper separately; stopping Portal stops the paper session.', 'portal','activate')
     add('engine','Built-in intelligence is included','Engine foundation','COMPLETE',
         'Numerical learning models and offline studies are included. No AI account or payment is needed. This checks availability, not investing skill.','ai','builtin-ai')
     add('storage','Save the engine’s memory locally','Engine foundation',
@@ -93,7 +95,15 @@ def checklist():
         'Broker adapters are still disconnected. Current trades are local simulations; viewing the connection plan does not link an account.','accounts','execution-connectors')
     add('cloud','Keep Nexus running while your computer is off','Connected trading and continuity — in development','PLANNED',
         'Cloud operation is on the roadmap and is not deployed. This installation needs its computer and application running.','todo','release-roadmap-load')
+    from nexus.found_markets import worker as found_worker
+    found=found_worker.status()
+    add('found_markets','Found Markets: optional automatic opportunity research','Discovery and research',
+        'COMPLETE' if found['enabled'] else 'OPTIONAL',
+        'When selected, Start Portal runs bounded public discovery in the background. A rule-based council compares 24-hour, 30-day and 180-day history and selects up to six fresh research prospects. It cannot add trade permissions or change the fixed BTC policy. Turning it off preserves baseline paper use.',
+        'todo','found-markets-enabled')
     explanations={
+        'portal':('Required before Engage','Engine running','The current paper executor requires an active Portal. This box reflects the local engine switch only; actual Engage checks accounting, risk and fresh observations again.'),
+        'found_markets':('Optional','Opportunity discovery','A capped discovery council narrows research attention as the catalog grows. Historical trends are clues to investigate, not validated future success; missing or stale data removes eligibility.'),
         'engine':('Included','Intelligence','Built-in specialists study market history and compare ideas for the trading engine. Today their output is research; the fixed paper policy makes trade decisions.'),
         'storage':('Needed for saving','Memory and recovery','Saved settings, observations and trade records let the engine remember its state and recover without guessing past trades.'),
         'budget':('Paper configuration','Spending limits','The budget sets the virtual money and allocation limits available to automated paper entries. Live trading will need separately verified spendable funds.'),
@@ -110,6 +120,8 @@ def checklist():
     }
     for item in items:
         item['setup_scope'],item['trading_role'],item['why']=explanations[item['id']]
+        item['necessity']='BASELINE' if item['id'] in ('portal','storage','budget','tier','portfolio','quotes') else 'FUTURE' if item['id'] in ('payment','broker','cloud') else 'OPTIONAL'
+        item['required_for_baseline']=item['necessity']=='BASELINE'
     return dict(mode='READ_ONLY_STARTUP_TASKS',product_goal='AUTONOMOUS_TRADING_ENGINE',live_workflow_available=False,paper_workflow_available=True,checked_at=time.time(),items=items,
                 summary='Set the risk allowance, Start Portal, then confirm Engage Paper for the automated virtual BTC experiment. The production goal is install, secure account/funding connection, choose risk and Engage. Defaults need no editing on a new installation. Saved choices and recovery blockers are preserved. Optional and future boxes can stay unticked; checks are not trading or release approval.',
                 live_orders_enabled=False,money_movement_enabled=False,starts_automatically=False,

@@ -1,0 +1,28 @@
+# Found Markets — bounded autonomous research
+
+Found Markets is an optional Portal research service, not a trading adapter. The To Do tab puts baseline paper prerequisites first (active Portal, storage, budget, entry allowance, accounting and current prices). Included research/learning, discovery, extra AI and paper-provider inspection are optional improvements. Funding, connected execution and cloud appear below as future features. Automatic ticks describe each row's limited evidence, never strategy approval.
+
+The discovery switch is selected by default in the desktop page. Start Portal includes it unless switched off; changing it while Portal runs starts/stops discovery separately. Legacy API callers must explicitly send `discover_markets:true`. Selection is for the current page/launch, not a persisted preference. Discovery failure does not fail the baseline engine. Application startup/restart never launches workers; Portal stop/application shutdown fences requests and publication. Emergency Stop cuts execution independently while research may continue.
+
+## Resource limits
+
+- One worker in this process; public Coinbase Exchange USD spot catalog only, parsed under the existing10,000-row and3MB catalog limits.
+- One burst every 15 minutes; at most four candidates and two bounded history requests each, plus one catalog request (nine attempts maximum). Requests are spaced with interruptible one-second waits.
+- At most 36 request attempts in a rolling hour per process. Stop/start does not reset budget or cadence. This is not a broker-wide, shared-IP or cross-process limiter; aggregate deployment budgets need acceptance.
+- Rotate through the catalog and revisit up to two expired earlier leaders. No exhaustive coverage or global opportunity claim. At most256 summaries, six fresh shortlisted markets, one-hour summary lifetime. Summaries remain in process memory and clear on restart; raw candle histories are temporary, not retained validation evidence or replicated account data.
+- GET status never initiates market IO, accounting, vault access, training or orders. No paid AI required. Transport rejects redirects, unexpected response URLs, oversized bodies and nonfinite JSON. Only constructed public catalog/candle paths are used; no user-supplied URLs, tokens or account data.
+
+## Council and horizons
+
+Discovery uses explicit deterministic specialists: trend, data quality, coarse liquidity and downside/adversarial risk. They evaluate historical24-hour (hourly bars), 30-day and 180-day (daily bars) windows. At most240 bars per history request, below the provider's300 maximum. Require enough closed bars, continuity, fresh endpoints, positive historical return, at least$1million approximate last-closed-day turnover, and bounded volatility/drawdown/outlier returns. Approximate turnover uses daily close times base volume; it is not depth, executable liquidity or spread.
+
+The single provider's bars are unverified evidence. Scores rank historical momentum versus realized variability and drawdown; they are not expected returns, calibrated confidence or probability of profit. Missing/stale/invalid evidence is vetoed, not imputed. The shortlist takes the highest eligible horizon score per market, at most six; it does not guarantee representation or diversification across all horizons. Retained reviews expose reasons when screens reject a horizon. A stale shortlist is withdrawn; empty results are valid.
+
+Current trained onboard models remain in the existing research workflow. These discovery rules do not pretend to be independently trained models or extend their supported market set. Future work: validated forecasting per horizon, honest out-of-sample comparisons after costs, spread/depth/source/eligibility checks, diversification/overlap allocation, authentic multi-asset connectors and governed policy admission. No discovered market or council opinion can modify the fixed BTC paper policy, permission tiers, account funds or order routing.
+
+Provider references, reviewed2026-10-18:
+
+- https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles — candle format, gaps,300-candle maximum and guidance against frequent history polling.
+- https://docs.cdp.coinbase.com/exchange/rest-api/rate-limits — public quotas are per IP; local discovery caps do not coordinate other clients on that IP.
+
+Run `tests/test_found_markets.py`, `tools/found_markets_smoke.cjs`, checklist/help/controller tests, full regression and the16 offline release profiles. The real-loopback HTTP profile verifies stopped passive discovery with zero request attempts and unchanged policy. Browser fixtures intercept all discovery responses; rendered, native Windows, sustained feed, real-account and independent/owner1.0 acceptance remain separate.

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.138.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.139.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.138 explains each startup component in terms of the autonomous trading engine and adds a read-only local check before Engage confirmation. It checks current local admission conditions without preparing accounting, contacting providers or granting permission; actual start repeats admission. Secure provider funding, learned-model execution, broker routing and cloud operation remain unfinished.
+Current hardening: v0.139 adds optional Found Markets background discovery: four public USD spot markets per 15-minute burst,36 requests/hour/process,256 compact in-memory summaries and up to six fresh research selections. Deterministic council specialists screen24-hour, 30-day and 180-day historical windows. To Do separates baseline prerequisites from optional improvements and future connected features. Research rankings do not change the fixed BTC execution policy; trained forecast, multi-asset routing, real-source sustained validation and provider eligibility remain release work.
 
 ```mermaid
 flowchart TD
@@ -86,8 +86,9 @@ Validate the fresh native EXE, ordinary profile, saved-choice upgrade, outage an
 7. Validate the opt-in BTC paper runner across sustained public feeds, outages and restart; integrate broader research-backed admission.
 8. Validate sustained local candidate refresh and independent walk-forward/cost evidence and reviewed optional local-weight runtime upgrades; never promote learned output automatically.
 9. Validate the explicit Windows paper credential/read controls in a real authorized paper account and review scoped-secret lifecycle; accept the journal-bound original-ID recovery coordinator against authorized paper data, then accept the bounded activity collector against authorized paper data, validate bounded local retention and implement authenticated source coverage and verified fee associations/timing, broker-wide pacing and cash/position/hold reconciliation before provider-paper routing; finish forward, packaging and independent release acceptance.
-10. Expand markets incrementally through verified data, legal eligibility, cost and paper-evidence gates.
-11. Evaluate free-tier computer-off hosting and secure headless operation without assuming anonymous hosting, free unlimited compute or automatic paid upgrades.
+10. Validate Found Markets on sustained real public feeds, missing data, outages and shared-IP budgets; add licensed/authorized asset connectors, leakage-free walk-forward cost evidence, calibrated forecasts, portfolio diversification and governed policy integration before any discovery-to-order route.
+11. Expand markets incrementally through verified data, legal eligibility, cost and paper-evidence gates.
+12. Evaluate free-tier computer-off hosting and secure headless operation without assuming anonymous hosting, free unlimited compute or automatic paid upgrades.
 
 ## Explicit expansion and cloud goals
 

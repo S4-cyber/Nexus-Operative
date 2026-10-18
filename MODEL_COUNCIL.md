@@ -29,3 +29,12 @@ is not independent evidence if the models share the same data or training.
 
 This architecture does not promise profit or zero losses; it is intentionally
 designed to fail closed.
+
+
+## v0.139 Found Markets and checklist scope
+
+Read FOUND_MARKETS.md before extending discovery. To Do separates current baseline prerequisites, optional improvements and future connected features. Found Markets is optional and selected by default in the page for Start Portal; legacy Portal API callers remain opt-in. It runs four candidates per 15-minute burst, up to36 requests/hour/process,256 in-memory summaries and six fresh research selections, with explicit deterministic 24-hour/30-day/180-day council screens. Start/stop cannot reset its request/cadence budget. Stop and engine admission fence publication; no background worker starts on application restart. Current-page switch preference is not persisted. GET status and checklist remain passive.
+
+Never promote discovery scores to expected profit, calibrated predictions or execution permissions. This first connector scans public USD spot crypto, not all asset classes. It rotates a bounded sample, revisits earlier leaders, uses single-source closed bars and coarse last-day turnover, and drops stale/gapped/negative/risky evidence. The shortlist uses best eligible horizon score, not balanced diversification. Trained-model forecasts, multi-asset connectors, costs/spread/depth, holdouts, eligibility, shared-IP/cross-process budgets and sustained real-source acceptance remain open. The fixed BTC execution policy and emergency throttle remain independent.
+
+Every new switch/button has practical black/purple help. The actual discovery controller tests optional startup/stop, coalesced reads/control requests, promoted reply rejection, stale-result clearing and private-error isolation without trading requests. The mandatory loopback HTTP profile adds passive discovery and explicit checklist necessity assertions; all examples remain offline fixtures.

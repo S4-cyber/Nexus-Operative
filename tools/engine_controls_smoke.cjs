@@ -27,7 +27,7 @@ const flush=()=>new Promise(setImmediate),starts=()=>calls.filter(x=>x.path==='/
  context.renderEngineStatus({emergency_cut_state:'VERIFIED',emergency_cut_pending:false});assert.match(byId('status').textContent,/CUT VERIFIED/);context.halted=false;
  assert.equal(calls.length,0);context.syncTradingControls();assert.equal(byId('engage').disabled,true);
  await byId('activate').onclick();assert.equal(calls.length,1);
- assert.deepEqual(JSON.parse(calls[0].options.body),{enabled:true,product:'BTC-USD',granularity:3600,limit:1000,collect_public_history:true});
+ assert.deepEqual(JSON.parse(calls[0].options.body),{enabled:true,product:'BTC-USD',granularity:3600,limit:1000,collect_public_history:true,discover_markets:false});
  confirm=false;await context.engagePaper();assert.equal(starts(),0);assert.equal(calls.at(-1).options,undefined);confirm=true;
  fixture={...clean(),local_checks_clear:false,will_prepare_unused_account:false,blockers:['TIER_NOT_SELECTED']};const dialogs=confirmations;
  await context.engagePaper();assert.equal(starts(),0);assert.equal(confirmations,dialogs);assert.match(byId('paper-start-check').textContent,/tier is OFF/);

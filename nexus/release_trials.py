@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance')
 
 
 def _require(condition, code):
@@ -143,6 +143,9 @@ def _execute(profile):
         return benchmark(30)
     if profile == 'http': return _http_trial()
     if profile == 'pacing': return _pacing_trial()
+    if profile == 'retained_balance':
+        from nexus.retained_balance_review import fixture_report
+        return fixture_report()
     if profile == 'collection':
         from nexus.activity_collection_evidence import fixture_report
         return fixture_report()
@@ -170,6 +173,18 @@ def _validate(profile, result):
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
+    if profile == 'retained_balance':
+        reviewed = result['review']; gross = reviewed['gross_fill_review']
+        _require(reviewed['arithmetic_evaluated'] is True and reviewed['head_rechecked'] is True and
+            result['stale_head_rejected'] is True, 'RETAINED_BALANCE_FENCES')
+        _require(gross['executions'] == 2 and gross['execution_groups'] == 2 and
+            gross['gross_execution_ending_balances'] == {'USD':'1009.89','BTC':'0.001'} and
+            gross['residual_equals_retained_fee_debits'] == {'USD':True,'BTC':True}, 'RETAINED_BALANCE_ARITHMETIC')
+        _require(reviewed['status'] == 'REVIEW_REQUIRED' and all(reviewed[k] is False for k in
+            ('source_coverage_verified', 'fee_coverage_complete', 'fee_execution_links_verified', 'holds_reconciled',
+             'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing', 'ledger_applied', 'live_orders_enabled', 'admission_reserved'))
+            and all(gross[k] is False for k in ('fee_debits_allocated_to_interval','fee_execution_links_verified',
+                'fee_reserved_funding_verified')), 'RETAINED_BALANCE_AUTHORITY')
     if profile == 'collection':
         _require(result['get_requests'] == 4 and result['retained_activities'] == 200 and
             result['retained_observations'] == 1 and result['retained_pages'] == 2, 'COLLECTION_RETENTION')

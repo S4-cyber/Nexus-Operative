@@ -151,6 +151,11 @@ class BrokerActivityStore:
         from nexus.broker_activity_review import review
         return review(self)
 
+    def review_balances(self, **scope):
+        """Explicit head-bound gross-fill/residual diagnostic; no funds authority."""
+        from nexus.retained_balance_review import review
+        return review(self, **scope)
+
     def _report(self, activities, receipts, head):
         return dict(mode='UNATTESTED_LOCAL_PAPER_ACTIVITY_RETENTION', account_sha256=self.account_digest,
             head_sha256=head, retained_batches=len(receipts), retained_activities=len(activities),

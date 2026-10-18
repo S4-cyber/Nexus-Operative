@@ -1,0 +1,148 @@
+"""Head-bound retained REST fill arithmetic against supplied total balances.
+
+No IO except read-only retained-history replay. Fees remain unallocated: dates,
+references and numerical residual matches never supply posting/link authority.
+"""
+from collections import defaultdict
+from decimal import Decimal, localcontext
+import re
+
+from nexus import alpaca_activity_normalizer as adapter
+from nexus import broker_activity_review
+from nexus.broker_activity_store import BrokerActivityStore
+from nexus.broker_fee_projection import balances
+from nexus.alpaca_paper_contract import number, text, sha
+
+POLICY = 'nexus.retained-gross-fill-residual-review.v1'
+MAX_SAMPLES = 20
+
+
+def _fail(code):
+    raise ValueError('RETAINED_BALANCE_REVIEW_' + code)
+
+
+def _gross_review(records, opening, observed):
+    current = dict(opening); minimum = dict(opening); groups = defaultdict(list)
+    fees = {'USD':Decimal(0), 'BTC':Decimal(0)}; fee_counts = dict(USD=0, BTC=0)
+    for row in records:
+        if row['kind'] == 'FILL': groups[row['occurred_at']].append(row)
+        else:
+            fees[row['asset']] += number(row['amount'], zero=True)
+            fee_counts[row['asset']] += 1
+    covered = True; shortfalls = []; events = 0
+    for at, rows in sorted(groups.items()):
+        debit = {'USD':Decimal(0), 'BTC':Decimal(0)}; credit = dict(debit)
+        for row in rows:
+            qty = number(row['quantity']); gross = qty * number(row['price'])
+            buy = row['side'] == 'BUY'
+            debit['USD' if buy else 'BTC'] += gross if buy else qty
+            credit['BTC' if buy else 'USD'] += qty if buy else gross
+        for asset in ('USD','BTC'):
+            if current[asset] < debit[asset]:
+                covered = False; events += 1
+                reason = 'AMBIGUOUS_EQUAL_NANOSECOND_FUNDING' if len(rows)>1 and current[asset]-debit[asset]+credit[asset]>=0 else 'GROSS_ONLY_INSUFFICIENT_' + asset
+                if len(shortfalls) < MAX_SAMPLES:
+                    shortfalls.append(dict(at=at, asset=asset, reason=reason, available=text(current[asset]),
+                        required=text(debit[asset]), shortfall=text(debit[asset]-current[asset])))
+            current[asset] += credit[asset] - debit[asset]
+            minimum[asset] = min(minimum[asset], current[asset])
+    residual = {k:current[k]-observed[k] for k in ('USD','BTC')}
+    return dict(gross_execution_ending_balances={k:text(v) for k,v in current.items()},
+        gross_minus_supplied_observed={k:text(v) for k,v in residual.items()},
+        gross_only_debits_covered=covered, gross_only_minimum_group_end_balances={k:text(v) for k,v in minimum.items()},
+        execution_groups=len(groups), executions=sum(len(rows) for rows in groups.values()),
+        equal_nanosecond_groups=sum(len(rows)>1 for rows in groups.values()),
+        gross_only_shortfalls=shortfalls, gross_only_shortfall_events=events, shortfall_sample_limit=MAX_SAMPLES,
+        shortfall_samples_truncated=events>len(shortfalls),
+        retained_unallocated_fee_debits={k:text(v) for k,v in fees.items()}, retained_fee_records_by_asset=fee_counts,
+        residual_equals_retained_fee_debits={k:None if fee_counts[k]==0 else residual[k]==fees[k] for k in fees},
+        fee_scope='ALL_RETAINED_UNALLOCATED_DEBITS_NOT_VERIFIED_INTERVAL_POSTINGS',
+        arithmetic_scope='EXPLICIT_GROSS_FILLS_ONLY_FEES_NEVER_SPENT_OR_ALLOCATED',
+        time_scope='CANONICAL_UTC_UP_TO_NANOSECONDS_EQUAL_INSTANT_DEBITS_REQUIRE_PRE_GROUP_FUNDS',
+        fee_debits_allocated_to_interval=False, fee_execution_links_verified=False, fee_reserved_funding_verified=False)
+
+
+def review(store, *, expected_account_id, expected_head, opening_balances, opening_at,
+           observed_balances, observed_at):
+    """Inspect exact retained history, then recheck its head before returning.
+
+    A recheck is no lock/reservation and does not attest supplied opening/observed
+    balances, source completeness or a broker snapshot. No automatic continuation.
+    """
+    if type(store) is not BrokerActivityStore: _fail('STORE_REQUIRED')
+    account = adapter._uuid(expected_account_id)
+    if store.account != account: _fail('ACCOUNT_DISAGREEMENT')
+    if not isinstance(expected_head, str) or re.fullmatch(r'[0-9a-f]{64}', expected_head) is None: _fail('HEAD_REFERENCE')
+    opening = balances(opening_balances); observed = balances(observed_balances)
+    start, end = adapter._instant(opening_at), adapter._instant(observed_at)
+    if end < start: _fail('INTERVAL_REGRESSION')
+    retained = store.inspect()
+    if retained['retained_batches'] == 0: _fail('HISTORY_REQUIRED')
+    if retained['head_sha256'] != expected_head: _fail('HEAD_DISAGREEMENT')
+    merged = broker_activity_review._review_snapshot(retained, account=account)
+    reasons = set(merged['review_reasons']) | {'OPENING_AND_OBSERVED_BALANCES_UNATTESTED',
+        'FEE_DEBITS_NOT_ALLOCATED_TO_EXECUTIONS_OR_INTERVAL', 'GROSS_FUNDING_EXCLUDES_FEE_OBLIGATIONS'}
+    normalization = merged['activity_normalization']; arithmetic = None
+    allowed = {'ACTIVITY_COVERAGE_UNVERIFIED','FEE_LINK_AND_TIMING_UNVERIFIED'}
+    if normalization is None or set(normalization['review_reasons']) - allowed:
+        reasons.add('RETAINED_FILL_ARITHMETIC_NOT_EVALUATED')
+    else:
+        records = normalization['normalized_activities']
+        # Never drop inconvenient fills or use an opening balance that already
+        # includes the same fill. Selection is explicit (opening, observed].
+        outside = [r['activity_id'] for r in records if r['kind']=='FILL' and not start < r['occurred_at'] <= end]
+        latest_times = [r['updated_at'] for receipt in retained['receipts'].values() for r in receipt['orders']]
+        if outside:
+            reasons.add('RETAINED_FILL_OUTSIDE_SELECTED_INTERVAL')
+        if any(at > end for at in latest_times): reasons.add('RETAINED_ORDER_SNAPSHOT_AFTER_OBSERVATION')
+        if not outside and not any(at > end for at in latest_times):
+            with localcontext() as context:
+                context.prec = 80
+                arithmetic = _gross_review(records, opening, observed)
+            if not arithmetic['gross_only_debits_covered']: reasons.add('GROSS_ONLY_FUNDING_SHORTFALL')
+            if any(Decimal(v)<0 for v in arithmetic['gross_execution_ending_balances'].values()):
+                reasons.add('NEGATIVE_GROSS_EXECUTION_ENDING_BALANCE')
+    # Complete replay again: concurrent append/corruption cannot return a result
+    # bearing a no-longer-current head. Changes after this sample remain possible.
+    current = store.inspect()
+    if current['head_sha256'] != expected_head: _fail('HEAD_CHANGED_DURING_REVIEW')
+    scope = dict(policy=POLICY, account_sha256=retained['account_sha256'], head_sha256=expected_head,
+        opening_balances={k:text(v) for k,v in opening.items()}, opening_at=start,
+        observed_balances={k:text(v) for k,v in observed.items()}, observed_at=end)
+    return dict(mode='HEAD_BOUND_RETAINED_GROSS_BALANCE_REVIEW', status='REVIEW_REQUIRED', read_only=True,
+        **scope, input_sha256=sha(scope), head_rechecked=True, admission_reserved=False, atomic_snapshot=False,
+        arithmetic_evaluated=arithmetic is not None, gross_fill_review=arithmetic,
+        retained_activity_review=merged, review_reasons=sorted(reasons), source='SUPPLIED_UNATTESTED',
+        source_coverage_verified=False, fee_coverage_complete=False, fee_execution_links_verified=False,
+        holds_reconciled=False, broker_account_reconciled=False, spendable_funds_verified=False,
+        ledger_applied=False, ready_for_routing=False, broker_connected=False, live_orders_enabled=False,
+        automatic_retry=False, automatic_continuation=False,
+        limitations='Read-only diagnostic of one retained head plus supplied TOTAL balances. Gross fills omit all fee obligations; a passing gross path is not spendable funding. Residual equality with unallocated fee debits cannot verify associations, fee posting times, selected-interval completeness or settled balances. No guessed fee links, date-to-instant conversion, cancellation, account write, reservation or resume permission. Final head recheck is a sample only, not protection from later changes, rewritten hashes or valid-tail deletion.')
+
+
+def fixture_report():
+    """Synthetic raw REST records, real temporary retention/review, no provider."""
+    import tempfile
+    from pathlib import Path
+    from nexus.broker_activity_store import _raw
+    from nexus.broker_fee_projection import fixture_inputs
+    data = fixture_inputs(); records = adapter.fixture_report()['normalized_activities']
+    with tempfile.TemporaryDirectory(prefix='nexus-retained-balance-') as directory:
+        store = BrokerActivityStore(Path(directory)/'activities.db','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+        store.retain([_raw(r) for r in records], data['orders'], after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z')
+        result = store.review_balances(expected_account_id=store.account, expected_head=store.inspect()['head_sha256'],
+            opening_balances=data['opening_balances'],opening_at=data['opening_at'],
+            observed_balances=data['observed_balances'],observed_at=data['observed_at'])
+        arithmetic = result['gross_fill_review']
+        stale_rejected = False
+        try:
+            store.review_balances(expected_account_id=store.account, expected_head='0'*64,
+                opening_balances=data['opening_balances'],opening_at=data['opening_at'],
+                observed_balances=data['observed_balances'],observed_at=data['observed_at'])
+        except ValueError as error:
+            if str(error) != 'RETAINED_BALANCE_REVIEW_HEAD_DISAGREEMENT': raise
+            stale_rejected = True
+        passed = (result['arithmetic_evaluated'] and arithmetic['gross_only_debits_covered']
+                  and all(arithmetic['residual_equals_retained_fee_debits'].values()))
+        return dict(passed=passed and stale_rejected,stale_head_rejected=stale_rejected,review=result,source='FIXED_SYNTHETIC_RETAINED_REST_FIXTURE',
+                    broker_connected=False,live_orders_enabled=False)

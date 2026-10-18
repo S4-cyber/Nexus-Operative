@@ -112,3 +112,17 @@ def test_collection_trial_keeps_page_cap_and_cursor_evidence_without_coverage_au
         with pytest.raises(ValueError,match='COLLECTION_AUTHORITY'): trials._validate('collection',dict(result,**{field:True}))
     with pytest.raises(ValueError,match='COLLECTION_SCOPE'): trials._validate('collection',dict(result,cursor_chain_preserved=False))
     with pytest.raises(ValueError,match='COLLECTION_RETENTION'): trials._validate('collection',dict(result,retained_pages=1))
+
+
+def test_retained_balance_trial_rejects_stale_or_authorized_gross_fee_inference():
+    from nexus.retained_balance_review import fixture_report
+    result=fixture_report();trials._validate('retained_balance',result)
+    changed=copy.deepcopy(result);changed['stale_head_rejected']=False
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_FENCES'): trials._validate('retained_balance',changed)
+    for field in ('source_coverage_verified','fee_coverage_complete','fee_execution_links_verified','holds_reconciled',
+                  'broker_account_reconciled','spendable_funds_verified','ready_for_routing','ledger_applied','live_orders_enabled','admission_reserved'):
+        changed=copy.deepcopy(result);changed['review'][field]=True
+        with pytest.raises(ValueError,match='RETAINED_BALANCE_AUTHORITY'): trials._validate('retained_balance',changed)
+    for field in ('fee_debits_allocated_to_interval','fee_execution_links_verified','fee_reserved_funding_verified'):
+        changed=copy.deepcopy(result);changed['review']['gross_fill_review'][field]=True
+        with pytest.raises(ValueError,match='RETAINED_BALANCE_AUTHORITY'): trials._validate('retained_balance',changed)

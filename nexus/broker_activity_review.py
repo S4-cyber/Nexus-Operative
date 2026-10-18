@@ -14,6 +14,11 @@ def review(store):
     if type(store) is not BrokerActivityStore:
         raise ValueError('BROKER_ACTIVITY_REVIEW_STORE_REQUIRED')
     retained = store.inspect()  # One replay-validated snapshot, no missing-state initialization.
+    return _review_snapshot(retained, account=store.account)
+
+
+def _review_snapshot(retained, *, account):
+    """Internal reuse of one already replay-validated, account-bound snapshot."""
     reasons = {'ACTIVITY_COVERAGE_UNVERIFIED', 'FEE_LINK_AND_TIMING_UNVERIFIED'}
     snapshots = {}; windows = set(); versions = 0
     for receipt in retained['receipts'].values():
@@ -57,7 +62,7 @@ def review(store):
     if not ambiguous and not regressed:
         try:
             normalization = adapter.normalize([_raw(record) for record in retained['normalized_activities']],
-                [dict(order, symbol='BTC/USD') for order in selected], expected_account_id=store.account)
+                [dict(order, symbol='BTC/USD') for order in selected], expected_account_id=account)
         except ValueError:
             # Individually valid batches may disagree when merged, or exceed the
             # existing combined parser budget. No truncated/partial review is returned.

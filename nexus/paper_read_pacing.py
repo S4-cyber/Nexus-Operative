@@ -77,7 +77,8 @@ class PaperReadPacing:
         if len(rows) > 2 * MAX_SESSIONS + 1: _fail('EVENT_CAP')
         state = dict(head_sha256=ZERO, events=0, sessions=0, pending_token=None,
                      last_evaluated_at=0, next_allowed_at=0, review_required=False, last_outcome=None,
-                     pending_owner_fenced=False, pending_owner_sha256=None, interruptions=0, last_interruption=None, last_interruption_head=None)
+                     pending_owner_fenced=False, pending_owner_sha256=None, pending_before_head_sha256=None,
+                     completed_sessions=[], interruptions=0, last_interruption=None, last_interruption_head=None)
         for index, (seq, encoded, parent, digest) in enumerate(rows):
             if not isinstance(encoded, str) or len(encoded.encode()) > 1024: _fail('EVENT_CAP')
             try: body = json.loads(encoded)
@@ -94,6 +95,7 @@ class PaperReadPacing:
                     now = clock(body['evaluated_at'])
                     self._admit(state, now)
                     state['pending_token'] = digest
+                    state['pending_before_head_sha256'] = ZERO if index==1 else parent
                     state['pending_owner_fenced'] = body.get('owner_fenced', False)
                     state['pending_owner_sha256'] = body.get('owner_sha256')
                     state['sessions'] += 1
@@ -105,6 +107,9 @@ class PaperReadPacing:
                     if outcome not in ('SUCCESS', 'NOT_FOUND', 'TIMEOUT', 'NETWORK_ERROR', 'RATE_LIMITED', 'SERVER_ERROR', 'AUTH_DENIED', 'REVIEW_REQUIRED'): _fail('OUTCOME_INVALID')
                     if type(delay) is not int or (outcome == 'RATE_LIMITED' and not 1 <= delay <= 86400) or (outcome != 'RATE_LIMITED' and delay != 0): _fail('DELAY_INVALID')
                     state['pending_token'] = None
+                    state['completed_sessions'].append(dict(before_head_sha256=state['pending_before_head_sha256'],
+                        after_head_sha256=digest,outcome=outcome))
+                    state['pending_before_head_sha256'] = None
                     state['pending_owner_fenced'] = False
                     state['pending_owner_sha256'] = None
                     state['review_required'] = outcome in ('AUTH_DENIED', 'REVIEW_REQUIRED')
@@ -118,6 +123,7 @@ class PaperReadPacing:
                     if not state['pending_owner_fenced']: _fail('LEGACY_OWNER_UNVERIFIED')
                     if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
                     state['pending_token'] = None
+                    state['pending_before_head_sha256'] = None
                     state['pending_owner_fenced'] = False
                     state['pending_owner_sha256'] = None
                     state['next_allowed_at'] = max(state['next_allowed_at'], now + INTERRUPTED_COOLDOWN)
@@ -145,13 +151,23 @@ class PaperReadPacing:
         if not self.path.exists():
             state = dict(head_sha256=ZERO, events=0, sessions=0, pending_token=None,
                          last_evaluated_at=0, next_allowed_at=0, review_required=False, last_outcome=None,
-                     pending_owner_fenced=False, pending_owner_sha256=None, interruptions=0, last_interruption=None, last_interruption_head=None)
+                     pending_owner_fenced=False, pending_owner_sha256=None, pending_before_head_sha256=None,
+                     completed_sessions=[], interruptions=0, last_interruption=None, last_interruption_head=None)
         else:
             with closing(self._connect()) as db: state = self._load(db)
-        return dict(state, account_sha256=self.account_digest, max_gets_per_session=4,
+        public=dict(state);public.pop('pending_before_head_sha256');public.pop('completed_sessions')
+        return dict(public, account_sha256=self.account_digest, max_gets_per_session=4,
                     min_post_result_cooldown_seconds=MIN_COOLDOWN, automatic_retry=False,
                     broker_wide_quota_verified=False, ready_for_routing=False,
                     limitations='Only cooperating callers using this exact local journal are coordinated. No provider quota, distributed ownership, source attestation, automatic interrupted-read release or valid-tail-deletion protection.')
+
+    def completed_sessions(self):
+        """Return replayed aggregate head transitions without request timing/content."""
+        self._path_check()
+        if not self.path.exists(): return ()
+        with closing(self._connect()) as db:
+            state=self._load(db)
+        return tuple(dict(item) for item in state['completed_sessions'])
 
     def ownership(self):
         """Local OS lease; runtime readers hold it through all IO and cleanup."""

@@ -107,3 +107,7 @@ The activity-acceptance release fixture fingerprints all expected cooperating SQ
 ## v0.127 latest accepted-content replay boundary
 
 Private cross-journal status now resolves the latest acceptance scope to its retained receipt and re-derives the account-bound collection scope, account-fields digest, collection-observation digest and canonical order/activity input digest. Matching journal heads no longer hide a content disagreement. The status path remains read-only and never opens the order input, credential vault or provider transport; any mismatch is review-required and cannot trigger repair, retry, reset or deletion. These hashes are local consistency evidence, not signatures, source attestation, complete activity/fee coverage, account reconciliation or routing authority.
+
+## v0.128 full accepted-history replay boundary
+
+Private status now obtains the acceptance scopes only through full validated acceptance-chain replay and checks every record against the exact retained receipt, canonical content and exact successful pacing/activity head transition. Only aggregate booleans and counts enter status or public synthetic release evidence; the scope list, receipts, identities, timings, journal paths and hashes remain private. An older-only disagreement is fail-closed even if the latest scope and all final heads match. Replay still cannot detect a coordinated valid rewrite, authenticate a provider or prove coverage, fee links, balances, holds, funds or routing authority. Never publish, erase or auto-repair the private journals.

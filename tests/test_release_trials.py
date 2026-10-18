@@ -173,9 +173,12 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
     from nexus.paper_activity_acceptance_evidence import fixture_report
     result=fixture_report();trials._validate('activity_acceptance',result)
     assert result['postcommit_latest_content_replayed'] is True
+    assert result['postcommit_all_content_replayed'] is True
+    assert result['accepted_transitions_after_commit']==2
     for field in ('missing_status_created_nothing','precommit_death_retained_unbound_transition',
                   'postcommit_death_replayed_bound_transition','precommit_rollback_journal_observed',
-                  'fresh_process_journals_unchanged','fresh_process_vault_silent'):
+                  'fresh_process_journals_unchanged','fresh_process_vault_silent',
+                  'postcommit_all_content_replayed'):
         changed=dict(result,**{field:False})
         with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_RECOVERY'):trials._validate('activity_acceptance',changed)
     for field in ('actual_provider_access','actual_vault_access','source_attested','activity_coverage_verified',

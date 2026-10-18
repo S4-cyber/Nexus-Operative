@@ -92,3 +92,5 @@ def test_distinct_second_transition_requires_exact_previous_heads(tmp_path):
     store.append(second,admission=lambda:admitted)
     report=store.inspect();assert report['records']==2 and report['last_record_sha256']==sha(second)
     assert report['last_record_scope']==second
+    assert store.replay_scopes()==(first,second)
+    assert 'record_scopes' not in report

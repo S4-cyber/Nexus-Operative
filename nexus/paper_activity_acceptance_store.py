@@ -100,7 +100,7 @@ class PaperActivityAcceptanceStore:
                 state=dict(head_sha256=digest,records=0,pacing_bound_head_sha256=body['baseline_pacing_head_sha256'],
                     retention_bound_head_sha256=body['baseline_retention_head_sha256'],
                     baseline_pacing_sessions=body['baseline_pacing_sessions'],baseline_retained_batches=body['baseline_retained_batches'],
-                    preexisting_history_unverified=expected,last_record_sha256=None,last_record_scope=None)
+                    preexisting_history_unverified=expected,last_record_sha256=None,last_record_scope=None,record_scopes=[])
             else:
                 if not isinstance(body,dict) or set(body)!={'scope','record_sha256'}:_fail('PAYLOAD_INVALID')
                 scope=self._scope(body['scope']);record_sha=sha(scope)
@@ -111,6 +111,7 @@ class PaperActivityAcceptanceStore:
                     pacing_bound_head_sha256=scope['pacing_after_head_sha256'],
                     retention_bound_head_sha256=scope['retention_after_head_sha256'],last_record_sha256=record_sha,
                     last_record_scope=scope)
+                state['record_scopes'].append(scope)
             previous=digest
         return state
 
@@ -123,8 +124,16 @@ class PaperActivityAcceptanceStore:
                 last_record_scope=None,
                 automatic_retry=False,ready_for_routing=False)
         with closing(self._connect()[0]) as db:state=self._load(db)
-        return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=True,account_sha256=self.account_digest,**state,
+        public=dict(state);public.pop('record_scopes')
+        return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=True,account_sha256=self.account_digest,**public,
             automatic_retry=False,ready_for_routing=False)
+
+    def replay_scopes(self):
+        """Return validated aggregate scopes in retained order for local replay."""
+        self._check()
+        if not self.path.exists(): return ()
+        with closing(self._connect()[0]) as db:state=self._load(db)
+        return tuple(dict(scope) for scope in state['record_scopes'])
 
     def bind(self,*,pacing_head,retention_head,pacing_sessions,retained_batches):
         pacing_head=_head(pacing_head);retention_head=_head(retention_head)

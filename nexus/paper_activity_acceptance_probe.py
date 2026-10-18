@@ -183,33 +183,64 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
     _, pacing, store, acceptance = _paths(expected_account_id,pacing_path,activity_store_path,acceptance_store_path)
     pace=pacing.inspect();retained=store.inspect();accepted=acceptance.inspect()
     pending = pace['pending_token'] is not None
+    scopes=acceptance.replay_scopes()
+    completed={(item['before_head_sha256'],item['after_head_sha256']) for item in pacing.completed_sessions()
+        if item['outcome']=='SUCCESS'}
+    records={row['activity_id']:row for row in retained['normalized_activities']}
+
+    def replay_scope(scope):
+        result=dict(accepted_receipt_replayed=False,collection_scope_replayed=False,
+            account_fields_replayed=False,collection_observation_replayed=False,
+            activity_input_replayed=False,pacing_transition_replayed=False,
+            retention_transition_replayed=False,accepted_transition_replayed=False)
+        receipt=retained['receipts'].get(scope['retained_receipt_sha256'])
+        result['accepted_receipt_replayed']=receipt is not None
+        if receipt is not None:
+            observation=receipt.get('collection_observation')
+            try:activities=[records[key] for key in receipt['activity_ids']]
+            except KeyError:activities=None
+            result['collection_scope_replayed']=scope['collection_scope_sha256']==sha(dict(
+                account_sha256=retained['account_sha256'],after=receipt['after'],until=receipt['until'],
+                direction='asc',page_size=PAGE_SIZE))
+            result['account_fields_replayed']=(isinstance(observation,dict) and
+                scope['account_fields_sha256']==observation.get('account_fields_sha256'))
+            result['collection_observation_replayed']=(isinstance(observation,dict) and
+                scope['collection_observation_sha256']==sha(observation))
+            result['activity_input_replayed']=(activities is not None and
+                scope['activity_input_sha256']==sha(dict(account_sha256=retained['account_sha256'],
+                    orders=receipt['orders'],activities=activities)))
+            result['retention_transition_replayed']=(
+                receipt['retention_before_head_sha256']==scope['retention_before_head_sha256'] and
+                receipt['retention_after_head_sha256']==scope['retention_after_head_sha256'])
+        result['pacing_transition_replayed']=(scope['pacing_before_head_sha256'],
+            scope['pacing_after_head_sha256']) in completed
+        result['accepted_transition_replayed']=all(value for key,value in result.items()
+            if key!='accepted_transition_replayed')
+        return result
+
+    replayed=[replay_scope(scope) for scope in scopes]
     latest = accepted['last_record_scope']
     replay = dict(latest_accepted_receipt_replayed=False,latest_collection_scope_replayed=False,
         latest_account_fields_replayed=False,latest_collection_observation_replayed=False,
-        latest_activity_input_replayed=False,latest_acceptance_record_replayed=False)
-    if latest is not None:
-        receipt=retained['receipts'].get(latest['retained_receipt_sha256'])
-        replay['latest_accepted_receipt_replayed']=receipt is not None
-        if receipt is not None:
-            observation=receipt.get('collection_observation')
-            records={row['activity_id']:row for row in retained['normalized_activities']}
-            try:activities=[records[key] for key in receipt['activity_ids']]
-            except KeyError:activities=None
-            replay['latest_collection_scope_replayed']=latest['collection_scope_sha256']==sha(dict(
-                account_sha256=retained['account_sha256'],after=receipt['after'],until=receipt['until'],
-                direction='asc',page_size=PAGE_SIZE))
-            replay['latest_account_fields_replayed']=(isinstance(observation,dict) and
-                latest['account_fields_sha256']==observation.get('account_fields_sha256'))
-            replay['latest_collection_observation_replayed']=(isinstance(observation,dict) and
-                latest['collection_observation_sha256']==sha(observation))
-            replay['latest_activity_input_replayed']=(activities is not None and
-                latest['activity_input_sha256']==sha(dict(account_sha256=retained['account_sha256'],
-                    orders=receipt['orders'],activities=activities)))
-        replay['latest_acceptance_record_replayed']=(all(value for key,value in replay.items()
-            if key!='latest_acceptance_record_replayed') and
+        latest_activity_input_replayed=False,latest_pacing_transition_replayed=False,
+        latest_retention_transition_replayed=False,latest_acceptance_record_replayed=False)
+    if latest is not None and replayed:
+        current=replayed[-1]
+        replay.update({f'latest_{key}':value for key,value in current.items()
+            if key!='accepted_transition_replayed'})
+        replay['latest_acceptance_record_replayed']=(current['accepted_transition_replayed'] and
             accepted['last_record_sha256']==sha(latest) and
             latest['pacing_after_head_sha256']==pace['head_sha256'] and
             latest['retention_after_head_sha256']==retained['head_sha256'])
+    historical=dict(replayed_accepted_transitions=sum(item['accepted_transition_replayed'] for item in replayed),
+        all_accepted_receipts_replayed=bool(replayed) and all(item['accepted_receipt_replayed'] for item in replayed),
+        all_collection_scopes_replayed=bool(replayed) and all(item['collection_scope_replayed'] for item in replayed),
+        all_account_fields_replayed=bool(replayed) and all(item['account_fields_replayed'] for item in replayed),
+        all_collection_observations_replayed=bool(replayed) and all(item['collection_observation_replayed'] for item in replayed),
+        all_activity_inputs_replayed=bool(replayed) and all(item['activity_input_replayed'] for item in replayed),
+        all_pacing_transitions_replayed=bool(replayed) and all(item['pacing_transition_replayed'] for item in replayed),
+        all_retention_transitions_replayed=bool(replayed) and all(item['retention_transition_replayed'] for item in replayed),
+        all_accepted_transitions_replayed=bool(replayed) and all(item['accepted_transition_replayed'] for item in replayed))
     if pending or pace['review_required']:recovery='PACING_UNCERTAINTY_REVIEW_REQUIRED'
     elif not accepted['initialized']:
         recovery='ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED' if pace['sessions'] or retained['retained_batches'] else 'NO_LOCAL_READ_HISTORY'
@@ -217,10 +248,12 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         recovery='UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED'
     elif accepted['records'] and not replay['latest_acceptance_record_replayed']:
         recovery='ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'
+    elif accepted['records'] and not historical['all_accepted_transitions_replayed']:
+        recovery='ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'
     elif accepted['records']:recovery='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED'
     elif accepted['preexisting_history_unverified']:recovery='LEGACY_BASELINE_ONLY_REVIEW_REQUIRED'
     else:recovery='NO_ACCEPTED_READ_TRANSITIONS'
-    uncertain=recovery in ('PACING_UNCERTAINTY_REVIEW_REQUIRED','ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED','ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','LEGACY_BASELINE_ONLY_REVIEW_REQUIRED')
+    uncertain=recovery in ('PACING_UNCERTAINTY_REVIEW_REQUIRED','ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED','ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','LEGACY_BASELINE_ONLY_REVIEW_REQUIRED')
     return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_STATUS',status='REVIEW_REQUIRED',read_only=True,
         pacing_journal_present=pacing.path.is_file(),activity_store_present=store.path.is_file(),acceptance_store_present=acceptance.path.is_file(),
         account_sha256=retained['account_sha256'],pacing_head_sha256=pace['head_sha256'],
@@ -234,10 +267,10 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         accepted_transitions=accepted['records'],acceptance_record_capacity_remaining=max(0,MAX_RECORDS-accepted['records']),
         preexisting_history_unverified=accepted['preexisting_history_unverified'],cross_journal_recovery_state=recovery,
         cross_journal_heads_match=accepted['initialized'] and accepted['pacing_bound_head_sha256']==pace['head_sha256'] and accepted['retention_bound_head_sha256']==retained['head_sha256'],
-        **replay,
+        **historical,**replay,
         suggested_action='REVIEW_ALL_RETAINED_JOURNALS_NO_AUTOMATIC_RETRY' if uncertain else 'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ',
         **{flag:False for flag in FLAGS},
-        limitations='Local replay only: no order file, vault or provider access and no admission permission. The latest accepted content is re-derived from its retained receipt, normalized activities and collection observation; matching content and sampled heads establish only local cooperating-journal consistency, not causality, source, coverage or valid-tail completeness. Missing history does not prove no earlier read. Other journals/hosts and direct store writers are not coordinated. Never erase uncertain reads, receipts, acceptance records or cooldowns to bypass review.')
+        limitations='Local replay only: no order file, vault or provider access and no admission permission. Every accepted content record is re-derived from its exact retained receipt, normalized activities, collection observation and exact retained pacing/activity head transitions; matching content and heads establish only local cooperating-journal consistency, not causality, source, coverage or valid-tail completeness. Missing history does not prove no earlier read. Other journals/hosts and direct store writers are not coordinated. Never erase uncertain reads, receipts, acceptance records or cooldowns to bypass review.')
 
 
 class _Parser(argparse.ArgumentParser):

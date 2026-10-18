@@ -135,7 +135,9 @@ class BrokerActivityStore:
                     if oid in bindings and bindings[oid] != binding: _fail('ORDER_BINDING_CONFLICT')
                     if binding[0] in clients and clients[binding[0]] != oid: _fail('CLIENT_BINDING_CONFLICT')
                     bindings[oid] = binding; clients[binding[0]] = oid
-                receipts[identity] = dict(after=body['after'], until=body['until'], activity_ids=ids, orders=data['orders'], **observation)
+                receipts[identity] = dict(after=body['after'], until=body['until'], activity_ids=ids, orders=data['orders'],
+                    retention_before_head_sha256=ZERO if index==1 else parent,
+                    retention_after_head_sha256=digest, **observation)
             previous = digest
         return activities, receipts, previous, total
 

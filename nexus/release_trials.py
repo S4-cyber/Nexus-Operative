@@ -505,11 +505,12 @@ def _validate(profile, result):
     if profile == 'activity_acceptance':
         _require(result['mode']=='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY' and
             result['source']=='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE' and
-            result['accepted_transitions_after_commit']==1, 'ACTIVITY_ACCEPTANCE_SCOPE')
+            result['accepted_transitions_after_commit']==2, 'ACTIVITY_ACCEPTANCE_SCOPE')
         _require(all(result[name] is True for name in ('missing_status_created_nothing',
             'precommit_death_retained_unbound_transition','postcommit_death_replayed_bound_transition',
             'precommit_rollback_journal_observed','fresh_process_journals_unchanged',
-            'fresh_process_vault_silent','postcommit_latest_content_replayed')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
+            'fresh_process_vault_silent','postcommit_latest_content_replayed',
+            'postcommit_all_content_replayed')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
         _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access','source_attested',
             'activity_coverage_verified','fee_execution_links_verified','broker_account_reconciled',
             'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled',

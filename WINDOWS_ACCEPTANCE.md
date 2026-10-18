@@ -1,5 +1,14 @@
 # Windows distribution and acceptance evidence
 
+
+## Verified installer checkpoint — v0.160 (2026-10-18)
+
+[Download the Windows installer artifact](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39174322289/artifacts/12154332632) (ZIP containing the setup EXE; artifact expires2026-10-25T23:18:00Z). The longer-retained [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39174322289/artifacts/12154745518) also includes the standalone EXE, source-bound checksum manifest and offline report; expires2026-11-17T23:17:56Z. GitHub may require your sign-in to download Actions artifacts.
+
+Verified source: `26c8cdd36f91a4e467f1caa09e21c7b775655011`. Windows build39174322289, safety/browser39174322293 and security39174322314 all completed successfully. The Windows job passed standalone private-tool checks, EXE startup, installer creation, installed/reinstalled execution, preserved-data uninstall and distribution evidence/checksums. This is disposable automated acceptance, not an ordinary-owner-profile/ACL, native-window, actual broker or production signoff.
+
+This checkpoint supports the six paper tools through v0.160. New quote-capture requires v0.162+; encrypted full-chain quote-evidence requires v0.163+. Source development and the newest unverified installer must not be presented as this tested checkpoint. Keep installed trading halted while reviewing upgrades and preserve private data/backups.
+
 The `Windows simulated-research build` workflow builds a standalone EXE and Inno installer. The `NexusOperative-Windows-Distribution` artifact contains both plus `artifact-manifest.json`: source commit, development version, byte lengths and SHA256 checksums. Verify the extracted distribution in the source Python environment:
 
 ```powershell

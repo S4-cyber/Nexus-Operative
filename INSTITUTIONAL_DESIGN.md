@@ -81,3 +81,6 @@ v0.161 adds private bounded supplied-quote retention against original request pr
 
 
 v0.162 adds an explicit private capture/status path binding a fixed-host quote read to a successful local pacing transition and original-request prefix. This is a prerequisite for provenance review; latest-quote capture still does not identify a decision/order-arrival event, verify clock domains or authorize execution-quality benchmarks/routing.
+
+
+v0.163 adds password-encrypted portable quote evidence with full request/quote/pacing replay in memory. It supports independent private content review without broker keys or plaintext database exports. Encryption and matching local chains do not authenticate source/clock/event/fee semantics, establish current account state or promote benchmarks/routing.

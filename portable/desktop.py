@@ -48,6 +48,7 @@ PAPER_TOOLS={
     'observation-crypto':'nexus.encrypted_observation',
     'quality-review':'nexus.paper_execution_quality_review',
     'quote-capture':'nexus.paper_quote_capture',
+    'quote-evidence':'nexus.paper_quote_bundle',
     'recovery':'nexus.paper_recovery_step',
 }
 
@@ -61,7 +62,7 @@ def _paper_tool(args):
             commands={name:'--paper-tool '+name+' --help' for name in sorted(PAPER_TOOLS)},
             default_data_created=False,desktop_started=False,automatic_read=False,
             automatic_retry=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
-            scope='Explicit private paper diagnostics only. Account/activity/quote/recovery reads require their own confirmation and saved Windows keys. Read-only status/reviews and observation encryption need no keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. Observation crypto creates a separate authenticated encrypted copy and never stores its password. No order submission or automatic continuation.'),sort_keys=True,indent=2))
+            scope='Explicit private paper diagnostics only. Account/activity/quote/recovery reads require their own confirmation and saved Windows keys. Read-only status/reviews and observation/quote-evidence encryption need no broker keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. Observation crypto creates a separate authenticated encrypted copy and never stores its password. No order submission or automatic continuation.'),sort_keys=True,indent=2))
         return 0
     if len(args)<2 or args[0]!='--paper-tool' or args[1] not in PAPER_TOOLS:
         print('NEXUS_PAPER_TOOL_USAGE_ERROR',file=sys.stderr);return 2

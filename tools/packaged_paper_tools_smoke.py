@@ -9,7 +9,7 @@ import tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 CHECKS=('catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
-        'private_account_review_checked','public_current_account_review_checked','private_execution_quality_checked','private_quote_status_checked','unconfirmed_quote_read_denied','private_files_unchanged','invalid_command_denied',
+        'private_account_review_checked','public_current_account_review_checked','private_execution_quality_checked','private_quote_status_checked','unconfirmed_quote_read_denied','encrypted_quote_evidence_checked','invalid_quote_export_denied','private_files_unchanged','invalid_command_denied',
         'default_data_not_created')
 
 
@@ -54,7 +54,7 @@ def run(command):
         env=dict(os.environ,NEXUS_PORTABLE_DATA=str(default),NEXUS_HEADLESS_MODE='1',NEXUS_BROWSER_MODE='1')
         catalog=_json_call(command,['--paper-tool','list'],env)
         _require(catalog['mode']=='NEXUS_PACKAGED_PAPER_TOOLS' and catalog['version']==REVISION and
-            set(catalog['commands'])=={'account-probe','activity','account-review','observation-crypto','quality-review','quote-capture','recovery'} and all(catalog[k] is False for k in
+            set(catalog['commands'])=={'account-probe','activity','account-review','observation-crypto','quality-review','quote-capture','quote-evidence','recovery'} and all(catalog[k] is False for k in
             ('default_data_created','desktop_started','automatic_read','automatic_retry','broker_connected','live_orders_enabled','money_movement_enabled')),'CATALOG')
         encrypted=_json_call(command,['--paper-tool','observation-crypto','self-test'],env)
         _require(encrypted['passed'] is True and encrypted['roundtrip_matches'] is True and
@@ -62,6 +62,12 @@ def run(command):
             all(encrypted[k] is False for k in ('password_saved','vault_accessed','external_connections',
                 'original_plaintext_deleted','output_file_writes','ready_for_routing','live_orders_enabled')),
             'OBSERVATION_CRYPTO')
+        from nexus.paper_quote_bundle import CHECKS as BUNDLE_CHECKS,FLAGS as BUNDLE_FLAGS
+        bundle=_json_call(command,['--paper-tool','quote-evidence','self-test'],env)
+        _require(bundle['passed'] is True and all(bundle[k] is True for k in BUNDLE_CHECKS) and
+            all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'QUOTE_EVIDENCE')
+        code,stdout,stderr=_call(command,['--paper-tool','quote-evidence','seal'],env)
+        _require(code==2 and stdout.strip()=='PAPER_QUOTE_BUNDLE_FAILED' and not stderr,'INVALID_QUOTE_EXPORT')
         account='01234567-89ab-cdef-0123-456789abcdef'
         account_status=_json_call(command,['--paper-tool','account-probe','--expected-account',account,
             '--pacing',str(missing/'pacing.sqlite3'),'--pacing-status-only'],env)
@@ -128,10 +134,10 @@ def run(command):
         _require(code==2 and stdout=='' and stderr.strip()=='NEXUS_PAPER_TOOL_USAGE_ERROR','INVALID_COMMAND')
         _require(not default.exists() and not missing.exists(),'DEFAULT_DATA_CREATED')
         return dict(mode='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE',passed=True,**{k:True for k in CHECKS},
-            tool_invocations=11,provider_reads_requested=False,credential_reads_requested=False,
+            tool_invocations=13,provider_reads_requested=False,credential_reads_requested=False,
             live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
             native_windows_acceptance=False,
-            scope='Eleven actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The encryption self-test retains no ciphertext, password or plaintext. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
+            scope='Thirteen actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. Inventory and full-chain quote-evidence self-tests use distinct authenticated encryption formats and retain no ciphertext, password or plaintext bundle. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
 
 
 class _Parser(argparse.ArgumentParser):

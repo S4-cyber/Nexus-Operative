@@ -344,3 +344,20 @@ NexusOperative.exe --paper-tool quote-capture --expected-account ACCOUNT_UUID --
 ```
 
 This uses the already saved Windows paper-key pair; never put keys/passwords on the command line. It reads the account, one fixed BTC/USD quote and the account again, then retains a bounded private observation. The provider read is GET-only; local pacing and quote files are written. Failures may already have retained a read or quote: run status, preserve history and do not automatically retry. Retention/read success does not establish provider acceptance or authorize orders. Source, decision/arrival timing, fees/funds and 1.0 acceptance remain unverified. Private output is not for Git or public logs, and this quote store does not encrypt its files.
+
+
+### Optional encrypted quote-evidence copy (v0.163+)
+
+Use this advanced offline tool to move an already captured paper history to another computer for review. It does not connect an account or start trading. Get the three exact heads from quote-capture status, choose a NEW encrypted output outside the application/repository, and keep the original private journals:
+
+```powershell
+NexusOperative.exe --paper-tool quote-evidence seal --expected-account ACCOUNT_UUID --request-journal PRIVATE_REQUESTS --quote-store PRIVATE_QUOTES --pacing PRIVATE_QUOTE_PACING --request-head REQUEST_SHA256 --quote-head QUOTE_SHA256 --pacing-head PACING_SHA256 --output PRIVATE_COPY.nexusenc
+```
+
+Enter a strong unique password at the hidden prompts; it is not stored and cannot be recovered by Nexus. The original databases remain unchanged and require their own private-volume protection. Review the encrypted file on another machine without broker keys or decrypted files:
+
+```powershell
+NexusOperative.exe --paper-tool quote-evidence review --source PRIVATE_COPY.nexusenc --public-summary
+```
+
+The public summary contains counts and local consistency only. Omit that flag for private IDs/heads; keep private stdout out of public logs. This checks the copied history, not the broker, current source state, profitability or trading readiness. It does not import or resume the copied databases. Never put encrypted account copies into the public repository.

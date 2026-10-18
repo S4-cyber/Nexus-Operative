@@ -425,7 +425,8 @@ def _inspection_inventory_trial():
     from nexus.paper_quote_observation import fixture_report as quote_fixture
     from nexus.paper_quote_store import fixture_report as quote_retention_fixture
     from nexus.paper_quote_capture import fixture_report as quote_capture_fixture
-    return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',btc_quote_observation=quote_fixture(),btc_quote_retention=quote_retention_fixture(),btc_quote_capture=quote_capture_fixture(),asset_rules_observation=asset_report,asset_get_requests=reader.requests,asset_shared_cooldown_checked=asset_cooldown,get_requests=requests,observations=reports, portable_roundtrips=len(exported), portable_tamper_rejected=tamper_rejected,
+    from nexus.paper_quote_bundle import fixture_report as quote_bundle_fixture
+    return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',btc_quote_observation=quote_fixture(),btc_quote_retention=quote_retention_fixture(),btc_quote_capture=quote_capture_fixture(),btc_quote_bundle=quote_bundle_fixture(),asset_rules_observation=asset_report,asset_get_requests=reader.requests,asset_shared_cooldown_checked=asset_cooldown,get_requests=requests,observations=reports, portable_roundtrips=len(exported), portable_tamper_rejected=tamper_rejected,
         broker_connected=False,live_orders_enabled=False,
         limitations='Fixed response objects and clocks; no actual credentials, provider, rendered UI, account reconciliation or spendable funds.')
 
@@ -614,7 +615,7 @@ def _validate(profile, result):
     if profile == 'http':
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS
         tools=result['paper_tools_source']
-        _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and tools['tool_invocations']==11 and all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
+        _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and tools['tool_invocations']==13 and all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
         _require(result['progress_estimate_scope_checked'] is True,'HTTP_PROGRESS_ASSESSMENT')
         _require(result['trial_readiness_passive_read'] is True,'HTTP_TRIAL_READINESS_READ')
@@ -683,6 +684,11 @@ def _validate(profile, result):
         _require(capture['source']=='INJECTED_PAPER_QUOTE_CAPTURE_FIXTURE' and capture['passed'] is True and
             all(capture[k] is True for k in CAPTURE_CHECKS),'BTC_QUOTE_CAPTURE')
         _require(all(capture[k] is False for k in (*CAPTURE_FLAGS,'actual_provider_access','actual_vault_access')),'BTC_QUOTE_CAPTURE_AUTHORITY')
+        from nexus.paper_quote_bundle import CHECKS as BUNDLE_CHECKS,FLAGS as BUNDLE_FLAGS
+        bundle=result['btc_quote_bundle']
+        _require(bundle['source']=='SYNTHETIC_ENCRYPTED_QUOTE_BUNDLE_FIXTURE' and bundle['passed'] is True and
+            all(bundle[k] is True for k in BUNDLE_CHECKS),'BTC_QUOTE_BUNDLE')
+        _require(all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'BTC_QUOTE_BUNDLE_AUTHORITY')
         from nexus.paper_asset_rules import FLAGS
         asset=result['asset_rules_observation']
         _require(result['asset_get_requests']==3 and result['asset_shared_cooldown_checked'] is True and asset['asset']['min_order_size']=='0.0001' and asset['reported_fields_observed'] is True and asset['account_fields_double_checked'] is True,'ASSET_RULES_READER')

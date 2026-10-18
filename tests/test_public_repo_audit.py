@@ -103,9 +103,18 @@ def test_pr_security_uses_trusted_policy_full_history_and_checksum_pinned_scanne
     'PAPER_RECONCILIATION_ACCEPTANCE_REVIEW','BROKER_REQUEST_ACTIVITY_REVIEW',
     'READ_ONLY_REQUEST_OBSERVATION_PREFIXES','PAPER_REQUEST_ACTIVITY_ACCEPTANCE_REVIEW','PAPER_ACCOUNT_EVIDENCE_BUNDLE_REVIEW','READ_ONLY_PAPER_ASSET_RULES',
     'PAPER_RECOVERY_SELECTION','PAPER_RECOVERY_STEP_REVIEW','EXPLICIT_SINGLE_PAPER_RECOVERY_STEP',
-    'SUPPLIED_EXECUTION_QUALITY_REVIEW','PAPER_EXECUTION_QUALITY_REVIEW','READ_ONLY_PAPER_BTC_QUOTE_OBSERVATION','PAPER_REQUEST_QUOTE_HISTORY','PAPER_REQUEST_QUOTE_RECEIPT','PAPER_QUOTE_CAPTURE_STATUS','EXPLICIT_PAPER_QUOTE_CAPTURE'])
+    'SUPPLIED_EXECUTION_QUALITY_REVIEW','PAPER_EXECUTION_QUALITY_REVIEW','READ_ONLY_PAPER_BTC_QUOTE_OBSERVATION','PAPER_REQUEST_QUOTE_HISTORY','PAPER_REQUEST_QUOTE_RECEIPT','PAPER_QUOTE_CAPTURE_STATUS','EXPLICIT_PAPER_QUOTE_CAPTURE','PRIVATE_PAPER_QUOTE_BUNDLE_REVIEW'])
 def test_standalone_operational_trial_report_is_private_even_when_renamed(tmp_path,mode):
     root=repository(tmp_path)
     commit(root,'ordinary.txt',json.dumps({'mode':mode,'fixture':True}).encode())
     result=audit.audit(root,history=True)
     assert not result['passed'] and any(f['rule']=='PRIVATE_FINANCIAL_REPORT' for f in result['findings'])
+
+
+def test_quote_evidence_ciphertext_and_plaintext_profile_are_private_when_renamed(tmp_path):
+    root=repository(tmp_path)
+    commit(root,'cipher.txt',b'NEXUS-QUOTE-EVIDENCE-ENC-1\nPRIVATE_CIPHERTEXT_FIXTURE')
+    commit(root,'ordinary.json',json.dumps({'profile':'nexus.private-paper-quote-evidence.v1'}).encode())
+    result=audit.audit(root,history=True)
+    assert not result['passed']
+    assert {'PRIVATE_BINARY_OR_KEY_CONTENT','PRIVATE_FINANCIAL_REPORT'}<={f['rule'] for f in result['findings']}

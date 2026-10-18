@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.162.0 (pre-release).** The seventh EXE paper tool, quote-capture, separately confirms one saved-pair read and private retention. Offline status replays original requests, quote bindings and pacing without keys or provider calls. Eleven child-command checks cover all tools. No automatic capture, verified decision/arrival/source/clock/funds authority, routing or broker acceptance is introduced.
+**Current development build: 0.163.0 (pre-release).** The eighth EXE paper tool, quote-evidence, creates a separately password-encrypted snapshot of exact request/quote/pacing history and replays it entirely in memory on another machine. Thirteen child-command checks cover all tools. Source journals stay unchanged; no import, source/currentness/clock/funds authority, routing or provider acceptance is introduced.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

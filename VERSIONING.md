@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.155.0 (pre-release).** The packaged EXE allowlist now includes the explicit paper account probe alongside activity, account review and recovery. Missing-history status remains vault/network/storage silent; confirmed reads still require the saved Windows pair, exact account and durable pacing. Exact-source Windows validation remains required.
+**Current development build: 0.156.0 (pre-release).** The packaged EXE allowlist now includes authenticated portable-observation encryption alongside account probe, activity, account review and recovery. The self-test retains no password, ciphertext or plaintext; real seal/unseal operations still require private operator-selected paths and hidden terminal prompts. Exact-source Windows validation remains required.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

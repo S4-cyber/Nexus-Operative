@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
-CHECKS=('catalog_allowlist_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
+CHECKS=('catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
         'private_account_review_checked','private_files_unchanged','invalid_command_denied',
         'default_data_not_created')
 
@@ -54,8 +54,14 @@ def run(command):
         env=dict(os.environ,NEXUS_PORTABLE_DATA=str(default),NEXUS_HEADLESS_MODE='1',NEXUS_BROWSER_MODE='1')
         catalog=_json_call(command,['--paper-tool','list'],env)
         _require(catalog['mode']=='NEXUS_PACKAGED_PAPER_TOOLS' and catalog['version']==REVISION and
-            set(catalog['commands'])=={'account-probe','activity','account-review','recovery'} and all(catalog[k] is False for k in
+            set(catalog['commands'])=={'account-probe','activity','account-review','observation-crypto','recovery'} and all(catalog[k] is False for k in
             ('default_data_created','desktop_started','automatic_read','automatic_retry','broker_connected','live_orders_enabled','money_movement_enabled')),'CATALOG')
+        encrypted=_json_call(command,['--paper-tool','observation-crypto','self-test'],env)
+        _require(encrypted['passed'] is True and encrypted['roundtrip_matches'] is True and
+            encrypted['ciphertext_randomized'] is True and encrypted['wrong_password_rejected'] is True and
+            all(encrypted[k] is False for k in ('password_saved','vault_accessed','external_connections',
+                'original_plaintext_deleted','output_file_writes','ready_for_routing','live_orders_enabled')),
+            'OBSERVATION_CRYPTO')
         account='01234567-89ab-cdef-0123-456789abcdef'
         account_status=_json_call(command,['--paper-tool','account-probe','--expected-account',account,
             '--pacing',str(missing/'pacing.sqlite3'),'--pacing-status-only'],env)
@@ -88,10 +94,10 @@ def run(command):
         _require(code==2 and stdout=='' and stderr.strip()=='NEXUS_PAPER_TOOL_USAGE_ERROR','INVALID_COMMAND')
         _require(not default.exists() and not missing.exists(),'DEFAULT_DATA_CREATED')
         return dict(mode='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE',passed=True,**{k:True for k in CHECKS},
-            tool_invocations=6,provider_reads_requested=False,credential_reads_requested=False,
+            tool_invocations=7,provider_reads_requested=False,credential_reads_requested=False,
             live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
             native_windows_acceptance=False,
-            scope='Six actual command-prefix child processes with disposable local journals and two supplied inventory manifests. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
+            scope='Seven actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals and two supplied inventory manifests. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The encryption self-test retains no ciphertext, password or plaintext. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
 
 
 class _Parser(argparse.ArgumentParser):
@@ -106,7 +112,7 @@ def main():
         report=run([str(args.executable.resolve())]);encoded=json.dumps(report,sort_keys=True,indent=2)+'\n'
         if args.output:args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(encoded,encoding='utf-8')
     except (Exception,KeyboardInterrupt) as error:
-        allowed={'COMMAND','CATALOG','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW',
+        allowed={'COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW',
             'PRIVATE_FILES_CHANGED','INVALID_COMMAND','DEFAULT_DATA_CREATED','OUTPUT_CAP',
             'CHILD_FAILED','CHILD_JSON','CHILD_TIMEOUT','EXECUTABLE_REQUIRED'}
         code=str(error) if type(error) is ValueError and str(error) in {'PACKAGED_PAPER_TOOLS_'+k for k in allowed} else 'PACKAGED_PAPER_TOOLS_INTERNAL_ERROR'

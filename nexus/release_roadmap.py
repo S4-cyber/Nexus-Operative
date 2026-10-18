@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.155.0'
+REVISION = '0.156.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -109,7 +109,7 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
-    'Verify all four EXE paper tools on standalone and installed Windows builds, including the account probe status/confirmed-read paths, untouched private evidence, no default-data/UI startup, explicit confirmation and actual account/key/profile acceptance. Earlier EXEs do not implement account-probe dispatch (requires v0.155+).',
+    'Verify all five EXE paper tools on standalone and installed Windows builds, including the real authenticated-encryption self-test, an ordinary-user private-profile seal/unseal round trip, account-probe status/confirmed-read paths, untouched private evidence, no default-data/UI startup, explicit confirmation and actual account/key/profile acceptance. Observation crypto requires v0.156+.',
     'Accept durable request-origin replay on authorized paper data: verify stored v3 request heads against historical prefixes and exact retained order inputs across restarts and later appends; retain mixed v2 history without inventing origin bindings or authorizing routing.',
     'Accept request-journal-derived activity collection on authorized Windows paper data, including changed heads during reads/retention/acceptance and lost returns; original observations and local hashes remain unverified, and no fee, funds or routing authority follows.',
     'Use the private combined account-evidence review on authorized retained paper data: bind original requests, accepted fills and opening/closing inventory to common heads, investigate term violations and gross-only differences, and obtain separate source/fee/hold/funds acceptance before any routing.',
@@ -150,7 +150,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.155 adds the existing explicitly confirmed four-GET paper account acceptance probe to the packaged EXE allowlist. Its pacing-status mode stays vault/network/storage silent for missing history; confirmed reads retain saved-key, exact-account, pacing, portable-observation and open-order-term checks. The standalone/installed smoke now executes six child commands and verifies all four tools without desktop/default-data startup. v0.154 Windows/installer, safety/browser and security CI all passed. No order/funding authority follows. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.156 exposes the existing password-authenticated portable-observation encryption utility through the packaged EXE. A real in-package AES-256-GCM/scrypt self-test proves round-trip, randomized ciphertext and wrong-password rejection without prompts, retained files, provider/vault access or authority. Standalone/installed smoke now executes seven child commands across five fixed tools. Exact v0.155 Windows/installer, safety/browser and security CI all passed. No plaintext deletion, password storage, account read, order or funding authority follows. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

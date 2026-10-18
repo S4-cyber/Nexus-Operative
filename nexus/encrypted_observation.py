@@ -5,9 +5,11 @@ Original downloads/local databases remain plaintext; keep them private too.
 """
 import argparse
 import getpass
+import json
 import os
 from pathlib import Path
 import stat
+import sys
 import warnings
 
 from cryptography.exceptions import InvalidTag, UnsupportedAlgorithm
@@ -21,9 +23,20 @@ MAGIC=b'NEXUS-OBS-ENC-1\n'
 SALT_BYTES=16
 NONCE_BYTES=12
 MAX_BYTES=len(MAGIC)+SALT_BYTES+NONCE_BYTES+portable.MAX_BYTES+16
+ROOT=Path(__file__).resolve().parents[1]
 
 
 def _fail():raise ValueError('ENCRYPTED_OBSERVATION_FAILED') from None
+
+
+def _private_path(value):
+    path=Path(value)
+    try:
+        absolute=path.absolute();resolved=path.resolve();protected=[ROOT]
+        if getattr(sys,'frozen',False):protected.append(Path(sys.executable).resolve().parent)
+    except (OSError,RuntimeError):_fail()
+    if any(absolute.is_relative_to(folder) or resolved.is_relative_to(folder) for folder in protected):_fail()
+    return path
 
 
 def _derive(passphrase,salt):
@@ -105,14 +118,19 @@ def prompt_passphrase(label='Passphrase (not stored): '):
 
 def main():
     parser=_Parser(description=__doc__)
-    parser.add_argument('action',choices=('seal','unseal'));parser.add_argument('source');parser.add_argument('--output',required=True)
+    parser.add_argument('action',choices=('seal','unseal','self-test'));parser.add_argument('source',nargs='?');parser.add_argument('--output')
     args=parser.parse_args()
     try:
-        raw=_read(args.source,portable.MAX_BYTES if args.action=='seal' else MAX_BYTES)
+        if args.action=='self-test':
+            if args.source is not None or args.output is not None:_fail()
+            print(json.dumps(fixture_report(),sort_keys=True));return 0
+        if args.source is None or args.output is None:_fail()
+        source=_private_path(args.source);output=_private_path(args.output)
+        raw=_read(source,portable.MAX_BYTES if args.action=='seal' else MAX_BYTES)
         phrase=prompt_passphrase()
         if args.action=='seal' and phrase!=prompt_passphrase('Repeat passphrase: '):_fail()
         payload=seal(raw,phrase) if args.action=='seal' else unseal(raw,phrase)+b'\n'
-        _write_new(args.output,payload)
+        _write_new(output,payload)
     except (OSError,ValueError,TypeError,EOFError,KeyboardInterrupt,MemoryError,getpass.GetPassWarning):
         print('ENCRYPTED_OBSERVATION_FAILED');return 2
     print('ENCRYPTED_COPY_CREATED' if args.action=='seal' else 'PRIVATE_PLAINTEXT_COPY_CREATED')

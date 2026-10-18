@@ -273,3 +273,20 @@ All v0.152 request-origin binding/prefix and earlier stop/key/recovery/cost chec
 Use `NexusOperative.exe --paper-tool account-probe --help` to see the explicit account-probe arguments. For a no-key local review, supply the expected account UUID, a private pacing path outside the application folder and `--pacing-status-only`. Only a separately confirmed read may access the saved Windows pair and fixed paper GET endpoints. Output may contain private account observations; redirect it only to an intentionally private location outside Git.
 
 The command dispatches before desktop/data initialization and never starts the PORTAL. It grants no order, retry, funding or live permission. v0.154 and older builds do not expose this command; verify the catalogue reports v0.155+ before using it.
+
+
+## v0.156 encrypt a private portable observation
+
+First verify the installed crypto path without opening a private file:
+
+`NexusOperative.exe --paper-tool observation-crypto self-test`
+
+Create a separate authenticated encrypted copy in a private user-data folder:
+
+`NexusOperative.exe --paper-tool observation-crypto seal PRIVATE_OBSERVATION.json --output PRIVATE_OBSERVATION.nexusenc`
+
+To create a separate plaintext copy later:
+
+`NexusOperative.exe --paper-tool observation-crypto unseal PRIVATE_OBSERVATION.nexusenc --output PRIVATE_OBSERVATION_REVIEW.json`
+
+Passwords are entered through hidden terminal prompts, are never accepted as arguments, and are not stored. Seal asks twice and requires at least 14 characters. Output paths must not already exist. The original is never deleted; protect or securely dispose of plaintext separately. Keep every input/output outside Git and the installation/source folder. This tool encrypts the supported portable observation profile only and grants no broker, account, order, funding, live or release authority.

@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.155.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.156.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -508,3 +508,12 @@ Final v0.154 combined-source validation: 2,425 Python tests passed with one exis
 The catalogue must contain exactly account-probe, activity, account-review and recovery. Standalone and installed smoke evidence must show six bounded invocations, unchanged private fixtures, no default-data/UI startup and false broker/funding/live/release flags. This is packaging acceptance only; actual account, source, fee, hold, funds, native-profile and independent acceptance remain open.
 
 Final v0.155 local validation: 2,425 Python tests passed with one existing Starlette/httpx deprecation warning. All fourteen actual Node controllers, Portal script syntax, compileall, dependency consistency and generated-roadmap comparison passed. Sixteen offline profiles and saved-evidence verification matched 304 source files/f273a28d6a594036273616656b7e8db5eb6b811c81051df49c521812d4c51055; report SHA256 230c0052ecc0dda946cba5f2965d81415bf38b1af6b08b1785b68fa2567d551d. Exact-source v0.155 Windows, safety/browser and security workflows remain required; no actual account, credentials, orders, funds, market trial or release approval is claimed.
+
+
+## v0.156 packaged private-observation encryption
+
+The standalone and installed EXEs must list exactly five paper tools and execute seven bounded child processes. `observation-crypto self-test` must use the real AES-256-GCM/scrypt implementation, prove round-trip equality, randomized ciphertext and wrong-password rejection, and retain no password, ciphertext, plaintext or output file. It must not initialize desktop/default storage or access the vault, provider, broker account, order routing or funds.
+
+Real `seal`/`unseal` acceptance remains an ordinary-user private-profile task: hidden prompts only, authenticated portable-observation input, exclusive new-file output, source preserved, and private files outside Git/install/source paths. Passing the synthetic self-test does not verify ACLs, full-disk encryption, password recovery, provider source, account data or release readiness. Exact-source v0.156 Windows, safety/browser and security workflows remain required.
+
+Final v0.156 local validation: 2,427 Python tests passed with one existing warning; fourteen Node controller suites, PORTAL syntax, compileall, dependency consistency, generated roadmap and diff checks passed. All sixteen offline profiles and saved-evidence verification passed for 304 source files with fingerprint 3e046000d941eca9cabdf9ecb0ad76d4e0319ce9c613deb0f2d4f70af23d824c; report SHA256 623b8a56193e93583122fa622992cbeae2eb555a341257206f0887c8b0a5ca60. All authority and acceptance flags remain false.

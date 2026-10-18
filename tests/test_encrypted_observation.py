@@ -75,6 +75,26 @@ def test_cli_prompts_without_password_arguments_and_failed_decryption_creates_no
     assert source.read_bytes()==plaintext()
 
 
+def test_cli_self_test_uses_real_crypto_without_prompt_or_files(tmp_path,monkeypatch,capsys):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(encrypted.getpass,'getpass',lambda *_:pytest.fail('self-test prompted'))
+    monkeypatch.setattr(sys,'argv',['tool','self-test'])
+    assert encrypted.main()==0
+    result=json.loads(capsys.readouterr().out)
+    assert result['passed'] and result['roundtrip_matches'] and result['ciphertext_randomized']
+    assert result['wrong_password_rejected'] and not list(tmp_path.iterdir())
+    assert all(result[k] is False for k in ('password_saved','vault_accessed','external_connections',
+        'original_plaintext_deleted','output_file_writes','ready_for_routing','live_orders_enabled'))
+
+
+def test_cli_rejects_source_checkout_private_inputs_before_prompt(tmp_path,monkeypatch,capsys):
+    inside=encrypted.ROOT/'PRIVATE_OBSERVATION_FIXTURE.json'
+    monkeypatch.setattr(encrypted.getpass,'getpass',lambda *_:pytest.fail('protected path prompted'))
+    monkeypatch.setattr(sys,'argv',['tool','seal',str(inside),'--output',str(tmp_path/'copy.nexusenc')])
+    assert encrypted.main()==2 and capsys.readouterr().out.strip()=='ENCRYPTED_OBSERVATION_FAILED'
+    assert not (tmp_path/'copy.nexusenc').exists()
+
+
 def test_cli_password_mismatch_and_missing_parent_are_not_success(tmp_path,monkeypatch,capsys):
     source=tmp_path/'original.json';source.write_bytes(plaintext());output=tmp_path/'absent'/'copy.nexusenc'
     replies=iter([PHRASE,PHRASE+' different']);monkeypatch.setattr(encrypted.getpass,'getpass',lambda _:next(replies))

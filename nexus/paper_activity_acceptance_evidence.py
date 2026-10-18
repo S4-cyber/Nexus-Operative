@@ -44,7 +44,7 @@ def _sqlite_files_snapshot(root):
     return tuple(snapshot)
 
 
-def _scope(root,index=1):
+def _scope(root,index=1,*,full_page=False):
     after,until=((AFTER,UNTIL) if index==1 else
         ('2026-10-18T00:00:00Z','2026-10-19T00:00:00Z'))
     at=1000+(index-1)*60
@@ -56,17 +56,18 @@ def _scope(root,index=1):
         pacing_sessions=before_pacing['sessions'],retained_batches=before_activity['retained_batches'])
     token=pacing.begin(admission=lambda:at)
     pacing.finish(token,admission=lambda:at,status_code=200)
-    row=dict(id=f'2026101{6+index}000000000::11234567-89ab-cdef-0123-{index:012d}',
+    rows=[dict(id=f'2026101{6+index}000000000::11234567-89ab-cdef-0123-{index*1000+i:012d}',
         activity_type='FEE',status='executed',net_amount='-0.01',date=f'2026-10-{15+index:02d}')
-    normalized=adapter.normalize([row],[],expected_account_id=ACCOUNT)
+        for i in range(1,(PAGE_SIZE if full_page else 1)+1)]
+    normalized=adapter.normalize(rows,[],expected_account_id=ACCOUNT)
     observed_at=1792281600+(index-1)*86400
     observation=validate(dict(schema=SCHEMA,declared_transport='INJECTED_UNATTESTED',
         read_started_at=observed_at,read_completed_at=observed_at,
         account_fields_sha256=sha(dict(fixture='process-death',kind='account',index=index)),
-        pages=[page_observation([row],normalized['normalized_activities'],after=after,until=until,
+        pages=[page_observation(rows,normalized['normalized_activities'],after=after,until=until,
             request_cursor=None,requested_at=observed_at,received_at=observed_at)]),
         dict(activities=normalized['normalized_activities']),after=after,until=until)
-    receipt=activity.retain([row],[],after=after,until=until,collection_observation=observation)
+    receipt=activity.retain(rows,[],after=after,until=until,collection_observation=observation)
     after_pacing=pacing.inspect();after_activity=activity.inspect()
     scope=dict(profile=PROFILE,account_sha256=after_activity['account_sha256'],
         collection_scope_sha256=sha(dict(account_sha256=after_activity['account_sha256'],after=after,

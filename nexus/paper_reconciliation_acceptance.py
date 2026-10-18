@@ -31,6 +31,7 @@ def _accepted(status):
         and status['accepted_transitions'] == status['sessions']
         and status['accepted_transitions'] == status['retained_batches']
         and status['accepted_transitions'] == status['retained_collection_observations']
+        and status['all_collection_cursor_sequences_complete'] is True
         and status['replayed_accepted_transitions'] == status['accepted_transitions']
         and status['latest_acceptance_record_replayed'] is True
         and status['all_accepted_transitions_replayed'] is True
@@ -76,6 +77,7 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
         complete_retained_batches_accepted=True,
         complete_collection_observations_accepted=True,
+        all_collection_cursor_sequences_complete=True,
         acceptance_recovery_state=after['cross_journal_recovery_state'],
         observation_review=component,
         admission_reserved=False, source_attested=False,
@@ -126,6 +128,21 @@ def fixture_report():
                 opening_observation=opening, closing_observation=closing)
         except ValueError as error:
             unbound_rejected = str(error) == 'PAPER_RECONCILIATION_ACCEPTANCE_ACCEPTED_HISTORY_REQUIRED'
+        continuation_root = root/'continuation'; continuation_root.mkdir()
+        partial_pacing, partial_activity, partial_acceptance, partial_scope = _scope(
+            continuation_root, full_page=True)
+        partial_acceptance.append(partial_scope, admission=lambda:(
+            partial_pacing.inspect()['head_sha256'],partial_activity.inspect()['head_sha256']))
+        continuation_rejected = False
+        try:
+            review(expected_account_id=ACCOUNT,
+                pacing_path=continuation_root/'pacing.sqlite3',
+                activity_store_path=continuation_root/'activity.sqlite3',
+                acceptance_store_path=continuation_root/'acceptance.sqlite3',
+                expected_activity_head=partial_activity.inspect()['head_sha256'],
+                opening_observation=opening, closing_observation=closing)
+        except ValueError as error:
+            continuation_rejected = str(error) == 'PAPER_RECONCILIATION_ACCEPTANCE_ACCEPTED_HISTORY_REQUIRED'
         exact_bound=(result['activity_head_sha256']==head and
             result['opening_manifest_sha256']==opening['manifest_sha256'] and
             result['closing_manifest_sha256']==closing['manifest_sha256'])
@@ -135,16 +152,19 @@ def fixture_report():
             result['complete_pacing_sessions_accepted'] is True and
             result['complete_retained_batches_accepted'] is True and
             result['complete_collection_observations_accepted'] is True)
+        cursor_complete=result['all_collection_cursor_sequences_complete'] is True
         arithmetic=result['observation_review']['arithmetic_evaluated'] is True
-        passed=(result == repeated and before == after and unbound_rejected and
-            exact_bound and replayed and complete and arithmetic)
+        passed=(result == repeated and before == after and unbound_rejected and continuation_rejected and
+            exact_bound and replayed and complete and cursor_complete and arithmetic)
         return dict(passed=passed, repeat_review_matches=result == repeated,
             journals_unchanged=before == after, unbound_history_rejected=unbound_rejected,
+            continuation_required_history_rejected=continuation_rejected,
             exact_activity_head_bound=exact_bound, complete_accepted_history_replayed=replayed,
             legacy_baseline_absent=result['legacy_baseline_absent'],
             complete_pacing_sessions_accepted=result['complete_pacing_sessions_accepted'],
             complete_retained_batches_accepted=result['complete_retained_batches_accepted'],
             complete_collection_observations_accepted=result['complete_collection_observations_accepted'],
+            all_collection_cursor_sequences_complete=cursor_complete,
             observation_arithmetic_evaluated=arithmetic, private_scope_omitted=True,
             source='SYNTHETIC_LOCAL_ACCEPTED_RECONCILIATION_FIXTURE',
             actual_provider_access=False, actual_vault_access=False,

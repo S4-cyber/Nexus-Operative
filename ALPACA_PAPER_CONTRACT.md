@@ -407,6 +407,12 @@ The private `paper_reconciliation_acceptance` composition binds two validated po
 
 This profile never loads an order snapshot, saved credential, provider response or real account. It validates local cooperating-journal commit-boundary behavior only. Every provider/source/coverage/fee/account/funds/routing/live/release authority field remains false, and the profile cannot substitute for an authorized private paper-account run.
 
+### v0.130 accepted cursor-completion boundary
+
+Acceptance content replay and cursor-sequence completion are separate predicates. If the final accepted collection page contains the full bounded `PAGE_SIZE`, status returns `ACCEPTED_COLLECTION_CONTINUATION_REQUIRED` even though every retained row and journal transition replays. The probe does not automatically request another page; the reviewed action is to collect narrower declared creation windows under the existing explicit-confirmation and pacing controls.
+
+Reconciliation requires every accepted observation to end in a short page before considering supplied balance arithmetic. A short page closes only the bounded cursor traversal for that declared creation window. It does not authenticate provider source, cover late or corrected records, establish execution/fee posting time, reconcile holds or spendable funds, or grant order/funding/live/release authority.
+
 
 ## v0.119 local HTTP paper-read recovery acceptance
 

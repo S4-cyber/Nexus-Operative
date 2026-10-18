@@ -191,6 +191,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
     def replay_scope(scope):
         result=dict(accepted_receipt_replayed=False,collection_scope_replayed=False,
             account_fields_replayed=False,collection_observation_replayed=False,
+            collection_cursor_sequence_complete=False,
             activity_input_replayed=False,pacing_transition_replayed=False,
             retention_transition_replayed=False,accepted_transition_replayed=False)
         receipt=retained['receipts'].get(scope['retained_receipt_sha256'])
@@ -206,6 +207,9 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
                 scope['account_fields_sha256']==observation.get('account_fields_sha256'))
             result['collection_observation_replayed']=(isinstance(observation,dict) and
                 scope['collection_observation_sha256']==sha(observation))
+            result['collection_cursor_sequence_complete']=(isinstance(observation,dict) and
+                bool(observation.get('pages')) and
+                len(observation['pages'][-1].get('activity_ids',())) < PAGE_SIZE)
             result['activity_input_replayed']=(activities is not None and
                 scope['activity_input_sha256']==sha(dict(account_sha256=retained['account_sha256'],
                     orders=receipt['orders'],activities=activities)))
@@ -215,13 +219,14 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         result['pacing_transition_replayed']=(scope['pacing_before_head_sha256'],
             scope['pacing_after_head_sha256']) in completed
         result['accepted_transition_replayed']=all(value for key,value in result.items()
-            if key!='accepted_transition_replayed')
+            if key not in ('accepted_transition_replayed','collection_cursor_sequence_complete'))
         return result
 
     replayed=[replay_scope(scope) for scope in scopes]
     latest = accepted['last_record_scope']
     replay = dict(latest_accepted_receipt_replayed=False,latest_collection_scope_replayed=False,
         latest_account_fields_replayed=False,latest_collection_observation_replayed=False,
+        latest_collection_cursor_sequence_complete=False,
         latest_activity_input_replayed=False,latest_pacing_transition_replayed=False,
         latest_retention_transition_replayed=False,latest_acceptance_record_replayed=False)
     if latest is not None and replayed:
@@ -237,6 +242,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         all_collection_scopes_replayed=bool(replayed) and all(item['collection_scope_replayed'] for item in replayed),
         all_account_fields_replayed=bool(replayed) and all(item['account_fields_replayed'] for item in replayed),
         all_collection_observations_replayed=bool(replayed) and all(item['collection_observation_replayed'] for item in replayed),
+        all_collection_cursor_sequences_complete=bool(replayed) and all(item['collection_cursor_sequence_complete'] for item in replayed),
         all_activity_inputs_replayed=bool(replayed) and all(item['activity_input_replayed'] for item in replayed),
         all_pacing_transitions_replayed=bool(replayed) and all(item['pacing_transition_replayed'] for item in replayed),
         all_retention_transitions_replayed=bool(replayed) and all(item['retention_transition_replayed'] for item in replayed),
@@ -252,9 +258,11 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         recovery='ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'
     elif accepted['records'] and not historical['all_accepted_transitions_replayed']:
         recovery='ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'
+    elif accepted['records'] and not historical['all_collection_cursor_sequences_complete']:
+        recovery='ACCEPTED_COLLECTION_CONTINUATION_REQUIRED'
     elif accepted['records']:recovery='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED'
     else:recovery='NO_ACCEPTED_READ_TRANSITIONS'
-    uncertain=recovery in ('PACING_UNCERTAINTY_REVIEW_REQUIRED','ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED','ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','LEGACY_BASELINE_ONLY_REVIEW_REQUIRED')
+    uncertain=recovery in ('PACING_UNCERTAINTY_REVIEW_REQUIRED','ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED','ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_COLLECTION_CONTINUATION_REQUIRED','LEGACY_BASELINE_ONLY_REVIEW_REQUIRED')
     return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_STATUS',status='REVIEW_REQUIRED',read_only=True,
         pacing_journal_present=pacing.path.is_file(),activity_store_present=store.path.is_file(),acceptance_store_present=acceptance.path.is_file(),
         account_sha256=retained['account_sha256'],pacing_head_sha256=pace['head_sha256'],
@@ -269,9 +277,12 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         preexisting_history_unverified=accepted['preexisting_history_unverified'],cross_journal_recovery_state=recovery,
         cross_journal_heads_match=accepted['initialized'] and accepted['pacing_bound_head_sha256']==pace['head_sha256'] and accepted['retention_bound_head_sha256']==retained['head_sha256'],
         **historical,**replay,
-        suggested_action='REVIEW_ALL_RETAINED_JOURNALS_NO_AUTOMATIC_RETRY' if uncertain else 'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ',
+        suggested_action=('COLLECT_REVIEWED_NARROWER_WINDOWS_NO_AUTOMATIC_CONTINUATION'
+            if recovery=='ACCEPTED_COLLECTION_CONTINUATION_REQUIRED' else
+            'REVIEW_ALL_RETAINED_JOURNALS_NO_AUTOMATIC_RETRY' if uncertain else
+            'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ'),
         **{flag:False for flag in FLAGS},
-        limitations='Local replay only: no order file, vault or provider access and no admission permission. Every accepted content record is re-derived from its exact retained receipt, normalized activities, collection observation and exact retained pacing/activity head transitions; matching content and heads establish only local cooperating-journal consistency, not causality, source, coverage or valid-tail completeness. Missing history does not prove no earlier read. Other journals/hosts and direct store writers are not coordinated. Never erase uncertain reads, receipts, acceptance records or cooldowns to bypass review.')
+        limitations='Local replay only: no order file, vault or provider access and no admission permission. Every accepted content record is re-derived from its exact retained receipt, normalized activities, collection observation and exact retained pacing/activity head transitions. A final short page establishes only bounded cursor-sequence completion for that declared creation window; it does not attest source, delayed/corrected activity coverage or fee posting. Matching content and heads establish only local cooperating-journal consistency, not causality or valid-tail completeness. Missing history does not prove no earlier read. Other journals/hosts and direct store writers are not coordinated. Never erase uncertain reads, receipts, acceptance records or cooldowns to bypass review.')
 
 
 class _Parser(argparse.ArgumentParser):

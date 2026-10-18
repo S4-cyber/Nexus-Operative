@@ -521,7 +521,9 @@ def _validate(profile, result):
     if profile == 'reconciliation_acceptance':
         _require(result['source']=='SYNTHETIC_LOCAL_ACCEPTED_RECONCILIATION_FIXTURE' and
             result['repeat_review_matches'] is True and result['journals_unchanged'] is True and
-            result['unbound_history_rejected'] is True and result['private_scope_omitted'] is True,
+            result['unbound_history_rejected'] is True and
+            result['continuation_required_history_rejected'] is True and
+            result['private_scope_omitted'] is True,
             'RECONCILIATION_ACCEPTANCE_REPLAY')
         _require(result['complete_accepted_history_replayed'] is True and
             result['exact_activity_head_bound'] is True and
@@ -529,6 +531,7 @@ def _validate(profile, result):
             result['complete_pacing_sessions_accepted'] is True and
             result['complete_retained_batches_accepted'] is True and
             result['complete_collection_observations_accepted'] is True and
+            result['all_collection_cursor_sequences_complete'] is True and
             result['observation_arithmetic_evaluated'] is True,
             'RECONCILIATION_ACCEPTANCE_BINDING')
         _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access',

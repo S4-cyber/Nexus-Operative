@@ -172,9 +172,26 @@ def test_status_replays_both_journals_without_order_vault_or_network(vault,tmp_p
         'latest_pacing_transition_replayed','latest_retention_transition_replayed','latest_acceptance_record_replayed',
         'all_accepted_receipts_replayed','all_collection_scopes_replayed','all_account_fields_replayed',
         'all_collection_observations_replayed','all_activity_inputs_replayed','all_pacing_transitions_replayed',
-        'all_retention_transitions_replayed','all_accepted_transitions_replayed'))
+        'all_retention_transitions_replayed','all_accepted_transitions_replayed',
+        'latest_collection_cursor_sequence_complete','all_collection_cursor_sequences_complete'))
     assert result['replayed_accepted_transitions']==1
     assert vault.reads==reads and before==(pacing.read_bytes(),activity.read_bytes(),acceptance.read_bytes())
+
+
+def test_status_keeps_content_valid_full_page_in_continuation_required_state(tmp_path):
+    from nexus.paper_activity_acceptance_evidence import _scope
+    pacing,activity,acceptance,scope=_scope(tmp_path,full_page=True)
+    acceptance.append(scope,admission=lambda:(pacing.inspect()['head_sha256'],
+        activity.inspect()['head_sha256']))
+    result=probe.status(expected_account_id=ACCOUNT,pacing_path=tmp_path/'pacing.sqlite3',
+        activity_store_path=tmp_path/'activity.sqlite3',
+        acceptance_store_path=tmp_path/'acceptance.sqlite3')
+    assert result['latest_acceptance_record_replayed']
+    assert result['all_accepted_transitions_replayed']
+    assert not result['latest_collection_cursor_sequence_complete']
+    assert not result['all_collection_cursor_sequences_complete']
+    assert result['cross_journal_recovery_state']=='ACCEPTED_COLLECTION_CONTINUATION_REQUIRED'
+    assert result['suggested_action']=='COLLECT_REVIEWED_NARROWER_WINDOWS_NO_AUTOMATIC_CONTINUATION'
 
 
 def test_status_detects_an_accepted_scope_that_does_not_match_its_retained_receipt(vault,tmp_path):

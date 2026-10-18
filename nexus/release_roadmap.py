@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.129.1'
+REVISION = '0.130.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -83,6 +83,7 @@ NEXT = (
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
+                current_hardening=CURRENT_HARDENING,
                 delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
                 production_scope='Secure provider-held funding, governed autonomous execution and computer-off operation are product goals. All agreed production workflows require acceptance before 1.0; live activation always requires separate authorization.',
                 settings_scope='TARGET_DESIGN_NOT_EFFECTIVE_RUNTIME', settings=dict(SETTINGS), milestones=[asdict(m) for m in MILESTONES], next_steps=list(NEXT),
@@ -95,13 +96,14 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
+CURRENT_HARDENING = 'v0.130 requires every accepted collection observation to end in a short final page before reconciliation arithmetic. A fully replayed record ending at the bounded page cap remains continuation-required; this is cursor-sequence evidence only, never provider source or delayed/corrected activity coverage.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():
     d=snapshot()
     lines=['# Nexus Operative — read-only 1.0 roadmap','',f"Revision: {REVISION}. Branch: `{BRANCH}`.",'',
            'Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.','',
-           PROGRESS_SUMMARY,'','```mermaid',PROGRESS_DIAGRAM,'```','',
+           PROGRESS_SUMMARY,'','Current hardening: '+CURRENT_HARDENING,'','```mermaid',PROGRESS_DIAGRAM,'```','',
            '| Milestone | Status | Evidence | Remaining acceptance |','| --- | --- | --- | --- |']
     lines += [f'| {m.id}: {m.title} | {m.status} | {m.evidence} | {m.remaining} |' for m in MILESTONES]
     lines += ['','## Product milestones: funding, autonomy and final release','','| Stage | Status | Built so far | Still required |','| --- | --- | --- | --- |']

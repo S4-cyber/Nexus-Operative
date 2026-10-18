@@ -39,6 +39,7 @@ def test_complete_accepted_history_binds_exact_observations_and_head_without_wri
     assert result['complete_pacing_sessions_accepted'] is True
     assert result['complete_retained_batches_accepted'] is True
     assert result['complete_collection_observations_accepted'] is True
+    assert result['all_collection_cursor_sequences_complete'] is True
     assert result['journals_rechecked_unchanged'] is True
     assert result['accepted_transitions']==1
     assert result['activity_head_sha256']==options['expected_activity_head']
@@ -91,7 +92,8 @@ def test_any_journal_change_during_composition_is_rejected(tmp_path,monkeypatch)
 @pytest.mark.parametrize('field,value',[('cross_journal_recovery_state','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'),
     ('latest_acceptance_record_replayed',False),('all_accepted_transitions_replayed',False),
     ('accepted_transitions',0),('preexisting_history_unverified',True),('sessions',2),
-    ('retained_batches',2),('retained_collection_observations',2)])
+    ('retained_batches',2),('retained_collection_observations',2),
+    ('all_collection_cursor_sequences_complete',False)])
 def test_every_accepted_history_requirement_fails_closed(tmp_path,monkeypatch,field,value):
     options=prepared(tmp_path);actual=subject.acceptance_status(**dict(
         expected_account_id=options['expected_account_id'],pacing_path=options['pacing_path'],
@@ -132,6 +134,29 @@ def test_accepted_tail_cannot_hide_unverified_legacy_baseline(tmp_path, monkeypa
     assert called is False
 
 
+def test_cursor_incomplete_accepted_history_fails_before_balance_review(tmp_path,monkeypatch):
+    pacing,activity,acceptance,scope=_scope(tmp_path,full_page=True)
+    acceptance.append(scope,admission=lambda:(pacing.inspect()['head_sha256'],
+        activity.inspect()['head_sha256']))
+    state=subject.acceptance_status(expected_account_id=ACCOUNT,
+        pacing_path=tmp_path/'pacing.sqlite3',activity_store_path=tmp_path/'activity.sqlite3',
+        acceptance_store_path=tmp_path/'acceptance.sqlite3')
+    assert state['all_accepted_transitions_replayed'] is True
+    assert state['cross_journal_recovery_state']=='ACCEPTED_COLLECTION_CONTINUATION_REQUIRED'
+    called=False
+    def forbidden(*args,**kwargs):
+        nonlocal called;called=True;raise AssertionError
+    monkeypatch.setattr(subject.paper_observation_review,'review',forbidden)
+    opening=_fixture_observation(ACCOUNT,'1000','0',1800000000,1800000001)
+    with pytest.raises(ValueError,match='ACCEPTED_HISTORY_REQUIRED'):
+        subject.review(expected_account_id=ACCOUNT,pacing_path=tmp_path/'pacing.sqlite3',
+            activity_store_path=tmp_path/'activity.sqlite3',
+            acceptance_store_path=tmp_path/'acceptance.sqlite3',
+            expected_activity_head=activity.inspect()['head_sha256'],
+            opening_observation=opening,closing_observation=opening)
+    assert called is False
+
+
 def test_cli_prints_private_review_but_never_writes_journals(tmp_path):
     options=prepared(tmp_path);opening=tmp_path/'opening.json';closing=tmp_path/'closing.json'
     opening.write_text(json.dumps(options['opening_observation']));closing.write_text(json.dumps(options['closing_observation']))
@@ -150,9 +175,11 @@ def test_release_fixture_is_repeatable_vault_and_provider_silent():
     result=subject.fixture_report()
     assert result['passed'] and result['repeat_review_matches'] and result['journals_unchanged']
     assert result['unbound_history_rejected'] and result['private_scope_omitted']
+    assert result['continuation_required_history_rejected']
     assert result['exact_activity_head_bound'] and result['complete_accepted_history_replayed']
     assert result['legacy_baseline_absent'] and result['complete_pacing_sessions_accepted']
     assert result['complete_retained_batches_accepted']
     assert result['complete_collection_observations_accepted']
+    assert result['all_collection_cursor_sequences_complete']
     assert result['observation_arithmetic_evaluated'] and 'review' not in result
     assert result['actual_provider_access'] is result['actual_vault_access'] is False

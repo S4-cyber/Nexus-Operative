@@ -66,3 +66,14 @@ v0.98 adds an internal bounded activity collector for future integration, not a 
 3. For source installations, check the file offline with `python -m nexus.portable_paper_observation Nexus-Paper-Observation.json`. A content-consistency result means its structure, arithmetic and fingerprints agree. It does not prove the provider source, current funds or permission to trade. The validator makes no provider request and changes no account.
 
 Unknown values stay unknown. Total BTC and available BTC are different observations, and their difference is not a verified hold. Keep the file as evidence for review; the application cannot import it to authorize funds or trading.
+
+
+## Compare two saved observations with retained activity (source tools)
+
+The offline review tool can compare two observation exports with an existing activity database. This is a developer/operator diagnostic; it cannot import balances into trading or start orders. Supply the exact account and current history head deliberately:
+
+```text
+python -m nexus.paper_observation_review --activities history.db --account ACCOUNT_UUID --head HISTORY_SHA256 --opening first.json --closing last.json
+```
+
+It prints a private JSON report containing balance observations and retained activity details. Keep that output private. The tool changes no files or accounts and sends no provider requests. If an observed fill occurred during either sequential read, or the reads overlap, it refuses the gross balance calculation. Unknown totals stay unknown. A calculated difference is not profit or verified spendable funds; matching hashes and balances still need independent source, fee and hold reconciliation. The tool requires an already retained history and never creates a replacement to bypass a mismatch.

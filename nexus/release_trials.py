@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory')
+PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review')
 
 
 def _require(condition, code):
@@ -165,6 +165,9 @@ def _inspection_inventory_trial():
 
 
 def _execute(profile):
+    if profile == 'observation_review':
+        from nexus.paper_observation_review import fixture_report
+        return fixture_report()
     if profile == 'forward':
         from nexus.forward_drill import run
         return run(20)
@@ -210,6 +213,22 @@ def _validate(profile, result):
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
                  and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
+    if profile == 'observation_review':
+        reviewed, boundary = result['review'], result['boundary_review']
+        _require(reviewed['arithmetic_evaluated'] is True and reviewed['head_rechecked'] is True and
+            result['stale_head_rejected'] is True, 'OBSERVATION_REVIEW_HEAD')
+        _require(reviewed['sampled_balance_changes']['cash'] == '9.78011' and
+            reviewed['retained_balance_review']['gross_fill_review']['gross_minus_supplied_observed'] ==
+                {'USD':'0.10989','BTC':'0.001'}, 'OBSERVATION_REVIEW_ARITHMETIC')
+        _require(boundary['arithmetic_evaluated'] is False and boundary['retained_balance_review'] is None and
+            boundary['boundary_fill_events'] == 1 and
+            'RETAINED_FILL_DURING_SEQUENTIAL_OBSERVATION' in boundary['review_reasons'], 'OBSERVATION_REVIEW_BOUNDARY')
+        flags = ('admission_reserved','source_attested','source_coverage_verified','balance_instants_verified',
+            'observation_windows_verified_quiet','atomic_snapshot','fee_coverage_complete','fee_execution_links_verified',
+            'holds_reconciled','broker_account_reconciled','spendable_funds_verified','ledger_applied',
+            'ready_for_routing','broker_connected','live_orders_enabled','automatic_retry','automatic_continuation')
+        _require(all(r['status']=='REVIEW_REQUIRED' and all(r[k] is False for k in flags)
+            for r in (reviewed,boundary)), 'OBSERVATION_REVIEW_AUTHORITY')
     if profile == 'inspection_inventory':
         _require(result['get_requests'] == 12 and len(result['observations']) == 3, 'INVENTORY_READ_SCOPE')
         regular, foreign, missing = result['observations']

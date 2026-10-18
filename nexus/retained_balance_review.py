@@ -62,23 +62,8 @@ def _gross_review(records, opening, observed):
         fee_debits_allocated_to_interval=False, fee_execution_links_verified=False, fee_reserved_funding_verified=False)
 
 
-def review(store, *, expected_account_id, expected_head, opening_balances, opening_at,
-           observed_balances, observed_at):
-    """Inspect exact retained history, then recheck its head before returning.
-
-    A recheck is no lock/reservation and does not attest supplied opening/observed
-    balances, source completeness or a broker snapshot. No automatic continuation.
-    """
-    if type(store) is not BrokerActivityStore: _fail('STORE_REQUIRED')
-    account = adapter._uuid(expected_account_id)
-    if store.account != account: _fail('ACCOUNT_DISAGREEMENT')
-    if not isinstance(expected_head, str) or re.fullmatch(r'[0-9a-f]{64}', expected_head) is None: _fail('HEAD_REFERENCE')
-    opening = balances(opening_balances); observed = balances(observed_balances)
-    start, end = adapter._instant(opening_at), adapter._instant(observed_at)
-    if end < start: _fail('INTERVAL_REGRESSION')
-    retained = store.inspect()
-    if retained['retained_batches'] == 0: _fail('HISTORY_REQUIRED')
-    if retained['head_sha256'] != expected_head: _fail('HEAD_DISAGREEMENT')
+def _review_snapshot(retained, *, account, expected_head, opening, observed, start, end):
+    """Pure calculation on one caller-validated snapshot; caller must recheck head."""
     merged = broker_activity_review._review_snapshot(retained, account=account)
     reasons = set(merged['review_reasons']) | {'OPENING_AND_OBSERVED_BALANCES_UNATTESTED',
         'FEE_DEBITS_NOT_ALLOCATED_TO_EXECUTIONS_OR_INTERVAL', 'GROSS_FUNDING_EXCLUDES_FEE_OBLIGATIONS'}
@@ -102,15 +87,11 @@ def review(store, *, expected_account_id, expected_head, opening_balances, openi
             if not arithmetic['gross_only_debits_covered']: reasons.add('GROSS_ONLY_FUNDING_SHORTFALL')
             if any(Decimal(v)<0 for v in arithmetic['gross_execution_ending_balances'].values()):
                 reasons.add('NEGATIVE_GROSS_EXECUTION_ENDING_BALANCE')
-    # Complete replay again: concurrent append/corruption cannot return a result
-    # bearing a no-longer-current head. Changes after this sample remain possible.
-    current = store.inspect()
-    if current['head_sha256'] != expected_head: _fail('HEAD_CHANGED_DURING_REVIEW')
     scope = dict(policy=POLICY, account_sha256=retained['account_sha256'], head_sha256=expected_head,
         opening_balances={k:text(v) for k,v in opening.items()}, opening_at=start,
         observed_balances={k:text(v) for k,v in observed.items()}, observed_at=end)
     return dict(mode='HEAD_BOUND_RETAINED_GROSS_BALANCE_REVIEW', status='REVIEW_REQUIRED', read_only=True,
-        **scope, input_sha256=sha(scope), head_rechecked=True, admission_reserved=False, atomic_snapshot=False,
+        **scope, input_sha256=sha(scope), head_rechecked=False, admission_reserved=False, atomic_snapshot=False,
         arithmetic_evaluated=arithmetic is not None, gross_fill_review=arithmetic,
         retained_activity_review=merged, review_reasons=sorted(reasons), source='SUPPLIED_UNATTESTED',
         source_coverage_verified=False, fee_coverage_complete=False, fee_execution_links_verified=False,
@@ -118,6 +99,33 @@ def review(store, *, expected_account_id, expected_head, opening_balances, openi
         ledger_applied=False, ready_for_routing=False, broker_connected=False, live_orders_enabled=False,
         automatic_retry=False, automatic_continuation=False,
         limitations='Read-only diagnostic of one retained head plus supplied TOTAL balances. Gross fills omit all fee obligations; a passing gross path is not spendable funding. Residual equality with unallocated fee debits cannot verify associations, fee posting times, selected-interval completeness or settled balances. No guessed fee links, date-to-instant conversion, cancellation, account write, reservation or resume permission. Final head recheck is a sample only, not protection from later changes, rewritten hashes or valid-tail deletion.')
+
+
+def review(store, *, expected_account_id, expected_head, opening_balances, opening_at,
+           observed_balances, observed_at):
+    """Inspect exact retained history, then recheck its head before returning.
+
+    A recheck is no lock/reservation and does not attest supplied opening/observed
+    balances, source completeness or a broker snapshot. No automatic continuation.
+    """
+    if type(store) is not BrokerActivityStore: _fail('STORE_REQUIRED')
+    account = adapter._uuid(expected_account_id)
+    if store.account != account: _fail('ACCOUNT_DISAGREEMENT')
+    if not isinstance(expected_head, str) or re.fullmatch(r'[0-9a-f]{64}', expected_head) is None: _fail('HEAD_REFERENCE')
+    opening = balances(opening_balances); observed = balances(observed_balances)
+    start, end = adapter._instant(opening_at), adapter._instant(observed_at)
+    if end < start: _fail('INTERVAL_REGRESSION')
+    retained = store.inspect()
+    if retained['retained_batches'] == 0: _fail('HISTORY_REQUIRED')
+    if retained['head_sha256'] != expected_head: _fail('HEAD_DISAGREEMENT')
+    result = _review_snapshot(retained, account=account, expected_head=expected_head,
+        opening=opening, observed=observed, start=start, end=end)
+    # Complete replay again: concurrent append/corruption cannot return a result
+    # bearing a no-longer-current head. Changes after this sample remain possible.
+    current = store.inspect()
+    if current['head_sha256'] != expected_head: _fail('HEAD_CHANGED_DURING_REVIEW')
+    result['head_rechecked'] = True
+    return result
 
 
 def fixture_report():

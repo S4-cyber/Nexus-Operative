@@ -146,3 +146,18 @@ def test_inventory_trial_rejects_missing_or_corrupt_portable_evidence():
     with pytest.raises(ValueError,match='INVENTORY_EXPORT_FENCES'):trials._validate('inspection_inventory',changed)
     changed=copy.deepcopy(result);changed['observations'][0]['portable_observation']['manifest_sha256']='0'*64
     with pytest.raises(ValueError,match='PAPER_OBSERVATION_INVALID'):trials._validate('inspection_inventory',changed)
+
+
+def test_portable_observation_review_trial_rejects_boundary_or_authority_promotion():
+    from nexus.paper_observation_review import fixture_report
+    result=fixture_report();trials._validate('observation_review',result)
+    changed=copy.deepcopy(result);changed['boundary_review']['arithmetic_evaluated']=True
+    with pytest.raises(ValueError,match='OBSERVATION_REVIEW_BOUNDARY'):trials._validate('observation_review',changed)
+    changed=copy.deepcopy(result);changed['stale_head_rejected']=False
+    with pytest.raises(ValueError,match='OBSERVATION_REVIEW_HEAD'):trials._validate('observation_review',changed)
+    for field in ('admission_reserved','source_attested','source_coverage_verified','balance_instants_verified',
+        'observation_windows_verified_quiet','atomic_snapshot','fee_coverage_complete','fee_execution_links_verified',
+        'holds_reconciled','broker_account_reconciled','spendable_funds_verified','ledger_applied',
+        'ready_for_routing','broker_connected','live_orders_enabled','automatic_retry','automatic_continuation'):
+        changed=copy.deepcopy(result);changed['review'][field]=True
+        with pytest.raises(ValueError,match='OBSERVATION_REVIEW_AUTHORITY'):trials._validate('observation_review',changed)

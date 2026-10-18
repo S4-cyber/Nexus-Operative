@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.152.0'
+REVISION = '0.153.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -149,7 +149,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.152 persists the request head and canonical order-input digest in new request-derived activity acceptance records. A read-only bounded historical-prefix reader validates the complete current request tail in one snapshot before returning requested observations; acceptance review re-derives every recorded origin against its exact retained receipt, including fresh-process replay after later appends. Existing v2 records are preserved and labelled without origin bindings. No source/fee/hold/funds or routing authority follows. v0.151 security CI passed; Windows/browser remain pending. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.153 lets the existing private, read-only activity-acceptance status optionally include the request journal and re-derive every persisted v3 origin from its exact historical request prefix. It validates the complete current request tail, samples its head again, labels mixed legacy v2 history without promotion and remains vault/network silent; the release collection profile makes warm, later-append and fresh-process status replay mandatory. No provider/source/fee/hold/funds or routing authority follows. v0.152 security CI passed; Windows/browser remain pending. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

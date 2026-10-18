@@ -473,11 +473,13 @@ def _request_collection_trial():
                 opener=Reader(),wall_clock=lambda:1792368000,elapsed_clock=lambda:50)
             before=Path(options['request_journal_path']).read_bytes();result=probe.probe(**args)
             request_unchanged=Path(options['request_journal_path']).read_bytes()==before
-            status=probe.status(**{k:args[k] for k in ('expected_account_id','pacing_path','activity_store_path','acceptance_store_path')})
+            status=probe.status(request_journal_path=options['request_journal_path'],
+                **{k:args[k] for k in ('expected_account_id','pacing_path','activity_store_path','acceptance_store_path')})
             journal=BrokerRequestJournal(options['request_journal_path'],account)
             plan=journal.lookup_request('nx_accept_fixture')['plan'];plan['payload']['client_order_id']='new_prepared'
             from nexus.alpaca_paper_contract import sha
             plan['payload_sha256']=sha(plan['payload']);journal.prepare(plan)
+            after_append=journal.path.read_bytes()
             from nexus.paper_request_activity_acceptance import review as origin_review
             origin_options=dict(expected_account_id=account,request_journal_path=journal.path,
                 pacing_path=args['pacing_path'],activity_store_path=args['activity_store_path'],
@@ -489,12 +491,16 @@ def _request_collection_trial():
 import json,sys
 from nexus import paper_credentials
 from nexus.paper_request_activity_acceptance import review
+from nexus.paper_activity_acceptance_probe import status
 def audit(event,args):
  if event=='socket.connect':raise RuntimeError('NETWORK_DENIED')
 def denied():raise RuntimeError('VAULT_DENIED')
 sys.addaudithook(audit);paper_credentials._vault=denied
 r=review(**json.loads(sys.argv[1]))
-print(json.dumps({'origins':r['request_origin_bound_transitions'],'prefixes':r['retained_request_origin_prefixes_replayed'],'bound':r['all_retained_request_origins_bound']}))
+o=json.loads(sys.argv[1])
+s=status(expected_account_id=o['expected_account_id'],request_journal_path=o['request_journal_path'],
+ pacing_path=o['pacing_path'],activity_store_path=o['activity_store_path'],acceptance_store_path=o['acceptance_store_path'])
+print(json.dumps({'origins':r['request_origin_bound_transitions'],'prefixes':r['retained_request_origin_prefixes_replayed'],'bound':r['all_retained_request_origins_bound'],'status':s['request_origin_history_verified'],'unchanged':s['request_journal_rechecked_unchanged']}))
 """
             try:
                 child=subprocess.run([sys.executable,'-c',expression,json.dumps({k:str(v) for k,v in origin_options.items()})],capture_output=True,text=True,timeout=20)
@@ -502,12 +508,18 @@ print(json.dumps({'origins':r['request_origin_bound_transitions'],'prefixes':r['
                 raise ReleaseTrialError('RELEASE_TRIAL_REQUEST_ORIGIN_RESTART_CHILD') from None
             _require(child.returncode==0,'REQUEST_ORIGIN_RESTART_CHILD')
             cold=json.loads(child.stdout)
+            origin_status=probe.status(expected_account_id=account,request_journal_path=journal.path,
+                pacing_path=args['pacing_path'],activity_store_path=args['activity_store_path'],
+                acceptance_store_path=args['acceptance_store_path'])
             reads_before=vault_reads;gets_before=gets;stale=False
             try:probe.probe(**args)
             except ValueError:stale=vault_reads==reads_before and gets==gets_before
             checks=dict(request_origin_head_persisted=result['order_input']['request_head_persisted_in_acceptance_record'],
                 historical_request_prefix_after_append_replayed=origin['all_retained_request_origins_bound'] and origin['retained_request_origin_prefixes_replayed']==1,
-                fresh_process_origin_replayed=cold==dict(origins=1,prefixes=1,bound=True),
+                request_status_origin_replayed=status['request_origin_history_verified'] and status['request_journal_rechecked_unchanged'],
+                request_status_after_append_replayed=origin_status['request_origin_history_verified'] and origin_status['request_origin_current_head_sha256']==journal.recovery()['head_sha256'],
+                fresh_process_origin_replayed=cold==dict(origins=1,prefixes=1,bound=True,status=True,unchanged=True),
+                request_status_journal_unchanged=journal.path.read_bytes()==after_append,
                 request_head_bound=result['order_input']['request_head_sha256']==options['expected_request_head'] and result['order_input']['request_head_rechecked'],
                 original_orders_derived=result['collection']['counts']['order_snapshots']==1,
                 two_explicit_fills_retained=result['collection']['counts']['executions']==2,
@@ -669,7 +681,7 @@ def _validate(profile, result):
     if profile == 'collection':
         from nexus.paper_activity_acceptance_probe import FLAGS as REQUEST_COLLECTION_FLAGS
         linked=result['request_derived_collection']
-        _require(linked['source']=='SYNTHETIC_RETAINED_REQUEST_ACTIVITY_COLLECTION_FIXTURE' and linked['injected_get_requests']==3 and all(linked[k] is True for k in ('passed','request_origin_head_persisted','historical_request_prefix_after_append_replayed','fresh_process_origin_replayed','request_head_bound','original_orders_derived','two_explicit_fills_retained','acceptance_replayed','request_journal_unchanged','stale_head_denied_before_vault_and_io','manual_order_file_not_created')),'REQUEST_DERIVED_COLLECTION')
+        _require(linked['source']=='SYNTHETIC_RETAINED_REQUEST_ACTIVITY_COLLECTION_FIXTURE' and linked['injected_get_requests']==3 and all(linked[k] is True for k in ('passed','request_origin_head_persisted','historical_request_prefix_after_append_replayed','request_status_origin_replayed','request_status_after_append_replayed','fresh_process_origin_replayed','request_status_journal_unchanged','request_head_bound','original_orders_derived','two_explicit_fills_retained','acceptance_replayed','request_journal_unchanged','stale_head_denied_before_vault_and_io','manual_order_file_not_created')),'REQUEST_DERIVED_COLLECTION')
         _require(all(linked[k] is False for k in (*REQUEST_COLLECTION_FLAGS,'actual_provider_access','actual_vault_access')),'REQUEST_DERIVED_COLLECTION_AUTHORITY')
         _require(result['get_requests'] == 4 and result['retained_activities'] == 200 and
             result['retained_observations'] == 1 and result['retained_pages'] == 2, 'COLLECTION_RETENTION')

@@ -113,6 +113,40 @@ def _request_orders_digest(orders,account,*,canonical_orders=False):
         orders=sorted(orders,key=lambda row:row['broker_order_id'])))
 
 
+def _request_origin_replay(journal, retained, scopes, account):
+    """Re-derive every persisted v3 request origin from its historical prefix."""
+    from nexus.paper_activity_acceptance_store import REQUEST_PROFILE
+    bound=[scope for scope in scopes if scope['profile']==REQUEST_PROFILE]
+    legacy=len(scopes)-len(bound)
+    prefixes=journal.observations_at_heads([scope['request_head_sha256'] for scope in bound])
+    replayed=0;disagreements=0
+    for scope in bound:
+        rows=prefixes['observations_by_head'].get(scope['request_head_sha256'])
+        receipt=retained['receipts'].get(scope['retained_receipt_sha256'])
+        if rows is None:
+            continue
+        try:
+            orders,_,_=_request_order_values(rows,account)
+            matches=(receipt is not None and
+                _request_orders_digest(orders,account)==scope['request_orders_sha256'] and
+                _request_orders_digest(receipt['orders'],account,canonical_orders=True)==scope['request_orders_sha256'])
+        except (ValueError,TypeError,KeyError):
+            matches=False
+        if matches:replayed+=1
+        else:disagreements+=1
+    verified=(bool(bound) and legacy==0 and replayed==len(bound) and
+        not prefixes['missing_heads'] and prefixes['complete_current_tail_replayed'] is True)
+    return dict(request_origin_bound_transitions=len(bound),legacy_unbound_request_transitions=legacy,
+        retained_request_origin_prefixes_replayed=len(prefixes['observations_by_head']),
+        replayed_request_origin_transitions=replayed,
+        request_origin_missing_prefixes=len(prefixes['missing_heads']),
+        request_origin_input_disagreements=disagreements,
+        request_origin_current_tail_replayed=prefixes['complete_current_tail_replayed'] is True,
+        request_origin_current_head_sha256=prefixes['current_head_sha256'],
+        all_retained_request_origins_bound=verified,
+        request_origin_history_verified=verified)
+
+
 def _paths(expected_account_id, pacing_path, activity_store_path, acceptance_store_path):
     account = _uuid(expected_account_id)
     pacing, pacing_resolved = _private_path(pacing_path)
@@ -235,8 +269,9 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
         _fail()
 
 
-def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_store_path):
-    _, pacing, store, acceptance = _paths(expected_account_id,pacing_path,activity_store_path,acceptance_store_path)
+def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_store_path,
+           request_journal_path=None):
+    account, pacing, store, acceptance = _paths(expected_account_id,pacing_path,activity_store_path,acceptance_store_path)
     pace=pacing.inspect();retained=store.inspect();accepted=acceptance.inspect()
     pending = pace['pending_token'] is not None
     scopes=acceptance.replay_scopes()
@@ -297,6 +332,33 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
             latest['pacing_after_head_sha256']==pace['head_sha256'] and
             latest['retention_after_head_sha256']==retained['head_sha256'])
     request_bound_count=sum('request_head_sha256' in scope for scope in scopes)
+    origins=dict(request_journal_supplied=False,request_journal_present=False,
+        request_origin_bound_transitions=request_bound_count,
+        legacy_unbound_request_transitions=len(scopes)-request_bound_count,
+        retained_request_origin_prefixes_replayed=0,replayed_request_origin_transitions=0,
+        request_origin_missing_prefixes=0,request_origin_input_disagreements=0,
+        request_origin_current_tail_replayed=False,request_origin_current_head_sha256=None,
+        all_retained_request_origins_bound=False,request_origin_history_verified=False,
+        request_journal_rechecked_unchanged=False,request_origin_recovery_state='NOT_REQUESTED')
+    if request_journal_path is not None:
+        from nexus.broker_request_journal import BrokerRequestJournal
+        request_path,request_resolved=_private_path(request_journal_path)
+        if request_resolved in {pacing.path.resolve(),store.path.resolve(),acceptance.path.resolve()}:_fail()
+        journal=BrokerRequestJournal(request_path,account)
+        origins.update(_request_origin_replay(journal,retained,scopes,account))
+        final_request=journal.recovery()
+        unchanged=final_request['head_sha256']==origins['request_origin_current_head_sha256']
+        origins.update(request_journal_supplied=True,request_journal_present=request_path.is_file(),
+            request_journal_rechecked_unchanged=unchanged)
+        origins['request_origin_history_verified']=origins['request_origin_history_verified'] and unchanged
+        origins['all_retained_request_origins_bound']=origins['request_origin_history_verified']
+        if not request_bound_count:origin_state='NO_REQUEST_BOUND_TRANSITIONS'
+        elif origins['legacy_unbound_request_transitions']:
+            origin_state='LEGACY_REQUEST_ORIGIN_HISTORY_UNVERIFIED'
+        elif origins['request_origin_history_verified']:
+            origin_state='REQUEST_ORIGIN_HISTORY_REPLAYED_REVIEW_REQUIRED'
+        else:origin_state='REQUEST_ORIGIN_HISTORY_DISAGREEMENT_REVIEW_REQUIRED'
+        origins['request_origin_recovery_state']=origin_state
     historical=dict(replayed_accepted_transitions=sum(item['accepted_transition_replayed'] for item in replayed),
         all_accepted_receipts_replayed=bool(replayed) and all(item['accepted_receipt_replayed'] for item in replayed),
         all_collection_scopes_replayed=bool(replayed) and all(item['collection_scope_replayed'] for item in replayed),
@@ -323,7 +385,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
     elif accepted['records']:recovery='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED'
     else:recovery='NO_ACCEPTED_READ_TRANSITIONS'
     uncertain=recovery in ('PACING_UNCERTAINTY_REVIEW_REQUIRED','ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED','ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_COLLECTION_CONTINUATION_REQUIRED','LEGACY_BASELINE_ONLY_REVIEW_REQUIRED')
-    return dict(request_bound_transitions=request_bound_count,request_origin_history_verified=False,mode='PAPER_ACTIVITY_ACCEPTANCE_STATUS',status='REVIEW_REQUIRED',read_only=True,
+    return dict(request_bound_transitions=request_bound_count,mode='PAPER_ACTIVITY_ACCEPTANCE_STATUS',status='REVIEW_REQUIRED',read_only=True,
         pacing_journal_present=pacing.path.is_file(),activity_store_present=store.path.is_file(),acceptance_store_present=acceptance.path.is_file(),
         account_sha256=retained['account_sha256'],pacing_head_sha256=pace['head_sha256'],
         retention_head_sha256=retained['head_sha256'],sessions=pace['sessions'],
@@ -336,13 +398,13 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         accepted_transitions=accepted['records'],acceptance_record_capacity_remaining=max(0,MAX_RECORDS-accepted['records']),
         preexisting_history_unverified=accepted['preexisting_history_unverified'],cross_journal_recovery_state=recovery,
         cross_journal_heads_match=accepted['initialized'] and accepted['pacing_bound_head_sha256']==pace['head_sha256'] and accepted['retention_bound_head_sha256']==retained['head_sha256'],
-        **historical,**replay,
+        **historical,**replay,**origins,
         suggested_action=('COLLECT_REVIEWED_NARROWER_WINDOWS_NO_AUTOMATIC_CONTINUATION'
             if recovery=='ACCEPTED_COLLECTION_CONTINUATION_REQUIRED' else
             'REVIEW_ALL_RETAINED_JOURNALS_NO_AUTOMATIC_RETRY' if uncertain else
             'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ'),
         **{flag:False for flag in FLAGS},
-        limitations='Local replay only: no order file, vault or provider access and no admission permission. Every accepted content record is re-derived from its exact retained receipt, normalized activities, collection observation and exact retained pacing/activity head transitions. A final short page establishes only bounded cursor-sequence completion for that declared creation window; it does not attest source, delayed/corrected activity coverage or fee posting. Matching content and heads establish only local cooperating-journal consistency, not causality or valid-tail completeness. Missing history does not prove no earlier read. Other journals/hosts and direct store writers are not coordinated. Never erase uncertain reads, receipts, acceptance records or cooldowns to bypass review.')
+        limitations='Local replay only: no order file, vault or provider access and no admission permission. Every accepted content record is re-derived from its exact retained receipt, normalized activities, collection observation and exact retained pacing/activity head transitions. When an explicit private request journal is supplied, persisted v3 origins are additionally re-derived from their exact historical request prefixes and the complete current request tail is sampled again; legacy v2 records remain unverified. A final short page establishes only bounded cursor-sequence completion for that declared creation window; it does not attest source, delayed/corrected activity coverage or fee posting. Matching content and heads establish only local cooperating-journal consistency, not causality or valid-tail completeness. Missing history does not prove no earlier read. Other journals/hosts and direct store writers are not coordinated. Never erase uncertain reads, receipts, acceptance records or cooldowns to bypass review.')
 
 
 class _Parser(argparse.ArgumentParser):
@@ -357,12 +419,14 @@ def main():
     parser.add_argument('--request-journal');parser.add_argument('--request-head')
     parser.add_argument('--after');parser.add_argument('--until')
     parser.add_argument('--confirm-read-only-paper', action='store_true')
-    parser.add_argument('--status-only', action='store_true', help='Replay local journals only; never read orders, credentials or provider data.')
+    parser.add_argument('--status-only', action='store_true', help='Replay local journals only; an optional request journal verifies persisted origins without credentials or provider data.')
     args = parser.parse_args()
     try:
         if args.status_only:
-            if args.confirm_read_only_paper or any(value is not None for value in (args.orders,args.request_journal,args.request_head,args.after,args.until)): _fail()
-            result = status(expected_account_id=args.expected_account,pacing_path=args.pacing,activity_store_path=args.activity_store,acceptance_store_path=args.acceptance_store)
+            if args.confirm_read_only_paper or any(value is not None for value in (args.orders,args.request_head,args.after,args.until)): _fail()
+            result = status(expected_account_id=args.expected_account,pacing_path=args.pacing,
+                activity_store_path=args.activity_store,acceptance_store_path=args.acceptance_store,
+                request_journal_path=args.request_journal)
         else:
             if None in (args.after,args.until) or (args.orders is None)==(args.request_journal is None):_fail()
             if (args.request_journal is None)!=(args.request_head is None):_fail()

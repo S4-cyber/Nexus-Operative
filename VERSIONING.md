@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.152.0 (pre-release).** Persist request-origin heads/order digests in v3 activity acceptance records and re-derive them from historical request prefixes after full current-tail validation. Existing v2 records remain readable without invented origin bindings.
+**Current development build: 0.153.0 (pre-release).** Allow explicit private status review to re-derive persisted v3 request origins from historical prefixes, recheck the complete request tail and clearly retain mixed legacy v2 history as unverified.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

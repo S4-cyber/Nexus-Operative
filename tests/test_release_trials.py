@@ -256,7 +256,9 @@ def test_collection_trial_keeps_page_cap_and_cursor_evidence_without_coverage_au
         with pytest.raises(ValueError,match='COLLECTION_AUTHORITY'): trials._validate('collection',dict(result,**{field:True}))
     with pytest.raises(ValueError,match='COLLECTION_SCOPE'): trials._validate('collection',dict(result,cursor_chain_preserved=False))
     with pytest.raises(ValueError,match='COLLECTION_RETENTION'): trials._validate('collection',dict(result,retained_pages=1))
-    for field in ('request_origin_head_persisted','historical_request_prefix_after_append_replayed','fresh_process_origin_replayed'):
+    for field in ('request_origin_head_persisted','historical_request_prefix_after_append_replayed',
+                  'request_status_origin_replayed','request_status_after_append_replayed',
+                  'fresh_process_origin_replayed','request_status_journal_unchanged'):
         altered=copy.deepcopy(result);altered['request_derived_collection'][field]=False
         with pytest.raises(ValueError,match='REQUEST_DERIVED_COLLECTION'):trials._validate('collection',altered)
 

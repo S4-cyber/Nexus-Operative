@@ -51,28 +51,18 @@ def _complete(value):
 
 def _request_origins(journal,store,acceptance_path,account,expected_head):
     """Re-derive v3 request inputs from historical prefixes, never current guesses."""
-    from nexus.paper_activity_acceptance_store import REQUEST_PROFILE
-    from nexus.paper_activity_acceptance_probe import _request_order_values,_request_orders_digest
+    from nexus.paper_activity_acceptance_probe import _request_origin_replay
     scopes=PaperActivityAcceptanceStore(acceptance_path,account).replay_scopes()
-    bound=[scope for scope in scopes if scope['profile']==REQUEST_PROFILE]
-    legacy=len(scopes)-len(bound);prefix_count=0
-    if bound:
-        prefixes=journal.observations_at_heads([scope['request_head_sha256'] for scope in bound])
-        if (prefixes['missing_heads'] or prefixes['current_head_sha256']!=expected_head or
-            prefixes['complete_current_tail_replayed'] is not True):_fail('HISTORICAL_REQUEST_PREFIX_REQUIRED')
-        retained=store.inspect();prefix_count=len(prefixes['observations_by_head'])
-        for scope in bound:
-            rows=prefixes['observations_by_head'][scope['request_head_sha256']]
-            receipt=retained['receipts'].get(scope['retained_receipt_sha256'])
-            try:orders,_,_=_request_order_values(rows,account)
-            except (ValueError,TypeError,KeyError):_fail('HISTORICAL_REQUEST_INPUT_DISAGREEMENT')
-            if (receipt is None or
-                _request_orders_digest(orders,account)!=scope['request_orders_sha256'] or
-                _request_orders_digest(receipt['orders'],account,canonical_orders=True)!=scope['request_orders_sha256']):
-                _fail('HISTORICAL_REQUEST_INPUT_DISAGREEMENT')
-    return dict(request_origin_bound_transitions=len(bound),legacy_unbound_request_transitions=legacy,
-        retained_request_origin_prefixes_replayed=prefix_count,
-        all_retained_request_origins_bound=bool(bound) and legacy==0)
+    result=_request_origin_replay(journal,store.inspect(),scopes,account)
+    if (result['request_origin_bound_transitions'] and
+        (result['request_origin_missing_prefixes'] or
+        result['request_origin_current_head_sha256']!=expected_head or
+        result['request_origin_current_tail_replayed'] is not True)):
+        _fail('HISTORICAL_REQUEST_PREFIX_REQUIRED')
+    if (result['request_origin_input_disagreements'] or
+        result['replayed_request_origin_transitions']!=result['request_origin_bound_transitions']):
+        _fail('HISTORICAL_REQUEST_INPUT_DISAGREEMENT')
+    return result
 
 
 def review(*, expected_account_id, request_journal_path, pacing_path,

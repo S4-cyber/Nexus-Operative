@@ -131,6 +131,69 @@ print(json.dumps({'origins':r['request_origin_bound_transitions'],'replayed':r['
     assert json.loads(child.stdout)==dict(origins=1,replayed=1,bound=True) and journal.path.read_bytes()==before
 
 
+def test_status_optionally_replays_all_request_origins_after_later_append(tmp_path,vault):
+    save();options,journal,_,_,_=collected(tmp_path);append(journal)
+    paths=(journal.path,options['pacing_path'],options['activity_store_path'],options['acceptance_store_path'])
+    before=tuple(path.read_bytes() for path in paths);reads=vault.reads
+    result=probe.status(expected_account_id=ACCOUNT,request_journal_path=journal.path,
+        pacing_path=options['pacing_path'],activity_store_path=options['activity_store_path'],
+        acceptance_store_path=options['acceptance_store_path'])
+    assert result['request_journal_supplied'] and result['request_journal_present']
+    assert result['request_origin_bound_transitions']==result['replayed_request_origin_transitions']==1
+    assert result['retained_request_origin_prefixes_replayed']==1
+    assert result['request_origin_missing_prefixes']==result['request_origin_input_disagreements']==0
+    assert result['request_origin_current_tail_replayed'] and result['request_journal_rechecked_unchanged']
+    assert result['request_origin_history_verified'] and result['all_retained_request_origins_bound']
+    assert result['request_origin_current_head_sha256']==journal.recovery()['head_sha256']
+    assert result['request_origin_recovery_state']=='REQUEST_ORIGIN_HISTORY_REPLAYED_REVIEW_REQUIRED'
+    assert vault.reads==reads and before==tuple(path.read_bytes() for path in paths)
+
+
+def test_status_does_not_promote_mixed_legacy_origin_history(tmp_path,vault):
+    save();options,journal,_,args,_=collected(tmp_path)
+    orders,_,_=probe._request_orders(journal.path,ACCOUNT,options['expected_request_head'])
+    path=tmp_path/'orders.json';path.write_text(json.dumps(orders))
+    second=probe.probe(**dict(args,orders_path=path,request_journal_path=None,
+        expected_request_head=None,wall_clock=lambda:NOW+60),opener=Opener([account(),[],account()]))
+    result=probe.status(expected_account_id=ACCOUNT,request_journal_path=journal.path,
+        pacing_path=options['pacing_path'],activity_store_path=options['activity_store_path'],
+        acceptance_store_path=options['acceptance_store_path'])
+    assert second['acceptance_history']['records']==2
+    assert result['request_origin_bound_transitions']==result['replayed_request_origin_transitions']==1
+    assert result['legacy_unbound_request_transitions']==1
+    assert not result['request_origin_history_verified'] and not result['all_retained_request_origins_bound']
+    assert result['request_origin_recovery_state']=='LEGACY_REQUEST_ORIGIN_HISTORY_UNVERIFIED'
+
+
+def test_status_reports_rehashed_origin_disagreement_without_promoting_it(tmp_path,vault):
+    save();options,journal,_,_,_=collected(tmp_path)
+    alter_scope(options['acceptance_store_path'],request_orders_sha256='f'*64)
+    result=probe.status(expected_account_id=ACCOUNT,request_journal_path=journal.path,
+        pacing_path=options['pacing_path'],activity_store_path=options['activity_store_path'],
+        acceptance_store_path=options['acceptance_store_path'])
+    assert result['request_origin_input_disagreements']==1
+    assert result['replayed_request_origin_transitions']==0
+    assert not result['request_origin_history_verified']
+    assert result['request_origin_recovery_state']=='REQUEST_ORIGIN_HISTORY_DISAGREEMENT_REVIEW_REQUIRED'
+
+
+def test_status_request_journal_must_be_distinct_and_cli_remains_vault_silent(tmp_path,vault,monkeypatch,capsys):
+    save();options,journal,_,_,_=collected(tmp_path)
+    before=options['activity_store_path'].read_bytes()
+    with pytest.raises(ValueError,match='PAPER_ACTIVITY_ACCEPTANCE_PROBE_FAILED'):
+        probe.status(expected_account_id=ACCOUNT,request_journal_path=options['activity_store_path'],
+            pacing_path=options['pacing_path'],activity_store_path=options['activity_store_path'],
+            acceptance_store_path=options['acceptance_store_path'])
+    assert options['activity_store_path'].read_bytes()==before
+    reads=vault.reads
+    monkeypatch.setattr(sys,'argv',['tool','--expected-account',ACCOUNT,'--request-journal',str(journal.path),
+        '--pacing',str(options['pacing_path']),'--activity-store',str(options['activity_store_path']),
+        '--acceptance-store',str(options['acceptance_store_path']),'--status-only'])
+    assert probe.main()==0
+    result=json.loads(capsys.readouterr().out)
+    assert result['request_origin_history_verified'] and vault.reads==reads
+
+
 @pytest.mark.parametrize('change',['missing-head','missing-orders','invalid-head','extra-field'])
 def test_v3_scope_requires_exact_bounded_request_fields_before_admission(tmp_path,vault,change):
     save();options,_,result,_,_=collected(tmp_path);scope=dict(result['acceptance_record_scope'])

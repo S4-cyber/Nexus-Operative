@@ -99,3 +99,7 @@ The fifteenth release profile contains only temporary synthetic local journals a
 ## v0.125 release-failure diagnostics
 
 The offline release CLI exposes only allowlisted `RELEASE_TRIAL_*` identifiers for a profile child failure, validation failure or bounded child timeout. Raw child stderr/stdout, arbitrary exception text, file paths, environment values and credential material are never copied into the diagnostic. Unknown `ValueError`, `OSError`, subprocess and key failures collapse to `RELEASE_TRIAL_INTERNAL_ERROR`; operators must inspect private runner evidence rather than weakening the sanitizer.
+
+## v0.126 synthetic recovery file-set boundary
+
+The activity-acceptance release fixture fingerprints all expected cooperating SQLite main, rollback-journal, WAL and shared-memory files before and after fresh-process status. It requires an actual pre-commit rollback journal so the check cannot pass by observing main files alone. Only aggregate pass/fail booleans enter the public report; local names, paths, bytes and digests are not emitted. The fixture is temporary and synthetic, and this sampled comparison is not a general filesystem race defense or evidence about private broker data.

@@ -118,3 +118,7 @@ The new mandatory release profile publishes only synthetic fixture booleans, fix
 ## v0.125 public failure-diagnostic boundary
 
 Release-trial failures are diagnostic-code-only. CI may identify a bounded profile child failure or timeout through an allowlisted `RELEASE_TRIAL_*` value, but must not echo child stderr, arbitrary exception messages, paths, environment values or private account material into public logs. Unknown failures collapse to one fixed internal-error code.
+
+## v0.126 public synthetic file-set evidence
+
+The expanded process-death release profile computes local names, sizes and SHA-256 digests for synthetic SQLite main/rollback/WAL/shared-memory files only inside its temporary child. The checked-in report retains only fixed booleans, including that a rollback journal was actually observed and that the full expected file set stayed unchanged. Never add those local digests, database bytes, paths or any real-account journal to public evidence.

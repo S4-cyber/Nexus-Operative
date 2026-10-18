@@ -173,7 +173,8 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
     from nexus.paper_activity_acceptance_evidence import fixture_report
     result=fixture_report();trials._validate('activity_acceptance',result)
     for field in ('missing_status_created_nothing','precommit_death_retained_unbound_transition',
-                  'postcommit_death_replayed_bound_transition','fresh_process_journals_unchanged','fresh_process_vault_silent'):
+                  'postcommit_death_replayed_bound_transition','precommit_rollback_journal_observed',
+                  'fresh_process_journals_unchanged','fresh_process_vault_silent'):
         changed=dict(result,**{field:False})
         with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_RECOVERY'):trials._validate('activity_acceptance',changed)
     for field in ('actual_provider_access','actual_vault_access','source_attested','activity_coverage_verified',
@@ -181,6 +182,21 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
                   'ready_for_routing','broker_connected','live_orders_enabled','money_movement_enabled','release_approved'):
         changed=dict(result,**{field:True})
         with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_AUTHORITY'):trials._validate('activity_acceptance',changed)
+
+
+def test_activity_acceptance_snapshot_covers_main_rollback_wal_and_shm_files(tmp_path):
+    from nexus.paper_activity_acceptance_evidence import _sqlite_files_snapshot
+    expected=[]
+    for name in ('pacing.sqlite3','activity.sqlite3','acceptance.sqlite3'):
+        for suffix in ('','-journal','-wal','-shm'):
+            path=tmp_path/(name+suffix);path.write_bytes((name+suffix).encode())
+            expected.append(name+suffix)
+    before=_sqlite_files_snapshot(tmp_path)
+    assert [entry[0] for entry in before]==expected
+    (tmp_path/'acceptance.sqlite3-journal').write_bytes(b'changed')
+    assert _sqlite_files_snapshot(tmp_path)!=before
+    (tmp_path/'acceptance.sqlite3-journal').unlink()
+    assert _sqlite_files_snapshot(tmp_path)!=before
 
 
 def test_balance_trial_requires_both_accounting_and_negative_fences_without_spending_authority():

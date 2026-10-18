@@ -4,6 +4,7 @@ This fixture uses only temporary local journals, synthetic digests and injected
 activity.  It never reads credentials, contacts a provider or grants authority.
 """
 import json
+import hashlib
 from pathlib import Path
 import subprocess
 import sys
@@ -18,6 +19,26 @@ from nexus.paper_read_pacing import PaperReadPacing
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
 AFTER = '2026-10-17T00:00:00Z'
 UNTIL = '2026-10-18T00:00:00Z'
+SQLITE_NAMES = tuple(
+    name + suffix
+    for name in ('pacing.sqlite3', 'activity.sqlite3', 'acceptance.sqlite3')
+    for suffix in ('', '-journal', '-wal', '-shm')
+)
+
+
+def _sqlite_files_snapshot(root):
+    """Fingerprint every cooperating SQLite main file and possible sidecar."""
+    snapshot=[]
+    for name in SQLITE_NAMES:
+        path=root/name
+        if not path.exists():
+            continue
+        digest=hashlib.sha256()
+        with path.open('rb') as stream:
+            for chunk in iter(lambda:stream.read(64*1024),b''):
+                digest.update(chunk)
+        snapshot.append((name,path.stat().st_size,digest.hexdigest()))
+    return tuple(snapshot)
 
 
 def _scope(root):
@@ -83,13 +104,15 @@ def audit(event,args):
  if event=='socket.connect': attempts['external_connections']+=1;raise RuntimeError('NETWORK_DENIED')
 sys.addaudithook(audit)
 from nexus import paper_credentials
+from nexus.paper_activity_acceptance_evidence import _sqlite_files_snapshot
 def denied(): attempts['credential_operations']+=1;raise RuntimeError('VAULT_DENIED')
 paper_credentials._vault=denied
 from nexus.paper_activity_acceptance_probe import status
 root=Path(sys.argv[1]);paths=[root/name for name in ('pacing.sqlite3','activity.sqlite3','acceptance.sqlite3')]
-before=[path.read_bytes() for path in paths]
+before=_sqlite_files_snapshot(root)
 result=status(expected_account_id=sys.argv[2],pacing_path=paths[0],activity_store_path=paths[1],acceptance_store_path=paths[2])
-print(json.dumps({'recovery':result['cross_journal_recovery_state'],'heads_match':result['cross_journal_heads_match'],'records':result['accepted_transitions'],'unchanged':before==[path.read_bytes() for path in paths],**attempts}))
+after=_sqlite_files_snapshot(root)
+print(json.dumps({'recovery':result['cross_journal_recovery_state'],'heads_match':result['cross_journal_heads_match'],'records':result['accepted_transitions'],'unchanged':before==after,'rollback_journal_observed':any(name.endswith('-journal') for name,_,_ in before),**attempts}))
 '''
     child=subprocess.run([sys.executable,'-c',script,str(root),ACCOUNT],capture_output=True,text=True,timeout=20)
     if child.returncode!=0:raise ValueError('PAPER_ACTIVITY_ACCEPTANCE_EVIDENCE_RESTART')
@@ -117,15 +140,17 @@ def fixture_report():
             after['recovery']=='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED' and after['heads_match'] and after['records']==1)
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
-        passed=missing_created_nothing and before_unbound and after_bound and silent and unchanged
+        rollback_observed=before['rollback_journal_observed'] is True
+        passed=missing_created_nothing and before_unbound and after_bound and silent and unchanged and rollback_observed
         return dict(mode='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY',passed=passed,
             source='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE',missing_status_created_nothing=missing_created_nothing,
             precommit_death_retained_unbound_transition=before_unbound,
             postcommit_death_replayed_bound_transition=after_bound,
+            precommit_rollback_journal_observed=rollback_observed,
             fresh_process_journals_unchanged=unchanged,fresh_process_vault_silent=silent,
             accepted_transitions_after_commit=after['records'],
             actual_provider_access=False,actual_vault_access=False,source_attested=False,
             activity_coverage_verified=False,fee_execution_links_verified=False,
             broker_account_reconciled=False,spendable_funds_verified=False,ready_for_routing=False,
             broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
-            limitations='Temporary synthetic local journals and forced process exits only. A replayed binding demonstrates SQLite commit-boundary recovery for cooperating files, not provider causality, source or activity coverage, fee links, account reconciliation, broker-wide ownership, funds, routing or release acceptance.')
+            limitations='Temporary synthetic local journals and forced process exits only. Full-file-set fingerprints cover the three main files and their rollback/WAL/shared-memory sidecars, but a replayed binding demonstrates only SQLite commit-boundary recovery for cooperating files, not provider causality, source or activity coverage, fee links, account reconciliation, broker-wide ownership, funds, routing or release acceptance.')

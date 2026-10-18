@@ -62,11 +62,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <div id="panel-portal" class="tab-panel" role="tabpanel" aria-labelledby="tab-portal"><h2 class="workspace-title">Portal</h2><p class="sub">Observe account movement and control the experimental paper session.</p>
 <section class="card"><div class="label">Your command center</div><h2>Watch and control paper research</h2><p>New here? Open To Do for your setup checklist. Use Research to collect data, Risk to choose entry allowances and Accounts for virtual balances. Changing tabs never starts or stops a session.</p><button data-open-tab="todo" data-help="Open the automatic startup checklist and read the next setup steps. This changes the visible tab without linking accounts or activating trading.">Open Startup Checklist</button></section>
 <section id="matrix-hangar" hidden aria-label="Account Matrix and public telemetry" aria-hidden="true"><div class="matrix-head"><span>◈ MATRIX STREAM // TELEMETRY</span><span id="matrix-state">STANDBY</span></div><div class="matrix-account">
-<div class="actions" aria-label="Account graph mode"><button id="matrix-singularity" aria-pressed="true" aria-controls="matrix-account-chart" data-help="Show the whole local paper account as one value line: available cash plus estimated sale value of holdings. This is observed paper data, not a connected brokerage balance.">Singularity</button><button id="matrix-fractal" aria-pressed="false" aria-controls="matrix-account-chart" data-help="Show a separate colored unrealized gain or loss line for each paper holding. Buying, selling or changing its cost basis can change a line; these are not lifetime returns.">Fractal</button>
+<div class="actions" aria-label="Account graph mode"><button id="matrix-singularity" aria-pressed="true" aria-controls="matrix-account-chart" data-help="Show the whole local paper account as one value line: available cash plus estimated sale value of holdings. This is observed paper data, not a connected brokerage balance.">Singularity</button><button id="matrix-fractal" aria-pressed="false" aria-controls="matrix-account-chart" data-help="Track all observed paper holdings together as moving points and individual history lines. Points move outward for gains and inward for losses on a shared dollar scale. Missing marks leave gaps; connecting edges are a layout, not measured correlations. These are unrealized values, not lifetime returns.">Fractal</button>
 <label>Time range <select id="matrix-range" data-help="Choose how much retained account history to display. Day and year windows are rolling; year to date begins January 1 UTC. Earlier history is not invented when tracking has just begun."><option value="1m">One minute</option><option value="1h">One hour</option><option value="1d" selected>One day</option><option value="1mo">One month (30 days)</option><option value="1y">One year (365 days)</option><option value="ytd">Year to date (UTC)</option><option value="all">All retained</option></select></label></div>
 <h2 id="matrix-account-title">SINGULARITY // Account movement</h2>
 <p class="sub" id="matrix-account-summary" role="status" aria-live="polite">Activate PORTAL to observe the local paper account. No historical values are manufactured.</p>
-<canvas id="matrix-account-chart" role="img" aria-label="Observed paper-account valuation history. The text below provides the latest values."></canvas><div id="matrix-account-legend"></div>
+<p id="matrix-account-guide" class="sub"></p><canvas aria-describedby="matrix-account-guide matrix-account-legend" id="matrix-account-chart" role="img" aria-label="Observed paper-account valuation history. The text below provides the latest values."></canvas><div id="matrix-account-legend"></div>
 <label for="matrix-adjustments">Position adjustments (latest 50 journal events)</label><select id="matrix-adjustments" data-help="Inspect recent recorded paper buys, sells and account initialization. Selecting an event shows its time, quantity and cash change; it never places, changes or cancels an order."><option value="">No recorded account adjustments</option></select>
 <p class="tiny" id="matrix-adjustment-detail" role="status">Select a recorded event to inspect it.</p>
 <p class="sub">Local paper account · estimated public bid less modeled exit fee · ~6 second observation while PORTAL is active · incomplete prices leave gaps · Fractal = unrealized P/L in USD. Earlier observations remain in retained history; collection pauses at total storage capacity. Decorative rain below is not position data.</p>
@@ -878,20 +878,43 @@ function matrixObservationReason(reason){return ({
 })[reason]||String(reason)}
 
 function renderAccountMatrix(){
- const width=Math.max(240,Math.floor(accountCanvas.clientWidth||600)),height=270,dpr=Math.min(window.devicePixelRatio||1,2);
+ const fractal=accountMode==='fractal',offset=fractal?240:0;
+ const width=Math.max(240,Math.floor(accountCanvas.clientWidth||600)),height=270+offset,dpr=Math.min(window.devicePixelRatio||1,2);
+ accountCanvas.style.height=height+'px';
  accountCanvas.width=width*dpr;accountCanvas.height=height*dpr;accountContext.setTransform(dpr,0,0,dpr,0,0);
  const c=accountContext;c.fillStyle='#010d07';c.fillRect(0,0,width,height);c.font='12px Consolas,monospace';
- const history=accountHistory,points=history?history.points:[],fractal=accountMode==='fractal';
+ const history=accountHistory,points=history?history.points:[];
  const products=[...new Set(points.flatMap(p=>p.positions.map(x=>x.product)))].sort();
  const series=fractal?products.map((product,i)=>({name:product,color:matrixColors[i%matrixColors.length],values:points.map(p=>{const x=p.positions.find(x=>x.product===product);return x?Number(x.unrealized_pnl):null})})):[{name:'Total estimated equity',color:matrixColors[0],values:points.map(p=>p.complete?Number(p.equity):null)}];
  const legend=byId('matrix-account-legend');legend.replaceChildren();
- for(const line of series){const item=document.createElement('span');item.style.color=line.color;item.textContent=line.name;legend.append(item)}
- show('matrix-account-title',fractal?'FRACTAL // Individual holdings':'SINGULARITY // Account movement');
+ for(const line of series){const item=document.createElement('span');item.style.color=line.color;const latest=points[points.length-1]?.positions.find(p=>p.product===line.name);item.textContent=line.name+(fractal?(latest?' / qty '+latest.quantity+' / unrealized $'+matrixMoney(latest.unrealized_pnl):' / no marked holding at latest sample'):'');legend.append(item)}
+ show('matrix-account-title',fractal?'FRACTAL // Coordinated position movement':'SINGULARITY // Account movement');
+ show('matrix-account-guide',fractal?'All position points share the latest observation. Outward = unrealized gain; inward = loss; the ring = zero USD. Angles identify products; edges show layout, not correlation. Faint points and lower lines retain observed movement. Missing or closed holdings have no current node.':'One graph tracks total estimated account value: cash plus marked holdings. Position details remain in the observation summary.');
+ accountCanvas.setAttribute('aria-label',fractal?'Fractal: coordinated position points and individual unrealized USD histories':'Singularity: one whole-account estimated value graph');
  byId('matrix-singularity').setAttribute('aria-pressed',String(!fractal));byId('matrix-fractal').setAttribute('aria-pressed',String(fractal));
  const values=series.flatMap(s=>s.values.filter(v=>v!==null&&Number.isFinite(v)));
  if(!values.length){c.fillStyle='#b4c8bc';c.fillText(fractal?'No marked positions in this range':'No complete account observations yet',12,100);return;}
+ if(fractal){
+  // Shared-time constellation: geometry encodes signed USD P/L, never invented prices.
+  const cx=width/2,cy=124,outer=Math.min(82,width*.26),zero=outer*.55,travel=outer*.4,scale=Math.max(.01,...values.map(v=>Math.abs(v)));
+  show('matrix-account-guide',byId('matrix-account-guide').textContent+' Shared displacement scale: +/- $'+matrixMoney(scale)+'; scaled to this selected history range.');
+  const location=(v,i)=>{const angle=-Math.PI/2+i*2*Math.PI/series.length,r=zero+v/scale*travel;return {x:cx+Math.cos(angle)*r,y:cy+Math.sin(angle)*r}};
+  c.strokeStyle='#456b55';c.lineWidth=1;c.beginPath();c.arc(cx,cy,zero,0,Math.PI*2);c.stroke();
+  c.fillStyle='#b4c8bc';c.fillText('Shared sample / USD P/L',8,16);
+  const nodes=[];
+  series.forEach((line,i)=>{
+   const end=location(scale,i),label=location(scale*1.4,i);c.strokeStyle='#1d4933';c.beginPath();c.moveTo(cx,cy);c.lineTo(end.x,end.y);c.stroke();
+   c.fillStyle=line.color;c.fillText(line.name,Math.max(4,Math.min(width-c.measureText(line.name).width-4,label.x-c.measureText(line.name).width/2)),label.y+4);
+   c.globalAlpha=.25;line.values.forEach(v=>{if(v===null||!Number.isFinite(v))return;const p=location(v,i);c.beginPath();c.arc(p.x,p.y,2,0,Math.PI*2);c.fill()});c.globalAlpha=1;
+   const current=line.values[line.values.length-1];if(current!==null&&Number.isFinite(current))nodes.push({...location(current,i),color:line.color});
+  });
+  // Join only simultaneous current nodes, never a carried-forward missing mark.
+  if(nodes.length>1){c.strokeStyle='#9d6fb7';c.beginPath();c.moveTo(nodes[0].x,nodes[0].y);for(const node of nodes.slice(1))c.lineTo(node.x,node.y);if(nodes.length>2)c.lineTo(nodes[0].x,nodes[0].y);c.stroke()}
+  for(const node of nodes){c.fillStyle=node.color;c.beginPath();c.arc(node.x,node.y,5,0,Math.PI*2);c.fill()}
+  c.fillStyle='#b4c8bc';c.fillText('Position histories / time',8,236);
+ }
  const min=Math.min(...values),max=Math.max(...values),pad=Math.max((max-min)*.12,Math.abs(max)*.00001,.01),low=min-pad,high=max+pad;
- const left=72,right=width-12,top=24,bottom=228,first=history.range_start||points[0].at,last=history.range_end;
+ const left=72,right=width-12,top=24+offset,bottom=228+offset,first=history.range_start||points[0].at,last=history.range_end;
  const x=at=>left+(at-first)/Math.max(1,last-first)*(right-left),y=v=>top+(high-v)/(high-low)*(bottom-top);
  c.strokeStyle='#1d4933';c.fillStyle='#a7c8b2';
  for(let i=0;i<4;i++){const v=low+(high-low)*i/3,py=y(v);c.beginPath();c.moveTo(left,py);c.lineTo(right,py);c.stroke();c.fillText(v.toFixed(2),2,py+4)}
@@ -901,8 +924,8 @@ function renderAccountMatrix(){
    // Downsampling and observation gaps never become a fabricated continuous path.
    if(previous&&!history.downsampled&&point.at-previous.at<=15&&point.at>previous.at){c.beginPath();c.moveTo(previous.x,previous.y);c.lineTo(px,py);c.stroke()}
    c.beginPath();c.arc(px,py,2.5,0,Math.PI*2);c.fill();previous={at:point.at,x:px,y:py};});}
- c.fillStyle='#b4c8bc';c.fillText('USD',2,14);const format=t=>new Date(t*1000).toLocaleString();
- c.fillText(format(first),6,252);const endLabel=format(last);c.fillText(endLabel,Math.max(6,width-c.measureText(endLabel).width-6),267);
+ c.fillStyle='#b4c8bc';c.fillText('USD',2,14+offset);const format=t=>new Date(t*1000).toLocaleString();
+ c.fillText(format(first),6,252+offset);const endLabel=format(last);c.fillText(endLabel,Math.max(6,width-c.measureText(endLabel).width-6),267+offset);
 }
 function applyAccountHistory(data){
  accountHistory=data;const points=data.points,last=points[points.length-1];

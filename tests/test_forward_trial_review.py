@@ -29,7 +29,7 @@ def database(tmp_path,monkeypatch,sessions):
             sid=f'{index+1:016x}';previous=evidence.GENESIS;rows=[]
             for cycle,(offset,eligible) in enumerate(points,1):
                 payload=evidence.canonical(dict(session=sid,cycle=cycle,evaluated_at=START+offset,
-                    quote={'provider':'coinbase_exchange_public'},quote_eligible=eligible,source_mode=source,
+                    quote=dict(provider='coinbase_exchange_public',product='BTC-USD',bid='100',ask='100.1',last='100',received_at=START+offset,exchange_time=until(offset),read_only=True,orders_allowed=False),quote_eligible=eligible,source_mode=source,
                     policy_sha256=policy['policy_sha256'],error_type=None))
                 digest=evidence.digest(previous,payload);rows.append((sid,cycle,payload,previous,digest));previous=digest
             first=START+points[0][0] if points else START;last=START+points[-1][0] if points else START
@@ -41,6 +41,91 @@ def database(tmp_path,monkeypatch,sessions):
 
 
 def run(path,seconds=60):return trial.review(path,after=AFTER,until=until(seconds))
+
+
+def rewrite(path, change, *, policy_change=None):
+    """Self-consistent local rewriting is not source attestation."""
+    with closing(sqlite3.connect(path)) as db,db:
+        rows=db.execute('SELECT session,cycle,payload FROM forward_quotes ORDER BY session,cycle').fetchall()
+        policy=None
+        if policy_change is not None:
+            policy=json.loads(db.execute('SELECT policy_json FROM sessions').fetchone()[0])
+            policy.update(policy_change);policy.pop('policy_sha256')
+            import hashlib
+            policy['policy_sha256']=hashlib.sha256(evidence.canonical(policy).encode()).hexdigest()
+            db.execute('UPDATE sessions SET policy_json=?',(evidence.canonical(policy),))
+        previous={};counts={}
+        for sid,cycle,raw in rows:
+            point=json.loads(raw)
+            if cycle==2:change(point)
+            if policy is not None:point['policy_sha256']=policy['policy_sha256']
+            payload=evidence.canonical(point);parent=previous.get(sid,evidence.GENESIS)
+            digest=evidence.digest(parent,payload)
+            db.execute('UPDATE forward_quotes SET payload=?,previous=?,digest=? WHERE session=? AND cycle=?',
+                (payload,parent,digest,sid,cycle))
+            previous[sid]=digest;counts[sid]=counts.get(sid,0)+1
+        for sid,head in previous.items():
+            db.execute('UPDATE forward_quote_heads SET observations=?,head=? WHERE session=?',(counts[sid],head,sid))
+
+
+@pytest.mark.parametrize('changes', [
+    {'received_at':START}, {'received_at':START+6}, {'received_at':False},
+    {'exchange_time':until(-10)}, {'exchange_time':until(6)},
+    {'exchange_time':until(-1)}, {'exchange_time':'invalid'}, {'exchange_time':until(5)[:-1]},
+    {'provider':'other'}, {'product':'ETH-USD'}, {'read_only':False}, {'orders_allowed':True},
+    {'bid':'NaN'}, {'bid':'200'}, {'ask':'102'}, {'last':None}, {'last':'125'},
+    {'bid':'1e999999999'},
+], ids=['stale-receipt','future-receipt','bool-receipt','stale-exchange','future-exchange',
+    'exchange-regression','bad-time','naive-time','provider','product','read-permission',
+    'order-permission','nonfinite','crossed','spread','missing-price','jump','decimal-overflow'])
+def test_claimed_eligible_bad_quotes_cannot_inflate_coverage(tmp_path,monkeypatch,changes):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    rewrite(path,lambda p:p['quote'].update(changes));before=path.read_bytes()
+    result=run(path,10)
+    assert result['eligible_observations_in_window']==3  # Original declared flags remain visible.
+    assert result['revalidated_eligible_observations_in_window']==2
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['declared_public_covered_seconds']=='0'
+    assert 'RECORDED_ELIGIBILITY_FAILS_RETAINED_QUOTE_RECHECK' in result['review_reasons']
+    assert all(result[k] is False for k in trial.FLAGS) and path.read_bytes()==before
+
+
+@pytest.mark.parametrize('kind',['missing-fields','recorded-error'])
+def test_minimal_or_failed_quote_does_not_qualify_even_with_valid_chain(tmp_path,monkeypatch,kind):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    def changed(point):
+        if kind=='missing-fields':point['quote']={'provider':'coinbase_exchange_public'}
+        else:point['error_type']='ValueError'
+    rewrite(path,changed)
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['revalidated_rejected_observations_in_window']==1
+    assert result['declared_public_covered_seconds']=='0'
+
+
+def test_rejected_flags_are_never_upgraded_by_a_valid_quote(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,False),(10,True)],trial.PUBLIC,'STOPPED')])
+    result=run(path,10)
+    assert result['revalidated_eligible_observations_in_window']==2
+    assert result['recorded_eligibility_disagreements_in_window']==0
+    assert result['declared_public_covered_seconds']=='0'
+
+
+@pytest.mark.parametrize('change',[{'receive_age_seconds':9999},{'id':'unadmitted_experiment'}])
+def test_self_consistent_modified_policy_cannot_relax_quote_replay(tmp_path,monkeypatch,change):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')])
+    rewrite(path,lambda p:None,policy_change=change);before=path.read_bytes()
+    with pytest.raises(ValueError):run(path,10)
+    assert path.read_bytes()==before
+
+
+def test_high_coverage_target_still_requires_no_eligibility_contradictions(tmp_path,monkeypatch):
+    points=[(i,True) for i in range(0,72*3600+1,10)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
+    rewrite(path,lambda p:p['quote'].update(read_only=False))
+    result=run(path,72*3600)
+    assert float(result['coverage_fraction'])>0.99 and not result['declared_coverage_target_met']
+    assert result['recorded_eligibility_disagreements_in_window']==1
 
 
 def test_sparse_endpoints_never_turn_calendar_span_into_covered_uptime(tmp_path,monkeypatch):

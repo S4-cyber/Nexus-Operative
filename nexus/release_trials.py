@@ -553,6 +553,14 @@ def _validate(profile, result):
         _require(coverage['status']=='REVIEW_REQUIRED' and coverage['injected_observations']==result['cycles'] and
             coverage['declared_public_covered_seconds']=='0' and coverage['declared_coverage_target_met'] is False,
             'FORWARD_COVERAGE_SCOPE')
+        _require(coverage['retained_quote_recheck_applied'] is True and
+            coverage['eligibility_count_scope']=='RECORDED_FLAGS_ONLY_SEE_REVALIDATED_COUNTS' and
+            type(coverage['recorded_eligibility_disagreements_in_window']) is int and
+            coverage['recorded_eligibility_disagreements_in_window']==0 and
+            type(coverage['revalidated_eligible_observations_in_window']) is int and
+            coverage['revalidated_eligible_observations_in_window']==coverage['eligible_observations_in_window'] and
+            coverage['revalidated_rejected_observations_in_window']==coverage['rejected_observations_in_window'],
+            'FORWARD_COVERAGE_REVALIDATION')
         _require(all(coverage[k] is False for k in COVERAGE_FLAGS),'FORWARD_COVERAGE_AUTHORITY')
         _require(result['rounds'] == 20 and len(result['recovered']['sessions']) == 20, 'FORWARD_SESSIONS')
         _require(result['recovered']['flat'] is True and result['recovered']['forward_stopped'] is True

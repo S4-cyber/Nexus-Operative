@@ -368,3 +368,7 @@ Keep quote-capture request, quote and pacing database paths separate from one an
 ### Read-purpose counts in optional paper diagnostics (v0.164+)
 
 Pacing status now identifies which standard reader used the local budget: inventory, BTC asset rules, activity pages, original-ID recovery or BTC quote. A pending purpose means that read has an unknown outcome requiring review. Older sessions say LEGACY_UNSPECIFIED because their purpose was never recorded; Nexus does not guess or rewrite them. These counts need no keys/network and do not authorize trading. Each purpose shares the same selected journal's cooldown and limits. Changing readers or creating new journal paths must not be used to bypass provider limits. Mixed operations still need a separately accepted receipt/budget model. Existing status commands stay read-only; no extra startup checklist or setting is required.
+
+### Optional offline provider/result review (v0.174+)
+
+Operators can run `NexusOperative.exe --paper-tool provider-results --input PRIVATE_MANIFEST.json` to compare supplied observations with pinned local provider/account histories. This is an optional diagnostic, not a startup requirement or an account connection. See [PROVIDER_RESULT_REVIEW.md](PROVIDER_RESULT_REVIEW.md) for the manifest format. Keep it private and outside the installation/source directory. The command never opens keys, contacts the broker, starts the engine or writes receipts. A successful command can report disagreement; even matching evidence remains REVIEW_REQUIRED and grants no trading permission.

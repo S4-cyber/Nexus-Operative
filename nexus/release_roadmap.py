@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.173.0'
+REVISION = '0.174.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.173.0 composes exact local provider/account read histories with frozen normalized observations and request scopes for every retained account session. Missing, changed, cross-account or unverified results withhold consistency even when provider counts match. Optional bounded receipts retain only digests and counts under a distinct versioned profile; older count-only receipts retain their original meaning. This is supplied local evidence, not raw-byte normalization, source/clock/quota/funds attestation, actual broker acceptance or order authority. Exact-source Windows/security/browser CI and external acceptance remain mandatory. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.174.0 adds the explicit installed --paper-tool provider-results --input command for bounded local normalized-result evidence. A private manifest pins every account/provider head and supplies exact journal paths and observations; relative paths resolve beside the manifest. The command rechecks the input, refuses malformed/duplicate/changed/unsafe inputs, and never starts the desktop, opens credentials, contacts providers or writes receipts. Packaged acceptance now requires eighteen cross-platform invocations plus the native Windows read-only emergency fault, including valid and altered-result checks. This remains supplied local consistency, not broker/source/clock/funds/market acceptance. Exact-source CI is mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

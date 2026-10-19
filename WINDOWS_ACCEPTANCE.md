@@ -1,6 +1,14 @@
 # Windows distribution and acceptance evidence
 
-## Verified installer checkpoint — v0.166.3 (2026-10-19 UTC)
+## Verified installer checkpoint — v0.172.3 (2026-10-19 UTC)
+
+[Download the Windows test installer](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39269412789/artifacts/12196145555) (ZIP containing the setup EXE; expires 2026-10-26T14:49:40Z). The [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39269412789/artifacts/12196145544) includes source-bound checksums, standalone EXE and offline evidence; expires 2026-11-18T14:49:36Z. GitHub may require sign-in.
+
+Verified source: `a16b2178dc1cb22e5ab177a4e99416edb4bd90d3`. Windows39269412789, split safety/browser39269412866 and security39269412781 all report success for that exact source. Installer evidence12194874557 expires 2026-11-18T14:49:39Z; standalone12194334570 expires 2026-11-18T14:45:06Z. All artifact metadata was rechecked as unexpired during v0.174 development.
+
+This test checkpoint includes the independent packaged emergency command, held-writer/CPU-pressure acceptance and separately budgeted safety gates. It excludes v0.172.4+ native read-only-storage fault and origin-OS changes, v0.173 normalized provider/result receipts and the v0.174 provider-results command; those require their own exact-source CI. New receipt profiles can be unreadable to older binaries. Preserve private backups and halt trading before reviewing an upgrade or downgrade. Automated installer/browser checks do not establish ordinary-owner profile/ACL, actual broker-paper, sustained-market, funds/live/cloud or production acceptance. This is an experimental paper-only installer, not a 1.0 release.
+
+## Previous verified installer checkpoint — v0.166.3 (2026-10-19 UTC)
 
 [Download the Windows installer artifact](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39189832242/artifacts/12160041702) (ZIP containing the setup EXE; expires 2026-10-26T02:42:39Z). The [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39189832242/artifacts/12159802457) includes source-bound checksums, standalone EXE and offline evidence; expires 2026-11-18T02:42:35Z. GitHub may require sign-in to download.
 

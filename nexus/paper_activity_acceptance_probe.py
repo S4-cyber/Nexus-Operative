@@ -20,6 +20,7 @@ from nexus import paper_credentials
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus.alpaca_activity_collection import PAGE_SIZE
+from nexus.activity_collection_evidence import request_targets_match
 from nexus.broker_activity_store import BrokerActivityStore, MAX_BATCHES
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore, MAX_RECORDS
 from nexus.paper_acceptance_probe import FLAGS, ROOT
@@ -260,7 +261,12 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
                 request_orders_sha256=_request_orders_digest(orders,account))
         def admission():
             input_guard()
-            return pacing.inspect()['head_sha256'],store.inspect()['head_sha256']
+            current_pacing=pacing.inspect();current_store=store.inspect()
+            operation=next((row for row in pacing.operation_history()
+                if row['before_head_sha256']==scope['pacing_before_head_sha256'] and
+                   row['after_head_sha256']==scope['pacing_after_head_sha256']),None)
+            if not request_targets_match(operation,current_store['receipts'].get(scope['retained_receipt_sha256'])):_fail()
+            return current_pacing['head_sha256'],current_store['head_sha256']
         accepted=acceptance.append(scope,admission=admission,**({'precommit_check':input_guard} if request_mode else {}))
         input_guard()
         acceptance_after=acceptance.inspect()
@@ -335,7 +341,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         operation=completed.get(transition)
         result['pacing_operation_typed']=operation is not None and operation['operation']=='ACTIVITY_COLLECTION'
         result['pacing_result_receipt_bound']=operation is not None and operation['result_receipt_bound'] is True
-        result['pacing_request_targets_bound']=operation is not None and operation['request_targets_bound'] is True
+        result['pacing_request_targets_bound']=request_targets_match(operation,receipt)
         result['accepted_transition_replayed']=all(value for key,value in result.items()
             if key not in ('accepted_transition_replayed','collection_cursor_sequence_complete'))
         return result
@@ -446,7 +452,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
             'REVIEW_ALL_RETAINED_JOURNALS_NO_AUTOMATIC_RETRY' if uncertain else
             'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ'),
         **{flag:False for flag in FLAGS},
-        limitations='Local replay only: no order file, vault or provider access and no admission permission. Every accepted content record is re-derived from its exact retained receipt, normalized activities, collection observation and exact retained pacing/activity head transitions. When an explicit private request journal is supplied, persisted v3 origins are additionally re-derived from their exact historical request prefixes and the complete current request tail is sampled again; legacy v2 records remain unverified. A final short page establishes only bounded cursor-sequence completion for that declared creation window; it does not attest source, delayed/corrected activity coverage or fee posting. Matching content and heads establish only local cooperating-journal consistency, not causality or valid-tail completeness. Missing history does not prove no earlier read. Other journals/hosts and direct store writers are not coordinated. Never erase uncertain reads, receipts, acceptance records or cooldowns to bypass review.')
+        limitations='Local replay only: no order file, vault or provider access and no admission permission. Every accepted content record is re-derived from its exact retained receipt, normalized activities, collection observation and exact retained pacing/activity head transitions. Request-target binding additionally reconstructs the account/page/account sequence from each retained creation window and opaque cursor. When an explicit private request journal is supplied, persisted v3 origins are additionally re-derived from their exact historical request prefixes and the complete current request tail is sampled again; legacy v2 records remain unverified. A final short page establishes only bounded cursor-sequence completion for that declared creation window; it does not attest source, delayed/corrected activity coverage or fee posting. Matching content and heads establish only local cooperating-journal consistency, not causality or valid-tail completeness. Missing history does not prove no earlier read. Other journals/hosts and direct store writers are not coordinated. Never erase uncertain reads, receipts, acceptance records or cooldowns to bypass review.')
 
 
 class _Parser(argparse.ArgumentParser):

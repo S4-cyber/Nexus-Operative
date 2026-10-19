@@ -13,7 +13,8 @@ import tempfile
 from nexus.alpaca_paper_contract import sha
 from nexus import alpaca_activity_normalizer as adapter
 from nexus.activity_collection_evidence import SCHEMA, page_observation, validate
-from nexus.alpaca_activity_collection import PAGE_SIZE
+from nexus.alpaca_activity_collection import PAGE_SIZE, activity_url
+from nexus.alpaca_paper_inspection import URLS
 from nexus.broker_activity_store import BrokerActivityStore
 from nexus.paper_activity_acceptance_probe import status
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore, PROFILE
@@ -44,7 +45,7 @@ def _sqlite_files_snapshot(root):
     return tuple(snapshot)
 
 
-def _scope(root,index=1,*,full_page=False):
+def _scope(root,index=1,*,full_page=False,request_targets=None):
     after,until=((AFTER,UNTIL) if index==1 else
         ('2026-10-18T00:00:00Z','2026-10-19T00:00:00Z'))
     at=1000+(index-1)*60
@@ -59,7 +60,8 @@ def _scope(root,index=1,*,full_page=False):
         kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
         pacing.finish(token,admission=lambda:at,status_code=200,ownership=owner,
             receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
-                request_sha256=[sha(dict(kind=kind,target=index,at=at)) for index,kind in enumerate(kinds)],
+                request_sha256=([sha(dict(method='GET',target=url)) for url in (URLS[0],activity_url(after,until),URLS[0])]
+                    if request_targets is None else list(request_targets)),
                 response_sha256=[sha(dict(kind=kind,index=index,at=at)) for index,kind in enumerate(kinds)]))
     rows=[dict(id=f'2026101{6+index}000000000::11234567-89ab-cdef-0123-{index*1000+i:012d}',
         activity_type='FEE',status='executed',net_amount='-0.01',date=f'2026-10-{15+index:02d}')
@@ -174,7 +176,21 @@ def fixture_report():
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
         rollback_observed=before['rollback_journal_observed'] is True
-        passed=missing_created_nothing and before_unbound and after_bound and silent and unchanged and rollback_observed
+        scope_checks=[];scope_unchanged=True
+        for label,target in (
+            ('window',activity_url('2026-10-16T00:00:00Z','2026-10-17T00:00:00Z')),
+            ('cursor',activity_url(AFTER,UNTIL,'20261017000000000::11234567-89AB-CDEF-0123-456789ABCDEF'))):
+            root=base/label;root.mkdir()
+            digests=[sha(dict(method='GET',target=url)) for url in (URLS[0],target,URLS[0])]
+            p,a,accepted,bound_scope=_scope(root,request_targets=digests)
+            accepted.append(bound_scope,admission=lambda:(p.inspect()['head_sha256'],a.inspect()['head_sha256']))
+            original=_sqlite_files_snapshot(root)
+            checked=_fresh_status(root)
+            scope_checks.append(checked['heads_match'] and not checked['all_request_targets_bound'] and
+                checked['recovery']=='ACCEPTED_PACING_REQUEST_TARGET_UNVERIFIED_REVIEW_REQUIRED')
+            scope_unchanged=scope_unchanged and checked['unchanged'] and original==_sqlite_files_snapshot(root)
+        passed=(missing_created_nothing and before_unbound and after_bound and silent and unchanged and
+            rollback_observed and all(scope_checks) and scope_unchanged)
         return dict(mode='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY',passed=passed,
             source='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE',missing_status_created_nothing=missing_created_nothing,
             precommit_death_retained_unbound_transition=before_unbound,
@@ -186,6 +202,9 @@ def fixture_report():
             postcommit_all_pacing_operations_typed=after['all_operations_typed'],
             postcommit_all_pacing_result_receipts_bound=after['all_receipts_bound'],
             postcommit_all_pacing_request_targets_bound=after['all_request_targets_bound'],
+            changed_creation_window_targets_refused=scope_checks[0],
+            changed_cursor_target_refused=scope_checks[1],
+            request_target_disagreement_history_preserved=scope_unchanged,
             accepted_transitions_after_commit=after['records'],
             actual_provider_access=False,actual_vault_access=False,source_attested=False,
             activity_coverage_verified=False,fee_execution_links_verified=False,

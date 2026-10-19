@@ -12,7 +12,8 @@ from pathlib import Path
 
 from nexus import alpaca_activity_normalizer as adapter
 from nexus.activity_collection_evidence import SCHEMA, page_observation, validate
-from nexus.alpaca_activity_collection import PAGE_SIZE
+from nexus.alpaca_activity_collection import PAGE_SIZE, activity_url
+from nexus.alpaca_paper_inspection import URLS
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_contract import preview
 from nexus.broker_activity_store import BrokerActivityStore
@@ -138,7 +139,7 @@ def _fixture(root):
         kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
         pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
             receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
-                request_sha256=[sha(dict(kind=kind,target=index)) for index,kind in enumerate(kinds)],
+                request_sha256=[sha(dict(method='GET',target=url)) for url in (URLS[0],activity_url(after,until),URLS[0])],
                 response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)]))
     asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
         fractionable=True,min_order_size='.5',min_trade_increment='.5',price_increment='.5')

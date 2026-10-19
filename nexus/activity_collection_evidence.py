@@ -64,6 +64,36 @@ def validate(evidence, data, *, after, until):
         read_completed_at=completed, account_fields_sha256=digest, pages=result)
 
 
+
+def request_targets_match(operation, receipt):
+    """Compare a replayed successful pacing receipt with retained page scope.
+
+    Callers supply a fully replay-validated activity receipt. This is local
+    target consistency only, not a check of raw response content or source.
+    Reconstruct at most two approved page targets; retain no URLs or cursors.
+    """
+    if not isinstance(operation, dict) or not isinstance(receipt, dict):
+        return False
+    if (operation.get('operation') != 'ACTIVITY_COLLECTION' or
+        operation.get('outcome') != 'SUCCESS' or operation.get('result_receipt_bound') is not True or
+        operation.get('request_targets_bound') is not True):
+        return False
+    observation = receipt.get('collection_observation')
+    if not isinstance(observation, dict):
+        return False
+    pages = observation.get('pages')
+    if not isinstance(pages, list) or not 1 <= len(pages) <= PAGE_LIMIT:
+        return False
+    from nexus.alpaca_paper_inspection import URLS
+    try:
+        targets = [URLS[0], *(activity_url(receipt['after'], receipt['until'], page['request_cursor'])
+            for page in pages), URLS[0]]
+    except (KeyError, TypeError, ValueError):
+        return False
+    kinds = ('ACCOUNT', *('ACTIVITY_PAGE' for _ in pages), 'ACCOUNT')
+    digests = tuple(sha(dict(method='GET', target=target)) for target in targets)
+    return operation.get('request_kinds') == kinds and operation.get('request_sha256') == digests
+
 def fixture_report():
     """Actual bounded collector + temporary retention, injected response objects."""
     import io

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.167.2'
+REVISION = '0.167.3'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.167.2 exposes content-free receipt completeness in the vault/network-silent Accounts pacing review. Completed typed results distinguish request-and-response-bound v2 receipts, older target-unverified v1 receipts and unreceipted results; pending/interrupted and legacy reads are excluded from receipt completion. Exact bounded browser validation rejects inconsistent counts, flags or private extras. Existing histories are retained unchanged and local hashes do not attest broker data. All v0.167.1 safeguards remain. Actual broker-paper, sustained market, funding/live/cloud, native-profile/ACL and independent/owner gates stay open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.167.3 compares each accepted activity pacing receipt against the exact account/page/account GET targets reconstructed from the retained creation window and original opaque cursors. New probe admission and full historical replay refuse mismatches even when v2 receipt hashes and all journal heads are self-consistent. A later valid tail cannot conceal an earlier mismatch. One- and two-page fixed bounds, legacy/v1 review, unknown outcomes and all existing history remain unchanged. Mandatory offline recovery evidence includes changed-window and changed-cursor refusals with unchanged private journals. Local target consistency does not attest response content, provider source, coverage, quota, funds or routing. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates stay open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

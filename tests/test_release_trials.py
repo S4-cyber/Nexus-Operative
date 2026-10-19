@@ -196,7 +196,9 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
     for field in ('missing_status_created_nothing','precommit_death_retained_unbound_transition',
                   'postcommit_death_replayed_bound_transition','precommit_rollback_journal_observed',
                   'fresh_process_journals_unchanged','fresh_process_vault_silent',
-                  'postcommit_all_content_replayed'):
+                  'postcommit_all_content_replayed','postcommit_all_pacing_request_targets_bound',
+                  'changed_creation_window_targets_refused','changed_cursor_target_refused',
+                  'request_target_disagreement_history_preserved'):
         changed=dict(result,**{field:False})
         with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_RECOVERY'):trials._validate('activity_acceptance',changed)
     for field in ('actual_provider_access','actual_vault_access','source_attested','activity_coverage_verified',

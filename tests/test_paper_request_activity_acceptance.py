@@ -9,7 +9,8 @@ import pytest
 from nexus import alpaca_activity_normalizer as adapter
 from nexus import paper_request_activity_acceptance as subject
 from nexus.activity_collection_evidence import SCHEMA, page_observation, validate
-from nexus.alpaca_activity_collection import PAGE_SIZE
+from nexus.alpaca_activity_collection import PAGE_SIZE, activity_url
+from nexus.alpaca_paper_inspection import URLS
 from nexus.alpaca_paper_contract import preview, sha
 from nexus.broker_activity_store import BrokerActivityStore
 from nexus.broker_request_journal import BrokerRequestJournal
@@ -35,7 +36,7 @@ def prepared(root, prices=('98','100'), *, typed=True):
             kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
             pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
                 receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
-                    request_sha256=[sha(dict(kind=kind,target=index)) for index,kind in enumerate(kinds)],
+                    request_sha256=[sha(dict(method='GET',target=url)) for url in (URLS[0],activity_url(AFTER,UNTIL),URLS[0])],
                     response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)]))
     else:
         token=pacing.begin(admission=lambda:1000)

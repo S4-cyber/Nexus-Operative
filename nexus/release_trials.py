@@ -817,7 +817,9 @@ def _validate(profile, result):
             'precommit_rollback_journal_observed','fresh_process_journals_unchanged',
             'fresh_process_vault_silent','postcommit_latest_content_replayed',
             'postcommit_all_content_replayed','postcommit_all_pacing_operations_typed',
-            'postcommit_all_pacing_result_receipts_bound')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
+            'postcommit_all_pacing_result_receipts_bound','postcommit_all_pacing_request_targets_bound',
+            'changed_creation_window_targets_refused','changed_cursor_target_refused',
+            'request_target_disagreement_history_preserved')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
         _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access','source_attested',
             'activity_coverage_verified','fee_execution_links_verified','broker_account_reconciled',
             'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled',

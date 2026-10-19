@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.175.0 (pre-release).** The private exact-head execution-quality review now requires its explicit `request_event_at_ns` to match the selected original request's retained local submission-admission marker exactly. Missing legacy markers, samples not exactly representable as integer nanoseconds, changed event times and journal changes fail closed. This binds cooperating local evidence; it does not attest transport invocation, broker arrival, quote contemporaneity, clock synchronization, source, fees, funds, routing or release. All such authority remains false. No UI, permission, risk limit or default changed. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.175.1 (pre-release).** Windows CI for v0.175.0 exposed two acceptance-harness defects after 3,365 passes: an emergency-cut race test allowed only the stopped-runner outcome even though the independent durable cut latch can veto first, and a complete real-loopback plus packaged-tool child had only a 35-second aggregate process budget. v0.175.1 accepts only the two explicit fail-closed reason/decision pairs while retaining every durable no-fill assertion, and uses a bounded 120-second aggregate child budget without changing any individual operation or evidence check. Runtime behavior and v0.175.0 request-event binding are unchanged. No UI, permission, risk limit or default changed. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,12 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.175.1 Windows acceptance-harness repair
+
+Exact v0.175.0 security 39311553891 and safety/browser/evidence 39311553832 passed. Windows 39311553897 reached 3,365 passes and 19 skips but failed before packaging because its blocked-fill race asserted only one of two exact safe orderings and its complete loopback/tool child exceeded a 35-second aggregate process budget. v0.175.1 accepts only `VETO`/`EMERGENCY_CUT_REQUESTED` or `HOLD`/`RUNNER_STOPPED_BEFORE_FILL`, preserving every durable no-fill/reconciliation assertion, and gives the aggregate child a bounded 120 seconds without changing its individual checks.
+
+Local validation passed 3,386 tests, the 124-test focused set and all sixteen source-fingerprinted profiles; exact-source v0.175.1 Windows packaging, installed smoke, browser/safety and security CI remain mandatory. No runtime, UI, permission, default, account, order, funds, live, cloud or release authority changed.
 
 ## Enforcement
 Application version, package metadata and Windows installer version/output filename must match. Automated tests guard against accidentally labeling an unfinished preview 1.0.0 or 1.1.0. The hourly autonomous development task is instructed to keep all work within the 0.x prerelease series unless these gates are independently evidenced and the user explicitly directs the promotion.

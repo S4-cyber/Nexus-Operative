@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.175.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.175.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,8 +36,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, fourteen Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | v0.175.0 source-fingerprinted report `validation/release_trials_0_175_0.json` verifies all sixteen local profiles; exact new-source Windows jobs must still run |
-| Windows packaging and data recovery | Exact v0.174.2 all green | v0.174.2 security 39301830418, Windows 39301830393 and split safety/browser/evidence 39301830361 passed, including packaging, installed/reinstalled smoke and data-preserving uninstall. v0.175.0 exact-source CI remains required; ordinary-user profile/ACL, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
+| Integrated local trials | Bounded offline trials passed | v0.175.1 source-fingerprinted report `validation/release_trials_0_175_1.json` verifies all sixteen local profiles against 345 files / `caa8fcab0b7f6823e6500c6580740991566b32a6f53ea730d68d180284a27e2b`; exact new-source Windows jobs must still run |
+| Windows packaging and data recovery | Exact v0.174.2 all green; v0.175.0 failed before packaging | v0.174.2 security 39301830418, Windows 39301830393 and split safety/browser/evidence 39301830361 passed. v0.175.0 Windows run 39311553897 reached 3,365 passes and 19 skips but exposed one over-constrained emergency-race assertion and one undersized aggregate child timeout, so packaging was skipped. v0.175.1 exact-source CI remains required; ordinary-user profile/ACL, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |

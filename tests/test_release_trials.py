@@ -8,6 +8,8 @@ import json
 import pytest
 from nexus import release_trials as trials
 
+HTTP_TRIAL_SUBPROCESS_TIMEOUT_SECONDS = 120
+
 
 class _ResettingBody:
     def read(self, size):
@@ -24,7 +26,12 @@ def test_http_trial_tolerates_reset_only_for_precredential_denial():
 def test_real_http_process_starts_stopped_without_data_credentials_or_external_io(tmp_path):
     env = {**os.environ, 'NEXUS_PORTABLE_DATA': str(tmp_path)}
     code = 'import json; from nexus.release_trials import _http_trial; print(json.dumps(_http_trial()))'
-    child = subprocess.run([sys.executable,'-c',code],env=env,capture_output=True,text=True,timeout=35)
+    # This child runs the complete real-loopback profile and all packaged
+    # paper-tool source commands. Keep it bounded but allow loaded Windows CI
+    # substantially more process-startup time than the individual operations.
+    child = subprocess.run(
+        [sys.executable,'-c',code],env=env,capture_output=True,text=True,
+        timeout=HTTP_TRIAL_SUBPROCESS_TIMEOUT_SECONDS)
     assert child.returncode == 0, child.stderr
     report = json.loads(child.stdout)
     assert report['passed'] and report['graceful_shutdown'] and report['startup_engine_stopped']

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.175.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.175.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.175.0 binds the private execution-quality benchmark request-event timestamp to the selected original request's exact retained local submission-admission marker. The marker, request journal and accepted activity history are replayed and sampled again; missing legacy markers, non-nanosecond local samples, changed timestamps or changed history fail closed. This is local cooperating-code evidence only: transport invocation, broker arrival, quote contemporaneity, clock synchronization, source/fee/funds/routing and release authority remain unverified and false. No UI, permission, risk limit or default changed. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.175.1 preserves two exact fail-closed outcomes at the independent emergency-cut/fill race and gives the complete real-loopback plus packaged-tool child a bounded 120-second Windows process budget. It removes an over-constrained test race and an undersized aggregate harness timeout without weakening no-fill, durable halt, profile, tool, evidence or per-operation checks. v0.175.0 request-event binding remains unchanged. No UI, permission, risk limit or default changed. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

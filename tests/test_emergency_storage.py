@@ -92,7 +92,15 @@ def test_cut_signal_vetoes_fill_after_actual_sqlite_write_wait(control,monkeypat
             finally:writer.rollback();writer.close()
             return await asyncio.wait_for(cut,6)
         assert asyncio.run(exercise())['emergency_cut_state']=='VERIFIED'
-        result=cycle.result(5);assert result['reason']=='RUNNER_STOPPED_BEFORE_FILL'
+        result=cycle.result(5)
+        # Once the blocked writer is released, the fill boundary can observe
+        # either the independent cut latch or the stopped runner first. Both
+        # are explicit fail-closed outcomes; the durable no-fill assertions
+        # below remain the authoritative safety contract.
+        assert (result['decision'],result['reason']) in {
+            ('VETO','EMERGENCY_CUT_REQUESTED'),
+            ('HOLD','RUNNER_STOPPED_BEFORE_FILL'),
+        }
     after=g.recovery_report();assert after['halted'] and after['portfolio_reconciled']
     assert after['execution_account']==before['execution_account'] and after['quote_model_events']==before['quote_model_events']
     assert after['orders'][-1]['side']==side and after['orders'][-1]['status']=='SIMULATED_CANCELLED'

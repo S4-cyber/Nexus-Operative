@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.175.0, retained local request-event binding for private execution-quality review. Read the newest version section and generated roadmap; exact-source Windows CI and actual broker/market acceptance remain open.
+Current checkpoint: v0.175.1, Windows acceptance-harness repair after retained local request-event binding. Read the newest version section and generated roadmap; exact-source Windows CI and actual broker/market acceptance remain open.
+
+## v0.175.1 Windows acceptance-harness repair
+
+Exact v0.175.0 security run 39311553891 and all three safety/browser/evidence jobs in run 39311553832 passed. Windows run 39311553897 reached 3,365 passes and 19 skips but failed two tests before packaging. The blocked-fill emergency test received the valid independent-latch pair `VETO`/`EMERGENCY_CUT_REQUESTED` instead of the equally safe stopped-runner pair `HOLD`/`RUNNER_STOPPED_BEFORE_FILL`; both paths retained a durably cancelled zero-fill order. The complete real-loopback plus packaged-tool child exceeded its hardcoded 35-second aggregate budget under Windows load.
+
+The race regression now admits only those two exact fail-closed reason/decision pairs and still requires verified durable halt, reconciled accounting, unchanged execution account and quote events, a cancelled zero-fill order, released ownership and preserved watchdog state. The aggregate child remains bounded at 120 seconds, while every HTTP, origin, startup, packaged-tool, private-file and authority assertion and every individual operation timeout remains. Application runtime behavior, the v0.175.0 request-event binding, UI, permissions, risk limits and defaults are unchanged. Exact-source Windows packaging/installed smoke, full safety regression and security/history CI must pass before this repair is accepted. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final v0.175.1 local validation: 3,386 Python tests passed with one existing Starlette/httpx deprecation warning; the focused repair/release/packaging set passed 124 tests. All sixteen offline profiles and saved-evidence verification matched 345 source files / `caa8fcab0b7f6823e6500c6580740991566b32a6f53ea730d68d180284a27e2b`; `validation/release_trials_0_175_1.json` SHA256 is `3b7d220927aee6491cd9de936879b29daef1d3f843343e46f7a38a886638b81b`. Fourteen Node controller smokes, Portal inline syntax, compileall, dependency consistency, generated-roadmap comparison and whitespace checks passed. Exact-source v0.175.1 artifact/security and native Windows execution remain mandatory. No actual provider, account, market, funds, live or cloud operation occurred.
 
 ## v0.175.0 retained local request-event binding
 

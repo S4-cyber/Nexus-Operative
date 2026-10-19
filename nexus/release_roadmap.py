@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.168.0'
+REVISION = '0.168.1'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.168.0 adds compact v3 normalized-result fingerprints to all five successful fixed paper-read operations, alongside request-target and accepted-response byte hashes. Managed account display/export and asset rules require the same normalized result; quote capture and complete live/copied/encrypted quote review compare retained observations, while activity acceptance and both reconciliation compositions require the same canonical collection receipt. Pre-commit result mutation rolls back completion; post-commit mutation suppresses acknowledgment while preserving evidence. v1/v2 and legacy histories remain readable and explicitly normalized-result-unverified, never migrated or silently replaced. Only new v3 rows may use a 1536-byte event cap; older rows retain 1024 bytes and all journal/session/GET limits remain. These are cooperating-code content bindings, not cryptographic proof of normalization, source, coverage, quota, clocks, funds or profitability. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.168.1 closes the paced one-step original-ID recovery acknowledgment gap. Both direct and saved-key coordinators require one exact pacing transition, the selected original-ID GET target, the matching outcome and full request-journal replay. Successful results must match the v3 normalized fingerprint; failed reads retain their target/outcome evidence without inventing normalized success. Changed results, unrelated appends and sampled replay races suppress acknowledgment while retaining committed history and cooldowns. All v0.168 safeguards and legacy readability remain. These checks coordinate cooperating callers on one local journal, not broker-wide quotas, distributed ownership or provider/source acceptance. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -47,7 +47,66 @@ def _selection(journal,expected_account_id,wall_clock,pacing=None):
     return reviewed['selection']
 
 
-def _result(chosen,result):
+def _receipt_before(chosen,journal,pacing):
+    if pacing is None:return None
+    before=pacing.inspect();requests=journal.recovery()
+    if (requests['head_sha256']!=chosen['head_sha256'] or
+        pacing.inspect()!=before or journal.recovery()!=requests):
+        raise ValueError('PAPER_RECOVERY_STEP_RECEIPT_DISAGREEMENT')
+    return before,requests
+
+
+def _check_receipt(chosen,result,journal,pacing,before):
+    """Sample both full replays under local pacing ownership; never accept a tail.
+
+    Successful normalization is co-reported, not provider attestation. Failed
+    lookups bind only their attempted targets/outcome and replayed local summary.
+    There is no cross-journal transaction or historical recovery acceptance.
+    """
+    if pacing is None:return
+    from nexus.alpaca_paper_contract import sha
+    from nexus.broker_lookup_policy import LOOKUP_URL
+    from nexus.paper_read_pacing import RECEIPT_PROFILE,RECEIPT_PROFILE_V3
+    from nexus.paper_read_projection import matches
+    def fail():raise ValueError('PAPER_RECOVERY_STEP_RECEIPT_DISAGREEMENT')
+    try:
+        with pacing.ownership():
+            old,old_requests=before
+            after=pacing.inspect();history=pacing.operation_history();current=journal.recovery()
+            identity=chosen['selected_client_order_id'];value=result['journal']
+            if (after['sessions']!=old['sessions']+1 or after['events']!=old['events']+2 or
+                after['pending_token'] is not None or not history or
+                current['retained_events']!=old_requests['retained_events']+2):fail()
+            record=history[-1];outcome=value['lookup']['last_outcome']
+            found=outcome=='FOUND'
+            kinds=('ACCOUNT','ORIGINAL_LOOKUP','ACCOUNT') if found else ('ACCOUNT','ORIGINAL_LOOKUP')
+            targets=(transport.URLS[0],LOOKUP_URL+'?client_order_id='+identity)
+            if found:targets=(*targets,transport.URLS[0])
+            if (record['operation']!='ORIGINAL_ID_RECOVERY' or
+                record['before_head_sha256']!=old['head_sha256'] or
+                record['after_head_sha256']!=after['head_sha256'] or
+                record['outcome']!=('SUCCESS' if found else outcome) or
+                record['receipt_profile'] not in (RECEIPT_PROFILE,RECEIPT_PROFILE_V3) or
+                record['result_receipt_bound'] is not True or record['request_targets_bound'] is not True or
+                record['request_kinds']!=kinds or
+                record['request_sha256']!=tuple(sha(dict(method='GET',target=target)) for target in targets) or
+                value['client_order_id']!=identity):fail()
+            if found and not matches(record,'ORIGINAL_ID_RECOVERY',dict(client_order_id=identity,journal=value)):fail()
+            selected=[row for row in current['requests'] if row['client_order_id']==identity]
+            previous=[row for row in old_requests['requests'] if row['client_order_id']==identity]
+            if (len(selected)!=1 or len(previous)!=1 or
+                sha({key:value[key] for key in selected[0]})!=sha(selected[0]) or
+                selected[0]['payload_sha256']!=previous[0]['payload_sha256'] or
+                selected[0]['lookup']['attempts']!=previous[0]['lookup']['attempts']+1 or
+                selected[0]['lookup']['pending'] is not False or
+                [row for row in current['requests'] if row['client_order_id']!=identity]!=
+                [row for row in old_requests['requests'] if row['client_order_id']!=identity] or
+                pacing.inspect()!=after or journal.recovery()!=current):fail()
+    except (KeyError,TypeError,AttributeError,IndexError):fail()
+
+
+def _result(chosen,result,journal=None,pacing=None,before=None):
+    _check_receipt(chosen,result,journal,pacing,before)
     return dict(mode='EXPLICIT_SINGLE_PAPER_RECOVERY_STEP',source=result['source'],
         selected_client_order_id=chosen['selected_client_order_id'],selection_head_sha256=chosen['head_sha256'],
         selection_policy=chosen['selection_policy'],lookup_attempts_this_step=1,recovery=result,
@@ -60,22 +119,24 @@ def recover_next(journal,api_key,api_secret,*,expected_account_id,confirm_read_o
                  permission_check=lambda:True,credential_check=lambda:True,pacing=None):
     if confirm_read_only_paper is not True:raise ValueError('PAPER_RECOVERY_STEP_CONFIRMATION_REQUIRED')
     chosen=_selection(journal,expected_account_id,wall_clock,pacing)
+    before=_receipt_before(chosen,journal,pacing)
     result=recover_original(journal,chosen['selected_client_order_id'],api_key,api_secret,
         expected_account_id=expected_account_id,confirm_read_only_paper=True,opener=opener,
         wall_clock=wall_clock,elapsed_clock=elapsed_clock,permission_check=permission_check,
         credential_check=credential_check,pacing=pacing,expected_request_head=chosen['head_sha256'])
-    return _result(chosen,result)
+    return _result(chosen,result,journal,pacing,before)
 
 
 def recover_next_saved(journal,*,expected_account_id,confirm_read_only_paper=False,
                        opener=None,wall_clock=time.time,elapsed_clock=time.monotonic,pacing=None):
     if confirm_read_only_paper is not True:raise ValueError('PAPER_RECOVERY_STEP_CONFIRMATION_REQUIRED')
     chosen=_selection(journal,expected_account_id,wall_clock,pacing)
+    before=_receipt_before(chosen,journal,pacing)
     from nexus.paper_credentials import recover_saved
     result=recover_saved(journal,chosen['selected_client_order_id'],expected_account_id=expected_account_id,
         confirm_read_only_paper=True,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,
         pacing=pacing,expected_request_head=chosen['head_sha256'])
-    return _result(chosen,result)
+    return _result(chosen,result,journal,pacing,before)
 
 
 class _Parser(argparse.ArgumentParser):

@@ -464,7 +464,7 @@ class _ReadOwnership:
 
 
 OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','five_request_targets_bound',
-    'three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified','five_normalized_results_bound','response_payloads_not_retained',
+    'three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified','five_normalized_results_bound','original_recovery_consumer_checked','response_payloads_not_retained',
     'one_shared_cooldown','legacy_not_relabelled','legacy_receipt_not_invented',
     'completed_outcomes_preserved','restart_replay_matches','status_read_only')
 OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
@@ -512,7 +512,7 @@ def typed_fixture_report():
     from nexus import alpaca_paper_inspection as reader
     from nexus.paper_asset_rules import inspect_rules
     from nexus.alpaca_activity_collection import collect_activities
-    from nexus.broker_paper_recovery import recover_original
+    from nexus.paper_recovery_step import recover_next
     from nexus.paper_quote_observation import inspect_quote
     from nexus.broker_request_journal import BrokerRequestJournal
     from nexus.alpaca_paper_contract import preview
@@ -547,7 +547,7 @@ def typed_fixture_report():
         journal.prepare(plan);journal.mark_submission_uncertain('nx_operation_fixture')
         raw_order=dict(plan['payload'],id=asset['id'],asset_class='crypto',status='canceled',filled_qty='0',filled_avg_price=None,
             updated_at='2026-10-19T00:03:00Z')
-        recover_original(journal,'nx_operation_fixture',key,secret,**args([raw_account,raw_order,raw_account],epoch+180))
+        recovered=recover_next(journal,key,secret,**args([raw_account,raw_order,raw_account],epoch+180))
         inspect_quote(key,secret,**args([raw_account,quote,raw_account],epoch+241))
         typed_state=gate.inspect();typed_history=gate.operation_history();retained=gate.path.read_bytes()
         token=gate.begin(admission=lambda:epoch+301);gate.finish(token,admission=lambda:epoch+301,status_code=200)
@@ -572,6 +572,8 @@ def typed_fixture_report():
             v1_fixed_targets_unverified=all(not fixed_targets_match(dict(record,receipt_profile=RECEIPT_PROFILE_V1,
                 request_sha256=(),request_targets_bound=False),record['operation']) for record in fixed),
             five_normalized_results_bound=all(r['normalized_result_bound'] and r['receipt_profile']==RECEIPT_PROFILE_V3 for r in typed_history),
+            original_recovery_consumer_checked=recovered['mode']=='EXPLICIT_SINGLE_PAPER_RECOVERY_STEP' and
+                recovered['selected_client_order_id']=='nx_operation_fixture' and recovered['recovery']['journal']['lookup']['last_outcome']=='FOUND',
             response_payloads_not_retained=all(value not in retained for value in
                 (account.encode(),key.encode(),secret.encode(),b'nx_operation_fixture',b'2026-10-17T00:00:00Z')),
             one_shared_cooldown=cooldown,legacy_not_relabelled=history[-1]['operation']==LEGACY_OPERATION and state['operation_counts'][LEGACY_OPERATION]==1,

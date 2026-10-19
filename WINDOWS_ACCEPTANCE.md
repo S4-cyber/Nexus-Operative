@@ -119,6 +119,14 @@ v0.174.1 uses `os.path.samestat` for platform file identity, binds the initial a
 
 Local source validation passed 3,379 tests plus the 228-test focused release set and all sixteen saved-evidence profiles. That evidence has `native_windows_acceptance: false`; it is not an installed Windows result. Exact-source v0.174.1 packaging and installed smoke remain the next acceptance gate.
 
+## v0.174.2 pacing-gate diagnostics and regression budget
+
+Exact v0.174.1 Windows run 39292524827 reached 3,359 passes and 19 skips but failed one aggregate typed-read release invariant; all packaging and installed-smoke steps were skipped. Security 39292524872 passed. Browser/help and release-evidence jobs in 39292524821 passed, while the independent full regression exhausted its 25-minute limit. Exact-source failed-job reruns were requested and remain diagnostic only.
+
+The release validator now maps each fixed typed-read boolean to a fixed content-free failure code, preserving the complete invariant set and suppressing all values/private evidence. The full-regression job gets a 35-minute independent budget; the other separately bounded jobs are unchanged. Exact-source v0.174.2 must pass regression, packaging and installed smoke before this component is accepted. Ordinary-user profile/ACL, clean-machine, provider and market acceptance remain independent.
+
+Local v0.174.2 validation passed 3,379 Python tests, the 232-test focused set, all sixteen source-fingerprinted profiles, saved-evidence verification, fourteen Node controller smokes, Portal syntax, compileall, dependency and roadmap checks. The report matches 345 source files / `8c0fc047d966530bdf2270e36b340a806755534dbdd31a1ded6109a45d6b9e50` and has SHA256 `c6a1be0a4e5986af9ba5ddf1dd8b860a485ac0374a52515d0c81c6b31b7cea00`. The 478-path proposed snapshot passed public-artifact audit. This remains non-Windows evidence with `native_windows_acceptance: false`.
+
 
 ## v0.135 packaged setup and saved-choice acceptance
 

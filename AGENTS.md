@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.174.1, Windows-portable installed provider/results manifest identity checking with explicit bounded private inputs and source/EXE smoke coverage. Read the newest version section and generated roadmap; exact-source Windows CI and actual broker/market acceptance remain open.
+Current checkpoint: v0.174.2, content-free per-invariant Windows pacing diagnostics and an independently bounded full-regression gate. Read the newest version section and generated roadmap; exact-source Windows CI and actual broker/market acceptance remain open.
+
+## v0.174.2 Windows pacing gate diagnostics and budget
+
+Exact v0.174.1 security 39292524872, browser/help and release-evidence jobs in 39292524821 passed. The Windows build 39292524827 reached 3,359 passes and 19 skips but failed one aggregate `RELEASE_TRIAL_TYPED_READ_OPERATIONS` assertion, then skipped packaging. The separate full-regression job exhausted its 25-minute budget and was cancelled. Failed-job reruns were requested for the exact source; do not infer acceptance from a retry.
+
+The pacing validator now checks the fixed `OPERATION_CHECKS` allowlist one field at a time and emits only a derived uppercase invariant name. It never emits values, paths, account identifiers, normalized results, request targets or arbitrary exception text, and every prior boolean remains mandatory. The independent full-regression job now has 35 minutes; release-evidence and browser/help remain separate 15-minute jobs. This changes no runtime, GUI, permission, order, funding, risk or authority behavior.
+
+Final v0.174.2 local validation: 3,379 Python tests passed with one existing Starlette/httpx deprecation warning; the focused pacing/recovery/release/evidence/workflow set passed 232 tests. All sixteen offline profiles and saved-evidence verification matched 345 source files / `8c0fc047d966530bdf2270e36b340a806755534dbdd31a1ded6109a45d6b9e50`; `validation/release_trials_0_174_2.json` SHA256 is `c6a1be0a4e5986af9ba5ddf1dd8b860a485ac0374a52515d0c81c6b31b7cea00`. Fourteen Node controller smokes, Portal inline syntax, compileall, dependency consistency, generated-roadmap comparison and whitespace checks passed. The exact 478-path proposed public snapshot passed the artifact audit with zero findings. Gitleaks and native Windows execution are unavailable locally; exact-source workflows remain mandatory. No actual provider, account, market, funds, live or cloud operation occurred.
 
 ## v0.174.1 Windows-portable manifest identity
 

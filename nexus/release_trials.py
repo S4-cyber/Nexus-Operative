@@ -586,7 +586,8 @@ def _execute(profile):
         return run(20)
     if profile == 'operations':
         from nexus.operation_drill import drill
-        return drill(24)
+        from nexus.order_offload import fixture_report as offload_fixture
+        result=drill(24);result['order_physical_offload']=offload_fixture();return result
     if profile == 'recovery':
         from nexus.recovery_drill import run
         return run()
@@ -644,7 +645,7 @@ def _validate(profile, result):
         native_windows_required=tools['host_os']=='WINDOWS_NT'
         _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and
             tools['host_os'] in ('WINDOWS_NT','NON_WINDOWS') and
-            tools['tool_invocations']==18+int(native_windows_required) and
+            tools['tool_invocations']==20+int(native_windows_required) and
             tools['native_windows_storage_fault_checked'] is native_windows_required and
             all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
@@ -904,6 +905,15 @@ def _validate(profile, result):
     if profile == 'operations':
         _require(result['cycles'] == result['buy_fills'] == result['sell_fills'] == result['tier_vetoes'] == 24, 'OPERATION_COUNTS')
         _require(result['history_deleted'] is False and result['old_id_deduplicated'] is True, 'HISTORY_LOSS')
+        # Reject an authority claim before reading the new nested evidence so
+        # malformed legacy-shaped results still fail on the safety invariant.
+        for name in ('broker_connected', 'live_orders_enabled', 'release_approved', 'application_accounts_changed'):
+            if name in result: _require(result[name] is False, 'UNEXPECTED_AUTHORITY')
+        from nexus.order_offload import CHECKS as OFFLOAD_CHECKS,AUTHORITY_FLAGS as OFFLOAD_FLAGS
+        offload=result['order_physical_offload']
+        _require(offload['source']=='TEMPORARY_OFFLINE_ORDER_OFFLOAD_FIXTURE' and offload['passed'] is True and
+                 all(offload[key] is True for key in OFFLOAD_CHECKS),'ORDER_OFFLOAD')
+        _require(all(offload[key] is False for key in OFFLOAD_FLAGS),'ORDER_OFFLOAD_AUTHORITY')
     if profile == 'recovery':
         _require(result['recovered']['halted'] is True and result['recovered']['portfolio_reconciled'] is True, 'RESTORE_ACCOUNTING')
     for name in ('broker_connected', 'live_orders_enabled', 'release_approved', 'application_accounts_changed'):

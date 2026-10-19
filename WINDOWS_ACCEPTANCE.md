@@ -160,3 +160,13 @@ Exact v0.175.1 commit `fd42efa0ee296a1cc9f0abfa0f1b9e6eba5133b6` passed security
 v0.176.0 changes the read-only Paper Trial Readiness DTO and existing Portal rendering to include session and durable order-command/ID capacity. Its conservative full-window bound is not an expected trade count or permission. Exact-source v0.176.0 Windows packaging/installed smoke, rendered-browser/help, release-evidence and security workflows remain mandatory; ordinary-user profile/ACL, clean native window, sustained real feeds, physical long-run offload and actual broker-paper acceptance remain separate.
 
 Local v0.176.0 validation passed 3,387 tests, the 89-test focused set, all sixteen source-fingerprinted profiles, saved-evidence verification, fourteen Node controllers, Portal syntax, compileall and dependency consistency. This is Linux/local evidence with `native_windows_acceptance: false`; it cannot replace the exact-source Windows run.
+
+## v0.177.0 candidate status
+
+Exact v0.176.0 commit `6f6eeaa44439d49e697597397c3678b409f1a974` passed public-security run 39327666704, all three safety/browser/evidence jobs in run 39327666689 and Windows/installer run 39327666522. That Windows job covered the prior standalone/installed tool catalogue and recovery contract.
+
+v0.177.0 adds `--paper-tool order-offload create|verify`. The common packaging smoke now builds a disposable stopped, flat, reconciled and logically archived order/portfolio pair, invokes create and verify through the source/standalone/installed command prefix, requires full replay/hash/integrity agreement and verifies that source history remains unchanged with no capacity or authority claim. Exact-source v0.177.0 must pass native regression, Portal syntax, standalone packaging, ten-tool private smoke, startup, installer creation, install/reinstall/default-layout/pinned recovery, data-preserving uninstall, checksums and evidence upload before this installed path is accepted.
+
+Local source success cannot establish private-volume ACLs, ordinary-user profile behavior, atomic publication under native faults, multi-epoch compaction/rotation or long-run storage acceptance. No Portal control, provider/account access, order route, funding/live/cloud operation or release authority is added.
+
+Local v0.177.0 validation passed 3,398 tests, the 125-test focused set, all sixteen source-fingerprinted profiles, saved-evidence verification, fourteen Node controllers, Portal syntax, compileall, dependency consistency and roadmap equality. This evidence has `native_windows_acceptance: false`; the exact-source Windows workflow remains the acceptance gate for the packaged command.

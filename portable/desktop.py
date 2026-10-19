@@ -46,6 +46,7 @@ PAPER_TOOLS={
     'account-probe':'nexus.paper_acceptance_probe',
     'account-review':'nexus.paper_account_evidence_review',
     'observation-crypto':'nexus.encrypted_observation',
+    'order-offload':'nexus.order_offload',
     'quality-review':'nexus.paper_execution_quality_review',
     'provider-results':'nexus.paper_provider_result_tool',
     'quote-capture':'nexus.paper_quote_capture',
@@ -64,7 +65,7 @@ def _paper_tool(args):
             emergency_stop_command='--emergency-stop',
             default_data_created=False,desktop_started=False,automatic_read=False,
             automatic_retry=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
-            scope='Explicit private paper diagnostics only. Account/activity/quote/recovery reads require their own confirmation and saved Windows keys. Read-only status/reviews and observation/quote-evidence encryption need no broker keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. Observation crypto creates a separate authenticated encrypted copy and never stores its password. No order submission or automatic continuation.'),sort_keys=True,indent=2))
+            scope='Explicit private paper diagnostics only. Account/activity/quote/recovery reads require their own confirmation and saved Windows keys. Read-only status/reviews, observation/quote-evidence encryption and offline order-history copy need no broker keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. Observation crypto creates a separate authenticated encrypted copy and never stores its password. Order offload requires a stopped, flat, reconciled, logically archived journal and an application-closed confirmation; it copies without deleting history or reclaiming live capacity. No order submission or automatic continuation.'),sort_keys=True,indent=2))
         return 0
     if len(args)<2 or args[0]!='--paper-tool' or args[1] not in PAPER_TOOLS:
         print('NEXUS_PAPER_TOOL_USAGE_ERROR',file=sys.stderr);return 2

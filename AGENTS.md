@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.176.0, sustained-trial capacity readiness after the v0.175.1 Windows harness passed exact-source CI. Read the newest version section and generated roadmap; v0.176.0 exact-source CI and actual broker/market acceptance remain open.
+Current checkpoint: v0.177.0, verified application-closed physical-copy foundation after v0.176.0 passed exact-source CI. Read the newest version section and generated roadmap; v0.177.0 exact-source CI, capacity-reclaiming compaction/rotation and actual broker/market acceptance remain open.
+
+## v0.177.0 verified physical-copy foundation
+
+The installed/source allowlist now exposes `order-offload create|verify`. Creation requires an explicit application-closed assertion plus a halted, flat, reconciled journal with completed logical archival and no active epoch commands. It refuses SQLite sidecars, links, special/oversized files, missing portfolio state, existing destinations and destinations under the live data directory. It copies both databases to a staged private directory, hashes them, runs SQLite integrity and complete archived-order replay, verifies the source stayed unchanged, writes a path/account-free manifest and publishes only after successful verification. Verify requires exactly the manifest and both databases and repeats those checks.
+
+This is copy-only: no source history is deleted, no live command/ID capacity is reclaimed, and no engine, network, vault, provider, account, order, funding, live, cloud or release authority is activated. The operations profile has a disposable offload fixture and the standalone/installed tool smoke performs both create and verify through the executable dispatcher. No UI control or modifiable parameter was added; the seven beginner tabs and black/bright-purple help contract remain unchanged. See `ORDER_OFFLOAD.md`.
+
+Exact v0.176.0 commit `6f6eeaa44439d49e697597397c3678b409f1a974` passed public-security 39327666704, all safety/browser/evidence jobs in 39327666689 and Windows/installer 39327666522. Exact-source v0.177.0 CI remains required. Capacity-reclaiming compaction/rotation, independent private-volume/native-profile recovery, multi-epoch long-run pressure, authorized broker paper, sustained real feeds, funding/live/cloud and owner release approval remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final v0.177.0 local validation: 3,398 Python tests passed with one existing Starlette/httpx deprecation warning; the focused offload/archival/capacity/packaged/release/version set passed 125 tests. All sixteen offline profiles and saved-evidence verification matched 347 source files / `2d396ef98eb40fcaac1db4889c64079c00d2e6c9ef63ce3f10c8d51b6105ee3b`; `validation/release_trials_0_177_0.json` SHA256 is `68220344fc05ddd8a8db3e4af210eea1df7344c58d4458d89a55c935d27e067d`. Fourteen Node controller smokes, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. The 485-path staged public snapshot passed the private-artifact audit with zero findings. Local Gitleaks, rendered browser and native Windows execution remain unavailable; exact-source workflows are mandatory. No actual provider, account, market, funds, live or cloud operation occurred.
 
 ## v0.176.0 sustained-trial capacity readiness
 

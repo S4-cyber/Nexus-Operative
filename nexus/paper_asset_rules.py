@@ -43,4 +43,5 @@ def inspect_rules(api_key,api_secret,*,expected_account_id,confirm_read_only_pap
             **scope,input_sha256=sha(scope),review_reasons=reasons,requests_completed=3,
             account_fields_double_checked=True,**{flag:False for flag in FLAGS},
             limitations='Reported paper BTC asset fields from three sequential GETs. Stable account fields are not atomic account/asset state, provider permission scope, fresh metadata or accepted order-size/increment semantics. No fees, funds, routing, order or funding authority; no automatic retry.')
+        session.bind_result_projection(result)
     return result

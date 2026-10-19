@@ -92,6 +92,7 @@ def inspect_quote(api_key,api_secret,*,expected_account_id,confirm_read_only_pap
                 timestamp_scope='EXCHANGE_NS_EXACT_LOCAL_RECEIPT_FLOAT_SECONDS_NOT_CLOCK_SYNCHRONIZATION',
                 **{k:False for k in FLAGS},
                 limitations='One explicitly confirmed BTC/USD quote from Alpaca US market data between two stable normalized paper-account reads. Quote sizes are reported data, not executable liquidity, venue entitlement or guaranteed fills. Receipt uses the local sampled clock; exchange nanoseconds do not prove synchronization, decision/order arrival or broker latency. Separate GETs are not atomic. Source/fees/funds/order/benchmark acceptance remains unverified. No order submission, retry or automatic retention. Keep account-bound observations private.')
+            session.bind_result_projection(result)
         # Revalidate after the durable pacing result as well: SQLite waiting
         # must not turn a once-fresh observation into a fresh-looking return.
         _quote(raw,session.previous[0])

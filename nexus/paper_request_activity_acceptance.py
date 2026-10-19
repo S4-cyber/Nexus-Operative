@@ -14,6 +14,7 @@ from nexus import alpaca_activity_normalizer as adapter
 from nexus.activity_collection_evidence import SCHEMA, page_observation, validate
 from nexus.alpaca_activity_collection import PAGE_SIZE, activity_url
 from nexus.alpaca_paper_inspection import URLS
+from nexus.paper_read_projection import digest as projection_digest
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_contract import preview
 from nexus.broker_activity_store import BrokerActivityStore
@@ -46,6 +47,7 @@ def _complete(value):
         and value['all_pacing_operations_typed'] is True
         and value['all_pacing_result_receipts_bound'] is True
         and value['all_pacing_request_targets_bound'] is True
+        and value['all_pacing_normalized_results_bound'] is True
         and value['replayed_accepted_transitions'] == value['accepted_transitions']
         and value['latest_acceptance_record_replayed'] is True
         and value['all_accepted_transitions_replayed'] is True
@@ -134,13 +136,6 @@ def _fixture(root):
     pace_before=pacing.inspect();activity_before=activity.inspect()
     acceptance.bind(pacing_head=pace_before['head_sha256'],
         retention_head=activity_before['head_sha256'],pacing_sessions=0,retained_batches=0)
-    with pacing.ownership() as owner:
-        token=pacing.begin(admission=lambda:1000,ownership=owner,operation='ACTIVITY_COLLECTION')
-        kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
-        pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
-            receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
-                request_sha256=[sha(dict(method='GET',target=url)) for url in (URLS[0],activity_url(after,until),URLS[0])],
-                response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)]))
     asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
         fractionable=True,min_order_size='.5',min_trade_increment='.5',price_increment='.5')
     plan=preview('nx_accept_fixture','BTC-USD','BUY','2','100',asset,
@@ -168,6 +163,14 @@ def _fixture(root):
         dict(activities=normalized['normalized_activities']),after=after,until=until)
     receipt=activity.retain(fills,[order],after=after,until=until,
         collection_observation=observation)
+    with pacing.ownership() as owner:
+        token=pacing.begin(admission=lambda:1000,ownership=owner,operation='ACTIVITY_COLLECTION')
+        kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
+        pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
+            receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
+                request_sha256=[sha(dict(method='GET',target=url)) for url in (URLS[0],activity_url(after,until),URLS[0])],
+                response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)],
+                result_projection_sha256=projection_digest('ACTIVITY_COLLECTION',receipt['receipt_id'])))
     pace_after=pacing.inspect();activity_after=activity.inspect()
     scope=dict(profile=PROFILE,account_sha256=activity_after['account_sha256'],
         collection_scope_sha256=sha(dict(account_sha256=activity_after['account_sha256'],

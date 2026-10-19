@@ -16,6 +16,7 @@ from nexus.broker_lookup_policy import clock
 from nexus.paper_activity_acceptance_probe import _private_path
 from nexus.paper_read_pacing import PaperReadPacing, fixed_targets_match
 from nexus.sqlite_journal_guard import check_path_set
+from nexus.paper_read_projection import matches as projection_matches
 
 FLAGS=(*observation.FLAGS,'capture_source_attested','pacing_causality_attested','broker_wide_quota_verified','windows_profile_accepted')
 CHECKS=('three_fixed_gets','one_local_transition_bound','quote_retained','offline_status_matches',
@@ -53,6 +54,10 @@ def _review(store,gate,scope,expected_request_head):
     if any(r['profile']!=quotes.CAPTURE_PROFILE for r in records):reasons.add('SUPPLIED_QUOTES_WITHOUT_CAPTURE_BINDING')
     captured=[r for r in records if r['profile']==quotes.CAPTURE_PROFILE]
     if any(r['pacing_scope_sha256']!=scope for r in captured):reasons.add('PACING_SCOPE_DISAGREEMENT')
+    completed_operations={(r['before_head_sha256'],r['after_head_sha256']):r for r in operations}
+    if any(not projection_matches(completed_operations.get((r['pacing_before_head_sha256'],r['pacing_after_head_sha256'])),
+        'BTC_QUOTE_OBSERVATION',r['observation']) for r in captured):
+        reasons.add('PACING_NORMALIZED_RESULT_UNVERIFIED')
     bindings=[dict(before_head_sha256=r['pacing_before_head_sha256'],after_head_sha256=r['pacing_after_head_sha256'],outcome='SUCCESS') for r in captured]
     if bindings!=list(sessions) or before['sessions']!=len(captured):reasons.add('UNBOUND_OR_DISAGREEING_PACING_SESSIONS')
     if not records and before['head_sha256']!=quotes.ZERO:reasons.add('PREEXISTING_UNBOUND_PACING_HISTORY')
@@ -125,6 +130,8 @@ def _capture(*,expected_account_id,request_journal_path,quote_store_path,pacing_
                 not fixed_targets_match(operations[-1],'BTC_QUOTE_OBSERVATION')):
                 _fail('PACING_REQUEST_TARGET_DISAGREEMENT')
             quotes._observation(value,store.account)
+            if not projection_matches(operations[-1],'BTC_QUOTE_OBSERVATION',value):
+                _fail('PACING_NORMALIZED_RESULT_DISAGREEMENT')
             if not stable():_fail('INPUTS_CHANGED_AFTER_READ')
             retaining=True
             def admit():

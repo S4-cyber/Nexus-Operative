@@ -81,13 +81,16 @@ def retarget(value, index=None, profile=None):
     row=value['pacing_events'][-1];body=json.loads(row[1])
     if index is not None:
         body['request_sha256'][index]=sha(dict(method='GET',target='https://paper-api.alpaca.markets/v2/positions'))
-    if profile=='v1':
-        body['receipt_profile']=pacing.RECEIPT_PROFILE_V1;body.pop('request_sha256')
+    if profile in ('v1','v2'):
+        body['receipt_profile']=pacing.RECEIPT_PROFILE_V1 if profile=='v1' else pacing.RECEIPT_PROFILE
+        body.pop('result_projection_sha256',None)
+        if profile=='v1':body.pop('request_sha256')
     scope=dict(profile=body['receipt_profile'],operation=record['operation'],
         before_head_sha256=record['before_head_sha256'],begin_head_sha256=record['begin_head_sha256'],
         evaluated_at=body['evaluated_at'],outcome=body['outcome'],request_kinds=body['request_kinds'],
         response_sha256=body['response_sha256'])
     if profile!='v1':scope['request_sha256']=body['request_sha256']
+    if 'result_projection_sha256' in body:scope['result_projection_sha256']=body['result_projection_sha256']
     body['receipt_sha256']=sha(scope)
     row[1]=canonical(body);row[3]=sha(dict(seq=row[0],body=body,previous=row[2]))
     value['heads']['pacing']=row[3];previous='0'*64

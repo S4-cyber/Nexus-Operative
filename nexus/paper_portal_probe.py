@@ -33,6 +33,7 @@ def inspect_rules_saved(*,expected_account_id,confirm_read_only_paper=False,
     from nexus import paper_credentials
     from nexus.paper_acceptance_probe import _gate
     from nexus.paper_read_pacing import fixed_targets_match
+    from nexus.paper_read_projection import matches as projection_matches
     account=_uuid(expected_account_id);gate=_gate(account,_managed_path(account));before=gate.inspect()
     result=paper_credentials.inspect_rules_saved(expected_account_id=account,confirm_read_only_paper=True,
         opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,pacing=gate)
@@ -42,7 +43,8 @@ def inspect_rules_saved(*,expected_account_id,confirm_read_only_paper=False,
         after['review_required'] is not False or after['last_outcome']!='SUCCESS' or not operations or
         operations[-1]['before_head_sha256']!=before['head_sha256'] or
         operations[-1]['after_head_sha256']!=after['head_sha256'] or
-        not fixed_targets_match(operations[-1],'BTC_ASSET_RULES')):
+        not fixed_targets_match(operations[-1],'BTC_ASSET_RULES') or
+        not projection_matches(operations[-1],'BTC_ASSET_RULES',result)):
         raise ValueError('PAPER_PORTAL_ASSET_RULES_REVIEW_REQUIRED')
     pacing=dict(account_sha256=after['account_sha256'],before_head_sha256=before['head_sha256'],
         after_head_sha256=after['head_sha256'],events=after['events'],sessions=after['sessions'],

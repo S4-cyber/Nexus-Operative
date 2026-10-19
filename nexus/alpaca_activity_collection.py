@@ -139,6 +139,11 @@ def collect_activities(api_key, api_secret, orders, *, expected_account_id, afte
             # A post-commit fault may lose the return, never the retained receipt.
             if admission() is not True: _fail('CREDENTIALS_CHANGED')
             completed = session.evaluated_at()
+        from nexus.broker_activity_store import _inputs
+        normalized_inputs=_inputs(rows,frozen_orders,account)
+        normalized_receipt=sha(dict(account_sha256=scope['account_sha256'],after=after,until=until,
+            **normalized_inputs,collection_observation=observation))
+        session.bind_result_projection(normalized_receipt)
         return dict(mode='EXPLICIT_BOUNDED_PAPER_ACTIVITY_COLLECTION',
                     source='INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_READS',
                     requested_creation_window=scope, scope_sha256=sha(scope),

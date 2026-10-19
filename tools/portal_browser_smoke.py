@@ -357,7 +357,7 @@ def run(output,channel=None):
                     page.locator('#paper-pacing-status').click()
                     expect(page.locator('#paper-credentials-result')).to_contain_text('1 / 256 sessions')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('No keys read or broker request')
-                    expect(page.locator('#paper-credentials-result')).to_contain_text('Completed typed results: 1; 1 with request and response hashes')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('Completed typed results: 1; 1 with request-target hashes')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('not verified broker data')
                     expect(page.locator('#paper-observation-download')).to_be_disabled()
                     page.once('dialog',lambda dialog:dialog.accept())

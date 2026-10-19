@@ -32,7 +32,7 @@ def accepted(root, urls):
 
 
 @pytest.mark.parametrize('changed', ['account_before', 'window', 'cursor', 'account_after'])
-def test_self_consistent_v2_receipt_must_match_retained_scope_without_repair(tmp_path, changed):
+def test_self_consistent_target_receipt_must_match_retained_scope_without_repair(tmp_path, changed):
     urls = [URLS[0], activity_url(evidence.AFTER, evidence.UNTIL), URLS[0]]
     if changed == 'window': urls[1] = activity_url('2026-10-16T00:00:00Z', '2026-10-17T00:00:00Z')
     elif changed == 'cursor': urls[1] = activity_url(evidence.AFTER, evidence.UNTIL, '20261017000000000::11234567-89AB-CDEF-0123-456789ABCDEF')
@@ -41,7 +41,7 @@ def test_self_consistent_v2_receipt_must_match_retained_scope_without_repair(tmp
     before = evidence._sqlite_files_snapshot(tmp_path)
     operation = gate.operation_history()[0]
     assert operation['result_receipt_bound'] is operation['request_targets_bound'] is True
-    assert operation['receipt_profile'] == pacing.RECEIPT_PROFILE
+    assert operation['receipt_profile'] == pacing.RECEIPT_PROFILE_V3
     state = probe.status(**options)
     assert state['cross_journal_heads_match'] is True
     assert state['all_pacing_operations_typed'] is state['all_pacing_result_receipts_bound'] is True

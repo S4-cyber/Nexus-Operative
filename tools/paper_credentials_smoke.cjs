@@ -118,7 +118,7 @@ const observed=enrich({mode:'READ_ONLY_PAPER_INSPECTION',checks:'OBSERVED_FIELDS
  pending.shift().resolve(paced);await operation;assert.match(last(),/Local pacing retained/);assert.equal(button('paper-observation-download').disabled,false);
  const consent=confirmations.length;
  operation=button('paper-pacing-status').onclick();assert.deepEqual(requests.at(-1).body,{expected_account_id:observed.account_id});assert.equal(confirmations.length,consent);
- pending.shift().resolve(status);await operation;assert.match(last(),/1 \/ 256 sessions/);assert.match(last(),/1 typed purpose \/ 0 legacy unspecified/);assert.match(last(),/No keys read or broker request/);assert.match(last(),/Completed typed results: 1; 1 with request and response hashes/);assert.match(last(),/not verified broker data/);assert.equal(button('paper-observation-download').disabled,true);
+ pending.shift().resolve(status);await operation;assert.match(last(),/1 \/ 256 sessions/);assert.match(last(),/1 typed purpose \/ 0 legacy unspecified/);assert.match(last(),/No keys read or broker request/);assert.match(last(),/Completed typed results: 1; 1 with request-target hashes/);assert.match(last(),/not verified broker data/);assert.match(last(),/Counts include failed attempts/);assert.equal(button('paper-observation-download').disabled,true);
  for(const change of [{local_pacing:{...pacing,private_extra:'private-secret'}},{local_pacing:{...pacing,events:3}},{local_pacing:{...pacing,min_post_result_cooldown_seconds:0}},{durable_local_pacing:false},{account_id:'11234567-89ab-cdef-0123-456789abcdef'}]){
   operation=button('paper-account-paced-inspect').onclick();pending.shift().resolve({...paced,...change});await operation;
   assert.match(last(),/could not be confirmed/);assert(!last().includes('private-secret'));assert.equal(button('paper-observation-download').disabled,true);
@@ -139,7 +139,7 @@ const observed=enrich({mode:'READ_ONLY_PAPER_INSPECTION',checks:'OBSERVED_FIELDS
   {typed_result_receipts:1,unreceipted_typed_results:0,all_typed_results_receipted:true,target_bound_typed_results:0,untargeted_typed_results:1,all_typed_request_targets_bound:false},
   {typed_result_receipts:0,unreceipted_typed_results:1,all_typed_results_receipted:false,target_bound_typed_results:0,untargeted_typed_results:1,all_typed_request_targets_bound:false}]){
   operation=button('paper-pacing-status').onclick();pending.shift().resolve({...status,receipt_summary:summary});await operation;
-  assert.match(last(),/0 with request and response hashes, 1 without request-target binding/);
+  assert.match(last(),/0 with request-target hashes, 1 without request-target binding/);
  }
  operation=button('paper-pacing-status').onclick();pending.shift().resolve({...status,pending_read:true,pending_operation:'ACCOUNT_INVENTORY',receipt_summary:{typed_result_receipts:0,unreceipted_typed_results:0,all_typed_results_receipted:false,target_bound_typed_results:0,untargeted_typed_results:0,all_typed_request_targets_bound:false},suggested_action:'REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY'});await operation;assert.match(last(),/previous read is uncertain/);
  operation=button('paper-account-paced-inspect').onclick();const latePaced=pending.shift();

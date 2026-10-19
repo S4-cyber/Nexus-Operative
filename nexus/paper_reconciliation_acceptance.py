@@ -38,6 +38,7 @@ def _accepted(status):
         and status['all_pacing_operations_typed'] is True
         and status['all_pacing_result_receipts_bound'] is True
         and status['all_pacing_request_targets_bound'] is True
+        and status['all_pacing_normalized_results_bound'] is True
         and status['replayed_accepted_transitions'] == status['accepted_transitions']
         and status['latest_acceptance_record_replayed'] is True
         and status['all_accepted_transitions_replayed'] is True

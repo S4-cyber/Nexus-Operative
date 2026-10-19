@@ -24,7 +24,7 @@ HEADER_BYTES=len(MAGIC)+crypto.SALT_BYTES+crypto.NONCE_BYTES
 MAX_ENCRYPTED_BYTES=HEADER_BYTES+MAX_PLAINTEXT_BYTES+16
 FLAGS=(*capture.FLAGS,'bundle_source_attested','bundle_imported','original_plaintext_deleted','password_saved','plaintext_file_written','current_source_history_verified','exporter_identity_verified')
 CHECKS=('full_three_journal_replay','historical_prefixes_preserved','local_capture_bindings_checked',
-    'encrypted_roundtrip','randomized_ciphertext','wrong_password_rejected','tampering_rejected','source_files_unchanged')
+    'normalized_result_binding_checked','normalized_result_disagreement_refused','encrypted_roundtrip','randomized_ciphertext','wrong_password_rejected','tampering_rejected','source_files_unchanged')
 
 
 def _fail(code):raise ValueError('PAPER_QUOTE_BUNDLE_'+code)
@@ -66,7 +66,7 @@ def validate(value):
     if sha({k:v for k,v in value.items() if k!='bundle_sha256'})!=value['bundle_sha256']:_fail('DIGEST')
     request_rows=_rows(value['request_events'],columns=5,limit=requests.MAX_EVENTS,body_index=2,body_cap=requests.MAX_EVENT_BYTES)
     quote_rows=_rows(value['quote_records'],columns=4,limit=quotes.MAX_RECORDS+1,body_index=1,body_cap=quotes.MAX_RECORD_BYTES)
-    pacing_rows=_rows(value['pacing_events'],columns=4,limit=2*pacing.MAX_SESSIONS+1,body_index=1,body_cap=1024)
+    pacing_rows=_rows(value['pacing_events'],columns=4,limit=2*pacing.MAX_SESSIONS+1,body_index=1,body_cap=pacing.MAX_EVENT_BYTES)
     # These paths are never opened: original request/pacing constructors only
     # establish account scope. Quote replay needs only the validated account
     # digest, so construct its filesystem-free validator without path preflight.
@@ -90,13 +90,16 @@ def validate(value):
     if bound!=state['completed_sessions']:_fail('PACING_BINDINGS')
     receipts=all(r['operation']=='BTC_QUOTE_OBSERVATION' and r['result_receipt_bound']
         for r in state['operation_sessions'])
+    from nexus.paper_read_projection import matches as projection_matches
+    normalized=all(projection_matches(operation,'BTC_QUOTE_OBSERVATION',record['observation'])
+        for operation,record in zip(state['operation_sessions'],records))
     targets=all(pacing.fixed_targets_match(r,'BTC_QUOTE_OBSERVATION') for r in state['operation_sessions'])
     return dict(mode='PRIVATE_PAPER_QUOTE_BUNDLE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
         profile=PROFILE,account_sha256=account_digest,bundle_sha256=value['bundle_sha256'],heads=dict(value['heads']),
         retained_requests=len(retained),retained_quotes=len(records),retained_pacing_sessions=state['sessions'],
         full_request_history_replayed=True,full_quote_history_replayed=True,full_pacing_history_replayed=True,
-        local_capture_history_agreement=receipts and targets,pacing_result_receipts_bound=receipts,
-        pacing_request_targets_bound=targets,**{k:False for k in FLAGS},
+        local_capture_history_agreement=receipts and targets and normalized,pacing_result_receipts_bound=receipts,
+        pacing_request_targets_bound=targets,pacing_normalized_results_bound=normalized,**{k:False for k in FLAGS},
         limitations='Full copied original-request, quote and pacing chains replayed in memory, including historical prefixes and one quote per successful local transition. Password authentication protects ciphertext under that password; it does not authenticate a broker/source, prove exporter identity, current/complete history, clocks, order timing, fees/funds or profit. The original path scope is retained as a digest, never reinterpreted as this machine\'s provider quota. No file import/restore, vault/network/order, plaintext file or release authority. Original journals and any other copies remain private plaintext unless separately protected.')
 
 
@@ -195,10 +198,23 @@ def fixture_report():
         changed=first[:-1]+bytes([first[-1]^1])
         try:unseal(changed,phrase)
         except ValueError:tampered=True
+        changed_value=json.loads(raw);previous='0'*64
+        for row in changed_value['quote_records']:
+            body=json.loads(row[1])
+            if row[0]:body['observation']['quote']['bid']='99'
+            row[1]=canonical(body);row[2]=previous;row[3]=sha(dict(seq=row[0],body=body,previous=previous));previous=row[3]
+        changed_value['heads']['quote']=previous
+        changed_value['bundle_sha256']=sha({k:v for k,v in changed_value.items() if k!='bundle_sha256'})
+        changed_review=validate(changed_value)
+        disagreement=(changed_review['pacing_request_targets_bound'] is True and
+            changed_review['pacing_normalized_results_bound'] is False and
+            changed_review['local_capture_history_agreement'] is False)
         body=json.loads(value['quote_records'][1][1])
         checks=dict(full_three_journal_replay=all(reviewed[k] is True for k in ('full_request_history_replayed','full_quote_history_replayed','full_pacing_history_replayed')),
             historical_prefixes_preserved=body['request_head_sha256']!=value['heads']['request'],
             local_capture_bindings_checked=reviewed['local_capture_history_agreement'] and reviewed['retained_quotes']==reviewed['retained_pacing_sessions']==1,
+            normalized_result_binding_checked=reviewed['pacing_normalized_results_bound'],
+            normalized_result_disagreement_refused=disagreement,
             encrypted_roundtrip=unseal(first,phrase)==raw,randomized_ciphertext=first!=second,
             wrong_password_rejected=wrong,tampering_rejected=tampered,source_files_unchanged=before=={p.name:p.read_bytes() for p in root.iterdir()})
         return dict(source='SYNTHETIC_ENCRYPTED_QUOTE_BUNDLE_FIXTURE',passed=all(checks.values()),**checks,

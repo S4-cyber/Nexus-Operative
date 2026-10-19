@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 
+from nexus.paper_read_projection import digest as projection_digest
 from nexus.alpaca_paper_contract import sha
 from nexus import alpaca_activity_normalizer as adapter
 from nexus.activity_collection_evidence import SCHEMA, page_observation, validate
@@ -45,7 +46,7 @@ def _sqlite_files_snapshot(root):
     return tuple(snapshot)
 
 
-def _scope(root,index=1,*,full_page=False,request_targets=None):
+def _scope(root,index=1,*,full_page=False,request_targets=None,bind_normalized=True):
     after,until=((AFTER,UNTIL) if index==1 else
         ('2026-10-18T00:00:00Z','2026-10-19T00:00:00Z'))
     at=1000+(index-1)*60
@@ -55,14 +56,6 @@ def _scope(root,index=1,*,full_page=False,request_targets=None):
     before_pacing=pacing.inspect();before_activity=activity.inspect()
     acceptance.bind(pacing_head=before_pacing['head_sha256'],retention_head=before_activity['head_sha256'],
         pacing_sessions=before_pacing['sessions'],retained_batches=before_activity['retained_batches'])
-    with pacing.ownership() as owner:
-        token=pacing.begin(admission=lambda:at,ownership=owner,operation='ACTIVITY_COLLECTION')
-        kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
-        pacing.finish(token,admission=lambda:at,status_code=200,ownership=owner,
-            receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
-                request_sha256=([sha(dict(method='GET',target=url)) for url in (URLS[0],activity_url(after,until),URLS[0])]
-                    if request_targets is None else list(request_targets)),
-                response_sha256=[sha(dict(kind=kind,index=index,at=at)) for index,kind in enumerate(kinds)]))
     rows=[dict(id=f'2026101{6+index}000000000::11234567-89ab-cdef-0123-{index*1000+i:012d}',
         activity_type='FEE',status='executed',net_amount='-0.01',date=f'2026-10-{15+index:02d}')
         for i in range(1,(PAGE_SIZE if full_page else 1)+1)]
@@ -75,6 +68,15 @@ def _scope(root,index=1,*,full_page=False,request_targets=None):
             request_cursor=None,requested_at=observed_at,received_at=observed_at)]),
         dict(activities=normalized['normalized_activities']),after=after,until=until)
     receipt=activity.retain(rows,[],after=after,until=until,collection_observation=observation)
+    with pacing.ownership() as owner:
+        token=pacing.begin(admission=lambda:at,ownership=owner,operation='ACTIVITY_COLLECTION')
+        kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
+        pacing.finish(token,admission=lambda:at,status_code=200,ownership=owner,
+            receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
+                request_sha256=([sha(dict(method='GET',target=url)) for url in (URLS[0],activity_url(after,until),URLS[0])]
+                    if request_targets is None else list(request_targets)),
+                response_sha256=[sha(dict(kind=kind,index=index,at=at)) for index,kind in enumerate(kinds)],
+                **({'result_projection_sha256':projection_digest('ACTIVITY_COLLECTION',receipt['receipt_id'])} if bind_normalized else {})))
     after_pacing=pacing.inspect();after_activity=activity.inspect()
     scope=dict(profile=PROFILE,account_sha256=after_activity['account_sha256'],
         collection_scope_sha256=sha(dict(account_sha256=after_activity['account_sha256'],after=after,
@@ -140,6 +142,7 @@ print(json.dumps({'recovery':result['cross_journal_recovery_state'],'heads_match
  'all_operations_typed':result['all_pacing_operations_typed'],
  'all_receipts_bound':result['all_pacing_result_receipts_bound'],
  'all_request_targets_bound':result['all_pacing_request_targets_bound'],
+ 'all_normalized_results_bound':result['all_pacing_normalized_results_bound'],
  'replayed_records':result['replayed_accepted_transitions'],'records':result['accepted_transitions'],
  'unchanged':before==after,'rollback_journal_observed':any(name.endswith('-journal') for name,_,_ in before),**attempts}))
 '''
@@ -171,7 +174,7 @@ def fixture_report():
         after_bound=(after_acceptance.inspect()['records']==2 and
             after['recovery']=='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED' and after['heads_match'] and
             after['latest_content_replayed'] and after['all_content_replayed'] and
-            after['all_operations_typed'] and after['all_receipts_bound'] and after['all_request_targets_bound'] and
+            after['all_operations_typed'] and after['all_receipts_bound'] and after['all_request_targets_bound'] and after['all_normalized_results_bound'] and
             after['replayed_records']==after['records']==2)
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
@@ -189,8 +192,15 @@ def fixture_report():
             scope_checks.append(checked['heads_match'] and not checked['all_request_targets_bound'] and
                 checked['recovery']=='ACCEPTED_PACING_REQUEST_TARGET_UNVERIFIED_REVIEW_REQUIRED')
             scope_unchanged=scope_unchanged and checked['unchanged'] and original==_sqlite_files_snapshot(root)
+        legacy_root=base/'legacy-result';legacy_root.mkdir()
+        p,a,accepted,legacy_scope=_scope(legacy_root,bind_normalized=False)
+        accepted.append(legacy_scope,admission=lambda:(p.inspect()['head_sha256'],a.inspect()['head_sha256']))
+        legacy_before=_sqlite_files_snapshot(legacy_root);legacy=_fresh_status(legacy_root)
+        legacy_refused=(legacy['recovery']=='ACCEPTED_NORMALIZED_RESULT_UNVERIFIED_REVIEW_REQUIRED' and
+            not legacy['all_normalized_results_bound'] and legacy['all_request_targets_bound'])
+        legacy_preserved=legacy['unchanged'] and legacy_before==_sqlite_files_snapshot(legacy_root)
         passed=(missing_created_nothing and before_unbound and after_bound and silent and unchanged and
-            rollback_observed and all(scope_checks) and scope_unchanged)
+            rollback_observed and all(scope_checks) and scope_unchanged and legacy_refused and legacy_preserved)
         return dict(mode='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY',passed=passed,
             source='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE',missing_status_created_nothing=missing_created_nothing,
             precommit_death_retained_unbound_transition=before_unbound,
@@ -202,6 +212,8 @@ def fixture_report():
             postcommit_all_pacing_operations_typed=after['all_operations_typed'],
             postcommit_all_pacing_result_receipts_bound=after['all_receipts_bound'],
             postcommit_all_pacing_request_targets_bound=after['all_request_targets_bound'],
+            postcommit_all_normalized_results_bound=after['all_normalized_results_bound'],
+            legacy_normalized_result_not_invented=legacy_refused,legacy_normalized_history_preserved=legacy_preserved,
             changed_creation_window_targets_refused=scope_checks[0],
             changed_cursor_target_refused=scope_checks[1],
             request_target_disagreement_history_preserved=scope_unchanged,

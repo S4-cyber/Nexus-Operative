@@ -11,6 +11,7 @@ from nexus import paper_request_activity_acceptance as subject
 from nexus.activity_collection_evidence import SCHEMA, page_observation, validate
 from nexus.alpaca_activity_collection import PAGE_SIZE, activity_url
 from nexus.alpaca_paper_inspection import URLS
+from nexus.paper_read_projection import digest as projection_digest
 from nexus.alpaca_paper_contract import preview, sha
 from nexus.broker_activity_store import BrokerActivityStore
 from nexus.broker_request_journal import BrokerRequestJournal
@@ -30,18 +31,6 @@ def prepared(root, prices=('98','100'), *, typed=True):
     pace_before=pacing.inspect();activity_before=activity.inspect()
     acceptance.bind(pacing_head=pace_before['head_sha256'],
         retention_head=activity_before['head_sha256'],pacing_sessions=0,retained_batches=0)
-    if typed:
-        with pacing.ownership() as owner:
-            token=pacing.begin(admission=lambda:1000,ownership=owner,operation='ACTIVITY_COLLECTION')
-            kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
-            pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
-                receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
-                    request_sha256=[sha(dict(method='GET',target=url)) for url in (URLS[0],activity_url(AFTER,UNTIL),URLS[0])],
-                    response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)]))
-    else:
-        token=pacing.begin(admission=lambda:1000)
-        pacing.finish(token,admission=lambda:1000,status_code=200)
-
     asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
         fractionable=True,min_order_size='.5',min_trade_increment='.5',price_increment='.5')
     plan=preview('nx_accept_fixture','BTC-USD','BUY','2','100',asset,
@@ -70,6 +59,19 @@ def prepared(root, prices=('98','100'), *, typed=True):
         dict(activities=normalized['normalized_activities']),after=AFTER,until=UNTIL)
     receipt=activity.retain(fills,[order],after=AFTER,until=UNTIL,
         collection_observation=observation)
+    if typed:
+        with pacing.ownership() as owner:
+            token=pacing.begin(admission=lambda:1000,ownership=owner,operation='ACTIVITY_COLLECTION')
+            kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
+            pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
+                receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
+                    request_sha256=[sha(dict(method='GET',target=url)) for url in (URLS[0],activity_url(AFTER,UNTIL),URLS[0])],
+                    response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)],
+                result_projection_sha256=projection_digest('ACTIVITY_COLLECTION',receipt['receipt_id'])))
+    else:
+        token=pacing.begin(admission=lambda:1000)
+        pacing.finish(token,admission=lambda:1000,status_code=200)
+
     pace_after=pacing.inspect();activity_after=activity.inspect()
     scope=dict(profile=PROFILE,account_sha256=activity_after['account_sha256'],
         collection_scope_sha256=sha(dict(account_sha256=activity_after['account_sha256'],

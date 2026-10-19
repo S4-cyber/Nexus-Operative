@@ -81,7 +81,7 @@ def test_pre_receipt_typed_result_replays_but_remains_explicitly_unverified(tmp_
         gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt('ACCOUNT_INVENTORY'))
     with sqlite3.connect(gate.path) as db:
         encoded,parent=db.execute('SELECT body,previous FROM events WHERE seq=2').fetchone();body=json.loads(encoded)
-        for key in ('receipt_profile','request_kinds','request_sha256','response_sha256','receipt_sha256'):body.pop(key)
+        for key in ('receipt_profile','request_kinds','request_sha256','response_sha256','receipt_sha256','result_projection_sha256'):body.pop(key,None)
         db.execute('UPDATE events SET body=?,digest=? WHERE seq=2',
             (canonical(body),sha(dict(seq=2,body=body,previous=parent))))
     record=gate.operation_history()[0];state=gate.inspect()
@@ -249,7 +249,7 @@ def recast_bundle_operation(value,operation):
         if body.get('kind')=='RESULT':
             body['token']=token
             if operation is None:
-                for key in ('receipt_profile','request_kinds','request_sha256','response_sha256','receipt_sha256'):body.pop(key,None)
+                for key in ('receipt_profile','request_kinds','request_sha256','response_sha256','receipt_sha256','result_projection_sha256'):body.pop(key,None)
         row[1]=canonical(body);row[2]=previous;row[3]=sha(dict(seq=row[0],body=body,previous=previous))
         if body.get('kind')=='BEGIN':token=row[3]
         previous=row[3]

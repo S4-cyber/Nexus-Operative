@@ -21,6 +21,7 @@ from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus.alpaca_activity_collection import PAGE_SIZE
 from nexus.activity_collection_evidence import request_targets_match
+from nexus.paper_read_projection import matches as projection_matches
 from nexus.broker_activity_store import BrokerActivityStore, MAX_BATCHES
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore, MAX_RECORDS
 from nexus.paper_acceptance_probe import FLAGS, ROOT
@@ -265,7 +266,8 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
             operation=next((row for row in pacing.operation_history()
                 if row['before_head_sha256']==scope['pacing_before_head_sha256'] and
                    row['after_head_sha256']==scope['pacing_after_head_sha256']),None)
-            if not request_targets_match(operation,current_store['receipts'].get(scope['retained_receipt_sha256'])):_fail()
+            if (not request_targets_match(operation,current_store['receipts'].get(scope['retained_receipt_sha256'])) or
+                not projection_matches(operation,'ACTIVITY_COLLECTION',scope['retained_receipt_sha256'])):_fail()
             return current_pacing['head_sha256'],current_store['head_sha256']
         accepted=acceptance.append(scope,admission=admission,**({'precommit_check':input_guard} if request_mode else {}))
         input_guard()
@@ -309,7 +311,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
             account_fields_replayed=False,collection_observation_replayed=False,
             collection_cursor_sequence_complete=False,
             activity_input_replayed=False,pacing_transition_replayed=False,
-            pacing_operation_typed=False,pacing_result_receipt_bound=False,pacing_request_targets_bound=False,
+            pacing_operation_typed=False,pacing_result_receipt_bound=False,pacing_request_targets_bound=False,pacing_normalized_result_bound=False,
             retention_transition_replayed=False,accepted_transition_replayed=False)
         receipt=retained['receipts'].get(scope['retained_receipt_sha256'])
         result['accepted_receipt_replayed']=receipt is not None
@@ -342,6 +344,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         result['pacing_operation_typed']=operation is not None and operation['operation']=='ACTIVITY_COLLECTION'
         result['pacing_result_receipt_bound']=operation is not None and operation['result_receipt_bound'] is True
         result['pacing_request_targets_bound']=request_targets_match(operation,receipt)
+        result['pacing_normalized_result_bound']=projection_matches(operation,'ACTIVITY_COLLECTION',scope['retained_receipt_sha256'])
         result['accepted_transition_replayed']=all(value for key,value in result.items()
             if key not in ('accepted_transition_replayed','collection_cursor_sequence_complete'))
         return result
@@ -352,7 +355,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         latest_account_fields_replayed=False,latest_collection_observation_replayed=False,
         latest_collection_cursor_sequence_complete=False,
         latest_activity_input_replayed=False,latest_pacing_transition_replayed=False,
-        latest_pacing_operation_typed=False,latest_pacing_result_receipt_bound=False,latest_pacing_request_targets_bound=False,
+        latest_pacing_operation_typed=False,latest_pacing_result_receipt_bound=False,latest_pacing_request_targets_bound=False,latest_pacing_normalized_result_bound=False,
         latest_retention_transition_replayed=False,latest_request_order_input_replayed=None,latest_acceptance_record_replayed=False)
     if latest is not None and replayed:
         current=replayed[-1]
@@ -401,6 +404,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         all_pacing_operations_typed=bool(replayed) and all(item['pacing_operation_typed'] for item in replayed),
         all_pacing_result_receipts_bound=bool(replayed) and all(item['pacing_result_receipt_bound'] for item in replayed),
         all_pacing_request_targets_bound=bool(replayed) and all(item['pacing_request_targets_bound'] for item in replayed),
+        all_pacing_normalized_results_bound=bool(replayed) and all(item['pacing_normalized_result_bound'] for item in replayed),
         all_retention_transitions_replayed=bool(replayed) and all(item['retention_transition_replayed'] for item in replayed),
         all_accepted_transitions_replayed=bool(replayed) and all(item['accepted_transition_replayed'] for item in replayed))
     if pending or pace['review_required']:recovery='PACING_UNCERTAINTY_REVIEW_REQUIRED'
@@ -416,6 +420,8 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         recovery='ACCEPTED_PACING_RESULT_RECEIPT_UNVERIFIED_REVIEW_REQUIRED'
     elif accepted['records'] and not historical['all_pacing_request_targets_bound']:
         recovery='ACCEPTED_PACING_REQUEST_TARGET_UNVERIFIED_REVIEW_REQUIRED'
+    elif accepted['records'] and not historical['all_pacing_normalized_results_bound']:
+        recovery='ACCEPTED_NORMALIZED_RESULT_UNVERIFIED_REVIEW_REQUIRED'
     elif accepted['records'] and not replay['latest_acceptance_record_replayed']:
         recovery='ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'
     elif accepted['records'] and not historical['all_accepted_transitions_replayed']:
@@ -424,7 +430,7 @@ def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_
         recovery='ACCEPTED_COLLECTION_CONTINUATION_REQUIRED'
     elif accepted['records']:recovery='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED'
     else:recovery='NO_ACCEPTED_READ_TRANSITIONS'
-    uncertain=recovery in ('PACING_UNCERTAINTY_REVIEW_REQUIRED','ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED','ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_COLLECTION_CONTINUATION_REQUIRED','LEGACY_BASELINE_ONLY_REVIEW_REQUIRED','ACCEPTED_PACING_OPERATION_UNVERIFIED_REVIEW_REQUIRED','ACCEPTED_PACING_RESULT_RECEIPT_UNVERIFIED_REVIEW_REQUIRED','ACCEPTED_PACING_REQUEST_TARGET_UNVERIFIED_REVIEW_REQUIRED')
+    uncertain=recovery in ('PACING_UNCERTAINTY_REVIEW_REQUIRED','ACCEPTANCE_HISTORY_MISSING_REVIEW_REQUIRED','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED','ACCEPTED_TRANSITION_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED','ACCEPTED_COLLECTION_CONTINUATION_REQUIRED','LEGACY_BASELINE_ONLY_REVIEW_REQUIRED','ACCEPTED_PACING_OPERATION_UNVERIFIED_REVIEW_REQUIRED','ACCEPTED_PACING_RESULT_RECEIPT_UNVERIFIED_REVIEW_REQUIRED','ACCEPTED_PACING_REQUEST_TARGET_UNVERIFIED_REVIEW_REQUIRED','ACCEPTED_NORMALIZED_RESULT_UNVERIFIED_REVIEW_REQUIRED')
     return dict(request_bound_transitions=request_bound_count,mode='PAPER_ACTIVITY_ACCEPTANCE_STATUS',status='REVIEW_REQUIRED',read_only=True,
         pacing_journal_present=pacing.path.is_file(),activity_store_present=store.path.is_file(),acceptance_store_present=acceptance.path.is_file(),
         account_sha256=retained['account_sha256'],pacing_head_sha256=pace['head_sha256'],

@@ -197,6 +197,7 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
                   'postcommit_death_replayed_bound_transition','precommit_rollback_journal_observed',
                   'fresh_process_journals_unchanged','fresh_process_vault_silent',
                   'postcommit_all_content_replayed','postcommit_all_pacing_request_targets_bound',
+                  'postcommit_all_normalized_results_bound','legacy_normalized_result_not_invented','legacy_normalized_history_preserved',
                   'changed_creation_window_targets_refused','changed_cursor_target_refused',
                   'request_target_disagreement_history_preserved'):
         changed=dict(result,**{field:False})

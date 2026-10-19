@@ -163,3 +163,6 @@ Latest verified checkpoint: v0.147 commit31672b1002d149fcab2540e37c2c5b84662d769
 
 
 v0.167.2: Review Read Pacing displays completed typed receipt counts separately from typed-purpose/legacy session counts. Explain request/response hashes as local consistency only and exclude pending/interrupted reads. Missing receipt data, private extras, non-integer/negative/over-cap counters, mismatched totals and false completeness claims must fail with fixed review text. Preserve no-vault/no-provider behavior, stale-result fencing and practical help on the existing button.
+
+
+v0.168: pacing receipt counts include completed failed attempts. Describe retained request-target hashes without implying successful reads or a response body for every attempt. Explicitly say counts include failures; pending/interrupted reads stay excluded. These profile counters do not independently attest normalized-result agreement. Preserve the existing practical help, strict aggregate validation, no-vault/no-provider behavior and black/purple bottom-right panel.

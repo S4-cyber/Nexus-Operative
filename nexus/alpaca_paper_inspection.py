@@ -187,7 +187,7 @@ class _ReadSession:
         from nexus.paper_read_pacing import OPERATIONS
         if operation is not None and (type(operation) is not str or operation not in OPERATIONS):
             _fail('PAPER_INSPECTION_OPERATION_INVALID')
-        self.operation=operation;self.request_kinds=[];self.request_sha256=[];self.response_sha256=[];self.operation_terminal_error=False
+        self.operation=operation;self.request_kinds=[];self.request_sha256=[];self.response_sha256=[];self.operation_terminal_error=False;self.result_projection_sha256=None;self._projection_value=None
         if pacing is not None:
             from nexus.paper_read_pacing import PaperReadPacing
             if type(pacing) is not PaperReadPacing or expected_account_id is None or pacing.account != _uuid(expected_account_id):
@@ -254,6 +254,14 @@ class _ReadSession:
             finally:
                 _lock.release()
 
+    def bind_result_projection(self, value):
+        if not self.active or self.pacing_finished or self.result_projection_sha256 is not None:
+            _fail('PAPER_INSPECTION_RESULT_BINDING_STATE')
+        from nexus.paper_read_projection import digest
+        self._operation_complete()
+        self.result_projection_sha256=digest(self.operation,value)
+        self._projection_value=value
+
     def _pacing_result(self, **outcome):
         if outcome.get('status_code')==200:self._operation_complete()
         if outcome.get('status_code')!=200:self.operation_terminal_error=True
@@ -262,6 +270,8 @@ class _ReadSession:
                 receipt=None if self.operation is None else dict(operation=self.operation,
                     request_kinds=list(self.request_kinds),request_sha256=list(self.request_sha256),
                     response_sha256=list(self.response_sha256))
+                if receipt is not None and self.result_projection_sha256 is not None:
+                    receipt['result_projection_sha256']=self.result_projection_sha256
                 self.pacing.finish(self.pacing_token, admission=self.evaluated_at, ownership=self.pacing_owner,
                     receipt=receipt,**outcome)
             except Exception as exc:
@@ -286,6 +296,10 @@ class _ReadSession:
                 _fail('PAPER_INSPECTION_CLOCK_DISCONTINUITY')
             if current[1] - self.start[1] >= TOTAL_SECONDS:
                 _fail('PAPER_INSPECTION_TIME_BUDGET')
+            if self.result_projection_sha256 is not None:
+                from nexus.paper_read_projection import digest
+                if digest(self.operation,self._projection_value)!=self.result_projection_sha256:
+                    _fail('PAPER_INSPECTION_RESULT_BINDING_CHANGED')
             self.previous = current
             return max(0.001, min(REQUEST_TIMEOUT, TOTAL_SECONDS - (current[1] - self.start[1])))
         except Exception as exc:
@@ -466,4 +480,5 @@ def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
         result['observation_digest_scope'] = 'NORMALIZED_ACCOUNT_INVENTORY_COUNTS_SOURCE_LABEL_AND_SAMPLED_TIMING_ONLY'
         from nexus.portable_paper_observation import create
         result['portable_observation'] = create(result)
+        session.bind_result_projection(result)
         return result

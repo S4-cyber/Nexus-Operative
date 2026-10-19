@@ -56,6 +56,8 @@ def recover_original(journal, client_order_id, api_key, api_secret, *, expected_
         result = journal.finish_lookup_checked(client_order_id, ticket['lookup_token'],
                                                 admission=session.evaluated_at, **outcome)
         session.checkpoint()  # A revoked/lost acknowledgment never erases a committed observation.
+        if outcome.get('status_code')==200:
+            session.bind_result_projection(dict(client_order_id=client_order_id,journal=result))
         return dict(mode='EXPLICIT_PAPER_ORIGINAL_ID_RECOVERY',
                     source='INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_READS',
                     account_identity_checked=True, account_fields_double_checked=double_checked,

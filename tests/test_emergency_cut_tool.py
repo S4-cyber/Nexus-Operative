@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from nexus import emergency_intent
+from nexus import emergency_priority
 from nexus.durable_orders import DurableOrderGateway
 from nexus.paper_forward import PaperForwardRunner
 from nexus.tier_permissions import configure
@@ -29,6 +30,9 @@ def test_standalone_command_durably_cuts_without_starting_desktop_or_network(tmp
     assert report['passed'] and report['emergency_cut_state']=='VERIFIED'
     assert report['intent_preceded_durable_halt'] and report['emergency_intent_present']
     assert report['durable_order_halt_confirmed'] and report['halted']
+    assert report['emergency_priority_attempted'] is (os.name=='nt')
+    assert report['emergency_priority_confirmed'] is (os.name=='nt')
+    assert report['emergency_priority_class']==('HIGH' if os.name=='nt' else 'STANDARD')
     assert all(report[key] is False for key in ('desktop_started','network_requested',
         'credential_access_requested','broker_connected','live_orders_enabled',
         'money_movement_enabled','reset_available','automatic_restart'))
@@ -85,3 +89,13 @@ def test_command_failure_does_not_echo_private_data_or_start_desktop(tmp_path):
     result=command(blocked)
     assert result.returncode==2 and result.stdout=='NEXUS_EMERGENCY_STOP_FAILED\n'
     assert not result.stderr and 'PRIVATE_DATA_ROOT' not in result.stdout
+
+
+def test_priority_failure_never_prevents_latch_or_durable_halt(tmp_path,monkeypatch):
+    monkeypatch.setattr(emergency_priority,'request',lambda:dict(
+        attempted=True,confirmed=False,priority_class='STANDARD'))
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert report['passed'] and report['durable_order_halt_confirmed']
+    assert report['emergency_priority_attempted'] and not report['emergency_priority_confirmed']
+    assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')

@@ -11,10 +11,12 @@ import sqlite3
 from pathlib import Path
 
 from nexus import emergency_intent
+from nexus import emergency_priority
 from nexus.durable_orders import DurableOrderGateway
 
 
 def activate(data_root=None):
+    priority = emergency_priority.request()
     root = Path(data_root or os.environ.get('NEXUS_PORTABLE_DATA',
         str(Path.home()/'.nexus-operative'))).expanduser()
     order_path = root/'order_lifecycle.sqlite3'
@@ -43,6 +45,9 @@ def activate(data_root=None):
         intent_preceded_durable_halt=intent_preceded,
         emergency_intent_present=final_intent,
         durable_order_halt_confirmed=durable_halt,
+        emergency_priority_attempted=priority['attempted'],
+        emergency_priority_confirmed=priority['confirmed'],
+        emergency_priority_class=priority['priority_class'],
         desktop_started=False,network_requested=False,credential_access_requested=False,
         broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
         reset_available=False,automatic_restart=False,

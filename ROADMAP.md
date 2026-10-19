@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.172.1. Branch: `development/windows-portal-foundation`.
+Revision: 0.172.2. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.172.1 extends the packaged emergency-stop smoke across a held SQLite writer. The separate process must publish the persistent latch before the lock clears, new gateway intake must reject without waiting on SQLite, and durable halt/cancellation must complete after release. The same smoke runs against the standalone and installed Windows EXE, while all authority flags remain false. This is bounded same-host storage-contention evidence, not whole-machine starvation, an out-of-band broker cancel, distributed control, actual broker-paper acceptance or release approval. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.172.2 asks the independent emergency command for high, never realtime, Windows process priority before storage work and adds a sixteenth packaged invocation under bounded synthetic CPU pressure plus a held SQLite writer. Priority failure never suppresses the latch or durable halt attempt. Source, standalone and installed runs must still prove latch-before-ledger ordering, immediate intake refusal and durable cancellation. This is bounded same-host load evidence, not whole-machine starvation, disk/ACL recovery, an out-of-band broker cancel, distributed control, actual broker-paper acceptance or release approval. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

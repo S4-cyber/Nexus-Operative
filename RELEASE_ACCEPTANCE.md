@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.172.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.172.2 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,8 +36,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, fourteen Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | v0.172.1 source-fingerprinted report `validation/release_trials_0_172_1.json` verifies all sixteen local profiles; exact new-source Windows trials must still run |
-| Windows packaging and data recovery | v0.172.0 exact-source CI verified; v0.172.1 source pending | Exact commit `7be66a038a0ed577c6a28709ad4984e5b123d696`: Windows run 39244201392, safety/browser 39244201283 and security 39244201237 passed. Native-profile/ACL, clean-machine native window, whole-machine pressure and independent acceptance remain separate; newer source needs its own CI |
+| Integrated local trials | Bounded offline trials passed | v0.172.2 source-fingerprinted report `validation/release_trials_0_172_2.json` verifies all sixteen local profiles; exact new-source Windows trials must still run |
+| Windows packaging and data recovery | v0.172.1 exact-source CI verified; v0.172.2 source pending | Exact commit `37941ef7932c2053dfc6a92ec3675cab13f273e3`: Windows run 39254308956, safety/browser 39254309078 and security 39254309027 passed. Native-profile/ACL, clean-machine native window, whole-machine pressure and independent acceptance remain separate; newer source needs its own CI |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |
@@ -987,3 +987,11 @@ Windows packaging runs the same fifteenth command-prefix child against the stand
 The v0.172.0 source that introduced the command subsequently passed exact-source security/history run39244201237, safety/browser run39244201283 and Windows packaging/installer run39244201392. v0.172.1 still needs its own exact-source workflows. Progress remains roughly40% (30–45%, low confidence), with0/9 fully accepted major stages; broker-paper, sustained real-feed, funding/live/cloud, independent and owner gates remain open.
 
 Final v0.172.1 local validation: 3,281 Python tests passed with one existing Starlette/httpx deprecation warning; the focused emergency/packaged/release/version set passed139 tests. All sixteen bounded profiles and saved-evidence verification matched339 source files/`b716bc0f710163b4d703b38cbf8c2ba3748078ceb6bf9e6a0cc5afc0bc20d353`; `validation/release_trials_0_172_1.json` SHA-256 is `8cd655685b1c54baf43f336cc3d567d8755b17d6367d19e167726905704dbde8`. Fourteen Node controllers, Portal syntax, compileall, dependency consistency, generated-roadmap and whitespace checks passed. The463-path proposed public snapshot passed artifact audit with zero findings. Local Gitleaks and native/rendered execution are unavailable; exact-source workflows remain mandatory. No broker, account, real market, funds, live or cloud operation occurred.
+
+## v0.172.2 emergency-stop CPU-pressure acceptance
+
+The independent command now asks Windows for high, never realtime, process priority before storage work. Refusal is nonfatal and cannot suppress the cut attempt. A sixteenth packaged invocation combines one to four bounded busy workers with a held SQLite writer and requires latch-before-ledger ordering, lock-free intake refusal and durable cancellation while load remains active. Source, standalone and installed commands use the same smoke.
+
+This does not claim resilience to total machine starvation, kernel/hardware failure, disk/ACL faults, broker cancellation or distributed control. It grants no provider, credential, funding, live-order, reset or release authority. No UI control or parameter changed. Full local regression/evidence and exact-source Windows, safety/browser and security workflows remain required before this source is credited.
+
+Final v0.172.2 local validation: 3,282 Python tests passed with one existing Starlette/httpx deprecation warning; the focused emergency/packaged/release/version set passed 175 tests. All sixteen bounded profiles and saved-evidence verification matched 340 source files / `494e1b9094a8f1bb4a9eda9758d92146d5907e44e4bbd37b6e4a56e0e4fcaecb`; `validation/release_trials_0_172_2.json` SHA-256 is `833a5cfbdae666cfdd43fd55521fac29afbd777e4a8e7b935d38b7f8572dd1c0`. Fourteen Node controllers, Portal syntax, compileall, dependency consistency, generated-roadmap and whitespace checks passed. The 465-path staged public snapshot passed artifact audit with zero findings. Local Gitleaks and native/rendered execution remain unavailable; exact-source workflows are mandatory. No broker, account, real market, funds, live or cloud operation occurred.

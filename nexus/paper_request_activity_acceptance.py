@@ -43,6 +43,7 @@ def _complete(value):
         and value['accepted_transitions'] == value['retained_collection_observations']
         and value['all_collection_cursor_sequences_complete'] is True
         and value['all_pacing_operations_typed'] is True
+        and value['all_pacing_result_receipts_bound'] is True
         and value['replayed_accepted_transitions'] == value['accepted_transitions']
         and value['latest_acceptance_record_replayed'] is True
         and value['all_accepted_transitions_replayed'] is True
@@ -108,6 +109,7 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
         journals_rechecked_unchanged=True, complete_accepted_history_replayed=True,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
         accepted_pacing_operations_typed=True,
+        accepted_pacing_result_receipts_bound=True,
         complete_retained_batches_accepted=True,
         complete_collection_observations_accepted=True,
         all_collection_cursor_sequences_complete=True,
@@ -131,7 +133,10 @@ def _fixture(root):
         retention_head=activity_before['head_sha256'],pacing_sessions=0,retained_batches=0)
     with pacing.ownership() as owner:
         token=pacing.begin(admission=lambda:1000,ownership=owner,operation='ACTIVITY_COLLECTION')
-        pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner)
+        kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
+        pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
+            receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
+                response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)]))
     asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
         fractionable=True,min_order_size='.5',min_trade_increment='.5',price_increment='.5')
     plan=preview('nx_accept_fixture','BTC-USD','BUY','2','100',asset,
@@ -193,12 +198,14 @@ def fixture_report():
         component=result['request_activity_review']
         passed=(result['complete_accepted_history_replayed'] and
             result['accepted_pacing_operations_typed'] and
+            result['accepted_pacing_result_receipts_bound'] and
             result['local_request_activity_agreement'] and
             component['request_reviews'][0]['explicit_fill_count']==2 and
             before==after and unbound)
         return dict(source='SYNTHETIC_LOCAL_ACCEPTED_REQUEST_FILL_FIXTURE',passed=passed,
             accepted_history_bound=result['complete_accepted_history_replayed'],
             accepted_pacing_operations_typed=result['accepted_pacing_operations_typed'],
+            accepted_pacing_result_receipts_bound=result['accepted_pacing_result_receipts_bound'],
             original_request_linked=result['local_request_activity_agreement'],
             explicit_fills_checked=component['request_reviews'][0]['explicit_fill_count']==2,
             journals_unchanged=before==after,unbound_activity_rejected=unbound,

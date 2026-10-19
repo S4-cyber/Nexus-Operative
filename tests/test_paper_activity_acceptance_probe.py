@@ -170,10 +170,10 @@ def test_status_replays_both_journals_without_order_vault_or_network(vault,tmp_p
     assert all(result[name] is True for name in ('latest_accepted_receipt_replayed','latest_collection_scope_replayed',
         'latest_account_fields_replayed','latest_collection_observation_replayed','latest_activity_input_replayed',
         'latest_pacing_transition_replayed','latest_retention_transition_replayed','latest_acceptance_record_replayed',
-        'latest_pacing_operation_typed',
+        'latest_pacing_operation_typed','latest_pacing_result_receipt_bound',
         'all_accepted_receipts_replayed','all_collection_scopes_replayed','all_account_fields_replayed',
         'all_collection_observations_replayed','all_activity_inputs_replayed','all_pacing_transitions_replayed',
-        'all_pacing_operations_typed',
+        'all_pacing_operations_typed','all_pacing_result_receipts_bound',
         'all_retention_transitions_replayed','all_accepted_transitions_replayed',
         'latest_collection_cursor_sequence_complete','all_collection_cursor_sequences_complete'))
     assert result['replayed_accepted_transitions']==1

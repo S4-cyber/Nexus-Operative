@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.166.3'
+REVISION = '0.167.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.166.3 requires every accepted activity transition to replay against an exact typed ACTIVITY_COLLECTION pacing session before request/fill or balance composition. Legacy untyped transitions remain readable and byte-compatible but are classified as operation-unverified and cannot satisfy accepted-history gates; there is no automatic repair, relabel or deletion. New acceptance probes also verify that the typed activity counter advances while the legacy counter does not. v0.166.2 original-lease completion, the v0.166.1 typed PORTAL status correction, v0.166 exact event ordering and earlier safeguards remain. These local checks do not attest provider source, establish a broker-wide budget or grant trading authority. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner gates stay open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.167.0 binds each typed fixed paper-read result to its declared request-kind sequence and content-free response SHA-256 sequence in the central pacing hash chain. All five real readers produce receipts; acceptance requires receipt-bound typed activity history. Earlier typed results remain replayable but explicitly unreceipted and cannot satisfy acceptance, while legacy rows are never relabeled. Raw responses, credentials and account identifiers are not retained by the receipt. v0.166.3 activity-purpose binding and earlier safeguards remain. These local receipts do not attest provider source, prove broker-wide quotas or grant trading authority. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates stay open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

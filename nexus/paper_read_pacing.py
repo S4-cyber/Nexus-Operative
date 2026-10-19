@@ -27,6 +27,14 @@ INTERRUPTED_COOLDOWN = 86400
 ZERO = '0' * 64
 LEGACY_OPERATION='LEGACY_UNSPECIFIED'
 OPERATIONS=('ACCOUNT_INVENTORY','BTC_ASSET_RULES','ACTIVITY_COLLECTION','ORIGINAL_ID_RECOVERY','BTC_QUOTE_OBSERVATION')
+RECEIPT_PROFILE='nexus.paper-read-operation-receipt.v1'
+OPERATION_PATTERNS={
+    'ACCOUNT_INVENTORY':(('ACCOUNT','POSITIONS','OPEN_ORDERS','ACCOUNT'),),
+    'BTC_ASSET_RULES':(('ACCOUNT','ASSET','ACCOUNT'),),
+    'BTC_QUOTE_OBSERVATION':(('ACCOUNT','QUOTE','ACCOUNT'),),
+    'ACTIVITY_COLLECTION':(('ACCOUNT','ACTIVITY_PAGE','ACCOUNT'),('ACCOUNT','ACTIVITY_PAGE','ACTIVITY_PAGE','ACCOUNT')),
+    'ORIGINAL_ID_RECOVERY':(('ACCOUNT','ORIGINAL_LOOKUP','ACCOUNT'),),
+}
 
 
 def _fail(code):
@@ -105,15 +113,41 @@ class PaperReadPacing:
                     state['sessions'] += 1
                     state['operation_sessions'].append(dict(operation=body.get('operation',LEGACY_OPERATION),
                         started_at=now,completed_at=None,before_head_sha256=state['pending_before_head_sha256'],
-                        begin_head_sha256=digest,after_head_sha256=None,outcome='PENDING_UNKNOWN'))
-                elif kind == 'RESULT' and set(body) == {'kind', 'evaluated_at', 'token', 'outcome', 'delay'}:
+                        begin_head_sha256=digest,after_head_sha256=None,outcome='PENDING_UNKNOWN',
+                        receipt_profile=None,request_kinds=(),response_sha256=(),receipt_sha256=None,
+                        result_receipt_bound=False))
+                elif kind == 'RESULT' and set(body) in (
+                    {'kind', 'evaluated_at', 'token', 'outcome', 'delay'},
+                    {'kind','evaluated_at','token','outcome','delay','receipt_profile','request_kinds','response_sha256','receipt_sha256'}):
                     now = clock(body['evaluated_at'])
                     if state['pending_token'] is None or body['token'] != state['pending_token']: _fail('TOKEN_DISAGREEMENT')
                     if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
                     outcome, delay = body['outcome'], body['delay']
                     if outcome not in ('SUCCESS', 'NOT_FOUND', 'TIMEOUT', 'NETWORK_ERROR', 'RATE_LIMITED', 'SERVER_ERROR', 'AUTH_DENIED', 'REVIEW_REQUIRED'): _fail('OUTCOME_INVALID')
                     if type(delay) is not int or (outcome == 'RATE_LIMITED' and not 1 <= delay <= 86400) or (outcome != 'RATE_LIMITED' and delay != 0): _fail('DELAY_INVALID')
-                    state['operation_sessions'][-1].update(completed_at=now,after_head_sha256=digest,outcome=outcome)
+                    receipt=set(body)!={'kind','evaluated_at','token','outcome','delay'}
+                    if receipt:
+                        operation=state['operation_sessions'][-1]['operation']
+                        if operation==LEGACY_OPERATION or body['receipt_profile']!=RECEIPT_PROFILE:_fail('RECEIPT_INVALID')
+                        kinds=body['request_kinds'];responses=body['response_sha256']
+                        if (type(kinds) is not list or not 1<=len(kinds)<=4 or
+                            any(type(value) is not str for value in kinds) or
+                            type(responses) is not list or len(responses)>len(kinds) or
+                            any(type(value) is not str or re.fullmatch(r'[0-9a-f]{64}',value) is None for value in responses)):_fail('RECEIPT_INVALID')
+                        patterns=OPERATION_PATTERNS[operation];sequence=tuple(kinds)
+                        if outcome=='SUCCESS':
+                            if sequence not in patterns or len(responses)!=len(kinds):_fail('RECEIPT_SEQUENCE')
+                        elif not any(pattern[:len(sequence)]==sequence for pattern in patterns) or len(responses)!=len(kinds)-1:
+                            _fail('RECEIPT_SEQUENCE')
+                        scope=dict(profile=RECEIPT_PROFILE,operation=operation,
+                            before_head_sha256=state['operation_sessions'][-1]['before_head_sha256'],
+                            begin_head_sha256=state['operation_sessions'][-1]['begin_head_sha256'],
+                            evaluated_at=now,outcome=outcome,request_kinds=kinds,response_sha256=responses)
+                        if body['receipt_sha256']!=sha(scope):_fail('RECEIPT_DIGEST')
+                    state['operation_sessions'][-1].update(completed_at=now,after_head_sha256=digest,outcome=outcome,
+                        receipt_profile=body.get('receipt_profile'),request_kinds=tuple(body.get('request_kinds',())),
+                        response_sha256=tuple(body.get('response_sha256',())),receipt_sha256=body.get('receipt_sha256'),
+                        result_receipt_bound=receipt)
                     state['pending_token'] = None
                     state['completed_sessions'].append(dict(before_head_sha256=state['pending_before_head_sha256'],
                         after_head_sha256=digest,outcome=outcome))
@@ -166,8 +200,13 @@ class PaperReadPacing:
             with closing(self._connect()) as db: state = self._load(db)
         public=dict(state);public.pop('pending_before_head_sha256');public.pop('completed_sessions');operations=public.pop('operation_sessions')
         counts={kind:sum(r['operation']==kind for r in operations) for kind in (*OPERATIONS,LEGACY_OPERATION)}
+        typed=[row for row in operations if row['operation']!=LEGACY_OPERATION]
+        completed_typed=[row for row in typed if row['outcome'] not in ('PENDING_UNKNOWN','INTERRUPTED_UNKNOWN')]
         return dict(public, account_sha256=self.account_digest, max_gets_per_session=4,
                     operation_counts=counts,pending_operation=None if state['pending_token'] is None else operations[-1]['operation'],
+                    typed_result_receipts=sum(row['result_receipt_bound'] for row in completed_typed),
+                    unreceipted_typed_results=sum(not row['result_receipt_bound'] for row in completed_typed),
+                    all_typed_results_receipted=bool(completed_typed) and all(row['result_receipt_bound'] for row in completed_typed),
                     operation_identity_attested=False,mixed_operation_acceptance_verified=False,
                     min_post_result_cooldown_seconds=MIN_COOLDOWN, automatic_retry=False,
                     broker_wide_quota_verified=False, ready_for_routing=False,
@@ -224,7 +263,7 @@ class PaperReadPacing:
             _fail('OPERATION_ORIGINAL_LEASE_REQUIRED')
         if state['pending_owner_sha256']!=ownership.identity():_fail('OWNER_SCOPE_CHANGED')
 
-    def finish(self, token, *, admission, status_code=None, transport_error=None, retry_after=None,ownership=None):
+    def finish(self, token, *, admission, status_code=None, transport_error=None, retry_after=None,ownership=None,receipt=None):
         """Retain fixed outcome/delay only; a lost return never erases the result."""
         self._path_check()
         if not self.path.exists(): _fail('BINDING_MISSING')
@@ -239,9 +278,31 @@ class PaperReadPacing:
                 result = classify(status_code=status_code, transport_error=transport_error,
                                   retry_after=retry_after, evaluated_at=now)
                 outcome = 'SUCCESS' if result['outcome'] == 'FOUND' else result['outcome']
-                head = self._append(db, state['events'] + 1,
-                    dict(kind='RESULT', evaluated_at=now, token=token, outcome=outcome,
-                         delay=result['retry_after_seconds']), state['head_sha256'])
+                body=dict(kind='RESULT', evaluated_at=now, token=token, outcome=outcome,
+                    delay=result['retry_after_seconds'])
+                operation=state['operation_sessions'][-1]['operation']
+                if operation!=LEGACY_OPERATION:
+                    if type(receipt) is not dict or set(receipt)!={'operation','request_kinds','response_sha256'} or receipt['operation']!=operation:
+                        _fail('RECEIPT_REQUIRED')
+                    kinds=receipt['request_kinds'];responses=receipt['response_sha256']
+                    # Reject malformed values before canonicalizing the receipt.
+                    patterns=OPERATION_PATTERNS[operation]
+                    if (type(kinds) is not list or not 1<=len(kinds)<=4 or any(type(value) is not str for value in kinds) or
+                        type(responses) is not list or len(responses)>len(kinds) or
+                        any(type(value) is not str or re.fullmatch(r'[0-9a-f]{64}',value) is None for value in responses)):_fail('RECEIPT_INVALID')
+                    sequence=tuple(kinds)
+                    if outcome=='SUCCESS':
+                        if sequence not in patterns or len(responses)!=len(kinds):_fail('RECEIPT_SEQUENCE')
+                    elif not any(pattern[:len(sequence)]==sequence for pattern in patterns) or len(responses)!=len(kinds)-1:
+                        _fail('RECEIPT_SEQUENCE')
+                    scope=dict(profile=RECEIPT_PROFILE,operation=operation,
+                        before_head_sha256=state['operation_sessions'][-1]['before_head_sha256'],
+                        begin_head_sha256=state['operation_sessions'][-1]['begin_head_sha256'],evaluated_at=now,
+                        outcome=outcome,request_kinds=kinds,response_sha256=responses)
+                    body.update(receipt_profile=RECEIPT_PROFILE,request_kinds=kinds,response_sha256=responses,
+                        receipt_sha256=sha(scope))
+                elif receipt is not None:_fail('RECEIPT_LEGACY_DENIED')
+                head = self._append(db, state['events'] + 1,body,state['head_sha256'])
                 self._load(db)
                 if clock(admission()) < now: _fail('CLOCK_REGRESSION')
                 self._completion_owner(token,ownership,state)
@@ -346,7 +407,8 @@ class _ReadOwnership:
         if fd is not None: os.close(fd)
 
 
-OPERATION_CHECKS=('five_actual_readers_typed','one_shared_cooldown','legacy_not_relabelled',
+OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','response_payloads_not_retained',
+    'one_shared_cooldown','legacy_not_relabelled','legacy_receipt_not_invented',
     'completed_outcomes_preserved','restart_replay_matches','status_read_only')
 OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
     'actual_provider_access','actual_vault_access','ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')
@@ -363,7 +425,10 @@ def completion_fixture_report():
         gate=PaperReadPacing(root/'completed.sqlite3',account)
         with gate.ownership() as owner:
             token=gate.begin(admission=lambda:1000,ownership=owner,operation='ACCOUNT_INVENTORY')
-            gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner)
+            kinds=list(OPERATION_PATTERNS['ACCOUNT_INVENTORY'][0])
+            receipt=dict(operation='ACCOUNT_INVENTORY',request_kinds=kinds,
+                response_sha256=[sha(dict(index=index)) for index in range(len(kinds))])
+            gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt)
         completed=gate.inspect()['last_outcome']=='SUCCESS'
         gate=PaperReadPacing(root/'pending.sqlite3',account);owner=gate.ownership()
         with owner:token=gate.begin(admission=lambda:1000,ownership=owner,operation='BTC_QUOTE_OBSERVATION')
@@ -426,13 +491,18 @@ def typed_fixture_report():
             updated_at='2026-10-19T00:03:00Z')
         recover_original(journal,'nx_operation_fixture',key,secret,**args([raw_account,raw_order,raw_account],epoch+180))
         inspect_quote(key,secret,**args([raw_account,quote,raw_account],epoch+241))
+        typed_state=gate.inspect();typed_history=gate.operation_history();retained=gate.path.read_bytes()
         token=gate.begin(admission=lambda:epoch+301);gate.finish(token,admission=lambda:epoch+301,status_code=200)
         before={p.name:p.read_bytes() for p in Path(directory).iterdir()};history=gate.operation_history();state=gate.inspect()
         blocked=Opener([raw_account,[],[],raw_account]);cooldown=False
         try:reader.inspect_account(key,secret,**dict(args([],epoch+302),opener=blocked))
         except ValueError:cooldown=not blocked.requests and before=={p.name:p.read_bytes() for p in Path(directory).iterdir()}
         checks=dict(five_actual_readers_typed=tuple(r['operation'] for r in history[:5])==OPERATIONS and all(state['operation_counts'][op]==1 for op in OPERATIONS),
+            five_request_receipts_bound=len(typed_history)==5 and all(r['result_receipt_bound'] for r in typed_history) and
+                typed_state['typed_result_receipts']==5 and typed_state['unreceipted_typed_results']==0 and typed_state['all_typed_results_receipted'],
+            response_payloads_not_retained=all(value not in retained for value in (account.encode(),key.encode(),secret.encode())),
             one_shared_cooldown=cooldown,legacy_not_relabelled=history[-1]['operation']==LEGACY_OPERATION and state['operation_counts'][LEGACY_OPERATION]==1,
+            legacy_receipt_not_invented=history[-1]['result_receipt_bound'] is False and history[-1]['receipt_sha256'] is None,
             completed_outcomes_preserved=len(history)==6 and all(r['outcome']=='SUCCESS' for r in history),
             restart_replay_matches=PaperReadPacing(gate.path,account).operation_history()==history,
             status_read_only=before=={p.name:p.read_bytes() for p in Path(directory).iterdir()})

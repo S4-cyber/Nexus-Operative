@@ -13,6 +13,13 @@ from nexus.alpaca_paper_contract import canonical,sha
 from test_alpaca_paper_inspection import ACCOUNT,KEY,SECRET,account,Opener
 
 
+def receipt(operation,outcome='SUCCESS'):
+    kinds=list(pacing.OPERATION_PATTERNS[operation][0] if outcome=='SUCCESS' else pacing.OPERATION_PATTERNS[operation][0][:1])
+    count=len(kinds) if outcome=='SUCCESS' else len(kinds)-1
+    return dict(operation=operation,request_kinds=kinds,
+        response_sha256=[sha(dict(operation=operation,index=index)) for index in range(count)])
+
+
 def test_missing_history_and_legacy_sessions_stay_unknown_without_writes(tmp_path):
     gate=pacing.PaperReadPacing(tmp_path/'absent'/'pacing.sqlite3',ACCOUNT)
     assert gate.operation_history()==() and not gate.path.parent.exists()
@@ -34,12 +41,52 @@ def test_typed_begin_requires_owned_account_scope_and_retains_outcome(tmp_path,o
         token=gate.begin(admission=lambda:1000,ownership=owner,operation=operation)
         assert gate.inspect()['pending_operation']==operation
         pending=gate.operation_history()[0];assert pending['outcome']=='PENDING_UNKNOWN' and pending['completed_at'] is None
-        gate.finish(token,admission=lambda:1001,status_code=429,retry_after='120',ownership=owner)
+        gate.finish(token,admission=lambda:1001,status_code=429,retry_after='120',ownership=owner,
+            receipt=receipt(operation,'RATE_LIMITED'))
     record=pacing.PaperReadPacing(gate.path,ACCOUNT).operation_history()[0]
     assert record['operation']==operation and record['outcome']=='RATE_LIMITED'
+    assert record['result_receipt_bound'] is True and record['request_kinds']==('ACCOUNT',)
     assert record['started_at']==1000 and record['completed_at']==1001
     assert gate.inspect()['next_allowed_at']==1121 and gate.inspect()['pending_operation'] is None
     assert gate.completed_sessions()==(dict(before_head_sha256=record['before_head_sha256'],after_head_sha256=record['after_head_sha256'],outcome='RATE_LIMITED'),)
+
+
+def test_typed_result_requires_exact_operation_receipt_before_commit(tmp_path):
+    gate=pacing.PaperReadPacing(tmp_path/'p.sqlite3',ACCOUNT)
+    with gate.ownership() as owner:
+        token=gate.begin(admission=lambda:1000,ownership=owner,operation='BTC_QUOTE_OBSERVATION')
+        before=gate.path.read_bytes()
+        for value,code in ((None,'RECEIPT_REQUIRED'),
+            (receipt('ACCOUNT_INVENTORY'),'RECEIPT_REQUIRED'),
+            (dict(operation='BTC_QUOTE_OBSERVATION',request_kinds=['ACCOUNT','QUOTE','ACCOUNT'],response_sha256=[]),'RECEIPT_SEQUENCE')):
+            with pytest.raises(ValueError,match=code):
+                gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=value)
+            assert gate.path.read_bytes()==before and gate.inspect()['pending_token']==token
+        gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,
+            receipt=receipt('BTC_QUOTE_OBSERVATION'))
+    record=gate.operation_history()[0]
+    assert record['result_receipt_bound'] is True
+    assert record['receipt_profile']==pacing.RECEIPT_PROFILE
+    assert gate.inspect()['typed_result_receipts']==1
+    assert gate.inspect()['unreceipted_typed_results']==0
+    assert gate.inspect()['all_typed_results_receipted'] is True
+
+
+def test_pre_receipt_typed_result_replays_but_remains_explicitly_unverified(tmp_path):
+    gate=pacing.PaperReadPacing(tmp_path/'p.sqlite3',ACCOUNT)
+    with gate.ownership() as owner:
+        token=gate.begin(admission=lambda:1000,ownership=owner,operation='ACCOUNT_INVENTORY')
+        gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt('ACCOUNT_INVENTORY'))
+    with sqlite3.connect(gate.path) as db:
+        encoded,parent=db.execute('SELECT body,previous FROM events WHERE seq=2').fetchone();body=json.loads(encoded)
+        for key in ('receipt_profile','request_kinds','response_sha256','receipt_sha256'):body.pop(key)
+        db.execute('UPDATE events SET body=?,digest=? WHERE seq=2',
+            (canonical(body),sha(dict(seq=2,body=body,previous=parent))))
+    record=gate.operation_history()[0];state=gate.inspect()
+    assert record['operation']=='ACCOUNT_INVENTORY' and record['outcome']=='SUCCESS'
+    assert record['result_receipt_bound'] is False and record['receipt_sha256'] is None
+    assert state['typed_result_receipts']==0 and state['unreceipted_typed_results']==1
+    assert state['all_typed_results_receipted'] is False
 
 
 @pytest.mark.parametrize('operation',(True,1,'UNKNOWN','',{},[]))
@@ -111,7 +158,11 @@ def test_actual_five_readers_record_fixed_purposes(tmp_path):
     quote=gate('quote');inspect_quote(KEY,SECRET,**dict(options(tmp_path),pacing=quote))
     for journal,operation in zip((inventory,asset,activity,recovery,quote),pacing.OPERATIONS):
         assert journal.operation_history()[0]['operation']==operation
+        assert journal.operation_history()[0]['result_receipt_bound'] is True
         assert journal.inspect()['operation_counts'][operation]==1 and journal.inspect()['operation_counts'][pacing.LEGACY_OPERATION]==0
+        assert journal.inspect()['all_typed_results_receipted'] is True
+        with closing(sqlite3.connect(journal.path)) as db:raw=str(db.execute('SELECT body FROM events').fetchall())
+        assert KEY not in raw and SECRET not in raw and ACCOUNT not in raw
 
 
 def test_same_budget_cooldown_survives_changed_purpose(tmp_path):
@@ -153,7 +204,10 @@ def recast_bundle_operation(value,operation):
         if body.get('kind')=='BEGIN':
             if operation is None:body.pop('operation',None)
             else:body['operation']=operation
-        if body.get('kind')=='RESULT':body['token']=token
+        if body.get('kind')=='RESULT':
+            body['token']=token
+            if operation is None:
+                for key in ('receipt_profile','request_kinds','response_sha256','receipt_sha256'):body.pop(key,None)
         row[1]=canonical(body);row[2]=previous;row[3]=sha(dict(seq=row[0],body=body,previous=previous))
         if body.get('kind')=='BEGIN':token=row[3]
         previous=row[3]
@@ -168,7 +222,9 @@ def recast_bundle_operation(value,operation):
 
 def test_legacy_quote_bundle_replays_without_inventing_purpose(tmp_path):
     options=bundle._fixture(tmp_path/'private');value=bundle.loads(bundle.snapshot(**options));recast_bundle_operation(value,None)
-    assert bundle.validate(value)['local_capture_history_agreement']
+    reviewed=bundle.validate(value)
+    assert reviewed['local_capture_history_agreement'] is False
+    assert reviewed['pacing_result_receipts_bound'] is False
     gate=pacing.PaperReadPacing('unused',value['account_id'])
     with closing(bundle._memory('events','seq INTEGER PRIMARY KEY,body TEXT,previous TEXT,digest TEXT',value['pacing_events'])) as db:
         state=gate._load(db)
@@ -177,7 +233,7 @@ def test_legacy_quote_bundle_replays_without_inventing_purpose(tmp_path):
 
 def test_self_consistent_wrong_typed_quote_receipt_is_rejected(tmp_path):
     options=bundle._fixture(tmp_path/'private');value=bundle.loads(bundle.snapshot(**options));recast_bundle_operation(value,'ACCOUNT_INVENTORY')
-    with pytest.raises(ValueError,match='UNBOUND_HISTORY'):bundle.validate(value)
+    with pytest.raises(ValueError,match='RECEIPT_(SEQUENCE|DIGEST)'):bundle.validate(value)
 
 
 def test_pacing_status_exposes_only_fixed_counts_and_unknown_legacy(tmp_path):

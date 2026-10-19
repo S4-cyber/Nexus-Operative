@@ -4,6 +4,7 @@ No credential storage, environment lookup, order methods or retries.
 Durable local pacing is optional and requires an explicit account/path journal.
 Injected transports are trusted test seams and never attest a broker account.
 """
+import hashlib
 import json
 from decimal import Decimal, localcontext
 import math
@@ -186,7 +187,7 @@ class _ReadSession:
         from nexus.paper_read_pacing import OPERATIONS
         if operation is not None and (type(operation) is not str or operation not in OPERATIONS):
             _fail('PAPER_INSPECTION_OPERATION_INVALID')
-        self.operation=operation;self.request_kinds=[];self.operation_terminal_error=False
+        self.operation=operation;self.request_kinds=[];self.response_sha256=[];self.operation_terminal_error=False
         if pacing is not None:
             from nexus.paper_read_pacing import PaperReadPacing
             if type(pacing) is not PaperReadPacing or expected_account_id is None or pacing.account != _uuid(expected_account_id):
@@ -258,7 +259,10 @@ class _ReadSession:
         if outcome.get('status_code')!=200:self.operation_terminal_error=True
         if self.pacing is not None and not self.pacing_finished:
             try:
-                self.pacing.finish(self.pacing_token, admission=self.evaluated_at, ownership=self.pacing_owner, **outcome)
+                receipt=None if self.operation is None else dict(operation=self.operation,
+                    request_kinds=list(self.request_kinds),response_sha256=list(self.response_sha256))
+                self.pacing.finish(self.pacing_token, admission=self.evaluated_at, ownership=self.pacing_owner,
+                    receipt=receipt,**outcome)
             except Exception as exc:
                 _sanitize(exc)  # Storage faults must never enter the HTTP retry/outcome branch.
             self.pacing_finished = True
@@ -307,13 +311,8 @@ class _ReadSession:
         return self._get_checked(BTC_QUOTE_URL)
 
     def _operation_patterns(self):
-        return {
-            'ACCOUNT_INVENTORY':(('ACCOUNT','POSITIONS','OPEN_ORDERS','ACCOUNT'),),
-            'BTC_ASSET_RULES':(('ACCOUNT','ASSET','ACCOUNT'),),
-            'BTC_QUOTE_OBSERVATION':(('ACCOUNT','QUOTE','ACCOUNT'),),
-            'ACTIVITY_COLLECTION':(('ACCOUNT','ACTIVITY_PAGE','ACCOUNT'),('ACCOUNT','ACTIVITY_PAGE','ACTIVITY_PAGE','ACCOUNT')),
-            'ORIGINAL_ID_RECOVERY':(('ACCOUNT','ORIGINAL_LOOKUP','ACCOUNT'),),
-        }[self.operation]
+        from nexus.paper_read_pacing import OPERATION_PATTERNS
+        return OPERATION_PATTERNS[self.operation]
 
     def _operation_request(self,url,lookup):
         if self.operation is None:return
@@ -383,6 +382,9 @@ class _ReadSession:
                 if length is not None and len(body) != int(length):
                     _fail('PAPER_INSPECTION_BODY_LENGTH_CHANGED')
                 value = json.loads(body.decode('utf-8'), object_pairs_hook=_pairs, parse_constant=_nonfinite, parse_float=Decimal)
+                # Bind the exact accepted response bytes. This preserves JSON
+                # decimal precision without retaining response content.
+                if self.operation is not None:self.response_sha256.append(hashlib.sha256(body).hexdigest())
                 return dict(status_code=200, response=value) if lookup else value
         except HTTPError as exc:
             try:

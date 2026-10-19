@@ -6,6 +6,7 @@ import sys
 
 import pytest
 from nexus import paper_read_pacing as pacing
+from nexus.alpaca_paper_contract import sha
 from test_alpaca_paper_inspection import ACCOUNT
 
 
@@ -15,6 +16,13 @@ def gate(tmp_path):return pacing.PaperReadPacing(tmp_path/'pacing.sqlite3',ACCOU
 
 def begin(gate,owner,operation='BTC_QUOTE_OBSERVATION'):
     return gate.begin(admission=lambda:1000,ownership=owner,operation=operation)
+
+
+def receipt(operation='BTC_QUOTE_OBSERVATION',success=True):
+    kinds=list(pacing.OPERATION_PATTERNS[operation][0] if success else pacing.OPERATION_PATTERNS[operation][0][:1])
+    count=len(kinds) if success else len(kinds)-1
+    return dict(operation=operation,request_kinds=kinds,
+        response_sha256=[sha(dict(operation=operation,index=index)) for index in range(count)])
 
 
 @pytest.mark.parametrize('operation',pacing.OPERATIONS)
@@ -32,7 +40,8 @@ def test_no_owner_completion_refuses_before_admission_and_preserves_typed_uncert
     ids=['success','not-found','rate','auth','server','timeout','network'])
 def test_original_held_lease_can_record_each_outcome(gate,outcome):
     with gate.ownership() as owner:
-        token=begin(gate,owner);head=gate.finish(token,admission=lambda:1001,ownership=owner,**outcome)
+        token=begin(gate,owner);head=gate.finish(token,admission=lambda:1001,ownership=owner,
+            receipt=receipt(success=outcome.get('status_code')==200),**outcome)
     assert gate.inspect()['pending_token'] is None and gate.inspect()['head_sha256']==head
 
 
@@ -58,7 +67,8 @@ def test_owner_release_after_result_insert_rolls_back_and_keeps_pending(gate,mon
         if body.get('kind')=='RESULT':owner.__exit__()
         return result
     monkeypatch.setattr(gate,'_append',append)
-    with pytest.raises(ValueError,match='OWNER_REQUIRED'):gate.finish(token,admission=lambda:1001,ownership=owner,status_code=200)
+    with pytest.raises(ValueError,match='OWNER_REQUIRED'):gate.finish(token,admission=lambda:1001,ownership=owner,
+        status_code=200,receipt=receipt())
     assert gate.path.read_bytes()==before and gate.inspect()['pending_token']==token
 
 
@@ -91,7 +101,7 @@ def test_lost_result_return_retains_committed_outcome_and_never_rearms(gate,monk
                 self.db.__exit__(*args)
                 if args[0] is None:raise OSError('lost commit acknowledgment')
         monkeypatch.setattr(gate,'_connect',lambda write=False:LostReturn(connect(write)) if write else connect())
-        with pytest.raises(OSError):gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner)
+        with pytest.raises(OSError):gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt())
         monkeypatch.setattr(gate,'_connect',connect)
         before=gate.path.read_bytes()
         with pytest.raises(ValueError,match='TOKEN_DISAGREEMENT'):gate.finish(token,admission=lambda:1002,status_code=200,ownership=owner)

@@ -39,6 +39,7 @@ def test_complete_accepted_history_binds_exact_observations_and_head_without_wri
     assert result['legacy_baseline_absent'] is True
     assert result['complete_pacing_sessions_accepted'] is True
     assert result['accepted_pacing_operations_typed'] is True
+    assert result['accepted_pacing_result_receipts_bound'] is True
     assert result['complete_retained_batches_accepted'] is True
     assert result['complete_collection_observations_accepted'] is True
     assert result['all_collection_cursor_sequences_complete'] is True

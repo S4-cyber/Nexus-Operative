@@ -1,12 +1,12 @@
 # Windows distribution and acceptance evidence
 
-## Verified installer checkpoint — v0.166.2 (2026-10-19 UTC)
+## Verified installer checkpoint — v0.166.3 (2026-10-19 UTC)
 
-[Download the Windows installer artifact](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39185300653/artifacts/12158621118) (ZIP containing the setup EXE; expires 2026-10-26T01:50:33Z). The [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39185300653/artifacts/12158780698) includes source-bound checksums, standalone EXE and offline evidence; expires 2026-11-18T01:50:29Z. GitHub may require sign-in to download.
+[Download the Windows installer artifact](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39189832242/artifacts/12160041702) (ZIP containing the setup EXE; expires 2026-10-26T02:42:39Z). The [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39189832242/artifacts/12159802457) includes source-bound checksums, standalone EXE and offline evidence; expires 2026-11-18T02:42:35Z. GitHub may require sign-in to download.
 
-Verified source: `f9de4fdd566a8df24d41a5e275a30d73acfbf754`. Windows39185300653, safety/browser39185300636 and security39185300627 completed successfully. Installer evidence artifact12158102585 expires 2026-11-18T01:50:31Z; standalone artifact12158133467 expires 2026-11-18T01:47:01Z.
+Verified source: `79068059513052a09f0d338f3507f9482f7b03b7`. Windows39189832242, safety/browser39189832249 and security39189832236 completed successfully. Installer evidence artifact12159677711 expires 2026-11-18T02:42:38Z; standalone artifact12160231173 expires 2026-11-18T02:37:43Z.
 
-This checkpoint includes exact nanosecond original-order snapshot ordering, the v0.166.1 typed pacing-status PORTAL correction, v0.166.2 original-lease completion and every earlier safeguard. It excludes the v0.166.3 typed activity-acceptance operation binding, which requires its own exact-source native checks. Automated disposable installer/browser acceptance does not close ordinary-owner profile/ACL, native-window, actual broker, sustained-market or release gates. Keep trading halted during upgrade review and preserve private data/backups.
+This checkpoint includes typed activity-purpose acceptance, original-lease completion, exact nanosecond original-order snapshot ordering and every earlier safeguard. It excludes the v0.167.0 mixed-operation receipt binding, which requires its own exact-source native checks. Automated disposable installer/browser acceptance does not close ordinary-owner profile/ACL, native-window, actual broker, sustained-market or release gates. Keep trading halted during upgrade review and preserve private data/backups.
 
 
 ## Previous verified installer checkpoint — v0.166 (2026-10-19 UTC)

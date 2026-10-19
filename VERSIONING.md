@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.166.3 (pre-release).** Accepted activity history now requires exact typed `ACTIVITY_COLLECTION` pacing transitions before request/fill or balance composition. Legacy untyped rows remain readable but operation-unverified and cannot satisfy acceptance; no history is rewritten, relabeled, deleted or automatically retried. The v0.166.2 original-lease completion, v0.166.1 PORTAL status correction, v0.166 exact ordering and earlier safeguards remain. No provider, funds, routing or release authority is introduced.
+**Current development build: 0.167.0 (pre-release).** Every typed fixed paper-read result now carries a central, content-free receipt binding its operation, request-kind sequence and response hashes. Acceptance requires receipt-bound typed activity history. Earlier typed rows remain readable but unreceipted and cannot satisfy acceptance; legacy rows are not relabeled. The v0.166.3 activity-purpose binding and earlier safeguards remain. No provider, funds, routing or release authority is introduced.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

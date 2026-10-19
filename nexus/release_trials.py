@@ -555,6 +555,7 @@ print(json.dumps({'origins':r['request_origin_bound_transitions'],'prefixes':r['
                 two_explicit_fills_retained=result['collection']['counts']['executions']==2,
                 acceptance_replayed=status['all_accepted_transitions_replayed'] and status['accepted_transitions']==1,
                 accepted_operation_typed=status['all_pacing_operations_typed'],
+                accepted_result_receipt_bound=status['all_pacing_result_receipts_bound'],
                 request_journal_unchanged=request_unchanged,stale_head_denied_before_vault_and_io=stale,
                 manual_order_file_not_created=not list(root.rglob('orders.json')))
             return dict(source='SYNTHETIC_RETAINED_REQUEST_ACTIVITY_COLLECTION_FIXTURE',passed=all(checks.values()),
@@ -749,7 +750,7 @@ def _validate(profile, result):
     if profile == 'collection':
         from nexus.paper_activity_acceptance_probe import FLAGS as REQUEST_COLLECTION_FLAGS
         linked=result['request_derived_collection']
-        _require(linked['source']=='SYNTHETIC_RETAINED_REQUEST_ACTIVITY_COLLECTION_FIXTURE' and linked['injected_get_requests']==3 and all(linked[k] is True for k in ('passed','request_origin_head_persisted','historical_request_prefix_after_append_replayed','request_status_origin_replayed','request_status_after_append_replayed','fresh_process_origin_replayed','request_status_journal_unchanged','request_head_bound','original_orders_derived','two_explicit_fills_retained','acceptance_replayed','accepted_operation_typed','request_journal_unchanged','stale_head_denied_before_vault_and_io','manual_order_file_not_created')),'REQUEST_DERIVED_COLLECTION')
+        _require(linked['source']=='SYNTHETIC_RETAINED_REQUEST_ACTIVITY_COLLECTION_FIXTURE' and linked['injected_get_requests']==3 and all(linked[k] is True for k in ('passed','request_origin_head_persisted','historical_request_prefix_after_append_replayed','request_status_origin_replayed','request_status_after_append_replayed','fresh_process_origin_replayed','request_status_journal_unchanged','request_head_bound','original_orders_derived','two_explicit_fills_retained','acceptance_replayed','accepted_operation_typed','accepted_result_receipt_bound','request_journal_unchanged','stale_head_denied_before_vault_and_io','manual_order_file_not_created')),'REQUEST_DERIVED_COLLECTION')
         _require(all(linked[k] is False for k in (*REQUEST_COLLECTION_FLAGS,'actual_provider_access','actual_vault_access')),'REQUEST_DERIVED_COLLECTION_AUTHORITY')
         _require(result['get_requests'] == 4 and result['retained_activities'] == 200 and
             result['retained_observations'] == 1 and result['retained_pages'] == 2, 'COLLECTION_RETENTION')
@@ -815,7 +816,8 @@ def _validate(profile, result):
             'precommit_death_retained_unbound_transition','postcommit_death_replayed_bound_transition',
             'precommit_rollback_journal_observed','fresh_process_journals_unchanged',
             'fresh_process_vault_silent','postcommit_latest_content_replayed',
-            'postcommit_all_content_replayed','postcommit_all_pacing_operations_typed')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
+            'postcommit_all_content_replayed','postcommit_all_pacing_operations_typed',
+            'postcommit_all_pacing_result_receipts_bound')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
         _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access','source_attested',
             'activity_coverage_verified','fee_execution_links_verified','broker_account_reconciled',
             'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled',
@@ -837,6 +839,7 @@ def _validate(profile, result):
             result['legacy_baseline_absent'] is True and
             result['complete_pacing_sessions_accepted'] is True and
             result['accepted_pacing_operations_typed'] is True and
+            result['accepted_pacing_result_receipts_bound'] is True and
             result['complete_retained_batches_accepted'] is True and
             result['complete_collection_observations_accepted'] is True and
             result['all_collection_cursor_sequences_complete'] is True and
@@ -856,7 +859,7 @@ def _validate(profile, result):
         from nexus.paper_request_activity_acceptance import FLAGS as ACCEPTED_FLAGS
         _require(accepted['source']=='SYNTHETIC_LOCAL_ACCEPTED_REQUEST_FILL_FIXTURE' and
             all(accepted[k] is True for k in ('passed','accepted_history_bound','original_request_linked',
-                'accepted_pacing_operations_typed','explicit_fills_checked','journals_unchanged','unbound_activity_rejected')),
+                'accepted_pacing_operations_typed','accepted_pacing_result_receipts_bound','explicit_fills_checked','journals_unchanged','unbound_activity_rejected')),
             'REQUEST_ACTIVITY_ACCEPTANCE')
         _require(all(accepted[k] is False for k in ACCEPTED_FLAGS) and
             accepted['actual_provider_access'] is accepted['actual_vault_access'] is False,

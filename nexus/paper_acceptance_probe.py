@@ -68,11 +68,13 @@ def _inspect_paced(*, expected_account_id, pacing_path, confirm_read_only_paper=
     observation=portable.validate(result['portable_observation'])
     if observation['account_id']!=account:_fail()
     after=gate.inspect()
+    operations=gate.operation_history()
     # Another valid append/change is not silently attributed to this probe. This
     # sampled binding is not a cross-process reservation or broker attestation.
     if (after['sessions']!=before['sessions']+1 or after['events']!=before['events']+2 or
         after['pending_token'] is not None or after['review_required'] is not False or
-        after['last_outcome']!='SUCCESS'):_fail()
+        after['last_outcome']!='SUCCESS' or not operations or
+        operations[-1]['operation']!='ACCOUNT_INVENTORY' or operations[-1]['result_receipt_bound'] is not True):_fail()
     pacing=dict(account_sha256=after['account_sha256'],before_head_sha256=before['head_sha256'],
         after_head_sha256=after['head_sha256'],events=after['events'],sessions=after['sessions'],
         next_allowed_at=after['next_allowed_at'],min_post_result_cooldown_seconds=after['min_post_result_cooldown_seconds'],

@@ -32,7 +32,10 @@ def prepared(root, prices=('98','100'), *, typed=True):
     if typed:
         with pacing.ownership() as owner:
             token=pacing.begin(admission=lambda:1000,ownership=owner,operation='ACTIVITY_COLLECTION')
-            pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner)
+            kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
+            pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
+                receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
+                    response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)]))
     else:
         token=pacing.begin(admission=lambda:1000)
         pacing.finish(token,admission=lambda:1000,status_code=200)
@@ -98,6 +101,7 @@ def test_complete_accepted_history_binds_original_terms_and_explicit_fills(tmp_p
     assert result['request_activity_review']['request_reviews'][0]['explicit_fill_count']==2
     assert result['journals_rechecked_unchanged'] is True and snapshot(tmp_path)==before
     assert result['accepted_pacing_operations_typed'] is True
+    assert result['accepted_pacing_result_receipts_bound'] is True
     assert all(result[name] is False for name in subject.FLAGS)
 
 
@@ -114,6 +118,23 @@ def test_legacy_unspecified_pacing_transition_remains_readable_but_cannot_be_acc
     monkeypatch.setattr(subject.request_review,'review',lambda *a,**k:pytest.fail('legacy purpose must block before review'))
     with pytest.raises(ValueError,match='ACCEPTED_HISTORY_REQUIRED'):
         subject.review(**options)
+
+
+def test_pre_receipt_typed_transition_is_replayed_but_cannot_be_accepted(tmp_path,monkeypatch):
+    options,_,_=prepared(tmp_path)
+    original=subject.PaperReadPacing.operation_history
+    monkeypatch.setattr(subject.PaperReadPacing,'operation_history',
+        lambda self:tuple(dict(row,result_receipt_bound=False,receipt_sha256=None) for row in original(self)))
+    state=subject.acceptance_status(expected_account_id=ACCOUNT,
+        pacing_path=options['pacing_path'],activity_store_path=options['activity_store_path'],
+        acceptance_store_path=options['acceptance_store_path'])
+    assert state['latest_pacing_transition_replayed'] is True
+    assert state['latest_pacing_operation_typed'] is True
+    assert state['latest_pacing_result_receipt_bound'] is False
+    assert state['all_pacing_result_receipts_bound'] is False
+    assert state['cross_journal_recovery_state']=='ACCEPTED_PACING_RESULT_RECEIPT_UNVERIFIED_REVIEW_REQUIRED'
+    monkeypatch.setattr(subject.request_review,'review',lambda *a,**k:pytest.fail('unreceipted history must block before review'))
+    with pytest.raises(ValueError,match='ACCEPTED_HISTORY_REQUIRED'):subject.review(**options)
 
 
 def test_unaccepted_direct_activity_append_blocks_before_component_review(tmp_path,monkeypatch):

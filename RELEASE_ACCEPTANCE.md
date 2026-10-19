@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.166.3 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.167.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -784,3 +784,13 @@ New collection probes verify that the typed activity counter advances exactly on
 This is local operation-purpose consistency, not source attestation, provider quota acceptance or broker-wide mixed-operation acceptance. No credentials, provider call, API/UI control, order route, ledger write, funding action or live authority is added. Actual paper-account evidence, centralized cross-operation budgeting, sustained market trials, source/clock/fee/hold/funds reconciliation, native-profile/ACL, funding/live/cloud, independent review and owner 1.0 approval remain open. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 Local v0.166.3 validation: 2,997 Python tests passed with one existing Starlette/httpx deprecation warning; the focused acceptance/pacing/release/version set passed 249 tests. All sixteen offline profiles and saved-evidence verification passed against 322 source files / `0e2573a4d64e6d6e4dff671934df19ebdbfd17d00c5692a302bf48fa7632a062`; `validation/release_trials_0_166_3.json` SHA-256 is `833452f6c6ee2888993b9c9b8240398e064cabc44f5c4eb7a4efaf59b3f97cd8`. All fourteen Node controller smokes, Portal inline syntax, compileall, dependency consistency, generated-roadmap comparison and whitespace checks passed. Exact-source public-security, safety/browser and Windows workflows remain required after publication.
+
+## v0.167.0 content-free mixed-operation result receipts
+
+Typed fixed paper-read results now require a central hash-chained receipt binding operation, fixed request-kind sequence, outcome, pacing heads, evaluation time and response SHA-256 sequence. All five real reader flows produce it under the original lease, and fresh replay verifies it. Invalid or missing receipts fail closed before result commit.
+
+Earlier typed results remain readable but unreceipted and cannot satisfy downstream accepted-history gates. Legacy results are not relabeled. No raw response, credential or plaintext account identifier is retained. No automatic migration, retry, deletion or repair exists.
+
+This is local cooperating-code consistency, not provider/source attestation, broker-wide quota acceptance, market realism, funds reconciliation or profitability. No UI/control, provider access, routing, funding, ledger or release authority is added. Rough implementation remains about 40% (30–45%, low confidence), 0/9 stages accepted; release approval and trading permission remain separate and absent.
+
+Local v0.167.0 validation: 3,000 Python tests passed with one existing Starlette/httpx deprecation warning. The final receipt regression passed 121 tests and the complete focused set passed 290. All sixteen offline profiles and saved-evidence verification passed for 322 source files / `c52a216c0f991c1d494771d5611a8b434a6260f8cf8f1e114d094ebc8b6f657d`; report SHA-256 `445f0d890519d40b31504fb5856cef5f708a152d011b8616edb3f0e4fd910eeb`. Fourteen Node controllers, Portal syntax, compilation, dependency, roadmap and whitespace checks passed. The proposed 432-path artifact audit had zero findings. Exact-source CI and Gitleaks remain pending until publication.

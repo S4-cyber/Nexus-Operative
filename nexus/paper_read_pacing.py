@@ -471,7 +471,7 @@ class _ReadOwnership:
 OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','five_request_targets_bound',
     'three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified','five_normalized_results_bound','original_recovery_consumer_checked','five_stale_heads_refused_before_io','mixed_history_review_checked','response_payloads_not_retained',
     'provider_budget_five_purposes_bound','provider_budget_account_heads_bound','provider_budget_content_free','provider_budget_authority_withheld',
-    'provider_account_review_consistent','provider_account_review_durable','provider_account_review_content_free',
+    'provider_results_review_checked','provider_account_review_consistent','provider_account_review_durable','provider_account_review_content_free',
     'one_shared_cooldown','legacy_not_relabelled','legacy_receipt_not_invented',
     'completed_outcomes_preserved','restart_replay_matches','status_read_only')
 OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
@@ -592,6 +592,8 @@ def typed_fixture_report():
             else:stale_refused.append(False)
         from nexus.paper_read_review import fixture_report as mixed_review_fixture,CHECKS as MIXED_CHECKS,FLAGS as MIXED_FLAGS
         mixed_review=mixed_review_fixture()
+        from nexus.paper_provider_result_review import fixture_report as result_fixture,CHECKS as RESULT_CHECKS,FLAGS as RESULT_FLAGS
+        provider_results=result_fixture()
         fixed=[typed_history[index] for index in (0,1,4)]
         wrong_fixed=True
         for record in fixed:
@@ -624,6 +626,7 @@ def typed_fixture_report():
                 (account.encode(),key.encode(),secret.encode(),b'nx_operation_fixture',b'2026-10-17T00:00:00Z')),
             provider_budget_authority_withheld=provider_state['local_provider_scope_coordinated'] is True and
                 provider_state['broker_wide_quota_verified'] is False and provider_state['ready_for_routing'] is False,
+            provider_results_review_checked=provider_results['passed'] is True and all(provider_results[k] is True for k in RESULT_CHECKS) and all(provider_results[k] is False for k in RESULT_FLAGS),
             provider_account_review_consistent=provider_reviewed['local_provider_account_history_consistent'] is True and
                 provider_reviewed['matched_sessions']==5 and all(provider_reviewed[name] is False for name in PROVIDER_REVIEW_FLAGS),
             provider_account_review_durable=provider_review_history['retained_receipts']==1 and

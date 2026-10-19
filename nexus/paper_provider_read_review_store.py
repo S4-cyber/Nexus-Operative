@@ -11,6 +11,7 @@ from nexus.paper_provider_read_review import MAX_ACCOUNTS,PROFILE,ZERO
 from nexus.sqlite_journal_guard import check_existing,check_path_set
 
 SCHEMA='nexus.paper-provider-read-review-history.v1'
+RESULT_PROFILE='nexus.paper-provider-result-review-receipt.v1'
 MAX_RECORDS=256
 MAX_RECORD_BYTES=4096
 MAX_DATABASE_BYTES=4*1024*1024
@@ -68,7 +69,9 @@ class PaperProviderReadReviewStore:
         keys={'profile','provider_sha256','provider_head_sha256','account_manifest_sha256','review_sha256',
             'account_journals','sessions_replayed','matched_sessions','operation_counts',
             'all_five_purposes_observed','local_provider_account_history_consistent'}
-        if type(value) is not dict or set(value)!=keys or value['profile']!=PROFILE or value['provider_sha256']!=self.provider:
+        if type(value) is dict and value.get('profile')==RESULT_PROFILE:
+            keys|={'result_manifest_sha256','normalized_sessions_replayed'}
+        if type(value) is not dict or set(value)!=keys or value['profile'] not in (PROFILE,RESULT_PROFILE) or value['provider_sha256']!=self.provider:
             _fail('SCOPE_INVALID')
         for key in ('provider_sha256','provider_head_sha256','account_manifest_sha256','review_sha256'):
             try:_digest(value[key])
@@ -76,6 +79,9 @@ class PaperProviderReadReviewStore:
         for key in ('account_journals','sessions_replayed','matched_sessions'):
             if type(value[key]) is not int or not 1<=value[key]<=256:_fail('SCOPE_INVALID')
         if value['account_journals']>MAX_ACCOUNTS or value['sessions_replayed']!=value['matched_sessions']:_fail('SCOPE_INVALID')
+        if value['profile']==RESULT_PROFILE:
+            _digest(value['result_manifest_sha256'])
+            if type(value['normalized_sessions_replayed']) is not int or value['normalized_sessions_replayed']!=value['matched_sessions']:_fail('SCOPE_INVALID')
         from nexus.paper_read_pacing import OPERATIONS
         counts=value['operation_counts']
         if (type(counts) is not dict or set(counts)!=set(OPERATIONS) or any(type(v) is not int or v<0 for v in counts.values()) or

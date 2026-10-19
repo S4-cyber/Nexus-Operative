@@ -155,7 +155,7 @@ def retain_review(store_path,gate,bindings,*,expected_head,expected_store_head='
     return store.append(value,expected_head=expected_store_head,admission=lambda:sha(scope()),precommit_check=precommit_check)
 
 
-def _fixture(root,*,full_activity=False):
+def _fixture(root,*,full_activity=False,provider_budget=None,account_id=None,epoch=1792368000):
     """Five actual bounded readers, disposable history and injected response bytes."""
     import io
     from nexus import alpaca_paper_inspection as reader
@@ -165,13 +165,15 @@ def _fixture(root,*,full_activity=False):
     from nexus.paper_quote_observation import inspect_quote
     from nexus.broker_request_journal import BrokerRequestJournal
     from nexus.alpaca_paper_contract import preview
-    account='01234567-89ab-cdef-0123-456789abcdef';epoch=1792368000
+    account=account_id or '01234567-89ab-cdef-0123-456789abcdef'
     raw_account=dict(id=account,currency='USD',status='ACTIVE',crypto_status='ACTIVE',account_blocked=False,
         trading_blocked=False,trade_suspended_by_user=False,cash='1000',non_marginable_buying_power='900',
         pending_transfer_in='0',pending_transfer_out='0',accrued_fees='0')
     asset=dict(id='11234567-89ab-cdef-0123-456789abcdef',symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
         fractionable=True,min_order_size='.5',min_trade_increment='.5',price_increment='.5')
-    quote={'quotes':{'BTC/USD':dict(bp='100',ap='101',bs='2',**{'as':'3'},t='2026-10-19T00:04:00.123456789Z')}}
+    from datetime import datetime,timezone
+    stamp=datetime.fromtimestamp(epoch+240,timezone.utc).strftime('%Y-%m-%dT%H:%M:%S')+'.123456789Z'
+    quote={'quotes':{'BTC/USD':dict(bp='100',ap='101',bs='2',**{'as':'3'},t=stamp)}}
     class Response:
         status=200;headers={'Content-Type':'application/json'}
         def __init__(self,url,value):self.url=url;self.body=io.BytesIO(json.dumps(value).encode())
@@ -185,7 +187,7 @@ def _fixture(root,*,full_activity=False):
     gate=pacing.PaperReadPacing(root/'pacing.sqlite3',account);bindings=[]
     key='fixture_key_only_123';secret='fixture_secret_only_123'
     def args(values,at):return dict(expected_account_id=account,confirm_read_only_paper=True,pacing=gate,
-        opener=Opener(values),wall_clock=lambda:at,elapsed_clock=lambda:50)
+        opener=Opener(values),wall_clock=lambda:at,elapsed_clock=lambda:50,provider_budget=provider_budget)
     def retain(value,scope=None):bindings.append(dict(after_head_sha256=gate.inspect()['head_sha256'],normalized_result=value,request_scope=scope))
     retain(reader.inspect_account(key,secret,**args([raw_account,[],[],raw_account],epoch)))
     retain(inspect_rules(key,secret,**args([raw_account,asset,raw_account],epoch+60)))

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.172.5. Branch: `development/windows-portal-foundation`.
+Revision: 0.173.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.172.5 binds packaged paper-tool evidence to its declared originating OS class so saved Linux evidence can be revalidated on Windows without being mistaken for a native Windows run. The validator still requires exactly seventeen invocations and the read-only-journal fault on WINDOWS_NT evidence, or exactly sixteen and no native claim on NON_WINDOWS evidence; inconsistent or unknown combinations fail closed. Exact v0.172.4 CI exposed this cross-platform evidence defect while its live Windows HTTP trial exercised the native fault. This is release-evidence portability hardening, not ordinary-user profile/ACL, whole-disk, broker cancellation, sustained-market or release acceptance. Exact-source CI remains mandatory. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.173.0 composes exact local provider/account read histories with frozen normalized observations and request scopes for every retained account session. Missing, changed, cross-account or unverified results withhold consistency even when provider counts match. Optional bounded receipts retain only digests and counts under a distinct versioned profile; older count-only receipts retain their original meaning. This is supplied local evidence, not raw-byte normalization, source/clock/quota/funds attestation, actual broker acceptance or order authority. Exact-source Windows/security/browser CI and external acceptance remain mandatory. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

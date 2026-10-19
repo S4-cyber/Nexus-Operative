@@ -34,7 +34,7 @@ def test_typed_begin_requires_owned_account_scope_and_retains_outcome(tmp_path,o
         token=gate.begin(admission=lambda:1000,ownership=owner,operation=operation)
         assert gate.inspect()['pending_operation']==operation
         pending=gate.operation_history()[0];assert pending['outcome']=='PENDING_UNKNOWN' and pending['completed_at'] is None
-        gate.finish(token,admission=lambda:1001,status_code=429,retry_after='120')
+        gate.finish(token,admission=lambda:1001,status_code=429,retry_after='120',ownership=owner)
     record=pacing.PaperReadPacing(gate.path,ACCOUNT).operation_history()[0]
     assert record['operation']==operation and record['outcome']=='RATE_LIMITED'
     assert record['started_at']==1000 and record['completed_at']==1001

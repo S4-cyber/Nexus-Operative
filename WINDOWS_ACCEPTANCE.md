@@ -6,7 +6,7 @@
 
 Verified source: `732cd7db2aad56ec38576f675bcd660a7caf0736`. Windows39182505029, safety/browser39182504957 and security39182504988 completed successfully. Installer evidence artifact12157127297 expires 2026-11-18T01:11:26Z; standalone artifact12157181422 expires 2026-11-18T01:05:25Z.
 
-This checkpoint includes exact nanosecond original-order snapshot ordering plus every v0.165.3 and earlier safeguard. It excludes the v0.166.1 typed pacing-status PORTAL contract correction, which requires its own exact-source native checks. Automated disposable installer/browser acceptance does not close ordinary-owner profile/ACL, native-window, actual broker, sustained-market or release gates. Keep trading halted during upgrade review and preserve private data/backups.
+This checkpoint includes exact nanosecond original-order snapshot ordering plus every v0.165.3 and earlier safeguard. It excludes the v0.166.1 typed pacing-status PORTAL contract correction and v0.166.2 original-lease completion, which requires its own exact-source native checks. Automated disposable installer/browser acceptance does not close ordinary-owner profile/ACL, native-window, actual broker, sustained-market or release gates. Keep trading halted during upgrade review and preserve private data/backups.
 
 
 ## Previous verified installer checkpoint — v0.165.3 (2026-10-19 UTC)

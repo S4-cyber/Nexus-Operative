@@ -258,7 +258,7 @@ class _ReadSession:
         if outcome.get('status_code')!=200:self.operation_terminal_error=True
         if self.pacing is not None and not self.pacing_finished:
             try:
-                self.pacing.finish(self.pacing_token, admission=self.evaluated_at, **outcome)
+                self.pacing.finish(self.pacing_token, admission=self.evaluated_at, ownership=self.pacing_owner, **outcome)
             except Exception as exc:
                 _sanitize(exc)  # Storage faults must never enter the HTTP retry/outcome branch.
             self.pacing_finished = True

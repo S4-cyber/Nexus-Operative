@@ -38,6 +38,7 @@ class PaperReadPacing:
         self.path = Path(path)
         self.account = _uuid(paper_account_id)
         self.account_digest = hashlib.sha256(self.account.encode()).hexdigest()
+        self._active_completion = None
 
     def _path_check(self):
         check_existing(self.path, MAX_DATABASE_BYTES, 'PAPER_READ_PACING_')
@@ -211,17 +212,29 @@ class PaperReadPacing:
                 self._load(db)
                 if clock(admission()) < now: _fail('CLOCK_REGRESSION')
                 if ownership is not None: self._owned(ownership)
+            if operation is not None:self._active_completion=(token,ownership,ownership.lease)
             return token
 
-    def finish(self, token, *, admission, status_code=None, transport_error=None, retry_after=None):
+    def _completion_owner(self,token,ownership,state):
+        if state['operation_sessions'][-1]['operation']==LEGACY_OPERATION:return
+        if ownership is None:_fail('OPERATION_OWNER_REQUIRED')
+        self._owned(ownership)
+        active=self._active_completion
+        if (active is None or active[0]!=token or active[1] is not ownership or active[2] is not ownership.lease):
+            _fail('OPERATION_ORIGINAL_LEASE_REQUIRED')
+        if state['pending_owner_sha256']!=ownership.identity():_fail('OWNER_SCOPE_CHANGED')
+
+    def finish(self, token, *, admission, status_code=None, transport_error=None, retry_after=None,ownership=None):
         """Retain fixed outcome/delay only; a lost return never erases the result."""
         self._path_check()
         if not self.path.exists(): _fail('BINDING_MISSING')
+        if ownership is not None:self._owned(ownership)
         with closing(self._connect(write=True)) as db:
             with db:
                 state = self._load(db)
-                now = clock(admission())
                 if state['pending_token'] is None or token != state['pending_token']: _fail('TOKEN_DISAGREEMENT')
+                self._completion_owner(token,ownership,state)
+                now = clock(admission())
                 if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
                 result = classify(status_code=status_code, transport_error=transport_error,
                                   retry_after=retry_after, evaluated_at=now)
@@ -231,6 +244,8 @@ class PaperReadPacing:
                          delay=result['retry_after_seconds']), state['head_sha256'])
                 self._load(db)
                 if clock(admission()) < now: _fail('CLOCK_REGRESSION')
+                self._completion_owner(token,ownership,state)
+            self._active_completion=None
             return head
 
     def _owned(self, ownership):
@@ -286,6 +301,7 @@ class _ReadOwnership:
         self.gate = gate
         self.path = gate.path.resolve().with_name(gate.path.name + '.owner.lock')
         self.fd = None
+        self.lease = None
 
     def validate(self):
         if self.fd is None or self.path.is_symlink(): _fail('OWNER_REQUIRED')
@@ -317,6 +333,7 @@ class _ReadOwnership:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             self.fd = fd
             self.validate()
+            self.lease=object()
             return self
         except BaseException as error:
             self.fd = None
@@ -333,6 +350,37 @@ OPERATION_CHECKS=('five_actual_readers_typed','one_shared_cooldown','legacy_not_
     'completed_outcomes_preserved','restart_replay_matches','status_read_only')
 OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
     'actual_provider_access','actual_vault_access','ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')
+
+COMPLETION_CHECKS=('original_lease_completes','reacquired_lease_refused','cold_instance_refused',
+                   'pending_history_preserved','explicit_interruption_preserved')
+
+
+def completion_fixture_report():
+    """Temporary typed reservation completion only; no provider or vault work."""
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix='nexus-read-completion-') as directory:
+        account='01234567-89ab-cdef-0123-456789abcdef';root=Path(directory)
+        gate=PaperReadPacing(root/'completed.sqlite3',account)
+        with gate.ownership() as owner:
+            token=gate.begin(admission=lambda:1000,ownership=owner,operation='ACCOUNT_INVENTORY')
+            gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner)
+        completed=gate.inspect()['last_outcome']=='SUCCESS'
+        gate=PaperReadPacing(root/'pending.sqlite3',account);owner=gate.ownership()
+        with owner:token=gate.begin(admission=lambda:1000,ownership=owner,operation='BTC_QUOTE_OBSERVATION')
+        before=gate.path.read_bytes();reacquired=cold=False
+        with owner:
+            try:gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner)
+            except ValueError as error:reacquired=str(error)=='PAPER_READ_PACING_OPERATION_ORIGINAL_LEASE_REQUIRED'
+        restarted=PaperReadPacing(gate.path,account)
+        with restarted.ownership() as another:
+            try:restarted.finish(token,admission=lambda:1001,status_code=200,ownership=another)
+            except ValueError as error:cold=str(error)=='PAPER_READ_PACING_OPERATION_ORIGINAL_LEASE_REQUIRED'
+        state=restarted.inspect();unchanged=before==gate.path.read_bytes() and state['pending_token']==token
+        restarted.interrupt(token,expected_head=state['head_sha256'],expected_account_id=account,confirm_interrupted=True,admission=lambda:1001)
+        after=restarted.inspect()
+        checks=dict(original_lease_completes=completed,reacquired_lease_refused=reacquired,cold_instance_refused=cold,
+            pending_history_preserved=unchanged,explicit_interruption_preserved=after['last_outcome']=='INTERRUPTED_UNKNOWN' and after['next_allowed_at']==1001+INTERRUPTED_COOLDOWN)
+        return dict(source='TEMPORARY_ORIGINAL_READ_LEASE_FIXTURE',passed=all(checks.values()),**checks,**{k:False for k in OPERATION_FLAGS})
 
 
 def typed_fixture_report():

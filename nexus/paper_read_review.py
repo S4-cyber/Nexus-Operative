@@ -20,7 +20,8 @@ FLAGS=('source_attested','source_coverage_verified','clock_domains_verified',
        'ledger_applied','live_orders_enabled','money_movement_enabled',
        'automatic_retry','automatic_continuation','release_approved')
 CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
-        'legacy_tail_unverified','review_preserved_files')
+        'legacy_tail_unverified','review_preserved_files','durable_receipt_replays',
+        'private_results_not_retained')
 
 
 def _fail(code):raise ValueError('PAPER_READ_REVIEW_'+code) from None
@@ -133,6 +134,27 @@ def review(gate,bindings,*,expected_head):
         limitations='Supplied normalized results and one fully replayed local journal only. Co-reported hashes do not prove normalization from response bytes, provider identity, coverage, clock domains, fees, holds, funds, provider-wide quotas or valid-tail preservation. No history import/repair, reservation, retry, routing, account or release acceptance.')
 
 
+def retain_review(store_path,gate,bindings,*,expected_head,expected_store_head='0'*64,precommit_check=lambda:True):
+    """Retain only content digests for one complete review; never raw observations."""
+    from nexus.paper_read_review_store import PaperReadReviewStore,PROFILE
+    frozen=_bindings(bindings)
+    frozen_values=[value for _,value in sorted(frozen.items())]
+    manifest=[dict(after_head_sha256=value['after_head_sha256'],normalized_result_sha256=sha(value['normalized_result']),
+        request_scope_sha256=sha(value['request_scope'])) for value in frozen_values]
+    manifest_sha=sha(manifest)
+    def scope():
+        result=review(gate,frozen_values,expected_head=expected_head)
+        if not result['complete_mixed_history_consistent']:_fail('INCOMPLETE')
+        return dict(profile=PROFILE,account_sha256=result['account_sha256'],pacing_head_sha256=expected_head,
+            review_sha256=sha(result),binding_manifest_sha256=manifest_sha,sessions_replayed=result['sessions_replayed'],
+            supplied_bindings=result['supplied_bindings'],matched_sessions=result['matched_sessions'],
+            operation_counts=result['operation_counts'],all_five_purposes_observed=result['all_five_purposes_observed'],
+            complete_mixed_history_consistent=result['complete_mixed_history_consistent'])
+    value=scope();receipt=sha(value)
+    store=PaperReadReviewStore(store_path,gate)
+    return store.append(value,expected_head=expected_store_head,admission=lambda:sha(scope()),precommit_check=precommit_check)
+
+
 def _fixture(root,*,full_activity=False):
     """Five actual bounded readers, disposable history and injected response bytes."""
     import io
@@ -196,10 +218,17 @@ def fixture_report():
         changed=deepcopy(bindings);changed[0]['normalized_result']['cash']='999'
         different=review(gate,changed,expected_head=head)
         unchanged=files()==before
+        receipt=retain_review(root/'review.sqlite3',gate,bindings,expected_head=head)
+        from nexus.paper_read_review_store import PaperReadReviewStore
+        retained=PaperReadReviewStore(root/'review.sqlite3',gate).inspect()
+        store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
         checks=dict(five_actual_results_match=result['complete_mixed_history_consistent'],
             omission_refused=not omitted['receipt_bindings_consistent'],changed_result_refused=not different['receipt_bindings_consistent'],
             legacy_tail_unverified=not legacy['receipt_bindings_consistent'] and 'LEGACY_PURPOSE_UNVERIFIED' in legacy['review_reasons'],
-            review_preserved_files=unchanged and files()==before)
+            review_preserved_files=unchanged,
+            durable_receipt_replays=retained['retained_receipts']==1 and retained['head_sha256']==receipt['head_sha256'],
+            private_results_not_retained=all(token not in store_bytes for token in
+                (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD',b'1000')))
         return dict(source='TEMPORARY_INJECTED_MIXED_READ_REVIEW',passed=all(checks.values()),**checks,**{flag:False for flag in FLAGS})

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.169.0'
+REVISION = '0.169.1'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.169.0 preserves v0.168.3 normalized-result completeness in Accounts and adds a bounded read-only mixed-history review over one fully replayed local pacing journal and supplied normalized results. It matches all five read purposes, reconstructs fixed and dynamic request scopes, revalidates canonical activity/page content, and flags omitted/changed results, older receipts, failed/interrupted/legacy tails and unknown binding heads. Pinned-head sampling detects concurrent appends; copied inputs are frozen and bounded by count, bytes, depth and nodes. Output contains aggregate counts and hashes only. The mandatory offline profile exercises five actual injected readers, including a nonempty two-page activity collection. This is co-reported local consistency, not response-byte normalization proof, provider-wide quota coordination, accepted broker/source/clock/funds evidence or routing authority. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.169.1 preserves v0.169.0 complete bounded mixed-history review and adds an optional private hash-chained receipt journal for successful reviews. Each receipt binds the exact account digest, pacing head, aggregate review digest, content-free binding-manifest digest, five-purpose counts and completeness result; normalized observations, request scopes, credentials and provider payloads are never stored. Full chain replay, exact expected-head admission, duplicate idempotence, pacing-path/SQLite-sidecar separation and before/during/after-commit rechecks fail closed. A changed post-commit input suppresses acknowledgment without erasing evidence. The mandatory injected profile retains and replays one two-page five-reader receipt and checks private fixture values are absent. This is durable local consistency evidence, not response-byte normalization proof, provider identity, provider-wide quota coordination, valid-tail preservation, broker/source/clock/funds acceptance or routing authority. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

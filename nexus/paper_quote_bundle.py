@@ -88,14 +88,15 @@ def validate(value):
         any(r['operation'] not in ('BTC_QUOTE_OBSERVATION','LEGACY_UNSPECIFIED') for r in state['operation_sessions'])):_fail('UNBOUND_HISTORY')
     bound=[dict(before_head_sha256=r['pacing_before_head_sha256'],after_head_sha256=r['pacing_after_head_sha256'],outcome='SUCCESS') for r in records]
     if bound!=state['completed_sessions']:_fail('PACING_BINDINGS')
-    receipts=all(r['operation']=='BTC_QUOTE_OBSERVATION' and r['result_receipt_bound'] and r['request_targets_bound']
+    receipts=all(r['operation']=='BTC_QUOTE_OBSERVATION' and r['result_receipt_bound']
         for r in state['operation_sessions'])
+    targets=all(pacing.fixed_targets_match(r,'BTC_QUOTE_OBSERVATION') for r in state['operation_sessions'])
     return dict(mode='PRIVATE_PAPER_QUOTE_BUNDLE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
         profile=PROFILE,account_sha256=account_digest,bundle_sha256=value['bundle_sha256'],heads=dict(value['heads']),
         retained_requests=len(retained),retained_quotes=len(records),retained_pacing_sessions=state['sessions'],
         full_request_history_replayed=True,full_quote_history_replayed=True,full_pacing_history_replayed=True,
-        local_capture_history_agreement=receipts,pacing_result_receipts_bound=receipts,
-        pacing_request_targets_bound=receipts,**{k:False for k in FLAGS},
+        local_capture_history_agreement=receipts and targets,pacing_result_receipts_bound=receipts,
+        pacing_request_targets_bound=targets,**{k:False for k in FLAGS},
         limitations='Full copied original-request, quote and pacing chains replayed in memory, including historical prefixes and one quote per successful local transition. Password authentication protects ciphertext under that password; it does not authenticate a broker/source, prove exporter identity, current/complete history, clocks, order timing, fees/funds or profit. The original path scope is retained as a digest, never reinterpreted as this machine\'s provider quota. No file import/restore, vault/network/order, plaintext file or release authority. Original journals and any other copies remain private plaintext unless separately protected.')
 
 

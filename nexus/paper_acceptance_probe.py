@@ -14,7 +14,7 @@ from nexus import paper_credentials
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus import paper_open_order_terms as order_terms
-from nexus.paper_read_pacing import PaperReadPacing, MAX_SESSIONS
+from nexus.paper_read_pacing import PaperReadPacing, MAX_SESSIONS, fixed_targets_match
 from nexus import portable_paper_observation as portable
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -77,8 +77,9 @@ def _inspect_paced(*, expected_account_id, pacing_path, confirm_read_only_paper=
     if (after['sessions']!=before['sessions']+1 or after['events']!=before['events']+2 or
         after['pending_token'] is not None or after['review_required'] is not False or
         after['last_outcome']!='SUCCESS' or not operations or
-        operations[-1]['operation']!='ACCOUNT_INVENTORY' or operations[-1]['result_receipt_bound'] is not True or
-        operations[-1]['request_targets_bound'] is not True):_fail()
+        operations[-1]['before_head_sha256']!=before['head_sha256'] or
+        operations[-1]['after_head_sha256']!=after['head_sha256'] or
+        not fixed_targets_match(operations[-1],'ACCOUNT_INVENTORY')):_fail()
     pacing=dict(account_sha256=after['account_sha256'],before_head_sha256=before['head_sha256'],
         after_head_sha256=after['head_sha256'],events=after['events'],sessions=after['sessions'],
         next_allowed_at=after['next_allowed_at'],min_post_result_cooldown_seconds=after['min_post_result_cooldown_seconds'],

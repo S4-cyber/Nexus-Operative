@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.167.3 (pre-release).** Activity acceptance now compares v2 request-target hashes with the exact retained creation window, page count and original cursor spelling at probe admission and full historical replay. Self-consistent but unrelated receipts require review; a valid later tail cannot hide an earlier mismatch. Existing journal bytes and older reports remain unchanged. Local target consistency grants no provider, funds, routing or release authority; all v0.167.2 safeguards remain.
+**Current development build: 0.167.4 (pre-release).** Fixed account inventory, BTC asset-rule and BTC quote consumers now verify the exact approved endpoint hashes and local pacing transition. Quote retention refuses known target mismatch; live/copy/encrypted quote review withholds agreement for mismatched history. v1 copied receipts remain receipted but target-unverified. Existing journals and published reports are unchanged; no provider, funds, routing or release authority is granted. All v0.167.3 safeguards remain.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

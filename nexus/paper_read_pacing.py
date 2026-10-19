@@ -38,6 +38,26 @@ OPERATION_PATTERNS={
 }
 
 
+
+def fixed_targets_match(record, operation):
+    """Read-only endpoint consistency for the three fixed-target read purposes.
+
+    Receipts are already replay-validated by the caller. Dynamic activity and
+    original-ID targets need their own retained-scope comparisons. This does
+    not authenticate responses, source identity, coverage or provider quotas.
+    """
+    if type(operation) is not str or operation not in ('ACCOUNT_INVENTORY','BTC_ASSET_RULES','BTC_QUOTE_OBSERVATION'):
+        return False
+    if (not isinstance(record, dict) or record.get('operation') != operation or
+        record.get('outcome') != 'SUCCESS' or record.get('receipt_profile') != RECEIPT_PROFILE or
+        record.get('result_receipt_bound') is not True or record.get('request_targets_bound') is not True):
+        return False
+    from nexus import alpaca_paper_inspection as reader
+    targets = (reader.URLS if operation == 'ACCOUNT_INVENTORY' else
+        (reader.URLS[0], reader.ASSET_URL if operation == 'BTC_ASSET_RULES' else reader.BTC_QUOTE_URL, reader.URLS[0]))
+    expected = tuple(sha(dict(method='GET', target=target)) for target in targets)
+    return record.get('request_kinds') == OPERATION_PATTERNS[operation][0] and record.get('request_sha256') == expected
+
 def _fail(code):
     raise ValueError('PAPER_READ_PACING_' + code)
 
@@ -421,7 +441,8 @@ class _ReadOwnership:
         if fd is not None: os.close(fd)
 
 
-OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','five_request_targets_bound','response_payloads_not_retained',
+OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','five_request_targets_bound',
+    'three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified','response_payloads_not_retained',
     'one_shared_cooldown','legacy_not_relabelled','legacy_receipt_not_invented',
     'completed_outcomes_preserved','restart_replay_matches','status_read_only')
 OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
@@ -512,12 +533,22 @@ def typed_fixture_report():
         blocked=Opener([raw_account,[],[],raw_account]);cooldown=False
         try:reader.inspect_account(key,secret,**dict(args([],epoch+302),opener=blocked))
         except ValueError:cooldown=not blocked.requests and before=={p.name:p.read_bytes() for p in Path(directory).iterdir()}
+        fixed=[typed_history[index] for index in (0,1,4)]
+        wrong_fixed=True
+        for record in fixed:
+            for index in range(len(record['request_sha256'])):
+                changed=list(record['request_sha256']);changed[index]=sha(dict(method='GET',target='wrong_fixture_target'))
+                wrong_fixed=wrong_fixed and not fixed_targets_match(dict(record,request_sha256=tuple(changed)),record['operation'])
         checks=dict(five_actual_readers_typed=tuple(r['operation'] for r in history[:5])==OPERATIONS and all(state['operation_counts'][op]==1 for op in OPERATIONS),
             five_request_receipts_bound=len(typed_history)==5 and all(r['result_receipt_bound'] for r in typed_history) and
                 typed_state['typed_result_receipts']==5 and typed_state['unreceipted_typed_results']==0 and typed_state['all_typed_results_receipted'],
             five_request_targets_bound=len(typed_history)==5 and all(r['request_targets_bound'] for r in typed_history) and
                 typed_state['target_bound_typed_results']==5 and typed_state['untargeted_typed_results']==0 and
                 typed_state['all_typed_request_targets_bound'],
+            three_fixed_targets_matched=all(fixed_targets_match(record,record['operation']) for record in fixed),
+            wrong_fixed_targets_refused=wrong_fixed,
+            v1_fixed_targets_unverified=all(not fixed_targets_match(dict(record,receipt_profile=RECEIPT_PROFILE_V1,
+                request_sha256=(),request_targets_bound=False),record['operation']) for record in fixed),
             response_payloads_not_retained=all(value not in retained for value in
                 (account.encode(),key.encode(),secret.encode(),b'nx_operation_fixture',b'2026-10-17T00:00:00Z')),
             one_shared_cooldown=cooldown,legacy_not_relabelled=history[-1]['operation']==LEGACY_OPERATION and state['operation_counts'][LEGACY_OPERATION]==1,

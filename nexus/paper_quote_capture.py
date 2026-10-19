@@ -14,7 +14,7 @@ from nexus import paper_quote_store as quotes,paper_quote_observation as observa
 from nexus.alpaca_paper_contract import sha
 from nexus.broker_lookup_policy import clock
 from nexus.paper_activity_acceptance_probe import _private_path
-from nexus.paper_read_pacing import PaperReadPacing
+from nexus.paper_read_pacing import PaperReadPacing, fixed_targets_match
 from nexus.sqlite_journal_guard import check_path_set
 
 FLAGS=(*observation.FLAGS,'capture_source_attested','pacing_causality_attested','broker_wide_quota_verified','windows_profile_accepted')
@@ -45,7 +45,7 @@ def _review(store,gate,scope,expected_request_head):
     if any(r['operation'] not in ('BTC_QUOTE_OBSERVATION','LEGACY_UNSPECIFIED') for r in operations):reasons.add('PACING_OPERATION_DISAGREEMENT')
     if any(r['operation']!='LEGACY_UNSPECIFIED' and not r['result_receipt_bound'] for r in operations):
         reasons.add('PACING_RESULT_RECEIPT_UNVERIFIED')
-    if any(r['operation']!='LEGACY_UNSPECIFIED' and not r['request_targets_bound'] for r in operations):
+    if any(r['operation']!='LEGACY_UNSPECIFIED' and not fixed_targets_match(r,'BTC_QUOTE_OBSERVATION') for r in operations):
         reasons.add('PACING_REQUEST_TARGET_UNVERIFIED')
     if any(r['operation']=='LEGACY_UNSPECIFIED' for r in operations):reasons.add('PACING_OPERATION_UNVERIFIED')
     if before['pending_token'] is not None:reasons.add('PENDING_READ_REQUIRES_REVIEW')
@@ -119,6 +119,11 @@ def _capture(*,expected_account_id,request_journal_path,quote_store_path,pacing_
                 len(completed)!=after['sessions'] or not completed or completed[-1]!=transition or
                 list(completed[:-1])!=[dict(before_head_sha256=r['pacing_before_head_sha256'],after_head_sha256=r['pacing_after_head_sha256'],outcome='SUCCESS') for r in history['records']]):
                 _fail('PACING_TRANSITION_DISAGREEMENT')
+            operations=gate.operation_history()
+            if (not operations or operations[-1]['before_head_sha256']!=expected_pacing_head or
+                operations[-1]['after_head_sha256']!=after['head_sha256'] or
+                not fixed_targets_match(operations[-1],'BTC_QUOTE_OBSERVATION')):
+                _fail('PACING_REQUEST_TARGET_DISAGREEMENT')
             quotes._observation(value,store.account)
             if not stable():_fail('INPUTS_CHANGED_AFTER_READ')
             retaining=True

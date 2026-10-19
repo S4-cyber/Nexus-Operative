@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.167.3. Branch: `development/windows-portal-foundation`.
+Revision: 0.167.4. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.167.3 compares each accepted activity pacing receipt against the exact account/page/account GET targets reconstructed from the retained creation window and original opaque cursors. New probe admission and full historical replay refuse mismatches even when v2 receipt hashes and all journal heads are self-consistent. A later valid tail cannot conceal an earlier mismatch. One- and two-page fixed bounds, legacy/v1 review, unknown outcomes and all existing history remain unchanged. Mandatory offline recovery evidence includes changed-window and changed-cursor refusals with unchanged private journals. Local target consistency does not attest response content, provider source, coverage, quota, funds or routing. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates stay open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.167.4 compares fixed inventory, BTC asset-rule and BTC quote receipt target hashes with the exact approved GET endpoints. Managed inventory/asset observations require the exact local pacing transition; quote capture refuses known target disagreement before quote retention. Full live quote-history and copied/encrypted bundle replay check every retained session. Older v1 receipts remain receipted but target-unverified; mismatches preserve evidence and grant no public agreement summary or automatic retry. Dynamic activity scope checks from v0.167.3 remain. These comparisons verify local intent, not response normalization, provider source, coverage, quota, funds or routing. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates stay open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

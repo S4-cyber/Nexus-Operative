@@ -469,7 +469,7 @@ class _ReadOwnership:
 
 
 OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','five_request_targets_bound',
-    'three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified','five_normalized_results_bound','original_recovery_consumer_checked','five_stale_heads_refused_before_io','response_payloads_not_retained',
+    'three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified','five_normalized_results_bound','original_recovery_consumer_checked','five_stale_heads_refused_before_io','mixed_history_review_checked','response_payloads_not_retained',
     'one_shared_cooldown','legacy_not_relabelled','legacy_receipt_not_invented',
     'completed_outcomes_preserved','restart_replay_matches','status_read_only')
 OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
@@ -576,6 +576,8 @@ def typed_fixture_report():
             try:run(options)
             except ValueError:stale_refused.append(not blocked_reader.requests and before=={p.name:p.read_bytes() for p in Path(directory).iterdir()})
             else:stale_refused.append(False)
+        from nexus.paper_read_review import fixture_report as mixed_review_fixture,CHECKS as MIXED_CHECKS,FLAGS as MIXED_FLAGS
+        mixed_review=mixed_review_fixture()
         fixed=[typed_history[index] for index in (0,1,4)]
         wrong_fixed=True
         for record in fixed:
@@ -596,6 +598,7 @@ def typed_fixture_report():
             original_recovery_consumer_checked=recovered['mode']=='EXPLICIT_SINGLE_PAPER_RECOVERY_STEP' and
                 recovered['selected_client_order_id']=='nx_operation_fixture' and recovered['recovery']['journal']['lookup']['last_outcome']=='FOUND',
             five_stale_heads_refused_before_io=len(stale_refused)==5 and all(stale_refused),
+            mixed_history_review_checked=mixed_review['passed'] is True and all(mixed_review[k] is True for k in MIXED_CHECKS) and all(mixed_review[k] is False for k in MIXED_FLAGS),
             response_payloads_not_retained=all(value not in retained for value in
                 (account.encode(),key.encode(),secret.encode(),b'nx_operation_fixture',b'2026-10-17T00:00:00Z')),
             one_shared_cooldown=cooldown,legacy_not_relabelled=history[-1]['operation']==LEGACY_OPERATION and state['operation_counts'][LEGACY_OPERATION]==1,

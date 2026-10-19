@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.168.3. Branch: `development/windows-portal-foundation`.
+Revision: 0.169.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.168.3 exposes normalized-result completeness in the existing vault/network-silent Accounts pacing review. It separates completed typed attempts from successful typed reads, then reports successful v3 normalized-result-bound versus older/unbound successes with a nonvacuous completeness flag. Failed attempts remain in receipt/target totals but are never mislabeled as missing normalized success. The strict Portal contract rejects extra/private fields and inconsistent aggregates; no control or journal format changes. All v0.168.2 shared preflight and exact-head admission safeguards remain. These local hashes do not establish broker-wide quotas, provider/source acceptance, coverage, funds or routing. Complete mixed-operation acceptance, actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.169.0 preserves v0.168.3 normalized-result completeness in Accounts and adds a bounded read-only mixed-history review over one fully replayed local pacing journal and supplied normalized results. It matches all five read purposes, reconstructs fixed and dynamic request scopes, revalidates canonical activity/page content, and flags omitted/changed results, older receipts, failed/interrupted/legacy tails and unknown binding heads. Pinned-head sampling detects concurrent appends; copied inputs are frozen and bounded by count, bytes, depth and nodes. Output contains aggregate counts and hashes only. The mandatory offline profile exercises five actual injected readers, including a nonempty two-page activity collection. This is co-reported local consistency, not response-byte normalization proof, provider-wide quota coordination, accepted broker/source/clock/funds evidence or routing authority. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

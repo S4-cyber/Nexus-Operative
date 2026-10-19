@@ -315,6 +315,7 @@ def test_aggregate_fixture_covers_every_reader_without_provider_or_vault():
 @pytest.mark.parametrize('field,value,code',[
     ('five_actual_readers_typed',False,'TYPED_READ_OPERATIONS'),
     ('five_stale_heads_refused_before_io',False,'TYPED_READ_OPERATIONS'),
+    ('mixed_history_review_checked',False,'TYPED_READ_OPERATIONS'),
     ('operation_identity_attested',True,'TYPED_READ_AUTHORITY'),
     ('mixed_operation_acceptance_verified',True,'TYPED_READ_AUTHORITY')])
 def test_release_evidence_requires_typed_checks_without_authority(field,value,code):

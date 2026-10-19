@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.166.2. Branch: `development/windows-portal-foundation`.
+Revision: 0.166.3. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.166.2 preserves the v0.166.1 typed PORTAL pacing-status correction and requires typed paper-read outcomes to complete under the original still-held local ownership acquisition. Completion checks run before caller admission and after result insertion; lease release/reacquisition, cold instances and revocation refuse while preserving pending uncertainty. Actual reader sessions pass their original owner. Explicit interrupted-read review and the full-day cooldown remain; legacy untyped completion and existing journal bytes still replay. These runtime checks do not retrospectively attest recorded results, make local locks distributed or grant provider/trading authority. v0.166 exact event ordering and earlier safeguards remain. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner gates stay open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.166.3 requires every accepted activity transition to replay against an exact typed ACTIVITY_COLLECTION pacing session before request/fill or balance composition. Legacy untyped transitions remain readable and byte-compatible but are classified as operation-unverified and cannot satisfy accepted-history gates; there is no automatic repair, relabel or deletion. New acceptance probes also verify that the typed activity counter advances while the legacy counter does not. v0.166.2 original-lease completion, the v0.166.1 typed PORTAL status correction, v0.166 exact event ordering and earlier safeguards remain. These local checks do not attest provider source, establish a broker-wide budget or grant trading authority. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner gates stay open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

@@ -35,6 +35,7 @@ def _accepted(status):
         and status['accepted_transitions'] == status['retained_batches']
         and status['accepted_transitions'] == status['retained_collection_observations']
         and status['all_collection_cursor_sequences_complete'] is True
+        and status['all_pacing_operations_typed'] is True
         and status['replayed_accepted_transitions'] == status['accepted_transitions']
         and status['latest_acceptance_record_replayed'] is True
         and status['all_accepted_transitions_replayed'] is True
@@ -113,6 +114,7 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
         status='REVIEW_REQUIRED', read_only=True, **scope, input_sha256=sha(scope),
         journals_rechecked_unchanged=True, complete_accepted_history_replayed=True,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
+        accepted_pacing_operations_typed=True,
         complete_retained_batches_accepted=True,
         complete_collection_observations_accepted=True,
         all_collection_cursor_sequences_complete=True,
@@ -198,6 +200,7 @@ def fixture_report():
             result['journals_rechecked_unchanged'] is True and result['accepted_transitions']==1)
         complete=(result['legacy_baseline_absent'] is True and
             result['complete_pacing_sessions_accepted'] is True and
+            result['accepted_pacing_operations_typed'] is True and
             result['complete_retained_batches_accepted'] is True and
             result['complete_collection_observations_accepted'] is True)
         cursor_complete=result['all_collection_cursor_sequences_complete'] is True
@@ -214,6 +217,7 @@ def fixture_report():
             exact_activity_head_bound=exact_bound, complete_accepted_history_replayed=replayed,
             legacy_baseline_absent=result['legacy_baseline_absent'],
             complete_pacing_sessions_accepted=result['complete_pacing_sessions_accepted'],
+            accepted_pacing_operations_typed=result['accepted_pacing_operations_typed'],
             complete_retained_batches_accepted=result['complete_retained_batches_accepted'],
             complete_collection_observations_accepted=result['complete_collection_observations_accepted'],
             all_collection_cursor_sequences_complete=cursor_complete,

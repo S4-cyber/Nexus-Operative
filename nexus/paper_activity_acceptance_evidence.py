@@ -54,8 +54,9 @@ def _scope(root,index=1,*,full_page=False):
     before_pacing=pacing.inspect();before_activity=activity.inspect()
     acceptance.bind(pacing_head=before_pacing['head_sha256'],retention_head=before_activity['head_sha256'],
         pacing_sessions=before_pacing['sessions'],retained_batches=before_activity['retained_batches'])
-    token=pacing.begin(admission=lambda:at)
-    pacing.finish(token,admission=lambda:at,status_code=200)
+    with pacing.ownership() as owner:
+        token=pacing.begin(admission=lambda:at,ownership=owner,operation='ACTIVITY_COLLECTION')
+        pacing.finish(token,admission=lambda:at,status_code=200,ownership=owner)
     rows=[dict(id=f'2026101{6+index}000000000::11234567-89ab-cdef-0123-{index*1000+i:012d}',
         activity_type='FEE',status='executed',net_amount='-0.01',date=f'2026-10-{15+index:02d}')
         for i in range(1,(PAGE_SIZE if full_page else 1)+1)]
@@ -130,6 +131,7 @@ after=_sqlite_files_snapshot(root)
 print(json.dumps({'recovery':result['cross_journal_recovery_state'],'heads_match':result['cross_journal_heads_match'],
  'latest_content_replayed':result['latest_acceptance_record_replayed'],
  'all_content_replayed':result['all_accepted_transitions_replayed'],
+ 'all_operations_typed':result['all_pacing_operations_typed'],
  'replayed_records':result['replayed_accepted_transitions'],'records':result['accepted_transitions'],
  'unchanged':before==after,'rollback_journal_observed':any(name.endswith('-journal') for name,_,_ in before),**attempts}))
 '''
@@ -161,6 +163,7 @@ def fixture_report():
         after_bound=(after_acceptance.inspect()['records']==2 and
             after['recovery']=='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED' and after['heads_match'] and
             after['latest_content_replayed'] and after['all_content_replayed'] and
+            after['all_operations_typed'] and
             after['replayed_records']==after['records']==2)
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
@@ -174,6 +177,7 @@ def fixture_report():
             fresh_process_journals_unchanged=unchanged,fresh_process_vault_silent=silent,
             postcommit_latest_content_replayed=after['latest_content_replayed'],
             postcommit_all_content_replayed=after['all_content_replayed'],
+            postcommit_all_pacing_operations_typed=after['all_operations_typed'],
             accepted_transitions_after_commit=after['records'],
             actual_provider_access=False,actual_vault_access=False,source_attested=False,
             activity_coverage_verified=False,fee_execution_links_verified=False,

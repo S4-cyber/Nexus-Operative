@@ -234,5 +234,8 @@ def test_activity_receipt_cannot_accept_a_different_declared_operation(tmp_path,
     def changed(self):return tuple(dict(row,operation='BTC_QUOTE_OBSERVATION') for row in original(self))
     monkeypatch.setattr(pacing.PaperReadPacing,'operation_history',changed)
     after=paper_activity_acceptance_probe.status(**common)
-    assert after['latest_pacing_transition_replayed'] is False
+    assert after['latest_pacing_transition_replayed'] is True
+    assert after['latest_pacing_operation_typed'] is False
+    assert after['all_pacing_operations_typed'] is False
     assert after['latest_acceptance_record_replayed'] is False
+    assert after['cross_journal_recovery_state']=='ACCEPTED_PACING_OPERATION_UNVERIFIED_REVIEW_REQUIRED'

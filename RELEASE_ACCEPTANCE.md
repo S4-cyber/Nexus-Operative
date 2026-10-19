@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.166.2 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.166.3 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -774,3 +774,13 @@ Final v0.166.2 merged-source validation: 2,996 Python tests passed with one exis
 Concurrent v0.166.1 commit 0d11dd2a19a2c5917e2891cd4a3e23395bf606cb was preserved as the publication parent after verifying all 428 parent file blobs. Its PORTAL typed-status validator, real-response browser fixture check, Node fixture, continuity notes and previously published trial report remain intact. The local batch was renumbered v0.166.2 and its evidence regenerated against the combined source. Parent security39184879950 passed; Windows39184879795 and safety/browser39184879966 were running at the latest check. Exact-source v0.166.2 CI remains required.
 
 Verified v0.166 source732cd7db2aad56ec38576f675bcd660a7caf0736 passed Windows39182505029, safety/browser39182504957 and security39182504988. WINDOWS_ACCEPTANCE.md retains its installer12156813547 and distribution12157391527 with explicit exclusions for the later PORTAL and original-lease changes. No actual provider/account/source/clock/fee/funds, ordinary native-profile/ACL, sustained market, funding/live/cloud, independent or owner1.0 acceptance follows from these offline/injected checks or disposable native CI. All authority remains false; implementation estimate stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+
+## v0.166.3 typed activity-acceptance operation binding
+
+Accepted activity replay now distinguishes a matching pacing head transition from a verified operation purpose. Every accepted transition must map to a successful typed `ACTIVITY_COLLECTION` session before request/fill review or balance composition can run. A legacy `LEGACY_UNSPECIFIED` transition remains hash-replayable and visible, but status classifies it as `ACCEPTED_PACING_OPERATION_UNVERIFIED_REVIEW_REQUIRED`; it cannot be counted as fully accepted history.
+
+New collection probes verify that the typed activity counter advances exactly once and that the legacy counter does not change. Status exposes only aggregate typed/legacy counts and fixed booleans. Existing journal bytes are not rewritten, relabeled, deleted or automatically retried. Operators must retain legacy history and treat separately collected typed evidence as a distinct reviewed scope; creating another journal must not be used to conceal earlier uncertainty.
+
+This is local operation-purpose consistency, not source attestation, provider quota acceptance or broker-wide mixed-operation acceptance. No credentials, provider call, API/UI control, order route, ledger write, funding action or live authority is added. Actual paper-account evidence, centralized cross-operation budgeting, sustained market trials, source/clock/fee/hold/funds reconciliation, native-profile/ACL, funding/live/cloud, independent review and owner 1.0 approval remain open. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+Local v0.166.3 validation: 2,997 Python tests passed with one existing Starlette/httpx deprecation warning; the focused acceptance/pacing/release/version set passed 249 tests. All sixteen offline profiles and saved-evidence verification passed against 322 source files / `0e2573a4d64e6d6e4dff671934df19ebdbfd17d00c5692a302bf48fa7632a062`; `validation/release_trials_0_166_3.json` SHA-256 is `833452f6c6ee2888993b9c9b8240398e064cabc44f5c4eb7a4efaf59b3f97cd8`. All fourteen Node controller smokes, Portal inline syntax, compileall, dependency consistency, generated-roadmap comparison and whitespace checks passed. Exact-source public-security, safety/browser and Windows workflows remain required after publication.

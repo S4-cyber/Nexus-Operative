@@ -170,11 +170,14 @@ def test_status_replays_both_journals_without_order_vault_or_network(vault,tmp_p
     assert all(result[name] is True for name in ('latest_accepted_receipt_replayed','latest_collection_scope_replayed',
         'latest_account_fields_replayed','latest_collection_observation_replayed','latest_activity_input_replayed',
         'latest_pacing_transition_replayed','latest_retention_transition_replayed','latest_acceptance_record_replayed',
+        'latest_pacing_operation_typed',
         'all_accepted_receipts_replayed','all_collection_scopes_replayed','all_account_fields_replayed',
         'all_collection_observations_replayed','all_activity_inputs_replayed','all_pacing_transitions_replayed',
+        'all_pacing_operations_typed',
         'all_retention_transitions_replayed','all_accepted_transitions_replayed',
         'latest_collection_cursor_sequence_complete','all_collection_cursor_sequences_complete'))
     assert result['replayed_accepted_transitions']==1
+    assert result['typed_activity_collection_sessions']==1 and result['legacy_unspecified_sessions']==0
     assert vault.reads==reads and before==(pacing.read_bytes(),activity.read_bytes(),acceptance.read_bytes())
 
 

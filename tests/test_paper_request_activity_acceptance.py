@@ -20,7 +20,7 @@ ACCOUNT='01234567-89ab-cdef-0123-456789abcdef'
 AFTER='2026-10-17T00:00:00Z';UNTIL='2026-10-18T00:00:00Z'
 
 
-def prepared(root, prices=('98','100')):
+def prepared(root, prices=('98','100'), *, typed=True):
     root.mkdir(exist_ok=True)
     pacing=PaperReadPacing(root/'pacing.sqlite3',ACCOUNT)
     activity=BrokerActivityStore(root/'activity.sqlite3',ACCOUNT)
@@ -29,7 +29,13 @@ def prepared(root, prices=('98','100')):
     pace_before=pacing.inspect();activity_before=activity.inspect()
     acceptance.bind(pacing_head=pace_before['head_sha256'],
         retention_head=activity_before['head_sha256'],pacing_sessions=0,retained_batches=0)
-    token=pacing.begin(admission=lambda:1000);pacing.finish(token,admission=lambda:1000,status_code=200)
+    if typed:
+        with pacing.ownership() as owner:
+            token=pacing.begin(admission=lambda:1000,ownership=owner,operation='ACTIVITY_COLLECTION')
+            pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner)
+    else:
+        token=pacing.begin(admission=lambda:1000)
+        pacing.finish(token,admission=lambda:1000,status_code=200)
 
     asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
         fractionable=True,min_order_size='.5',min_trade_increment='.5',price_increment='.5')
@@ -91,7 +97,23 @@ def test_complete_accepted_history_binds_original_terms_and_explicit_fills(tmp_p
     assert result['local_request_activity_agreement'] is True
     assert result['request_activity_review']['request_reviews'][0]['explicit_fill_count']==2
     assert result['journals_rechecked_unchanged'] is True and snapshot(tmp_path)==before
+    assert result['accepted_pacing_operations_typed'] is True
     assert all(result[name] is False for name in subject.FLAGS)
+
+
+def test_legacy_unspecified_pacing_transition_remains_readable_but_cannot_be_accepted(tmp_path,monkeypatch):
+    options,_,_=prepared(tmp_path,typed=False)
+    state=subject.acceptance_status(expected_account_id=ACCOUNT,
+        pacing_path=options['pacing_path'],activity_store_path=options['activity_store_path'],
+        acceptance_store_path=options['acceptance_store_path'])
+    assert state['latest_pacing_transition_replayed'] is True
+    assert state['latest_pacing_operation_typed'] is False
+    assert state['all_pacing_operations_typed'] is False
+    assert state['legacy_unspecified_sessions']==1
+    assert state['cross_journal_recovery_state']=='ACCEPTED_PACING_OPERATION_UNVERIFIED_REVIEW_REQUIRED'
+    monkeypatch.setattr(subject.request_review,'review',lambda *a,**k:pytest.fail('legacy purpose must block before review'))
+    with pytest.raises(ValueError,match='ACCEPTED_HISTORY_REQUIRED'):
+        subject.review(**options)
 
 
 def test_unaccepted_direct_activity_append_blocks_before_component_review(tmp_path,monkeypatch):

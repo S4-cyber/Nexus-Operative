@@ -38,6 +38,7 @@ def test_complete_accepted_history_binds_exact_observations_and_head_without_wri
     assert result['complete_accepted_history_replayed'] is True
     assert result['legacy_baseline_absent'] is True
     assert result['complete_pacing_sessions_accepted'] is True
+    assert result['accepted_pacing_operations_typed'] is True
     assert result['complete_retained_batches_accepted'] is True
     assert result['complete_collection_observations_accepted'] is True
     assert result['all_collection_cursor_sequences_complete'] is True
@@ -182,6 +183,7 @@ def test_release_fixture_is_repeatable_vault_and_provider_silent():
     assert result['continuation_required_history_rejected']
     assert result['exact_activity_head_bound'] and result['complete_accepted_history_replayed']
     assert result['legacy_baseline_absent'] and result['complete_pacing_sessions_accepted']
+    assert result['accepted_pacing_operations_typed']
     assert result['complete_retained_batches_accepted']
     assert result['complete_collection_observations_accepted']
     assert result['all_collection_cursor_sequences_complete']

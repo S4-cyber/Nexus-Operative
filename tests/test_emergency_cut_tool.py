@@ -99,3 +99,27 @@ def test_priority_failure_never_prevents_latch_or_durable_halt(tmp_path,monkeypa
     assert report['passed'] and report['durable_order_halt_confirmed']
     assert report['emergency_priority_attempted'] and not report['emergency_priority_confirmed']
     assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
+
+
+def test_storage_failure_retains_cut_until_explicit_retry_finishes_cleanup(tmp_path,monkeypatch):
+    gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
+    gateway.submit('storage-fault','BTC-USD','BUY',1,tier='terrestrial')
+    original=DurableOrderGateway.emergency_halt
+    monkeypatch.setattr(DurableOrderGateway,'emergency_halt',
+        lambda self:(_ for _ in ()).throw(OSError('PRIVATE_STORAGE_FAULT')))
+    from nexus.emergency_cut_tool import activate
+    first=activate(tmp_path)
+    assert not first['passed'] and first['halted']
+    assert first['emergency_cut_state']=='UNCONFIRMED'
+    assert first['intent_preceded_durable_halt'] and first['emergency_intent_present']
+    assert not first['durable_order_halt_confirmed']
+    with pytest.raises(ValueError,match='EMERGENCY_CUT_REQUESTED'):
+        gateway.submit('post-fault','BTC-USD','BUY',1,tier='terrestrial')
+    monkeypatch.setattr(DurableOrderGateway,'emergency_halt',original)
+    before=gateway.recovery_report()
+    assert not before['halted'] and before['orders'][0]['status']=='SIMULATED_ACK_ONLY'
+    second=activate(tmp_path)
+    assert second['passed'] and second['emergency_cut_state']=='VERIFIED'
+    after=gateway.recovery_report()
+    assert after['halted'] and after['orders'][0]['status']=='SIMULATED_CANCELLED'
+    assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')

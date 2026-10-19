@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import stat
 import subprocess
 import sys
 import tempfile
@@ -129,6 +130,50 @@ def _contended_emergency_stop(command,env,root,cpu_pressure=False):
             'EMERGENCY_STOP_CPU_PRESSURE')
 
 
+def _windows_read_only_emergency_stop(command,env,root):
+    """Require a native read-only journal fault to retain the independent cut.
+
+    Windows ``chmod`` changes the DOS read-only attribute.  The first command
+    must therefore publish the separate intent but cannot acknowledge durable
+    SQLite cleanup.  After restoring write access, one explicit operator retry
+    must finish cancellation without clearing or replacing the original latch.
+    """
+    _require(os.name=='nt','EMERGENCY_STOP_READ_ONLY_PLATFORM')
+    from nexus import emergency_intent
+    from nexus.durable_orders import DurableOrderGateway
+    order_path=root/'order_lifecycle.sqlite3';gateway=DurableOrderGateway(order_path)
+    gateway.submit('read-only-fixture','BTC-USD','BUY',1,tier='terrestrial')
+    os.chmod(order_path,stat.S_IREAD)
+    try:
+        code,stdout,stderr=_call(command,['--emergency-stop'],env)
+        _require(code==2 and not stderr,'EMERGENCY_STOP_READ_ONLY_STORAGE')
+        try:cut=json.loads(stdout)
+        except (ValueError,TypeError):raise ValueError('PACKAGED_PAPER_TOOLS_CHILD_JSON') from None
+        _require(cut['passed'] is False and cut['halted'] is True and
+            cut['emergency_cut_state']=='UNCONFIRMED' and
+            cut['intent_preceded_durable_halt'] is True and
+            cut['emergency_intent_present'] is True and
+            cut['durable_order_halt_confirmed'] is False and
+            emergency_intent.requested(order_path),'EMERGENCY_STOP_READ_ONLY_STORAGE')
+        started=time.monotonic()
+        try:gateway.submit('post-read-only-cut','BTC-USD','BUY',1,tier='terrestrial')
+        except ValueError as error:
+            _require(str(error)=='EMERGENCY_CUT_REQUESTED','EMERGENCY_STOP_READ_ONLY_STORAGE')
+        else:_require(False,'EMERGENCY_STOP_READ_ONLY_STORAGE')
+        _require(time.monotonic()-started<3,'EMERGENCY_STOP_READ_ONLY_STORAGE')
+    finally:
+        os.chmod(order_path,stat.S_IREAD | stat.S_IWRITE)
+    before=gateway.recovery_report()
+    _require(before['halted'] is False and len(before['orders'])==1 and
+        before['orders'][0]['status']=='SIMULATED_ACK_ONLY','EMERGENCY_STOP_READ_ONLY_STORAGE')
+    recovered=_json_call(command,['--emergency-stop'],env)
+    after=gateway.recovery_report()
+    _require(recovered['passed'] is True and recovered['emergency_cut_state']=='VERIFIED' and
+        after['halted'] is True and len(after['orders'])==1 and
+        after['orders'][0]['status']=='SIMULATED_CANCELLED' and
+        emergency_intent.requested(order_path),'EMERGENCY_STOP_READ_ONLY_STORAGE')
+
+
 def run(command):
     from nexus.paper_account_evidence_review import _fixture,FLAGS
     from nexus.paper_acceptance_probe import FLAGS as PROBE_FLAGS
@@ -232,12 +277,17 @@ def run(command):
         _contended_emergency_stop(command,dict(env,NEXUS_PORTABLE_DATA=str(contention_root)),contention_root)
         pressure_root=root/'cpu-pressure-emergency-cut'
         _contended_emergency_stop(command,dict(env,NEXUS_PORTABLE_DATA=str(pressure_root)),pressure_root,True)
+        if os.name=='nt':
+            read_only_root=root/'read-only-emergency-cut'
+            _windows_read_only_emergency_stop(command,
+                dict(env,NEXUS_PORTABLE_DATA=str(read_only_root)),read_only_root)
         _require(not default.exists() and not missing.exists(),'DEFAULT_DATA_CREATED')
         return dict(mode='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE',passed=True,**{k:True for k in CHECKS},
-            tool_invocations=16,provider_reads_requested=False,credential_reads_requested=False,
+            tool_invocations=16+int(os.name=='nt'),provider_reads_requested=False,credential_reads_requested=False,
             live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
+            native_windows_storage_fault_checked=os.name=='nt',
             native_windows_acceptance=False,
-            scope='Sixteen actual command-prefix child processes, including explicit emergency cuts with and without a held SQLite writer and under bounded synthetic CPU pressure, with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. Contended emergency commands must publish the latch before the writer clears, reject new intake without waiting on SQLite and durably cancel after release. Windows requests high, never realtime, process priority; failure never suppresses the cut attempt. Inventory and full-chain quote-evidence self-tests use distinct authenticated encryption formats and retain no ciphertext, password or plaintext bundle. This is bounded same-host evidence, not whole-machine starvation, an OS-level network/vault audit, actual account acceptance, native-profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
+            scope='Sixteen cross-platform command-prefix child processes, plus one native Windows read-only-journal emergency fault when applicable. Explicit cuts run with and without a held SQLite writer and under bounded synthetic CPU pressure, with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. Contended emergency commands must publish the latch before the writer clears, reject new intake without waiting on SQLite and durably cancel after release. A native read-only fault must remain unconfirmed but fenced until one explicit post-recovery retry completes cleanup. Windows requests high, never realtime, process priority; failure never suppresses the cut attempt. Inventory and full-chain quote-evidence self-tests use distinct authenticated encryption formats and retain no ciphertext, password or plaintext bundle. This is bounded same-host evidence, not whole-machine starvation, an OS-level network/vault audit, actual account acceptance, ordinary-user profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
 
 
 class _Parser(argparse.ArgumentParser):
@@ -254,6 +304,7 @@ def main():
     except (Exception,KeyboardInterrupt) as error:
         allowed={'COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW','QUALITY_REVIEW',
             'PRIVATE_FILES_CHANGED','INVALID_COMMAND','EMERGENCY_STOP','EMERGENCY_STOP_CONTENTION','EMERGENCY_STOP_CPU_PRESSURE','DEFAULT_DATA_CREATED','OUTPUT_CAP',
+            'EMERGENCY_STOP_READ_ONLY_PLATFORM','EMERGENCY_STOP_READ_ONLY_STORAGE',
             'CHILD_FAILED','CHILD_JSON','CHILD_TIMEOUT','EXECUTABLE_REQUIRED'}
         code=str(error) if type(error) is ValueError and str(error) in {'PACKAGED_PAPER_TOOLS_'+k for k in allowed} else 'PACKAGED_PAPER_TOOLS_INTERNAL_ERROR'
         if args.output:

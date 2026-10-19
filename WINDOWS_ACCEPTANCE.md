@@ -111,6 +111,14 @@ Use `python tools/installed_smoke.py --exe <installed-exe> --default-data-root <
 
 Default-layout automated evidence: both workflows for commit `ad59507feafec4db2489fd05bc3f91cd9ee4c9a2` completed successfully, including child-only default AppData layout, restart halt recovery and uninstall preservation. Ordinary-user profile/ACL, native-window and clean-machine prior-installer replacement acceptance remain open.
 
+## v0.174.1 provider-result manifest identity portability
+
+Exact v0.172.5 security run 39283670255, Windows run 39283670294 and safety/browser/evidence run 39283670478 passed. Exact v0.174.0 security 39286221444 and safety/browser/evidence 39286221429 also passed. Its Windows run 39286221494 deterministically failed eleven provider-result manifest cases after 3,348 passes and 19 skips, before packaging: Windows path and descriptor stat calls can expose different `ctime` representations immediately after a file rewrite, so the reader rejected the manifest before the intended consistency/path-alias assertions.
+
+v0.174.1 uses `os.path.samestat` for platform file identity, binds the initial and final path samples by identity and size to the opened descriptor, and requires descriptor size/mtime stability through the read. Regular-file, single-link, bounded-size, no-follow where available, exact read length and the second full manifest read remain. A regression injects path/descriptor `ctime` disagreement for the same file. Only a green exact-source Windows run can accept this repair; local Linux tests cannot establish installed EXE/installer behavior, ordinary-user profile/ACL, native rendering or clean-machine acceptance.
+
+Local source validation passed 3,379 tests plus the 228-test focused release set and all sixteen saved-evidence profiles. That evidence has `native_windows_acceptance: false`; it is not an installed Windows result. Exact-source v0.174.1 packaging and installed smoke remain the next acceptance gate.
+
 
 ## v0.135 packaged setup and saved-choice acceptance
 

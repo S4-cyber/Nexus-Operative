@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.174.0, installed read-only provider/results manifest review with explicit bounded private inputs and source/EXE smoke coverage. Read the newest version section and generated roadmap; exact-source CI and actual broker/market acceptance remain open.
+Current checkpoint: v0.174.1, Windows-portable installed provider/results manifest identity checking with explicit bounded private inputs and source/EXE smoke coverage. Read the newest version section and generated roadmap; exact-source Windows CI and actual broker/market acceptance remain open.
+
+## v0.174.1 Windows-portable manifest identity
+
+The bounded installed provider-result reader no longer treats cross-API `ctime` equality as file identity. Windows can expose different creation/change-time representations for a path stat and descriptor stat immediately after a rewrite, which caused all eleven rewrite-based native tests to reject otherwise valid manifests at v0.174.0. `os.path.samestat` now supplies platform file identity, while size binds the path sample and final path to the opened descriptor and size/mtime stability guards the descriptor during the read. The regular-file, single-link, maximum-size, no-follow where available, exact read length and second full-read checks remain fail closed.
+
+Exact v0.172.5 security 39283670255, Windows 39283670294 and safety/browser/evidence 39283670478 all passed. Exact v0.174.0 security 39286221444 and safety/browser/evidence 39286221429 passed; Windows 39286221494 failed eleven provider-result manifest tests after 3,348 passes and before packaging, exposing this portability defect. This correction changes no GUI, setting, account permission, connection, order, funding, live, cloud or release authority. Exact-source v0.174.1 Windows CI is required before the correction is accepted.
+
+Final v0.174.1 local validation: 3,379 Python tests passed with one existing Starlette/httpx deprecation warning; the focused manifest/packaged-tool/release/evidence/version/roadmap set passed 228 tests. All sixteen offline profiles and saved-evidence verification matched 345 source files / `0ab965a5980c2ae6dbce69ee49f0a5616581d3832c6db8055582fa78feb34aba`; `validation/release_trials_0_174_1.json` SHA256 is `7d0fd950b8a5ee745d24ad84e6dc7e72b6f0f224c6f82a3bfed6051ab6d8d381`. Fourteen Node controller smokes, Portal inline syntax, compileall, dependency consistency, generated-roadmap comparison and introduced-whitespace checks passed. Gitleaks and native Windows execution are unavailable locally; exact-source security/history, safety/browser/evidence and Windows packaging CI remain mandatory. No actual provider, account, market, funds, live or cloud operation occurred.
 
 Start with `ROADMAP.md`, the bundled read-only contract in `nexus/release_roadmap.py`, then `LAUNCH_DRIVE.md` and `VERSIONING.md`. The PORTAL exposes the same reference at `GET /api/roadmap`. Runtime users cannot edit it. Update source and regenerate ROADMAP.md together when milestones change.
 

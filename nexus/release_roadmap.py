@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.174.0'
+REVISION = '0.174.1'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.174.0 adds the explicit installed --paper-tool provider-results --input command for bounded local normalized-result evidence. A private manifest pins every account/provider head and supplies exact journal paths and observations; relative paths resolve beside the manifest. The command rechecks the input, refuses malformed/duplicate/changed/unsafe inputs, and never starts the desktop, opens credentials, contacts providers or writes receipts. Packaged acceptance now requires eighteen cross-platform invocations plus the native Windows read-only emergency fault, including valid and altered-result checks. This remains supplied local consistency, not broker/source/clock/funds/market acceptance. Exact-source CI is mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.174.1 makes the installed provider-result manifest identity check portable across Windows path and descriptor stat semantics. Platform file identity plus size binds the pre-open path and final path to the opened descriptor; descriptor size and modification time must remain stable, and the existing regular-file, single-link, bounded-read and full reread checks remain. Exact v0.174.0 security and safety/browser/evidence CI passed, while Windows found eleven ctime-based false rejections before packaging. No authority, UI, permission or default changed. Exact-source Windows CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

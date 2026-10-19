@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.174.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.174.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.174.0 adds the explicit installed --paper-tool provider-results --input command for bounded local normalized-result evidence. A private manifest pins every account/provider head and supplies exact journal paths and observations; relative paths resolve beside the manifest. The command rechecks the input, refuses malformed/duplicate/changed/unsafe inputs, and never starts the desktop, opens credentials, contacts providers or writes receipts. Packaged acceptance now requires eighteen cross-platform invocations plus the native Windows read-only emergency fault, including valid and altered-result checks. This remains supplied local consistency, not broker/source/clock/funds/market acceptance. Exact-source CI is mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.174.1 makes the installed provider-result manifest identity check portable across Windows path and descriptor stat semantics. Platform file identity plus size binds the pre-open path and final path to the opened descriptor; descriptor size and modification time must remain stable, and the existing regular-file, single-link, bounded-read and full reread checks remain. Exact v0.174.0 security and safety/browser/evidence CI passed, while Windows found eleven ctime-based false rejections before packaging. No authority, UI, permission or default changed. Exact-source Windows CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

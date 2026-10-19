@@ -35,12 +35,20 @@ def _read(path):
     observed=path.lstat()
     if not stat.S_ISREG(observed.st_mode) or observed.st_nlink!=1 or not 1<=observed.st_size<=MAX_BYTES:_fail()
     flags=os.O_RDONLY|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0)
-    def identity(s):return (s.st_dev,s.st_ino,s.st_size,s.st_mtime_ns,s.st_ctime_ns)
+    def same_file(left,right):return os.path.samestat(left,right)
+    def stable(left,right):return (same_file(left,right) and
+        (left.st_size,left.st_mtime_ns)==(right.st_size,right.st_mtime_ns))
     with os.fdopen(os.open(path,flags),'rb') as stream:
         before=os.fstat(stream.fileno())
-        if identity(before)!=identity(observed) or not stat.S_ISREG(before.st_mode) or before.st_nlink!=1:_fail()
+        # Windows path stat and descriptor stat can expose different ctime
+        # values immediately after a rewrite.  ctime is metadata, not file
+        # identity.  samestat uses the platform's device/file identity; size
+        # still binds the pre-open path sample to the opened descriptor.
+        if not same_file(before,observed) or before.st_size!=observed.st_size or not stat.S_ISREG(before.st_mode) or before.st_nlink!=1:_fail()
         raw=stream.read(MAX_BYTES+1);after=os.fstat(stream.fileno())
-    if len(raw)>MAX_BYTES or identity(after)!=identity(before) or identity(path.lstat())!=identity(before):_fail()
+    if len(raw)>MAX_BYTES or len(raw)!=before.st_size or not stable(after,before):_fail()
+    final=path.lstat()
+    if not same_file(final,before) or final.st_size!=before.st_size:_fail()
     return raw
 
 

@@ -25,6 +25,20 @@ def test_relative_paths_resolve_beside_manifest_without_writes_or_authority(mani
     assert files(tmp_path)==before
 
 
+def test_path_descriptor_ctime_disagreement_is_not_treated_as_identity_change(manifest,monkeypatch):
+    original=Path.lstat
+    class StatProxy:
+        def __init__(self,value):self.value=value
+        def __getattr__(self,name):
+            if name=='st_ctime_ns':return self.value.st_ctime_ns+1
+            return getattr(self.value,name)
+    def shifted(path):
+        value=original(path)
+        return StatProxy(value) if path==manifest else value
+    monkeypatch.setattr(Path,'lstat',shifted)
+    assert subject.review_file(manifest)['local_provider_results_consistent']
+
+
 @pytest.mark.parametrize('change',['result','missing','scope','account','provider_head','account_head'])
 def test_changed_evidence_cannot_pass_local_consistency(manifest,change):
     value=json.loads(manifest.read_text());account=value['accounts'][0]

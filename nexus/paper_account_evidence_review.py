@@ -31,6 +31,8 @@ def _fail(code):raise ValueError('PAPER_ACCOUNT_EVIDENCE_'+code)
 def _review_paths(request_journal_path,pacing_path,activity_store_path,acceptance_store_path):
     paths=[_private_path(p)[1] for p in (request_journal_path,pacing_path,activity_store_path,acceptance_store_path)]
     if len(set(paths))!=4:_fail('DISTINCT_JOURNALS_REQUIRED')
+    from nexus.sqlite_journal_guard import check_path_set
+    check_path_set(paths,'PAPER_ACCOUNT_EVIDENCE_')
 
 
 def review_current(*,expected_account_id,request_journal_path,pacing_path,activity_store_path,

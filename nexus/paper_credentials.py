@@ -224,7 +224,8 @@ def recover_saved(journal, client_order_id, *, expected_account_id,
     """Internal opt-in original-ID recovery; no application endpoint/default path."""
     if confirm_read_only_paper is not True:
         _fail('READ_CONFIRMATION_REQUIRED')
-    from nexus.broker_paper_recovery import recover_original
+    from nexus.broker_paper_recovery import recover_original,_storage_paths
+    _storage_paths(journal,pacing)
     epoch, raw, record = _capture()
     def credential_check():
         current_epoch, current_raw, _ = _capture()
@@ -246,6 +247,8 @@ def collect_saved(orders, *, expected_account_id, after, until,
     if confirm_read_only_paper is not True:
         _fail('READ_CONFIRMATION_REQUIRED')
     from nexus.alpaca_activity_collection import collect_activities
+    from nexus.alpaca_activity_collection import _storage_paths
+    _storage_paths(activity_store,pacing)
     if input_guard() is not True:_fail('ACTIVITY_INPUT_CHANGED')
     epoch, raw, record = _capture()
     def credential_check():

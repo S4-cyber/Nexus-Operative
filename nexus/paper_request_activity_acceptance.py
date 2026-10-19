@@ -69,6 +69,8 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
            activity_store_path, acceptance_store_path,
            expected_request_head, expected_activity_head):
     """Review immutable request terms/fills only after full accepted-history replay."""
+    from nexus.sqlite_journal_guard import check_path_set
+    check_path_set((request_journal_path,pacing_path,activity_store_path,acceptance_store_path),'PAPER_REQUEST_ACTIVITY_ACCEPTANCE_')
     before = acceptance_status(expected_account_id=expected_account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path)

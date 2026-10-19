@@ -15,6 +15,7 @@ from nexus.alpaca_paper_contract import sha
 from nexus.broker_lookup_policy import clock
 from nexus.paper_activity_acceptance_probe import _private_path
 from nexus.paper_read_pacing import PaperReadPacing
+from nexus.sqlite_journal_guard import check_path_set
 
 FLAGS=(*observation.FLAGS,'capture_source_attested','pacing_causality_attested','broker_wide_quota_verified','windows_profile_accepted')
 CHECKS=('three_fixed_gets','one_local_transition_bound','quote_retained','offline_status_matches',
@@ -29,12 +30,7 @@ def _stores(expected_account_id,request_journal_path,quote_store_path,pacing_pat
     if len(set(resolved))!=3:_fail('DISTINCT_PATHS_REQUIRED')
     # Reject paths that occupy another selected SQLite recovery file or the
     # pacing ownership file before a provider read can be attempted.
-    companions=[]
-    for path in resolved:
-        companions.append({path.with_name(path.name+suffix) for suffix in ('-journal','-wal','-shm')})
-    companions[2].add(resolved[2].with_name(resolved[2].name+'.owner.lock'))
-    if any(selected in companions[index] for index in range(3) for selected in resolved if selected!=resolved[index]):
-        _fail('RELATED_PATHS_REQUIRED_DISTINCT')
+    check_path_set(resolved,'PAPER_QUOTE_CAPTURE_')
     store=quotes.PaperQuoteStore(quote_store_path,expected_account_id,request_journal_path)
     gate=PaperReadPacing(pacing_path,expected_account_id)
     # Bind the selected local scope, not a portable path, file attestation,

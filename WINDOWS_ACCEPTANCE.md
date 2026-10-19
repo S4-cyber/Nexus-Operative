@@ -1,7 +1,16 @@
 # Windows distribution and acceptance evidence
 
+## Verified installer checkpoint — v0.164 (CI completed 2026-10-19 UTC)
 
-## Verified installer checkpoint — v0.160 (2026-10-18)
+[Download the Windows installer artifact](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39177466868/artifacts/12155865656) (ZIP containing the setup EXE; artifact expires 2026-10-26T00:05:42Z). The longer-retained [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39177466868/artifacts/12155481695) includes the standalone EXE, source-bound checksum manifest and offline report; expires 2026-11-18T00:05:37Z. GitHub may require sign-in to download Actions artifacts.
+
+Verified source: `458f2a212b2246c1991d172e2915ecf6564d86c5`. Windows run39177466868, safety/browser run39177466863 and security run39177466881 completed successfully. The Windows workflow passed standalone private-tool checks, EXE startup, installer creation, installed/reinstalled execution, preserved-data uninstall and distribution evidence/checksums. Installer acceptance evidence artifact12155516670 expires 2026-11-18T00:05:41Z; standalone artifact12155193315 expires 2026-11-18T00:01:00Z. Artifact metadata matches this exact source commit and is not expired at this check.
+
+This checkpoint includes eight paper tools, encrypted full-chain quote evidence, the related-path quote-capture fix and declared read-purpose sequences. It does not include v0.165 admission samples, v0.165.1 precision fixes or v0.165.2 shared path preflight. It is available for desktop/install testing; newer diagnostic changes require their own exact-source native acceptance. Keep trading halted during upgrade review and preserve private data/backups. Automated disposable Windows/browser acceptance does not close ordinary-user profile/ACL, native-window, actual broker, sustained-market or production release gates.
+
+
+
+## Previous verified installer checkpoint — v0.160 (2026-10-18)
 
 [Download the Windows installer artifact](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39174322289/artifacts/12154332632) (ZIP containing the setup EXE; artifact expires2026-10-25T23:18:00Z). The longer-retained [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39174322289/artifacts/12154745518) also includes the standalone EXE, source-bound checksum manifest and offline report; expires2026-11-17T23:17:56Z. GitHub may require your sign-in to download Actions artifacts.
 

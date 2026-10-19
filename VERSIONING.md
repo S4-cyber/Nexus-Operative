@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.165.1 (pre-release).** The older supplied linked-fee projector now rejects finer-than-microsecond and unsupported timestamp profiles before normalization, and canonicalizes supported time zones to UTC before deduplication/hashing. Separate REST evidence keeps exact nanoseconds; cash-path review never invents an order among simultaneous executions. v0.165 admission samples and all existing read-purpose/path guards remain intact. No account, funds, transport, routing or release authority is introduced.
+**Current development build: 0.165.2 (pre-release).** Shared storage relationship checks now protect recovery, activity collection, quote capture and composed evidence review. Conflicting databases, SQLite sidecars, ownership-file names and selected file/directory ancestors refuse before relevant vault/transport/journal work. No paths are created or repaired by preflight. v0.165.1 precision handling and earlier admission/read-purpose safeguards remain intact. No provider, funds, routing or release authority is introduced.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

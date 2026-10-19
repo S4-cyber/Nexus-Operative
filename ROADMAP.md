@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.165.1. Branch: `development/windows-portal-foundation`.
+Revision: 0.165.2. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.165.1 closes silent submicrosecond truncation at the older supplied linked-fee projection boundary: opening/closing times and order/execution/fee rows must fit its explicit RFC3339 microsecond profile. Accepted instants normalize to UTC before deduplication, window checks and hashing; equivalent offsets no longer conflict. The separate raw REST adapter continues retaining exact nanoseconds. Cash-path groups remain conservative microsecond groups, never invented fine-grained ordering. v0.165 checked admission evidence, v0.164 read-purpose fences and v0.163.1 related-path guards remain intact. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner acceptance remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.165.2 shares bounded read-only storage relationship preflight across quote capture, original-ID recovery, activity collection and composed evidence reviews. Selected databases/inputs cannot overlap each other or possible rollback/WAL/shared-memory/ownership files, including normalized aliases and file-directory ancestors. Saved recovery/collection reject collisions before vault capture; direct readers reject before session reservation or journal replay. Existing individual file, source/install, account, ownership, clock and receipt checks remain. This is sampled local path consistency, not atomic path ownership, an ACL audit, encryption or distributed fencing. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner acceptance remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

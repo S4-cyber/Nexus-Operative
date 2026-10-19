@@ -51,6 +51,8 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
     """Derive all retained priced fills for one original request; never sample a subset."""
     paths=[_private_path(p)[1] for p in (request_journal_path,pacing_path,activity_store_path,acceptance_store_path)]
     if len(set(paths))!=4:_fail('DISTINCT_JOURNALS_REQUIRED')
+    from nexus.sqlite_journal_guard import check_path_set
+    check_path_set(paths,'PAPER_EXECUTION_QUALITY_')
     for head in (expected_request_head,expected_activity_head):
         if type(head) is not str or re.fullmatch('[0-9a-f]{64}',head) is None:_fail('HEAD_REFERENCE')
     if type(client_order_id) is not str or re.fullmatch('[A-Za-z0-9_-]{1,64}',client_order_id) is None:_fail('CLIENT_ID')

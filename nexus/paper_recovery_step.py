@@ -7,7 +7,7 @@ import time
 
 from nexus import alpaca_paper_inspection as transport
 from nexus.broker_request_journal import BrokerRequestJournal
-from nexus.broker_paper_recovery import recover_original
+from nexus.broker_paper_recovery import recover_original,_storage_paths
 
 FLAGS=('automatic_continuation','automatic_retry','automatic_submission','ready_for_routing',
        'broker_connected','broker_account_reconciled','spendable_funds_verified','ledger_applied',
@@ -19,6 +19,7 @@ def review_next(journal,*,expected_account_id,evaluated_at,pacing=None):
     if type(journal) is not BrokerRequestJournal:raise ValueError('PAPER_RECOVERY_STEP_JOURNAL_REQUIRED')
     account=transport._uuid(expected_account_id)
     if journal.account_digest!=hashlib.sha256(account.encode()).hexdigest():raise ValueError('PAPER_RECOVERY_STEP_ACCOUNT_DISAGREEMENT')
+    _storage_paths(journal,pacing)
     chosen=journal.lookup_review(evaluated_at=evaluated_at)
     reasons=list(chosen['reasons']);state=None
     if pacing is not None:

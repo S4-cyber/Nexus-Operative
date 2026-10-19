@@ -60,10 +60,22 @@ def is_activity_url(url):
         return False
 
 
+def _storage_paths(activity_store,pacing):
+    if activity_store is None or pacing is None:return
+    from nexus.broker_activity_store import BrokerActivityStore
+    from nexus.paper_read_pacing import PaperReadPacing
+    from nexus.sqlite_journal_guard import check_path_set
+    if type(activity_store) is not BrokerActivityStore or type(pacing) is not PaperReadPacing:
+        _fail('RETENTION_OR_PACING_TYPE')
+    check_path_set((activity_store.path,pacing.path),'PAPER_ACTIVITY_COLLECTION_')
+
+
 def collect_activities(api_key, api_secret, orders, *, expected_account_id, after, until,
                        confirm_read_only_paper=False, opener=None, wall_clock=time.time,
                        elapsed_clock=time.monotonic, permission_check=lambda: True,
                        credential_check=lambda: True, activity_store=None, pacing=None):
+    if confirm_read_only_paper is not True:transport._fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
+    _storage_paths(activity_store,pacing)
     session = transport._ReadSession(api_key, api_secret, confirm_read_only_paper=confirm_read_only_paper,
         opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
         pacing=pacing, expected_account_id=expected_account_id,operation='ACTIVITY_COLLECTION')

@@ -157,6 +157,8 @@ def _paths(expected_account_id, pacing_path, activity_store_path, acceptance_sto
     acceptance, acceptance_resolved = _private_path(acceptance_store_path)
     if len({pacing_resolved,activity_resolved,acceptance_resolved}) != 3:
         _fail()
+    from nexus.sqlite_journal_guard import check_path_set
+    check_path_set((pacing_resolved,activity_resolved,acceptance_resolved),'PAPER_ACTIVITY_ACCEPTANCE_')
     return (account,PaperReadPacing(pacing,account),BrokerActivityStore(activity,account),
         PaperActivityAcceptanceStore(acceptance,account))
 
@@ -179,6 +181,8 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
     if (orders_path is None)==(not request_mode) or (not request_mode and expected_request_head is not None):_fail()
     order_path,order_resolved=_private_path(request_journal_path if request_mode else orders_path)
     if order_resolved in (pacing.path.resolve(),store.path.resolve(),acceptance.path.resolve()):_fail()
+    from nexus.sqlite_journal_guard import check_path_set
+    check_path_set((pacing.path,store.path,acceptance.path,order_resolved),'PAPER_ACTIVITY_ACCEPTANCE_')
     orders,unique_orders,duplicate_orders=(_request_orders(order_path,account,expected_request_head)
         if request_mode else _orders(order_path,account))
     def input_guard():
@@ -275,6 +279,11 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
 def status(*, expected_account_id, pacing_path, activity_store_path, acceptance_store_path,
            request_journal_path=None):
     account, pacing, store, acceptance = _paths(expected_account_id,pacing_path,activity_store_path,acceptance_store_path)
+    if request_journal_path is not None:
+        from nexus.sqlite_journal_guard import check_path_set
+        request_resolved=_private_path(request_journal_path)[1]
+        if request_resolved in {pacing.path.resolve(),store.path.resolve(),acceptance.path.resolve()}:_fail()
+        check_path_set((pacing.path,store.path,acceptance.path,request_resolved),'PAPER_ACTIVITY_ACCEPTANCE_')
     pace=pacing.inspect();retained=store.inspect();accepted=acceptance.inspect()
     pending = pace['pending_token'] is not None
     scopes=acceptance.replay_scopes()

@@ -88,10 +88,14 @@ def paper_asset_rules_fixture():
 
 def paper_pacing_status_fixture():
     from nexus.paper_acceptance_probe import FLAGS
+    from nexus.paper_read_pacing import OPERATIONS,LEGACY_OPERATION
     return dict(mode='PAPER_ACCEPTANCE_PACING_STATUS',status='REVIEW_REQUIRED',read_only=True,
         journal_present=True,account_sha256='a'*64,head_sha256='c'*64,sessions=1,
         session_capacity_remaining=255,next_allowed_at=1060,pending_read=False,retained_review_block=False,
         suggested_action='RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ',
+        operation_counts={key:int(key=='ACCOUNT_INVENTORY') for key in (*OPERATIONS,LEGACY_OPERATION)},
+        pending_operation=None,legacy_unspecified_sessions=0,
+        operation_identity_attested=False,mixed_operation_acceptance_verified=False,
         limitations='Local replay only, no vault or provider access.',**{flag:False for flag in FLAGS})
 
 

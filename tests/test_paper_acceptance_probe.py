@@ -150,10 +150,18 @@ def test_cli_missing_confirmation_and_usage_are_private(vault,tmp_path,monkeypat
 def test_pacing_status_is_vault_silent_and_preserves_missing_or_pending_state(vault,tmp_path):
     path=tmp_path/'absent'/'pacing.sqlite3'
     result=probe.pacing_status(expected_account_id=ACCOUNT,pacing_path=path)
+    from tools.portal_browser_smoke import paper_pacing_status_fixture
+    assert set(paper_pacing_status_fixture())==set(result)
+    assert set(paper_pacing_status_fixture()['operation_counts'])==set(result['operation_counts'])
     assert result['journal_present'] is False and not path.parent.exists() and vault.reads==0
+    assert result['pending_operation'] is None and result['legacy_unspecified_sessions']==0
+    assert sum(result['operation_counts'].values())==result['sessions']==0
+    assert result['operation_identity_attested'] is result['mixed_operation_acceptance_verified'] is False
     gate=PaperReadPacing(path,ACCOUNT);gate.begin(admission=lambda:1000)
     before=path.read_bytes();result=probe.pacing_status(expected_account_id=ACCOUNT,pacing_path=path)
     assert result['pending_read'] and result['suggested_action']=='REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY'
+    assert result['pending_operation']=='LEGACY_UNSPECIFIED' and result['legacy_unspecified_sessions']==1
+    assert sum(result['operation_counts'].values())==result['sessions']==1
     assert vault.reads==0 and path.read_bytes()==before and 'pending_token' not in result
 
 

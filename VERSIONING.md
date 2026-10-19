@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.166.0 (pre-release).** Order snapshot comparisons now preserve exact nanosecond ordering without rewriting raw timestamp text or retained journals. Same-microsecond updates can progress; backward or conflicting equal-instant observations refuse. Supported older microsecond ISO spellings remain readable; unsupported finer profiles require review. All v0.165.3 and earlier safeguards remain. No provider/source, synchronized-clock, latency, routing or release authority is introduced.
+**Current development build: 0.166.1 (pre-release).** The beginner PORTAL now validates the real typed pacing-status response instead of rejecting its fixed operation-purpose fields as unexpected. It checks exact operation counts, pending/legacy consistency and false authority before displaying typed versus legacy sessions. Browser fixtures are checked against the vault/network-silent backend shape. v0.166 nanosecond snapshot ordering and all earlier safeguards remain. No provider request, credential access, retry, routing or release authority is introduced.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

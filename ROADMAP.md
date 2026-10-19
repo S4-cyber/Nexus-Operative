@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.166.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.166.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.166 compares original order snapshot updates using exact integer nanoseconds instead of datetime microsecond truncation. Distinct RFC3339 updates within one microsecond remain ordered; regressions and equal-instant conflicts refuse without changing retained state. Raw timestamp spelling and journal hashes are preserved, supported legacy microsecond ISO formats still replay, and unsupported finer profiles refuse rather than round. Fresh-process original recovery and encrypted quote-copy replay are tested. Prior shared path, admission, precision and Windows denial-harness fixes remain intact. These are supplied event-ordering checks, not synchronized clocks, broker latency, execution authority or source acceptance. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.166.1 restores the real typed pacing-status contract in the beginner PORTAL: the strict validator now accepts only the backend's exact fixed operation-count, pending-purpose and legacy-purpose fields, rejects inconsistent counts or promoted authority, and explains typed versus legacy sessions without exposing account IDs, paths or secrets. Browser fixtures are source-shape checked against the real vault/network-silent backend response so synthetic browser CI cannot remain green after this contract drifts again. v0.166 exact nanosecond order-snapshot comparisons and earlier safeguards remain intact. No provider request, credential access, retry, routing or release authority is added. Actual broker-paper, central budget/mixed-receipt acceptance, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

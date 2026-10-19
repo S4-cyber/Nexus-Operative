@@ -493,18 +493,25 @@ function checkedPaperPacing(value){
 }
 function checkedPaperPacingStatus(value){
  const flags=['broker_connected','broker_paper_accepted','source_attested','source_coverage_verified','broker_wide_quota_verified','account_reconciled','holds_reconciled','spendable_funds_verified','ledger_applied','ready_for_routing','live_orders_enabled','money_movement_enabled','automatic_retry','automatic_continuation','release_approved','cloud_deployed','provider_key_permissions_verified','windows_profile_accepted'];
- const keys=['mode','status','read_only','journal_present','account_sha256','head_sha256','sessions','session_capacity_remaining','next_allowed_at','pending_read','retained_review_block','suggested_action','limitations',...flags];
+ const operations=['ACCOUNT_INVENTORY','BTC_ASSET_RULES','ACTIVITY_COLLECTION','ORIGINAL_ID_RECOVERY','BTC_QUOTE_OBSERVATION','LEGACY_UNSPECIFIED'];
+ const keys=['mode','status','read_only','journal_present','account_sha256','head_sha256','sessions','session_capacity_remaining','next_allowed_at','pending_read','retained_review_block','suggested_action','operation_counts','pending_operation','legacy_unspecified_sessions','operation_identity_attested','mixed_operation_acceptance_verified','limitations',...flags];
  const actions={REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY:'A previous read is uncertain. Preserve the history for review; do not automatically retry.',REVIEW_RETAINED_BLOCK_NO_AUTOMATIC_RESET:'A retained block needs review. Do not reset or replace the journal.',SESSION_HISTORY_CAP_REVIEW_NO_DELETION:'Read history is full. Preserve it for review; do not delete it to bypass the limit.',RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ:'Observe the retained cooldown before separately confirming one read.'};
+ const counts=value&&value.operation_counts;
  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==keys.length||keys.some(k=>!Object.hasOwn(value,k))||
     value.mode!=='PAPER_ACCEPTANCE_PACING_STATUS'||value.status!=='REVIEW_REQUIRED'||value.read_only!==true||flags.some(k=>value[k]!==false)||
+    value.operation_identity_attested!==false||value.mixed_operation_acceptance_verified!==false||
     ['journal_present','pending_read','retained_review_block'].some(k=>typeof value[k]!=='boolean')||
     ['account_sha256','head_sha256'].some(k=>typeof value[k]!=='string'||! /^[0-9a-f]{64}$/.test(value[k]))||
     !Number.isInteger(value.sessions)||value.sessions<0||value.sessions>256||value.session_capacity_remaining!==256-value.sessions||
+    !counts||typeof counts!=='object'||Array.isArray(counts)||Object.keys(counts).length!==operations.length||operations.some(k=>!Object.hasOwn(counts,k)||!Number.isInteger(counts[k])||counts[k]<0||counts[k]>256)||
+    operations.reduce((total,k)=>total+counts[k],0)!==value.sessions||value.legacy_unspecified_sessions!==counts.LEGACY_UNSPECIFIED||
+    !(value.pending_operation===null||operations.includes(value.pending_operation))||value.pending_read!==(value.pending_operation!==null)||
     typeof value.next_allowed_at!=='number'||!Number.isFinite(value.next_allowed_at)||value.next_allowed_at<0||value.next_allowed_at>1e12||
     typeof value.limitations!=='string'||value.limitations.length>1024||!Object.hasOwn(actions,value.suggested_action))throw Error('Invalid pacing status');
  const expectedAction=value.pending_read?'REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY':value.retained_review_block?'REVIEW_RETAINED_BLOCK_NO_AUTOMATIC_RESET':value.session_capacity_remaining===0?'SESSION_HISTORY_CAP_REVIEW_NO_DELETION':'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ';
  if(value.suggested_action!==expectedAction||(!value.journal_present&&(value.sessions!==0||value.pending_read||value.retained_review_block||value.next_allowed_at!==0)))throw Error('Inconsistent pacing status');
  return (value.journal_present?'Managed local read history: ':'No managed local read history. Missing does not prove no earlier request. ')+value.sessions+' / 256 sessions; '+
+  (value.sessions-value.legacy_unspecified_sessions)+' typed purpose'+(value.sessions-value.legacy_unspecified_sessions===1?'':'s')+' / '+value.legacy_unspecified_sessions+' legacy unspecified. '+
   (value.next_allowed_at?'recorded cooldown ends '+new Date(value.next_allowed_at*1000).toISOString()+'. ':'No recorded cooldown. ')+actions[value.suggested_action]+
   ' No keys read or broker request made by this check. Other/no journals and computers are not coordinated. No trading permission.';
 }

@@ -5,6 +5,7 @@ quotes and clocks remain supplied/unverified; retained fee records stay unlinked
 """
 import argparse
 from datetime import datetime,timezone
+from decimal import Decimal,InvalidOperation
 import json
 import re
 import sqlite3
@@ -21,10 +22,11 @@ from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_activity_acceptance_probe import _private_path
 
 POLICY='nexus.paper-execution-quality-review.v1'
-BENCHMARK_KEYS=('decision_mid','decision_at_ns','arrival_bid','arrival_ask','arrival_at_ns','end_at_ns','unfilled_mark')
+BENCHMARK_KEYS=('decision_mid','decision_at_ns','request_event_at_ns','arrival_bid','arrival_ask','arrival_at_ns','end_at_ns','unfilled_mark')
 FLAGS=tuple(dict.fromkeys((*quality.FLAGS,*accepted.FLAGS,'benchmark_source_verified',
     'benchmark_request_event_time_verified','atomic_snapshot','fee_debits_allocated_to_order')))
 CHECKS=('all_original_fills_derived','exact_heads_replayed','missing_fees_unlinked',
+    'local_request_event_bound','changed_request_event_refused','legacy_request_event_refused',
     'repeat_review_matches','journals_unchanged','benchmark_not_attested','integer_fill_times_preserved')
 
 
@@ -36,7 +38,11 @@ def _benchmark(value):
     copied={k:value[k] for k in BENCHMARK_KEYS}
     # Validate quote/time/mark fields before opening any journal. No fill is
     # invented by this empty-input validation and no result is acknowledged.
+    request_event=copied.pop('request_event_at_ns')
     quality.review(product='BTC-USD',side='BUY',requested_quantity='1',fills=[],**copied)
+    copied['request_event_at_ns']=quality._ns(request_event)
+    if not copied['decision_at_ns']<=copied['request_event_at_ns']<=copied['arrival_at_ns']:
+        _fail('REQUEST_EVENT_TIME_ORDER')
     return copied
 
 
@@ -44,6 +50,15 @@ def _instant_ns(value):
     normalized=adapter._instant(value);base,_,fraction=normalized[:-6].partition('.')
     delta=datetime.fromisoformat(base).replace(tzinfo=timezone.utc)-datetime(1970,1,1,tzinfo=timezone.utc)
     return quality._ns((delta.days*86400+delta.seconds)*1_000_000_000+int(fraction.ljust(9,'0')))
+
+
+def _local_event_ns(value):
+    """Exact retained local wall-clock spelling, never synchronized-clock proof."""
+    if isinstance(value,bool) or not isinstance(value,(int,float)):_fail('REQUEST_EVENT_MARKER')
+    try:scaled=Decimal(str(value))*1_000_000_000
+    except (InvalidOperation,ValueError,OverflowError):_fail('REQUEST_EVENT_MARKER')
+    if not scaled.is_finite() or scaled!=scaled.to_integral_value():_fail('REQUEST_EVENT_PRECISION')
+    return quality._ns(int(scaled))
 
 
 def review(*,expected_account_id,request_journal_path,pacing_path,activity_store_path,acceptance_store_path,
@@ -66,11 +81,18 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
         any(before.get(k) is not False for k in accepted.FLAGS)):_fail('ACCEPTED_REQUEST_AGREEMENT_REQUIRED')
     journal=BrokerRequestJournal(request_journal_path,expected_account_id)
     store=BrokerActivityStore(activity_store_path,expected_account_id)
-    requests=original._requests(journal);retained=store.inspect()
+    requests=original._requests(journal);recovery=journal.recovery();retained=store.inspect()
     if (requests['head_sha256']!=expected_request_head or retained['head_sha256']!=expected_activity_head or
-        before['account_sha256']!=store.account_digest):_fail('HEAD_DISAGREEMENT')
+        recovery['head_sha256']!=expected_request_head or before['account_sha256']!=store.account_digest):_fail('HEAD_DISAGREEMENT')
     request=requests['requests'].get(client_order_id)
     if request is None or request['marked'] is not True or request['snapshot'] is None:_fail('OBSERVED_ORIGINAL_REQUEST_REQUIRED')
+    summaries=[row for row in recovery['requests'] if row['client_order_id']==client_order_id]
+    if len(summaries)!=1 or summaries[0]['payload_sha256']!=request['plan']['payload_sha256']:
+        _fail('REQUEST_EVENT_BINDING')
+    marker=summaries[0]['submission_admission']
+    if marker is None:_fail('REQUEST_EVENT_MARKER_REQUIRED')
+    request_event_ns=_local_event_ns(marker['evaluated_at'])
+    if benchmark['request_event_at_ns']!=request_event_ns:_fail('REQUEST_EVENT_TIME_DISAGREEMENT')
     plan=request['plan'];payload=plan['payload'];snapshot=request['snapshot'];broker_id=snapshot['broker_order_id']
     selected=[r for r in before['request_activity_review']['request_reviews'] if r['client_order_id']==client_order_id]
     if (len(selected)!=1 or selected[0]['broker_order_id']!=broker_id or selected[0]['local_terms_agree'] is not True or
@@ -82,8 +104,9 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
     # execution IDs. No fee is guessed from references, dates or residuals.
     fills=[dict(execution_id='rest:'+r['activity_id'],quantity=r['quantity'],price=r['price'],
         filled_at_ns=_instant_ns(r['occurred_at']),fee_usd=None) for r in records]
+    quality_benchmark={key:value for key,value in benchmark.items() if key!='request_event_at_ns'}
     result=quality.review(product='BTC-USD',side=payload['side'].upper(),requested_quantity=payload['qty'],
-        fills=fills,**benchmark)
+        fills=fills,**quality_benchmark)
     if (result.get('mode')!='SUPPLIED_EXECUTION_QUALITY_REVIEW' or result.get('policy')!=quality.POLICY or
         result.get('status')!='RESEARCH_REVIEW_REQUIRED' or any(result.get(k) is not False for k in quality.FLAGS) or
         result.get('unique_fills')!=len(records) or result.get('filled_quantity')!=selected[0]['explicit_fill_quantity'] or
@@ -92,26 +115,30 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
             'executed_shortfall_with_supplied_fees_bps','signed_whole_order_shortfall_usd','whole_order_shortfall_bps'))):
         _fail('QUALITY_COMPONENT_DISAGREEMENT')
     after=accepted.review(**common)
-    if (after!=before or original._requests(journal)!=requests or store.inspect()!=retained):_fail('JOURNALS_CHANGED_DURING_REVIEW')
+    if (after!=before or original._requests(journal)!=requests or journal.recovery()!=recovery or store.inspect()!=retained):
+        _fail('JOURNALS_CHANGED_DURING_REVIEW')
     scope=dict(policy=POLICY,account_sha256=before['account_sha256'],request_head_sha256=expected_request_head,
         activity_head_sha256=expected_activity_head,pacing_head_sha256=before['pacing_head_sha256'],
         acceptance_head_sha256=before['acceptance_head_sha256'],client_order_id=client_order_id,
         broker_order_id=broker_id,payload_sha256=plan['payload_sha256'],benchmark_sha256=sha(benchmark),
+        request_event_marker_sha256=sha(marker),request_event_at_ns=request_event_ns,
         accepted_review_sha256=sha(before),quality_input_sha256=result['input_sha256'])
     return dict(mode='PAPER_EXECUTION_QUALITY_REVIEW',status='REVIEW_REQUIRED',read_only=True,
         **scope,input_sha256=sha(scope),complete_accepted_history_replayed=True,local_original_terms_agree=True,
-        all_retained_original_fills_included=True,journals_rechecked_unchanged=True,
+        all_retained_original_fills_included=True,local_request_event_bound=True,journals_rechecked_unchanged=True,
         retained_unallocated_fee_records=sum(r['kind']!='FILL' for r in retained['normalized_activities']),
         identity_scope='REST_ACTIVITY_IDS_AS_LOCAL_SURROGATES_NOT_VERIFIED_STREAM_EXECUTION_IDS',
-        benchmark_scope='SUPPLIED_UNVERIFIED_QUOTES_AND_CLOCK_DOMAIN_NOT_ORDER_EVENT_ATTESTATION',
+        benchmark_scope='SUPPLIED_UNVERIFIED_QUOTES_WITH_EXACT_LOCAL_REQUEST_MARKER_BINDING_NOT_TRANSPORT_OR_CLOCK_ATTESTATION',
         execution_quality=result,**{k:False for k in FLAGS},
         limitations='Exact local account/request/activity/pacing/acceptance replay binds all retained priced fills and original immutable terms to a supplied quote benchmark. It does not prove complete received activity, actual order arrival/decision timing, source, synchronized clocks, fee links, account balances, spendable funds, profit or routing permission. All fee-inclusive results remain unknown. Separate databases are sampled, not atomic; valid-tail deletion/ABA replacement and other hosts are not excluded. No network/vault/write/retry/repair. Actual input/output is private financial information, never public CI evidence.')
 
 
-def _fixture(root):
-    options,_=accepted._fixture(root);epoch=_instant_ns('2026-10-17T18:00:00Z')
+def _fixture(root,*,timed=True):
+    epoch=_instant_ns('2026-10-17T18:00:00Z')
+    options,_=accepted._fixture(root,submission_admission=epoch//1_000_000_000 if timed else None)
     return dict(**options,client_order_id='nx_accept_fixture',benchmark=dict(decision_mid='100',decision_at_ns=epoch-1,
-        arrival_bid='99',arrival_ask='101',arrival_at_ns=epoch,end_at_ns=epoch+3_000_000_000,unfilled_mark=None))
+        request_event_at_ns=epoch,arrival_bid='99',arrival_ask='101',arrival_at_ns=epoch,
+        end_at_ns=epoch+3_000_000_000,unfilled_mark=None))
 
 
 def fixture_report():
@@ -119,9 +146,18 @@ def fixture_report():
         root=Path(directory);args=_fixture(root)
         before=tuple((p.name,p.read_bytes()) for p in sorted(root.iterdir()))
         result=review(**args);repeated=review(**args);q=result['execution_quality']
+        changed=dict(args,benchmark=dict(args['benchmark'],request_event_at_ns=args['benchmark']['request_event_at_ns']-1))
+        try:review(**changed);changed_refused=False
+        except ValueError as error:changed_refused=str(error)=='PAPER_EXECUTION_QUALITY_REQUEST_EVENT_TIME_DISAGREEMENT'
+        with tempfile.TemporaryDirectory(prefix='nexus-paper-quality-legacy-') as legacy_directory:
+            legacy_args=_fixture(Path(legacy_directory),timed=False)
+            try:review(**legacy_args);legacy_refused=False
+            except ValueError as error:legacy_refused=str(error)=='PAPER_EXECUTION_QUALITY_REQUEST_EVENT_MARKER_REQUIRED'
         checks=dict(all_original_fills_derived=q['unique_fills']==2 and q['filled_quantity']=='2' and q['fill_vwap']=='99',
             exact_heads_replayed=result['complete_accepted_history_replayed'] and result['journals_rechecked_unchanged'],
             missing_fees_unlinked=q['supplied_fee_total_usd'] is None and q['signed_shortfall_with_supplied_fees_usd'] is None,
+            local_request_event_bound=result['local_request_event_bound'] and result['request_event_at_ns']==args['benchmark']['request_event_at_ns'],
+            changed_request_event_refused=changed_refused,legacy_request_event_refused=legacy_refused,
             repeat_review_matches=result==repeated,journals_unchanged=before==tuple((p.name,p.read_bytes()) for p in sorted(root.iterdir())),
             benchmark_not_attested=result['benchmark_source_verified'] is False and result['benchmark_request_event_time_verified'] is False,
             integer_fill_times_preserved=q['decision_to_arrival_ns']==1 and q['arrival_to_last_supplied_fill_ns']==2_000_000_000)
@@ -156,7 +192,7 @@ def main():
         'request-head':'Exact current request-history SHA256 to bind; a changed history fails without retry.',
         'activity-head':'Exact current activity-history SHA256 to bind; a changed history fails without retry.',
         'client-order-id':'Original retained client order ID to review; never creates an order.',
-        'benchmark':'Private bounded JSON with decision_mid, decision_at_ns, arrival_bid, arrival_ask, arrival_at_ns, end_at_ns and unfilled_mark. Prices are decimal strings, times integer nanoseconds; quotes/clocks remain unverified.'}
+        'benchmark':'Private bounded JSON with decision_mid, decision_at_ns, request_event_at_ns, arrival_bid, arrival_ask, arrival_at_ns, end_at_ns and unfilled_mark. request_event_at_ns must exactly match the retained local submission-admission marker; this does not attest transport, source or clock synchronization.'}
     for name,description in descriptions.items():parser.add_argument('--'+name,required=True,help=description)
     args=parser.parse_args()
     try:

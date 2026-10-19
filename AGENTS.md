@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.174.2, content-free per-invariant Windows pacing diagnostics and an independently bounded full-regression gate. Read the newest version section and generated roadmap; exact-source Windows CI and actual broker/market acceptance remain open.
+Current checkpoint: v0.175.0, retained local request-event binding for private execution-quality review. Read the newest version section and generated roadmap; exact-source Windows CI and actual broker/market acceptance remain open.
+
+## v0.175.0 retained local request-event binding
+
+Execution-quality review now replays the exact retained request journal and requires the selected original request's immutable `submission_admission` marker. The caller-supplied benchmark must contain the identical integer-nanosecond request event and must order decision at or before request event at or before arrival. Decimal conversion is exact; legacy untimed markers and non-nanosecond values remain readable in the journal but are refused for quality review without rewriting history. The private result binds the marker digest and local request-event nanoseconds, then repeats journal recovery after arithmetic.
+
+This proves only that the supplied benchmark uses the retained local pre-transport admission event. It does not prove transport invocation, broker arrival, clock synchronization, quote contemporaneity, source authenticity, fee/hold/funds coverage, routing, fill quality, market realism or release authority. Every related authority flag remains false. No UI, editable parameter, permission, default connection, order path, retry, funding, live or cloud behavior changed; the beginner tabs and black/bright-purple help contract are unchanged.
+
+Exact v0.174.2 commit `69631229444cd141889c25508affadcaea6746c6` passed Windows run 39301830393, safety/browser/evidence run 39301830361 and security run 39301830418, including packaging, install/reinstall/uninstall and all separately budgeted safety jobs. v0.175.0 requires its own exact-source workflows. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; this consistency increment does not close an independent stage, grant release approval or change trading permission.
+
+Final v0.175.0 local validation: 3,386 Python tests passed with one existing Starlette/httpx deprecation warning; the focused paper-account/request/quality/shared set passed 185 tests. All sixteen offline profiles and saved-evidence verification matched 345 source files / `697eee99e5626a95fc9998fdc76dd555d9fe3090fbfac88b7470b6336d35e5e4`; `validation/release_trials_0_175_0.json` SHA256 is `f075644339cdba184a9a8720140bf3700841b5e7133eb7fb7967436391f6ce82`. Fourteen Node controller smokes, Portal inline syntax, compileall, dependency consistency, generated-roadmap comparison and whitespace checks passed. Exact-source artifact/security and native Windows execution remain mandatory. No actual provider, account, market, funds, live or cloud operation occurred.
 
 ## v0.174.2 Windows pacing gate diagnostics and budget
 

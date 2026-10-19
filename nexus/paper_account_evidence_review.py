@@ -148,7 +148,7 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
 
 def _fixture(root):
     from nexus.paper_request_activity_acceptance import _fixture as prepare
-    options,_=prepare(root);epoch=1792195200+18*3600
+    epoch=1792195200+18*3600;options,_=prepare(root,submission_admission=epoch)
     return dict(**options,
         opening_observation=observations._fixture_observation(options['expected_account_id'],'1000','0',epoch-2,epoch-1),
         closing_observation=observations._fixture_observation(options['expected_account_id'],'802','2',epoch+3,epoch+4))

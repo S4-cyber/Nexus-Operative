@@ -219,8 +219,9 @@ def run(command):
         opening.write_text(canonical(options['opening_observation']),encoding='utf-8');closing.write_text(canonical(options['closing_observation']),encoding='utf-8')
         from nexus.paper_execution_quality_review import _instant_ns, FLAGS as QUALITY_FLAGS
         epoch=_instant_ns('2026-10-17T18:00:00Z');benchmark=private/'benchmark.json'
-        benchmark.write_text(canonical(dict(decision_mid='100',decision_at_ns=epoch-1,arrival_bid='99',arrival_ask='101',
-            arrival_at_ns=epoch,end_at_ns=epoch+3_000_000_000,unfilled_mark=None)),encoding='utf-8')
+        benchmark.write_text(canonical(dict(decision_mid='100',decision_at_ns=epoch-1,request_event_at_ns=epoch,
+            arrival_bid='99',arrival_ask='101',arrival_at_ns=epoch,end_at_ns=epoch+3_000_000_000,
+            unfilled_mark=None)),encoding='utf-8')
         from nexus.paper_quote_capture import _fixture as quote_fixture,FLAGS as QUOTE_FLAGS
         quote_options,quote_checks=quote_fixture(private/'quote-capture')
         _require(quote_checks['passed'] is True,'QUOTE_FIXTURE')
@@ -262,7 +263,8 @@ def run(command):
         reviewed=_json_call(command,[*quality_args,'--client-order-id','nx_accept_fixture','--benchmark',str(benchmark)],env)
         q=reviewed['execution_quality']
         _require(reviewed['mode']=='PAPER_EXECUTION_QUALITY_REVIEW' and reviewed['all_retained_original_fills_included'] is True and
-            reviewed['journals_rechecked_unchanged'] is True and reviewed['request_head_sha256']==options['expected_request_head'] and
+            reviewed['local_request_event_bound'] is True and reviewed['request_event_at_ns']==epoch and
+            reviewed['benchmark_request_event_time_verified'] is False and reviewed['journals_rechecked_unchanged'] is True and reviewed['request_head_sha256']==options['expected_request_head'] and
             reviewed['activity_head_sha256']==options['expected_activity_head'] and q['unique_fills']==2 and
             q['fill_vwap']=='99' and q['signed_gross_shortfall_usd']=='-2' and q['signed_shortfall_with_supplied_fees_usd'] is None and
             all(reviewed[k] is False for k in QUALITY_FLAGS),'QUALITY_REVIEW')

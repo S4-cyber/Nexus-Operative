@@ -21,6 +21,8 @@ def test_derives_original_terms_and_all_explicit_prices_without_writes(tmp_path)
     assert q['arrival_to_first_supplied_fill_ns']==1_000_000_000
     assert q['arrival_to_last_supplied_fill_ns']==2_000_000_000 and q['decision_to_arrival_ns']==1
     assert r['all_retained_original_fills_included'] and r['journals_rechecked_unchanged']
+    assert r['local_request_event_bound'] and r['request_event_at_ns']==args['benchmark']['request_event_at_ns']
+    assert r['benchmark_request_event_time_verified'] is False and r['clock_domains_verified'] is False
     assert r['payload_sha256'] and r['request_head_sha256']==args['expected_request_head']
     assert all(r[k] is False for k in subject.FLAGS) and all(q[k] is False for k in subject.quality.FLAGS)
     assert subject.review(**args)==r and snapshot(tmp_path)==before
@@ -31,6 +33,31 @@ def test_cannot_select_only_favorable_fill_by_shortening_benchmark_interval(tmp_
     before=snapshot(tmp_path)
     with pytest.raises(ValueError,match='FILL_TIME_ORDER'):subject.review(**args)
     assert snapshot(tmp_path)==before
+
+
+def test_request_event_must_exactly_match_retained_original_marker(tmp_path):
+    args=subject._fixture(tmp_path);before=snapshot(tmp_path)
+    args['benchmark']['request_event_at_ns']-=1
+    with pytest.raises(ValueError,match='REQUEST_EVENT_TIME_DISAGREEMENT'):subject.review(**args)
+    assert snapshot(tmp_path)==before
+
+
+def test_legacy_untimed_original_marker_is_preserved_and_refused(tmp_path):
+    args=subject._fixture(tmp_path,timed=False);before=snapshot(tmp_path)
+    with pytest.raises(ValueError,match='REQUEST_EVENT_MARKER_REQUIRED'):subject.review(**args)
+    assert snapshot(tmp_path)==before
+
+
+@pytest.mark.parametrize('value',[1.0000000001,True,'1',None])
+def test_local_request_event_requires_exact_integer_nanoseconds(value):
+    with pytest.raises(ValueError,match='REQUEST_EVENT_MARKER|REQUEST_EVENT_PRECISION'):
+        subject._local_event_ns(value)
+
+
+def test_request_event_order_is_validated_before_journal_access(tmp_path,monkeypatch):
+    args=subject._fixture(tmp_path);args['benchmark']['request_event_at_ns']=args['benchmark']['arrival_at_ns']+1
+    monkeypatch.setattr(subject.accepted,'review',lambda **kw:pytest.fail('journal read'))
+    with pytest.raises(ValueError,match='REQUEST_EVENT_TIME_ORDER'):subject.review(**args)
 
 
 @pytest.mark.parametrize('field',['expected_request_head','expected_activity_head'])
@@ -50,7 +77,8 @@ def test_individual_limit_violation_blocks_even_when_average_price_matches(tmp_p
     args,_,_=prepared(tmp_path,prices=('85','113'))
     epoch=subject._instant_ns('2026-10-17T18:00:00Z')
     args.update(client_order_id='nx_accept_fixture',benchmark=dict(decision_mid='100',decision_at_ns=epoch-1,
-        arrival_bid='99',arrival_ask='101',arrival_at_ns=epoch,end_at_ns=epoch+3_000_000_000,unfilled_mark=None))
+        request_event_at_ns=epoch,arrival_bid='99',arrival_ask='101',arrival_at_ns=epoch,
+        end_at_ns=epoch+3_000_000_000,unfilled_mark=None))
     with pytest.raises(ValueError,match='ACCEPTED_REQUEST_AGREEMENT_REQUIRED'):subject.review(**args)
 
 

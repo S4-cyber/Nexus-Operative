@@ -125,7 +125,7 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
         limitations='Complete local accepted-history replay binds this exact request head to one exact retained activity head and rechecks all cooperating journals. This is sampled local consistency only: it does not attest provider source or complete activity/fee coverage, make the request journal atomic with collection, verify holds or spendable funds, authorize transport, write a ledger or approve release. Keep all private journals and reports outside Git.')
 
 
-def _fixture(root):
+def _fixture(root,*,submission_admission=None):
     """Build one accepted synthetic fill collection; never provider or vault IO."""
     account='01234567-89ab-cdef-0123-456789abcdef'
     after='2026-10-17T00:00:00Z';until='2026-10-18T00:00:00Z'
@@ -143,7 +143,12 @@ def _fixture(root):
     broker_id='11234567-89ab-cdef-0123-456789abcdef'
     raw=dict(**plan['payload'],id=broker_id,asset_class='crypto',status='filled',
         filled_qty='2',filled_avg_price='99',updated_at='2026-10-17T18:00:02+00:00')
-    requests.prepare(plan);requests.mark_submission_uncertain('nx_accept_fixture')
+    requests.prepare(plan)
+    if submission_admission is None:
+        requests.mark_submission_uncertain('nx_accept_fixture')
+    else:
+        requests.begin_submission_checked('nx_accept_fixture',expected_head=requests.recovery()['head_sha256'],
+            expected_payload_sha256=plan['payload_sha256'],admission=lambda:submission_admission)
     requests.observe('nx_accept_fixture',raw)
     order=dict(broker_order_id=broker_id,client_order_id='nx_accept_fixture',symbol='BTC/USD',
         side='buy',status='filled',filled_quantity='2',average_fill_price='99',

@@ -1,6 +1,6 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.172.4, native Windows read-only order-journal emergency-cut fencing and explicit post-recovery cleanup retry. Read the newest version section and generated roadmap; exact-source execution and actual broker/market operational acceptance remain open.
+Current checkpoint: v0.172.5, origin-scoped cross-platform revalidation of packaged paper-tool evidence while preserving the native Windows read-only order-journal emergency-cut requirement. Read the newest version section and generated roadmap; exact-source execution and actual broker/market operational acceptance remain open.
 
 Start with `ROADMAP.md`, the bundled read-only contract in `nexus/release_roadmap.py`, then `LAUNCH_DRIVE.md` and `VERSIONING.md`. The PORTAL exposes the same reference at `GET /api/roadmap`. Runtime users cannot edit it. Update source and regenerate ROADMAP.md together when milestones change.
 

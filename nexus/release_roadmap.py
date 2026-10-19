@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.172.4'
+REVISION = '0.172.5'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.172.4 adds a native Windows read-only order-journal fault drill to the exact standalone and installed emergency-stop command. The first cut must publish the independent latch, refuse success while durable SQLite cleanup is unavailable and fence new intake without waiting on storage; after write access is restored, one explicit retry must cancel the retained pending order and verify the durable halt. This is one bounded storage-fault case, not ordinary-user profile/ACL, whole-disk, broker cancellation, sustained-market or release acceptance. Exact-source CI remains mandatory. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.172.5 binds packaged paper-tool evidence to its declared originating OS class so saved Linux evidence can be revalidated on Windows without being mistaken for a native Windows run. The validator still requires exactly seventeen invocations and the read-only-journal fault on WINDOWS_NT evidence, or exactly sixteen and no native claim on NON_WINDOWS evidence; inconsistent or unknown combinations fail closed. Exact v0.172.4 CI exposed this cross-platform evidence defect while its live Windows HTTP trial exercised the native fault. This is release-evidence portability hardening, not ordinary-user profile/ACL, whole-disk, broker cancellation, sustained-market or release acceptance. Exact-source CI remains mandatory. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

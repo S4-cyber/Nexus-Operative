@@ -82,6 +82,20 @@ def test_http_paper_evidence_cannot_be_missing_or_relabelled_as_broker_io():
     with pytest.raises(ValueError, match='HTTP_PAPER_SCOPE'): trials._validate('http', result)
 
 
+@pytest.mark.parametrize(('host_os','native_checked','tool_invocations'), [
+    ('WINDOWS_NT',False,17),
+    ('WINDOWS_NT',True,16),
+    ('NON_WINDOWS',True,16),
+    ('NON_WINDOWS',False,17),
+    ('UNKNOWN',False,16),
+])
+def test_http_paper_tool_platform_scope_must_be_self_consistent(host_os,native_checked,tool_invocations):
+    result=http_report();tools=result['paper_tools_source']
+    tools.update(host_os=host_os,native_windows_storage_fault_checked=native_checked,
+        tool_invocations=tool_invocations)
+    with pytest.raises(ValueError,match='HTTP_PAPER_TOOLS'):trials._validate('http',result)
+
+
 @pytest.mark.parametrize('profile', trials.PROFILES)
 def test_zero_exit_or_generic_success_cannot_certify_a_trial(profile):
     # Incomplete profile results must not turn a green child exit into acceptance.

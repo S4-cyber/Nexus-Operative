@@ -641,9 +641,11 @@ def _validate(profile, result):
     if profile == 'http':
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS
         tools=result['paper_tools_source']
+        native_windows_required=tools['host_os']=='WINDOWS_NT'
         _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and
-            tools['tool_invocations']==16+int(os.name=='nt') and
-            tools['native_windows_storage_fault_checked'] is (os.name=='nt') and
+            tools['host_os'] in ('WINDOWS_NT','NON_WINDOWS') and
+            tools['tool_invocations']==16+int(native_windows_required) and
+            tools['native_windows_storage_fault_checked'] is native_windows_required and
             all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
         _require(result['progress_estimate_scope_checked'] is True,'HTTP_PROGRESS_ASSESSMENT')

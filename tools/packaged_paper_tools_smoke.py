@@ -4,13 +4,15 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import sqlite3
 import subprocess
 import tempfile
+import time
 
 ROOT=Path(__file__).resolve().parents[1]
 CHECKS=('catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
         'private_account_review_checked','public_current_account_review_checked','private_execution_quality_checked','private_quote_status_checked','unconfirmed_quote_read_denied','encrypted_quote_evidence_checked','invalid_quote_export_denied','private_files_unchanged','invalid_command_denied',
-        'emergency_stop_independent','default_data_not_created')
+        'emergency_stop_independent','emergency_stop_storage_contention','default_data_not_created')
 
 
 def _require(condition,code):
@@ -41,6 +43,51 @@ def _json_call(command,args,env):
     _require(code==0 and not stderr,'CHILD_FAILED')
     try:return json.loads(stdout)
     except (ValueError,TypeError):raise ValueError('PACKAGED_PAPER_TOOLS_CHILD_JSON') from None
+
+
+def _contended_emergency_stop(command,env,root):
+    """Require the external cut latch to win before a held SQLite writer."""
+    from nexus import emergency_intent
+    from nexus.durable_orders import DurableOrderGateway
+    order_path=root/'order_lifecycle.sqlite3';gateway=DurableOrderGateway(order_path)
+    gateway.submit('contention-fixture','BTC-USD','BUY',1,tier='terrestrial')
+    lock=sqlite3.connect(order_path,timeout=10);process=None
+    try:
+        lock.execute('BEGIN IMMEDIATE')
+        process=subprocess.Popen([*command,'--emergency-stop'],cwd=ROOT,env=env,
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8',errors='replace')
+        # A frozen one-file Windows launcher can spend several seconds unpacking
+        # before it reaches the latch; this bound is still below the smoke's
+        # ordinary child timeout and does not release the SQLite writer.
+        deadline=time.monotonic()+15
+        while time.monotonic()<deadline and not emergency_intent.requested(order_path):
+            if process.poll() is not None:break
+            time.sleep(.01)
+        _require(emergency_intent.requested(order_path),'EMERGENCY_STOP_CONTENTION')
+        _require(process.poll() is None,'EMERGENCY_STOP_CONTENTION')
+        started=time.monotonic()
+        try:gateway.submit('post-cut-fixture','BTC-USD','BUY',1,tier='terrestrial')
+        except ValueError as error:_require(str(error)=='EMERGENCY_CUT_REQUESTED','EMERGENCY_STOP_CONTENTION')
+        else:_require(False,'EMERGENCY_STOP_CONTENTION')
+        _require(time.monotonic()-started<3,'EMERGENCY_STOP_CONTENTION')
+    finally:
+        try:lock.rollback()
+        finally:lock.close()
+    try:stdout,stderr=process.communicate(timeout=30)
+    except subprocess.TimeoutExpired:
+        if os.name=='nt':subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],capture_output=True,timeout=10)
+        else:process.kill()
+        process.communicate(timeout=10)
+        raise ValueError('PACKAGED_PAPER_TOOLS_CHILD_TIMEOUT') from None
+    _require(len(stdout.encode())+len(stderr.encode())<4*1024*1024,'OUTPUT_CAP')
+    _require(process.returncode==0 and not stderr,'EMERGENCY_STOP_CONTENTION')
+    try:cut=json.loads(stdout)
+    except (ValueError,TypeError):raise ValueError('PACKAGED_PAPER_TOOLS_CHILD_JSON') from None
+    recovered=DurableOrderGateway(order_path).recovery_report()
+    _require(cut['passed'] is True and cut['emergency_cut_state']=='VERIFIED' and
+        cut['intent_preceded_durable_halt'] is True and recovered['halted'] is True and
+        len(recovered['orders'])==1 and recovered['orders'][0]['status']=='SIMULATED_CANCELLED',
+        'EMERGENCY_STOP_CONTENTION')
 
 
 def run(command):
@@ -142,12 +189,14 @@ def run(command):
                 'broker_connected','live_orders_enabled','money_movement_enabled','reset_available','automatic_restart')) and
             (cut_root/'emergency_cut.intent').is_file() and (cut_root/'order_lifecycle.sqlite3').is_file(),
             'EMERGENCY_STOP')
+        contention_root=root/'contended-emergency-cut'
+        _contended_emergency_stop(command,dict(env,NEXUS_PORTABLE_DATA=str(contention_root)),contention_root)
         _require(not default.exists() and not missing.exists(),'DEFAULT_DATA_CREATED')
         return dict(mode='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE',passed=True,**{k:True for k in CHECKS},
-            tool_invocations=14,provider_reads_requested=False,credential_reads_requested=False,
+            tool_invocations=15,provider_reads_requested=False,credential_reads_requested=False,
             live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
             native_windows_acceptance=False,
-            scope='Fourteen actual command-prefix child processes, including a separate explicit emergency cut, with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The emergency command starts no desktop, network, vault or reset path. Inventory and full-chain quote-evidence self-tests use distinct authenticated encryption formats and retain no ciphertext, password or plaintext bundle. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
+            scope='Fifteen actual command-prefix child processes, including explicit emergency cuts with and without a held SQLite writer, with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The contended emergency command must publish its latch before the writer clears, reject new intake without waiting on SQLite and durably cancel after release. Inventory and full-chain quote-evidence self-tests use distinct authenticated encryption formats and retain no ciphertext, password or plaintext bundle. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
 
 
 class _Parser(argparse.ArgumentParser):
@@ -163,7 +212,7 @@ def main():
         if args.output:args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(encoded,encoding='utf-8')
     except (Exception,KeyboardInterrupt) as error:
         allowed={'COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW','QUALITY_REVIEW',
-            'PRIVATE_FILES_CHANGED','INVALID_COMMAND','EMERGENCY_STOP','DEFAULT_DATA_CREATED','OUTPUT_CAP',
+            'PRIVATE_FILES_CHANGED','INVALID_COMMAND','EMERGENCY_STOP','EMERGENCY_STOP_CONTENTION','DEFAULT_DATA_CREATED','OUTPUT_CAP',
             'CHILD_FAILED','CHILD_JSON','CHILD_TIMEOUT','EXECUTABLE_REQUIRED'}
         code=str(error) if type(error) is ValueError and str(error) in {'PACKAGED_PAPER_TOOLS_'+k for k in allowed} else 'PACKAGED_PAPER_TOOLS_INTERNAL_ERROR'
         if args.output:

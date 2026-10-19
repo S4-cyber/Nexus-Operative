@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.172.0'
+REVISION = '0.172.1'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.172.0 adds an exact installed --emergency-stop command that runs in a separate process without starting the Portal, event loop, browser, network, credential vault or reset path. It publishes the existing durable cut intent before SQLite cancellation and reasserts it afterward. The paper runner now consults that latch at start, quote, submit and fill boundaries; a still-running API adopts an external latch without restart and fails every entry path closed while preserving the existing explicit disengaged reset. Source subprocess and packaged-command smoke tests cover durable acknowledgment and an in-flight blocked quote. This is same-host local paper safety, not an out-of-band broker cancel, distributed stop service, native Windows acceptance or release approval. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.172.1 extends the packaged emergency-stop smoke across a held SQLite writer. The separate process must publish the persistent latch before the lock clears, new gateway intake must reject without waiting on SQLite, and durable halt/cancellation must complete after release. The same smoke runs against the standalone and installed Windows EXE, while all authority flags remain false. This is bounded same-host storage-contention evidence, not whole-machine starvation, an out-of-band broker cancel, distributed control, actual broker-paper acceptance or release approval. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

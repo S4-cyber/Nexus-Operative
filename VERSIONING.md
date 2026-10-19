@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.165.2 (pre-release).** Shared storage relationship checks now protect recovery, activity collection, quote capture and composed evidence review. Conflicting databases, SQLite sidecars, ownership-file names and selected file/directory ancestors refuse before relevant vault/transport/journal work. No paths are created or repaired by preflight. v0.165.1 precision handling and earlier admission/read-purpose safeguards remain intact. No provider, funds, routing or release authority is introduced.
+**Current development build: 0.165.3 (pre-release).** The real-loopback release trial now handles the Windows connection-reset form of a verified 403/no-store pre-credential origin denial without relaxing successful or credential-bearing response checks. Runtime middleware, provider access and authority are unchanged; v0.165.2 storage preflight remains intact.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

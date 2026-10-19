@@ -9,6 +9,18 @@ import pytest
 from nexus import release_trials as trials
 
 
+class _ResettingBody:
+    def read(self, size):
+        raise ConnectionResetError('fixture reset after response headers')
+
+
+def test_http_trial_tolerates_reset_only_for_precredential_denial():
+    assert trials._http_trial_response_body(
+        _ResettingBody(),tolerate_precredential_denial_reset=True) == b'{}'
+    with pytest.raises(ConnectionResetError):
+        trials._http_trial_response_body(_ResettingBody())
+
+
 def test_real_http_process_starts_stopped_without_data_credentials_or_external_io(tmp_path):
     env = {**os.environ, 'NEXUS_PORTABLE_DATA': str(tmp_path)}
     code = 'import json; from nexus.release_trials import _http_trial; print(json.dumps(_http_trial()))'

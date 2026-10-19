@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.165.2'
+REVISION = '0.165.3'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.165.2 shares bounded read-only storage relationship preflight across quote capture, original-ID recovery, activity collection and composed evidence reviews. Selected databases/inputs cannot overlap each other or possible rollback/WAL/shared-memory/ownership files, including normalized aliases and file-directory ancestors. Saved recovery/collection reject collisions before vault capture; direct readers reject before session reservation or journal replay. Existing individual file, source/install, account, ownership, clock and receipt checks remain. This is sampled local path consistency, not atomic path ownership, an ACL audit, encryption or distributed fencing. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner acceptance remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.165.3 makes the real-loopback release trial portable across Windows denied-request close behavior. After an exact 403/no-store pre-credential origin denial is verified, that narrow trial path may treat a connection reset while draining the unused response body as an empty diagnostic body. Success, credential-bearing and every other response still require complete bounded JSON; reset tolerance cannot mask their failure. Application middleware, broker readers, permissions and runtime networking are unchanged. Exact-source Windows/browser/security CI and actual broker/provider acceptance remain required. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

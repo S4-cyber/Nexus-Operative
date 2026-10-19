@@ -19,6 +19,7 @@ import time
 PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'activity_acceptance', 'reconciliation_acceptance', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms', 'encrypted_observation')
 PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
     'unconfirmed_read_denied', 'invalid_scope_denied', 'foreign_origin_denied',
+    'precredential_denial_reset_scoped',
     'inspection_inventory_validated', 'cooldown_prevented_transport',
     'removal_completed_during_read', 'revoked_read_returned_no_observation',
     'pending_history_preserved', 'fresh_process_preserved_pending_history')
@@ -39,6 +40,22 @@ def _safe_failure_code(error):
     if isinstance(error, ReleaseTrialError) and SAFE_FAILURE_CODE.fullmatch(value):
         return value
     return 'RELEASE_TRIAL_INTERNAL_ERROR'
+
+
+def _http_trial_response_body(response, *, tolerate_precredential_denial_reset=False):
+    """Bounded trial-only read; a rejected pre-credential request may close early.
+
+    Windows can surface an unread denied POST body as a TCP reset after the
+    response status and headers have arrived. Only callers that have already
+    verified a pre-credential denial may tolerate that close. Successful or
+    credential-bearing responses still require a complete JSON body.
+    """
+    try:
+        return response.read(2 * 1024 * 1024)
+    except ConnectionResetError:
+        if not tolerate_precredential_denial_reset:
+            raise
+        return b'{}'
 
 
 def _pacing_restart_review(path):
@@ -81,14 +98,16 @@ def _http_pacing_trial(base, root):
     started, resume = threading.Event(), threading.Event()
     workers = []; outcomes = []; now = [1000]; blocking = [False]
     state = dict(saved=None, reads=0, writes=0, deletes=0, requests=0, closed=0)
-    def post(action, payload, *, origin=base, expected=200):
+    def post(action, payload, *, origin=base, expected=200, tolerate_precredential_denial_reset=False):
         request = Request(base+'/api/execution/alpaca-paper/local-credentials/'+action,
             data=json.dumps(payload).encode(), headers={'Content-Type':'application/json','Origin':origin}, method='POST')
         try: response = build_opener(ProxyHandler({})).open(request, timeout=15)
         except HTTPError as error: response = error
         with response:
-            raw = response.read(2*1024*1024)
             _require(response.status == expected and response.headers.get('Cache-Control') == 'no-store', 'HTTP_PAPER_STATUS')
+            _require(not tolerate_precredential_denial_reset or expected == 403, 'HTTP_PAPER_RESET_SCOPE')
+            raw = _http_trial_response_body(response,
+                tolerate_precredential_denial_reset=tolerate_precredential_denial_reset)
         _require(key.encode() not in raw and secret.encode() not in raw, 'HTTP_PAPER_SECRET_ECHO')
         return json.loads(raw)
     class Vault:
@@ -126,10 +145,12 @@ def _http_pacing_trial(base, root):
         post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=False), expected=503)
         post('asset-rules', dict(expected_account_id=account_id,confirm_read_only_paper=False), expected=503)
         post('asset-rules', dict(expected_account_id=account_id,confirm_read_only_paper=True,url='https://foreign.invalid'), expected=422)
-        post('asset-rules', dict(expected_account_id=account_id,confirm_read_only_paper=True),origin='https://foreign.invalid',expected=403)
+        post('asset-rules', dict(expected_account_id=account_id,confirm_read_only_paper=True),
+            origin='https://foreign.invalid',expected=403,tolerate_precredential_denial_reset=True)
         post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=True,pacing_path='forbidden'), expected=422)
         post('paced-inspect', dict(confirm_read_only_paper=True), expected=422)
-        post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=True), origin='https://foreign.invalid', expected=403)
+        post('paced-inspect', dict(expected_account_id=account_id,confirm_read_only_paper=True),
+            origin='https://foreign.invalid',expected=403,tolerate_precredential_denial_reset=True)
         _require(not path.parent.exists(), 'HTTP_PAPER_DENIAL_WRITE')
         fixture_vault = Vault(); credentials._vault = lambda: fixture_vault
         portal.inspect_saved = lambda **kw: original_inspect(**kw,opener=Opener(),wall_clock=lambda:now[0],elapsed_clock=lambda:50)

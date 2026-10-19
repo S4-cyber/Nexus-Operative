@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.172.2. Branch: `development/windows-portal-foundation`.
+Revision: 0.172.3. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.172.2 asks the independent emergency command for high, never realtime, Windows process priority before storage work and adds a sixteenth packaged invocation under bounded synthetic CPU pressure plus a held SQLite writer. Priority failure never suppresses the latch or durable halt attempt. Source, standalone and installed runs must still prove latch-before-ledger ordering, immediate intake refusal and durable cancellation. This is bounded same-host load evidence, not whole-machine starvation, disk/ACL recovery, an out-of-band broker cancel, distributed control, actual broker-paper acceptance or release approval. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.172.3 separates the Windows safety workflow into independently budgeted regression, source-fingerprinted release-evidence and rendered-browser jobs. The prior v0.172.2 monolithic job proved the full Windows regression but hit its 20-minute ceiling during release trials, skipping saved-evidence revalidation and browser acceptance. Each gate now retains its own failure artifact and cannot consume another gate's runtime budget. This is release-pipeline reliability, not new broker, market, native-profile, disk/ACL, funding, live/cloud or release acceptance. Exact-source CI remains mandatory. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

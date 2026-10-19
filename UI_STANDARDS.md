@@ -166,3 +166,5 @@ v0.167.2: Review Read Pacing displays completed typed receipt counts separately 
 
 
 v0.168: pacing receipt counts include completed failed attempts. Describe retained request-target hashes without implying successful reads or a response body for every attempt. Explicitly say counts include failures; pending/interrupted reads stay excluded. These profile counters do not independently attest normalized-result agreement. Preserve the existing practical help, strict aggregate validation, no-vault/no-provider behavior and black/purple bottom-right panel.
+
+v0.168.3: the same read-only pacing copy separately reports successful typed reads and their normalized-result-bound/unbound split. Do not count failed attempts as unbound normalized successes. Require exact bounded aggregates, nonvacuous completeness and fixed sanitized failure text. No new control or editable parameter was added; preserve the Accounts tab and existing black/bright-purple bottom-right help.

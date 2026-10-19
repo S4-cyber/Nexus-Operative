@@ -244,6 +244,7 @@ class PaperReadPacing:
         counts={kind:sum(r['operation']==kind for r in operations) for kind in (*OPERATIONS,LEGACY_OPERATION)}
         typed=[row for row in operations if row['operation']!=LEGACY_OPERATION]
         completed_typed=[row for row in typed if row['outcome'] not in ('PENDING_UNKNOWN','INTERRUPTED_UNKNOWN')]
+        successful_typed=[row for row in completed_typed if row['outcome']=='SUCCESS']
         return dict(public, account_sha256=self.account_digest, max_gets_per_session=4,
                     operation_counts=counts,pending_operation=None if state['pending_token'] is None else operations[-1]['operation'],
                     typed_result_receipts=sum(row['result_receipt_bound'] for row in completed_typed),
@@ -252,6 +253,10 @@ class PaperReadPacing:
                     target_bound_typed_results=sum(row['request_targets_bound'] for row in completed_typed),
                     untargeted_typed_results=sum(not row['request_targets_bound'] for row in completed_typed),
                     all_typed_request_targets_bound=bool(completed_typed) and all(row['request_targets_bound'] for row in completed_typed),
+                    successful_typed_results=len(successful_typed),
+                    normalized_bound_successful_results=sum(row['normalized_result_bound'] for row in successful_typed),
+                    normalized_unbound_successful_results=sum(not row['normalized_result_bound'] for row in successful_typed),
+                    all_successful_normalized_results_bound=bool(successful_typed) and all(row['normalized_result_bound'] for row in successful_typed),
                     operation_identity_attested=False,mixed_operation_acceptance_verified=False,
                     min_post_result_cooldown_seconds=MIN_COOLDOWN, automatic_retry=False,
                     broker_wide_quota_verified=False, ready_for_routing=False,

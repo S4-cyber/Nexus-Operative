@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.168.2 (pre-release).** All five saved-key paper-read operations share a read-only local pacing preflight before vault access and carry the sampled head into owned admission. Known blocks avoid credential reads; changed heads refuse before new BEGIN or provider GETs. Existing consumer snapshots pass their exact expected heads. No journal format, migration, automatic retry, provider quota, account acceptance or trading authority is added; v0.168 receipt safeguards and compatibility cautions remain.
+**Current development build: 0.168.3 (pre-release).** The vault/network-silent Accounts pacing review now distinguishes completed typed attempts from successful typed reads and reports successful v3 normalized-result binding separately. Failed attempts remain counted in receipt/target totals but never appear as missing normalized success. Empty success history is not a vacuous pass. All v0.168.2 shared preflight and exact-head admission safeguards remain; no provider, funds, routing or release authority is granted.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

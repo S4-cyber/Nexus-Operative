@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.168.2. Branch: `development/windows-portal-foundation`.
+Revision: 0.168.3. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.168.2 unifies saved-key preflight and sampled pacing-head admission across inventory, BTC asset rules, activity collection, original-ID recovery and BTC quotes. Known local blocks stop before credential access. Each saved read carries its sampled head through vault access to the original owned session; account/asset/activity/recovery consumers also pass their exact previously reviewed head. Changed heads refuse before BEGIN or provider GETs, preserving history and requiring a separately confirmed attempt. Existing completion receipts and conservative unknown-outcome handling remain. This is one local journal, not a provider-wide quota, reservation, distributed lease or accepted broker account. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.168.3 exposes normalized-result completeness in the existing vault/network-silent Accounts pacing review. It separates completed typed attempts from successful typed reads, then reports successful v3 normalized-result-bound versus older/unbound successes with a nonvacuous completeness flag. Failed attempts remain in receipt/target totals but are never mislabeled as missing normalized success. The strict Portal contract rejects extra/private fields and inconsistent aggregates; no control or journal format changes. All v0.168.2 shared preflight and exact-head admission safeguards remain. These local hashes do not establish broker-wide quotas, provider/source acceptance, coverage, funds or routing. Complete mixed-operation acceptance, actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

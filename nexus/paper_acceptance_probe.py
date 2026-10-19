@@ -56,7 +56,9 @@ def pacing_status(*, expected_account_id, pacing_path):
         legacy_unspecified_sessions=state['operation_counts']['LEGACY_UNSPECIFIED'],
         receipt_summary={key:state[key] for key in ('typed_result_receipts','unreceipted_typed_results',
             'all_typed_results_receipted','target_bound_typed_results','untargeted_typed_results',
-            'all_typed_request_targets_bound')},
+            'all_typed_request_targets_bound','successful_typed_results',
+            'normalized_bound_successful_results','normalized_unbound_successful_results',
+            'all_successful_normalized_results_bound')},
         operation_identity_attested=False,mixed_operation_acceptance_verified=False,
         **{flag:False for flag in FLAGS},
         limitations='Local replay only, no vault/provider access or admission permission. Missing history does not prove no earlier read. Other/no journals and hosts are not coordinated. Never erase uncertain reads or cooldowns to bypass review.')

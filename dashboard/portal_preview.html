@@ -498,8 +498,8 @@ function checkedPaperPacingStatus(value){
  const actions={REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY:'A previous read is uncertain. Preserve the history for review; do not automatically retry.',REVIEW_RETAINED_BLOCK_NO_AUTOMATIC_RESET:'A retained block needs review. Do not reset or replace the journal.',SESSION_HISTORY_CAP_REVIEW_NO_DELETION:'Read history is full. Preserve it for review; do not delete it to bypass the limit.',RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ:'Observe the retained cooldown before separately confirming one read.'};
  const counts=value&&value.operation_counts;
  const receipts=value&&value.receipt_summary;
- const receiptCounts=['typed_result_receipts','unreceipted_typed_results','target_bound_typed_results','untargeted_typed_results'];
- const receiptFlags=['all_typed_results_receipted','all_typed_request_targets_bound'];
+ const receiptCounts=['typed_result_receipts','unreceipted_typed_results','target_bound_typed_results','untargeted_typed_results','successful_typed_results','normalized_bound_successful_results','normalized_unbound_successful_results'];
+ const receiptFlags=['all_typed_results_receipted','all_typed_request_targets_bound','all_successful_normalized_results_bound'];
  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==keys.length||keys.some(k=>!Object.hasOwn(value,k))||
     value.mode!=='PAPER_ACCEPTANCE_PACING_STATUS'||value.status!=='REVIEW_REQUIRED'||value.read_only!==true||flags.some(k=>value[k]!==false)||
     value.operation_identity_attested!==false||value.mixed_operation_acceptance_verified!==false||
@@ -511,22 +511,26 @@ function checkedPaperPacingStatus(value){
     !(value.pending_operation===null||operations.includes(value.pending_operation))||value.pending_read!==(value.pending_operation!==null)||(value.pending_read&&counts[value.pending_operation]===0)||
     typeof value.next_allowed_at!=='number'||!Number.isFinite(value.next_allowed_at)||value.next_allowed_at<0||value.next_allowed_at>1e12||
     typeof value.limitations!=='string'||value.limitations.length>1024||!Object.hasOwn(actions,value.suggested_action))throw Error('Invalid pacing status');
- if(!receipts||typeof receipts!=='object'||Array.isArray(receipts)||Object.keys(receipts).length!==6||
+ if(!receipts||typeof receipts!=='object'||Array.isArray(receipts)||Object.keys(receipts).length!==10||
     [...receiptCounts,...receiptFlags].some(k=>!Object.hasOwn(receipts,k))||
     receiptCounts.some(k=>!Number.isInteger(receipts[k])||receipts[k]<0||receipts[k]>256)||
     receiptFlags.some(k=>typeof receipts[k]!=='boolean'))throw Error('Invalid pacing receipt summary');
  const completed=receipts.typed_result_receipts+receipts.unreceipted_typed_results;
  const typed=value.sessions-value.legacy_unspecified_sessions;
  if(completed!==receipts.target_bound_typed_results+receipts.untargeted_typed_results||
+    receipts.successful_typed_results!==receipts.normalized_bound_successful_results+receipts.normalized_unbound_successful_results||
+    receipts.successful_typed_results>completed||receipts.normalized_bound_successful_results>receipts.typed_result_receipts||
     receipts.target_bound_typed_results>receipts.typed_result_receipts||
     completed>typed-(value.pending_read&&value.pending_operation!=='LEGACY_UNSPECIFIED'?1:0)||
     receipts.all_typed_results_receipted!==(completed>0&&receipts.unreceipted_typed_results===0)||
-    receipts.all_typed_request_targets_bound!==(completed>0&&receipts.untargeted_typed_results===0))throw Error('Inconsistent pacing receipts');
+    receipts.all_typed_request_targets_bound!==(completed>0&&receipts.untargeted_typed_results===0)||
+    receipts.all_successful_normalized_results_bound!==(receipts.successful_typed_results>0&&receipts.normalized_unbound_successful_results===0))throw Error('Inconsistent pacing receipts');
  const expectedAction=value.pending_read?'REVIEW_RETAINED_PENDING_READ_NO_AUTOMATIC_RETRY':value.retained_review_block?'REVIEW_RETAINED_BLOCK_NO_AUTOMATIC_RESET':value.session_capacity_remaining===0?'SESSION_HISTORY_CAP_REVIEW_NO_DELETION':'RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ';
  if(value.suggested_action!==expectedAction||(!value.journal_present&&(value.sessions!==0||value.pending_read||value.retained_review_block||value.next_allowed_at!==0)))throw Error('Inconsistent pacing status');
  return (value.journal_present?'Managed local read history: ':'No managed local read history. Missing does not prove no earlier request. ')+value.sessions+' / 256 sessions; '+
   (value.sessions-value.legacy_unspecified_sessions)+' typed purpose'+(value.sessions-value.legacy_unspecified_sessions===1?'':'s')+' / '+value.legacy_unspecified_sessions+' legacy unspecified. '+
   'Completed typed results: '+completed+'; '+receipts.target_bound_typed_results+' with request-target hashes, '+receipts.untargeted_typed_results+' without request-target binding ('+receipts.unreceipted_typed_results+' without receipts). Counts include failed attempts. Pending/interrupted reads are excluded. Hashes record local consistency, not verified broker data. '+
+  'Successful typed results: '+receipts.successful_typed_results+'; '+receipts.normalized_bound_successful_results+' normalized-result bound, '+receipts.normalized_unbound_successful_results+' without normalized-result binding. '+
   (value.next_allowed_at?'recorded cooldown ends '+new Date(value.next_allowed_at*1000).toISOString()+'. ':'No recorded cooldown. ')+actions[value.suggested_action]+
   ' No keys read or broker request made by this check. Other/no journals and computers are not coordinated. No trading permission.';
 }

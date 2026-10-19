@@ -189,7 +189,7 @@ def test_cli_interrupt_retains_pending_read_and_returns_no_private_trace(vault,t
     assert PaperReadPacing(path,ACCOUNT).inspect()['pending_token'] is not None
 
 
-@pytest.mark.parametrize('profile',['missing','pending','interrupted','legacy','unreceipted','v1','v2'])
+@pytest.mark.parametrize('profile',['missing','pending','interrupted','legacy','unreceipted','v1','v2','v3','failure'])
 def test_pacing_status_receipt_summary_is_read_only_and_not_authority(vault,tmp_path,profile):
     import sqlite3
     from nexus import paper_read_pacing as pacing
@@ -202,7 +202,10 @@ def test_pacing_status_receipt_summary_is_read_only_and_not_authority(vault,tmp_
         with gate.ownership() as owner:
             token=gate.begin(admission=lambda:1000,ownership=owner,operation='ACCOUNT_INVENTORY')
             if profile not in ('pending','interrupted'):
-                gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt('ACCOUNT_INVENTORY'))
+                retained=receipt('ACCOUNT_INVENTORY','RATE_LIMITED' if profile=='failure' else 'SUCCESS')
+                if profile=='v3':retained['result_projection_sha256']=sha(dict(normalized_result=True))
+                gate.finish(token,admission=lambda:1001,status_code=429 if profile=='failure' else 200,
+                    retry_after='120' if profile=='failure' else None,ownership=owner,receipt=retained)
         if profile=='interrupted':
             gate.interrupt(token,expected_head=gate.inspect()['head_sha256'],expected_account_id=ACCOUNT,
                 confirm_interrupted=True,admission=lambda:1001)
@@ -222,11 +225,14 @@ def test_pacing_status_receipt_summary_is_read_only_and_not_authority(vault,tmp_
     before=path.read_bytes() if path.exists() else None
     status=probe.pacing_status(expected_account_id=ACCOUNT,pacing_path=path)
     summary=status['receipt_summary']
-    completed=profile in ('unreceipted','v1','v2')
-    assert summary==dict(typed_result_receipts=int(profile in ('v1','v2')),
-        unreceipted_typed_results=int(profile=='unreceipted'),all_typed_results_receipted=profile in ('v1','v2'),
-        target_bound_typed_results=int(profile=='v2'),untargeted_typed_results=int(profile in ('unreceipted','v1')),
-        all_typed_request_targets_bound=profile=='v2')
+    completed=profile in ('unreceipted','v1','v2','v3','failure')
+    successful=profile in ('unreceipted','v1','v2','v3')
+    assert summary==dict(typed_result_receipts=int(profile in ('v1','v2','v3','failure')),
+        unreceipted_typed_results=int(profile=='unreceipted'),all_typed_results_receipted=profile in ('v1','v2','v3','failure'),
+        target_bound_typed_results=int(profile in ('v2','v3','failure')),untargeted_typed_results=int(profile in ('unreceipted','v1')),
+        all_typed_request_targets_bound=profile in ('v2','v3','failure'),successful_typed_results=int(successful),
+        normalized_bound_successful_results=int(profile=='v3'),normalized_unbound_successful_results=int(successful and profile!='v3'),
+        all_successful_normalized_results_bound=profile=='v3')
     assert sum(summary[k] for k in ('typed_result_receipts','unreceipted_typed_results'))==int(completed)
     assert all(status[flag] is False for flag in probe.FLAGS)
     assert status['operation_identity_attested'] is status['mixed_operation_acceptance_verified'] is False

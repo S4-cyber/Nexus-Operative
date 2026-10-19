@@ -37,6 +37,7 @@ def _accepted(status):
         and status['all_collection_cursor_sequences_complete'] is True
         and status['all_pacing_operations_typed'] is True
         and status['all_pacing_result_receipts_bound'] is True
+        and status['all_pacing_request_targets_bound'] is True
         and status['replayed_accepted_transitions'] == status['accepted_transitions']
         and status['latest_acceptance_record_replayed'] is True
         and status['all_accepted_transitions_replayed'] is True
@@ -117,6 +118,7 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
         accepted_pacing_operations_typed=True,
         accepted_pacing_result_receipts_bound=True,
+        accepted_pacing_request_targets_bound=True,
         complete_retained_batches_accepted=True,
         complete_collection_observations_accepted=True,
         all_collection_cursor_sequences_complete=True,
@@ -204,6 +206,7 @@ def fixture_report():
             result['complete_pacing_sessions_accepted'] is True and
             result['accepted_pacing_operations_typed'] is True and
             result['accepted_pacing_result_receipts_bound'] is True and
+            result['accepted_pacing_request_targets_bound'] is True and
             result['complete_retained_batches_accepted'] is True and
             result['complete_collection_observations_accepted'] is True)
         cursor_complete=result['all_collection_cursor_sequences_complete'] is True
@@ -222,6 +225,7 @@ def fixture_report():
             complete_pacing_sessions_accepted=result['complete_pacing_sessions_accepted'],
             accepted_pacing_operations_typed=result['accepted_pacing_operations_typed'],
             accepted_pacing_result_receipts_bound=result['accepted_pacing_result_receipts_bound'],
+            accepted_pacing_request_targets_bound=result['accepted_pacing_request_targets_bound'],
             complete_retained_batches_accepted=result['complete_retained_batches_accepted'],
             complete_collection_observations_accepted=result['complete_collection_observations_accepted'],
             all_collection_cursor_sequences_complete=cursor_complete,

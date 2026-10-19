@@ -22,6 +22,7 @@ def receipt(operation='BTC_QUOTE_OBSERVATION',success=True):
     kinds=list(pacing.OPERATION_PATTERNS[operation][0] if success else pacing.OPERATION_PATTERNS[operation][0][:1])
     count=len(kinds) if success else len(kinds)-1
     return dict(operation=operation,request_kinds=kinds,
+        request_sha256=[sha(dict(operation=operation,target=index)) for index in range(len(kinds))],
         response_sha256=[sha(dict(operation=operation,index=index)) for index in range(count)])
 
 

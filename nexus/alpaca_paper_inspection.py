@@ -187,7 +187,7 @@ class _ReadSession:
         from nexus.paper_read_pacing import OPERATIONS
         if operation is not None and (type(operation) is not str or operation not in OPERATIONS):
             _fail('PAPER_INSPECTION_OPERATION_INVALID')
-        self.operation=operation;self.request_kinds=[];self.response_sha256=[];self.operation_terminal_error=False
+        self.operation=operation;self.request_kinds=[];self.request_sha256=[];self.response_sha256=[];self.operation_terminal_error=False
         if pacing is not None:
             from nexus.paper_read_pacing import PaperReadPacing
             if type(pacing) is not PaperReadPacing or expected_account_id is None or pacing.account != _uuid(expected_account_id):
@@ -260,7 +260,8 @@ class _ReadSession:
         if self.pacing is not None and not self.pacing_finished:
             try:
                 receipt=None if self.operation is None else dict(operation=self.operation,
-                    request_kinds=list(self.request_kinds),response_sha256=list(self.response_sha256))
+                    request_kinds=list(self.request_kinds),request_sha256=list(self.request_sha256),
+                    response_sha256=list(self.response_sha256))
                 self.pacing.finish(self.pacing_token, admission=self.evaluated_at, ownership=self.pacing_owner,
                     receipt=receipt,**outcome)
             except Exception as exc:
@@ -326,6 +327,9 @@ class _ReadSession:
         if not any(p[:len(candidate)]==candidate for p in self._operation_patterns()):
             _fail('PAPER_INSPECTION_OPERATION_PATH_SEQUENCE')
         self.request_kinds.append(kind)
+        # Retain only a digest of the exact approved target. This binds dynamic
+        # cursor/window and original-ID lookups without persisting their values.
+        self.request_sha256.append(sha(dict(method='GET',target=url)))
 
     def _operation_complete(self):
         if self.operation is None:return

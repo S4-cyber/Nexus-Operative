@@ -59,6 +59,7 @@ def _scope(root,index=1,*,full_page=False):
         kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
         pacing.finish(token,admission=lambda:at,status_code=200,ownership=owner,
             receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
+                request_sha256=[sha(dict(kind=kind,target=index,at=at)) for index,kind in enumerate(kinds)],
                 response_sha256=[sha(dict(kind=kind,index=index,at=at)) for index,kind in enumerate(kinds)]))
     rows=[dict(id=f'2026101{6+index}000000000::11234567-89ab-cdef-0123-{index*1000+i:012d}',
         activity_type='FEE',status='executed',net_amount='-0.01',date=f'2026-10-{15+index:02d}')
@@ -136,6 +137,7 @@ print(json.dumps({'recovery':result['cross_journal_recovery_state'],'heads_match
  'all_content_replayed':result['all_accepted_transitions_replayed'],
  'all_operations_typed':result['all_pacing_operations_typed'],
  'all_receipts_bound':result['all_pacing_result_receipts_bound'],
+ 'all_request_targets_bound':result['all_pacing_request_targets_bound'],
  'replayed_records':result['replayed_accepted_transitions'],'records':result['accepted_transitions'],
  'unchanged':before==after,'rollback_journal_observed':any(name.endswith('-journal') for name,_,_ in before),**attempts}))
 '''
@@ -167,7 +169,7 @@ def fixture_report():
         after_bound=(after_acceptance.inspect()['records']==2 and
             after['recovery']=='BOUND_TRANSITIONS_REPLAYED_REVIEW_REQUIRED' and after['heads_match'] and
             after['latest_content_replayed'] and after['all_content_replayed'] and
-            after['all_operations_typed'] and after['all_receipts_bound'] and
+            after['all_operations_typed'] and after['all_receipts_bound'] and after['all_request_targets_bound'] and
             after['replayed_records']==after['records']==2)
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
@@ -183,6 +185,7 @@ def fixture_report():
             postcommit_all_content_replayed=after['all_content_replayed'],
             postcommit_all_pacing_operations_typed=after['all_operations_typed'],
             postcommit_all_pacing_result_receipts_bound=after['all_receipts_bound'],
+            postcommit_all_pacing_request_targets_bound=after['all_request_targets_bound'],
             accepted_transitions_after_commit=after['records'],
             actual_provider_access=False,actual_vault_access=False,source_attested=False,
             activity_coverage_verified=False,fee_execution_links_verified=False,

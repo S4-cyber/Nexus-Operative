@@ -45,6 +45,8 @@ def _review(store,gate,scope,expected_request_head):
     if any(r['operation'] not in ('BTC_QUOTE_OBSERVATION','LEGACY_UNSPECIFIED') for r in operations):reasons.add('PACING_OPERATION_DISAGREEMENT')
     if any(r['operation']!='LEGACY_UNSPECIFIED' and not r['result_receipt_bound'] for r in operations):
         reasons.add('PACING_RESULT_RECEIPT_UNVERIFIED')
+    if any(r['operation']!='LEGACY_UNSPECIFIED' and not r['request_targets_bound'] for r in operations):
+        reasons.add('PACING_REQUEST_TARGET_UNVERIFIED')
     if any(r['operation']=='LEGACY_UNSPECIFIED' for r in operations):reasons.add('PACING_OPERATION_UNVERIFIED')
     if before['pending_token'] is not None:reasons.add('PENDING_READ_REQUIRES_REVIEW')
     if before['review_required'] or before['interruptions']:reasons.add('RETAINED_PACING_REVIEW_REQUIRED')

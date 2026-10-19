@@ -35,6 +35,7 @@ def prepared(root, prices=('98','100'), *, typed=True):
             kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
             pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
                 receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
+                    request_sha256=[sha(dict(kind=kind,target=index)) for index,kind in enumerate(kinds)],
                     response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)]))
     else:
         token=pacing.begin(admission=lambda:1000)
@@ -134,6 +135,23 @@ def test_pre_receipt_typed_transition_is_replayed_but_cannot_be_accepted(tmp_pat
     assert state['all_pacing_result_receipts_bound'] is False
     assert state['cross_journal_recovery_state']=='ACCEPTED_PACING_RESULT_RECEIPT_UNVERIFIED_REVIEW_REQUIRED'
     monkeypatch.setattr(subject.request_review,'review',lambda *a,**k:pytest.fail('unreceipted history must block before review'))
+    with pytest.raises(ValueError,match='ACCEPTED_HISTORY_REQUIRED'):subject.review(**options)
+
+
+def test_v1_receipt_target_unverified_transition_cannot_be_accepted(tmp_path,monkeypatch):
+    options,_,_=prepared(tmp_path)
+    original=subject.PaperReadPacing.operation_history
+    monkeypatch.setattr(subject.PaperReadPacing,'operation_history',
+        lambda self:tuple(dict(row,request_targets_bound=False,request_sha256=()) for row in original(self)))
+    state=subject.acceptance_status(expected_account_id=ACCOUNT,
+        pacing_path=options['pacing_path'],activity_store_path=options['activity_store_path'],
+        acceptance_store_path=options['acceptance_store_path'])
+    assert state['latest_pacing_result_receipt_bound'] is True
+    assert state['latest_pacing_request_targets_bound'] is False
+    assert state['all_pacing_request_targets_bound'] is False
+    assert state['cross_journal_recovery_state']=='ACCEPTED_PACING_REQUEST_TARGET_UNVERIFIED_REVIEW_REQUIRED'
+    assert state['suggested_action']=='RETAIN_UNTARGETED_HISTORY_AND_REVIEW_SEPARATE_TARGET_BOUND_EVIDENCE'
+    monkeypatch.setattr(subject.request_review,'review',lambda *a,**k:pytest.fail('untargeted history must block before review'))
     with pytest.raises(ValueError,match='ACCEPTED_HISTORY_REQUIRED'):subject.review(**options)
 
 

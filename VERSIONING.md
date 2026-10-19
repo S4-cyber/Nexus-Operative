@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.167.0 (pre-release).** Every typed fixed paper-read result now carries a central, content-free receipt binding its operation, request-kind sequence and response hashes. Acceptance requires receipt-bound typed activity history. Earlier typed rows remain readable but unreceipted and cannot satisfy acceptance; legacy rows are not relabeled. The v0.166.3 activity-purpose binding and earlier safeguards remain. No provider, funds, routing or release authority is introduced.
+**Current development build: 0.167.1 (pre-release).** New typed fixed paper-read receipts bind content-free SHA-256 sequences for the exact approved request targets, request kinds and accepted response bytes. Published v1 receipts remain readable and receipted, but are explicitly request-target-unverified and cannot satisfy downstream acceptance. Raw targets are not retained. The v0.167.0 response binding and earlier safeguards remain. No provider, funds, routing or release authority is introduced.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

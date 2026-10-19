@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.167.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.167.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -794,3 +794,13 @@ Earlier typed results remain readable but unreceipted and cannot satisfy downstr
 This is local cooperating-code consistency, not provider/source attestation, broker-wide quota acceptance, market realism, funds reconciliation or profitability. No UI/control, provider access, routing, funding, ledger or release authority is added. Rough implementation remains about 40% (30–45%, low confidence), 0/9 stages accepted; release approval and trading permission remain separate and absent.
 
 Local v0.167.0 validation: 3,000 Python tests passed with one existing Starlette/httpx deprecation warning. The final receipt regression passed 121 tests and the complete focused set passed 290. All sixteen offline profiles and saved-evidence verification passed for 322 source files / `c52a216c0f991c1d494771d5611a8b434a6260f8cf8f1e114d094ebc8b6f657d`; report SHA-256 `445f0d890519d40b31504fb5856cef5f708a152d011b8616edb3f0e4fd910eeb`. Fourteen Node controllers, Portal syntax, compilation, dependency, roadmap and whitespace checks passed. The proposed 432-path artifact audit had zero findings. Exact-source CI and Gitleaks remain pending until publication.
+
+## v0.167.1 exact request-target receipt acceptance
+
+- Every new typed fixed-read receipt must use profile v2 and bind one content-free exact-target SHA-256 per attempted request before transport.
+- Successful receipts must bind equal request-kind, target and accepted-response counts; terminal failures bind the attempted target prefix and no invented failed response.
+- Profile-v1 receipts remain readable and receipt-bound but must report request targets unverified and cannot satisfy activity, quote, account, request/fill or reconciliation acceptance.
+- Exact request URLs, dynamic cursors/windows, original client-order IDs, responses, credentials and plaintext account identifiers must not be retained in the pacing journal.
+- Acceptance remains local and read-only; provider source, broker-wide quotas, coverage, fees, holds, funds, live execution and release authority remain false.
+
+Local v0.167.1 validation: 3,003 Python tests passed with one existing Starlette/httpx deprecation warning; the focused receipt/acceptance/release/version set passed 386. All sixteen offline profiles and saved-evidence verification passed for 322 source files / `9033166017f7dc1dc3b6a2fc07c96011763b9bc248909e17de4125d6ba4cc9df`; report SHA-256 `2071bbed19d049f8b58dfe157e80840ce3d0e3cc28b6675c97a4050ee6bf34e1`. Fourteen Node controllers, Portal syntax, compilation, dependency, roadmap and whitespace checks passed. Exact-source CI and Gitleaks remain pending until publication.

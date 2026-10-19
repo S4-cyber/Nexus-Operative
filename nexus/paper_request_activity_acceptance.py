@@ -44,6 +44,7 @@ def _complete(value):
         and value['all_collection_cursor_sequences_complete'] is True
         and value['all_pacing_operations_typed'] is True
         and value['all_pacing_result_receipts_bound'] is True
+        and value['all_pacing_request_targets_bound'] is True
         and value['replayed_accepted_transitions'] == value['accepted_transitions']
         and value['latest_acceptance_record_replayed'] is True
         and value['all_accepted_transitions_replayed'] is True
@@ -110,6 +111,7 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
         accepted_pacing_operations_typed=True,
         accepted_pacing_result_receipts_bound=True,
+        accepted_pacing_request_targets_bound=True,
         complete_retained_batches_accepted=True,
         complete_collection_observations_accepted=True,
         all_collection_cursor_sequences_complete=True,
@@ -136,6 +138,7 @@ def _fixture(root):
         kinds=['ACCOUNT','ACTIVITY_PAGE','ACCOUNT']
         pacing.finish(token,admission=lambda:1000,status_code=200,ownership=owner,
             receipt=dict(operation='ACTIVITY_COLLECTION',request_kinds=kinds,
+                request_sha256=[sha(dict(kind=kind,target=index)) for index,kind in enumerate(kinds)],
                 response_sha256=[sha(dict(kind=kind,index=index)) for index,kind in enumerate(kinds)]))
     asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
         fractionable=True,min_order_size='.5',min_trade_increment='.5',price_increment='.5')
@@ -199,6 +202,7 @@ def fixture_report():
         passed=(result['complete_accepted_history_replayed'] and
             result['accepted_pacing_operations_typed'] and
             result['accepted_pacing_result_receipts_bound'] and
+            result['accepted_pacing_request_targets_bound'] and
             result['local_request_activity_agreement'] and
             component['request_reviews'][0]['explicit_fill_count']==2 and
             before==after and unbound)
@@ -206,6 +210,7 @@ def fixture_report():
             accepted_history_bound=result['complete_accepted_history_replayed'],
             accepted_pacing_operations_typed=result['accepted_pacing_operations_typed'],
             accepted_pacing_result_receipts_bound=result['accepted_pacing_result_receipts_bound'],
+            accepted_pacing_request_targets_bound=result['accepted_pacing_request_targets_bound'],
             original_request_linked=result['local_request_activity_agreement'],
             explicit_fills_checked=component['request_reviews'][0]['explicit_fill_count']==2,
             journals_unchanged=before==after,unbound_activity_rejected=unbound,

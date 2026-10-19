@@ -17,6 +17,7 @@ def receipt(operation,outcome='SUCCESS'):
     kinds=list(pacing.OPERATION_PATTERNS[operation][0] if outcome=='SUCCESS' else pacing.OPERATION_PATTERNS[operation][0][:1])
     count=len(kinds) if outcome=='SUCCESS' else len(kinds)-1
     return dict(operation=operation,request_kinds=kinds,
+        request_sha256=[sha(dict(operation=operation,target=index)) for index in range(len(kinds))],
         response_sha256=[sha(dict(operation=operation,index=index)) for index in range(count)])
 
 
@@ -58,7 +59,8 @@ def test_typed_result_requires_exact_operation_receipt_before_commit(tmp_path):
         before=gate.path.read_bytes()
         for value,code in ((None,'RECEIPT_REQUIRED'),
             (receipt('ACCOUNT_INVENTORY'),'RECEIPT_REQUIRED'),
-            (dict(operation='BTC_QUOTE_OBSERVATION',request_kinds=['ACCOUNT','QUOTE','ACCOUNT'],response_sha256=[]),'RECEIPT_SEQUENCE')):
+            (dict(operation='BTC_QUOTE_OBSERVATION',request_kinds=['ACCOUNT','QUOTE','ACCOUNT'],
+                request_sha256=[sha(dict(target=index)) for index in range(3)],response_sha256=[]),'RECEIPT_SEQUENCE')):
             with pytest.raises(ValueError,match=code):
                 gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=value)
             assert gate.path.read_bytes()==before and gate.inspect()['pending_token']==token
@@ -79,7 +81,7 @@ def test_pre_receipt_typed_result_replays_but_remains_explicitly_unverified(tmp_
         gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt('ACCOUNT_INVENTORY'))
     with sqlite3.connect(gate.path) as db:
         encoded,parent=db.execute('SELECT body,previous FROM events WHERE seq=2').fetchone();body=json.loads(encoded)
-        for key in ('receipt_profile','request_kinds','response_sha256','receipt_sha256'):body.pop(key)
+        for key in ('receipt_profile','request_kinds','request_sha256','response_sha256','receipt_sha256'):body.pop(key)
         db.execute('UPDATE events SET body=?,digest=? WHERE seq=2',
             (canonical(body),sha(dict(seq=2,body=body,previous=parent))))
     record=gate.operation_history()[0];state=gate.inspect()
@@ -87,6 +89,44 @@ def test_pre_receipt_typed_result_replays_but_remains_explicitly_unverified(tmp_
     assert record['result_receipt_bound'] is False and record['receipt_sha256'] is None
     assert state['typed_result_receipts']==0 and state['unreceipted_typed_results']==1
     assert state['all_typed_results_receipted'] is False
+
+
+def test_v1_receipt_replays_as_receipted_but_request_target_unverified(tmp_path):
+    gate=pacing.PaperReadPacing(tmp_path/'p.sqlite3',ACCOUNT)
+    with gate.ownership() as owner:
+        token=gate.begin(admission=lambda:1000,ownership=owner,operation='ACCOUNT_INVENTORY')
+        gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt('ACCOUNT_INVENTORY'))
+    original=gate.operation_history()[0]
+    with sqlite3.connect(gate.path) as db:
+        encoded,parent=db.execute('SELECT body,previous FROM events WHERE seq=2').fetchone();body=json.loads(encoded)
+        body['receipt_profile']=pacing.RECEIPT_PROFILE_V1;body.pop('request_sha256')
+        scope=dict(profile=pacing.RECEIPT_PROFILE_V1,operation='ACCOUNT_INVENTORY',
+            before_head_sha256=original['before_head_sha256'],begin_head_sha256=original['begin_head_sha256'],
+            evaluated_at=body['evaluated_at'],outcome=body['outcome'],request_kinds=body['request_kinds'],
+            response_sha256=body['response_sha256'])
+        body['receipt_sha256']=sha(scope)
+        db.execute('UPDATE events SET body=?,digest=? WHERE seq=2',
+            (canonical(body),sha(dict(seq=2,body=body,previous=parent))))
+    record=gate.operation_history()[0];state=gate.inspect()
+    assert record['receipt_profile']==pacing.RECEIPT_PROFILE_V1
+    assert record['result_receipt_bound'] is True and record['request_targets_bound'] is False
+    assert record['request_sha256']==()
+    assert state['all_typed_results_receipted'] is True
+    assert state['target_bound_typed_results']==0 and state['untargeted_typed_results']==1
+    assert state['all_typed_request_targets_bound'] is False
+
+
+def test_v2_request_target_digest_tamper_is_rejected_on_replay(tmp_path):
+    gate=pacing.PaperReadPacing(tmp_path/'p.sqlite3',ACCOUNT)
+    with gate.ownership() as owner:
+        token=gate.begin(admission=lambda:1000,ownership=owner,operation='ACCOUNT_INVENTORY')
+        gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt('ACCOUNT_INVENTORY'))
+    with sqlite3.connect(gate.path) as db:
+        encoded,parent=db.execute('SELECT body,previous FROM events WHERE seq=2').fetchone();body=json.loads(encoded)
+        body['request_sha256'][0]=sha(dict(substituted_target=True))
+        db.execute('UPDATE events SET body=?,digest=? WHERE seq=2',
+            (canonical(body),sha(dict(seq=2,body=body,previous=parent))))
+    with pytest.raises(ValueError,match='RECEIPT_DIGEST'):gate.operation_history()
 
 
 @pytest.mark.parametrize('operation',(True,1,'UNKNOWN','',{},[]))
@@ -159,10 +199,12 @@ def test_actual_five_readers_record_fixed_purposes(tmp_path):
     for journal,operation in zip((inventory,asset,activity,recovery,quote),pacing.OPERATIONS):
         assert journal.operation_history()[0]['operation']==operation
         assert journal.operation_history()[0]['result_receipt_bound'] is True
+        assert journal.operation_history()[0]['request_targets_bound'] is True
+        assert len(journal.operation_history()[0]['request_sha256'])==len(journal.operation_history()[0]['request_kinds'])
         assert journal.inspect()['operation_counts'][operation]==1 and journal.inspect()['operation_counts'][pacing.LEGACY_OPERATION]==0
         assert journal.inspect()['all_typed_results_receipted'] is True
         with closing(sqlite3.connect(journal.path)) as db:raw=str(db.execute('SELECT body FROM events').fetchall())
-        assert KEY not in raw and SECRET not in raw and ACCOUNT not in raw
+        assert KEY not in raw and SECRET not in raw and ACCOUNT not in raw and 'nx_fixture' not in raw
 
 
 def test_same_budget_cooldown_survives_changed_purpose(tmp_path):
@@ -207,7 +249,7 @@ def recast_bundle_operation(value,operation):
         if body.get('kind')=='RESULT':
             body['token']=token
             if operation is None:
-                for key in ('receipt_profile','request_kinds','response_sha256','receipt_sha256'):body.pop(key,None)
+                for key in ('receipt_profile','request_kinds','request_sha256','response_sha256','receipt_sha256'):body.pop(key,None)
         row[1]=canonical(body);row[2]=previous;row[3]=sha(dict(seq=row[0],body=body,previous=previous))
         if body.get('kind')=='BEGIN':token=row[3]
         previous=row[3]

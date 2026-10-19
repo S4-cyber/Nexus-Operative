@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.170.0'
+REVISION = '0.171.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.170.0 adds an optional hash-chained local provider-scope budget shared by all five typed paper GET purposes and multiple account-bound pacing journals. It reserves the maximum GET count before account-local admission, binds content-free account and before/after pacing-head digests, preserves partial cross-journal commits as explicit pending unknowns, enforces one local cooldown and supports only explicit interruption with a full-day block. Saved-key paths preflight the exact provider-budget head before opening the vault. Known account-local blocks fail before creating a provider pending record; path families must remain distinct. The mandatory injected profile exercises all five consumers and withholds every authority flag. This coordinates only cooperating callers using one path on one host; it does not discover another credential, application, host or machine and is not verified provider-wide quota ownership, source/coverage attestation, broker acceptance, funds/routing authority or release approval. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.171.0 adds an exact-head, read-only composition between the shared local provider budget and one to six account pacing journals. Every completed provider session must match one typed account session by account digest, before/after pacing heads, purpose, outcome and actual GET count; missing, extra, legacy, interrupted, pending, unreceipted or changed histories fail closed. An optional bounded hash-chained receipt retains only provider/account-manifest/review digests, heads and aggregate counts, with idempotent duplicates and post-commit revocation checks. The mandatory injected profile exercises the five actual readers, cross-journal review and durable replay while withholding every authority flag. This is cooperating local-history consistency only, not provider identity/quota ownership, distributed coordination, source/coverage/clock acceptance, broker acceptance, funds/routing authority or release approval. Actual broker-paper, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

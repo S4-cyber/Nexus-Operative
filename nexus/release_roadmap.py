@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.165.3'
+REVISION = '0.166.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.165.3 makes the real-loopback release trial portable across Windows denied-request close behavior. After an exact 403/no-store pre-credential origin denial is verified, that narrow trial path may treat a connection reset while draining the unused response body as an empty diagnostic body. Success, credential-bearing and every other response still require complete bounded JSON; reset tolerance cannot mask their failure. Application middleware, broker readers, permissions and runtime networking are unchanged. Exact-source Windows/browser/security CI and actual broker/provider acceptance remain required. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.166 compares original order snapshot updates using exact integer nanoseconds instead of datetime microsecond truncation. Distinct RFC3339 updates within one microsecond remain ordered; regressions and equal-instant conflicts refuse without changing retained state. Raw timestamp spelling and journal hashes are preserved, supported legacy microsecond ISO formats still replay, and unsupported finer profiles refuse rather than round. Fresh-process original recovery and encrypted quote-copy replay are tested. Prior shared path, admission, precision and Windows denial-harness fixes remain intact. These are supplied event-ordering checks, not synchronized clocks, broker latency, execution authority or source acceptance. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner gates remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

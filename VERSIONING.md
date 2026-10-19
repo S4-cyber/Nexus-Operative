@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.165.3 (pre-release).** The real-loopback release trial now handles the Windows connection-reset form of a verified 403/no-store pre-credential origin denial without relaxing successful or credential-bearing response checks. Runtime middleware, provider access and authority are unchanged; v0.165.2 storage preflight remains intact.
+**Current development build: 0.166.0 (pre-release).** Order snapshot comparisons now preserve exact nanosecond ordering without rewriting raw timestamp text or retained journals. Same-microsecond updates can progress; backward or conflicting equal-instant observations refuse. Supported older microsecond ISO spellings remain readable; unsupported finer profiles require review. All v0.165.3 and earlier safeguards remain. No provider/source, synchronized-clock, latency, routing or release authority is introduced.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

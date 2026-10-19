@@ -4,7 +4,7 @@ Only quantity-based IOC limit previews are admitted. Broker observations remain
 unattested diagnostics, never existing synthetic fills or reconciled holdings.
 """
 import copy
-from datetime import datetime
+from datetime import datetime,timezone
 from decimal import Decimal,InvalidOperation,localcontext
 import hashlib
 import json
@@ -47,6 +47,24 @@ def timestamp(value):
     except ValueError:raise ValueError('INVALID_BROKER_UPDATE_TIME')
     if stamp.tzinfo is None:raise ValueError('INVALID_BROKER_UPDATE_TIME')
     return stamp
+
+
+def timestamp_order_ns(value):
+    """Exact RFC3339 nanosecond ordering; legacy <=microsecond ISO stays readable.
+
+    This is supplied event ordering, never clock synchronization or latency proof.
+    Raw source spelling remains unchanged in normalized snapshots and journals.
+    """
+    stamp=timestamp(value)
+    match=re.fullmatch(r'([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})(?:\.([0-9]{1,9}))?(Z|[+-][0-9]{2}:[0-9]{2})',value)
+    fraction=None
+    if match:
+        stamp=timestamp(match[1]+match[3]);fraction=int((match[2] or '').ljust(9,'0'))
+    elif re.search(r'[.,][0-9]{7,}',value):
+        raise ValueError('BROKER_UPDATE_TIME_PRECISION_UNSUPPORTED')
+    try:delta=stamp.astimezone(timezone.utc)-datetime(1970,1,1,tzinfo=timezone.utc)
+    except (ValueError,OverflowError):raise ValueError('BROKER_UPDATE_TIME_PRECISION_UNSUPPORTED') from None
+    return (delta.days*86400+delta.seconds)*1_000_000_000+(delta.microseconds*1000 if fraction is None else fraction)
 
 
 def preview(client_order_id,product,side,quantity,limit_price,asset,*,metadata_at,evaluated_at):
@@ -98,7 +116,7 @@ def normalize(response,payload):
         average=None
     if status=='filled' and qty!=requested or status=='partially_filled' and not 0<qty<requested or status in ('accepted','pending_new','new','rejected') and qty:
         raise ValueError('BROKER_STATUS_QUANTITY_DISAGREEMENT')
-    updated=response.get('updated_at');timestamp(updated)
+    updated=response.get('updated_at');timestamp_order_ns(updated)
     return dict(broker_order_id=broker_id,client_order_id=payload['client_order_id'],symbol=payload['symbol'],
                 side=payload['side'],status=status,filled_quantity=text(qty),average_fill_price=text(average) if average is not None else None,
                 updated_at=updated,terminal=status in TERMINAL,cancellation_confirmed=status=='canceled',
@@ -123,7 +141,7 @@ class SnapshotTracker:
         previous=self._latest
         if previous:
             if current['broker_order_id']!=previous['broker_order_id']:raise ValueError('BROKER_ASSIGNED_ID_CHANGED')
-            before=timestamp(previous['updated_at']);after=timestamp(current['updated_at'])
+            before=timestamp_order_ns(previous['updated_at']);after=timestamp_order_ns(current['updated_at'])
             if after<before:raise ValueError('BROKER_UPDATE_TIME_REGRESSION')
             if after==before:raise ValueError('BROKER_UPDATE_TIME_CONFLICT')
             old=number(previous['filled_quantity'],zero=True);new=number(current['filled_quantity'],zero=True)
@@ -166,6 +184,30 @@ def catalogue():
                 activity_collection_scope='Internal explicitly confirmed paper GET collection for a closed creation window up to one day, at most two 100-row pages plus stable account reads; no startup/UI route, persistence, verified coverage, automatic continuation or routing authority. Opaque cursors preserve source spelling.',
                 account_inspection_scope='Explicit Windows-only local credential save/remove/status and separately confirmed fixed-host GET-only paper inspection controls exist; injected tests only, no authenticated acceptance, atomic snapshot, spendable-funds authority or order adapter.',
                 documentation_verified_at='2026-10-17',sources=list(SOURCES))
+
+
+TIME_CHECKS=('nanosecond_updates_ordered','regression_retains_latest','equal_instant_conflicts','raw_spelling_retained')
+TIME_FLAGS=('source_attested','clock_synchronized','execution_latency_verified','broker_connected',
+            'ready_for_routing','ledger_applied','live_orders_enabled','money_movement_enabled','release_approved')
+
+
+def timestamp_fixture_report():
+    asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,fractionable=True,
+        min_order_size='.5',min_trade_increment='.5',price_increment='.5')
+    request=preview('nx_time_fixture','BTC-USD','BUY','2','100',asset,metadata_at=1000,evaluated_at=1001)
+    first=dict(**request['payload'],id='01234567-89ab-cdef-0123-456789abcdef',asset_class='crypto',
+        status='new',filled_qty='0',filled_avg_price=None,updated_at='2026-10-17T18:00:00.123456788Z')
+    second=dict(first,status='partially_filled',filled_qty='1',filled_avg_price='99',updated_at='2026-10-17T18:00:00.123456789Z')
+    tracker=SnapshotTracker(request);tracker.observe(first);result=tracker.observe(second);before=tracker.status()
+    regression=conflict=False
+    try:tracker.observe(first)
+    except ValueError as error:regression=str(error)=='BROKER_UPDATE_TIME_REGRESSION' and tracker.status()==before
+    try:tracker.observe(dict(second,status='pending_cancel',updated_at='2026-10-17T11:00:00.123456789-07:00'))
+    except ValueError as error:conflict=str(error)=='BROKER_UPDATE_TIME_CONFLICT' and tracker.status()==before
+    checks=dict(nanosecond_updates_ordered=result['observed_quantity_increase']=='1' and timestamp_order_ns(second['updated_at'])-timestamp_order_ns(first['updated_at'])==1,
+        regression_retains_latest=regression,equal_instant_conflicts=conflict,
+        raw_spelling_retained=result['snapshot']['updated_at']==second['updated_at'] and tracker.observe(second)['duplicate'])
+    return dict(source='SUPPLIED_EXACT_SNAPSHOT_TIME_FIXTURE',passed=all(checks.values()),**checks,**{k:False for k in TIME_FLAGS})
 
 
 def fixture_report():

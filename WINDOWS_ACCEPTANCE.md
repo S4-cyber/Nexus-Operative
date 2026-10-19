@@ -1,6 +1,15 @@
 # Windows distribution and acceptance evidence
 
-## Verified installer checkpoint — v0.164 (CI completed 2026-10-19 UTC)
+## Verified installer checkpoint — v0.165.3 (2026-10-19 UTC)
+
+[Download the Windows installer artifact](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39180194396/artifacts/12156108702) (ZIP containing the setup EXE; expires 2026-10-26T00:38:34Z). The [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39180194396/artifacts/12156173370) includes source-bound checksums, standalone EXE and offline evidence; expires 2026-11-18T00:38:30Z. GitHub may require sign-in to download.
+
+Verified source: `3036e83d15fffa2d09ce973d5f0be0e7450cfad9`. Windows39180194396, safety/browser39180194482 and security39180194394 completed successfully. Exact-source artifact metadata is unexpired and matches that commit. Installer evidence artifact12156272764 expires 2026-11-18T00:38:33Z; standalone artifact12156063336 expires 2026-11-18T00:33:59Z.
+
+This checkpoint includes the shared path safeguards, retained admission samples, supplied projection precision refusal and scoped Windows denial-harness fix through v0.165.3. It excludes v0.166 exact snapshot ordering, which needs its own exact-source native checks. Automated disposable installer/browser acceptance does not close ordinary-owner profile/ACL, native-window, actual broker, sustained-market or release gates. Keep trading halted during upgrade review and preserve private data/backups.
+
+
+## Previous verified installer checkpoint — v0.164 (CI completed 2026-10-19 UTC)
 
 [Download the Windows installer artifact](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39177466868/artifacts/12155865656) (ZIP containing the setup EXE; artifact expires 2026-10-26T00:05:42Z). The longer-retained [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39177466868/artifacts/12155481695) includes the standalone EXE, source-bound checksum manifest and offline report; expires 2026-11-18T00:05:37Z. GitHub may require sign-in to download Actions artifacts.
 

@@ -394,7 +394,8 @@ def _pacing_trial():
         from nexus.paper_recovery_drill import fixture_report as crash_fixture
         crash=crash_fixture()
         from nexus.sqlite_journal_guard import path_fixture_report
-        return dict(path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        from nexus.alpaca_paper_contract import timestamp_fixture_report
+        return dict(snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -777,6 +778,10 @@ def _validate(profile, result):
         paths=result['path_preflight']
         _require(paths['source']=='TEMPORARY_MISSING_JOURNAL_PATH_FIXTURE' and paths['passed'] is True and all(paths[k] is True for k in PATH_CHECKS),'JOURNAL_PATH_PREFLIGHT')
         _require(all(paths[k] is False for k in PATH_FLAGS),'JOURNAL_PATH_AUTHORITY')
+        from nexus.alpaca_paper_contract import TIME_CHECKS,TIME_FLAGS
+        timing=result['snapshot_time']
+        _require(timing['source']=='SUPPLIED_EXACT_SNAPSHOT_TIME_FIXTURE' and timing['passed'] is True and all(timing[k] is True for k in TIME_CHECKS),'SNAPSHOT_TIME_ORDERING')
+        _require(all(timing[k] is False for k in TIME_FLAGS),'SNAPSHOT_TIME_AUTHORITY')
         from nexus.paper_recovery_drill import PHASES as CRASH_PHASES,CHECKS as CRASH_CHECKS
         from nexus.paper_recovery_step import FLAGS as RECOVERY_FLAGS
         crash=result['bounded_recovery_crash_drill']

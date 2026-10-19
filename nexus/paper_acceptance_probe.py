@@ -68,7 +68,7 @@ def _inspect_paced(*, expected_account_id, pacing_path, confirm_read_only_paper=
     # Real acceptance data/journals belong outside the public source checkout.
     gate=_gate(expected_account_id,pacing_path);account=gate.account;before=gate.inspect()
     result=paper_credentials.inspect_saved(confirm_read_only_paper=True,expected_account_id=account,
-        pacing=gate,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock)
+        pacing=gate,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,expected_pacing_head=before['head_sha256'])
     observation=portable.validate(result['portable_observation'])
     if observation['account_id']!=account:_fail()
     after=gate.inspect()

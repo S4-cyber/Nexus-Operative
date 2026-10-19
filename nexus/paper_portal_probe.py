@@ -36,7 +36,7 @@ def inspect_rules_saved(*,expected_account_id,confirm_read_only_paper=False,
     from nexus.paper_read_projection import matches as projection_matches
     account=_uuid(expected_account_id);gate=_gate(account,_managed_path(account));before=gate.inspect()
     result=paper_credentials.inspect_rules_saved(expected_account_id=account,confirm_read_only_paper=True,
-        opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,pacing=gate)
+        opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,pacing=gate,expected_pacing_head=before['head_sha256'])
     after=gate.inspect();operations=gate.operation_history()
     if (result['account_id']!=account or after['sessions']!=before['sessions']+1 or
         after['events']!=before['events']+2 or after['pending_token'] is not None or

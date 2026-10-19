@@ -123,7 +123,7 @@ def recover_next(journal,api_key,api_secret,*,expected_account_id,confirm_read_o
     result=recover_original(journal,chosen['selected_client_order_id'],api_key,api_secret,
         expected_account_id=expected_account_id,confirm_read_only_paper=True,opener=opener,
         wall_clock=wall_clock,elapsed_clock=elapsed_clock,permission_check=permission_check,
-        credential_check=credential_check,pacing=pacing,expected_request_head=chosen['head_sha256'])
+        credential_check=credential_check,pacing=pacing,expected_request_head=chosen['head_sha256'],expected_pacing_head=None if before is None else before[0]['head_sha256'])
     return _result(chosen,result,journal,pacing,before)
 
 
@@ -135,7 +135,7 @@ def recover_next_saved(journal,*,expected_account_id,confirm_read_only_paper=Fal
     from nexus.paper_credentials import recover_saved
     result=recover_saved(journal,chosen['selected_client_order_id'],expected_account_id=expected_account_id,
         confirm_read_only_paper=True,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,
-        pacing=pacing,expected_request_head=chosen['head_sha256'])
+        pacing=pacing,expected_request_head=chosen['head_sha256'],expected_pacing_head=None if before is None else before[0]['head_sha256'])
     return _result(chosen,result,journal,pacing,before)
 
 

@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.168.1 (pre-release).** Paced single-step original-ID recovery now checks the exact selected lookup target, one local pacing transition, matching result/outcome and complete request-journal replay before acknowledgment. Successful reads require their v3 normalized-result fingerprint. Mismatches preserve committed evidence and suppress acknowledgment; failed reads never claim normalized success. Existing v0.168 formats and downgrade cautions remain. No provider, funds, routing or release authority is granted.
+**Current development build: 0.168.2 (pre-release).** All five saved-key paper-read operations share a read-only local pacing preflight before vault access and carry the sampled head into owned admission. Known blocks avoid credential reads; changed heads refuse before new BEGIN or provider GETs. Existing consumer snapshots pass their exact expected heads. No journal format, migration, automatic retry, provider quota, account acceptance or trading authority is added; v0.168 receipt safeguards and compatibility cautions remain.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

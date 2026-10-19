@@ -22,13 +22,13 @@ def _storage_paths(journal,pacing):
 def recover_original(journal, client_order_id, api_key, api_secret, *, expected_account_id,
                      confirm_read_only_paper=False, opener=None, wall_clock=time.time,
                      elapsed_clock=time.monotonic, permission_check=lambda: True,
-                     credential_check=lambda: True, pacing=None, expected_request_head=None):
+                     credential_check=lambda: True, pacing=None, expected_request_head=None, expected_pacing_head=None):
     if confirm_read_only_paper is not True:transport._fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
     _storage_paths(journal,pacing)
     session = transport._ReadSession(api_key, api_secret,
         confirm_read_only_paper=confirm_read_only_paper, opener=opener,
         wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
-        pacing=pacing, expected_account_id=expected_account_id,operation='ORIGINAL_ID_RECOVERY')
+        pacing=pacing, expected_account_id=expected_account_id,expected_pacing_head=expected_pacing_head,operation='ORIGINAL_ID_RECOVERY')
     expected = transport._uuid(expected_account_id)
     # Read-only before any network or write. No untracked/foreign lookup target.
     request = journal.lookup_request(client_order_id)

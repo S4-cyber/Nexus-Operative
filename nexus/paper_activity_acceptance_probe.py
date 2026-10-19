@@ -203,7 +203,7 @@ def probe(*, expected_account_id, pacing_path, activity_store_path, acceptance_s
         acceptance_before['records']>=MAX_RECORDS):_fail()
     result = paper_credentials.collect_saved(orders, expected_account_id=account, after=after, until=until,
         confirm_read_only_paper=True, opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock,
-        activity_store=store, pacing=pacing,**({'input_guard':input_guard} if request_mode else {}))
+        activity_store=store, pacing=pacing,expected_pacing_head=pacing_before['head_sha256'],**({'input_guard':input_guard} if request_mode else {}))
     input_guard()
     pacing_after = pacing.inspect(); store_after = store.inspect()
     try:

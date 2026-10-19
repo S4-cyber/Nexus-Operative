@@ -450,12 +450,12 @@ def _sanitize(exc):
 
 def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
                     expected_account_id=None, opener=None, wall_clock=time.time,
-                    elapsed_clock=time.monotonic, permission_check=lambda: True, pacing=None):
+                    elapsed_clock=time.monotonic, permission_check=lambda: True, pacing=None, expected_pacing_head=None):
     """Four bounded account GETs after explicit authorization; no order methods."""
     # Validate authorization and credentials before even inspecting caller scope.
     session = _ReadSession(api_key, api_secret, confirm_read_only_paper=confirm_read_only_paper,
         opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
-        pacing=pacing, expected_account_id=expected_account_id,operation='ACCOUNT_INVENTORY')
+        pacing=pacing, expected_account_id=expected_account_id,expected_pacing_head=expected_pacing_head,operation='ACCOUNT_INVENTORY')
     expected = None if expected_account_id is None else _uuid(expected_account_id)
     with session:
         values = []

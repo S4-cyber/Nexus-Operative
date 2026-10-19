@@ -73,12 +73,12 @@ def _storage_paths(activity_store,pacing):
 def collect_activities(api_key, api_secret, orders, *, expected_account_id, after, until,
                        confirm_read_only_paper=False, opener=None, wall_clock=time.time,
                        elapsed_clock=time.monotonic, permission_check=lambda: True,
-                       credential_check=lambda: True, activity_store=None, pacing=None):
+                       credential_check=lambda: True, activity_store=None, pacing=None, expected_pacing_head=None):
     if confirm_read_only_paper is not True:transport._fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
     _storage_paths(activity_store,pacing)
     session = transport._ReadSession(api_key, api_secret, confirm_read_only_paper=confirm_read_only_paper,
         opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
-        pacing=pacing, expected_account_id=expected_account_id,operation='ACTIVITY_COLLECTION')
+        pacing=pacing, expected_account_id=expected_account_id,expected_pacing_head=expected_pacing_head,operation='ACTIVITY_COLLECTION')
     account = adapter._uuid(expected_account_id)
     if activity_store is not None:
         from nexus.broker_activity_store import BrokerActivityStore, MAX_BATCHES

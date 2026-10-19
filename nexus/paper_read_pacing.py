@@ -464,7 +464,7 @@ class _ReadOwnership:
 
 
 OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','five_request_targets_bound',
-    'three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified','five_normalized_results_bound','original_recovery_consumer_checked','response_payloads_not_retained',
+    'three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified','five_normalized_results_bound','original_recovery_consumer_checked','five_stale_heads_refused_before_io','response_payloads_not_retained',
     'one_shared_cooldown','legacy_not_relabelled','legacy_receipt_not_invented',
     'completed_outcomes_preserved','restart_replay_matches','status_read_only')
 OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
@@ -555,6 +555,22 @@ def typed_fixture_report():
         blocked=Opener([raw_account,[],[],raw_account]);cooldown=False
         try:reader.inspect_account(key,secret,**dict(args([],epoch+302),opener=blocked))
         except ValueError:cooldown=not blocked.requests and before=={p.name:p.read_bytes() for p in Path(directory).iterdir()}
+        # The same stale sampled budget head must block every actual reader
+        # before BEGIN, original-ID lookup admission, retention or any GET.
+        from nexus.broker_paper_recovery import recover_original
+        stale_readers=(
+            lambda kw:reader.inspect_account(key,secret,**kw),
+            lambda kw:inspect_rules(key,secret,**kw),
+            lambda kw:collect_activities(key,secret,[],after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z',**kw),
+            lambda kw:recover_original(journal,'nx_operation_fixture',key,secret,**kw),
+            lambda kw:inspect_quote(key,secret,**kw))
+        stale_refused=[]
+        for run in stale_readers:
+            blocked_reader=Opener([])
+            options=dict(args([],epoch+400),opener=blocked_reader,expected_pacing_head=ZERO)
+            try:run(options)
+            except ValueError:stale_refused.append(not blocked_reader.requests and before=={p.name:p.read_bytes() for p in Path(directory).iterdir()})
+            else:stale_refused.append(False)
         fixed=[typed_history[index] for index in (0,1,4)]
         wrong_fixed=True
         for record in fixed:
@@ -574,6 +590,7 @@ def typed_fixture_report():
             five_normalized_results_bound=all(r['normalized_result_bound'] and r['receipt_profile']==RECEIPT_PROFILE_V3 for r in typed_history),
             original_recovery_consumer_checked=recovered['mode']=='EXPLICIT_SINGLE_PAPER_RECOVERY_STEP' and
                 recovered['selected_client_order_id']=='nx_operation_fixture' and recovered['recovery']['journal']['lookup']['last_outcome']=='FOUND',
+            five_stale_heads_refused_before_io=len(stale_refused)==5 and all(stale_refused),
             response_payloads_not_retained=all(value not in retained for value in
                 (account.encode(),key.encode(),secret.encode(),b'nx_operation_fixture',b'2026-10-17T00:00:00Z')),
             one_shared_cooldown=cooldown,legacy_not_relabelled=history[-1]['operation']==LEGACY_OPERATION and state['operation_counts'][LEGACY_OPERATION]==1,

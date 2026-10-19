@@ -198,8 +198,30 @@ def _capture():
         _operations.release()
 
 
+def _read_preflight(expected_account_id,pacing,wall_clock,expected_pacing_head):
+    """No vault, writes or reservation. Actual owned admission rechecks the head."""
+    if expected_pacing_head is not None and (pacing is None or type(expected_pacing_head) is not str or
+        re.fullmatch('[0-9a-f]{64}',expected_pacing_head) is None):_fail('READ_PACING_HEAD_INVALID')
+    if pacing is None:return None
+    from nexus.paper_read_pacing import PaperReadPacing
+    from nexus.alpaca_paper_inspection import _uuid,_sanitize,PaperInspectionError
+    from nexus.broker_lookup_policy import clock
+    if type(pacing) is not PaperReadPacing or pacing.account!=_uuid(expected_account_id):_fail('READ_PACING_SCOPE')
+    state=pacing.inspect()
+    try:pacing._admit(state,clock(wall_clock()))
+    except ValueError as exc:
+        # Preserve the existing inspection exception class and the quote
+        # preflight's fixed pacing codes. Never forward arbitrary callback text.
+        codes=('PENDING_REVIEW','BLOCKED_REVIEW','CLOCK_REGRESSION','COOLDOWN','SESSION_CAP')
+        if str(exc) in tuple('PAPER_READ_PACING_'+code for code in codes):
+            raise PaperInspectionError(str(exc)) from None
+        _sanitize(exc)
+    if expected_pacing_head is not None and state['head_sha256']!=expected_pacing_head:_fail('READ_PACING_HEAD_CHANGED')
+    return state['head_sha256']
+
+
 def inspect_saved(*, confirm_read_only_paper=False, expected_account_id=None,
-                  opener=None, wall_clock=time.time, elapsed_clock=time.monotonic, pacing=None):
+                  opener=None, wall_clock=time.time, elapsed_clock=time.monotonic, pacing=None, expected_pacing_head=None):
     """One explicitly confirmed read. Keep secrets out of all returned records.
 
     Local mutation epochs fence IO checkpoints. Final OS readback also rejects a
@@ -208,10 +230,11 @@ def inspect_saved(*, confirm_read_only_paper=False, expected_account_id=None,
     """
     if confirm_read_only_paper is not True:
         _fail('READ_CONFIRMATION_REQUIRED')
+    expected_pacing_head=_read_preflight(expected_account_id,pacing,wall_clock,expected_pacing_head)
     epoch, raw, record = _capture()
     result = inspect_account(record['api_key'], record['api_secret'], confirm_read_only_paper=True,
         expected_account_id=expected_account_id, opener=opener, wall_clock=wall_clock,
-        elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch), pacing=pacing)
+        elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch), pacing=pacing,expected_pacing_head=expected_pacing_head)
     current_epoch, current_raw, _ = _capture()
     if epoch != current_epoch or raw != current_raw or not _current(epoch):
         _fail('READ_REVOKED')
@@ -220,12 +243,13 @@ def inspect_saved(*, confirm_read_only_paper=False, expected_account_id=None,
 
 def recover_saved(journal, client_order_id, *, expected_account_id,
                   confirm_read_only_paper=False, opener=None, wall_clock=time.time,
-                  elapsed_clock=time.monotonic, pacing=None, expected_request_head=None):
+                  elapsed_clock=time.monotonic, pacing=None, expected_request_head=None, expected_pacing_head=None):
     """Internal opt-in original-ID recovery; no application endpoint/default path."""
     if confirm_read_only_paper is not True:
         _fail('READ_CONFIRMATION_REQUIRED')
     from nexus.broker_paper_recovery import recover_original,_storage_paths
     _storage_paths(journal,pacing)
+    expected_pacing_head=_read_preflight(expected_account_id,pacing,wall_clock,expected_pacing_head)
     epoch, raw, record = _capture()
     def credential_check():
         current_epoch, current_raw, _ = _capture()
@@ -233,7 +257,7 @@ def recover_saved(journal, client_order_id, *, expected_account_id,
     result = recover_original(journal, client_order_id, record['api_key'], record['api_secret'],
         expected_account_id=expected_account_id, confirm_read_only_paper=True, opener=opener,
         wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch),
-        credential_check=credential_check, pacing=pacing,expected_request_head=expected_request_head)
+        credential_check=credential_check, pacing=pacing,expected_request_head=expected_request_head,expected_pacing_head=expected_pacing_head)
 
     if not credential_check():
         _fail('READ_REVOKED')
@@ -242,7 +266,7 @@ def recover_saved(journal, client_order_id, *, expected_account_id,
 
 def collect_saved(orders, *, expected_account_id, after, until,
                   confirm_read_only_paper=False, opener=None, wall_clock=time.time,
-                  elapsed_clock=time.monotonic, activity_store=None, pacing=None, input_guard=lambda:True):
+                  elapsed_clock=time.monotonic, activity_store=None, pacing=None, input_guard=lambda:True,expected_pacing_head=None):
     """Internal one-shot activity collection; no runtime route or automatic start."""
     if confirm_read_only_paper is not True:
         _fail('READ_CONFIRMATION_REQUIRED')
@@ -250,6 +274,7 @@ def collect_saved(orders, *, expected_account_id, after, until,
     from nexus.alpaca_activity_collection import _storage_paths
     _storage_paths(activity_store,pacing)
     if input_guard() is not True:_fail('ACTIVITY_INPUT_CHANGED')
+    expected_pacing_head=_read_preflight(expected_account_id,pacing,wall_clock,expected_pacing_head)
     epoch, raw, record = _capture()
     def credential_check():
         current_epoch, current_raw, _ = _capture()
@@ -258,33 +283,34 @@ def collect_saved(orders, *, expected_account_id, after, until,
         expected_account_id=expected_account_id, after=after, until=until,
         confirm_read_only_paper=True, opener=opener, wall_clock=wall_clock,
         elapsed_clock=elapsed_clock, permission_check=lambda: input_guard() is True and _current(epoch),
-        credential_check=credential_check, activity_store=activity_store, pacing=pacing)
+        credential_check=credential_check, activity_store=activity_store, pacing=pacing,expected_pacing_head=expected_pacing_head)
     if input_guard() is not True or not credential_check():
         _fail('READ_REVOKED')
     return result
 
 
 def inspect_rules_saved(*,expected_account_id,confirm_read_only_paper=False,opener=None,
-                        wall_clock=time.time,elapsed_clock=time.monotonic,pacing=None):
+                        wall_clock=time.time,elapsed_clock=time.monotonic,pacing=None,expected_pacing_head=None):
     """Explicit saved-pair asset read with mutation fence and final OS readback."""
     if confirm_read_only_paper is not True:_fail('READ_CONFIRMATION_REQUIRED')
     from nexus.paper_asset_rules import inspect_rules
     from nexus.alpaca_paper_inspection import _uuid
     expected_account_id=_uuid(expected_account_id)
+    expected_pacing_head=_read_preflight(expected_account_id,pacing,wall_clock,expected_pacing_head)
     epoch,raw,record=_capture()
     result=inspect_rules(record['api_key'],record['api_secret'],expected_account_id=expected_account_id,
         confirm_read_only_paper=True,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,
-        permission_check=lambda:_current(epoch),pacing=pacing)
+        permission_check=lambda:_current(epoch),pacing=pacing,expected_pacing_head=expected_pacing_head)
     current_epoch,current_raw,_=_capture()
     if epoch!=current_epoch or raw!=current_raw or not _current(epoch):_fail('READ_REVOKED')
     return result
 
 
 def inspect_quote_saved(*,expected_account_id,confirm_read_only_paper=False,pacing=None,opener=None,
-                        wall_clock=time.time,elapsed_clock=time.monotonic):
+                        wall_clock=time.time,elapsed_clock=time.monotonic,expected_pacing_head=None):
     """Internal explicit fixed-host quote observation; no Portal route/startup read."""
     return _consume_quote_saved(expected_account_id=expected_account_id,confirm_read_only_paper=confirm_read_only_paper,
-        pacing=pacing,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock)
+        pacing=pacing,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,expected_pacing_head=expected_pacing_head)
 
 
 def _consume_quote_saved(*,expected_account_id,confirm_read_only_paper=False,pacing=None,opener=None,
@@ -292,11 +318,9 @@ def _consume_quote_saved(*,expected_account_id,confirm_read_only_paper=False,pac
     """Keep saved-pair fencing through an internal private retention consumer."""
     if confirm_read_only_paper is not True:_fail('READ_CONFIRMATION_REQUIRED')
     from nexus.paper_quote_observation import inspect_quote,_scope
-    from nexus.broker_lookup_policy import clock
     account=_scope(expected_account_id,pacing)
-    pacing._admit(pacing.inspect(),clock(wall_clock()))
     if permission_check() is not True:_fail('READ_REVOKED')
-    if expected_pacing_head is not None and pacing.inspect()['head_sha256']!=expected_pacing_head:_fail('READ_REVOKED')
+    expected_pacing_head=_read_preflight(expected_account_id,pacing,wall_clock,expected_pacing_head)
     epoch,raw,record=_capture()
     def current():return _current(epoch) and permission_check() is True
     def rechecked():

@@ -95,6 +95,9 @@ def paper_pacing_status_fixture():
         suggested_action='RESPECT_RETAINED_COOLDOWN_AND_SEPARATELY_CONFIRM_ONE_READ',
         operation_counts={key:int(key=='ACCOUNT_INVENTORY') for key in (*OPERATIONS,LEGACY_OPERATION)},
         pending_operation=None,legacy_unspecified_sessions=0,
+        receipt_summary=dict(typed_result_receipts=1,unreceipted_typed_results=0,
+            all_typed_results_receipted=True,target_bound_typed_results=1,untargeted_typed_results=0,
+            all_typed_request_targets_bound=True),
         operation_identity_attested=False,mixed_operation_acceptance_verified=False,
         limitations='Local replay only, no vault or provider access.',**{flag:False for flag in FLAGS})
 
@@ -354,6 +357,8 @@ def run(output,channel=None):
                     page.locator('#paper-pacing-status').click()
                     expect(page.locator('#paper-credentials-result')).to_contain_text('1 / 256 sessions')
                     expect(page.locator('#paper-credentials-result')).to_contain_text('No keys read or broker request')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('Completed typed results: 1; 1 with request and response hashes')
+                    expect(page.locator('#paper-credentials-result')).to_contain_text('not verified broker data')
                     expect(page.locator('#paper-observation-download')).to_be_disabled()
                     page.once('dialog',lambda dialog:dialog.accept())
                     page.locator('#paper-credentials-remove').click()

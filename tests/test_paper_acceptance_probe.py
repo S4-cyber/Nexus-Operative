@@ -187,3 +187,53 @@ def test_cli_interrupt_retains_pending_read_and_returns_no_private_trace(vault,t
     assert probe.main()==2
     captured=capsys.readouterr();assert captured.out.strip()=='PAPER_ACCEPTANCE_PROBE_FAILED' and not captured.err
     assert PaperReadPacing(path,ACCOUNT).inspect()['pending_token'] is not None
+
+
+@pytest.mark.parametrize('profile',['missing','pending','interrupted','legacy','unreceipted','v1','v2'])
+def test_pacing_status_receipt_summary_is_read_only_and_not_authority(vault,tmp_path,profile):
+    import sqlite3
+    from nexus import paper_read_pacing as pacing
+    from nexus.alpaca_paper_contract import canonical,sha
+    from test_typed_paper_read_pacing import receipt
+    path=tmp_path/'private'/'pacing.sqlite3';gate=PaperReadPacing(path,ACCOUNT)
+    if profile=='legacy':
+        token=gate.begin(admission=lambda:1000);gate.finish(token,admission=lambda:1001,status_code=200)
+    elif profile!='missing':
+        with gate.ownership() as owner:
+            token=gate.begin(admission=lambda:1000,ownership=owner,operation='ACCOUNT_INVENTORY')
+            if profile not in ('pending','interrupted'):
+                gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt('ACCOUNT_INVENTORY'))
+        if profile=='interrupted':
+            gate.interrupt(token,expected_head=gate.inspect()['head_sha256'],expected_account_id=ACCOUNT,
+                confirm_interrupted=True,admission=lambda:1001)
+        if profile in ('unreceipted','v1'):
+            original=gate.operation_history()[0]
+            with sqlite3.connect(path) as db:
+                encoded,parent=db.execute('SELECT body,previous FROM events WHERE seq=2').fetchone();body=json.loads(encoded)
+                if profile=='unreceipted':
+                    for key in ('receipt_profile','request_kinds','request_sha256','response_sha256','receipt_sha256'):body.pop(key)
+                else:
+                    body['receipt_profile']=pacing.RECEIPT_PROFILE_V1;body.pop('request_sha256')
+                    body['receipt_sha256']=sha(dict(profile=pacing.RECEIPT_PROFILE_V1,operation='ACCOUNT_INVENTORY',
+                        before_head_sha256=original['before_head_sha256'],begin_head_sha256=original['begin_head_sha256'],
+                        evaluated_at=body['evaluated_at'],outcome=body['outcome'],request_kinds=body['request_kinds'],
+                        response_sha256=body['response_sha256']))
+                db.execute('UPDATE events SET body=?,digest=? WHERE seq=2',(canonical(body),sha(dict(seq=2,body=body,previous=parent))))
+    before=path.read_bytes() if path.exists() else None
+    status=probe.pacing_status(expected_account_id=ACCOUNT,pacing_path=path)
+    summary=status['receipt_summary']
+    completed=profile in ('unreceipted','v1','v2')
+    assert summary==dict(typed_result_receipts=int(profile in ('v1','v2')),
+        unreceipted_typed_results=int(profile=='unreceipted'),all_typed_results_receipted=profile in ('v1','v2'),
+        target_bound_typed_results=int(profile=='v2'),untargeted_typed_results=int(profile in ('unreceipted','v1')),
+        all_typed_request_targets_bound=profile=='v2')
+    assert sum(summary[k] for k in ('typed_result_receipts','unreceipted_typed_results'))==int(completed)
+    assert all(status[flag] is False for flag in probe.FLAGS)
+    assert status['operation_identity_attested'] is status['mixed_operation_acceptance_verified'] is False
+    assert vault.reads==vault.writes==0
+    assert (path.read_bytes() if path.exists() else None)==before
+    if profile=='missing':assert not path.parent.exists()
+    encoded=json.dumps(status)
+    assert all(value not in encoded for value in (KEY,SECRET,ACCOUNT,str(path)))
+    # Cold status uses only the retained journal, not the process's lease memory.
+    assert probe.pacing_status(expected_account_id=ACCOUNT,pacing_path=path)==status

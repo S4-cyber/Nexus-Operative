@@ -182,7 +182,7 @@ def _review(path, *, after, until):
         return dict(mode='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
             after=after,until=until,window_seconds=_text(duration),minimum_trial_seconds=MINIMUM_SECONDS,
             maximum_covered_gap_seconds=MAX_GAP_SECONDS,required_coverage_fraction='0.95',
-            retained_observations=count,observations_in_window=selected,eligible_observations_in_window=eligible,rejected_observations_in_window=selected-eligible,
+            retained_observations=count,retained_sessions=n,observations_in_window=selected,eligible_observations_in_window=eligible,rejected_observations_in_window=selected-eligible,
             eligibility_count_scope='RECORDED_FLAGS_ONLY_SEE_REVALIDATED_COUNTS',
             retained_quote_recheck_applied=True,revalidated_eligible_observations_in_window=revalidated,
             revalidated_rejected_observations_in_window=selected-revalidated,

@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.175.1, Windows acceptance-harness repair after retained local request-event binding. Read the newest version section and generated roadmap; exact-source Windows CI and actual broker/market acceptance remain open.
+Current checkpoint: v0.176.0, sustained-trial capacity readiness after the v0.175.1 Windows harness passed exact-source CI. Read the newest version section and generated roadmap; v0.176.0 exact-source CI and actual broker/market acceptance remain open.
+
+## v0.176.0 sustained-trial capacity readiness
+
+The existing read-only Paper Trial Readiness view now reports three separate bounded storage scopes: quote observations, retained session rows and the durable order journal's ordinary-command and intent-ID headroom. It replays the order journal without creating missing storage. The normal next-cycle reserve stays distinct from a conservative full-window upper bound that assumes every policy-cadence cycle consumes the runner's complete admission reserve. That upper bound is deliberately not an expected trade count, strategy forecast, reservation or start permission.
+
+On a fresh profile, the 72-hour/5-second evidence estimate is 51,841 quote records and fits the 100,000-record quote cap. Its conservative 622,092-command / 103,682-ID order upper bound does not fit the current 8,999 ordinary-command / 1,000-ID headroom, making long-run physical offload and capacity acceptance visible rather than implying sustained readiness. Ordinary cycle admission, exits, emergency behavior and the quote cap are unchanged. Missing/corrupt histories fail closed; no engine/session starts, network/vault/provider access, account write, permission, default, risk limit, pruning or automatic archival is added. Existing tabbed controls and black/bright-purple practical help remain.
+
+Exact v0.175.1 commit `fd42efa0ee296a1cc9f0abfa0f1b9e6eba5133b6` passed security run 39315209592, all three safety/browser/evidence jobs in run 39315209583 and Windows/installer run 39315209635, including regression, Portal syntax, standalone/installed tools, startup, install/reinstall/default-layout recovery, uninstall and artifacts. v0.176.0 requires its own exact-source CI. Actual authorized broker paper, sustained real-feed trials, physical long-run offload, independent source/strategy/risk/security review, funding/live/cloud and owner release approval remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final v0.176.0 local validation: 3,387 Python tests passed with one existing Starlette/httpx deprecation warning; the focused roadmap/version/trial/capacity/help/API set passed 89 tests. All sixteen offline profiles and saved-evidence verification matched 345 source files / `53ff9780601ce573d9976460b04dc75cc939e9cb885a6e678f9b8b818d40de99`; `validation/release_trials_0_176_0.json` SHA256 is `f4bdf23a5a75abd04dbbdf622a17395f57210897859127530d81041809bbfc24`. Fourteen Node controller smokes, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and the 480-path public artifact audit passed. Local Gitleaks, rendered browser and native Windows execution are unavailable; exact-source workflows remain mandatory. No actual provider, account, market, funds, live or cloud operation occurred.
 
 ## v0.175.1 Windows acceptance-harness repair
 

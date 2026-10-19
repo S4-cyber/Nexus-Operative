@@ -20,6 +20,11 @@ def test_absent_history_forecasts_quote_room_without_creating_anything(tmp_path)
     report=ready.build(path,now=START+72*3600)
     assert report['status']=='NO_RETAINED_HISTORY' and report['review'] is None and not path.parent.exists()
     cap=report['quote_capacity'];assert cap['estimated_additional_observations']==51841 and cap['room_for_additional_requested_window']
+    sessions=report['session_capacity'];assert sessions['retained']==0 and sessions['remaining']==sessions['limit'] and sessions['room_for_additional_session']
+    orders=report['order_capacity']
+    assert not orders['journal_present'] and orders['next_cycle_reserve_clear']
+    assert orders['commands_per_cycle_upper_bound']==12 and orders['intents_per_cycle_upper_bound']==2
+    assert orders['estimated_upper_bound_commands']==51841*12 and not orders['room_for_conservative_requested_window']
     assert all(report[k] is False for k in trial.FLAGS)
     assert not ready.build(path,hours=168,now=START+168*3600)['quote_capacity']['room_for_additional_requested_window']
 
@@ -28,6 +33,7 @@ def test_retained_injected_history_remains_review_and_file_bytes_unchanged(tmp_p
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.INJECTED,'STOPPED')]);before=snapshot(tmp_path)
     report=ready.build(path,hours=1,now=START+3600)
     assert report['review']['injected_observations']==3 and not report['review']['declared_coverage_target_met']
+    assert report['review']['retained_sessions']==1 and report['session_capacity']['retained']==1
     assert report['quote_capacity']['retained']==3 and report['quote_capacity']['remaining']==99997
     assert snapshot(tmp_path)==before
     assert all(report[k] is False and report['review'][k] is False for k in trial.FLAGS)
@@ -74,3 +80,15 @@ def test_actual_trial_controller():
     if not node:pytest.skip('Node required for actual controller')
     result=subprocess.run([node,str(Path(__file__).resolve().parents[1]/'tools/trial_readiness_smoke.cjs')],capture_output=True,text=True,timeout=15)
     assert result.returncode==0,result.stderr
+
+
+def test_order_capacity_snapshot_is_read_only_and_uses_retained_position_reserve(tmp_path):
+    class Gateway:
+        def recovery_report(self):
+            return dict(journal_present=True,capacity=dict(ordinary_commands_remaining=20,intents_remaining=4,
+                lifecycle_intake_allowed=True),execution_account=dict(account=dict(positions={'BTC-USD':'fixture'})))
+    report=ready.build(tmp_path/'unused'/'paper_forward.sqlite3',hours=1,now=START+3600,order_gateway=Gateway())
+    capacity=report['order_capacity']
+    assert capacity['retained_position'] and capacity['commands_per_cycle_upper_bound']==4
+    assert capacity['intents_per_cycle_upper_bound']==1 and capacity['next_cycle_reserve_clear']
+    assert not capacity['room_for_conservative_requested_window'] and not (tmp_path/'unused').exists()

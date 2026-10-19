@@ -152,3 +152,11 @@ Exact v0.175.0 security run 39311553891 and all three safety/browser/evidence jo
 v0.175.1 allows only the two exact fail-closed decision/reason pairs possible at the independent cut-latch/stopped-runner boundary, while retaining every durable no-fill and reconciliation assertion. It expands only the full loopback-plus-tool child process budget to 120 seconds; individual operations and evidence checks remain bounded and unchanged. Exact-source v0.175.1 Windows CI must pass regression, packaging, private tool smoke, startup, install/reinstall/default-layout/cross-version recovery and data-preserving uninstall before this candidate gains automated native evidence.
 
 Local v0.175.1 source validation passed 3,386 tests plus the 124-test focused set and all sixteen source-fingerprinted profiles. This has `native_windows_acceptance: false` and cannot replace the required exact-source Windows run.
+
+## v0.176.0 candidate status
+
+Exact v0.175.1 commit `fd42efa0ee296a1cc9f0abfa0f1b9e6eba5133b6` passed security run 39315209592, all three safety/browser/evidence jobs in run 39315209583 and Windows run 39315209635. The Windows run passed regression, Portal syntax, standalone packaging, private tool smoke, startup, installer creation, install/reinstall/default-layout and pinned recovery checks, data-preserving uninstall, checksums and evidence uploads.
+
+v0.176.0 changes the read-only Paper Trial Readiness DTO and existing Portal rendering to include session and durable order-command/ID capacity. Its conservative full-window bound is not an expected trade count or permission. Exact-source v0.176.0 Windows packaging/installed smoke, rendered-browser/help, release-evidence and security workflows remain mandatory; ordinary-user profile/ACL, clean native window, sustained real feeds, physical long-run offload and actual broker-paper acceptance remain separate.
+
+Local v0.176.0 validation passed 3,387 tests, the 89-test focused set, all sixteen source-fingerprinted profiles, saved-evidence verification, fourteen Node controllers, Portal syntax, compileall and dependency consistency. This is Linux/local evidence with `native_windows_acceptance: false`; it cannot replace the exact-source Windows run.

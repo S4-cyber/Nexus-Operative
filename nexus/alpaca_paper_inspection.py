@@ -178,7 +178,8 @@ class _ReadSession:
     """Private fixed-path GET session shared by account inspection and recovery."""
     def __init__(self, api_key, api_secret, *, confirm_read_only_paper=False,
                  opener=None, wall_clock=time.time, elapsed_clock=time.monotonic,
-                 permission_check=lambda: True, pacing=None, expected_account_id=None, expected_pacing_head=None,operation=None):
+                 permission_check=lambda: True, pacing=None, expected_account_id=None, expected_pacing_head=None,
+                 provider_budget=None, expected_provider_budget_head=None, operation=None):
         if confirm_read_only_paper is not True:
             _fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
         for value in (api_key, api_secret):
@@ -195,8 +196,24 @@ class _ReadSession:
             pacing.inspect()  # Corrupt/foreign history blocks all IO; missing stays missing.
         if expected_pacing_head is not None and (pacing is None or type(expected_pacing_head) is not str or re.fullmatch(r'[0-9a-f]{64}',expected_pacing_head) is None):
             _fail('PAPER_INSPECTION_PACING_HEAD_INVALID')
+        if provider_budget is not None:
+            from nexus.paper_provider_read_budget import PaperProviderReadBudget
+            from nexus.sqlite_journal_guard import check_path_set
+            if type(provider_budget) is not PaperProviderReadBudget or pacing is None or operation is None:
+                _fail('PAPER_INSPECTION_PROVIDER_BUDGET_TYPE_OR_SCOPE')
+            check_path_set((provider_budget.path, pacing.path), 'PAPER_INSPECTION_PROVIDER_BUDGET_')
+            provider_budget.inspect()
+        if expected_provider_budget_head is not None and (provider_budget is None or
+                type(expected_provider_budget_head) is not str or
+                re.fullmatch(r'[0-9a-f]{64}', expected_provider_budget_head) is None):
+            _fail('PAPER_INSPECTION_PROVIDER_BUDGET_HEAD_INVALID')
         self.expected_pacing_head=expected_pacing_head
+        self.expected_provider_budget_head=expected_provider_budget_head
         self.pacing = pacing
+        self.provider_budget = provider_budget
+        self.provider_owner = None
+        self.provider_token = None
+        self.provider_finished = False
         self.pacing_owner = None
         self.pacing_token = None
         self.pacing_finished = False
@@ -217,11 +234,27 @@ class _ReadSession:
             _fail('PAPER_INSPECTION_BUSY')
         try:
             self.checkpoint()
+            if self.provider_budget is not None:
+                self.provider_owner = self.provider_budget.ownership()
+                self.provider_owner.__enter__()
             if self.pacing is not None:
                 self.pacing_owner = self.pacing.ownership()
                 self.pacing_owner.__enter__()
-                if self.expected_pacing_head is not None and self.pacing.inspect()['head_sha256']!=self.expected_pacing_head:
+                account_state = self.pacing.inspect()
+                account_before_head = account_state['head_sha256']
+                if self.expected_pacing_head is not None and account_before_head!=self.expected_pacing_head:
                     _fail('PAPER_INSPECTION_PACING_HEAD_CHANGED')
+                if self.provider_budget is not None:
+                    # Refuse known account-local blockers before creating a
+                    # provider-scope unknown. Both journals still recheck under
+                    # their write locks; a later race remains conservatively
+                    # retained in the provider budget.
+                    self.pacing._admit(account_state, self.evaluated_at())
+                    self.provider_token = self.provider_budget.begin(account_id=self.pacing.account,
+                        account_before_head_sha256=account_before_head, operation=self.operation,
+                        admission=self.evaluated_at, ownership=self.provider_owner,
+                        expected_head=self.expected_provider_budget_head)
+                    self.checkpoint()
                 self.pacing_token = self.pacing.begin(admission=self.evaluated_at, ownership=self.pacing_owner,**({'operation':self.operation} if self.operation is not None else {}))
                 self.checkpoint()  # A lost/revoked acknowledgment never releases a reservation.
             if self.reader is None:
@@ -232,7 +265,10 @@ class _ReadSession:
             try:
                 if self.pacing_owner is not None: self.pacing_owner.__exit__(None, None, None)
             finally:
-                _lock.release()
+                try:
+                    if self.provider_owner is not None: self.provider_owner.__exit__(None, None, None)
+                finally:
+                    _lock.release()
             if isinstance(exc, Exception):
                 _sanitize(exc)
             raise
@@ -252,7 +288,10 @@ class _ReadSession:
             try:
                 if self.pacing_owner is not None: self.pacing_owner.__exit__(None, None, None)
             finally:
-                _lock.release()
+                try:
+                    if self.provider_owner is not None: self.provider_owner.__exit__(None, None, None)
+                finally:
+                    _lock.release()
 
     def bind_result_projection(self, value):
         if not self.active or self.pacing_finished or self.result_projection_sha256 is not None:
@@ -272,17 +311,27 @@ class _ReadSession:
                     response_sha256=list(self.response_sha256))
                 if receipt is not None and self.result_projection_sha256 is not None:
                     receipt['result_projection_sha256']=self.result_projection_sha256
-                self.pacing.finish(self.pacing_token, admission=self.evaluated_at, ownership=self.pacing_owner,
+                account_after_head = self.pacing.finish(self.pacing_token, admission=self.evaluated_at, ownership=self.pacing_owner,
                     receipt=receipt,**outcome)
             except Exception as exc:
                 _sanitize(exc)  # Storage faults must never enter the HTTP retry/outcome branch.
             self.pacing_finished = True
             self.checkpoint()
+            if self.provider_budget is not None and not self.provider_finished:
+                try:
+                    self.provider_budget.finish(self.provider_token, account_after_head_sha256=account_after_head,
+                        actual_gets=self.requests, admission=self.evaluated_at, ownership=self.provider_owner, **outcome)
+                except Exception as exc:
+                    _sanitize(exc)
+                self.provider_finished = True
+                self.checkpoint()
 
     def checkpoint(self):
         try:
             if self.pacing_owner is not None:
                 self.pacing_owner.validate()
+            if self.provider_owner is not None:
+                self.provider_owner.validate()
             if self.permission_check() is not True:
                 _fail('PAPER_INSPECTION_PERMISSION_REVOKED')
             current = (self.wall_clock(), self.elapsed_clock())
@@ -450,12 +499,15 @@ def _sanitize(exc):
 
 def inspect_account(api_key, api_secret, *, confirm_read_only_paper=False,
                     expected_account_id=None, opener=None, wall_clock=time.time,
-                    elapsed_clock=time.monotonic, permission_check=lambda: True, pacing=None, expected_pacing_head=None):
+                    elapsed_clock=time.monotonic, permission_check=lambda: True, pacing=None, expected_pacing_head=None,
+                    provider_budget=None, expected_provider_budget_head=None):
     """Four bounded account GETs after explicit authorization; no order methods."""
     # Validate authorization and credentials before even inspecting caller scope.
     session = _ReadSession(api_key, api_secret, confirm_read_only_paper=confirm_read_only_paper,
         opener=opener, wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
-        pacing=pacing, expected_account_id=expected_account_id,expected_pacing_head=expected_pacing_head,operation='ACCOUNT_INVENTORY')
+        pacing=pacing, expected_account_id=expected_account_id,expected_pacing_head=expected_pacing_head,
+        provider_budget=provider_budget, expected_provider_budget_head=expected_provider_budget_head,
+        operation='ACCOUNT_INVENTORY')
     expected = None if expected_account_id is None else _uuid(expected_account_id)
     with session:
         values = []

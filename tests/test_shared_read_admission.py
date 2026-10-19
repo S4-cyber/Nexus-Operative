@@ -106,3 +106,13 @@ def test_expected_head_requires_a_real_account_bound_gate_before_vault(tmp_path,
         reader=Opener()
         with pytest.raises(ValueError):invoke(operation,gate,journal,at=1000,opener=reader,expected_pacing_head=pacing.ZERO)
         assert vault.reads==0 and not reader.requests
+
+
+@pytest.mark.parametrize('operation',OPERATIONS)
+def test_related_provider_budget_path_is_rejected_before_saved_vault(tmp_path,vault,operation):
+    from nexus.paper_provider_read_budget import PaperProviderReadBudget
+    gate=pacing.PaperReadPacing(tmp_path/'pacing.sqlite3',ACCOUNT);journal=request_journal(tmp_path)
+    provider=PaperProviderReadBudget(gate.path);reader=Opener()
+    with pytest.raises(ValueError,match='RELATED_PATHS_REQUIRED_DISTINCT'):
+        invoke(operation,gate,journal,at=1000,opener=reader,provider_budget=provider)
+    assert vault.reads==0 and not reader.requests and not gate.path.exists()

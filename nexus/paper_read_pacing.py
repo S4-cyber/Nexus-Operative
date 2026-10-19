@@ -470,6 +470,7 @@ class _ReadOwnership:
 
 OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','five_request_targets_bound',
     'three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified','five_normalized_results_bound','original_recovery_consumer_checked','five_stale_heads_refused_before_io','mixed_history_review_checked','response_payloads_not_retained',
+    'provider_budget_five_purposes_bound','provider_budget_account_heads_bound','provider_budget_content_free','provider_budget_authority_withheld',
     'one_shared_cooldown','legacy_not_relabelled','legacy_receipt_not_invented',
     'completed_outcomes_preserved','restart_replay_matches','status_read_only')
 OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
@@ -540,9 +541,11 @@ def typed_fixture_report():
         def open(self,request,timeout):self.requests.append(request);return Response(request.full_url,next(self.values))
     with tempfile.TemporaryDirectory(prefix='nexus-typed-reads-') as directory:
         gate=PaperReadPacing(Path(directory)/'pacing.sqlite3',account)
+        from nexus.paper_provider_read_budget import PaperProviderReadBudget
+        provider_budget=PaperProviderReadBudget(Path(directory)/'provider-budget.sqlite3')
         key='fixture_key_only_123';secret='fixture_secret_only_123'
         def args(values,at):return dict(expected_account_id=account,confirm_read_only_paper=True,pacing=gate,
-            opener=Opener(values),wall_clock=lambda:at,elapsed_clock=lambda:50)
+            provider_budget=provider_budget,opener=Opener(values),wall_clock=lambda:at,elapsed_clock=lambda:50)
         reader.inspect_account(key,secret,**args([raw_account,[],[],raw_account],epoch))
         inspect_rules(key,secret,**args([raw_account,asset,raw_account],epoch+60))
         collect_activities(key,secret,[],after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z',
@@ -555,6 +558,8 @@ def typed_fixture_report():
         recovered=recover_next(journal,key,secret,**args([raw_account,raw_order,raw_account],epoch+180))
         inspect_quote(key,secret,**args([raw_account,quote,raw_account],epoch+241))
         typed_state=gate.inspect();typed_history=gate.operation_history();retained=gate.path.read_bytes()
+        provider_state=provider_budget.inspect();provider_history=provider_budget.history()
+        provider_retained=provider_budget.path.read_bytes()
         token=gate.begin(admission=lambda:epoch+301);gate.finish(token,admission=lambda:epoch+301,status_code=200)
         before={p.name:p.read_bytes() for p in Path(directory).iterdir()};history=gate.operation_history();state=gate.inspect()
         blocked=Opener([raw_account,[],[],raw_account]);cooldown=False
@@ -601,6 +606,15 @@ def typed_fixture_report():
             mixed_history_review_checked=mixed_review['passed'] is True and all(mixed_review[k] is True for k in MIXED_CHECKS) and all(mixed_review[k] is False for k in MIXED_FLAGS),
             response_payloads_not_retained=all(value not in retained for value in
                 (account.encode(),key.encode(),secret.encode(),b'nx_operation_fixture',b'2026-10-17T00:00:00Z')),
+            provider_budget_five_purposes_bound=len(provider_history)==5 and
+                tuple(row['operation'] for row in provider_history)==OPERATIONS and
+                all(provider_state['operation_counts'][operation]==1 for operation in OPERATIONS),
+            provider_budget_account_heads_bound=all(row['account_before_head_sha256']==typed_history[index]['before_head_sha256'] and
+                row['account_after_head_sha256']==typed_history[index]['after_head_sha256'] for index,row in enumerate(provider_history)),
+            provider_budget_content_free=all(value not in provider_retained for value in
+                (account.encode(),key.encode(),secret.encode(),b'nx_operation_fixture',b'2026-10-17T00:00:00Z')),
+            provider_budget_authority_withheld=provider_state['local_provider_scope_coordinated'] is True and
+                provider_state['broker_wide_quota_verified'] is False and provider_state['ready_for_routing'] is False,
             one_shared_cooldown=cooldown,legacy_not_relabelled=history[-1]['operation']==LEGACY_OPERATION and state['operation_counts'][LEGACY_OPERATION]==1,
             legacy_receipt_not_invented=history[-1]['result_receipt_bound'] is False and history[-1]['receipt_sha256'] is None,
             completed_outcomes_preserved=len(history)==6 and all(r['outcome']=='SUCCESS' for r in history),

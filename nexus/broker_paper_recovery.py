@@ -9,26 +9,35 @@ from nexus import alpaca_paper_inspection as transport
 from nexus.broker_lookup_policy import LOOKUP_URL
 
 
-def _storage_paths(journal,pacing):
+def _storage_paths(journal,pacing,provider_budget=None):
     if pacing is None:return
     from nexus.broker_request_journal import BrokerRequestJournal
     from nexus.paper_read_pacing import PaperReadPacing
     from nexus.sqlite_journal_guard import check_path_set
     if type(journal) is not BrokerRequestJournal or type(pacing) is not PaperReadPacing:
         transport._fail('PAPER_RECOVERY_STORES_REQUIRED')
-    check_path_set((journal.path,pacing.path),'PAPER_RECOVERY_')
+    paths=[journal.path,pacing.path]
+    if provider_budget is not None:
+        from nexus.paper_provider_read_budget import PaperProviderReadBudget
+        if type(provider_budget) is not PaperProviderReadBudget:
+            transport._fail('PAPER_RECOVERY_STORES_REQUIRED')
+        paths.append(provider_budget.path)
+    check_path_set(paths,'PAPER_RECOVERY_')
 
 
 def recover_original(journal, client_order_id, api_key, api_secret, *, expected_account_id,
                      confirm_read_only_paper=False, opener=None, wall_clock=time.time,
                      elapsed_clock=time.monotonic, permission_check=lambda: True,
-                     credential_check=lambda: True, pacing=None, expected_request_head=None, expected_pacing_head=None):
+                     credential_check=lambda: True, pacing=None, expected_request_head=None, expected_pacing_head=None,
+                     provider_budget=None, expected_provider_budget_head=None):
     if confirm_read_only_paper is not True:transport._fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
-    _storage_paths(journal,pacing)
+    _storage_paths(journal,pacing,provider_budget)
     session = transport._ReadSession(api_key, api_secret,
         confirm_read_only_paper=confirm_read_only_paper, opener=opener,
         wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
-        pacing=pacing, expected_account_id=expected_account_id,expected_pacing_head=expected_pacing_head,operation='ORIGINAL_ID_RECOVERY')
+        pacing=pacing, expected_account_id=expected_account_id,expected_pacing_head=expected_pacing_head,
+        provider_budget=provider_budget,expected_provider_budget_head=expected_provider_budget_head,
+        operation='ORIGINAL_ID_RECOVERY')
     expected = transport._uuid(expected_account_id)
     # Read-only before any network or write. No untracked/foreign lookup target.
     request = journal.lookup_request(client_order_id)

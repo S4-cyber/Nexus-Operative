@@ -60,6 +60,7 @@ def _paper_tool(args):
         from nexus.release_roadmap import REVISION
         print(json.dumps(dict(mode='NEXUS_PACKAGED_PAPER_TOOLS',version=REVISION,
             commands={name:'--paper-tool '+name+' --help' for name in sorted(PAPER_TOOLS)},
+            emergency_stop_command='--emergency-stop',
             default_data_created=False,desktop_started=False,automatic_read=False,
             automatic_retry=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
             scope='Explicit private paper diagnostics only. Account/activity/quote/recovery reads require their own confirmation and saved Windows keys. Read-only status/reviews and observation/quote-evidence encryption need no broker keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. Observation crypto creates a separate authenticated encrypted copy and never stores its password. No order submission or automatic continuation.'),sort_keys=True,indent=2))
@@ -87,6 +88,14 @@ def main(argv=None):
         if not getattr(sys,'frozen',False):
             root=installation_root()
             if str(root) not in sys.path:sys.path.insert(0,str(root))
+        if args==['--emergency-stop']:
+            try:
+                configure()
+                from nexus.emergency_cut_tool import main as emergency_stop
+                return emergency_stop()
+            except (Exception,KeyboardInterrupt):
+                print('NEXUS_EMERGENCY_STOP_FAILED')
+                return 2
         return _paper_tool(args)
     root, data = configure()
     if str(root) not in sys.path:

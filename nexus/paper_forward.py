@@ -22,7 +22,7 @@ from nexus.public_data import read_ticker
 from nexus.tier_permissions import require_entry, TIERS
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
-from nexus import forward_evidence,forward_sessions
+from nexus import emergency_intent,forward_evidence,forward_sessions
 from nexus.forward_ownership import ForwardOwnership
 
 INTERVAL=POLICY['interval_seconds']
@@ -124,13 +124,18 @@ class PaperForwardRunner:
         """Coordinator only: after durable reset and its final epoch check. Never starts work."""
         self._cut_requested.clear()
 
+    def _cut_active(self):
+        if self._cut_requested.is_set():return True
+        try:return emergency_intent.requested(self.orders._path())
+        except (ValueError,OSError):return True
+
     def _intake_stopped(self):
-        return self._stop.is_set() or self._cut_requested.is_set()
+        return self._stop.is_set() or self._cut_active()
 
     def prepare(self,tier,policy_id=POLICY['id']):
         """Validate/start session state without starting a thread (also testable offline)."""
         with self._cycle_lock,self._lock:
-            if self._cut_requested.is_set():raise ValueError('EMERGENCY_CUT_REQUESTED')
+            if self._cut_active():raise ValueError('EMERGENCY_CUT_REQUESTED')
             if not self._stop.is_set() or (self._thread and self._thread.is_alive()):raise ValueError('PAPER_FORWARD_ALREADY_ACTIVE')
             if self._ownership and self._ownership.held:
                 raise ValueError('PAPER_FORWARD_PREVIOUS_CYCLE_STILL_ACTIVE')
@@ -162,7 +167,7 @@ class PaperForwardRunner:
                 holding=bool(report['execution_account']['account']['positions'])
                 if not report['capacity']['lifecycle_intake_allowed'] or report['capacity']['ordinary_commands_remaining']<(4 if holding else 12) or report['capacity']['intents_remaining']<(1 if holding else 2):
                     raise ValueError('INSUFFICIENT_FORWARD_JOURNAL_CAPACITY')
-                if self._cut_requested.is_set():raise ValueError('EMERGENCY_CUT_REQUESTED')
+                if self._cut_active():raise ValueError('EMERGENCY_CUT_REQUESTED')
                 self._policy=selected_policy
                 self._session=uuid.uuid4().hex[:16];self._tier=tier
                 self._prices.clear();self._guard=FeedGuard();self._stamp=None;self._last_rank=0
@@ -387,7 +392,8 @@ class PaperForwardRunner:
 
     def status(self):
         with self._lock:
-            return dict(mode='EXPERIMENTAL_PUBLIC_QUOTE_PAPER_FORWARD',enabled=not self._intake_stopped(),cut_requested=self._cut_requested.is_set(),
+            cut_requested=self._cut_active()
+            return dict(mode='EXPERIMENTAL_PUBLIC_QUOTE_PAPER_FORWARD',enabled=not self._stop.is_set() and not cut_requested,cut_requested=cut_requested,
                         worker_alive=bool(self._thread and self._thread.is_alive()),ownership_held=bool(self._ownership and self._ownership.held),session=self._session,tier=self._tier,
                         product=PRODUCT,interval_seconds=INTERVAL,entry_ranking_seconds=RANKING_INTERVAL,
                         cycles=self._cycles,consecutive_feed_failures=self._failures,last_error=self._error,last_event=self._last,

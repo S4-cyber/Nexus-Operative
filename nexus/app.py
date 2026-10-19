@@ -70,7 +70,7 @@ async def application_lifespan(application):
                     try:await asyncio.to_thread(refresh_worker.shutdown)
                     finally:await asyncio.to_thread(found_market_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.171.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.172.0",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -101,6 +101,19 @@ def _recover_emergency_cut():
     return halted, confirmed
 
 _halted, _cut_confirmed = _recover_emergency_cut()
+
+def _execution_halted():
+    """Adopt a process-external latch without touching SQLite or starting work."""
+    global _halted,_cut_confirmed
+    if _halted:return True
+    try:external=emergency_intent.requested(research_order_gateway._path())
+    except (ValueError,OSError):external=True
+    if external:
+        paper_forward_runner.request_cut()
+        with _cut_lock:
+            _halted=True
+            _cut_confirmed=False  # This process did not witness durable cleanup.
+    return external
 
 _tiers = {
     "terrestrial": {"risk":"low", "max_weight":0.01, "score":28, "approach":"Prioritize liquid assets, modest position exposure and defined exits."},
@@ -327,17 +340,18 @@ def release_roadmap():
     return snapshot()
 
 def status():
+    _execution_halted()
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.171.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.172.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
 
 @app.get("/api/status")
 async def runtime_status():
-    # This snapshot performs no IO and must not queue behind blocking feed workers.
+    # A bounded latch lstat adopts standalone cuts; no SQLite/feed/general worker.
     return JSONResponse(status(),headers={"Cache-Control":"no-store"})
 
 @app.post("/api/candle-research/{product}/regime-stress")
@@ -489,14 +503,14 @@ def paper_portfolio_init(data:PortfolioInit):
 
 @app.post("/api/paper/portfolio/buy")
 def paper_portfolio_buy(data:PaperTrade):
-    if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
+    if _execution_halted():raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
     if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
     with _cut_lock:epoch=_cut_epoch
     try:
         require_tier_entry(data.tier,data.notional)
         quote=read_ticker(data.product)
         with _trading_control_lock:
-            if _halted or epoch!=_cut_epoch:raise HTTPException(status_code=409,detail="EMERGENCY_CUT_INTERRUPTED_TRADE")
+            if _execution_halted() or epoch!=_cut_epoch:raise HTTPException(status_code=409,detail="EMERGENCY_CUT_INTERRUPTED_TRADE")
             if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
             require_tier_entry(data.tier,data.notional)
             return paper_buy(data.product,data.notional,quote)
@@ -504,12 +518,12 @@ def paper_portfolio_buy(data:PaperTrade):
 
 @app.post("/api/paper/portfolio/sell")
 def paper_portfolio_sell(data:PaperClose):
-    if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
+    if _execution_halted():raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
     with _cut_lock:epoch=_cut_epoch
     try:
         quote=read_ticker(data.product)
         with _trading_control_lock:
-            if _halted or epoch!=_cut_epoch:raise HTTPException(status_code=409,detail="EMERGENCY_CUT_INTERRUPTED_TRADE")
+            if _execution_halted() or epoch!=_cut_epoch:raise HTTPException(status_code=409,detail="EMERGENCY_CUT_INTERRUPTED_TRADE")
             return paper_sell(data.product,quote)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
@@ -607,7 +621,7 @@ def paper_trial_readiness(hours:int=72):
 def paper_forward_preflight(tier:str='terrestrial'):
     from nexus.forward_preflight import build,TIERS
     if tier not in TIERS:raise HTTPException(status_code=422,detail='INVALID_PREFLIGHT_TIER')
-    try:return build(research_order_gateway,paper_forward_runner,tier=tier,portal_active=not _paused,halted=_halted)
+    try:return build(research_order_gateway,paper_forward_runner,tier=tier,portal_active=not _paused,halted=_execution_halted())
     except (ValueError,OSError,sqlite3.Error):raise HTTPException(status_code=503,detail='PAPER_PREFLIGHT_UNAVAILABLE')
 
 @app.post("/api/paper/forward/start")
@@ -615,11 +629,11 @@ def paper_forward_start(data:PaperForwardStart):
     if not data.confirm_experimental_paper:
         raise HTTPException(status_code=422,detail="EXPERIMENTAL_PAPER_CONFIRMATION_REQUIRED")
     with _trading_control_lock:
-        if _paused or _halted:raise HTTPException(status_code=409,detail="ACTIVATE_UNHALTED_PORTAL_FIRST")
+        if _paused or _execution_halted():raise HTTPException(status_code=409,detail="ACTIVATE_UNHALTED_PORTAL_FIRST")
         try:
             result=paper_forward_runner.start(data.tier,data.policy_id)
             # A cut/pause can arrive while preparation is admitting the session.
-            if _halted or _paused:
+            if _execution_halted() or _paused:
                 paper_forward_runner.stop('START_INTERRUPTED_BY_CUT_OR_PAUSE')
                 raise HTTPException(status_code=409,detail="ENGAGE_INTERRUPTED_BY_CUT_OR_PAUSE")
             return result
@@ -654,7 +668,7 @@ class ArchiveTerminalRequest(BaseModel):
 def execution_archive_terminal(data:ArchiveTerminalRequest):
     if data.confirm_archive is not True:
         raise HTTPException(status_code=422,detail="EXPLICIT_ARCHIVE_CONFIRMATION_REQUIRED")
-    if not _halted or not _paused:
+    if not _execution_halted() or not _paused:
         raise HTTPException(status_code=409,detail="ARCHIVAL_REQUIRES_HALTED_PAUSED_PORTAL")
     try:
         return {**research_order_gateway.archive_terminal(data.batch_id),"halted":True,"paused":True,"history_deleted":False}
@@ -709,7 +723,7 @@ class SimulatedOrderIntent(BaseModel):
 @app.post("/api/execution/intent/simulate")
 def simulate_order_intent(data:SimulatedOrderIntent):
     with _trading_control_lock:
-        if _halted:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
+        if _execution_halted():raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
         if data.provider!="nexus_local_paper":raise HTTPException(status_code=422,detail="EXTERNAL_BROKER_NOT_AUTHORIZED")
         if data.side=="BUY":
             if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
@@ -831,7 +845,7 @@ def tier_permission_state():
 
 @app.put("/api/tiers/{tier}/permission")
 def set_tier_permission(tier:str,cmd:TierPermissionCommand):
-    if _halted and cmd.enabled:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
+    if _execution_halted() and cmd.enabled:raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
     try:return configure_tier_permission(tier,cmd.enabled)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
     except (OSError,sqlite3.Error):raise HTTPException(status_code=503,detail="PAPER_SETTINGS_REVIEW_REQUIRED")
@@ -1020,6 +1034,8 @@ def _complete_halt_reset(epoch):
 async def reset_emergency_halt(confirmation:HaltResetConfirmation):
     if confirmation.confirm_reset is not True:
         raise HTTPException(status_code=422,detail="Explicit halt reset confirmation required")
+    # Adopt a standalone latch before capturing the reset epoch.
+    _execution_halted()
     # Capture intent before general-worker scheduling, not after a queued request wakes.
     with _cut_lock:
         epoch=_cut_epoch

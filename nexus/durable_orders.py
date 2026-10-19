@@ -13,7 +13,7 @@ from contextlib import closing, contextmanager
 from pathlib import Path
 from nexus.order_gateway import OrderGateway
 from nexus.order_accounting import AccountingOrderGateway, MAX_ARCHIVED_INTENTS, MAX_ARCHIVE_BATCHES
-from nexus import execution_portfolio, order_checkpoints
+from nexus import emergency_intent, execution_portfolio, order_checkpoints
 from nexus.execution_capacity import report as capacity_report, CONTROL_RESERVE
 
 MAX_COMMANDS = 10000
@@ -99,6 +99,10 @@ class DurableOrderGateway:
         if execution_clock is not None and not callable(execution_clock):raise ValueError('INVALID_EXECUTION_CLOCK')
         steps=tuple(steps)
         if not steps or len(steps)>4:raise ValueError('INVALID_ORDER_TRANSACTION_SIZE')
+        if any(step[0] in ('submit','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps):
+            try:cut=emergency_intent.requested(self._path())
+            except (ValueError,OSError):cut=True
+            if cut:raise ValueError('EMERGENCY_CUT_REQUESTED')
         if len(steps)>1:
             if [step[0] for step in steps]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
                 raise ValueError('INVALID_QUOTE_ORDER_TRANSACTION')

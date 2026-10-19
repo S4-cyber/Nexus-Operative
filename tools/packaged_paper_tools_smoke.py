@@ -10,7 +10,7 @@ import tempfile
 ROOT=Path(__file__).resolve().parents[1]
 CHECKS=('catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
         'private_account_review_checked','public_current_account_review_checked','private_execution_quality_checked','private_quote_status_checked','unconfirmed_quote_read_denied','encrypted_quote_evidence_checked','invalid_quote_export_denied','private_files_unchanged','invalid_command_denied',
-        'default_data_not_created')
+        'emergency_stop_independent','default_data_not_created')
 
 
 def _require(condition,code):
@@ -55,7 +55,8 @@ def run(command):
         catalog=_json_call(command,['--paper-tool','list'],env)
         _require(catalog['mode']=='NEXUS_PACKAGED_PAPER_TOOLS' and catalog['version']==REVISION and
             set(catalog['commands'])=={'account-probe','activity','account-review','observation-crypto','quality-review','quote-capture','quote-evidence','recovery'} and all(catalog[k] is False for k in
-            ('default_data_created','desktop_started','automatic_read','automatic_retry','broker_connected','live_orders_enabled','money_movement_enabled')),'CATALOG')
+            ('default_data_created','desktop_started','automatic_read','automatic_retry','broker_connected','live_orders_enabled','money_movement_enabled')) and
+            catalog['emergency_stop_command']=='--emergency-stop','CATALOG')
         encrypted=_json_call(command,['--paper-tool','observation-crypto','self-test'],env)
         _require(encrypted['passed'] is True and encrypted['roundtrip_matches'] is True and
             encrypted['ciphertext_randomized'] is True and encrypted['wrong_password_rejected'] is True and
@@ -132,12 +133,21 @@ def run(command):
         _require(_snapshot(private)==before,'PRIVATE_FILES_CHANGED')
         code,stdout,stderr=_call(command,['--paper-tool','__not_allowed__','PRIVATE_ARGUMENT_FIXTURE'],env)
         _require(code==2 and stdout=='' and stderr.strip()=='NEXUS_PAPER_TOOL_USAGE_ERROR','INVALID_COMMAND')
+        cut_root=root/'explicit-emergency-cut';cut_env=dict(env,NEXUS_PORTABLE_DATA=str(cut_root))
+        cut=_json_call(command,['--emergency-stop'],cut_env)
+        _require(cut['mode']=='NEXUS_LOCAL_PAPER_EMERGENCY_STOP' and cut['passed'] is True and
+            cut['emergency_cut_state']=='VERIFIED' and cut['intent_preceded_durable_halt'] is True and
+            cut['emergency_intent_present'] is True and cut['durable_order_halt_confirmed'] is True and
+            all(cut[k] is False for k in ('desktop_started','network_requested','credential_access_requested',
+                'broker_connected','live_orders_enabled','money_movement_enabled','reset_available','automatic_restart')) and
+            (cut_root/'emergency_cut.intent').is_file() and (cut_root/'order_lifecycle.sqlite3').is_file(),
+            'EMERGENCY_STOP')
         _require(not default.exists() and not missing.exists(),'DEFAULT_DATA_CREATED')
         return dict(mode='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE',passed=True,**{k:True for k in CHECKS},
-            tool_invocations=13,provider_reads_requested=False,credential_reads_requested=False,
+            tool_invocations=14,provider_reads_requested=False,credential_reads_requested=False,
             live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
             native_windows_acceptance=False,
-            scope='Thirteen actual command-prefix child processes with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. Inventory and full-chain quote-evidence self-tests use distinct authenticated encryption formats and retain no ciphertext, password or plaintext bundle. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
+            scope='Fourteen actual command-prefix child processes, including a separate explicit emergency cut, with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. The emergency command starts no desktop, network, vault or reset path. Inventory and full-chain quote-evidence self-tests use distinct authenticated encryption formats and retain no ciphertext, password or plaintext bundle. This is not an OS-level network/vault audit, actual account acceptance, native-window/profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
 
 
 class _Parser(argparse.ArgumentParser):
@@ -153,7 +163,7 @@ def main():
         if args.output:args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(encoded,encoding='utf-8')
     except (Exception,KeyboardInterrupt) as error:
         allowed={'COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW','QUALITY_REVIEW',
-            'PRIVATE_FILES_CHANGED','INVALID_COMMAND','DEFAULT_DATA_CREATED','OUTPUT_CAP',
+            'PRIVATE_FILES_CHANGED','INVALID_COMMAND','EMERGENCY_STOP','DEFAULT_DATA_CREATED','OUTPUT_CAP',
             'CHILD_FAILED','CHILD_JSON','CHILD_TIMEOUT','EXECUTABLE_REQUIRED'}
         code=str(error) if type(error) is ValueError and str(error) in {'PACKAGED_PAPER_TOOLS_'+k for k in allowed} else 'PACKAGED_PAPER_TOOLS_INTERNAL_ERROR'
         if args.output:

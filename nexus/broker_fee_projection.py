@@ -5,6 +5,7 @@ Alpaca activity adapter: execution-to-fee links and coverage are caller supplied
 """
 from collections import defaultdict
 from decimal import Decimal,localcontext
+from datetime import timezone
 import re
 from uuid import UUID
 from nexus.alpaca_paper_contract import number,text,timestamp,sha,STATUSES
@@ -12,6 +13,29 @@ from nexus.alpaca_paper_contract import number,text,timestamp,sha,STATUSES
 MAX_ORDERS=1000
 MAX_EXECUTIONS=2000
 MAX_FEES=4000
+TIMESTAMP_SCOPE='RFC3339_UTC_MICROSECOND_PROFILE_NO_ROUNDING'
+TIMESTAMP_CHECKS=('unsupported_precision_rejected','timezone_equivalents_deduplicated',
+                  'timezone_canonical_digest_stable','rest_nanoseconds_preserved')
+TIMESTAMP_FLAGS=('actual_provider_access','broker_connected','broker_account_reconciled','spendable_funds_verified',
+                 'ledger_applied','ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')
+
+
+def _timestamp(value):
+    """This older projection cannot represent finer timestamps; never truncate."""
+    if (type(value) is not str or re.fullmatch(
+        r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])',value) is None or
+        value.endswith('-00:00')):
+        raise ValueError('BROKER_PROJECTION_TIMESTAMP_PROFILE')
+    try:return timestamp(value).astimezone(timezone.utc)
+    except (ValueError,OverflowError):raise ValueError('BROKER_PROJECTION_TIMESTAMP_PROFILE') from None
+
+
+def _timed_record(normalize,field):
+    def checked(raw):
+        at=_timestamp(raw.get(field))
+        result=normalize(raw);result[field]=at.isoformat()
+        return result
+    return checked
 
 
 def identifier(value):
@@ -72,11 +96,13 @@ def balances(raw):
 def _project(orders,executions,fees,*,opening_balances,opening_at,observed_balances,observed_at,fee_coverage_complete=False):
     if type(fee_coverage_complete) is not bool:raise ValueError('INVALID_BROKER_FEE_COVERAGE_DECLARATION')
     opening=balances(opening_balances);observed=balances(observed_balances)
-    start=timestamp(opening_at);end=timestamp(observed_at)
+    start=_timestamp(opening_at);end=_timestamp(observed_at)
     if end<start:raise ValueError('BROKER_PROJECTION_INTERVAL_REGRESSION')
-    orders,order_duplicates=unique(orders,MAX_ORDERS,'broker_order_id',order_record)
-    executions,execution_duplicates=unique(executions,MAX_EXECUTIONS,'execution_id',execution_record)
-    fees,fee_duplicates=unique(fees,MAX_FEES,'activity_id',fee_record)
+    # Keep the raw record normalizers available to the separate nanosecond REST
+    # adapter. Enforce this narrower profile only at the projection boundary.
+    orders,order_duplicates=unique(orders,MAX_ORDERS,'broker_order_id',_timed_record(order_record,'updated_at'))
+    executions,execution_duplicates=unique(executions,MAX_EXECUTIONS,'execution_id',_timed_record(execution_record,'occurred_at'))
+    fees,fee_duplicates=unique(fees,MAX_FEES,'activity_id',_timed_record(fee_record,'occurred_at'))
     reasons=[];totals=defaultdict(Decimal);quantities=defaultdict(Decimal);notionals=defaultdict(Decimal);fee_links=set()
     projected=dict(opening);admitted_executions=set()
     if len({o['client_order_id'] for o in orders.values()})!=len(orders):reasons.append('CLIENT_ORDER_ID_MULTIPLE_BROKER_IDS')
@@ -128,6 +154,7 @@ def _project(orders,executions,fees,*,opening_balances,opening_at,observed_balan
                 gross_buy_notional=text(totals['gross_buy_notional']),gross_sell_notional=text(totals['gross_sell_notional']),
                 fees_by_asset={asset:text(totals['fee_'+asset]) for asset in ('BTC','USD')},
                 projection_scope='AGGREGATE_INTERVAL_BALANCE_CONSERVATION_ONLY',
+                timestamp_scope=TIMESTAMP_SCOPE,
                 coverage_scope='CALLER_DECLARED_AND_EXECUTION_LINKED_NOT_INDEPENDENTLY_ATTESTED',
                 broker_account_reconciled=False,broker_connected=False,ledger_applied=False,ready_for_routing=False,live_orders_enabled=False,
                 limitations='Pure supplied-data consistency only. Explicit execution prices are required; cumulative averages never create executions. Fee links, opening balances and completeness are unverified inputs. Intraperiod spending capacity is not proved. Missing corrections, transfers, deposits or fees can invalidate the projection. No existing paper account is modified.')
@@ -163,6 +190,40 @@ def fixture_report():
     result=analyze_and_project(**fixture_inputs())
     result['activity_normalization']=activity_fixture()
     return result
+
+
+def timestamp_fixture_report():
+    """Aggregate-only precision separation; supplied data, no IO or authority."""
+    from copy import deepcopy
+    from datetime import timedelta
+    from nexus import alpaca_activity_normalizer as adapter
+    data=fixture_inputs();baseline=reconcile(**data);denied=[]
+    for field in ('opening_at','observed_at','orders','executions','fees'):
+        candidate=deepcopy(data);stamp='2026-10-17T18:00:01.000000001Z'
+        if field in ('opening_at','observed_at'):candidate[field]=stamp
+        else:candidate[field][0]['updated_at' if field=='orders' else 'occurred_at']=stamp
+        try:reconcile(**candidate)
+        except ValueError as error:denied.append(str(error)=='BROKER_PROJECTION_TIMESTAMP_PROFILE')
+    shifted=deepcopy(data)
+    for field in ('opening_at','observed_at'):shifted[field]=_timestamp(shifted[field]).astimezone(timezone(timedelta(hours=-7))).isoformat()
+    for group,field in (('orders','updated_at'),('executions','occurred_at'),('fees','occurred_at')):
+        for row in shifted[group]:row[field]=_timestamp(row[field]).astimezone(timezone(timedelta(hours=-7))).isoformat()
+    alternate=reconcile(**shifted);combined=deepcopy(data)
+    for group in ('orders','executions','fees'):combined[group]+=shifted[group]
+    duplicate=reconcile(**combined)
+    rows=[];orders=deepcopy(data['orders'])
+    for i,execution in enumerate(data['executions'],1):
+        at=f'2026-10-17T18:00:0{i}.123456789Z';orders[i-1]['updated_at']=at
+        rows.append(dict(id='20261017180000000::'+f'11234567-89ab-cdef-0123-{i:012d}',activity_type='FILL',
+            order_id=execution['broker_order_id'],symbol='BTCUSD',side=execution['side'].lower(),type='fill',
+            qty=execution['quantity'],cum_qty=execution['quantity'],leaves_qty='0',price=execution['price'],transaction_time=at))
+    _,order_map,activities,_,_=adapter.canonical_inputs(rows,orders,expected_account_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+    checks=dict(unsupported_precision_rejected=len(denied)==5 and all(denied),
+        timezone_equivalents_deduplicated=duplicate['input_consistency_ok'] and duplicate['duplicate_records_ignored']==dict(orders=2,executions=2,fees=2),
+        timezone_canonical_digest_stable=baseline['input_sha256']==alternate['input_sha256']==duplicate['input_sha256'],
+        rest_nanoseconds_preserved=all(r['occurred_at'].endswith('.123456789+00:00') for r in activities) and
+            all(r['updated_at'].endswith('.123456789+00:00') for r in order_map.values()))
+    return dict(source='SUPPLIED_TIMESTAMP_PROFILE_FIXTURE',passed=all(checks.values()),**checks,**{k:False for k in TIMESTAMP_FLAGS})
 
 
 if __name__=='__main__':

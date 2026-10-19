@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.165.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.165.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.165 retains checked submission admission samples with the exact preceding request head and immutable payload digest. Replay validates the new marker and preserves older untimed markers without inference. Retained admission samples now fence clock regression in later checked submissions, original-ID lookup and passive reviews across restarts and requests. The original admission sample is caller wall-clock seconds, not send/arrival time, synchronized time or a latency benchmark. v0.164 read-purpose sequences and the v0.163.1 related-path fix remain intact. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner acceptance remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
+Current hardening: v0.165.1 closes silent submicrosecond truncation at the older supplied linked-fee projection boundary: opening/closing times and order/execution/fee rows must fit its explicit RFC3339 microsecond profile. Accepted instants normalize to UTC before deduplication, window checks and hashing; equivalent offsets no longer conflict. The separate raw REST adapter continues retaining exact nanoseconds. Cash-path groups remain conservative microsecond groups, never invented fine-grained ordering. v0.165 checked admission evidence, v0.164 read-purpose fences and v0.163.1 related-path guards remain intact. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner acceptance remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

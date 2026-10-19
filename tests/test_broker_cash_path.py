@@ -106,8 +106,7 @@ def test_timezone_equivalent_group_report_does_not_depend_on_input_order():
 
 def test_submicrosecond_times_do_not_invent_a_verified_execution_order():
     value=data();times(value,'2026-10-17T18:00:01.000000001+00:00','2026-10-17T18:00:01.000000002+00:00')
-    report=audit(value)
-    assert 'AMBIGUOUS_SAME_TIME_FUNDING' in report['reasons'] and not report['declared_debits_covered']
+    with pytest.raises(ValueError,match='TIMESTAMP_PROFILE'):audit(value)
 
 
 def test_open_or_pending_cancel_orders_require_reservation_review_even_when_path_is_funded():

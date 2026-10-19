@@ -3,7 +3,6 @@
 No provider, credentials, storage, ledger mutation or spendable-funds authority.
 Sequential snapshots and caller-linked fees remain unverified even when matching.
 """
-from datetime import timezone
 from decimal import Decimal, localcontext
 import hashlib
 import re
@@ -26,9 +25,7 @@ def _fail(code):
 def _stamp(value):
     # The older linked-fee projector groups at microsecond precision. Do not
     # silently round nanosecond REST evidence into that different profile.
-    if not isinstance(value, str) or re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?(?:Z|[+-][0-9]{2}:[0-9]{2})', value) is None:
-        _fail('TIMESTAMP_PROFILE')
-    try: return contract.timestamp(value).astimezone(timezone.utc)
+    try: return projection._timestamp(value)
     except (ValueError, OverflowError): _fail('TIMESTAMP_PROFILE')
 
 
@@ -216,5 +213,5 @@ def fixture_report():
                   and 'POSITION_AVAILABILITY_MISSING' in missing['review_reasons'],
                   cash_disagreement_detected='DECLARED_BALANCE_DISAGREEMENT' in mismatch['review_reasons'])
     return dict(passed=result['linked_history_review']['cash_path']['declared_path_consistency_ok'] and all(checks.values()), review=result,
-                negative_checks=checks,
+                negative_checks=checks,timestamp_profile=projection.timestamp_fixture_report(),
                 source='FIXED_SUPPLIED_LINKED_FEE_FIXTURE', broker_connected=False, live_orders_enabled=False)

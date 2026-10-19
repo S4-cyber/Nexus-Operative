@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.165.0'
+REVISION = '0.165.1'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.165 retains checked submission admission samples with the exact preceding request head and immutable payload digest. Replay validates the new marker and preserves older untimed markers without inference. Retained admission samples now fence clock regression in later checked submissions, original-ID lookup and passive reviews across restarts and requests. The original admission sample is caller wall-clock seconds, not send/arrival time, synchronized time or a latency benchmark. v0.164 read-purpose sequences and the v0.163.1 related-path fix remain intact. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner acceptance remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.165.1 closes silent submicrosecond truncation at the older supplied linked-fee projection boundary: opening/closing times and order/execution/fee rows must fit its explicit RFC3339 microsecond profile. Accepted instants normalize to UTC before deduplication, window checks and hashing; equivalent offsets no longer conflict. The separate raw REST adapter continues retaining exact nanoseconds. Cash-path groups remain conservative microsecond groups, never invented fine-grained ordering. v0.165 checked admission evidence, v0.164 read-purpose fences and v0.163.1 related-path guards remain intact. Actual broker-paper, central budget/mixed-receipt review, sustained market, funding/live/cloud and independent/owner acceptance remain open. Rough implementation stays about40% (30–45%, low confidence),0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

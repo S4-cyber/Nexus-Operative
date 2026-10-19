@@ -732,6 +732,10 @@ def _validate(profile, result):
         _require(all(result[k] is False for k in ('source_attested', 'activity_coverage_verified',
             'ready_for_routing', 'automatic_continuation')), 'COLLECTION_AUTHORITY')
     if profile == 'balance':
+        from nexus.broker_fee_projection import TIMESTAMP_CHECKS,TIMESTAMP_FLAGS
+        timing=result['timestamp_profile']
+        _require(timing['source']=='SUPPLIED_TIMESTAMP_PROFILE_FIXTURE' and timing['passed'] is True and all(timing[k] is True for k in TIMESTAMP_CHECKS),'BALANCE_TIMESTAMP_PROFILE')
+        _require(all(timing[k] is False for k in TIMESTAMP_FLAGS),'BALANCE_TIMESTAMP_AUTHORITY')
         reviewed = result['review']
         _require(reviewed['balance_projection_evaluated'] is True and
             reviewed['linked_history_review']['projection_matches_declared_balances'] is True and

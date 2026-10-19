@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.165.0 (pre-release).** Checked submission markers retain their sampled local admission time, exact preceding request head and payload digest. Restarted replay and subsequent submission/lookup reviews enforce that retained clock floor. Older markers stay untimed; no send/arrival timestamp, benchmark, transport, account or routing authority is inferred. The v0.164 read-purpose and v0.163.1 related-path safeguards remain intact.
+**Current development build: 0.165.1 (pre-release).** The older supplied linked-fee projector now rejects finer-than-microsecond and unsupported timestamp profiles before normalization, and canonicalizes supported time zones to UTC before deduplication/hashing. Separate REST evidence keeps exact nanoseconds; cash-path review never invents an order among simultaneous executions. v0.165 admission samples and all existing read-purpose/path guards remain intact. No account, funds, transport, routing or release authority is introduced.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.

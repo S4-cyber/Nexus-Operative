@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.177.1. Branch: `development/windows-portal-foundation`.
+Revision: 0.177.2. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.177.1 closes every read-only SQLite integrity-check connection before the staged order-offload directory is renamed or removed. v0.177.0 exact-source Windows release evidence exposed the handle leak because Windows correctly locks open database files; Linux had allowed the same open files to move and be deleted. A publication regression now refuses the rename unless all integrity handles are closed. The copy-only scope, fail-closed gates, source preservation, OFF defaults and lack of execution/release authority are unchanged. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.177.2 gives the shared public-discovery request budget a bounded retry for SQLite BUSY/LOCKED writer contention. Exact v0.177.1 Windows CI admitted only 8 of 12 available slots because lock timeout failures were conservatively refused alongside 18 legitimate quota denials. The repaired contract requires exactly 12 durable admissions and 18 explicit EXHAUSTED outcomes; unresolved contention still fails closed after 30 seconds with a fixed code. The 36-request hourly cap, commit-before-transport order, OFF defaults, UI and lack of provider/execution/release authority are unchanged. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

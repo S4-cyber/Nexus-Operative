@@ -6,6 +6,7 @@ import threading
 import pytest
 
 from nexus.found_market_budget import SharedRequestBudget
+from nexus import found_market_budget as budget_module
 from nexus import found_markets as fm
 
 NOW = 1_800_000_000
@@ -41,12 +42,54 @@ def test_concurrent_instances_never_over_admit(tmp_path):
     path=tmp_path/'budget.sqlite3';results=[];lock=threading.Lock()
     def run(index):
         try:SharedRequestBudget(path,limit=12).admit(lambda:NOW);value=True
-        except ValueError:value=False
+        except ValueError as error:value=str(error)
         with lock:results.append(value)
     threads=[threading.Thread(target=run,args=(i,)) for i in range(30)]
     for thread in threads:thread.start()
     for thread in threads:thread.join()
-    assert sum(results)==12 and SharedRequestBudget(path,limit=12).inspect()['admissions']==12
+    assert results.count(True)==12
+    assert results.count('FOUND_MARKET_BUDGET_EXHAUSTED')==18
+    assert SharedRequestBudget(path,limit=12).inspect()['admissions']==12
+
+
+def test_transient_sqlite_writer_contention_retries_without_losing_capacity(tmp_path,monkeypatch):
+    path=tmp_path/'budget.sqlite3';budget=SharedRequestBudget(path,limit=2)
+    budget.admit(lambda:NOW)
+    real_connect=sqlite3.connect;raised=[]
+    class BusyOnce:
+        def __init__(self,db):self.db=db
+        def __getattr__(self,name):return getattr(self.db,name)
+        def execute(self,sql,*args):
+            if sql=='BEGIN IMMEDIATE' and not raised:
+                raised.append(True);error=sqlite3.OperationalError('private contention detail')
+                error.args=('database is locked',)
+                raise error
+            return self.db.execute(sql,*args)
+    def connect(*args,**kwargs):
+        db=real_connect(*args,**kwargs)
+        return BusyOnce(db) if not raised else db
+    monkeypatch.setattr(budget_module.sqlite3,'connect',connect)
+    assert budget.admit(lambda:NOW+1)['remaining']==0
+    assert raised==[True] and budget.inspect()['admissions']==2
+
+
+def test_sqlite_writer_contention_timeout_is_fixed_and_preserves_history(tmp_path,monkeypatch):
+    path=tmp_path/'budget.sqlite3';budget=SharedRequestBudget(path,limit=2)
+    budget.admit(lambda:NOW);before=path.read_bytes();real_connect=sqlite3.connect
+    class AlwaysBusy:
+        def __init__(self,db):self.db=db
+        def __getattr__(self,name):return getattr(self.db,name)
+        def execute(self,sql,*args):
+            if sql=='BEGIN IMMEDIATE':
+                error=sqlite3.OperationalError('private contention detail')
+                error.sqlite_errorcode=sqlite3.SQLITE_LOCKED
+                raise error
+            return self.db.execute(sql,*args)
+    monkeypatch.setattr(budget_module.sqlite3,'connect',lambda *a,**k:AlwaysBusy(real_connect(*a,**k)))
+    monkeypatch.setattr(budget_module,'LOCK_RETRY_SECONDS',0.0)
+    with pytest.raises(ValueError,match='^FOUND_MARKET_BUDGET_CONTENTION_TIMEOUT$'):
+        budget.admit(lambda:NOW+1)
+    assert path.read_bytes()==before and budget.inspect()['admissions']==1
 
 
 def test_malformed_sidecars_links_and_oversize_fail_closed(tmp_path):

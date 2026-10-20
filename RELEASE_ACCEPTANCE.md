@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.177.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.177.2 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,8 +36,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, fourteen Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | v0.177.1 source-fingerprinted report `validation/release_trials_0_177_1.json` verifies all sixteen local profiles against 347 files / `5d7aec1cd4980de8e8b330b319cf04ac8d95368bccf221db4a913b948367de21`; report SHA256 `262de076ea23e39df01e7be2a1c85529e796f5f3fbd877861f27e35117b1f258`; actual broker/market/native-profile acceptance remains open |
-| Windows packaging and data recovery | Exact v0.176.0 all green; v0.177.1 pending | v0.177.0 security and browser-help passed, but Windows release evidence exposed open SQLite integrity handles in order offload. v0.177.1 closes each handle before staged publication and must pass exact-source native regression, release evidence and installer/tool smoke; ordinary-user private-volume/profile/ACL, multi-epoch rotation/compaction, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
+| Integrated local trials | Bounded offline trials passed | v0.177.2 source-fingerprinted report `validation/release_trials_0_177_2.json` verifies all sixteen local profiles against 347 files / `3a04e339dd8a1b92669d1a2dae2af3dc806b2cc9572edaac31738518006ce882`; report SHA256 `2ed3f208329c276fe3a14d9faf3a5a81b965b1b94c194dd3b1e752c7e1de7d9b`; actual broker/market/native-profile acceptance remains open |
+| Windows packaging and data recovery | Exact v0.177.1 security/safety green; v0.177.2 packaging pending | v0.177.1 fixed the offload handle leak and passed all safety/browser/evidence jobs, but its Windows full-suite packaging run under-admitted the shared public-discovery request budget during writer contention and skipped packaging. v0.177.2 adds bounded BUSY/LOCKED retry without relaxing the cap and must pass exact-source native regression, release evidence and installer/tool smoke; ordinary-user private-volume/profile/ACL, multi-epoch rotation/compaction, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |

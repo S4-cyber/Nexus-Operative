@@ -19,6 +19,23 @@ WINDOW_SECONDS = 3600
 DEFAULT_LIMIT = 36
 MAX_DATABASE_BYTES = 1024 * 1024
 MAX_SEQUENCE = 2**63 - 2
+LOCK_RETRY_SECONDS = 30.0
+LOCK_RETRY_INTERVAL_SECONDS = 0.01
+SQLITE_LOCK_CODES = (getattr(sqlite3, 'SQLITE_BUSY', 5), getattr(sqlite3, 'SQLITE_LOCKED', 6))
+SQLITE_310_LOCK_MESSAGES = (('database is locked',), ('database table is locked',), ('database schema is locked',))
+
+
+class _LockContention(Exception):
+    """Internal bounded-retry signal; never exposes SQLite error text."""
+
+
+def _lock_contention(error):
+    code = getattr(error, 'sqlite_errorcode', None)
+    if type(code) is int:
+        return (code & 0xFF) in SQLITE_LOCK_CODES
+    # Python 3.10 does not expose sqlite_errorcode. Match only SQLite's fixed
+    # lock messages there; arbitrary error text is never returned to callers.
+    return error.args in SQLITE_310_LOCK_MESSAGES
 
 
 def _fail(code):
@@ -59,7 +76,9 @@ class SharedRequestBudget:
             mode = '?mode=rw' if write else '?mode=ro'
             try:
                 db = sqlite3.connect(self.path.resolve().as_uri() + mode, uri=True, timeout=5)
-            except sqlite3.Error:
+            except sqlite3.Error as error:
+                if _lock_contention(error):
+                    raise _LockContention from None
                 _fail('DATABASE_UNAVAILABLE')
             try:
                 if not write:
@@ -85,8 +104,10 @@ class SharedRequestBudget:
                 return db
             except ValueError:
                 db.close();raise
-            except sqlite3.Error:
+            except sqlite3.Error as error:
                 db.close()
+                if _lock_contention(error):
+                    raise _LockContention from None
                 _fail('DATABASE_INVALID')
         _fail('INITIALIZATION_INCOMPLETE')
 
@@ -105,7 +126,9 @@ class SharedRequestBudget:
                 _fail('SCHEMA')
             binding = db.execute('SELECT schema,last_seen FROM binding LIMIT 2').fetchall()
             rows = db.execute('SELECT seq,admitted_at FROM admissions ORDER BY seq LIMIT ?', (self.limit + 2,)).fetchall()
-        except sqlite3.Error:
+        except sqlite3.Error as error:
+            if _lock_contention(error):
+                raise _LockContention from None
             _fail('DATABASE_INVALID')
         if len(binding) != 1 or binding[0][0] != SCHEMA:
             _fail('BINDING')
@@ -131,37 +154,54 @@ class SharedRequestBudget:
         """Read without creating a missing journal."""
         if not self._check():
             return dict(admissions=0, last_seen=0.0, limit=self.limit, window_seconds=WINDOW_SECONDS)
-        with closing(self._connect()) as db:
-            last_seen, _, times = self._load(db)
+        try:
+            with closing(self._connect()) as db:
+                last_seen, _, times = self._load(db)
+        except _LockContention:
+            _fail('DATABASE_UNAVAILABLE')
         return dict(admissions=len(times), last_seen=last_seen, limit=self.limit, window_seconds=WINDOW_SECONDS)
 
     def admit(self, admission):
         """Commit one slot before external IO; sample time after the write lock."""
         if not callable(admission):
             _fail('CLOCK_SOURCE')
-        denied = False
-        with closing(self._connect(write=True)) as db:
+        deadline = time.monotonic() + LOCK_RETRY_SECONDS
+        while True:
+            denied = False
             try:
-                last_seen, sequence, _ = self._load(db)
-                now = _time(admission())
-                if now < last_seen:
-                    _fail('CLOCK_REGRESSION')
-                db.execute('DELETE FROM admissions WHERE admitted_at <= ?', (now - WINDOW_SECONDS,))
-                remaining = db.execute('SELECT COUNT(*) FROM admissions').fetchone()[0]
-                if type(remaining) is not int or not 0 <= remaining <= self.limit:
-                    _fail('ROW_CAP')
-                db.execute('UPDATE binding SET last_seen=?', (now,))
-                if remaining >= self.limit:
-                    denied = True
-                else:
-                    if sequence >= MAX_SEQUENCE:
-                        _fail('SEQUENCE_CAP')
-                    db.execute('INSERT INTO admissions VALUES (?, ?)', (sequence + 1, now))
-                self._load(db)
-                db.commit()
-            except BaseException:
-                db.rollback()
-                raise
+                with closing(self._connect(write=True)) as db:
+                    try:
+                        last_seen, sequence, _ = self._load(db)
+                        now = _time(admission())
+                        if now < last_seen:
+                            _fail('CLOCK_REGRESSION')
+                        db.execute('DELETE FROM admissions WHERE admitted_at <= ?', (now - WINDOW_SECONDS,))
+                        remaining = db.execute('SELECT COUNT(*) FROM admissions').fetchone()[0]
+                        if type(remaining) is not int or not 0 <= remaining <= self.limit:
+                            _fail('ROW_CAP')
+                        db.execute('UPDATE binding SET last_seen=?', (now,))
+                        if remaining >= self.limit:
+                            denied = True
+                        else:
+                            if sequence >= MAX_SEQUENCE:
+                                _fail('SEQUENCE_CAP')
+                            db.execute('INSERT INTO admissions VALUES (?, ?)', (sequence + 1, now))
+                        self._load(db)
+                        db.commit()
+                    except sqlite3.Error as error:
+                        db.rollback()
+                        if _lock_contention(error):
+                            raise _LockContention from None
+                        _fail('DATABASE_INVALID')
+                    except BaseException:
+                        db.rollback()
+                        raise
+                break
+            except _LockContention:
+                remaining_wait = deadline - time.monotonic()
+                if remaining_wait <= 0:
+                    _fail('CONTENTION_TIMEOUT')
+                time.sleep(min(LOCK_RETRY_INTERVAL_SECONDS, remaining_wait))
         if denied:
             _fail('EXHAUSTED')
         return dict(admitted=True, remaining=self.limit - remaining - 1,

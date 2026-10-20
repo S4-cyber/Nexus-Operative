@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.177.1, Windows SQLite-handle correction for the application-closed physical-copy foundation. Read the newest version section and generated roadmap; v0.177.1 exact-source CI, capacity-reclaiming compaction/rotation and actual broker/market acceptance remain open.
+Current checkpoint: v0.177.2, bounded Windows shared-request-budget contention recovery. Read the newest version section and generated roadmap; v0.177.2 exact-source CI, capacity-reclaiming compaction/rotation and actual broker/market acceptance remain open.
+
+## v0.177.2 bounded shared-budget contention recovery
+
+Exact v0.177.1 security run 39385781709 and all three safety/browser/evidence jobs in run 39385781778 passed. Windows run 39385781816 completed 3,379 passes and 19 skips but failed `test_concurrent_instances_never_over_admit`: only 8 of 12 available shared public-discovery request slots committed. The test had classified every `ValueError` as an expected denial, so SQLite lock timeout failures were indistinguishable from the 18 legitimate `EXHAUSTED` outcomes. The budget never over-admitted, but safe capacity was lost and packaging was skipped.
+
+v0.177.2 retries only SQLite BUSY/LOCKED writer contention within a 30-second monotonic bound, rolling back and closing each failed attempt. Exhausted capacity, invalid storage, clock regression and every other error remain immediate fail-closed outcomes. If lock coordination does not recover, callers receive only fixed `FOUND_MARKET_BUDGET_CONTENTION_TIMEOUT`; SQLite/path details remain suppressed. The strengthened concurrency regression requires exactly 12 durable admissions plus 18 exact exhaustion denials, and deterministic tests cover one recovered lock and a timed-out lock with unchanged history.
+
+The fixed 36-request/hour upper bound, shared-local-root scope, durable commit-before-transport behavior, explicit discovery start, UI, seven tabs, black/bright-purple help, permissions, risk controls and all false broker/funds/live/release flags are unchanged. Exact-source regression, release evidence, public security and Windows packaging/installer execution remain mandatory. Capacity-reclaiming order rotation, authorized broker paper, sustained real feeds, native private-profile/ACL recovery, funding/live/cloud and owner approval remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages.
+
+Final v0.177.2 local validation: 3,401 Python tests passed with one existing Starlette/httpx deprecation warning; the focused market/release/roadmap/workflow/packaging set passed 215 tests. All sixteen offline profiles and saved-evidence verification matched 347 source files / `3a04e339dd8a1b92669d1a2dae2af3dc806b2cc9572edaac31738518006ce882`; `validation/release_trials_0_177_2.json` SHA256 is `2ed3f208329c276fe3a14d9faf3a5a81b965b1b94c194dd3b1e752c7e1de7d9b`. Compilation, dependency, generated-roadmap, controller and public-artifact checks remain required before publication. Native Windows acceptance still requires exact-source CI; no external operation occurred.
 
 ## v0.177.1 Windows offload handle correction
 

@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.177.1 (pre-release).** The application-closed, copy-only order offload now closes every read-only SQLite integrity handle before staged publication and cleanup on Windows. The stopped, flat, reconciled and logically archived gate, full verification, source preservation and lack of compaction/capacity/execution/release authority remain unchanged. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.177.2 (pre-release).** The shared public-discovery request budget now retries only SQLite BUSY/LOCKED writer contention within a bounded window while preserving the fixed hourly cap and fail-closed storage behavior. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.177.2 bounded shared-budget contention recovery
+
+Exact v0.177.1 security run 39385781709 and safety/browser/evidence run 39385781778 passed. Windows run 39385781816 completed 3,379 tests but failed before packaging because concurrent shared-budget instances admitted 8 of 12 safe slots. SQLite writer lock timeouts had been conservatively grouped with expected cap exhaustion.
+
+The budget now retries only typed SQLite BUSY/LOCKED contention for at most 30 monotonic seconds. Every failed attempt closes its connection and rolls back; a continued lock produces a fixed timeout code with no SQLite/path detail. The concurrency contract requires exactly 12 committed admissions and 18 exact exhaustion denials. The 36-request/hour limit, commit-before-transport ordering, explicit public-discovery start, UI, permissions and authority remain unchanged. Exact-source Windows execution remains required.
+
+Local validation passed 3,401 tests, the 215-test focused set and all sixteen source-fingerprinted profiles. Saved evidence matched 347 files / `3a04e339dd8a1b92669d1a2dae2af3dc806b2cc9572edaac31738518006ce882`; report SHA256 is `2ed3f208329c276fe3a14d9faf3a5a81b965b1b94c194dd3b1e752c7e1de7d9b`. This does not replace exact-source Windows acceptance.
 
 ## v0.177.1 Windows offload handle correction
 

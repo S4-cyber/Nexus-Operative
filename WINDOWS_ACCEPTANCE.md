@@ -171,6 +171,12 @@ Local source success cannot establish private-volume ACLs, ordinary-user profile
 
 Local v0.177.0 validation passed 3,398 tests, the 125-test focused set, all sixteen source-fingerprinted profiles, saved-evidence verification, fourteen Node controllers, Portal syntax, compileall, dependency consistency and roadmap equality. This evidence has `native_windows_acceptance: false`; the exact-source Windows workflow remains the acceptance gate for the packaged command.
 
+## v0.177.2 candidate status
+
+Exact v0.177.1 public-security run 39385781709 and safety/browser/evidence run 39385781778 passed. Windows run 39385781816 reached 3,379 passes and 19 skips, then failed `test_concurrent_instances_never_over_admit` before packaging: 30 simultaneous budget clients produced 8 durable admissions rather than consuming all 12 available slots. The safety bound held, but writer lock timeout failures caused conservative under-admission.
+
+v0.177.2 retries only SQLite BUSY/LOCKED outcomes for a bounded 30-second monotonic window, closing each attempt. Continued contention remains fail closed under a fixed code, while exhaustion and all non-lock failures are never retried. The native contract now distinguishes the 12 expected successes from 18 exact quota denials. No UI, request cap, provider connection, account, execution or release authority changed. Exact-source Windows regression and the complete packaging/installer lifecycle remain mandatory.
+
 ## v0.177.1 candidate status
 
 Exact v0.177.0 security run 39335584198 and the browser-help job in safety run 39335584233 passed, but that run's release-evidence job failed in the operations child. The offload integrity pass used SQLite connection context managers, which finalize transactions but do not close connections. Linux permitted the staged files to be moved and removed with those handles open; Windows correctly retained file locks. v0.177.1 explicitly closes both read-only integrity handles before replay, publication and cleanup, and adds a platform-neutral regression that blocks rename while any tracked integrity handle remains open.

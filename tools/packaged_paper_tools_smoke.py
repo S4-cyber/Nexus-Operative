@@ -27,10 +27,12 @@ def _snapshot(root):
         for p in root.rglob('*') if p.is_file())
 
 
-def _call(command,args,env):
+def _call(command,args,env,*,timeout=30):
+    if type(timeout) not in (int,float) or not 1<=timeout<=60:
+        raise ValueError('PACKAGED_PAPER_TOOLS_TIMEOUT')
     process=subprocess.Popen([*command,*args],cwd=ROOT,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
         text=True,encoding='utf-8',errors='replace')
-    try:stdout,stderr=process.communicate(timeout=30)
+    try:stdout,stderr=process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
         # Only the smoke's own child tree, including the onefile bootloader.
         if os.name=='nt':subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],capture_output=True,timeout=10)
@@ -41,8 +43,11 @@ def _call(command,args,env):
     return process.returncode,stdout,stderr
 
 
-def _json_call(command,args,env):
-    code,stdout,stderr=_call(command,args,env)
+def _json_call(command,args,env,*,timeout=30):
+    # Preserve the original three-argument seam for default callers and tests;
+    # only the explicitly slower crypto check needs to override the bound.
+    result=_call(command,args,env) if timeout==30 else _call(command,args,env,timeout=timeout)
+    code,stdout,stderr=result
     _require(code==0 and not stderr,'CHILD_FAILED')
     try:return json.loads(stdout)
     except (ValueError,TypeError):raise ValueError('PACKAGED_PAPER_TOOLS_CHILD_JSON') from None
@@ -188,14 +193,17 @@ def run(command):
             set(catalog['commands'])=={'account-probe','activity','account-review','observation-crypto','order-offload','quality-review','provider-results','quote-capture','quote-evidence','recovery'} and all(catalog[k] is False for k in
             ('default_data_created','desktop_started','automatic_read','automatic_retry','broker_connected','live_orders_enabled','money_movement_enabled')) and
             catalog['emergency_stop_command']=='--emergency-stop','CATALOG')
-        encrypted=_json_call(command,['--paper-tool','observation-crypto','self-test'],env)
+        # The fixed encrypted-evidence self-tests are intentionally expensive
+        # and can approach 30 seconds on a constrained source or Windows runner.
+        # Only these two smoke children get the wider bounded startup/KDF budget.
+        encrypted=_json_call(command,['--paper-tool','observation-crypto','self-test'],env,timeout=60)
         _require(encrypted['passed'] is True and encrypted['roundtrip_matches'] is True and
             encrypted['ciphertext_randomized'] is True and encrypted['wrong_password_rejected'] is True and
             all(encrypted[k] is False for k in ('password_saved','vault_accessed','external_connections',
                 'original_plaintext_deleted','output_file_writes','ready_for_routing','live_orders_enabled')),
             'OBSERVATION_CRYPTO')
         from nexus.paper_quote_bundle import CHECKS as BUNDLE_CHECKS,FLAGS as BUNDLE_FLAGS
-        bundle=_json_call(command,['--paper-tool','quote-evidence','self-test'],env)
+        bundle=_json_call(command,['--paper-tool','quote-evidence','self-test'],env,timeout=60)
         _require(bundle['passed'] is True and all(bundle[k] is True for k in BUNDLE_CHECKS) and
             all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'QUOTE_EVIDENCE')
         code,stdout,stderr=_call(command,['--paper-tool','quote-evidence','seal'],env)

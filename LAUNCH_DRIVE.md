@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.181.0 replay-bound replacement epoch lineage
+
+New halted replacement journals carry a replay-validated content-free generation record bound to the exact predecessor archive manifest and prior epoch digest. Candidate, install-recovery and installed verification cross-check the chain, and a successive-rotation fixture proves generation 1 → 2 continuity without restoring retired commands into live capacity. v0.180 v1 candidate, recovery and interrupted-install marker records remain readable.
+
+This closes an audit-identity foundation only. It does not prove sustained multi-epoch capacity, prevent a deliberate caller-selected local simulation ID from being reused, retire source history, resume the engine, connect a broker, move funds or grant live/cloud/release authority. The packaged-tools harness retains its ordinary 30-second child bound and uses a bounded 60 seconds only for the two expensive encrypted-evidence self-tests (observation crypto and sealed quote evidence); crypto/runtime behavior is unchanged. Native Windows power-loss/private-volume/profile/ACL and exact-source workflows remain mandatory. No UI control or editable parameter changed; seven tabs, black/bright-purple help, OFF defaults and account/risk gates remain unchanged. The rough estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+The preceding v0.180.0 head `a5c10881429f946621f6bb4d93b62781afb75593` passed public security (39426790639), but safety run 39426790798 failed regression and release evidence while browser help passed, and Windows run 39426790658 failed install/test before packaging. Public annotations retain only exit code 1. Fresh v0.181.0 exact-source workflows must determine whether the bounded crypto-smoke correction and lineage changes are green.
+
+Final local validation passed 3,426 tests in the complete run before one collection-time generated-roadmap mismatch caused by regenerating `ROADMAP.md` after pytest had imported the prior roadmap module. The frozen-tree roadmap rerun passed 7/7; the final focused durable order/checkpoint/offload/packaging/release/roadmap set passed 75 tests. All sixteen bounded profiles passed and saved-evidence verification matched 347 source files / `d3a47f7e2a034672643ba121afd26c51169d140a756e3ec0d16fa122c030beb4`; `validation/release_trials_0_181_0.json` SHA256 is `ccb06a1c24061d8eb6201af2eb4df1d3ae96b0197bd8acc08761b20089a450a9`. This is not an uninterrupted fully green complete-suite claim and does not replace exact-source security, safety/browser/evidence or Windows packaging/installer CI.
+
 ## v0.180.0 interruption-recoverable halted replacement installation
 
 Exact v0.179.0 source `1e3cc62a031470b874bc9c4301e9f4dcd745b240` passed security 39415934750, all safety/browser/evidence jobs in 39415934794 and Windows regression/packaging/installer 39415934810.

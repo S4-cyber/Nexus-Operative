@@ -111,7 +111,8 @@ def test_prepare_replacement_publishes_halted_candidate_and_preserves_inputs(tmp
     result=order_offload.prepare_replacement(source,archive,candidate,application_closed=True)
     assert result['verified'] and result['replacement_candidate_only'] and result['new_destination']
     assert result['halted'] and result['flat'] and result['portfolio_reconciled']
-    assert result['commands']==3 and result['source_archived_orders']==2
+    assert result['commands']==4 and result['source_archived_orders']==2
+    assert result['generation']==1 and len(result['epoch_sha256'])==64
     assert result['source_preserved'] and result['archive_preserved']
     assert not result['capacity_reclaimed'] and not result['source_history_deleted']
     assert not result['automatic_install'] and not result['automatic_resume']
@@ -135,15 +136,32 @@ def test_replacement_rejects_archive_or_candidate_tamper(tmp_path):
     order_offload.create(source,archive,application_closed=True)
     order_offload.prepare_replacement(source,archive,candidate,application_closed=True)
     manifest=candidate/order_offload.REPLACEMENT_MANIFEST
-    document=json.loads(manifest.read_text());document['commands']=4
+    document=json.loads(manifest.read_text());document['commands']=5
     manifest.write_text(json.dumps(document))
     with pytest.raises(ValueError,match='REPLACEMENT_REPLAY_DISAGREEMENT'):
         order_offload.verify_replacement(archive,candidate)
-    document['commands']=3;manifest.write_text(json.dumps(document))
+    document['commands']=4;manifest.write_text(json.dumps(document))
     with sqlite3.connect(candidate/order_offload.ORDER_FILE) as db:
         db.execute("UPDATE commands SET payload='{}' WHERE sequence=1")
     with pytest.raises(ValueError,match='REPLACEMENT_CONTENT_DISAGREEMENT|RECOVERY_FAILED'):
         order_offload.verify_replacement(archive,candidate)
+
+
+def test_v1_replacement_candidate_remains_verifiable(tmp_path):
+    gateway=archived(tmp_path);source=gateway.path;archive=tmp_path/'archive';candidate=tmp_path/'candidate'
+    order_offload.create(source,archive,application_closed=True)
+    order_offload.prepare_replacement(source,archive,candidate,application_closed=True)
+    with sqlite3.connect(candidate/order_offload.ORDER_FILE) as db:
+        db.execute('DELETE FROM commands WHERE sequence=4')
+    manifest=candidate/order_offload.REPLACEMENT_MANIFEST;document=json.loads(manifest.read_text())
+    document['schema']=order_offload.REPLACEMENT_SCHEMA_V1
+    for key in ('source_epoch_sha256','candidate_epoch_sha256','candidate_generation'):document.pop(key)
+    document['commands']=3
+    document['candidate_recovery_sha256']=order_offload._snapshot(candidate/order_offload.ORDER_FILE)[1]
+    document['files']=order_offload._files(candidate)
+    manifest.write_text(json.dumps(document,sort_keys=True,indent=2)+'\n')
+    verified=order_offload.verify_replacement(archive,candidate)
+    assert verified['generation']==0 and verified['commands']==3
 
 
 def test_prepare_replacement_requires_fresh_external_destination_and_closed_assertion(tmp_path):
@@ -187,7 +205,8 @@ def test_install_replacement_reclaims_live_capacity_and_explicit_rollback_restor
     assert installed['source_preserved'] and not installed['source_history_deleted']
     assert not installed['automatic_resume'] and not installed['live_orders_enabled']
     report=DurableOrderGateway(source).recovery_report()
-    assert report['commands']==3 and report['halted'] and report['orders']==[]
+    assert report['commands']==4 and report['halted'] and report['orders']==[]
+    assert report['lineage']['generation']==1
     assert not (source.parent/order_offload.ROTATION_MARKER).exists()
     recovery_report=order_offload.verify_install_recovery(archive,recovery)
     assert recovery_report['source_commands']==source_commands and recovery_report['rollback_available']
@@ -195,6 +214,30 @@ def test_install_replacement_reclaims_live_capacity_and_explicit_rollback_restor
     assert rolled_back['restored'] and not rolled_back['capacity_reclaimed']
     assert before==(source.read_bytes(),portfolio.read_bytes())
     assert DurableOrderGateway(source).recovery_report()['commands']==source_commands
+
+
+def test_successive_replacements_form_replay_verified_epoch_lineage(tmp_path):
+    _,source,archive_0,candidate_1=prepared_install(tmp_path)
+    order_offload.install_replacement(source,archive_0,candidate_1,tmp_path/'recovery-0',application_closed=True)
+    first=DurableOrderGateway(source).recovery_report()['lineage']
+    assert first['generation']==1
+
+    gateway=DurableOrderGateway(source);gateway.reset()
+    for side in ('BUY','SELL'):
+        oid=side.lower();gateway.submit(oid,'BTC-USD',side,50,tier='terrestrial')
+        gateway.set_execution_terms(oid,2000,10)
+        gateway.simulate_quote_fill(oid,'fill',1,1,25,25,2,2001,2001)
+        gateway.cancel(oid)
+    gateway.emergency_halt();gateway.archive_terminal('epoch_1')
+    archive_1=tmp_path/'archive-1';candidate_2=tmp_path/'candidate-2'
+    order_offload.create(source,archive_1,application_closed=True)
+    prepared=order_offload.prepare_replacement(source,archive_1,candidate_2,application_closed=True)
+    second=DurableOrderGateway(candidate_2/order_offload.ORDER_FILE).recovery_report()['lineage']
+    assert prepared['generation']==2 and second['generation']==2
+    assert second['predecessor_epoch_sha256']==first['epoch_sha256']
+    assert second['predecessor_archive_sha256']==order_offload._manifest_entry(archive_1)['sha256']
+    installed=order_offload.install_replacement(source,archive_1,candidate_2,tmp_path/'recovery-1',application_closed=True)
+    assert installed['generation']==2 and DurableOrderGateway(source).recovery_report()['lineage']==second
 
 
 def test_interrupted_pair_install_blocks_gateway_until_explicit_recovery(tmp_path,monkeypatch):
@@ -234,6 +277,28 @@ def test_install_requires_closed_assertion_fresh_external_recovery_and_intact_ma
     document['source_commands']+=1;manifest.write_text(json.dumps(document))
     with pytest.raises(ValueError,match='INSTALL_RECOVERY_REPLAY_DISAGREEMENT'):
         order_offload.verify_install_recovery(archive,recovery)
+
+
+def test_v1_install_recovery_manifest_remains_verifiable(tmp_path):
+    _,source,archive,candidate=prepared_install(tmp_path);recovery=tmp_path/'recovery'
+    order_offload.install_replacement(source,archive,candidate,recovery,application_closed=True)
+    manifest=recovery/order_offload.INSTALL_MANIFEST;document=json.loads(manifest.read_text())
+    document['schema']=order_offload.INSTALL_SCHEMA_V1
+    document.pop('candidate_generation');document.pop('candidate_epoch_sha256')
+    manifest.write_text(json.dumps(document,sort_keys=True,indent=2)+'\n')
+    verified=order_offload.verify_install_recovery(archive,recovery)
+    assert verified['candidate_generation']==0 and verified['candidate_epoch_sha256']=='0'*64
+
+
+def test_v1_interrupted_install_marker_remains_recoverable(tmp_path):
+    _,source,archive,candidate=prepared_install(tmp_path);recovery=tmp_path/'recovery'
+    order_offload.install_replacement(source,archive,candidate,recovery,application_closed=True)
+    transaction_sha=order_offload._manifest_entry(recovery,order_offload.INSTALL_MANIFEST)['sha256']
+    marker=order_offload._write_rotation_marker(source.parent,transaction_sha)
+    document=json.loads(marker.read_text());document['schema']=order_offload.INSTALL_SCHEMA_V1
+    marker.write_text(json.dumps(document,sort_keys=True)+'\n')
+    recovered=order_offload.recover_install(source,archive,recovery,application_closed=True)
+    assert recovered['restored'] and recovered['halted'] and not marker.exists()
 
 
 def test_uncertain_marker_clear_restores_gateway_fence(tmp_path,monkeypatch):

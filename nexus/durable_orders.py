@@ -4,6 +4,7 @@ Requests verify retained command history and use replay-validated checkpoints.
 Fresh processes replay prefixes before accepting cached state.
 No positions or account balances are inferred from reference-notional fills.
 """
+import copy
 import json
 import math
 import os
@@ -19,7 +20,7 @@ from nexus.execution_capacity import report as capacity_report, CONTROL_RESERVE
 MAX_COMMANDS = 10000
 MAX_RETAINED_COMMANDS = 100000
 ROTATION_MARKER = 'nexus-order-rotation.intent'
-METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal'))
+METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal', 'bind_replacement_epoch'))
 
 
 class DurableOrderGateway:
@@ -153,9 +154,9 @@ class DurableOrderGateway:
                 execution_portfolio.compare(portfolio,gateway.account)
             if method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
                 raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
-        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
         result = getattr(gateway, method)(*args, **kwargs)
-        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
         if before != after:
             if method=='link_portfolio':
                 execution_portfolio.link(portfolio,gateway.account)
@@ -169,7 +170,7 @@ class DurableOrderGateway:
                     require_entry(order['tier'],order['notional'])
                 execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
             # Halt/cancel/reset must remain possible when normal intake is full.
-            if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill'):
+            if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill','bind_replacement_epoch'):
                 raise ValueError('ORDER_JOURNAL_CAP_REACHED')
             if (active_count >= MAX_COMMANDS and method!='archive_terminal') or count>=MAX_RETAINED_COMMANDS:
                 raise ValueError('ORDER_JOURNAL_CAP_REACHED')
@@ -231,6 +232,9 @@ class DurableOrderGateway:
     def archive_terminal(self,batch_id):
         return self._call('archive_terminal',batch_id)
 
+    def bind_replacement_epoch(self,generation,predecessor_archive_sha256,predecessor_epoch_sha256):
+        return self._call('bind_replacement_epoch',generation,predecessor_archive_sha256,predecessor_epoch_sha256)
+
     def connections(self):
         from nexus.alpaca_paper_contract import catalogue
         return {**OrderGateway().connections(),'alpaca_paper_contract':catalogue()}
@@ -272,6 +276,9 @@ class DurableOrderGateway:
                     retention=dict(command_history_deleted=False,checkpoint_limit=2,journal_command_limit=MAX_COMMANDS,retained_history_command_limit=MAX_RETAINED_COMMANDS),
                     capacity=capacity_report(count-gateway.archival_boundary,len(gateway.intents),gateway.halted,MAX_COMMANDS,
                         retained_commands=count,retained_limit=MAX_RETAINED_COMMANDS),
+                    lineage=(copy.deepcopy(gateway.epoch_lineage) if gateway.epoch_lineage is not None else
+                             dict(generation=0,epoch_sha256='0'*64,predecessor_archive_sha256=None,
+                                  predecessor_epoch_sha256=None)),
                     archival=dict(active_epoch_commands=count-gateway.archival_boundary,
                                   retained_commands=count,retained_limit=MAX_RETAINED_COMMANDS,
                                   archived_order_count=len(gateway.archived_intents),archived_order_limit=MAX_ARCHIVED_INTENTS,

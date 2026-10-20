@@ -35,6 +35,8 @@ v0.179.0 adds only an explicit application-closed offline replacement-candidate 
 
 v0.180.0 adds advanced application-closed install/recovery/rollback commands. A retained rotation marker makes ordinary order-gateway startup fail closed after an interrupted pair replacement; keep Nexus closed and use the documented `recover-install` command rather than deleting the marker. A completed install remains halted. The Portal, seven tabs, OFF defaults, permissions, account checks and risk limits are unchanged. See `ORDER_OFFLOAD.md`.
 
+v0.181.0 adds content-free replayed generation lineage to newly prepared replacement journals so successive rotations can be audited against their exact predecessor archive. It does not resume Nexus, restore old orders into live capacity or authorize ID reuse, providers, funds or live execution.
+
 
 v0.86: To Do → View Release Roadmap displays both product stages and technical evidence tracks, including secure deposits/available cash, connected broker paper, governed live execution, computer-off operation and final 1.0 acceptance. These entries are plans, not permissions or connected features. Current funding remains preview-only and current Engage remains virtual/fixed-policy only. The final release requires accepted production workflows, testing, reconciliation, security/risk review, recovery and explicit owner approval; it does not automatically activate live money.
 

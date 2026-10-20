@@ -26,6 +26,7 @@ def number(value, zero=False):
 
 MAX_ARCHIVED_INTENTS=10000
 MAX_ARCHIVE_BATCHES=100
+ZERO_SHA256='0'*64
 
 class AccountingOrderGateway(OrderGateway):
     def __init__(self, **kwargs):
@@ -39,6 +40,29 @@ class AccountingOrderGateway(OrderGateway):
         self.archived_intents = {}
         self.archive_batches = {}
         self.archival_boundary = 0
+        self.epoch_lineage = None
+
+    def bind_replacement_epoch(self,generation,predecessor_archive_sha256,predecessor_epoch_sha256):
+        """Bind a fresh halted journal to its exact predecessor without importing history."""
+        if (type(generation) is not int or not 1<=generation<=1000000 or
+            not isinstance(predecessor_archive_sha256,str) or len(predecessor_archive_sha256)!=64 or
+            any(character not in '0123456789abcdef' for character in predecessor_archive_sha256) or
+            not isinstance(predecessor_epoch_sha256,str) or len(predecessor_epoch_sha256)!=64 or
+            any(character not in '0123456789abcdef' for character in predecessor_epoch_sha256) or
+            (generation==1)!=(predecessor_epoch_sha256==ZERO_SHA256)):
+            raise ValueError('INVALID_REPLACEMENT_EPOCH_LINEAGE')
+        body=dict(generation=generation,predecessor_archive_sha256=predecessor_archive_sha256,
+                  predecessor_epoch_sha256=predecessor_epoch_sha256)
+        lineage={**body,'epoch_sha256':hashlib.sha256(json.dumps(body,sort_keys=True,separators=(',',':')).encode()).hexdigest()}
+        if self.epoch_lineage is not None:
+            if self.epoch_lineage!=lineage:raise ValueError('REPLACEMENT_EPOCH_LINEAGE_CONFLICT')
+            return {**copy.deepcopy(self.epoch_lineage),'idempotent_replay':True}
+        if (not self.halted or not self.portfolio_linked or self.account is None or
+            self.account['positions'] or self.intents or self.archived_intents or self.executions or
+            self.quote_events or self.order_terms or self.archive_batches):
+            raise ValueError('REPLACEMENT_EPOCH_REQUIRES_FRESH_HALTED_FLAT_ACCOUNT')
+        self.epoch_lineage=lineage
+        return {**copy.deepcopy(lineage),'idempotent_replay':False}
 
     def lookup(self,client_order_id):
         return self.intents.get(client_order_id) or self.archived_intents.get(client_order_id)

@@ -24,6 +24,19 @@ def test_actual_source_child_smoke_covers_all_ten_tools_without_default_data():
     assert all(value not in json.dumps(r) for value in ('01234567-89ab-cdef-0123-456789abcdef','opening.json','private.sqlite3','802'))
 
 
+def test_only_encrypted_evidence_smokes_may_use_wider_bounded_child_timeout(monkeypatch):
+    seen=[]
+    class Process:
+        returncode=0
+        def communicate(self,timeout):seen.append(timeout);return ('{}','')
+    monkeypatch.setattr(smoke.subprocess,'Popen',lambda *args,**kwargs:Process())
+    assert smoke._json_call(['python'],['ordinary'],{},timeout=30)=={}
+    assert smoke._json_call(['python'],['crypto'],{},timeout=60)=={}
+    assert seen==[30,60]
+    with pytest.raises(ValueError,match='PACKAGED_PAPER_TOOLS_TIMEOUT'):
+        smoke._json_call(['python'],['invalid'],{},timeout=61)
+
+
 @pytest.mark.parametrize('args',[['--paper-tool'],['--paper-tool','unknown','PRIVATE_VALUE'],['--api-secret','PRIVATE_VALUE'],['--paper-tool','list','PRIVATE_VALUE']])
 def test_bad_dispatch_never_configures_or_echoes_arguments(monkeypatch,capsys,args):
     monkeypatch.setattr(desktop,'configure',lambda:pytest.fail('desktop initialized'))

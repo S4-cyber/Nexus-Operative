@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.180.0, interruption-recoverable order-history replacement installation. Read the newest version section and generated roadmap; exact-source CI, native Windows power-loss/private-volume acceptance, multi-epoch pressure and actual broker/market acceptance remain open.
+Current checkpoint: v0.181.0, replay-bound replacement epoch lineage. Read the newest version section and generated roadmap; exact-source CI, native Windows power-loss/private-volume acceptance, multi-epoch pressure and actual broker/market acceptance remain open.
+
+## v0.181.0 replay-bound replacement epoch lineage
+
+New v2 replacement candidates append one durable lineage command only after the fresh synthetic account is linked, flat and halted. Recovery and checkpoints replay a bounded generation, the exact predecessor archive-manifest digest, the prior epoch digest and a deterministic epoch digest. Candidate, install-recovery and installed-pair verification cross-check the content-free values. A two-rotation fixture proves generation 1 → 2 continuity; v0.180 v1 candidate, install-recovery and interrupted-install marker records remain readable.
+
+The v0.180.0 remote head `a5c10881429f946621f6bb4d93b62781afb75593` passed public-security run 39426790639, but safety run 39426790798 failed its regression and release-evidence jobs while browser help passed, and Windows run 39426790658 failed its install/test step before packaging. Public annotations expose only exit code 1. v0.181.0 must obtain fresh exact-source runs; do not infer that its local correction of the reproducible observation-crypto smoke timeout resolves every remote failure.
+
+Lineage imports no retired orders and is not a retained-ID denylist. It distinguishes generations but does not itself prevent a deliberate caller-selected local simulation ID from being reused. Full multi-epoch pressure, source-retirement policy, native Windows power-loss/private-volume/profile/ACL behavior, exact-source CI and independent acceptance remain open. No UI control or modifiable parameter changed; preserve seven tabs, black/bright-purple bottom-right help, OFF defaults and every account/risk/stop gate. No broker, network, funds, live, cloud or release authority was added. Keep rough implementation at about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+The packaged-tools harness retains its ordinary 30-second child bound and permits only the two deliberately expensive encrypted-evidence self-tests (observation crypto and sealed quote evidence) to use a bounded 60-second child timeout. This changes neither crypto parameters nor runtime behavior. Final local validation passed 3,426 tests in the complete run before one collection-time generated-roadmap mismatch caused by regenerating `ROADMAP.md` after pytest imported the prior roadmap module; the frozen-tree roadmap rerun passed 7/7 and the final focused durable order/checkpoint/offload/packaging/release/roadmap set passed 75 tests. All sixteen bounded profiles and saved-evidence verification matched 347 source files / `d3a47f7e2a034672643ba121afd26c51169d140a756e3ec0d16fa122c030beb4`; `validation/release_trials_0_181_0.json` SHA256 is `ccb06a1c24061d8eb6201af2eb4df1d3ae96b0197bd8acc08761b20089a450a9`. Do not treat test counts as percentage completion or claim an uninterrupted fully green complete run.
 
 ## v0.180.0 interruption-recoverable halted replacement installation
 

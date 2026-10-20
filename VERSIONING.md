@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.180.0 (pre-release).** The application-closed order-offload flow can retain an exact source recovery copy, install the verified halted replacement behind a fail-closed interruption marker, explicitly recover an incomplete pair replacement and roll a completed install back. It reclaims live journal capacity while preserving history externally and never resumes operation or grants authority. Exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.181.0 (pre-release).** Newly prepared halted replacements retain a replay-validated content-free generation record bound to the exact predecessor archive manifest and prior epoch digest. This makes successive rotations distinguishable without importing retired orders. v0.180 v1 candidate/recovery manifests and interrupted-install markers remain readable. Multi-epoch pressure, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.181.0 replay-bound replacement epoch lineage
+
+Every newly prepared v2 replacement journal adds one durable `bind_replacement_epoch` command after it is initialized, portfolio-linked and halted. The content-free record contains a bounded generation number, the exact predecessor archive-manifest SHA-256 and the prior epoch SHA-256; its own digest is deterministically replayed through ordinary recovery and checkpoints. Candidate, install-recovery and installed-pair verification require these values to agree. A two-rotation regression proves generation 1 → 2 continuity while old v1 candidate, recovery and interrupted-install marker records remain readable.
+
+Lineage does not copy retired order details into the live journal, delete any archive/recovery artifact, prevent arbitrary callers from deliberately reusing an old local simulation ID, resume the runner, connect a provider or grant funds/live/release authority. Full multi-epoch pressure, ID-policy review, native power-loss/private-volume/profile acceptance and exact-source CI remain open. No Portal control or modifiable parameter changed, so the seven tabs and black/bright-purple bottom-right help contract are unchanged.
+
+The packaged-tools harness keeps the ordinary 30-second child limit and widens only the two expensive encrypted-evidence self-tests (observation crypto and sealed quote evidence) to a bounded 60 seconds; crypto parameters and runtime behavior are unchanged. The complete local run passed 3,426 tests before one collection-time generated-roadmap mismatch caused by regenerating the roadmap after import; the frozen-tree roadmap rerun passed 7/7 and the final focused set passed 75 tests. All sixteen profiles and saved-evidence verification matched 347 source files / `d3a47f7e2a034672643ba121afd26c51169d140a756e3ec0d16fa122c030beb4`; `validation/release_trials_0_181_0.json` SHA256 is `ccb06a1c24061d8eb6201af2eb4df1d3ae96b0197bd8acc08761b20089a450a9`. Exact-source CI remains mandatory; this is not an uninterrupted fully green complete-suite claim.
 
 ## v0.180.0 interruption-recoverable halted replacement installation
 

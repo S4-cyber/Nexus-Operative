@@ -52,6 +52,31 @@ def test_invalid_transition_not_committed(tmp_path):
     assert g.recovery_report()['commands'] == 1
 
 
+def test_replacement_epoch_lineage_requires_fresh_halted_flat_state_and_replays(tmp_path):
+    path=tmp_path/'orders.sqlite3';g=DurableOrderGateway(path)
+    with pytest.raises(ValueError,match='FRESH_HALTED_FLAT'):
+        g.bind_replacement_epoch(1,'a'*64,'0'*64)
+    g.initialize_account(1000);g.link_portfolio();g.emergency_halt()
+    bound=g.bind_replacement_epoch(1,'a'*64,'0'*64)
+    assert bound['generation']==1 and len(bound['epoch_sha256'])==64
+    assert g.bind_replacement_epoch(1,'a'*64,'0'*64)['idempotent_replay']
+    with pytest.raises(ValueError,match='LINEAGE_CONFLICT'):
+        g.bind_replacement_epoch(1,'b'*64,'0'*64)
+    restored=DurableOrderGateway(path).recovery_report()
+    assert restored['lineage']=={key:value for key,value in bound.items() if key!='idempotent_replay'}
+    assert restored['commands']==4 and restored['halted']
+
+
+@pytest.mark.parametrize('generation,archive,predecessor',[
+    (0,'a'*64,'0'*64),(1,'A'*64,'0'*64),(1,'a'*63,'0'*64),
+    (1,'a'*64,'1'*64),(2,'a'*64,'0'*64)])
+def test_invalid_replacement_epoch_lineage_is_rejected(tmp_path,generation,archive,predecessor):
+    g=DurableOrderGateway(tmp_path/'orders.sqlite3')
+    g.initialize_account(1000);g.link_portfolio();g.emergency_halt()
+    with pytest.raises(ValueError,match='INVALID_REPLACEMENT_EPOCH_LINEAGE'):
+        g.bind_replacement_epoch(generation,archive,predecessor)
+
+
 def test_corrupt_log_fails_closed(tmp_path):
     path = tmp_path/'orders.sqlite3'
     g = DurableOrderGateway(path)

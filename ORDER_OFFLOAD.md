@@ -10,6 +10,8 @@ v0.179.0 adds `prepare-replacement` and `verify-replacement`. Preparation requir
 
 v0.180.0 adds explicit `install-replacement`, `verify-install-recovery`, `recover-install` and `rollback-install`. Installation first publishes a separate exact source recovery pair outside the live, archive and candidate directories. It then writes a content-free marker beside the live databases before replacing either file. Nexus durable order reads and writes fail closed while that marker exists. A successful install verifies the new halted pair and clears the marker; an interrupted install must be recovered explicitly. No command automatically resumes Nexus or deletes the archive, candidate or recovery copy.
 
+v0.181.0 replacement manifests use schema v2. The fresh halted journal contains one replayed lineage command with a generation number, the exact predecessor archive-manifest digest and the prior epoch digest. A second rotation therefore proves a content-free generation 1 → 2 chain without restoring retired commands into live capacity. The verifier still accepts v0.180 v1 candidate and install-recovery manifests plus v1 interrupted-install marker records. Lineage distinguishes audit epochs; it is not a retained-ID index and does not itself prohibit a caller from deliberately reusing an old local-simulation ID. Full multi-epoch load and ID-policy acceptance remain separate gates.
+
 ## Before creating a copy
 
 - Fully close Nexus. The command requires `--confirm-application-closed`; the flag is an operator assertion, not process detection.

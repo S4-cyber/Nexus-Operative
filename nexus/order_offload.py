@@ -24,9 +24,11 @@ from nexus.paper_activity_acceptance_probe import _private_path
 
 SCHEMA='nexus.order-physical-offload.v1'
 MANIFEST='nexus-order-offload-manifest.json'
-REPLACEMENT_SCHEMA='nexus.order-replacement-candidate.v1'
+REPLACEMENT_SCHEMA_V1='nexus.order-replacement-candidate.v1'
+REPLACEMENT_SCHEMA='nexus.order-replacement-candidate.v2'
 REPLACEMENT_MANIFEST='nexus-order-replacement-manifest.json'
-INSTALL_SCHEMA='nexus.order-replacement-install.v1'
+INSTALL_SCHEMA_V1='nexus.order-replacement-install.v1'
+INSTALL_SCHEMA='nexus.order-replacement-install.v2'
 INSTALL_MANIFEST='nexus-order-install-recovery-manifest.json'
 ORDER_FILE='order_lifecycle.sqlite3'
 PORTFOLIO_FILE='paper_portfolio.sqlite3'
@@ -67,6 +69,13 @@ def _regular(path):
 
 def _digest(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+
+
+def _next_lineage(source_report,archive_manifest_sha256):
+    source=source_report['lineage'];body=dict(generation=source['generation']+1,
+        predecessor_archive_sha256=archive_manifest_sha256,
+        predecessor_epoch_sha256=source['epoch_sha256'])
+    return {**body,'epoch_sha256':_digest(body)}
 
 
 def _replay_scope(gateway,report):
@@ -212,13 +221,16 @@ def verify_replacement(archive,directory):
     archive_before=[_manifest_entry(archive),*_files(archive)]
     archived=verify(archive)
     document=_load_named_manifest(root,REPLACEMENT_MANIFEST)
-    required={'schema','application_closed_confirmation','archive_manifest_sha256',
+    legacy_required={'schema','application_closed_confirmation','archive_manifest_sha256',
               'archive_recovery_sha256','candidate_recovery_sha256','account_transition_sha256',
               'files','commands','source_commands','source_archived_orders','source_archive_batches',
               'replacement_candidate_only','source_preserved','archive_preserved','capacity_reclaimed',
               'source_history_deleted','broker_connected','live_orders_enabled','money_movement_enabled',
               'release_approved','scope'}
-    if (set(document)!=required or document['schema']!=REPLACEMENT_SCHEMA or
+    required=legacy_required|{'source_epoch_sha256','candidate_epoch_sha256','candidate_generation'}
+    if ((document.get('schema')==REPLACEMENT_SCHEMA and set(document)!=required) or
+        (document.get('schema')==REPLACEMENT_SCHEMA_V1 and set(document)!=legacy_required) or
+        document.get('schema') not in (REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V1) or
         document['application_closed_confirmation'] is not True):
         _fail('REPLACEMENT_MANIFEST_INVALID')
     actual=_files(root)
@@ -235,13 +247,22 @@ def verify_replacement(archive,directory):
     if source_account is None or candidate_account is None:_fail('REPLACEMENT_REPLAY_DISAGREEMENT')
     transition_sha=_digest(dict(source_final_account=source_account,replacement_initial_account=candidate_account))
     archive_manifest_sha=_manifest_entry(archive)['sha256']
+    expected_lineage=_next_lineage(source_report,archive_manifest_sha)
+    lineage_valid=(candidate_report['lineage']==expected_lineage and
+        document.get('source_epoch_sha256')==source_report['lineage']['epoch_sha256'] and
+        document.get('candidate_epoch_sha256')==expected_lineage['epoch_sha256'] and
+        document.get('candidate_generation')==expected_lineage['generation'])
+    if document['schema']==REPLACEMENT_SCHEMA_V1:
+        lineage_valid=(candidate_report['lineage']['generation']==0)
+    expected_commands=4 if document['schema']==REPLACEMENT_SCHEMA else 3
     if (archive_manifest_sha!=document['archive_manifest_sha256'] or
         source_sha!=document['archive_recovery_sha256'] or candidate_sha!=document['candidate_recovery_sha256'] or
         transition_sha!=document['account_transition_sha256'] or
         archived['commands']!=document['source_commands'] or
         archived['archived_orders']!=document['source_archived_orders'] or
         archived['archive_batches']!=document['source_archive_batches'] or
-        candidate_report['commands']!=document['commands'] or candidate_report['commands']!=3 or
+        candidate_report['commands']!=document['commands'] or candidate_report['commands']!=expected_commands or
+        not lineage_valid or
         candidate_report['orders'] or not candidate_report['halted'] or
         not candidate_report['portfolio_reconciled'] or
         candidate_report['archival']['archived_order_count']!=0 or
@@ -257,6 +278,7 @@ def verify_replacement(archive,directory):
     return dict(mode='OFFLINE_ORDER_REPLACEMENT_CANDIDATE',verified=True,
         replacement_candidate_only=True,halted=True,flat=True,portfolio_reconciled=True,
         commands=candidate_report['commands'],source_commands=source_report['commands'],
+        generation=candidate_report['lineage']['generation'],epoch_sha256=candidate_report['lineage']['epoch_sha256'],
         source_archived_orders=source_report['archival']['archived_order_count'],
         source_archive_batches=len(source_report['archival']['batches']),
         source_preserved=True,archive_preserved=True,automatic_install=False,automatic_resume=False,
@@ -287,12 +309,19 @@ def prepare_replacement(source,archive,destination,*,application_closed=False):
         try:candidate.initialize_account(source_account['cash'])
         except ValueError:_fail('REPLACEMENT_BALANCE_REVIEW_REQUIRED')
         candidate.link_portfolio();candidate.emergency_halt()
+        archive_manifest_sha=_manifest_entry(archive)['sha256']
+        lineage=_next_lineage(source_report,archive_manifest_sha)
+        candidate.bind_replacement_epoch(lineage['generation'],lineage['predecessor_archive_sha256'],
+                                         lineage['predecessor_epoch_sha256'])
         for name in (ORDER_FILE,PORTFOLIO_FILE):os.chmod(stage/name,0o600)
         candidate_report,candidate_sha=_snapshot(stage/ORDER_FILE)
         candidate_account=candidate_report['execution_account']['account']
         document=dict(schema=REPLACEMENT_SCHEMA,application_closed_confirmation=True,
-            archive_manifest_sha256=_manifest_entry(archive)['sha256'],archive_recovery_sha256=source_sha,
+            archive_manifest_sha256=archive_manifest_sha,archive_recovery_sha256=source_sha,
             candidate_recovery_sha256=candidate_sha,
+            source_epoch_sha256=source_report['lineage']['epoch_sha256'],
+            candidate_epoch_sha256=candidate_report['lineage']['epoch_sha256'],
+            candidate_generation=candidate_report['lineage']['generation'],
             account_transition_sha256=_digest(dict(source_final_account=source_account,replacement_initial_account=candidate_account)),
             files=_files(stage),commands=candidate_report['commands'],source_commands=source_report['commands'],
             source_archived_orders=source_report['archival']['archived_order_count'],
@@ -362,7 +391,7 @@ def _load_rotation_marker(root,transaction_sha256):
     marker=Path(root)/ROTATION_MARKER
     document=_load_named_manifest(root,ROTATION_MARKER)
     required={'schema','transaction_manifest_sha256','application_closed_confirmation','automatic_resume'}
-    if (set(document)!=required or document['schema']!=INSTALL_SCHEMA or
+    if (set(document)!=required or document['schema'] not in (INSTALL_SCHEMA,INSTALL_SCHEMA_V1) or
         document['transaction_manifest_sha256']!=transaction_sha256 or
         document['application_closed_confirmation'] is not True or document['automatic_resume'] is not False):
         _fail('INSTALL_MARKER_INVALID')
@@ -387,13 +416,16 @@ def verify_install_recovery(archive,directory):
     if archive.is_symlink() or not archive.is_dir() or root.is_symlink() or not root.is_dir():
         _fail('DIRECTORY_REQUIRED')
     document=_load_named_manifest(root,INSTALL_MANIFEST)
-    required={'schema','application_closed_confirmation','archive_manifest_sha256',
+    legacy_required={'schema','application_closed_confirmation','archive_manifest_sha256',
               'source_recovery_sha256','candidate_recovery_sha256','source_files','candidate_files',
               'source_commands','source_archived_orders','source_archive_batches','candidate_commands',
               'source_recovery_copy','install_requires_closed_application','automatic_resume',
               'capacity_reclaimed','source_history_deleted','broker_connected','live_orders_enabled',
               'money_movement_enabled','release_approved','scope'}
-    if (set(document)!=required or document['schema']!=INSTALL_SCHEMA or
+    required=legacy_required|{'candidate_generation','candidate_epoch_sha256'}
+    if ((document.get('schema')==INSTALL_SCHEMA and set(document)!=required) or
+        (document.get('schema')==INSTALL_SCHEMA_V1 and set(document)!=legacy_required) or
+        document.get('schema') not in (INSTALL_SCHEMA,INSTALL_SCHEMA_V1) or
         document['application_closed_confirmation'] is not True):
         _fail('INSTALL_MANIFEST_INVALID')
     actual=_files(root)
@@ -419,6 +451,8 @@ def verify_install_recovery(archive,directory):
     return dict(mode='OFFLINE_ORDER_INSTALL_RECOVERY',verified=True,source_preserved=True,
         source_commands=report['commands'],source_archived_orders=report['archival']['archived_order_count'],
         source_archive_batches=len(report['archival']['batches']),candidate_commands=document['candidate_commands'],
+        candidate_generation=document.get('candidate_generation',0),
+        candidate_epoch_sha256=document.get('candidate_epoch_sha256','0'*64),
         rollback_available=True,automatic_resume=False,**{flag:False for flag in AUTHORITY_FLAGS})
 
 
@@ -442,6 +476,8 @@ def _publish_install_recovery(source,archive,candidate,destination):
             source_archived_orders=source_report['archival']['archived_order_count'],
             source_archive_batches=len(source_report['archival']['batches']),
             candidate_commands=candidate_report['commands'],source_recovery_copy=True,
+            candidate_generation=candidate_report['lineage']['generation'],
+            candidate_epoch_sha256=candidate_report['lineage']['epoch_sha256'],
             install_requires_closed_application=True,automatic_resume=False,capacity_reclaimed=False,
             source_history_deleted=False,broker_connected=False,live_orders_enabled=False,
             money_movement_enabled=False,release_approved=False,
@@ -495,7 +531,10 @@ def install_replacement(source,archive,candidate,recovery,*,application_closed=F
         document=_load_named_manifest(recovery,INSTALL_MANIFEST)
         if (_files(root)!=document['candidate_files'] or recovery_sha!=document['candidate_recovery_sha256'] or
             report['commands']!=document['candidate_commands'] or report['orders'] or not report['halted'] or
-            not report['portfolio_reconciled']):
+            not report['portfolio_reconciled'] or
+            (document['schema']==INSTALL_SCHEMA and
+             (report['lineage']['generation']!=document['candidate_generation'] or
+              report['lineage']['epoch_sha256']!=document['candidate_epoch_sha256']))):
             _fail('INSTALLED_REPLACEMENT_DISAGREEMENT')
         _clear_rotation_marker(root,transaction_sha)
     except Exception:
@@ -508,6 +547,7 @@ def install_replacement(source,archive,candidate,recovery,*,application_closed=F
         source_preserved=True,archive_preserved=True,recovery_preserved=True,rollback_available=True,
         automatic_resume=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
         release_approved=False,candidate_commands=candidate_result['commands'],
+        generation=candidate_result['generation'],epoch_sha256=candidate_result['epoch_sha256'],
         source_commands=recovery_result['source_commands'])
 
 
@@ -639,7 +679,8 @@ def fixture_report():
                 prepared['halted'] and prepared['flat'],
             replacement_candidate_non_installing=not prepared['automatic_install'] and
                 not prepared['capacity_reclaimed'] and not prepared['source_history_deleted'] and
-                candidate_non_installing and installed_report['commands']==3,
+                candidate_non_installing and installed_report['commands']==4 and
+                installed_report['lineage']['generation']==1,
             replacement_install_reclaims_capacity=installed['capacity_reclaimed'] and installed['installed'] and
                 not installed['automatic_resume'] and installed['source_preserved'] and installed['rollback_available'],
             replacement_rollback_restores_source=rolled_back['restored'] and recovered['restored'] and

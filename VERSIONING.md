@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.181.0 (pre-release).** Newly prepared halted replacements retain a replay-validated content-free generation record bound to the exact predecessor archive manifest and prior epoch digest. This makes successive rotations distinguishable without importing retired orders. v0.180 v1 candidate/recovery manifests and interrupted-install markers remain readable. Multi-epoch pressure, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.181.1 (pre-release).** Replay-bound replacement lineage remains unchanged. Explicit durable file flushes now use a writable descriptor because Windows rejects `fsync` on the prior read-only descriptor with `EBADF`; the file is not modified. Multi-epoch pressure, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,12 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.181.1 Windows durable-flush descriptor correction
+
+Exact v0.181.0 commit `fa2f6eead85eaee5366099dbb2899df902ace563` passed public security 39455511206 and browser help in safety run 39455511204, but release evidence failed in the operations child. Retained v0.180 Windows logs identify the shared root cause: `fsync` on a read-only `_sync_file` descriptor raises `EBADF` on Windows. v0.181.1 opens the already validated private file as `r+b` solely for the flush and writes no content. A regression verifies the descriptor mode and unchanged bytes. The lineage, marker fencing, halted state and all false authority flags are unchanged.
+
+Local focused durability/order-offload/packaging/version/roadmap validation passed 76 tests. All sixteen profiles and saved-evidence verification matched 347 source files / `352f7cdfaf9abfe3f194f3d2a5ab47773426a133b16a46647202a15230f96984`; `validation/release_trials_0_181_1.json` SHA256 is `54c15e8548f5d6c8d502930c9f68e352688981327676ace3c0b801cf3a024101`. Fresh exact-source security, safety/browser/evidence and Windows packaging/installer CI remain mandatory.
 
 ## v0.181.0 replay-bound replacement epoch lineage
 

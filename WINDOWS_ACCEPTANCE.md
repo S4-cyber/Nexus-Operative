@@ -1,5 +1,11 @@
 # Windows distribution and acceptance evidence
 
+## v0.181.1 candidate status
+
+Exact v0.181.0 commit `fa2f6eead85eaee5366099dbb2899df902ace563` passed public security 39455511206 and browser help in safety run 39455511204, while its release-evidence operations child failed. Retained v0.180 Windows logs show the direct fault: `fsync` on the read-only `_sync_file` descriptor raises `EBADF` on Windows and caused the order-offload tests, packaged-tool smoke and operations profile to fail. v0.181.1 uses `r+b` only to obtain a Windows-compatible flush descriptor and does not write file content; a regression checks mode and byte preservation. Fresh exact-source Windows regression, packaged tools, EXE and installer lifecycle remain required.
+
+Local focused durability/order-offload/packaging/version/roadmap validation passed 76 tests and all sixteen saved-evidence profiles matched 347 source files / `352f7cdfaf9abfe3f194f3d2a5ab47773426a133b16a46647202a15230f96984`. This is not native Windows acceptance.
+
 ## v0.181.0 candidate status
 
 v0.181.0 adds a replay-bound replacement generation record and v2 candidate/install manifests while retaining v1 candidate, recovery and interrupted-install marker compatibility. The packaged-tools harness retains a 30-second ordinary child bound and permits a bounded 60 seconds only for the expensive encrypted-evidence self-tests (observation crypto and sealed quote evidence); application crypto and runtime behavior are unchanged. The preceding v0.180.0 head `a5c10881429f946621f6bb4d93b62781afb75593` passed public security (39426790639), but its safety run (39426790798) failed regression and release evidence while browser help passed, and Windows run 39426790658 failed install/test before packaging. Public annotations expose only exit code 1, so this local timeout correction is not proof that every remote failure is resolved. Local successive-rotation tests do not establish native Windows power-loss durability, private-volume/profile ACL behavior or sustained multi-epoch pressure. Exact-source Windows regression, standalone/installed command smoke, EXE startup and installer lifecycle remain required.

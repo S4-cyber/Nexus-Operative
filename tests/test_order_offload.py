@@ -1,3 +1,4 @@
+import builtins
 import json
 from pathlib import Path
 import shutil
@@ -194,6 +195,17 @@ def prepared_install(tmp_path):
     order_offload.create(source,archive,application_closed=True)
     order_offload.prepare_replacement(source,archive,candidate,application_closed=True)
     return gateway,source,archive,candidate
+
+
+def test_file_sync_uses_windows_compatible_writable_descriptor_without_mutation(tmp_path,monkeypatch):
+    path=tmp_path/'private.bin';path.write_bytes(b'unchanged')
+    modes=[]
+    def opened(target,mode,**kwargs):
+        modes.append(mode)
+        return builtins.open(target,mode,**kwargs)
+    monkeypatch.setattr(order_offload,'open',opened,raising=False)
+    order_offload._sync_file(path)
+    assert modes==['r+b'] and path.read_bytes()==b'unchanged'
 
 
 def test_install_replacement_reclaims_live_capacity_and_explicit_rollback_restores_source(tmp_path):

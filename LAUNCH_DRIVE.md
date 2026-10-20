@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.181.1 Windows durable-flush descriptor correction
+
+Exact v0.181.0 commit `fa2f6eead85eaee5366099dbb2899df902ace563` passed public-security run 39455511206 and browser-help in safety run 39455511204. Its release-evidence operations child failed. Retained v0.180 Windows regression logs expose the shared root cause: `_sync_file` opened private files read-only and Windows rejected `fsync` with `EBADF`. v0.181.1 opens the already validated file as `r+b` solely for the flush, writes no content and adds a regression proving unchanged bytes. The lineage, fail-closed marker, halted replacement, OFF defaults and all authority flags are unchanged. Fresh exact-source CI remains mandatory; progress stays about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local focused durability/order-offload/packaging/version/roadmap validation passed 76 tests. All sixteen bounded profiles passed and saved-evidence verification matched 347 source files / `352f7cdfaf9abfe3f194f3d2a5ab47773426a133b16a46647202a15230f96984`; `validation/release_trials_0_181_1.json` SHA256 is `54c15e8548f5d6c8d502930c9f68e352688981327676ace3c0b801cf3a024101`. These Linux/local results do not establish the Windows correction until fresh exact-source CI completes.
+
 ## v0.181.0 replay-bound replacement epoch lineage
 
 New halted replacement journals carry a replay-validated content-free generation record bound to the exact predecessor archive manifest and prior epoch digest. Candidate, install-recovery and installed verification cross-check the chain, and a successive-rotation fixture proves generation 1 → 2 continuity without restoring retired commands into live capacity. v0.180 v1 candidate, recovery and interrupted-install marker records remain readable.

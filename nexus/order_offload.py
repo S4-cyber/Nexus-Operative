@@ -343,7 +343,9 @@ def prepare_replacement(source,archive,destination,*,application_closed=False):
 
 
 def _sync_file(path):
-    with open(path,'rb',buffering=0) as stream:os.fsync(stream.fileno())
+    # Windows' CRT rejects _commit/fsync on a read-only descriptor with EBADF.
+    # Open the already validated private file for update without writing it.
+    with open(path,'r+b',buffering=0) as stream:os.fsync(stream.fileno())
 
 
 def _sync_directory(path):

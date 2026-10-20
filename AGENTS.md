@@ -1,6 +1,12 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.181.0, replay-bound replacement epoch lineage. Read the newest version section and generated roadmap; exact-source CI, native Windows power-loss/private-volume acceptance, multi-epoch pressure and actual broker/market acceptance remain open.
+Current checkpoint: v0.181.1, Windows durable-flush descriptor correction over replay-bound replacement epoch lineage. Read the newest version section and generated roadmap; exact-source CI, native Windows power-loss/private-volume acceptance, multi-epoch pressure and actual broker/market acceptance remain open.
+
+## v0.181.1 Windows durable-flush descriptor correction
+
+Exact v0.181.0 commit `fa2f6eead85eaee5366099dbb2899df902ace563` passed public-security run 39455511206 and browser-help in safety run 39455511204. Its release-evidence operations child failed, and retained v0.180 Windows logs identify `OSError: [Errno 9] Bad file descriptor` at `_sync_file`: Windows rejects `fsync` on the prior read-only descriptor. Open the already validated private file as `r+b` for the flush without writing content; a regression must verify both the mode and unchanged bytes. v0.181.1 needs fresh exact-source security, safety/evidence/browser and Windows installer runs. Do not infer native acceptance from Linux tests or the diagnosis.
+
+Local v0.181.1 focused durability/order-offload/packaging/version/roadmap validation passed 76 tests. All sixteen bounded profiles and saved-evidence verification matched 347 source files / `352f7cdfaf9abfe3f194f3d2a5ab47773426a133b16a46647202a15230f96984`; `validation/release_trials_0_181_1.json` SHA256 is `54c15e8548f5d6c8d502930c9f68e352688981327676ace3c0b801cf3a024101`. This remains Linux/local evidence with native Windows, broker, market, funds, live, cloud and release flags false.
 
 ## v0.181.0 replay-bound replacement epoch lineage
 

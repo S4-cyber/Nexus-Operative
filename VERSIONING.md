@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.183.1 (pre-release).** Order-rotation publication now uses durable move boundaries: parent-directory fsync on POSIX and Win32 write-through moves on Windows. The persistent marker still fences incomplete or uncertain installs. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Physical power-loss/private-volume/ACL evidence, extended long-run pressure, reviewed legacy-baseline migration, caller identity/broker-wide idempotency and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.184.0 (pre-release).** Legacy rotated order journals now have an explicit private baseline-review path. A review must bind a sorted complete operator-supplied retired-ID scope to the exact closed source and verified archive; known archived IDs cannot be omitted. The v4 candidate carries only bounded fingerprints and an `OPERATOR_REVIEWED_UNATTESTED` lineage marker. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Independent private-scope review, physical power-loss/private-volume/ACL evidence, extended long-run pressure, caller identity/broker-wide idempotency and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,16 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.184.0 reviewed legacy retired-ID baseline migration
+
+The application-closed order-offload tool now accepts a deliberately private `nexus.order-retired-id-baseline-review.v1` document for a legacy rotated source whose lineage predates the v3 retired-ID fence. The document must explicitly confirm a complete reviewed scope and bind its sorted, unique IDs to the exact source generation, epoch digest, replay digest and verified archive-manifest digest. It is rejected if any client ID is malformed, duplicated, out of order, above the fixed cap, collides at the private fingerprint layer or omits an ID still provable from the current archive.
+
+`review-retired-id-baseline` performs a content-free read-only review. `prepare-replacement --reviewed-retired-id-baseline` then creates a v4 candidate whose replayed lineage binds the aggregate review digest and labels provenance `OPERATOR_REVIEWED_UNATTESTED`. Raw IDs remain only in the caller-selected private file; they are not copied to the candidate, manifest, CLI report or public evidence. Public repository auditing rejects the baseline schema even under an ordinary filename. Existing v1/v2/v3 candidates remain verifiable, and ordinary v3 preparation refuses an unnecessary baseline.
+
+This closes the missing software migration mechanism, not the factual completeness gate. The source cannot attest IDs omitted by older rotations, so a real migration still needs an authorized operator and independent review of the private list. The operation remains halted, flat and non-installing, with broker, funds, live, cloud and release authority false. The read-only roadmap estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; this bounded migration feature does not justify an estimate increase.
+
+Final local validation passed 3,453 tests with one expected non-Windows skip and one existing warning; the release-focused set passed 260 with the same skip. All sixteen profiles and saved-evidence verification matched 347 source files / `0b1a18198805a3a90d55b4834b65023cf2e343c17d7941820ab08f0a1715c505`; report SHA256 is `507a044545c4ac25f23e4f3df5f8749863733f8ce0f1a09e962f5f637af72c81`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Fresh exact-source workflows remain required.
 
 ## v0.183.1 Windows write-through rotation publication
 

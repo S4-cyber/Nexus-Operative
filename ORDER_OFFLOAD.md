@@ -16,6 +16,8 @@ v0.183.0 replacement schema v3 carries a sorted, bounded private fingerprint set
 
 v0.183.1 publishes the archive, candidate, install-recovery directory, intent marker and both live database replacements through a durable move helper. POSIX uses rename plus parent-directory fsync. Windows uses `MoveFileExW` with `MOVEFILE_WRITE_THROUGH` and adds replacement semantics only at intended replacement boundaries. File bytes remain separately flushed. This reduces a known metadata-publication gap but does not substitute for physical power-loss, private-volume or ACL acceptance.
 
+v0.184.0 adds a private legacy-baseline review for a v2-era rotated source that cannot prove a complete retired-ID set. The operator-supplied JSON must list a sorted, unique, explicitly reviewed complete scope and bind the exact closed source generation, epoch digest, replay digest and verified archive-manifest digest. The tool rejects omission of IDs still visible in the current archive. A successful v4 migration retains only bounded fingerprints plus the aggregate review digest and labels the provenance `OPERATOR_REVIEWED_UNATTESTED`. That label is deliberate: software can bind the review but cannot reconstruct or attest history discarded before v3.
+
 ## Before creating a copy
 
 - Fully close Nexus. The command requires `--confirm-application-closed`; the flag is an operator assertion, not process detection.
@@ -77,6 +79,33 @@ Source installations use the same subcommands with `python -m nexus.order_offloa
 
 The v3 candidate contains four initialization/link/halt/lineage commands but no plaintext order IDs or archived orders. Its private journal contains only the bounded fingerprint membership set. Do not copy it over the live files manually. Use only the guarded commands below after preserving private backups.
 
+### Review and migrate an older rotated source
+
+Keep the baseline JSON on private, access-controlled storage outside the source checkout. It is operational account data and must never be committed. Its exact schema is:
+
+```json
+{
+  "schema": "nexus.order-retired-id-baseline-review.v1",
+  "application_closed_confirmation": true,
+  "complete_retired_order_id_scope_reviewed": true,
+  "source_generation": 1,
+  "source_epoch_sha256": "64 lowercase hex characters",
+  "source_recovery_sha256": "64 lowercase hex characters",
+  "archive_manifest_sha256": "64 lowercase hex characters",
+  "retired_client_order_ids": ["sorted-private-id-1", "sorted-private-id-2"]
+}
+```
+
+With Nexus still closed, emit the content-free exact binding fields, use them to author the private document, then run the read-only review and supply the same file during preparation. Do not guess values or copy hashes from untrusted output:
+
+```text
+NexusOperative.exe --paper-tool order-offload retired-id-baseline-binding PRIVATE_PATH\order_lifecycle.sqlite3 PRIVATE_ARCHIVE\epoch-001 --confirm-application-closed
+NexusOperative.exe --paper-tool order-offload review-retired-id-baseline PRIVATE_PATH\order_lifecycle.sqlite3 PRIVATE_ARCHIVE\epoch-001 PRIVATE_REVIEW\retired-ids.json --confirm-application-closed
+NexusOperative.exe --paper-tool order-offload prepare-replacement PRIVATE_PATH\order_lifecycle.sqlite3 PRIVATE_ARCHIVE\epoch-001 PRIVATE_CANDIDATES\epoch-002 --reviewed-retired-id-baseline PRIVATE_REVIEW\retired-ids.json --confirm-application-closed
+```
+
+The review output contains counts and aggregate digests, never raw IDs or paths. A missing, stale, malformed, linked, changed, incomplete or unnecessary baseline fails closed. Successful preparation still does not install, resume, delete history or grant authority. Independent review must establish that the private list is actually complete; the current source can only enforce inclusion of the IDs it still retains.
+
 ## Install with a separate recovery copy
 
 ```text
@@ -94,4 +123,4 @@ NexusOperative.exe --paper-tool order-offload recover-install PRIVATE_PATH\order
 
 The marker deliberately prevents ordinary order-gateway reads and writes until this command restores and verifies the original pair. Do not delete the marker or temporary files manually. For a completed installation, explicit rollback uses `rollback-install` with the same arguments. Rollback restores the preserved source pair and remains halted; it does not discard the candidate or recovery evidence.
 
-The implementation flushes each file and uses atomic per-file replacement. Portable Python cannot fsync Windows directories, so native power-loss tests at every boundary, private-volume/profile ACL review, and independent recovery acceptance remain mandatory. This is interruption-recoverable local tooling, not yet independent proof of power-loss safety.
+The implementation flushes each file and uses atomic per-file replacement. Windows publication uses Win32 write-through moves because portable Python cannot fsync directories there. Native physical power-loss tests at every boundary, private-volume/profile ACL review, and independent recovery acceptance remain mandatory. This is interruption-recoverable local tooling, not yet independent proof of power-loss safety.

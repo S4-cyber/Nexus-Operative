@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.183.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.184.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,8 +36,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, fourteen Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Current bounded offline trials passed | v0.183.1 source-fingerprinted report `validation/release_trials_0_183_1.json` verifies all sixteen local profiles against 347 files / `7dfe0b4640c4fe33cdf202bb12799c835dd2cec881433be48f9febbbf44aaf9a`; report SHA256 is `2319f00b5b1e029be494d2477b9479b2d8c018641a525dc6b0a730ca52bdfff0`. This remains synthetic/offline Linux evidence; actual broker/market/native-profile acceptance is open |
-| Windows packaging and data recovery | Latest published exact-source workflows passed; current source pending | Exact v0.183.0 commit `42023862874c0b91249b83e8c90821e59c272291` passed public security 39494341943, all safety/evidence/browser jobs in 39494340579 and Windows regression/EXE/installer 39494340749. v0.183.1 adds native write-through order-rotation publication and requires fresh exact-source workflows. Physical power-loss boundaries, ordinary-user private-volume/profile/ACL, extended long-run pressure, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
+| Integrated local trials | Current bounded offline trials passed | v0.184.0 source-fingerprinted report `validation/release_trials_0_184_0.json` verifies all sixteen local profiles against 347 files / `0b1a18198805a3a90d55b4834b65023cf2e343c17d7941820ab08f0a1715c505`; report SHA256 is `507a044545c4ac25f23e4f3df5f8749863733f8ce0f1a09e962f5f637af72c81`. This remains synthetic/offline Linux evidence; actual broker/market/native-profile acceptance is open |
+| Windows packaging and data recovery | Latest published exact-source workflows passed; current source pending | Exact v0.183.1 commit `8f271c1eac88bbde9ad491026808f4415017dda2` passed public security 39501375299, all safety/evidence/browser jobs in 39501375274 and Windows regression/EXE/installer 39501375258. v0.184.0 adds a private reviewed legacy-baseline migration and requires fresh exact-source workflows. Independent baseline completeness, physical power-loss boundaries, ordinary-user private-volume/profile/ACL, extended long-run pressure, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |

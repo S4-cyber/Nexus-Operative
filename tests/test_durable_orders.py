@@ -88,6 +88,24 @@ def test_replacement_epoch_replays_bounded_retired_id_fence_without_retaining_pl
     assert restored.submit('new-id','BTC-USD','BUY',25)['id']=='new-id'
 
 
+def test_reviewed_legacy_baseline_provenance_is_durable_and_replay_bound(tmp_path):
+    path=tmp_path/'orders.sqlite3';g=DurableOrderGateway(path)
+    g.initialize_account(1000);g.link_portfolio();g.emergency_halt()
+    fingerprints=sorted(order_id_fingerprint(value) for value in ('prior-a','prior-b'))
+    bound=g.bind_replacement_epoch(2,'a'*64,'b'*64,fingerprints,'c'*64)
+    assert bound['retired_order_id_baseline_kind']=='OPERATOR_REVIEWED_UNATTESTED'
+    assert bound['retired_order_id_baseline_review_sha256']=='c'*64
+    assert DurableOrderGateway(path).recovery_report()['lineage']=={
+        key:value for key,value in bound.items() if key!='idempotent_replay'}
+
+
+def test_reviewed_legacy_baseline_hash_requires_fingerprint_set(tmp_path):
+    path=tmp_path/'orders.sqlite3';g=DurableOrderGateway(path)
+    g.initialize_account(1000);g.link_portfolio();g.emergency_halt()
+    with pytest.raises(ValueError,match='INVALID_RETIRED_ORDER_ID_BASELINE_REVIEW'):
+        g.bind_replacement_epoch(1,'a'*64,'0'*64,None,'c'*64)
+
+
 @pytest.mark.parametrize('fingerprints',[
     ['f'*32,'a'*32],['a'*32,'a'*32],['A'*32],['a'*31],[1],
 ])

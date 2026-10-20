@@ -41,6 +41,8 @@ def json_rule(raw):
     try:value=json.loads(raw)
     except (ValueError,UnicodeError,RecursionError):return None
     if not isinstance(value,dict):return None
+    if value.get('schema')=='nexus.order-retired-id-baseline-review.v1':
+        return 'PRIVATE_ORDER_ID_BASELINE_REVIEW'
     if value.get('profile') in ('nexus.portable-paper-observation.v1','nexus.private-paper-quote-evidence.v1') or value.get('mode') in (
         'PORTABLE_OBSERVATION_RETAINED_ACTIVITY_REVIEW','HEAD_BOUND_RETAINED_GROSS_BALANCE_REVIEW','READ_ONLY_PAPER_INSPECTION',
         'RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW','PAPER_ACCOUNT_ACCEPTANCE_PROBE','PAPER_ACCEPTANCE_PACING_STATUS',

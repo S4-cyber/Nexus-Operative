@@ -234,9 +234,12 @@ class DurableOrderGateway:
         return self._call('archive_terminal',batch_id)
 
     def bind_replacement_epoch(self,generation,predecessor_archive_sha256,predecessor_epoch_sha256,
-                               retired_order_id_fingerprints=None):
+                               retired_order_id_fingerprints=None,retired_order_id_baseline_review_sha256=None):
         args=(generation,predecessor_archive_sha256,predecessor_epoch_sha256)
         if retired_order_id_fingerprints is not None:args=(*args,retired_order_id_fingerprints)
+        if retired_order_id_baseline_review_sha256 is not None:
+            if retired_order_id_fingerprints is None:raise ValueError('INVALID_RETIRED_ORDER_ID_BASELINE_REVIEW')
+            args=(*args,retired_order_id_baseline_review_sha256)
         return self._call('bind_replacement_epoch',*args)
 
     def _retired_order_id_fingerprints(self):

@@ -217,6 +217,80 @@ def test_legacy_rotated_source_requires_explicit_retired_id_baseline_review(tmp_
         order_offload.prepare_replacement(source,archive,tmp_path/'candidate',application_closed=True)
 
 
+def legacy_review_case(tmp_path):
+    live=tmp_path/'live';live.mkdir();source=live/order_offload.ORDER_FILE
+    gateway=DurableOrderGateway(source);gateway.initialize_account(1000);gateway.link_portfolio();gateway.emergency_halt()
+    gateway.bind_replacement_epoch(1,'a'*64,'0'*64)
+    gateway.reset();gateway.submit('legacy-current','BTC-USD','BUY',25,tier='terrestrial')
+    gateway.cancel('legacy-current');gateway.emergency_halt();gateway.archive_terminal('legacy_epoch')
+    archive=tmp_path/'archive';order_offload.create(source,archive,application_closed=True)
+    report,recovery_sha=order_offload._snapshot(source)
+    document=dict(schema=order_offload.RETIRED_BASELINE_SCHEMA,application_closed_confirmation=True,
+        complete_retired_order_id_scope_reviewed=True,source_generation=1,
+        source_epoch_sha256=report['lineage']['epoch_sha256'],source_recovery_sha256=recovery_sha,
+        archive_manifest_sha256=order_offload._manifest_entry(archive)['sha256'],
+        retired_client_order_ids=['legacy-current','legacy-prior'])
+    baseline=tmp_path/'private-baseline.json';baseline.write_text(json.dumps(document))
+    return source,archive,baseline,document
+
+
+def test_reviewed_legacy_baseline_is_exact_bound_content_free_and_migrates(tmp_path):
+    source,archive,baseline,document=legacy_review_case(tmp_path)
+    before=(source.read_bytes(),(source.parent/order_offload.PORTFOLIO_FILE).read_bytes())
+    binding=order_offload.retired_id_baseline_binding(source,archive,application_closed=True)
+    assert binding['exact_source_bound'] and binding['historical_source_attested'] is False
+    assert binding['complete_retired_order_id_scope_reviewed'] is False
+    assert all(binding[key]==document[key] for key in ('schema','source_generation','source_epoch_sha256',
+        'source_recovery_sha256','archive_manifest_sha256'))
+    review=order_offload.review_retired_id_baseline(source,archive,baseline,application_closed=True)
+    assert review['reviewed'] and review['exact_source_bound'] and review['complete_scope_operator_confirmed']
+    assert review['historical_source_attested'] is False and review['raw_order_ids_retained'] is False
+    assert review['migration_performed'] is False and review['retired_order_id_fingerprint_count']==2
+    assert all(order_id not in json.dumps(review) for order_id in document['retired_client_order_ids'])
+    candidate=tmp_path/'candidate'
+    result=order_offload.prepare_replacement(source,archive,candidate,application_closed=True,
+        reviewed_retired_id_baseline=baseline)
+    assert result['verified'] and result['legacy_baseline_reviewed']
+    assert result['historical_source_attested'] is False and result['cross_epoch_id_reuse_fenced']
+    manifest=json.loads((candidate/order_offload.REPLACEMENT_MANIFEST).read_text())
+    assert manifest['schema']==order_offload.REPLACEMENT_SCHEMA_V4
+    assert manifest['retired_order_id_baseline_kind']=='OPERATOR_REVIEWED_UNATTESTED'
+    assert manifest['historical_source_attested'] is False
+    assert all(order_id not in json.dumps(manifest) for order_id in document['retired_client_order_ids'])
+    replacement=DurableOrderGateway(candidate/order_offload.ORDER_FILE);replacement.reset()
+    for order_id in document['retired_client_order_ids']:
+        with pytest.raises(ValueError,match='RETIRED_ORDER_ID_REUSE'):
+            replacement.submit(order_id,'BTC-USD','BUY',25,tier='terrestrial')
+    assert before==(source.read_bytes(),(source.parent/order_offload.PORTFOLIO_FILE).read_bytes())
+
+
+def test_legacy_baseline_rejects_omission_stale_binding_and_unneeded_use(tmp_path):
+    source,archive,baseline,document=legacy_review_case(tmp_path)
+    document['retired_client_order_ids']=['legacy-prior'];baseline.write_text(json.dumps(document))
+    with pytest.raises(ValueError,match='BASELINE_INCOMPLETE'):
+        order_offload.review_retired_id_baseline(source,archive,baseline,application_closed=True)
+    document['retired_client_order_ids']=['legacy-current','legacy-prior']
+    document['source_recovery_sha256']='f'*64;baseline.write_text(json.dumps(document))
+    with pytest.raises(ValueError,match='BASELINE_INVALID'):
+        order_offload.review_retired_id_baseline(source,archive,baseline,application_closed=True)
+    ordinary_root=tmp_path/'ordinary';ordinary_root.mkdir()
+    ordinary=archived(ordinary_root);ordinary_archive=tmp_path/'ordinary-archive'
+    order_offload.create(ordinary.path,ordinary_archive,application_closed=True)
+    with pytest.raises(ValueError,match='BASELINE_NOT_REQUIRED'):
+        order_offload.prepare_replacement(ordinary.path,ordinary_archive,tmp_path/'ordinary-candidate',
+            application_closed=True,reviewed_retired_id_baseline=baseline)
+
+
+@pytest.mark.parametrize('ids',[
+    ['legacy-prior','legacy-current'],['legacy-current','legacy-current'],['legacy-current',1],
+])
+def test_legacy_baseline_rejects_unsorted_duplicate_or_malformed_ids(tmp_path,ids):
+    source,archive,baseline,document=legacy_review_case(tmp_path)
+    document['retired_client_order_ids']=ids;baseline.write_text(json.dumps(document))
+    with pytest.raises(ValueError,match='BASELINE_INVALID'):
+        order_offload.review_retired_id_baseline(source,archive,baseline,application_closed=True)
+
+
 def test_failed_replacement_verification_never_publishes_destination(tmp_path,monkeypatch):
     gateway=archived(tmp_path);source=gateway.path;archive=tmp_path/'archive';destination=tmp_path/'candidate'
     order_offload.create(source,archive,application_closed=True)

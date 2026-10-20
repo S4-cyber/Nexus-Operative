@@ -30,6 +30,7 @@ MAX_ARCHIVE_BATCHES=100
 MAX_RETIRED_ORDER_ID_FINGERPRINTS=100000
 ZERO_SHA256='0'*64
 RETIRED_ID_POLICY='nexus.retired-order-id-fingerprint.v1'
+RETIRED_ID_BASELINE_KIND='OPERATOR_REVIEWED_UNATTESTED'
 
 
 def order_id_fingerprint(client_order_id):
@@ -62,7 +63,7 @@ class AccountingOrderGateway(OrderGateway):
         self.retired_order_id_fingerprints = []
 
     def bind_replacement_epoch(self,generation,predecessor_archive_sha256,predecessor_epoch_sha256,
-                               retired_order_id_fingerprints=None):
+                               retired_order_id_fingerprints=None,retired_order_id_baseline_review_sha256=None):
         """Bind a fresh halted journal to its exact predecessor without importing history."""
         if (type(generation) is not int or not 1<=generation<=1000000 or
             not isinstance(predecessor_archive_sha256,str) or len(predecessor_archive_sha256)!=64 or
@@ -84,6 +85,14 @@ class AccountingOrderGateway(OrderGateway):
             body.update(retired_order_id_policy=RETIRED_ID_POLICY,
                 retired_order_id_fingerprint_count=len(fingerprints),
                 retired_order_id_fingerprints_sha256=retired_id_set_sha256(fingerprints))
+        if retired_order_id_baseline_review_sha256 is not None:
+            if (fingerprints is None or not isinstance(retired_order_id_baseline_review_sha256,str) or
+                len(retired_order_id_baseline_review_sha256)!=64 or
+                any(character not in '0123456789abcdef'
+                    for character in retired_order_id_baseline_review_sha256)):
+                raise ValueError('INVALID_RETIRED_ORDER_ID_BASELINE_REVIEW')
+            body.update(retired_order_id_baseline_kind=RETIRED_ID_BASELINE_KIND,
+                retired_order_id_baseline_review_sha256=retired_order_id_baseline_review_sha256)
         lineage={**body,'epoch_sha256':hashlib.sha256(json.dumps(body,sort_keys=True,separators=(',',':')).encode()).hexdigest()}
         if self.epoch_lineage is not None:
             if self.epoch_lineage!=lineage or (fingerprints is not None and self.retired_order_id_fingerprints!=fingerprints):

@@ -20,7 +20,7 @@ import tempfile
 from nexus.artifact_manifest import file_entry
 from nexus.durable_orders import DurableOrderGateway, ROTATION_MARKER
 from nexus.order_accounting import (MAX_RETIRED_ORDER_ID_FINGERPRINTS, RETIRED_ID_POLICY,
-    order_id_fingerprint, retired_id_set_sha256)
+    RETIRED_ID_BASELINE_KIND, order_id_fingerprint, retired_id_set_sha256)
 from nexus.paper_activity_acceptance_probe import _private_path
 
 
@@ -29,7 +29,9 @@ MANIFEST='nexus-order-offload-manifest.json'
 REPLACEMENT_SCHEMA_V1='nexus.order-replacement-candidate.v1'
 REPLACEMENT_SCHEMA_V2='nexus.order-replacement-candidate.v2'
 REPLACEMENT_SCHEMA='nexus.order-replacement-candidate.v3'
+REPLACEMENT_SCHEMA_V4='nexus.order-replacement-candidate.v4'
 REPLACEMENT_MANIFEST='nexus-order-replacement-manifest.json'
+RETIRED_BASELINE_SCHEMA='nexus.order-retired-id-baseline-review.v1'
 INSTALL_SCHEMA_V1='nexus.order-replacement-install.v1'
 INSTALL_SCHEMA='nexus.order-replacement-install.v2'
 INSTALL_MANIFEST='nexus-order-install-recovery-manifest.json'
@@ -39,6 +41,7 @@ INSTALL_ORDER_TEMP='.nexus-order-install-order.tmp'
 INSTALL_PORTFOLIO_TEMP='.nexus-order-install-portfolio.tmp'
 MAX_FILE_BYTES=512*1024*1024
 MAX_MANIFEST_BYTES=1024*1024
+MAX_RETIRED_BASELINE_BYTES=16*1024*1024
 AUTHORITY_FLAGS=('broker_connected','live_orders_enabled','money_movement_enabled',
                  'release_approved','capacity_reclaimed','source_history_deleted')
 CHECKS=('copy_verified','source_unchanged','archived_order_replay',
@@ -49,7 +52,8 @@ CHECKS=('copy_verified','source_unchanged','archived_order_replay',
         'replacement_install_reclaims_capacity','replacement_rollback_restores_source',
         'incomplete_install_blocks_gateway','multi_epoch_generation_chain',
         'multi_epoch_capacity_reclaimed','multi_epoch_artifacts_replay',
-        'multi_epoch_retired_id_reuse_fenced')
+        'multi_epoch_retired_id_reuse_fenced','legacy_baseline_review_bound',
+        'legacy_baseline_migration_fenced')
 MULTI_EPOCH_FIXTURE_GENERATIONS=4
 MULTI_EPOCH_FIXTURE_ORDERS=12
 
@@ -79,7 +83,8 @@ def _digest(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
 
 
-def _next_lineage(source_report,archive_manifest_sha256,retired_order_id_fingerprints=None):
+def _next_lineage(source_report,archive_manifest_sha256,retired_order_id_fingerprints=None,
+                  retired_order_id_baseline_review_sha256=None):
     source=source_report['lineage'];body=dict(generation=source['generation']+1,
         predecessor_archive_sha256=archive_manifest_sha256,
         predecessor_epoch_sha256=source['epoch_sha256'])
@@ -87,6 +92,9 @@ def _next_lineage(source_report,archive_manifest_sha256,retired_order_id_fingerp
         body.update(retired_order_id_policy=RETIRED_ID_POLICY,
             retired_order_id_fingerprint_count=len(retired_order_id_fingerprints),
             retired_order_id_fingerprints_sha256=retired_id_set_sha256(retired_order_id_fingerprints))
+    if retired_order_id_baseline_review_sha256 is not None:
+        body.update(retired_order_id_baseline_kind=RETIRED_ID_BASELINE_KIND,
+            retired_order_id_baseline_review_sha256=retired_order_id_baseline_review_sha256)
     return {**body,'epoch_sha256':_digest(body)}
 
 
@@ -101,6 +109,113 @@ def _retired_fingerprints(path,report):
         values.update(order_id_fingerprint(order_id) for order_id in batch['order_ids'])
     result=sorted(values)
     if len(result)>MAX_RETIRED_ORDER_ID_FINGERPRINTS:_fail('RETIRED_ORDER_ID_CAPACITY_REVIEW_REQUIRED')
+    return result
+
+
+def _archived_fingerprints(report):
+    values=[]
+    for batch in report['archival']['batches']:
+        values.extend(order_id_fingerprint(order_id) for order_id in batch['order_ids'])
+    if len(values)!=len(set(values)):_fail('ARCHIVE_ID_SCOPE_INVALID')
+    return sorted(values)
+
+
+def _load_retired_baseline(path):
+    """Load one private, regular, single-link review file without leaking IDs."""
+    path,_=_private_path(path)
+    flags=os.O_RDONLY|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0)
+    try:
+        observed=path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or not stat.S_ISREG(observed.st_mode) or
+            observed.st_nlink!=1 or not 1<=observed.st_size<=MAX_RETIRED_BASELINE_BYTES):
+            _fail('RETIRED_ORDER_ID_BASELINE_INVALID')
+        with os.fdopen(os.open(path,flags),'rb') as stream:
+            opened=os.fstat(stream.fileno());raw=stream.read(MAX_RETIRED_BASELINE_BYTES+1)
+            closed=os.fstat(stream.fileno())
+        final=path.lstat()
+        identity=('st_dev','st_ino','st_size','st_mtime_ns','st_ctime_ns')
+        if (len(raw)!=opened.st_size or any(getattr(observed,key)!=getattr(opened,key) for key in identity) or
+            any(getattr(opened,key)!=getattr(closed,key) for key in identity) or
+            any(getattr(observed,key)!=getattr(final,key) for key in identity)):
+            _fail('RETIRED_ORDER_ID_BASELINE_INVALID')
+    except (OSError,ValueError):_fail('RETIRED_ORDER_ID_BASELINE_INVALID')
+    def pairs(items):
+        result={}
+        for key,value in items:
+            if key in result:_fail('RETIRED_ORDER_ID_BASELINE_INVALID')
+            result[key]=value
+        return result
+    try:
+        value=json.loads(raw.decode('utf-8'),object_pairs_hook=pairs,
+            parse_constant=lambda _:_fail('RETIRED_ORDER_ID_BASELINE_INVALID'))
+    except (UnicodeError,ValueError,TypeError,RecursionError):
+        _fail('RETIRED_ORDER_ID_BASELINE_INVALID')
+    return value
+
+
+def _reviewed_retired_baseline(source,archive,document,source_report,source_sha):
+    required={'schema','application_closed_confirmation','complete_retired_order_id_scope_reviewed',
+        'source_generation','source_epoch_sha256','source_recovery_sha256',
+        'archive_manifest_sha256','retired_client_order_ids'}
+    if not isinstance(document,dict):_fail('RETIRED_ORDER_ID_BASELINE_INVALID')
+    lineage=source_report['lineage'];ids=document.get('retired_client_order_ids')
+    archive_manifest_sha=_manifest_entry(archive)['sha256']
+    if (set(document)!=required or
+        document.get('schema')!=RETIRED_BASELINE_SCHEMA or
+        document.get('application_closed_confirmation') is not True or
+        document.get('complete_retired_order_id_scope_reviewed') is not True or
+        type(document.get('source_generation')) is not int or
+        document.get('source_generation')!=lineage['generation'] or
+        document.get('source_epoch_sha256')!=lineage['epoch_sha256'] or
+        document.get('source_recovery_sha256')!=source_sha or
+        document.get('archive_manifest_sha256')!=archive_manifest_sha or
+        lineage['generation']<=0 or 'retired_order_id_fingerprints_sha256' in lineage or
+        not isinstance(ids,list) or len(ids)>MAX_RETIRED_ORDER_ID_FINGERPRINTS or
+        any(not isinstance(value,str) or not 1<=len(value)<=64 or not value.isascii() or
+            not value.replace('-','').replace('_','').isalnum() for value in ids) or
+        ids!=sorted(ids) or len(ids)!=len(set(ids))):
+        _fail('RETIRED_ORDER_ID_BASELINE_INVALID')
+    fingerprints=sorted(order_id_fingerprint(value) for value in ids)
+    if len(fingerprints)!=len(set(fingerprints)):_fail('RETIRED_ORDER_ID_FINGERPRINT_COLLISION_REVIEW_REQUIRED')
+    if not set(_archived_fingerprints(source_report)).issubset(fingerprints):
+        _fail('RETIRED_ORDER_ID_BASELINE_INCOMPLETE')
+    return fingerprints,_digest(document)
+
+
+def review_retired_id_baseline(source,archive,baseline,*,application_closed=False):
+    """Validate an operator-reviewed private legacy ID list against one exact source."""
+    if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
+    source,_=_private_path(source);archive,_=_private_path(archive)
+    rotation_plan(source,archive,application_closed=True)
+    report,recovery_sha=_snapshot(source);document=_load_retired_baseline(baseline)
+    fingerprints,review_sha=_reviewed_retired_baseline(source,archive,document,report,recovery_sha)
+    rotation_plan(source,archive,application_closed=True)
+    return dict(mode='OFFLINE_RETIRED_ORDER_ID_BASELINE_REVIEW',reviewed=True,
+        baseline_kind=RETIRED_ID_BASELINE_KIND,baseline_review_sha256=review_sha,
+        retired_order_id_fingerprint_count=len(fingerprints),
+        retired_order_id_fingerprints_sha256=retired_id_set_sha256(fingerprints),
+        exact_source_bound=True,complete_scope_operator_confirmed=True,
+        historical_source_attested=False,raw_order_ids_retained=False,
+        migration_performed=False,automatic_install=False,automatic_resume=False,
+        **{flag:False for flag in AUTHORITY_FLAGS})
+
+
+def retired_id_baseline_binding(source,archive,*,application_closed=False):
+    """Emit only the exact content-free fields needed to author a private review."""
+    if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
+    source,_=_private_path(source);archive,_=_private_path(archive)
+    rotation_plan(source,archive,application_closed=True)
+    report,recovery_sha=_snapshot(source);lineage=report['lineage']
+    if lineage['generation']<=0 or 'retired_order_id_fingerprints_sha256' in lineage:
+        _fail('RETIRED_ORDER_ID_BASELINE_NOT_REQUIRED')
+    result=dict(mode='OFFLINE_RETIRED_ORDER_ID_BASELINE_BINDING',schema=RETIRED_BASELINE_SCHEMA,
+        source_generation=lineage['generation'],source_epoch_sha256=lineage['epoch_sha256'],
+        source_recovery_sha256=recovery_sha,archive_manifest_sha256=_manifest_entry(archive)['sha256'],
+        application_closed_confirmation=True,complete_retired_order_id_scope_reviewed=False,
+        retired_client_order_ids_included=False,exact_source_bound=True,
+        historical_source_attested=False,migration_performed=False,
+        automatic_install=False,automatic_resume=False,**{flag:False for flag in AUTHORITY_FLAGS})
+    rotation_plan(source,archive,application_closed=True)
     return result
 
 
@@ -256,10 +371,14 @@ def verify_replacement(archive,directory):
     v2_required=legacy_required|{'source_epoch_sha256','candidate_epoch_sha256','candidate_generation'}
     required=v2_required|{'retired_order_id_policy','retired_order_id_fingerprint_count',
                           'retired_order_id_fingerprints_sha256'}
-    if ((document.get('schema')==REPLACEMENT_SCHEMA and set(document)!=required) or
+    v4_required=required|{'retired_order_id_baseline_schema','retired_order_id_baseline_kind',
+        'retired_order_id_baseline_review_sha256','complete_scope_operator_confirmed',
+        'historical_source_attested'}
+    if ((document.get('schema')==REPLACEMENT_SCHEMA_V4 and set(document)!=v4_required) or
+        (document.get('schema')==REPLACEMENT_SCHEMA and set(document)!=required) or
         (document.get('schema')==REPLACEMENT_SCHEMA_V2 and set(document)!=v2_required) or
         (document.get('schema')==REPLACEMENT_SCHEMA_V1 and set(document)!=legacy_required) or
-        document.get('schema') not in (REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V2,REPLACEMENT_SCHEMA_V1) or
+        document.get('schema') not in (REPLACEMENT_SCHEMA_V4,REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V2,REPLACEMENT_SCHEMA_V1) or
         document['application_closed_confirmation'] is not True):
         _fail('REPLACEMENT_MANIFEST_INVALID')
     actual=_files(root)
@@ -276,22 +395,33 @@ def verify_replacement(archive,directory):
     if source_account is None or candidate_account is None:_fail('REPLACEMENT_REPLAY_DISAGREEMENT')
     transition_sha=_digest(dict(source_final_account=source_account,replacement_initial_account=candidate_account))
     archive_manifest_sha=_manifest_entry(archive)['sha256']
-    retired_fingerprints=(_retired_fingerprints(archive/ORDER_FILE,source_report)
+    candidate_fingerprints=list(DurableOrderGateway(root/ORDER_FILE)._retired_order_id_fingerprints())
+    retired_fingerprints=(candidate_fingerprints if document['schema']==REPLACEMENT_SCHEMA_V4 else
+        _retired_fingerprints(archive/ORDER_FILE,source_report)
         if document['schema']==REPLACEMENT_SCHEMA else [])
+    baseline_review_sha=(document['retired_order_id_baseline_review_sha256']
+        if document['schema']==REPLACEMENT_SCHEMA_V4 else None)
     expected_lineage=_next_lineage(source_report,archive_manifest_sha,
-        retired_fingerprints if document['schema']==REPLACEMENT_SCHEMA else None)
+        retired_fingerprints if document['schema'] in (REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V4) else None,
+        baseline_review_sha)
     lineage_valid=(candidate_report['lineage']==expected_lineage and
         document.get('source_epoch_sha256')==source_report['lineage']['epoch_sha256'] and
         document.get('candidate_epoch_sha256')==expected_lineage['epoch_sha256'] and
         document.get('candidate_generation')==expected_lineage['generation'])
     if document['schema']==REPLACEMENT_SCHEMA_V1:
         lineage_valid=(candidate_report['lineage']['generation']==0)
-    expected_commands=4 if document['schema'] in (REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V2) else 3
-    retired_valid=(document['schema']!=REPLACEMENT_SCHEMA or
+    expected_commands=4 if document['schema'] in (REPLACEMENT_SCHEMA_V4,REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V2) else 3
+    retired_valid=(document['schema'] not in (REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V4) or
         (document['retired_order_id_policy']==RETIRED_ID_POLICY and
          document['retired_order_id_fingerprint_count']==len(retired_fingerprints) and
          document['retired_order_id_fingerprints_sha256']==retired_id_set_sha256(retired_fingerprints) and
-         list(DurableOrderGateway(root/ORDER_FILE)._retired_order_id_fingerprints())==retired_fingerprints))
+         candidate_fingerprints==retired_fingerprints))
+    baseline_valid=(document['schema']!=REPLACEMENT_SCHEMA_V4 or
+        (document['retired_order_id_baseline_schema']==RETIRED_BASELINE_SCHEMA and
+         document['retired_order_id_baseline_kind']==RETIRED_ID_BASELINE_KIND and
+         document['complete_scope_operator_confirmed'] is True and
+         document['historical_source_attested'] is False and
+         set(_archived_fingerprints(source_report)).issubset(retired_fingerprints)))
     if (archive_manifest_sha!=document['archive_manifest_sha256'] or
         source_sha!=document['archive_recovery_sha256'] or candidate_sha!=document['candidate_recovery_sha256'] or
         transition_sha!=document['account_transition_sha256'] or
@@ -299,7 +429,7 @@ def verify_replacement(archive,directory):
         archived['archived_orders']!=document['source_archived_orders'] or
         archived['archive_batches']!=document['source_archive_batches'] or
         candidate_report['commands']!=document['commands'] or candidate_report['commands']!=expected_commands or
-        not lineage_valid or not retired_valid or
+        not lineage_valid or not retired_valid or not baseline_valid or
         candidate_report['orders'] or not candidate_report['halted'] or
         not candidate_report['portfolio_reconciled'] or
         candidate_report['archival']['archived_order_count']!=0 or
@@ -317,14 +447,16 @@ def verify_replacement(archive,directory):
         commands=candidate_report['commands'],source_commands=source_report['commands'],
         generation=candidate_report['lineage']['generation'],epoch_sha256=candidate_report['lineage']['epoch_sha256'],
         retired_order_id_fingerprint_count=len(DurableOrderGateway(root/ORDER_FILE)._retired_order_id_fingerprints()),
-        cross_epoch_id_reuse_fenced=document['schema']==REPLACEMENT_SCHEMA,
+        cross_epoch_id_reuse_fenced=document['schema'] in (REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V4),
+        legacy_baseline_reviewed=document['schema']==REPLACEMENT_SCHEMA_V4,
+        historical_source_attested=False if document['schema']==REPLACEMENT_SCHEMA_V4 else None,
         source_archived_orders=source_report['archival']['archived_order_count'],
         source_archive_batches=len(source_report['archival']['batches']),
         source_preserved=True,archive_preserved=True,automatic_install=False,automatic_resume=False,
         **{flag:False for flag in AUTHORITY_FLAGS})
 
 
-def prepare_replacement(source,archive,destination,*,application_closed=False):
+def prepare_replacement(source,archive,destination,*,application_closed=False,reviewed_retired_id_baseline=None):
     """Publish a fresh halted candidate without touching the live source."""
     if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
     source,_=_private_path(source);archive,archive_resolved=_private_path(archive)
@@ -340,6 +472,19 @@ def prepare_replacement(source,archive,destination,*,application_closed=False):
     source_account=source_report['execution_account']['account']
     if source_account is None or source_account['positions']:
         _fail('HALTED_FLAT_LOGICAL_ARCHIVE_REQUIRED')
+    legacy_lineage=(source_report['lineage']['generation']>0 and
+        'retired_order_id_fingerprints_sha256' not in source_report['lineage'])
+    baseline_review_sha=None
+    if legacy_lineage:
+        if reviewed_retired_id_baseline is None:_fail('RETIRED_ORDER_ID_BASELINE_REVIEW_REQUIRED')
+        baseline_document=_load_retired_baseline(reviewed_retired_id_baseline)
+        retired_fingerprints,baseline_review_sha=_reviewed_retired_baseline(
+            source,archive,baseline_document,source_report,source_sha)
+        candidate_schema=REPLACEMENT_SCHEMA_V4
+    else:
+        if reviewed_retired_id_baseline is not None:_fail('RETIRED_ORDER_ID_BASELINE_NOT_REQUIRED')
+        retired_fingerprints=_retired_fingerprints(source,source_report)
+        candidate_schema=REPLACEMENT_SCHEMA
     destination.parent.mkdir(parents=True,exist_ok=True)
     stage=Path(tempfile.mkdtemp(prefix='nexus-order-replacement-',dir=destination.parent))
     try:
@@ -349,14 +494,14 @@ def prepare_replacement(source,archive,destination,*,application_closed=False):
         except ValueError:_fail('REPLACEMENT_BALANCE_REVIEW_REQUIRED')
         candidate.link_portfolio();candidate.emergency_halt()
         archive_manifest_sha=_manifest_entry(archive)['sha256']
-        retired_fingerprints=_retired_fingerprints(source,source_report)
-        lineage=_next_lineage(source_report,archive_manifest_sha,retired_fingerprints)
+        lineage=_next_lineage(source_report,archive_manifest_sha,retired_fingerprints,baseline_review_sha)
         candidate.bind_replacement_epoch(lineage['generation'],lineage['predecessor_archive_sha256'],
-                                         lineage['predecessor_epoch_sha256'],retired_fingerprints)
+                                         lineage['predecessor_epoch_sha256'],retired_fingerprints,
+                                         baseline_review_sha)
         for name in (ORDER_FILE,PORTFOLIO_FILE):os.chmod(stage/name,0o600)
         candidate_report,candidate_sha=_snapshot(stage/ORDER_FILE)
         candidate_account=candidate_report['execution_account']['account']
-        document=dict(schema=REPLACEMENT_SCHEMA,application_closed_confirmation=True,
+        document=dict(schema=candidate_schema,application_closed_confirmation=True,
             archive_manifest_sha256=archive_manifest_sha,archive_recovery_sha256=source_sha,
             candidate_recovery_sha256=candidate_sha,
             source_epoch_sha256=source_report['lineage']['epoch_sha256'],
@@ -372,6 +517,11 @@ def prepare_replacement(source,archive,destination,*,application_closed=False):
             source_preserved=True,archive_preserved=True,capacity_reclaimed=False,source_history_deleted=False,
             broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
             scope='Fresh halted replacement candidate only; live source and verified archive retained; no installation, resume or authority.')
+        if candidate_schema==REPLACEMENT_SCHEMA_V4:
+            document.update(retired_order_id_baseline_schema=RETIRED_BASELINE_SCHEMA,
+                retired_order_id_baseline_kind=RETIRED_ID_BASELINE_KIND,
+                retired_order_id_baseline_review_sha256=baseline_review_sha,
+                complete_scope_operator_confirmed=True,historical_source_attested=False)
         (stage/REPLACEMENT_MANIFEST).write_text(json.dumps(document,sort_keys=True,indent=2)+'\n',encoding='utf-8')
         os.chmod(stage/REPLACEMENT_MANIFEST,0o600)
         verify_replacement(archive,stage)
@@ -773,6 +923,43 @@ def _multi_epoch_fixture(root):
         multi_epoch_max_live_commands=max_live_commands)
 
 
+def _legacy_baseline_fixture(root):
+    """Exercise a private reviewed baseline without claiming source attestation."""
+    root=Path(root);root.mkdir();live=root/'live';live.mkdir()
+    gateway=DurableOrderGateway(live/ORDER_FILE)
+    gateway.initialize_account(1000);gateway.link_portfolio();gateway.emergency_halt()
+    gateway.bind_replacement_epoch(1,'a'*64,'0'*64)
+    gateway.reset();gateway.submit('legacy-current','BTC-USD','BUY',25,tier='terrestrial')
+    gateway.cancel('legacy-current');gateway.emergency_halt();gateway.archive_terminal('legacy_epoch')
+    archive=root/'archive';candidate=root/'candidate';baseline=root/'private-baseline.json'
+    create(gateway.path,archive,application_closed=True)
+    report,recovery_sha=_snapshot(gateway.path)
+    document=dict(schema=RETIRED_BASELINE_SCHEMA,application_closed_confirmation=True,
+        complete_retired_order_id_scope_reviewed=True,
+        source_generation=report['lineage']['generation'],
+        source_epoch_sha256=report['lineage']['epoch_sha256'],
+        source_recovery_sha256=recovery_sha,
+        archive_manifest_sha256=_manifest_entry(archive)['sha256'],
+        retired_client_order_ids=['legacy-current','legacy-prior'])
+    baseline.write_text(json.dumps(document,sort_keys=True)+'\n',encoding='utf-8');os.chmod(baseline,0o600)
+    reviewed=review_retired_id_baseline(gateway.path,archive,baseline,application_closed=True)
+    prepared=prepare_replacement(gateway.path,archive,candidate,application_closed=True,
+        reviewed_retired_id_baseline=baseline)
+    replacement=DurableOrderGateway(candidate/ORDER_FILE);replacement.reset();blocked=True
+    for order_id in document['retired_client_order_ids']:
+        try:replacement.submit(order_id,'BTC-USD','BUY',25,tier='terrestrial')
+        except ValueError as error:blocked=blocked and str(error)=='RETIRED_ORDER_ID_REUSE'
+        else:blocked=False
+    manifest=(candidate/REPLACEMENT_MANIFEST).read_text(encoding='utf-8')
+    return dict(legacy_baseline_review_bound=reviewed['reviewed'] and reviewed['exact_source_bound'] and
+        reviewed['complete_scope_operator_confirmed'] and reviewed['historical_source_attested'] is False and
+        reviewed['migration_performed'] is False,
+        legacy_baseline_migration_fenced=prepared['verified'] and prepared['legacy_baseline_reviewed'] and
+        prepared['historical_source_attested'] is False and prepared['cross_epoch_id_reuse_fenced'] and blocked and
+        all(order_id not in manifest for order_id in document['retired_client_order_ids']),
+        legacy_baseline_retired_id_fingerprint_count=prepared['retired_order_id_fingerprint_count'])
+
+
 def fixture_report():
     from nexus.tier_permissions import configure
     with tempfile.TemporaryDirectory(prefix='nexus-order-offload-fixture-') as temporary:
@@ -803,6 +990,7 @@ def fixture_report():
         except ValueError as error:blocked=str(error)=='ORDER_ROTATION_RECOVERY_REQUIRED'
         recovered=recover_install(live/ORDER_FILE,output,install_recovery,application_closed=True)
         pressure=_multi_epoch_fixture(root/'multi-epoch')
+        legacy=_legacy_baseline_fixture(root/'legacy-baseline')
         checks=dict(copy_verified=result['verified'] and checked['verified'],
             source_unchanged=((live/ORDER_FILE).read_bytes(),(live/PORTFOLIO_FILE).read_bytes())==source_before and result['source_unchanged'],
             archived_order_replay=copied.order_report('buy')['archived'] and copied.order_report('sell')['archived'],
@@ -822,11 +1010,13 @@ def fixture_report():
             replacement_rollback_restores_source=rolled_back['restored'] and recovered['restored'] and
                 ((live/ORDER_FILE).read_bytes(),(live/PORTFOLIO_FILE).read_bytes())==source_before,
             incomplete_install_blocks_gateway=blocked and not (live/ROTATION_MARKER).exists(),
-            **{key:pressure[key] for key in CHECKS if key.startswith('multi_epoch_')})
+            **{key:pressure[key] for key in CHECKS if key.startswith('multi_epoch_')},
+            **{key:legacy[key] for key in CHECKS if key.startswith('legacy_baseline_')})
         try:create(live/ORDER_FILE,root/'unconfirmed')
         except ValueError as error:checks['application_closed_required']=str(error)=='ORDER_OFFLOAD_APPLICATION_MUST_BE_CLOSED'
         return dict(source='TEMPORARY_OFFLINE_ORDER_OFFLOAD_FIXTURE',passed=all(checks.values()),**checks,
                     **{key:value for key,value in pressure.items() if key not in checks},
+                    **{key:value for key,value in legacy.items() if key not in checks},
                     **{flag:False for flag in AUTHORITY_FLAGS})
 
 
@@ -845,6 +1035,13 @@ def main():
     prepare_command=sub.add_parser('prepare-replacement');prepare_command.add_argument('source',type=Path)
     prepare_command.add_argument('archive',type=Path);prepare_command.add_argument('destination',type=Path)
     prepare_command.add_argument('--confirm-application-closed',action='store_true')
+    prepare_command.add_argument('--reviewed-retired-id-baseline',type=Path)
+    binding_command=sub.add_parser('retired-id-baseline-binding');binding_command.add_argument('source',type=Path)
+    binding_command.add_argument('archive',type=Path)
+    binding_command.add_argument('--confirm-application-closed',action='store_true')
+    baseline_command=sub.add_parser('review-retired-id-baseline');baseline_command.add_argument('source',type=Path)
+    baseline_command.add_argument('archive',type=Path);baseline_command.add_argument('baseline',type=Path)
+    baseline_command.add_argument('--confirm-application-closed',action='store_true')
     replacement_command=sub.add_parser('verify-replacement');replacement_command.add_argument('archive',type=Path)
     replacement_command.add_argument('directory',type=Path)
     install_command=sub.add_parser('install-replacement');install_command.add_argument('source',type=Path)
@@ -866,6 +1063,13 @@ def main():
             result=rotation_plan(args.source,args.directory,application_closed=args.confirm_application_closed)
         elif args.action=='prepare-replacement':
             result=prepare_replacement(args.source,args.archive,args.destination,
+                application_closed=args.confirm_application_closed,
+                reviewed_retired_id_baseline=args.reviewed_retired_id_baseline)
+        elif args.action=='review-retired-id-baseline':
+            result=review_retired_id_baseline(args.source,args.archive,args.baseline,
+                application_closed=args.confirm_application_closed)
+        elif args.action=='retired-id-baseline-binding':
+            result=retired_id_baseline_binding(args.source,args.archive,
                 application_closed=args.confirm_application_closed)
         elif args.action=='verify-replacement':
             result=verify_replacement(args.archive,args.directory)

@@ -1,6 +1,12 @@
 # Windows distribution and acceptance evidence
 
-## v0.183.1 candidate status
+## v0.184.0 candidate status
+
+Exact v0.183.1 commit `8f271c1eac88bbde9ad491026808f4415017dda2` passed public-security run 39501375299, all safety/evidence/browser jobs in run 39501375274, and Windows regression/EXE/installer run 39501375258. v0.184.0 adds a platform-neutral private reviewed-baseline migration path for older rotated order journals; the current candidate still requires fresh exact-source Windows regression, standalone/installed tool, packaging and installer results. The review remains operator-confirmed and unattested by discarded source history. Native ordinary-user private-volume/profile/ACL and physical power-loss behavior remain independent gates.
+
+Local v0.184.0 validation passed 3,453 tests with one expected non-Windows skip and one existing warning; all sixteen profiles and saved-evidence verification matched 347 source files / `0b1a18198805a3a90d55b4834b65023cf2e343c17d7941820ab08f0a1715c505`, and the report SHA256 is `507a044545c4ac25f23e4f3df5f8749863733f8ce0f1a09e962f5f637af72c81`. This Linux result sets `native_windows_acceptance: false`; fresh exact-source Windows execution is mandatory.
+
+## v0.183.1 accepted exact-source workflow baseline
 
 Exact v0.183.0 commit `42023862874c0b91249b83e8c90821e59c272291` passed public-security run 39494341943, all safety/evidence/browser jobs in run 39494340579, and Windows regression/EXE/installer run 39494340749. v0.183.1 replaces the deliberate Windows directory-sync no-op at order-rotation publication boundaries with native `MoveFileExW` write-through moves. A Windows-only regression executes both publish and replace cases; the full rotation fixture also exercises marker and live pair publication. Fresh exact-source Windows results remain required, and passing disposable CI is not physical power-loss/private-volume/profile/ACL acceptance.
 

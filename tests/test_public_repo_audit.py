@@ -60,6 +60,17 @@ def test_export_renamed_as_json_is_blocked_but_offline_fixture_report_is_allowed
     assert not audit.audit(root,history=True)['passed']
 
 
+def test_private_retired_order_id_baseline_is_blocked_even_when_renamed(tmp_path):
+    root=repository(tmp_path)
+    commit(root,'ordinary.json',json.dumps({
+        'schema':'nexus.order-retired-id-baseline-review.v1',
+        'retired_client_order_ids':['private-order-id']}).encode())
+    result=audit.audit(root,history=True)
+    assert not result['passed']
+    assert any(item['rule']=='PRIVATE_ORDER_ID_BASELINE_REVIEW' for item in result['findings'])
+    assert 'private-order-id' not in json.dumps(result)
+
+
 def test_required_ref_must_be_fetched_and_shallow_clone_is_not_a_pass(tmp_path):
     root=repository(tmp_path);commit(root,'source.py',b'public')
     with pytest.raises(ValueError,match='GIT_AUDIT_INCOMPLETE'):audit.audit(root,history=True,required_refs=['refs/remotes/origin/missing'])

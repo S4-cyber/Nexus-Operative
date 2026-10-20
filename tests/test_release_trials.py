@@ -116,6 +116,16 @@ def test_declared_authority_or_user_data_mutation_rejects_report(name):
             'history_deleted':False,'old_id_deduplicated':True,name:True})
 
 
+def test_multi_epoch_order_offload_metrics_are_mandatory():
+    result=trials._execute('operations');trials._validate('operations',result)
+    offload=result['order_physical_offload']
+    for field,value in (('multi_epoch_generations',3),('multi_epoch_orders',47),
+                        ('multi_epoch_max_live_commands',5),('multi_epoch_max_source_commands',100)):
+        changed={**result,'order_physical_offload':{**offload,field:value}}
+        with pytest.raises(ValueError,match='ORDER_OFFLOAD_MULTI_EPOCH'):
+            trials._validate('operations',changed)
+
+
 def test_source_fingerprint_tracks_source_test_and_workflow_changes(tmp_path):
     for name in ('nexus','tests','tools','.github/workflows','dashboard','installer'):
         (tmp_path/name).mkdir(parents=True)

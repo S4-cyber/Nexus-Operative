@@ -913,10 +913,17 @@ def _validate(profile, result):
         # malformed legacy-shaped results still fail on the safety invariant.
         for name in ('broker_connected', 'live_orders_enabled', 'release_approved', 'application_accounts_changed'):
             if name in result: _require(result[name] is False, 'UNEXPECTED_AUTHORITY')
-        from nexus.order_offload import CHECKS as OFFLOAD_CHECKS,AUTHORITY_FLAGS as OFFLOAD_FLAGS
+        from nexus.order_offload import (CHECKS as OFFLOAD_CHECKS,AUTHORITY_FLAGS as OFFLOAD_FLAGS,
+            MULTI_EPOCH_FIXTURE_GENERATIONS,MULTI_EPOCH_FIXTURE_ORDERS)
         offload=result['order_physical_offload']
         _require(offload['source']=='TEMPORARY_OFFLINE_ORDER_OFFLOAD_FIXTURE' and offload['passed'] is True and
                  all(offload[key] is True for key in OFFLOAD_CHECKS),'ORDER_OFFLOAD')
+        _require(offload['multi_epoch_generations']==MULTI_EPOCH_FIXTURE_GENERATIONS and
+                 offload['multi_epoch_orders']==MULTI_EPOCH_FIXTURE_GENERATIONS*MULTI_EPOCH_FIXTURE_ORDERS and
+                 offload['multi_epoch_max_live_commands']==4 and
+                 type(offload['multi_epoch_max_source_commands']) is int and
+                 4<offload['multi_epoch_max_source_commands']<100,
+                 'ORDER_OFFLOAD_MULTI_EPOCH')
         _require(all(offload[key] is False for key in OFFLOAD_FLAGS),'ORDER_OFFLOAD_AUTHORITY')
     if profile == 'recovery':
         _require(result['recovered']['halted'] is True and result['recovered']['portfolio_reconciled'] is True, 'RESTORE_ACCOUNTING')

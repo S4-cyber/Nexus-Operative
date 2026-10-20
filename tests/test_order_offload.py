@@ -460,4 +460,7 @@ def test_cli_failures_never_echo_private_arguments(arguments):
 def test_fixture_is_bounded_and_grants_no_authority():
     report=order_offload.fixture_report()
     assert report['passed'] and all(report[key] for key in order_offload.CHECKS)
+    assert report['multi_epoch_generations']==4 and report['multi_epoch_orders']==48
+    assert report['multi_epoch_max_live_commands']==4
+    assert report['multi_epoch_max_source_commands']<100
     assert all(report[key] is False for key in order_offload.AUTHORITY_FLAGS)

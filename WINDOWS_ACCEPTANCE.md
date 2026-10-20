@@ -1,8 +1,8 @@
 # Windows distribution and acceptance evidence
 
-## v0.181.1 candidate status
+## v0.182.0 candidate status
 
-Exact v0.181.0 commit `fa2f6eead85eaee5366099dbb2899df902ace563` passed public security 39455511206 and browser help in safety run 39455511204, while its release-evidence operations child failed. Retained v0.180 Windows logs show the direct fault: `fsync` on the read-only `_sync_file` descriptor raises `EBADF` on Windows and caused the order-offload tests, packaged-tool smoke and operations profile to fail. v0.181.1 uses `r+b` only to obtain a Windows-compatible flush descriptor and does not write file content; a regression checks mode and byte preservation. Fresh exact-source Windows regression, packaged tools, EXE and installer lifecycle remain required.
+Exact v0.181.1 commit `83e209c96a9544222bb8843fb6225e7a2cecc311` passed public security 39457656564, all safety/browser/evidence jobs in 39457656536 and Windows regression/packaging/installer run 39457656543. v0.182.0 adds a bounded four-generation, 48-order synthetic replacement-pressure fixture to mandatory operations evidence. Fresh exact-source Windows regression, packaged tools, EXE and installer lifecycle remain required; ordinary-user profile/ACL, private-volume and power-loss behavior at every pair-replacement boundary remain independent gates.
 
 Local focused durability/order-offload/packaging/version/roadmap validation passed 76 tests and all sixteen saved-evidence profiles matched 347 source files / `352f7cdfaf9abfe3f194f3d2a5ab47773426a133b16a46647202a15230f96984`. This is not native Windows acceptance.
 

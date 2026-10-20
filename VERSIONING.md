@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.181.1 (pre-release).** Replay-bound replacement lineage remains unchanged. Explicit durable file flushes now use a writable descriptor because Windows rejects `fsync` on the prior read-only descriptor with `EBADF`; the file is not modified. Multi-epoch pressure, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.182.0 (pre-release).** A bounded four-generation, 48-order synthetic fixture now makes repeated replacement lineage, retained-artifact replay and four-command halted live-capacity recovery mandatory in the operations release profile. Extended long-run pressure, caller-ID policy, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.182.0 bounded multi-epoch replacement pressure
+
+Exact v0.181.1 source `83e209c96a9544222bb8843fb6225e7a2cecc311` passed public security 39457656564, safety/browser/evidence 39457656536 and Windows regression/packaging/installer 39457656543. The operations release fixture now executes four synthetic replacement generations containing 48 terminal orders. It replays every preserved archive, candidate and install-recovery set, verifies the exact predecessor epoch chain and requires each installed live pair to be halted, flat, reconciled and back at four commands.
+
+The fixture is bounded regression evidence, not extended long-run, real-feed throughput, native power-loss/private-volume/profile/ACL, source-retirement or caller-ID-policy acceptance. It cannot resume, connect a broker, move funds, enable live orders or approve a release. Exact-source v0.182.0 workflows remain mandatory.
+
+Local evidence passed all sixteen profiles and saved-evidence verification against 347 files / `10d0b931ab2a89b6a0e47889eae42f76498c237bdba25c744105ba3e84c2d766`; report SHA256 is `53ef916a889944719944927bfb19ae5411abc6eb7152c9794c7f62f9ae250008`. The complete regression recorded 3,428 passes plus one aggregate-load emergency-lane timing failure whose exact two parameterizations then passed alone; this is not described as an uninterrupted green full run.
 
 ## v0.181.1 Windows durable-flush descriptor correction
 

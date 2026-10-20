@@ -43,7 +43,10 @@ CHECKS=('copy_verified','source_unchanged','archived_order_replay',
         'rotation_plan_exact_source_bound','rotation_plan_non_mutating',
         'replacement_candidate_verified','replacement_candidate_non_installing',
         'replacement_install_reclaims_capacity','replacement_rollback_restores_source',
-        'incomplete_install_blocks_gateway')
+        'incomplete_install_blocks_gateway','multi_epoch_generation_chain',
+        'multi_epoch_capacity_reclaimed','multi_epoch_artifacts_replay')
+MULTI_EPOCH_FIXTURE_GENERATIONS=4
+MULTI_EPOCH_FIXTURE_ORDERS=12
 
 
 def _fail(code):
@@ -641,6 +644,60 @@ def create(source,destination,*,application_closed=False):
         if stage.exists():shutil.rmtree(stage)
 
 
+def _multi_epoch_fixture(root):
+    """Exercise several bounded replacement epochs with retained artifacts.
+
+    This is deliberately synthetic and private.  It proves that repeated
+    archive/candidate/install cycles preserve their replay evidence and return
+    the live journal to its small halted baseline.  It is not a duration,
+    market-throughput, caller-ID policy, or native power-loss acceptance test.
+    """
+    root=Path(root);root.mkdir();live=root/'multi-live';live.mkdir()
+    gateway=DurableOrderGateway(live/ORDER_FILE)
+    gateway.initialize_account(1000000);gateway.link_portfolio()
+    predecessor_epoch_sha256='0'*64;artifacts=[];max_source_commands=0;max_live_commands=0
+    generation_chain=True;capacity_reclaimed=True
+    for index in range(MULTI_EPOCH_FIXTURE_GENERATIONS):
+        if index:gateway.reset()
+        for order_index in range(MULTI_EPOCH_FIXTURE_ORDERS):
+            side='BUY' if order_index%2==0 else 'SELL'
+            order_id=f'epoch-{index}-order-{order_index}'
+            gateway.submit(order_id,'BTC-USD',side,50,tier='terrestrial')
+            gateway.set_execution_terms(order_id,1000,10)
+            gateway.simulate_quote_fill(order_id,f'fill-{index}-{order_index}',1,1,25,25,2,
+                                        1001+index,1001+index)
+            gateway.cancel(order_id)
+        gateway.emergency_halt();gateway.archive_terminal(f'fixture_epoch_{index}')
+        source_report=gateway.recovery_report();max_source_commands=max(max_source_commands,source_report['commands'])
+        archive=root/f'multi-archive-{index}';candidate=root/f'multi-candidate-{index}'
+        recovery=root/f'multi-recovery-{index}'
+        create(gateway.path,archive,application_closed=True)
+        prepared=prepare_replacement(gateway.path,archive,candidate,application_closed=True)
+        installed=install_replacement(gateway.path,archive,candidate,recovery,application_closed=True)
+        gateway=DurableOrderGateway(gateway.path);live_report=gateway.recovery_report()
+        lineage=live_report['lineage'];max_live_commands=max(max_live_commands,live_report['commands'])
+        expected_generation=index+1
+        generation_chain=(generation_chain and prepared['generation']==expected_generation and
+            installed['generation']==expected_generation and lineage['generation']==expected_generation and
+            lineage['predecessor_epoch_sha256']==predecessor_epoch_sha256)
+        capacity_reclaimed=(capacity_reclaimed and installed['capacity_reclaimed'] is True and
+            live_report['commands']==4 and live_report['orders']==[] and live_report['halted'] is True and
+            live_report['portfolio_reconciled'] is True)
+        predecessor_epoch_sha256=lineage['epoch_sha256']
+        artifacts.append((archive,candidate,recovery))
+    artifacts_replay=all(verify(archive)['verified'] and
+        verify_replacement(archive,candidate)['verified'] and
+        verify_install_recovery(archive,recovery)['rollback_available']
+        for archive,candidate,recovery in artifacts)
+    return dict(multi_epoch_generation_chain=generation_chain,
+        multi_epoch_capacity_reclaimed=capacity_reclaimed,
+        multi_epoch_artifacts_replay=artifacts_replay,
+        multi_epoch_generations=MULTI_EPOCH_FIXTURE_GENERATIONS,
+        multi_epoch_orders=MULTI_EPOCH_FIXTURE_GENERATIONS*MULTI_EPOCH_FIXTURE_ORDERS,
+        multi_epoch_max_source_commands=max_source_commands,
+        multi_epoch_max_live_commands=max_live_commands)
+
+
 def fixture_report():
     from nexus.tier_permissions import configure
     with tempfile.TemporaryDirectory(prefix='nexus-order-offload-fixture-') as temporary:
@@ -670,6 +727,7 @@ def fixture_report():
         try:DurableOrderGateway(live/ORDER_FILE).recovery_report()
         except ValueError as error:blocked=str(error)=='ORDER_ROTATION_RECOVERY_REQUIRED'
         recovered=recover_install(live/ORDER_FILE,output,install_recovery,application_closed=True)
+        pressure=_multi_epoch_fixture(root/'multi-epoch')
         checks=dict(copy_verified=result['verified'] and checked['verified'],
             source_unchanged=((live/ORDER_FILE).read_bytes(),(live/PORTFOLIO_FILE).read_bytes())==source_before and result['source_unchanged'],
             archived_order_replay=copied.order_report('buy')['archived'] and copied.order_report('sell')['archived'],
@@ -687,10 +745,12 @@ def fixture_report():
                 not installed['automatic_resume'] and installed['source_preserved'] and installed['rollback_available'],
             replacement_rollback_restores_source=rolled_back['restored'] and recovered['restored'] and
                 ((live/ORDER_FILE).read_bytes(),(live/PORTFOLIO_FILE).read_bytes())==source_before,
-            incomplete_install_blocks_gateway=blocked and not (live/ROTATION_MARKER).exists())
+            incomplete_install_blocks_gateway=blocked and not (live/ROTATION_MARKER).exists(),
+            **{key:pressure[key] for key in CHECKS if key.startswith('multi_epoch_')})
         try:create(live/ORDER_FILE,root/'unconfirmed')
         except ValueError as error:checks['application_closed_required']=str(error)=='ORDER_OFFLOAD_APPLICATION_MUST_BE_CLOSED'
         return dict(source='TEMPORARY_OFFLINE_ORDER_OFFLOAD_FIXTURE',passed=all(checks.values()),**checks,
+                    **{key:value for key,value in pressure.items() if key not in checks},
                     **{flag:False for flag in AUTHORITY_FLAGS})
 
 

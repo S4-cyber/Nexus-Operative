@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.181.1, Windows durable-flush descriptor correction over replay-bound replacement epoch lineage. Read the newest version section and generated roadmap; exact-source CI, native Windows power-loss/private-volume acceptance, multi-epoch pressure and actual broker/market acceptance remain open.
+Current checkpoint: v0.182.0, bounded multi-epoch replacement-pressure evidence over replay-bound replacement lineage. Read the newest version section and generated roadmap; exact-source CI, extended long-run/native Windows power-loss/private-volume acceptance, caller-ID policy and actual broker/market acceptance remain open.
+
+## v0.182.0 bounded multi-epoch replacement pressure
+
+Exact v0.181.1 commit `83e209c96a9544222bb8843fb6225e7a2cecc311` passed public security 39457656564, all safety/browser/evidence jobs in 39457656536 and Windows regression/packaging/installer run 39457656543. The durable-flush correction therefore has exact-source native workflow coverage, without establishing private-volume power-loss acceptance.
+
+The operations release profile now requires a bounded four-generation, 48-order synthetic pressure fixture. Every generation creates a verified physical archive, prepares and installs a replay-bound halted candidate, retains its recovery copy, and is reverified after the final generation. Each install must advance the exact predecessor digest chain and return the live journal to the four-command halted/flat/reconciled baseline. Fixed profile validation also rejects changed generation, order and live/source command metrics.
+
+This advances repeat-rotation regression evidence only. It is not sustained-duration or real-market throughput, native power-loss/private-volume/profile/ACL acceptance, source-retirement policy or cross-epoch caller-ID prevention. It adds no UI control or parameter, imports no retired order, resumes nothing and grants no provider, account, funds, live, cloud or release authority. Keep rough implementation at about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.182.0 evidence: all sixteen profiles and saved-evidence verification matched 347 files / `10d0b931ab2a89b6a0e47889eae42f76498c237bdba25c744105ba3e84c2d766`; `validation/release_trials_0_182_0.json` SHA256 is `53ef916a889944719944927bfb19ae5411abc6eb7152c9794c7f62f9ae250008`. The focused offload/release suite passed 116 tests and the packaging/version/roadmap/evidence set passed 108. The complete suite passed 3,428 tests and recorded one emergency-lane four-second scheduling failure under aggregate load; its exact two-case rerun passed in 1.47 seconds. Do not call that first complete run fully green. Compilation, dependency consistency, all fourteen Node controllers, Portal syntax and whitespace checks passed. Exact-source workflows remain mandatory.
 
 ## v0.181.1 Windows durable-flush descriptor correction
 

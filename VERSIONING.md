@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.178.1 (pre-release).** The read-only order-offload rotation preflight is unchanged. This repair makes an intermittent Windows typed-reader trial failure identify the precise fixed invariant before checking its derived summary; it changes no runtime or authority. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.179.0 (pre-release).** The offline order-offload flow can now publish a separate verified halted replacement candidate after the exact-source archive preflight. It does not install that candidate, delete history, reclaim live capacity, resume operation or grant authority. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.179.0 verified halted replacement candidate
+
+Exact v0.178.1 source `931062a3edd7f57673e8b09baa6a5f8ff6b7435b` passed security 39408328998, all three safety/browser/evidence jobs in 39408328904 and Windows packaging/installer 39408328907. `prepare-replacement` requires the application-closed exact-source rotation preflight, creates a new halted/flat order and portfolio pair from the final synthetic cash state, binds replay and account transition digests to the verified archive, verifies it and atomically publishes only the new candidate directory. `verify-replacement` repeats the archive/candidate checks.
+
+The source and archive are preserved. Automatic install/resume, live capacity reclamation, source-history deletion and every broker/funds/live/release flag remain false. Crash-safe live installation/rollback, source retirement, multi-epoch pressure and independent native private-volume/profile acceptance remain open. No UI control or parameter changed.
+
+Local validation passed 3,412 tests and the 162-test focused release/evidence/offload/packaging set. All sixteen profiles passed and saved evidence verified against 347 source files / `0cbdb811f3de53257f97cd38dddf43cc0142069d3093451b6a279cc50958fcfc`; report SHA256 is `28a00f63a121312fb70c418ffaadb491492fac9a131eb0dc2b220c1fcbfbe19f`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Exact-source CI remains required.
 
 ## v0.178.1 Windows typed-reader diagnostic ordering
 

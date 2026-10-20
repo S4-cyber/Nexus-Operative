@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.178.1, Windows release-trial diagnostic ordering repair. Read the newest version section and generated roadmap; v0.178.1 exact-source CI, capacity-reclaiming compaction/rotation and actual broker/market acceptance remain open.
+Current checkpoint: v0.179.0, verified order-history replacement candidate. Read the newest version section and generated roadmap; exact-source CI, crash-safe live installation/rollback, actual capacity reclamation and actual broker/market acceptance remain open.
+
+## v0.179.0 verified halted replacement candidate
+
+Exact v0.178.1 commit `931062a3edd7f57673e8b09baa6a5f8ff6b7435b` passed security run 39408328998, all safety/browser/evidence jobs in run 39408328904 and Windows packaging/installer run 39408328907. The native run completed regression, Portal syntax, standalone/installed tools, EXE startup, install/reinstall/uninstall and retained evidence.
+
+`order-offload prepare-replacement` requires an explicitly closed application, a verified physical archive and the exact unchanged halted/flat/reconciled live source. It creates a separate fresh halted order/portfolio pair from the final flat synthetic cash state, binds its replay and account transition to the archive, verifies SQLite integrity and replay, then atomically publishes only a new candidate directory. `verify-replacement` repeats the archive/candidate checks. Both commands expose fixed content-free failure output through the installed dispatcher.
+
+The candidate is never installed over live data. Source and archive remain preserved; source-history deletion, live-capacity reclamation, automatic resume, broker connection, money movement and release authority remain false. No Portal control or modifiable parameter was added, so the seven tabs and black/bright-purple bottom-right help contract are unchanged. Run focused order/offload/packaging tests, all sixteen profiles with saved-evidence verification, full regression, controller/Portal/static checks and the public-artifact scan before publication. Exact-source security, safety/browser/evidence and Windows packaging/installer CI remain mandatory. Keep rough implementation at about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final v0.179.0 local validation: 3,412 Python tests passed with one existing Starlette/httpx deprecation warning; the focused release/evidence/offload/packaging set passed 162 tests. All sixteen offline profiles and saved-evidence verification matched 347 source files / `0cbdb811f3de53257f97cd38dddf43cc0142069d3093451b6a279cc50958fcfc`; `validation/release_trials_0_179_0.json` SHA256 is `28a00f63a121312fb70c418ffaadb491492fac9a131eb0dc2b220c1fcbfbe19f`. Compilation, dependency consistency, generated-roadmap equality, all fourteen Node controllers, Portal inline syntax and whitespace checks passed. Run the staged public-artifact scan before publication; local Gitleaks is unavailable and exact-source security remains mandatory.
 
 ## v0.178.1 Windows typed-reader diagnostic ordering
 

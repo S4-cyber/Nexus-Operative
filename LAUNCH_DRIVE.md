@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.179.0 verified halted replacement candidate
+
+Exact v0.178.1 commit `931062a3edd7f57673e8b09baa6a5f8ff6b7435b` passed security 39408328998, safety/browser/evidence 39408328904 and Windows packaging/installer 39408328907. The order-offload tool now prepares and independently verifies a separate fresh halted/flat candidate bound to the verified archive and final synthetic account state. Staged publication is atomic to a new directory and the live source plus archive are rechecked and retained.
+
+This does not install the candidate, replace or delete live history, reclaim live command/ID capacity, resume paper operation, connect a broker, move money or grant release authority. Crash-safe live installation/rollback, source retirement, multi-epoch pressure and private-volume/native-profile acceptance remain the next capacity gate. UI, seven tabs, black/bright-purple help, OFF defaults, risk and account checks are unchanged. Rough implementation remains about 40% (30–45%, low confidence), 0/9 fully accepted.
+
+Final local validation passed 3,412 tests and the 162-test focused release/evidence/offload/packaging set. All sixteen profiles passed and saved evidence verified against 347 source files / `0cbdb811f3de53257f97cd38dddf43cc0142069d3093451b6a279cc50958fcfc`; report SHA256 is `28a00f63a121312fb70c418ffaadb491492fac9a131eb0dc2b220c1fcbfbe19f`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Exact-source CI and public artifact/history scanning remain mandatory.
+
 **Primary objective:** finish, validate and package a reliable, easy-to-use Windows Nexus Operative v1.0.0. **Secondary parallel objective:** expand the researched opportunity universe globally, as documented in [EXPANSION_INITIATIVE.md](EXPANSION_INITIATIVE.md). Breadth must not delay closure of primary readiness defects.
 
 ## Core automated-execution ambition

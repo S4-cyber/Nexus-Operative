@@ -1,9 +1,10 @@
-"""Create, verify, or compare an offline physical order-history copy.
+"""Create, verify, or compare offline order-history rotation artifacts.
 
 Nexus must be closed before creating a copy.  This tool never deletes or
 compacts the live journal.  ``rotation-plan`` is a read-only exact-binding
 preflight; capacity is not reclaimed until a separately reviewed compaction
-design exists.
+design exists.  Replacement preparation creates a new halted candidate beside
+the verified archive but never installs it over the live journal.
 """
 import argparse
 from contextlib import closing
@@ -23,6 +24,8 @@ from nexus.paper_activity_acceptance_probe import _private_path
 
 SCHEMA='nexus.order-physical-offload.v1'
 MANIFEST='nexus-order-offload-manifest.json'
+REPLACEMENT_SCHEMA='nexus.order-replacement-candidate.v1'
+REPLACEMENT_MANIFEST='nexus-order-replacement-manifest.json'
 ORDER_FILE='order_lifecycle.sqlite3'
 PORTFOLIO_FILE='paper_portfolio.sqlite3'
 MAX_FILE_BYTES=512*1024*1024
@@ -31,7 +34,8 @@ AUTHORITY_FLAGS=('broker_connected','live_orders_enabled','money_movement_enable
                  'release_approved','capacity_reclaimed','source_history_deleted')
 CHECKS=('copy_verified','source_unchanged','archived_order_replay',
         'new_destination_required','application_closed_required',
-        'rotation_plan_exact_source_bound','rotation_plan_non_mutating')
+        'rotation_plan_exact_source_bound','rotation_plan_non_mutating',
+        'replacement_candidate_verified','replacement_candidate_non_installing')
 
 
 def _fail(code):
@@ -86,7 +90,11 @@ def _files(root):
 
 
 def _load_manifest(root):
-    path=Path(root)/MANIFEST
+    return _load_named_manifest(root,MANIFEST)
+
+
+def _load_named_manifest(root,name):
+    path=Path(root)/name
     flags=os.O_RDONLY|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0)
     try:
         with os.fdopen(os.open(path,flags),'rb') as stream:
@@ -106,6 +114,11 @@ def _load_manifest(root):
     try:return json.loads(raw.decode('utf-8'),object_pairs_hook=pairs,
                           parse_constant=lambda _:_fail('MANIFEST_INVALID'))
     except (OSError,UnicodeError,json.JSONDecodeError,TypeError,RecursionError):_fail('MANIFEST_INVALID')
+
+
+def _manifest_entry(root,name=MANIFEST):
+    entry=file_entry(Path(root)/name);entry['name']=name
+    return entry
 
 
 def verify(directory):
@@ -185,6 +198,115 @@ def rotation_plan(source,directory,*,application_closed=False):
         automatic_resume=False,**{flag:False for flag in AUTHORITY_FLAGS})
 
 
+def verify_replacement(archive,directory):
+    """Verify a halted fresh candidate and its immutable archive binding."""
+    archive,_=_private_path(archive);root,_=_private_path(directory)
+    if archive.is_symlink() or not archive.is_dir() or root.is_symlink() or not root.is_dir():
+        _fail('DIRECTORY_REQUIRED')
+    archive_before=[_manifest_entry(archive),*_files(archive)]
+    archived=verify(archive)
+    document=_load_named_manifest(root,REPLACEMENT_MANIFEST)
+    required={'schema','application_closed_confirmation','archive_manifest_sha256',
+              'archive_recovery_sha256','candidate_recovery_sha256','account_transition_sha256',
+              'files','commands','source_commands','source_archived_orders','source_archive_batches',
+              'replacement_candidate_only','source_preserved','archive_preserved','capacity_reclaimed',
+              'source_history_deleted','broker_connected','live_orders_enabled','money_movement_enabled',
+              'release_approved','scope'}
+    if (set(document)!=required or document['schema']!=REPLACEMENT_SCHEMA or
+        document['application_closed_confirmation'] is not True):
+        _fail('REPLACEMENT_MANIFEST_INVALID')
+    actual=_files(root)
+    if (actual!=document['files'] or [row['name'] for row in actual]!=[ORDER_FILE,PORTFOLIO_FILE] or
+        set(path.name for path in root.iterdir())!={REPLACEMENT_MANIFEST,ORDER_FILE,PORTFOLIO_FILE}):
+        _fail('REPLACEMENT_CONTENT_DISAGREEMENT')
+    for name in (ORDER_FILE,PORTFOLIO_FILE):
+        with closing(sqlite3.connect((root/name).resolve().as_uri()+'?mode=ro&immutable=1',uri=True)) as db:
+            if db.execute('PRAGMA quick_check').fetchall()!=[('ok',)]:_fail('SQLITE_INTEGRITY_FAILED')
+    source_report,source_sha=_snapshot(archive/ORDER_FILE)
+    candidate_report,candidate_sha=_snapshot(root/ORDER_FILE)
+    source_account=source_report['execution_account']['account']
+    candidate_account=candidate_report['execution_account']['account']
+    if source_account is None or candidate_account is None:_fail('REPLACEMENT_REPLAY_DISAGREEMENT')
+    transition_sha=_digest(dict(source_final_account=source_account,replacement_initial_account=candidate_account))
+    archive_manifest_sha=_manifest_entry(archive)['sha256']
+    if (archive_manifest_sha!=document['archive_manifest_sha256'] or
+        source_sha!=document['archive_recovery_sha256'] or candidate_sha!=document['candidate_recovery_sha256'] or
+        transition_sha!=document['account_transition_sha256'] or
+        archived['commands']!=document['source_commands'] or
+        archived['archived_orders']!=document['source_archived_orders'] or
+        archived['archive_batches']!=document['source_archive_batches'] or
+        candidate_report['commands']!=document['commands'] or candidate_report['commands']!=3 or
+        candidate_report['orders'] or not candidate_report['halted'] or
+        not candidate_report['portfolio_reconciled'] or
+        candidate_report['archival']['archived_order_count']!=0 or
+        candidate_report['archival']['batches'] or
+        source_account['positions'] or
+        candidate_account!={'initial':source_account['cash'],'cash':source_account['cash'],'positions':{}}):
+        _fail('REPLACEMENT_REPLAY_DISAGREEMENT')
+    if (document['replacement_candidate_only'] is not True or document['source_preserved'] is not True or
+        document['archive_preserved'] is not True or any(document[flag] is not False for flag in AUTHORITY_FLAGS)):
+        _fail('REPLACEMENT_MANIFEST_INVALID')
+    if (_files(root)!=actual or [_manifest_entry(archive),*_files(archive)]!=archive_before):
+        _fail('CONTENT_CHANGED_DURING_VERIFICATION')
+    return dict(mode='OFFLINE_ORDER_REPLACEMENT_CANDIDATE',verified=True,
+        replacement_candidate_only=True,halted=True,flat=True,portfolio_reconciled=True,
+        commands=candidate_report['commands'],source_commands=source_report['commands'],
+        source_archived_orders=source_report['archival']['archived_order_count'],
+        source_archive_batches=len(source_report['archival']['batches']),
+        source_preserved=True,archive_preserved=True,automatic_install=False,automatic_resume=False,
+        **{flag:False for flag in AUTHORITY_FLAGS})
+
+
+def prepare_replacement(source,archive,destination,*,application_closed=False):
+    """Publish a fresh halted candidate without touching the live source."""
+    if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
+    source,_=_private_path(source);archive,archive_resolved=_private_path(archive)
+    destination,destination_resolved=_private_path(destination)
+    _regular(source)
+    if destination.exists() or destination.is_symlink():_fail('DESTINATION_MUST_BE_NEW')
+    live_root=source.resolve().parent
+    if (destination_resolved==live_root or destination_resolved.is_relative_to(live_root) or
+        destination_resolved==archive_resolved or destination_resolved.is_relative_to(archive_resolved)):
+        _fail('DESTINATION_OUTSIDE_SOURCE_AND_ARCHIVE_REQUIRED')
+    rotation_plan(source,archive,application_closed=True)
+    source_report,source_sha=_snapshot(source)
+    source_account=source_report['execution_account']['account']
+    if source_account is None or source_account['positions']:
+        _fail('HALTED_FLAT_LOGICAL_ARCHIVE_REQUIRED')
+    destination.parent.mkdir(parents=True,exist_ok=True)
+    stage=Path(tempfile.mkdtemp(prefix='nexus-order-replacement-',dir=destination.parent))
+    try:
+        os.chmod(stage,0o700)
+        candidate=DurableOrderGateway(stage/ORDER_FILE)
+        try:candidate.initialize_account(source_account['cash'])
+        except ValueError:_fail('REPLACEMENT_BALANCE_REVIEW_REQUIRED')
+        candidate.link_portfolio();candidate.emergency_halt()
+        for name in (ORDER_FILE,PORTFOLIO_FILE):os.chmod(stage/name,0o600)
+        candidate_report,candidate_sha=_snapshot(stage/ORDER_FILE)
+        candidate_account=candidate_report['execution_account']['account']
+        document=dict(schema=REPLACEMENT_SCHEMA,application_closed_confirmation=True,
+            archive_manifest_sha256=_manifest_entry(archive)['sha256'],archive_recovery_sha256=source_sha,
+            candidate_recovery_sha256=candidate_sha,
+            account_transition_sha256=_digest(dict(source_final_account=source_account,replacement_initial_account=candidate_account)),
+            files=_files(stage),commands=candidate_report['commands'],source_commands=source_report['commands'],
+            source_archived_orders=source_report['archival']['archived_order_count'],
+            source_archive_batches=len(source_report['archival']['batches']),replacement_candidate_only=True,
+            source_preserved=True,archive_preserved=True,capacity_reclaimed=False,source_history_deleted=False,
+            broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
+            scope='Fresh halted replacement candidate only; live source and verified archive retained; no installation, resume or authority.')
+        (stage/REPLACEMENT_MANIFEST).write_text(json.dumps(document,sort_keys=True,indent=2)+'\n',encoding='utf-8')
+        os.chmod(stage/REPLACEMENT_MANIFEST,0o600)
+        verify_replacement(archive,stage)
+        rotation_plan(source,archive,application_closed=True)
+        if destination.exists():_fail('DESTINATION_MUST_BE_NEW')
+        os.rename(stage,destination)
+        result=verify_replacement(archive,destination)
+        rotation_plan(source,archive,application_closed=True)
+        return {**result,'new_destination':True}
+    finally:
+        if stage.exists():shutil.rmtree(stage)
+
+
 def create(source,destination,*,application_closed=False):
     if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
     source,_=_private_path(source);destination,destination_resolved=_private_path(destination)
@@ -236,6 +358,7 @@ def fixture_report():
     from nexus.tier_permissions import configure
     with tempfile.TemporaryDirectory(prefix='nexus-order-offload-fixture-') as temporary:
         root=Path(temporary);live=root/'live';live.mkdir();output=root/'archive'/'epoch'
+        replacement=root/'replacement'/'epoch'
         configure('terrestrial',True)
         gateway=DurableOrderGateway(live/ORDER_FILE);gateway.initialize_account(10000);gateway.link_portfolio()
         for side in ('BUY','SELL'):
@@ -247,12 +370,19 @@ def fixture_report():
         source_before=(live/ORDER_FILE).read_bytes();result=create(live/ORDER_FILE,output,application_closed=True)
         checked=verify(output);copied=DurableOrderGateway(output/ORDER_FILE)
         planned=rotation_plan(live/ORDER_FILE,output,application_closed=True)
+        prepared=prepare_replacement(live/ORDER_FILE,output,replacement,application_closed=True)
+        replacement_checked=verify_replacement(output,replacement)
         checks=dict(copy_verified=result['verified'] and checked['verified'],
             source_unchanged=(live/ORDER_FILE).read_bytes()==source_before and result['source_unchanged'],
             archived_order_replay=copied.order_report('buy')['archived'] and copied.order_report('sell')['archived'],
             new_destination_required=result['new_destination'],application_closed_required=False,
             rotation_plan_exact_source_bound=planned['exact_source_bound'],
             rotation_plan_non_mutating=planned['dry_run_only'] and not planned['compaction_performed'] and
+                (live/ORDER_FILE).read_bytes()==source_before,
+            replacement_candidate_verified=prepared['verified'] and replacement_checked['verified'] and
+                prepared['halted'] and prepared['flat'],
+            replacement_candidate_non_installing=not prepared['automatic_install'] and
+                not prepared['capacity_reclaimed'] and not prepared['source_history_deleted'] and
                 (live/ORDER_FILE).read_bytes()==source_before)
         try:create(live/ORDER_FILE,root/'unconfirmed')
         except ValueError as error:checks['application_closed_required']=str(error)=='ORDER_OFFLOAD_APPLICATION_MUST_BE_CLOSED'
@@ -272,12 +402,22 @@ def main():
     verify_command=sub.add_parser('verify');verify_command.add_argument('directory',type=Path)
     plan_command=sub.add_parser('rotation-plan');plan_command.add_argument('source',type=Path)
     plan_command.add_argument('directory',type=Path);plan_command.add_argument('--confirm-application-closed',action='store_true')
+    prepare_command=sub.add_parser('prepare-replacement');prepare_command.add_argument('source',type=Path)
+    prepare_command.add_argument('archive',type=Path);prepare_command.add_argument('destination',type=Path)
+    prepare_command.add_argument('--confirm-application-closed',action='store_true')
+    replacement_command=sub.add_parser('verify-replacement');replacement_command.add_argument('archive',type=Path)
+    replacement_command.add_argument('directory',type=Path)
     args=parser.parse_args()
     try:
         if args.action=='create':
             result=create(args.source,args.destination,application_closed=args.confirm_application_closed)
         elif args.action=='rotation-plan':
             result=rotation_plan(args.source,args.directory,application_closed=args.confirm_application_closed)
+        elif args.action=='prepare-replacement':
+            result=prepare_replacement(args.source,args.archive,args.destination,
+                application_closed=args.confirm_application_closed)
+        elif args.action=='verify-replacement':
+            result=verify_replacement(args.archive,args.directory)
         else:result=verify(args.directory)
         print(json.dumps(result,sort_keys=True))
         return 0

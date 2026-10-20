@@ -100,6 +100,76 @@ def test_rotation_plan_rejects_source_change_after_initial_replay(tmp_path,monke
         order_offload.rotation_plan(source,destination,application_closed=True)
 
 
+def test_prepare_replacement_publishes_halted_candidate_and_preserves_inputs(tmp_path):
+    gateway=archived(tmp_path);source=gateway.path;archive=tmp_path/'archive';candidate=tmp_path/'candidate'
+    order_offload.create(source,archive,application_closed=True)
+    before=(source.read_bytes(),(source.parent/order_offload.PORTFOLIO_FILE).read_bytes(),
+            (archive/order_offload.ORDER_FILE).read_bytes(),
+            (archive/order_offload.PORTFOLIO_FILE).read_bytes(),
+            (archive/order_offload.MANIFEST).read_bytes())
+    result=order_offload.prepare_replacement(source,archive,candidate,application_closed=True)
+    assert result['verified'] and result['replacement_candidate_only'] and result['new_destination']
+    assert result['halted'] and result['flat'] and result['portfolio_reconciled']
+    assert result['commands']==3 and result['source_archived_orders']==2
+    assert result['source_preserved'] and result['archive_preserved']
+    assert not result['capacity_reclaimed'] and not result['source_history_deleted']
+    assert not result['automatic_install'] and not result['automatic_resume']
+    assert set(path.name for path in candidate.iterdir())=={
+        order_offload.ORDER_FILE,order_offload.PORTFOLIO_FILE,order_offload.REPLACEMENT_MANIFEST}
+    assert order_offload.verify_replacement(archive,candidate)=={key:value for key,value in result.items()
+        if key!='new_destination'}
+    replacement=DurableOrderGateway(candidate/order_offload.ORDER_FILE).recovery_report()
+    assert replacement['halted'] and replacement['orders']==[]
+    source_cash=gateway.recovery_report()['execution_account']['account']['cash']
+    assert replacement['execution_account']['account']=={'initial':source_cash,'cash':source_cash,'positions':{}}
+    assert replacement['archival']['archived_order_count']==0
+    assert before==(source.read_bytes(),(source.parent/order_offload.PORTFOLIO_FILE).read_bytes(),
+                    (archive/order_offload.ORDER_FILE).read_bytes(),
+                    (archive/order_offload.PORTFOLIO_FILE).read_bytes(),
+                    (archive/order_offload.MANIFEST).read_bytes())
+
+
+def test_replacement_rejects_archive_or_candidate_tamper(tmp_path):
+    gateway=archived(tmp_path);source=gateway.path;archive=tmp_path/'archive';candidate=tmp_path/'candidate'
+    order_offload.create(source,archive,application_closed=True)
+    order_offload.prepare_replacement(source,archive,candidate,application_closed=True)
+    manifest=candidate/order_offload.REPLACEMENT_MANIFEST
+    document=json.loads(manifest.read_text());document['commands']=4
+    manifest.write_text(json.dumps(document))
+    with pytest.raises(ValueError,match='REPLACEMENT_REPLAY_DISAGREEMENT'):
+        order_offload.verify_replacement(archive,candidate)
+    document['commands']=3;manifest.write_text(json.dumps(document))
+    with sqlite3.connect(candidate/order_offload.ORDER_FILE) as db:
+        db.execute("UPDATE commands SET payload='{}' WHERE sequence=1")
+    with pytest.raises(ValueError,match='REPLACEMENT_CONTENT_DISAGREEMENT|RECOVERY_FAILED'):
+        order_offload.verify_replacement(archive,candidate)
+
+
+def test_prepare_replacement_requires_fresh_external_destination_and_closed_assertion(tmp_path):
+    gateway=archived(tmp_path);source=gateway.path;archive=tmp_path/'archive'
+    order_offload.create(source,archive,application_closed=True)
+    with pytest.raises(ValueError,match='APPLICATION_MUST_BE_CLOSED'):
+        order_offload.prepare_replacement(source,archive,tmp_path/'candidate')
+    with pytest.raises(ValueError,match='OUTSIDE_SOURCE_AND_ARCHIVE'):
+        order_offload.prepare_replacement(source,archive,archive/'candidate',application_closed=True)
+    existing=tmp_path/'existing';existing.mkdir()
+    with pytest.raises(ValueError,match='DESTINATION_MUST_BE_NEW'):
+        order_offload.prepare_replacement(source,archive,existing,application_closed=True)
+
+
+def test_failed_replacement_verification_never_publishes_destination(tmp_path,monkeypatch):
+    gateway=archived(tmp_path);source=gateway.path;archive=tmp_path/'archive';destination=tmp_path/'candidate'
+    order_offload.create(source,archive,application_closed=True)
+    original=order_offload.verify_replacement
+    def fail_stage(archive_path,candidate_path):
+        if Path(candidate_path)!=destination:raise ValueError('INJECTED_REPLACEMENT_VERIFY_FAILURE')
+        return original(archive_path,candidate_path)
+    monkeypatch.setattr(order_offload,'verify_replacement',fail_stage)
+    with pytest.raises(ValueError,match='INJECTED_REPLACEMENT_VERIFY_FAILURE'):
+        order_offload.prepare_replacement(source,archive,destination,application_closed=True)
+    assert not destination.exists()
+
+
 def test_creation_requires_closed_halted_flat_logical_archive(tmp_path):
     live=tmp_path/'live';live.mkdir();source=live/order_offload.ORDER_FILE
     gateway=DurableOrderGateway(source);gateway.initialize_account(1000);gateway.link_portfolio()
@@ -204,11 +274,20 @@ def test_cli_create_and_verify_emit_content_free_status(tmp_path):
     plan=subprocess.run([sys.executable,'-m','nexus.order_offload','rotation-plan',str(gateway.path),str(destination),
                          '--confirm-application-closed'],capture_output=True,text=True,timeout=30)
     assert plan.returncode==0 and json.loads(plan.stdout)['exact_source_bound']
+    candidate=tmp_path/'candidate'
+    prepared=subprocess.run([sys.executable,'-m','nexus.order_offload','prepare-replacement',str(gateway.path),
+        str(destination),str(candidate),'--confirm-application-closed'],capture_output=True,text=True,timeout=30)
+    assert prepared.returncode==0 and str(gateway.path) not in prepared.stdout
+    assert json.loads(prepared.stdout)['replacement_candidate_only']
+    replacement=subprocess.run([sys.executable,'-m','nexus.order_offload','verify-replacement',str(destination),
+        str(candidate)],capture_output=True,text=True,timeout=30)
+    assert replacement.returncode==0 and json.loads(replacement.stdout)['verified']
 
 
 @pytest.mark.parametrize('arguments',[
     ['create','PRIVATE_PATH_TOKEN/order_lifecycle.sqlite3','PRIVATE_DEST_TOKEN','--confirm-application-closed'],
     ['rotation-plan','PRIVATE_PATH_TOKEN/order_lifecycle.sqlite3','PRIVATE_DEST_TOKEN'],
+    ['prepare-replacement','PRIVATE_PATH_TOKEN/order_lifecycle.sqlite3','PRIVATE_ARCHIVE_TOKEN','PRIVATE_DEST_TOKEN'],
     ['--unknown','PRIVATE_ARGUMENT_TOKEN'],
 ])
 def test_cli_failures_never_echo_private_arguments(arguments):

@@ -31,7 +31,7 @@ For the application-closed, copy-only archived order-journal command introduced 
 
 v0.178.0 changes no startup or Portal control. Its optional installed/source `order-offload rotation-plan` operator command is a read-only, application-closed exact-copy preflight; ordinary startup, explicit Start Portal behavior, engagement defaults and all permissions remain unchanged.
 
-v0.178.1 changes only release-trial diagnostic ordering. It adds no startup work, retry, storage mutation, control or permission and leaves the v0.178.0 operator command unchanged.
+v0.179.0 adds only an explicit application-closed offline replacement-candidate command after verified archival/preflight. It does not alter startup, install the candidate, delete live history, resume paper operation, or change any UI control, permission or risk limit. See `ORDER_OFFLOAD.md`.
 
 
 v0.86: To Do → View Release Roadmap displays both product stages and technical evidence tracks, including secure deposits/available cash, connected broker paper, governed live execution, computer-off operation and final 1.0 acceptance. These entries are plans, not permissions or connected features. Current funding remains preview-only and current Engage remains virtual/fixed-policy only. The final release requires accepted production workflows, testing, reconciliation, security/risk review, recovery and explicit owner approval; it does not automatically activate live money.

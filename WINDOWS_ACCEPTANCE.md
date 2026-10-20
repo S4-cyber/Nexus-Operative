@@ -1,5 +1,9 @@
 # Windows distribution and acceptance evidence
 
+## v0.179.0 candidate status
+
+Exact v0.178.1 commit `931062a3edd7f57673e8b09baa6a5f8ff6b7435b` passed Windows 39408328907, safety/browser/evidence 39408328904 and security 39408328998. v0.179.0 extends the installed order-offload smoke with prepare/verify replacement commands for a separate halted candidate while preserving the live source and archive. Exact-source Windows regression, standalone/installed command smoke, EXE startup, installer, install/reinstall/uninstall and evidence retention remain required for this candidate. This does not establish live installation/rollback, capacity reclamation, ordinary-user private-volume/ACL or actual broker/market acceptance.
+
 ## Verified installer checkpoint — v0.172.3 (2026-10-19 UTC)
 
 [Download the Windows test installer](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39269412789/artifacts/12196145555) (ZIP containing the setup EXE; expires 2026-10-26T14:49:40Z). The [distribution bundle](https://github.com/S4-cyber/Nexus-Operative/actions/runs/39269412789/artifacts/12196145544) includes source-bound checksums, standalone EXE and offline evidence; expires 2026-11-18T14:49:36Z. GitHub may require sign-in.

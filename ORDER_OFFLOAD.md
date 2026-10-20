@@ -2,6 +2,8 @@
 
 Nexus v0.177.0 adds an explicit operator tool for making a verified physical copy of a logically archived order journal. It is a copy-only foundation for later long-run storage work. It does **not** compact or delete the live journal, reclaim command/ID capacity, resume trading, attest a broker account, or grant release authority.
 
+v0.177.1 closes the read-only SQLite integrity-check handles before the staged directory is published or cleaned up. This is required by Windows file locking and does not change the command, evidence, permission or authority contract below.
+
 ## Before creating a copy
 
 - Fully close Nexus. The command requires `--confirm-application-closed`; the flag is an operator assertion, not process detection.

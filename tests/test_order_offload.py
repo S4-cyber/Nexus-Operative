@@ -110,6 +110,28 @@ def test_failed_verification_never_publishes_destination(tmp_path,monkeypatch):
     assert not destination.exists()
 
 
+def test_integrity_connections_close_before_staged_directory_publish(tmp_path,monkeypatch):
+    gateway=archived(tmp_path);destination=tmp_path/'archive';opened=[]
+    original_connect=order_offload.sqlite3.connect
+    original_rename=order_offload.os.rename
+    class Tracked:
+        def __init__(self,connection):self.connection=connection;self.closed=False
+        def __getattr__(self,name):return getattr(self.connection,name)
+        def close(self):self.connection.close();self.closed=True
+    def connect(*args,**kwargs):
+        connection=original_connect(*args,**kwargs)
+        if kwargs.get('uri') is True and 'immutable=1' in str(args[0]):
+            connection=Tracked(connection);opened.append(connection)
+        return connection
+    def rename(source,target):
+        assert opened and all(connection.closed for connection in opened)
+        return original_rename(source,target)
+    monkeypatch.setattr(order_offload.sqlite3,'connect',connect)
+    monkeypatch.setattr(order_offload.os,'rename',rename)
+    assert order_offload.create(gateway.path,destination,application_closed=True)['verified']
+    assert all(connection.closed for connection in opened)
+
+
 def test_cli_create_and_verify_emit_content_free_status(tmp_path):
     gateway=archived(tmp_path);destination=tmp_path/'archive'
     create=subprocess.run([sys.executable,'-m','nexus.order_offload','create',str(gateway.path),str(destination),

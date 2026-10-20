@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.177.0 (pre-release).** The installed/source operator allowlist now includes an application-closed, copy-only order offload command. It accepts only a stopped, flat, reconciled and logically archived journal, copies both databases to a new private destination, verifies hashes/SQLite/full replay and preserves the source. It does not compact, delete, reclaim live capacity, resume execution or grant authority. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.177.1 (pre-release).** The application-closed, copy-only order offload now closes every read-only SQLite integrity handle before staged publication and cleanup on Windows. The stopped, flat, reconciled and logically archived gate, full verification, source preservation and lack of compaction/capacity/execution/release authority remain unchanged. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.177.1 Windows offload handle correction
+
+Exact v0.177.0 public-security run 39335584198 and its browser-help job passed, while the Windows release-evidence operations child failed. Its SQLite integrity connections were entered as transaction context managers, which do not close the underlying handles. Linux permitted rename/removal with the leaked handles, masking the native locking defect. v0.177.1 explicitly closes both read-only integrity connections before replay, rename and cleanup; a regression blocks publication until every tracked integrity handle is closed.
+
+This patch changes no command semantics, user interface, editable parameter, permission, risk limit, account, provider, funding, live/cloud behavior or authority flag. Exact-source Windows regression/release evidence, standalone/installed command smoke, packaging/installer and security workflows remain mandatory.
+
+Local validation passed 3,399 tests, the 152-test focused set and all sixteen source-fingerprinted profiles. Saved evidence matched 347 source files / `5d7aec1cd4980de8e8b330b319cf04ac8d95368bccf221db4a913b948367de21`; report SHA256 is `262de076ea23e39df01e7be2a1c85529e796f5f3fbd877861f27e35117b1f258`. This does not replace exact-source Windows acceptance.
 
 ## v0.175.1 Windows acceptance-harness repair
 

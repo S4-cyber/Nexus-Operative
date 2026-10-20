@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.177.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.177.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.177.0 adds an explicit application-closed installed/source order-offload tool that creates a new private copy only after the journal is stopped, flat, reconciled and logically archived. It rejects SQLite sidecars and aliases, hashes both databases, runs SQLite integrity and full archived-order replay checks, verifies the source stayed unchanged and never deletes history or claims reclaimed live capacity. The operations release profile and packaged-tool smoke exercise the copy. This is a physical-copy foundation, not compaction, rotation, long-run acceptance or permission. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.177.1 closes every read-only SQLite integrity-check connection before the staged order-offload directory is renamed or removed. v0.177.0 exact-source Windows release evidence exposed the handle leak because Windows correctly locks open database files; Linux had allowed the same open files to move and be deleted. A publication regression now refuses the rename unless all integrity handles are closed. The copy-only scope, fail-closed gates, source preservation, OFF defaults and lack of execution/release authority are unchanged. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.177.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.177.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,8 +36,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, fourteen Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | v0.177.0 source-fingerprinted report `validation/release_trials_0_177_0.json` verifies all sixteen local profiles against 347 files / `2d396ef98eb40fcaac1db4889c64079c00d2e6c9ef63ce3f10c8d51b6105ee3b`; report SHA256 `68220344fc05ddd8a8db3e4af210eea1df7344c58d4458d89a55c935d27e067d`; actual broker/market/native-profile acceptance remains open |
-| Windows packaging and data recovery | Exact v0.176.0 all green; v0.177.0 pending | v0.176.0 commit `6f6eeaa44439d49e697597397c3678b409f1a974` passed security 39327666704, safety/browser/evidence 39327666689 and Windows/installer 39327666522. v0.177.0 exact-source CI must exercise the new installed create/verify commands; ordinary-user private-volume/profile/ACL, multi-epoch rotation/compaction, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
+| Integrated local trials | Bounded offline trials passed | v0.177.1 source-fingerprinted report `validation/release_trials_0_177_1.json` verifies all sixteen local profiles against 347 files / `5d7aec1cd4980de8e8b330b319cf04ac8d95368bccf221db4a913b948367de21`; report SHA256 `262de076ea23e39df01e7be2a1c85529e796f5f3fbd877861f27e35117b1f258`; actual broker/market/native-profile acceptance remains open |
+| Windows packaging and data recovery | Exact v0.176.0 all green; v0.177.1 pending | v0.177.0 security and browser-help passed, but Windows release evidence exposed open SQLite integrity handles in order offload. v0.177.1 closes each handle before staged publication and must pass exact-source native regression, release evidence and installer/tool smoke; ordinary-user private-volume/profile/ACL, multi-epoch rotation/compaction, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |

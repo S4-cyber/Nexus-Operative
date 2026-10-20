@@ -170,3 +170,11 @@ v0.177.0 adds `--paper-tool order-offload create|verify`. The common packaging s
 Local source success cannot establish private-volume ACLs, ordinary-user profile behavior, atomic publication under native faults, multi-epoch compaction/rotation or long-run storage acceptance. No Portal control, provider/account access, order route, funding/live/cloud operation or release authority is added.
 
 Local v0.177.0 validation passed 3,398 tests, the 125-test focused set, all sixteen source-fingerprinted profiles, saved-evidence verification, fourteen Node controllers, Portal syntax, compileall, dependency consistency and roadmap equality. This evidence has `native_windows_acceptance: false`; the exact-source Windows workflow remains the acceptance gate for the packaged command.
+
+## v0.177.1 candidate status
+
+Exact v0.177.0 security run 39335584198 and the browser-help job in safety run 39335584233 passed, but that run's release-evidence job failed in the operations child. The offload integrity pass used SQLite connection context managers, which finalize transactions but do not close connections. Linux permitted the staged files to be moved and removed with those handles open; Windows correctly retained file locks. v0.177.1 explicitly closes both read-only integrity handles before replay, publication and cleanup, and adds a platform-neutral regression that blocks rename while any tracked integrity handle remains open.
+
+No order, portfolio, permission, risk, UI, provider, account, funding, live, cloud or release behavior changes. Exact-source v0.177.1 regression, release evidence, standalone/installed command smoke, packaging, install/reinstall/uninstall and security remain mandatory.
+
+Local v0.177.1 validation passed 3,399 tests, the 152-test focused set and all sixteen source-fingerprinted profiles. A direct descriptor audit found zero leaked offload handles, but this Linux result is not native Windows acceptance; the exact-source workflows remain mandatory.

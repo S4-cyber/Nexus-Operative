@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.177.0, verified application-closed physical-copy foundation after v0.176.0 passed exact-source CI. Read the newest version section and generated roadmap; v0.177.0 exact-source CI, capacity-reclaiming compaction/rotation and actual broker/market acceptance remain open.
+Current checkpoint: v0.177.1, Windows SQLite-handle correction for the application-closed physical-copy foundation. Read the newest version section and generated roadmap; v0.177.1 exact-source CI, capacity-reclaiming compaction/rotation and actual broker/market acceptance remain open.
+
+## v0.177.1 Windows offload handle correction
+
+Exact v0.177.0 commit `ec6c61ca29fcab7160bab3165e565fd394f5aedb` passed public-security run 39335584198 and the browser-help job in safety run 39335584233, but the release-evidence operations child failed on Windows. The offload verifier used SQLite connection context managers for `quick_check`; those finalize transactions but do not close connections. Linux allowed the staged files to be renamed and removed despite six retained handles across the three verification passes. Windows correctly locks open database files.
+
+v0.177.1 wraps each read-only integrity connection in explicit closure before replay, staged-directory publication and fixture cleanup. A platform-neutral regression tracks those connections and refuses the publication rename unless all are closed. The application-closed, stopped/flat/reconciled/logically archived gates, source preservation, no-sidecar/link rules, hashes, SQLite integrity, complete replay, copy-only scope and all false authority flags remain unchanged. No UI control or parameter changed; the seven beginner tabs and black/bright-purple help contract remain unchanged.
+
+Exact-source v0.177.1 regression, release evidence, public-security, standalone/installed ten-tool smoke, packaging, startup, installer, install/reinstall/uninstall and artifact evidence are required. Capacity-reclaiming compaction/rotation, independent native private-volume/profile/ACL recovery, multi-epoch pressure, authorized broker paper, sustained real feeds, funding/live/cloud and owner release approval remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final v0.177.1 local validation: 3,399 Python tests passed with one existing Starlette/httpx deprecation warning; the focused offload/release/evidence/version/packaging set passed 152 tests. All sixteen offline profiles and saved-evidence verification matched 347 source files / `5d7aec1cd4980de8e8b330b319cf04ac8d95368bccf221db4a913b948367de21`; `validation/release_trials_0_177_1.json` SHA256 is `262de076ea23e39df01e7be2a1c85529e796f5f3fbd877861f27e35117b1f258`. The direct descriptor audit found zero remaining offload handles. Compilation, dependency consistency, generated-roadmap equality, controller/Portal checks and public-artifact scans must also pass before publication. Exact-source native Windows workflows remain mandatory. No actual provider, account, market, funds, live or cloud operation occurred.
 
 ## v0.177.0 verified physical-copy foundation
 

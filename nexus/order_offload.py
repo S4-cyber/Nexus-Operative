@@ -5,6 +5,7 @@ compacts the live journal; capacity is not reclaimed until a separately
 reviewed compaction design exists.
 """
 import argparse
+from contextlib import closing
 import hashlib
 import json
 import os
@@ -121,7 +122,10 @@ def verify(directory):
     if set(path.name for path in root.iterdir())!={MANIFEST,*(row['name'] for row in actual)}:
         _fail('CONTENT_DISAGREEMENT')
     for name in (ORDER_FILE,PORTFOLIO_FILE):
-        with sqlite3.connect((root/name).resolve().as_uri()+'?mode=ro&immutable=1',uri=True) as db:
+        # Connection context managers commit/roll back but do not close.  An
+        # explicit close is required before Windows can rename or remove the
+        # staged directory after verification.
+        with closing(sqlite3.connect((root/name).resolve().as_uri()+'?mode=ro&immutable=1',uri=True)) as db:
             if db.execute('PRAGMA quick_check').fetchall()!=[('ok',)]:_fail('SQLITE_INTEGRITY_FAILED')
     report,recovery_sha256=_snapshot(root/ORDER_FILE)
     expected=(document['commands'],document['archived_orders'],document['archive_batches'])

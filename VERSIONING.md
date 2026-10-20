@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.182.1 (pre-release).** Aggregate-load regression setup and CLI privacy/exit-contract child startup now tolerate unrelated scheduler stalls without changing the two-second emergency response assertions or any runtime behavior. Engagement permissions and risk controls are unchanged. Extended long-run pressure, caller-ID policy, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.182.2 (pre-release).** The real-loopback release trial now handles Windows abort/reset timing for one pre-credential foreign-origin denial by requiring a bodyless re-probe to return the exact 403/no-store response. Runtime HTTP policy, credentials, engagement permissions and risk controls are unchanged. Extended long-run pressure, caller-ID policy, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,16 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.182.2 Windows pre-credential denial re-probe
+
+Exact v0.182.1 security run 39477022644 and Windows regression/packaging/installer run 39477022746 passed. Safety run 39477022684 passed its source-fingerprinted release evidence and rendered browser-help jobs, but its independent complete Windows regression failed after 3,409 passes and 19 skips. The disposable real-loopback trial's foreign-origin credential POST was denied before credential installation, but Windows aborted the connection before urllib exposed the 403 response (`WinError 10053`).
+
+Only this body-bearing, foreign-origin pre-credential fixture may respond to an abort/reset by sending one bodyless request to the same protected route with the same foreign Origin. The trial still requires the second request to expose the exact 403 and no-store headers. A missing/wrong response, server failure or repeated abort still fails. Ordinary, same-origin and credential-bearing requests never re-probe. Resets after an already verified 403 may omit only the denied response body.
+
+A combined local release/version run also exposed one 25-second timeout in a disposable forced-process recovery fixture; its exact recovery set immediately passed 9/9 in 13.4 seconds. Those child processes now receive a bounded 60-second allowance because their contract is crash-state replay integrity, not startup latency. The five forced exits, ten fresh-process reviews and every recovery assertion remain unchanged. These changes do not alter the production HTTP boundary, credential operations, runtime deadlines, permissions or authority. Exact-source workflows remain required.
+
+Final local validation passed 3,435 tests with one existing warning and the focused release/recovery/version/roadmap set passed 140. All sixteen offline profiles and saved-evidence verification matched 347 source files / `850bf55bfcd70fd33151fc1dc6fafac2d875b702bc3ed66317bb9ae09029ae3c`; report SHA-256 is `98bf4c04d0e0b810ef62fd2a22b82c8d0f74b64229e5ee7384ef14d6c42bad48`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed.
 
 ## v0.182.1 aggregate-load fixture deadline isolation
 

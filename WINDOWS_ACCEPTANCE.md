@@ -1,5 +1,13 @@
 # Windows distribution and acceptance evidence
 
+## v0.182.2 candidate status
+
+Exact v0.182.1 commit `cdd8633e8c55ad619d7df5c105edce8877e179fe` passed public security 39477022644 and Windows regression/packaging/installer 39477022746. Safety run 39477022684 passed release evidence and rendered browser help, while its complete Windows regression failed after 3,409 passes and 19 skips when a disposable foreign-origin credential POST was aborted before urllib exposed its 403 (`WinError 10053`).
+
+v0.182.2 permits only that pre-credential, foreign-origin release fixture to issue one bodyless same-route/same-Origin re-probe after an abort/reset. The probe must independently return the exact 403/no-store denial; ordinary, same-origin and credential-bearing traffic never follows this path. Production middleware, credentials, Portal behavior and authority are unchanged. Fresh exact-source regression/evidence/browser and packaging/installer runs are mandatory; ordinary-user profile/ACL, private-volume and power-loss behavior at every pair-replacement boundary remain independent gates.
+
+Final local evidence passed 3,435 tests and all sixteen profiles; the saved report matches 347 source files / `850bf55bfcd70fd33151fc1dc6fafac2d875b702bc3ed66317bb9ae09029ae3c` with SHA256 `98bf4c04d0e0b810ef62fd2a22b82c8d0f74b64229e5ee7384ef14d6c42bad48`. This remains Linux/local evidence until fresh exact-source Windows workflows complete.
+
 ## v0.182.1 candidate status
 
 Exact v0.182.0 commit `c21b989380bb0eb2052c2f97f0d60be06bf0cdeb` passed public security 39467696168, all safety/browser/evidence jobs in 39467694519 and Windows regression/packaging/installer run 39467694560. v0.182.1 separates overload-fixture setup tolerance from the unchanged two-second Emergency Stop/status assertions after a local aggregate-load scheduler stall. Fresh exact-source Windows regression, packaged tools, EXE and installer lifecycle remain required; ordinary-user profile/ACL, private-volume and power-loss behavior at every pair-replacement boundary remain independent gates.

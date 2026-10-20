@@ -25,6 +25,7 @@ PHASES=('before_lookup_begin_commit','after_lookup_begin_commit','before_lookup_
 CHECKS=('retained_prefix_matches_boundary','fresh_process_replay_equal','sqlite_files_unchanged',
         'restart_vault_silent','restart_network_silent','another_step_denied_before_vault',
         'no_attempt_rearmed','original_uncertainty_preserved','local_ownership_reacquired')
+CHILD_TIMEOUT_SECONDS=60
 SQLITE_NAMES=tuple(name+suffix for name in ('requests.sqlite3','pacing.sqlite3')
     for suffix in ('','-journal','-wal','-shm'))
 
@@ -143,7 +144,8 @@ def _fresh(root,phase):
 
 
 def _child(expression,*args,expected=0):
-    try:child=subprocess.run([sys.executable,'-c',expression,*map(str,args)],capture_output=True,text=True,timeout=25)
+    try:child=subprocess.run([sys.executable,'-c',expression,*map(str,args)],capture_output=True,text=True,
+        timeout=CHILD_TIMEOUT_SECONDS)
     except (OSError,subprocess.SubprocessError):raise ValueError('PAPER_RECOVERY_DRILL_CHILD_FAILED') from None
     _require(child.returncode==expected,'CHILD_BOUNDARY')
     if expected:return None

@@ -29,11 +29,21 @@ def test_actual_drill_cli_exposes_only_aggregate_disposable_evidence():
 def test_child_failures_do_not_echo_private_stderr_or_paths(monkeypatch,kind):
     private='PRIVATE_PATH_AND_ERROR_FIXTURE'
     def fail(*args,**kwargs):
-        if kind=='timeout':raise subprocess.TimeoutExpired(private,25,stderr=private)
+        if kind=='timeout':raise subprocess.TimeoutExpired(private,drill.CHILD_TIMEOUT_SECONDS,stderr=private)
         return subprocess.CompletedProcess(private,1 if kind=='exit' else 0,stdout=private,stderr=private)
     monkeypatch.setattr(drill.subprocess,'run',fail)
     with pytest.raises(ValueError) as error:drill._child(private,private)
     assert private not in str(error.value) and str(error.value).startswith('PAPER_RECOVERY_DRILL_CHILD_')
+
+
+def test_child_timeout_is_bounded_but_not_a_startup_latency_assertion(monkeypatch):
+    observed=[]
+    def completed(*args,**kwargs):
+        observed.append(kwargs['timeout'])
+        return subprocess.CompletedProcess(args[0],0,stdout='{}',stderr='')
+    monkeypatch.setattr(drill.subprocess,'run',completed)
+    assert drill._child('fixture') == {}
+    assert observed == [drill.CHILD_TIMEOUT_SECONDS] == [60]
 
 
 def test_failed_cli_emits_fixed_code_without_exception_details(monkeypatch,capsys):

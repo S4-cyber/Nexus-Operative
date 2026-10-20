@@ -52,10 +52,33 @@ def _http_trial_response_body(response, *, tolerate_precredential_denial_reset=F
     """
     try:
         return response.read(2 * 1024 * 1024)
-    except ConnectionResetError:
+    except (ConnectionAbortedError, ConnectionResetError):
         if not tolerate_precredential_denial_reset:
             raise
         return b'{}'
+
+
+def _http_trial_open(opener, request, *, timeout, precredential_denial_probe=None):
+    """Open one trial request, with a strictly scoped denied-request re-probe.
+
+    Windows can abort a connection before urllib exposes the response when the
+    loopback boundary rejects a POST without consuming its body.  Only the
+    foreign-origin, pre-credential fixture supplies a bodyless probe.  That
+    second request must still return the exact expected denial in the caller;
+    ordinary, same-origin and credential-bearing requests never retry here.
+    """
+    from urllib.error import HTTPError
+    try:
+        return opener.open(request, timeout=timeout)
+    except HTTPError as error:
+        return error
+    except (ConnectionAbortedError, ConnectionResetError):
+        if precredential_denial_probe is None:
+            raise
+        try:
+            return opener.open(precredential_denial_probe, timeout=timeout)
+        except HTTPError as error:
+            return error
 
 
 def _pacing_restart_review(path):
@@ -101,8 +124,13 @@ def _http_pacing_trial(base, root):
     def post(action, payload, *, origin=base, expected=200, tolerate_precredential_denial_reset=False):
         request = Request(base+'/api/execution/alpaca-paper/local-credentials/'+action,
             data=json.dumps(payload).encode(), headers={'Content-Type':'application/json','Origin':origin}, method='POST')
-        try: response = build_opener(ProxyHandler({})).open(request, timeout=15)
-        except HTTPError as error: response = error
+        probe = None
+        if tolerate_precredential_denial_reset:
+            _require(expected == 403 and origin != base, 'HTTP_PAPER_RESET_SCOPE')
+            probe = Request(request.full_url, data=b'',
+                headers={'Content-Type':'application/json','Origin':origin}, method='POST')
+        response = _http_trial_open(build_opener(ProxyHandler({})), request, timeout=15,
+            precredential_denial_probe=probe)
         with response:
             _require(response.status == expected and response.headers.get('Cache-Control') == 'no-store', 'HTTP_PAPER_STATUS')
             _require(not tolerate_precredential_denial_reset or expected == 403, 'HTTP_PAPER_RESET_SCOPE')

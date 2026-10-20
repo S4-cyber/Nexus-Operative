@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.182.1, aggregate-load fixture deadline isolation over the v0.182.0 bounded multi-epoch replacement evidence. Read the newest version section and generated roadmap; exact-source CI, extended long-run/native Windows power-loss/private-volume acceptance, caller-ID policy and actual broker/market acceptance remain open.
+Current checkpoint: v0.182.2, Windows loopback denial-trial portability over the v0.182.1 aggregate-load fixture correction and v0.182.0 bounded multi-epoch replacement evidence. Read the newest version section and generated roadmap; exact-source CI, extended long-run/native Windows power-loss/private-volume acceptance, caller-ID policy and actual broker/market acceptance remain open.
+
+## v0.182.2 Windows pre-credential denial re-probe
+
+Exact v0.182.1 commit `cdd8633e8c55ad619d7df5c105edce8877e179fe` passed public-security run 39477022644 and Windows regression/packaging/installer run 39477022746. In independently budgeted safety run 39477022684, release evidence and rendered browser help passed, but the complete Windows regression failed after 3,409 passes and 19 skips when the host aborted one foreign-origin paper-credential POST before urllib exposed the 403 response (`WinError 10053`). No credential had been installed, and the failure occurred in the disposable real-loopback trial rather than application runtime.
+
+The trial opener may now re-probe only a body-bearing pre-credential request that was already marked as a foreign-origin denial fixture and aborted/reset before headers. Its re-probe uses the same local credential route and foreign Origin with an empty body, so the global boundary must independently return the exact 403 and no-store response without leaving unread body bytes. A reset after a verified 403 may remain bodyless. Ordinary, same-origin and credential-bearing requests never receive this recovery path. Regression tests inject both `ConnectionAbortedError` and `ConnectionResetError`, prove the bodyless probe is used only when supplied, and prove unscoped requests fail immediately.
+
+A combined local release/version run also exposed one 25-second disposable recovery-drill child timeout under aggregate load; the exact recovery set immediately passed 9/9 in 13.4 seconds. Those forced-process crash/replay children now have a bounded 60-second process allowance because the drill measures retained journal invariants, not startup latency. Its five exact forced exits, ten fresh-process replays, sidecar fingerprints and all no-network/no-vault/no-authority checks are unchanged. The server boundary, UI, permissions, risk controls, credential behavior and every authority flag are unchanged. Fresh exact-source security, safety/evidence/browser and Windows installer workflows remain mandatory.
+
+Final local v0.182.2 validation passed 3,435 tests with one existing Starlette/httpx warning; the focused release/recovery/version/roadmap set passed 140 tests. All sixteen profiles and saved-evidence verification matched 347 files / `850bf55bfcd70fd33151fc1dc6fafac2d875b702bc3ed66317bb9ae09029ae3c`; `validation/release_trials_0_182_2.json` SHA256 is `98bf4c04d0e0b810ef62fd2a22b82c8d0f74b64229e5ee7384ef14d6c42bad48`. Compilation, dependency consistency, all fourteen Node controllers, Portal syntax, generated-roadmap equality and whitespace checks passed. The staged public-artifact audit found zero disallowed artifacts; fresh exact-source workflows remain required.
 
 ## v0.182.1 aggregate-load fixture deadline isolation
 

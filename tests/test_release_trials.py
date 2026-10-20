@@ -1,9 +1,11 @@
 """Actual local HTTP acceptance and rejection of falsely successful evidence."""
 import copy
+import io
 import os
 import subprocess
 import sys
 import json
+from urllib.error import HTTPError
 
 import pytest
 from nexus import release_trials as trials
@@ -12,15 +14,56 @@ HTTP_TRIAL_SUBPROCESS_TIMEOUT_SECONDS = 120
 
 
 class _ResettingBody:
+    error = ConnectionResetError
+
     def read(self, size):
-        raise ConnectionResetError('fixture reset after response headers')
+        raise self.error('fixture reset after response headers')
 
 
-def test_http_trial_tolerates_reset_only_for_precredential_denial():
+@pytest.mark.parametrize('error', [ConnectionAbortedError, ConnectionResetError])
+def test_http_trial_tolerates_reset_only_for_precredential_denial(error):
+    body = _ResettingBody(); body.error = error
     assert trials._http_trial_response_body(
-        _ResettingBody(),tolerate_precredential_denial_reset=True) == b'{}'
-    with pytest.raises(ConnectionResetError):
-        trials._http_trial_response_body(_ResettingBody())
+        body,tolerate_precredential_denial_reset=True) == b'{}'
+    body = _ResettingBody(); body.error = error
+    with pytest.raises(error):
+        trials._http_trial_response_body(body)
+
+
+class _AbortThenDeny:
+    def __init__(self, error=ConnectionAbortedError):
+        self.error = error
+        self.requests = []
+
+    def open(self, request, timeout):
+        self.requests.append((request, timeout))
+        if len(self.requests) == 1:
+            raise self.error('fixture aborted before response headers')
+        raise HTTPError(request.full_url, 403, 'denied',
+            {'Cache-Control':'no-store'}, io.BytesIO(b'{"detail":"LOCAL_PAPER_PORTAL_REQUIRED"}'))
+
+
+@pytest.mark.parametrize('error', [ConnectionAbortedError, ConnectionResetError])
+def test_http_trial_reprobes_only_scoped_precredential_denial(error):
+    from urllib.request import Request
+    request = Request('http://127.0.0.1:1/private', data=b'secretless-fixture', method='POST')
+    probe = Request(request.full_url, data=b'', method='POST')
+    opener = _AbortThenDeny(error)
+    response = trials._http_trial_open(opener, request, timeout=15,
+        precredential_denial_probe=probe)
+    assert response.code == 403 and response.headers['Cache-Control'] == 'no-store'
+    assert [row[0].data for row in opener.requests] == [b'secretless-fixture', b'']
+    assert [row[1] for row in opener.requests] == [15, 15]
+
+
+@pytest.mark.parametrize('error', [ConnectionAbortedError, ConnectionResetError])
+def test_http_trial_never_reprobes_unscoped_request(error):
+    from urllib.request import Request
+    opener = _AbortThenDeny(error)
+    request = Request('http://127.0.0.1:1/private', data=b'ordinary-request', method='POST')
+    with pytest.raises(error):
+        trials._http_trial_open(opener, request, timeout=15)
+    assert len(opener.requests) == 1
 
 
 def test_real_http_process_starts_stopped_without_data_credentials_or_external_io(tmp_path):

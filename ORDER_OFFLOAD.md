@@ -14,6 +14,8 @@ v0.182.0 retains the v0.181 schema-v2 lineage and Windows-compatible writable fl
 
 v0.183.0 replacement schema v3 carries a sorted, bounded private fingerprint set for every retired client-order ID in the retained lineage. The candidate lineage and manifest bind its policy, count and set digest, and later submission rejects reuse before mutation. Existing v1 and v2 candidates remain verifiable. A source already rotated by an older schema has no provably complete baseline, so preparing another replacement fails closed for explicit operator review. Fingerprints are pseudonymous rather than anonymous and must remain on private storage; public output exposes only their count and aggregate digest. The fence covers one retained Nexus lineage, not caller identity, other hosts/journals or broker-wide idempotency.
 
+v0.183.1 publishes the archive, candidate, install-recovery directory, intent marker and both live database replacements through a durable move helper. POSIX uses rename plus parent-directory fsync. Windows uses `MoveFileExW` with `MOVEFILE_WRITE_THROUGH` and adds replacement semantics only at intended replacement boundaries. File bytes remain separately flushed. This reduces a known metadata-publication gap but does not substitute for physical power-loss, private-volume or ACL acceptance.
+
 ## Before creating a copy
 
 - Fully close Nexus. The command requires `--confirm-application-closed`; the flag is an operator assertion, not process detection.

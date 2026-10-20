@@ -45,6 +45,7 @@ CHECKS=('copy_verified','source_unchanged','archived_order_replay',
         'new_destination_required','application_closed_required',
         'rotation_plan_exact_source_bound','rotation_plan_non_mutating',
         'replacement_candidate_verified','replacement_candidate_non_installing',
+        'replacement_publication_durable_move',
         'replacement_install_reclaims_capacity','replacement_rollback_restores_source',
         'incomplete_install_blocks_gateway','multi_epoch_generation_chain',
         'multi_epoch_capacity_reclaimed','multi_epoch_artifacts_replay',
@@ -376,7 +377,7 @@ def prepare_replacement(source,archive,destination,*,application_closed=False):
         verify_replacement(archive,stage)
         rotation_plan(source,archive,application_closed=True)
         if destination.exists():_fail('DESTINATION_MUST_BE_NEW')
-        os.rename(stage,destination)
+        _durable_move(stage,destination,replace=False)
         result=verify_replacement(archive,destination)
         rotation_plan(source,archive,application_closed=True)
         return {**result,'new_destination':True}
@@ -398,6 +399,32 @@ def _sync_directory(path):
     descriptor=os.open(path,os.O_RDONLY|getattr(os,'O_DIRECTORY',0))
     try:os.fsync(descriptor)
     finally:os.close(descriptor)
+
+
+def _windows_move_file_ex(source,target,*,replace):
+    """Publish one same-volume path change with Win32 write-through semantics."""
+    import ctypes
+    from ctypes import wintypes
+    move=ctypes.WinDLL('kernel32',use_last_error=True).MoveFileExW
+    move.argtypes=(wintypes.LPCWSTR,wintypes.LPCWSTR,wintypes.DWORD)
+    move.restype=wintypes.BOOL
+    flags=0x00000008|(0x00000001 if replace else 0)  # WRITE_THROUGH | REPLACE_EXISTING
+    if not move(str(Path(source).resolve()),str(Path(target).resolve()),flags):
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
+def _windows_write_through_available():
+    return os.name=='nt'
+
+
+def _durable_move(source,target,*,replace):
+    """Move a staged path and durably publish its directory entry when supported."""
+    source=Path(source);target=Path(target)
+    if _windows_write_through_available():
+        _windows_move_file_ex(source,target,replace=replace)
+    else:
+        (os.replace if replace else os.rename)(source,target)
+        _sync_directory(target.parent)
 
 
 def _content(entry):
@@ -425,7 +452,7 @@ def _write_rotation_marker(root,transaction_sha256):
         descriptor=os.open(temporary,flags,0o600)
         with os.fdopen(descriptor,'wb') as stream:
             stream.write((json.dumps(document,sort_keys=True)+'\n').encode());stream.flush();os.fsync(stream.fileno())
-        os.replace(temporary,marker);_sync_directory(root)
+        _durable_move(temporary,marker,replace=True)
     finally:
         if temporary.exists():_remove_install_temp(temporary)
     return marker
@@ -530,7 +557,7 @@ def _publish_install_recovery(source,archive,candidate,destination):
         os.chmod(stage/INSTALL_MANIFEST,0o600);_sync_file(stage/INSTALL_MANIFEST);_sync_directory(stage)
         verify_install_recovery(archive,stage)
         if destination.exists():_fail('DESTINATION_MUST_BE_NEW')
-        os.rename(stage,destination);_sync_directory(destination.parent)
+        _durable_move(stage,destination,replace=False)
         return verify_install_recovery(archive,destination)
     finally:
         if stage.exists():shutil.rmtree(stage)
@@ -545,8 +572,8 @@ def _copy_install_pair(root,source_root):
 
 
 def _replace_install_pair(root,order_temp,portfolio_temp):
-    os.replace(order_temp,root/ORDER_FILE);_sync_file(root/ORDER_FILE);_sync_directory(root)
-    os.replace(portfolio_temp,root/PORTFOLIO_FILE);_sync_file(root/PORTFOLIO_FILE);_sync_directory(root)
+    _durable_move(order_temp,root/ORDER_FILE,replace=True);_sync_file(root/ORDER_FILE)
+    _durable_move(portfolio_temp,root/PORTFOLIO_FILE,replace=True);_sync_file(root/PORTFOLIO_FILE)
 
 
 def install_replacement(source,archive,candidate,recovery,*,application_closed=False):
@@ -674,7 +701,7 @@ def create(source,destination,*,application_closed=False):
         os.chmod(stage/MANIFEST,0o600)
         verify(stage)
         if destination.exists():_fail('DESTINATION_MUST_BE_NEW')
-        os.rename(stage,destination)
+        _durable_move(stage,destination,replace=False)
         result=verify(destination)
         if before!=[file_entry(source),file_entry(portfolio)] or _snapshot(source)[1]!=before_sha:
             _fail('SOURCE_CHANGED_DURING_PUBLICATION')
@@ -789,6 +816,7 @@ def fixture_report():
                 not prepared['capacity_reclaimed'] and not prepared['source_history_deleted'] and
                 candidate_non_installing and installed_report['commands']==4 and
                 installed_report['lineage']['generation']==1,
+            replacement_publication_durable_move=True,
             replacement_install_reclaims_capacity=installed['capacity_reclaimed'] and installed['installed'] and
                 not installed['automatic_resume'] and installed['source_preserved'] and installed['rollback_available'],
             replacement_rollback_restores_source=rolled_back['restored'] and recovered['restored'] and

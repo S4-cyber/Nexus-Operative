@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.183.0 (pre-release).** Fresh replacement epochs now replay a bounded private fingerprint set for retired client-order IDs and reject cross-epoch reuse before journal mutation. Legacy rotated sources without a complete retired-ID baseline fail closed for explicit review. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Extended long-run pressure, caller identity/broker-wide idempotency, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.183.1 (pre-release).** Order-rotation publication now uses durable move boundaries: parent-directory fsync on POSIX and Win32 write-through moves on Windows. The persistent marker still fences incomplete or uncertain installs. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Physical power-loss/private-volume/ACL evidence, extended long-run pressure, reviewed legacy-baseline migration, caller identity/broker-wide idempotency and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.183.1 Windows write-through rotation publication
+
+Exact v0.183.0 commit `42023862874c0b91249b83e8c90821e59c272291` passed public-security run 39494341943, all safety/evidence/browser jobs in run 39494340579, and Windows regression/EXE/installer run 39494340749. The rotation tool now publishes archives, replacement candidates, recovery directories, the fail-closed intent marker and each live database replacement through a shared durable move boundary. POSIX retains atomic rename followed by parent-directory fsync. Windows calls `MoveFileExW` with `MOVEFILE_WRITE_THROUGH`; replacement is requested only where the destination is intentionally superseded. Database and manifest bytes are still flushed separately.
+
+The intent marker remains present across any interrupted pair install, and ordinary gateway access remains blocked until explicit recovery. If marker removal cannot be confirmed, the fence is restored before failure returns. This is a concrete metadata-durability improvement, not proof of behavior through physical power loss, a storage-controller outage, unusual private volumes or ordinary-user ACL policies. Fresh exact-source Windows execution is required. No UI/control, broker connection, retry, resume, source-history deletion, money movement, live order or release authority was added.
+
+Final local validation passed 3,445 tests with one expected non-Windows skip and one existing warning; the release-focused set passed 185 with the same skip. All sixteen bounded offline profiles passed and saved evidence verified against 347 source files / `7dfe0b4640c4fe33cdf202bb12799c835dd2cec881433be48f9febbbf44aaf9a`; `validation/release_trials_0_183_1.json` SHA256 is `2319f00b5b1e029be494d2477b9479b2d8c018641a525dc6b0a730ca52bdfff0`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The exact 498-path staged snapshot passed the public-artifact audit with zero findings; exact-source Gitleaks and Windows workflows remain required. Native Windows, broker, market, funds, live, cloud and release flags remain false.
 
 ## v0.183.0 bounded retired-ID lineage fence
 

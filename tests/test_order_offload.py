@@ -1,5 +1,7 @@
 import builtins
+import ctypes
 import json
+import os
 from pathlib import Path
 import shutil
 import sqlite3
@@ -246,6 +248,43 @@ def test_file_sync_uses_windows_compatible_writable_descriptor_without_mutation(
     assert modes==['r+b'] and path.read_bytes()==b'unchanged'
 
 
+def test_durable_move_uses_windows_write_through_boundary(tmp_path,monkeypatch):
+    source=tmp_path/'source';target=tmp_path/'target';source.write_bytes(b'private')
+    calls=[]
+    monkeypatch.setattr(order_offload,'_windows_write_through_available',lambda:True)
+    monkeypatch.setattr(order_offload,'_windows_move_file_ex',
+                        lambda left,right,*,replace:calls.append((Path(left),Path(right),replace)))
+    order_offload._durable_move(source,target,replace=True)
+    assert calls==[(source,target,True)]
+    assert source.is_file() and not target.exists()  # injected boundary is non-mutating
+
+
+def test_windows_move_file_ex_sets_write_through_and_replace_flags(tmp_path,monkeypatch):
+    calls=[]
+    class Move:
+        argtypes=None
+        restype=None
+        def __call__(self,source,target,flags):
+            calls.append((source,target,flags));return True
+    move=Move()
+    class Kernel:
+        MoveFileExW=move
+    monkeypatch.setattr(ctypes,'WinDLL',lambda name,**kwargs:Kernel(),raising=False)
+    source=tmp_path/'source';target=tmp_path/'target';source.write_bytes(b'private')
+    order_offload._windows_move_file_ex(source,target,replace=True)
+    assert calls==[(str(source.resolve()),str(target.resolve()),0x00000009)]
+
+
+@pytest.mark.skipif(os.name!='nt',reason='native Win32 write-through acceptance')
+def test_native_windows_write_through_move_publishes_file(tmp_path):
+    source=tmp_path/'source';target=tmp_path/'target';source.write_bytes(b'private')
+    order_offload._durable_move(source,target,replace=False)
+    assert not source.exists() and target.read_bytes()==b'private'
+    replacement=tmp_path/'replacement';replacement.write_bytes(b'replacement')
+    order_offload._durable_move(replacement,target,replace=True)
+    assert not replacement.exists() and target.read_bytes()==b'replacement'
+
+
 def test_install_replacement_reclaims_live_capacity_and_explicit_rollback_restores_source(tmp_path):
     gateway,source,archive,candidate=prepared_install(tmp_path);recovery=tmp_path/'install-recovery'
     portfolio=source.parent/order_offload.PORTFOLIO_FILE
@@ -297,18 +336,18 @@ def test_successive_replacements_form_replay_verified_epoch_lineage(tmp_path):
 def test_interrupted_pair_install_blocks_gateway_until_explicit_recovery(tmp_path,monkeypatch):
     _,source,archive,candidate=prepared_install(tmp_path);recovery=tmp_path/'install-recovery'
     portfolio=source.parent/order_offload.PORTFOLIO_FILE
-    before=(source.read_bytes(),portfolio.read_bytes());original_replace=order_offload.os.replace
-    def interrupt(source_path,target_path):
+    before=(source.read_bytes(),portfolio.read_bytes());original_move=order_offload._durable_move
+    def interrupt(source_path,target_path,*,replace):
         if Path(target_path)==portfolio:raise OSError('INJECTED_SECOND_REPLACE_FAILURE')
-        return original_replace(source_path,target_path)
-    monkeypatch.setattr(order_offload.os,'replace',interrupt)
+        return original_move(source_path,target_path,replace=replace)
+    monkeypatch.setattr(order_offload,'_durable_move',interrupt)
     with pytest.raises(OSError,match='INJECTED_SECOND_REPLACE_FAILURE'):
         order_offload.install_replacement(source,archive,candidate,recovery,application_closed=True)
     marker=source.parent/order_offload.ROTATION_MARKER
     assert marker.is_file() and source.read_bytes()!=before[0] and portfolio.read_bytes()==before[1]
     with pytest.raises(ValueError,match='ORDER_ROTATION_RECOVERY_REQUIRED'):
         DurableOrderGateway(source).recovery_report()
-    monkeypatch.setattr(order_offload.os,'replace',original_replace)
+    monkeypatch.setattr(order_offload,'_durable_move',original_move)
     recovered=order_offload.recover_install(source,archive,recovery,application_closed=True)
     assert recovered['restored'] and not marker.exists()
     assert before==(source.read_bytes(),portfolio.read_bytes())

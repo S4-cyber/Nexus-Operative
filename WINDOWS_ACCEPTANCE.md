@@ -1,10 +1,16 @@
 # Windows distribution and acceptance evidence
 
-## v0.183.0 candidate status
+## v0.183.1 candidate status
 
-Exact v0.182.2 commit `70e7efdbab7a0cee27da97ef0843c8f74e73d1e3` passed public-security run 39486711199, all safety/evidence/browser jobs in run 39486711203, and Windows regression/EXE/installer run 39486711266. v0.183.0 adds private replayed retired-ID fingerprints to replacement journals and requires fresh exact-source Windows regression, standalone/installed private-tool, startup and installer evidence. Parent success does not certify the new source. Native ordinary-user private-volume/profile/ACL and power-loss behavior at every pair-replacement boundary remain independent gates.
+Exact v0.183.0 commit `42023862874c0b91249b83e8c90821e59c272291` passed public-security run 39494341943, all safety/evidence/browser jobs in run 39494340579, and Windows regression/EXE/installer run 39494340749. v0.183.1 replaces the deliberate Windows directory-sync no-op at order-rotation publication boundaries with native `MoveFileExW` write-through moves. A Windows-only regression executes both publish and replace cases; the full rotation fixture also exercises marker and live pair publication. Fresh exact-source Windows results remain required, and passing disposable CI is not physical power-loss/private-volume/profile/ACL acceptance.
 
-Local v0.183.0 evidence passed all sixteen profiles and saved-evidence verification against 347 source files / `b997a5a54d634202be661f7f8f2d83c7d05885745308b62e9756c97da45ab001`; report SHA256 is `3741cba13a1b83e6eb9698b01825281e29f2c4a06ca723b985b692ea547d9960`. This Linux result sets `native_windows_acceptance: false` and cannot replace fresh v0.183.0 native CI.
+Local v0.183.1 validation passed 3,445 tests with one expected non-Windows skip and one existing warning; all sixteen profiles and saved-evidence verification matched 347 source files / `7dfe0b4640c4fe33cdf202bb12799c835dd2cec881433be48f9febbbf44aaf9a`, and the report SHA256 is `2319f00b5b1e029be494d2477b9479b2d8c018641a525dc6b0a730ca52bdfff0`. This Linux result sets `native_windows_acceptance: false`; fresh exact-source Windows execution is mandatory.
+
+## v0.183.0 accepted exact-source workflow baseline
+
+Exact v0.183.0 commit `42023862874c0b91249b83e8c90821e59c272291` passed public-security run 39494341943, all safety/evidence/browser jobs in run 39494340579, and Windows regression/EXE/installer run 39494340749, including regression, Portal syntax, standalone/installed private tools, EXE startup, install/reinstall/uninstall, checksums and retained evidence. Native ordinary-user private-volume/profile/ACL and physical power-loss behavior at every pair-replacement boundary remain independent gates.
+
+Local v0.183.0 evidence passed all sixteen profiles and saved-evidence verification against 347 source files / `b997a5a54d634202be661f7f8f2d83c7d05885745308b62e9756c97da45ab001`; report SHA256 is `3741cba13a1b83e6eb9698b01825281e29f2c4a06ca723b985b692ea547d9960`. Its exact-source workflows subsequently passed as recorded above.
 
 Exact v0.182.1 commit `cdd8633e8c55ad619d7df5c105edce8877e179fe` passed public security 39477022644 and Windows regression/packaging/installer 39477022746. Safety run 39477022684 passed release evidence and rendered browser help, while its complete Windows regression failed after 3,409 passes and 19 skips when a disposable foreign-origin credential POST was aborted before urllib exposed its 403 (`WinError 10053`).
 

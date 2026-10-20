@@ -1,6 +1,6 @@
 # Emergency control under feed load
 
-v0.183.0 changes only private order-replacement lineage and retired-ID admission. The v0.182.2 denial-trial correction, actual two-second Emergency Stop/status assertions and production runtime behavior are unchanged.
+v0.183.1 changes only private order-rotation publication durability. The v0.182.2 denial-trial correction, actual two-second Emergency Stop/status assertions and production runtime behavior are unchanged.
 
 Emergency Stop remains an independent paper throttle cut. It leaves the research engine, observer and bounded learning worker in their prior state, preserves committed fills/holdings and attempts durable cancellation of pending simulated remainders. Reset clears only the cut; Engage remains explicit. No broker, deposit, transfer, live order or cloud connection is added.
 

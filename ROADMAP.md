@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.184.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.185.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.184.0 adds an explicit private legacy retired-ID baseline review and v4 replacement path. The review requires a sorted complete operator-supplied ID scope bound to the exact closed source generation, epoch, replay digest and verified archive manifest; known current archived IDs must be included. Only bounded fingerprints and an aggregate review digest enter the candidate lineage, which is labeled OPERATOR_REVIEWED_UNATTESTED rather than source-attested. Raw IDs stay in the caller-selected private input and public-repository auditing rejects that schema even after rename. Existing v1/v2/v3 candidates remain readable. Native exact-source execution, independent completeness review, physical power-loss/private-volume/ACL acceptance and broker-wide identity remain open. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.185.0 adds an optional four-observation stability guard around the existing accepted paper-reconciliation comparison. Four distinct, ordered manifests must retain the same account/source and adjacent balance/inventory fingerprints; accepted declared collection windows must cover the outer envelope, and retained fills in either guard band fail closed. The result remains an explicitly unverified diagnostic: sequential reads are not quiet or atomic balance instants, and provider source, received-activity coverage, fees, holds, spendable funds and routing remain unverified. This release also removes the POSIX-only O_NONBLOCK flag from private retired-baseline reads on Windows while retaining descriptor identity checks and POSIX hardening. Runtime permissions, UI, emergency behavior and every authority flag remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

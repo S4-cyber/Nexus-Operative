@@ -32,6 +32,13 @@ def snapshot(root):
     return tuple((path.name,path.read_bytes()) for path in sorted(root.iterdir()) if path.is_file())
 
 
+def guarded(tmp_path):
+    options=prepared(tmp_path)
+    options.update(pre_opening_observation=_fixture_observation(ACCOUNT,'1000','0',EPOCH+98,EPOCH+99),
+        post_closing_observation=_fixture_observation(ACCOUNT,'1000','0',EPOCH+104,EPOCH+105))
+    return options
+
+
 def test_complete_accepted_history_binds_exact_observations_and_head_without_writes(tmp_path):
     options=prepared(tmp_path);before=snapshot(tmp_path);result=subject.review(**options)
     assert result['mode']=='PAPER_RECONCILIATION_ACCEPTANCE_REVIEW'
@@ -59,6 +66,72 @@ def test_complete_accepted_history_binds_exact_observations_and_head_without_wri
         'ready_for_routing','broker_connected','live_orders_enabled','money_movement_enabled',
         'automatic_retry','automatic_continuation','release_approved'):
         assert result[flag] is False
+
+
+def test_four_observation_stability_guard_is_exact_bound_read_only_and_non_authoritative(tmp_path):
+    options=guarded(tmp_path);before=snapshot(tmp_path)
+    result=subject.review_with_stability_guards(**options)
+    assert result['mode']=='PAPER_RECONCILIATION_STABILITY_GUARD_REVIEW'
+    assert result['guard_manifests_distinct'] and result['guard_windows_ordered']
+    assert result['adjacent_guard_balances_stable']
+    assert result['guard_retained_fill_events']==0
+    assert result['accepted_declared_windows_cover_guard_envelope']
+    assert result['journals_rechecked_unchanged']
+    assert result['accepted_reconciliation_review']['observation_review']['arithmetic_evaluated']
+    assert result==subject.review_with_stability_guards(**options)
+    assert snapshot(tmp_path)==before
+    for flag in ('admission_reserved','source_attested','source_coverage_verified',
+        'activity_coverage_verified','fee_coverage_complete','fee_execution_links_verified',
+        'balance_instants_verified','observation_windows_verified_quiet','holds_reconciled',
+        'broker_account_reconciled','spendable_funds_verified','ledger_applied','ready_for_routing',
+        'broker_connected','live_orders_enabled','money_movement_enabled','automatic_retry',
+        'automatic_continuation','release_approved'):
+        assert result[flag] is False
+
+
+@pytest.mark.parametrize('change,code',[
+    ({'pre_opening_observation':lambda:_fixture_observation(ACCOUNT,'999','0',EPOCH+98,EPOCH+99)},'GUARD_BALANCE_CHANGED'),
+    ({'pre_opening_observation':lambda:_fixture_observation(ACCOUNT,'1000','0',EPOCH+99,EPOCH+100)},'GUARD_WINDOWS_NOT_ORDERED'),
+    ({'pre_opening_observation':lambda:_fixture_observation(ACCOUNT,'1000','0',EPOCH-2,EPOCH-1)},'DECLARED_WINDOWS_DO_NOT_COVER_OBSERVATION_ENVELOPE'),
+    ({'post_closing_observation':lambda:_fixture_observation(ACCOUNT,'1000','0',EPOCH+102.5,EPOCH+104)},'GUARD_WINDOWS_NOT_ORDERED'),
+])
+def test_stability_guard_rejects_changed_overlap_or_unaccepted_outer_scope(tmp_path,change,code):
+    options=guarded(tmp_path);options.update({key:value() for key,value in change.items()})
+    before=snapshot(tmp_path)
+    with pytest.raises(ValueError,match=code):subject.review_with_stability_guards(**options)
+    assert snapshot(tmp_path)==before
+
+
+def test_stability_guard_rejects_manifest_reuse_and_declared_source_disagreement(tmp_path):
+    base=guarded(tmp_path);options=copy.deepcopy(base)
+    options['pre_opening_observation']=copy.deepcopy(options['opening_observation'])
+    with pytest.raises(ValueError,match='GUARD_MANIFEST_REUSE'):
+        subject.review_with_stability_guards(**options)
+    options=copy.deepcopy(base);foreign=options['post_closing_observation']
+    foreign['source']='PAPER_HTTPS_READS'
+    timing={key:float(value) if '.' in value or 'e' in value else int(value)
+        for key,value in foreign['read_timing'].items()}
+    foreign['observation_sha256']=subject.sha(dict(profile='nexus.paper-account-observation.v1',
+        account_fields_sha256=foreign['account_fields_sha256'],
+        reported_inventory_sha256=foreign['reported_inventory_sha256'],
+        position_count=foreign['position_count'],open_order_count=foreign['open_order_count'],
+        source=foreign['source'],read_timing=timing))
+    foreign['manifest_sha256']=subject.sha({k:v for k,v in foreign.items() if k!='manifest_sha256'})
+    with pytest.raises(ValueError,match='GUARD_SOURCE_DISAGREEMENT'):
+        subject.review_with_stability_guards(**options)
+
+
+def test_guard_fill_scan_is_inclusive_and_content_free():
+    windows={
+        'pre_opening':{'started_at':'2026-10-17T00:00:00+00:00','completed_at':'2026-10-17T00:00:01+00:00'},
+        'opening':{'started_at':'2026-10-17T00:00:02+00:00','completed_at':'2026-10-17T00:00:03+00:00'},
+        'closing':{'started_at':'2026-10-17T00:00:04+00:00','completed_at':'2026-10-17T00:00:05+00:00'},
+        'post_closing':{'started_at':'2026-10-17T00:00:06+00:00','completed_at':'2026-10-17T00:00:07+00:00'}}
+    retained={'normalized_activities':[
+        {'kind':'FILL','activity_id':'first-private-id','occurred_at':'2026-10-17T00:00:03+00:00'},
+        {'kind':'FILL','activity_id':'second-private-id','occurred_at':'2026-10-17T00:00:04+00:00'},
+        {'kind':'FEE','activity_id':'ignored-fee','reported_date':'2026-10-17'}]}
+    assert subject._guard_fill_events(retained,windows)==['first-private-id','second-private-id']
 
 
 def test_unbound_or_missing_acceptance_history_fails_before_balance_review(tmp_path, monkeypatch):
@@ -177,6 +250,28 @@ def test_cli_prints_private_review_but_never_writes_journals(tmp_path):
     assert snapshot(tmp_path)==before
 
 
+def test_cli_stability_guards_are_paired_and_never_write_journals(tmp_path):
+    options=guarded(tmp_path);files={}
+    for name in ('pre_opening_observation','opening_observation','closing_observation','post_closing_observation'):
+        path=tmp_path/(name+'.json');path.write_text(json.dumps(options[name]));files[name]=path
+    common=[sys.executable,'-m','nexus.paper_reconciliation_acceptance',
+        '--expected-account',ACCOUNT,'--pacing',str(options['pacing_path']),
+        '--activity-store',str(options['activity_store_path']),
+        '--acceptance-store',str(options['acceptance_store_path']),
+        '--activity-head',options['expected_activity_head'],
+        '--opening',str(files['opening_observation']),'--closing',str(files['closing_observation'])]
+    before=snapshot(tmp_path)
+    child=subprocess.run(common+['--pre-opening',str(files['pre_opening_observation']),
+        '--post-closing',str(files['post_closing_observation'])],capture_output=True,text=True,timeout=20)
+    assert child.returncode==0
+    assert json.loads(child.stdout)['mode']=='PAPER_RECONCILIATION_STABILITY_GUARD_REVIEW'
+    assert snapshot(tmp_path)==before
+    unpaired=subprocess.run(common+['--pre-opening',str(files['pre_opening_observation'])],
+        capture_output=True,text=True,timeout=20)
+    assert unpaired.returncode==2 and unpaired.stdout=='PAPER_RECONCILIATION_ACCEPTANCE_FAILED\n'
+    assert snapshot(tmp_path)==before
+
+
 def test_release_fixture_is_repeatable_vault_and_provider_silent():
     result=subject.fixture_report()
     assert result['passed'] and result['repeat_review_matches'] and result['journals_unchanged']
@@ -192,6 +287,12 @@ def test_release_fixture_is_repeatable_vault_and_provider_silent():
     assert result['declared_windows_cover_observation_envelope']
     assert result['requested_window_boundaries_verified'] is False
     assert result['observation_arithmetic_evaluated'] and 'review' not in result
+    assert result['stability_guard_bound'] and result['stability_guard_repeat_matches']
+    assert result['changed_guard_balance_rejected'] and result['unordered_guard_windows_rejected']
+    assert result['outer_guard_window_coverage_rejected']
+    assert result['guard_retained_fill_events_absent']
+    assert result['guard_balance_instants_verified'] is False
+    assert result['guard_observation_windows_verified_quiet'] is False
     assert result['actual_provider_access'] is result['actual_vault_access'] is False
 
 

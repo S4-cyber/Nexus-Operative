@@ -1,5 +1,11 @@
 # Windows distribution and acceptance evidence
 
+## v0.185.0 candidate status
+
+Exact v0.184.0 commit `e78a4cf59721d0b7eeb0791ae5dc6675fbc8fd5c` passed public-security run 39510620112 and every safety/evidence/browser job in run 39510620109. Windows run 39510620199 reached the full regression but failed two private reviewed-baseline assertions after 3,433 passes, 19 skips and one existing warning. The retained log shows Windows rejecting `O_NONBLOCK` in the baseline `os.open` call, so packaging and installer stages did not run.
+
+v0.185.0 selects only read/binary descriptor flags on Windows and retains `O_NOFOLLOW` plus `O_NONBLOCK` on POSIX. The existing lstat/fstat/final identity, regular-file, single-link and byte-bound checks remain. A host-specific regression verifies the exact flag sets. This is a portability correction, not native ordinary-user profile/ACL, private-volume or physical power-loss acceptance; fresh exact-source Windows regression, EXE/tool smoke, packaging and installer evidence are mandatory.
+
 ## v0.184.0 candidate status
 
 Exact v0.183.1 commit `8f271c1eac88bbde9ad491026808f4415017dda2` passed public-security run 39501375299, all safety/evidence/browser jobs in run 39501375274, and Windows regression/EXE/installer run 39501375258. v0.184.0 adds a platform-neutral private reviewed-baseline migration path for older rotated order journals; the current candidate still requires fresh exact-source Windows regression, standalone/installed tool, packaging and installer results. The review remains operator-confirmed and unattested by discarded source history. Native ordinary-user private-volume/profile/ACL and physical power-loss behavior remain independent gates.

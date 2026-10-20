@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.184.0 (pre-release).** Legacy rotated order journals now have an explicit private baseline-review path. A review must bind a sorted complete operator-supplied retired-ID scope to the exact closed source and verified archive; known archived IDs cannot be omitted. The v4 candidate carries only bounded fingerprints and an `OPERATOR_REVIEWED_UNATTESTED` lineage marker. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Independent private-scope review, physical power-loss/private-volume/ACL evidence, extended long-run pressure, caller identity/broker-wide idempotency and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.185.0 (pre-release).** Accepted paper reconciliation can now optionally bind four distinct ordered observations around the balance comparison, require stable adjacent balance/inventory fingerprints, require accepted declared-window coverage of the outer envelope and reject retained guard-band fills. These sequential observations are not quiet or atomic balance instants. A Windows portability fix also removes the unsupported `O_NONBLOCK` flag from private retired-baseline reads while retaining identity checks. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Actual provider source/coverage, fees, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,16 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.185.0 guarded paper-reconciliation observations
+
+The source-only reconciliation diagnostic accepts an optional pre-opening and post-closing observation pair in addition to its opening and closing manifests. All four manifests must be distinct, ordered, from the same declared source/account and free of open orders. The guard adjacent to each compared balance must retain the same account-fields and inventory fingerprints. Accepted declared collection windows must cover the entire outer guard envelope; any retained fill in either guard band fails closed. The final accepted journal heads are replayed and checked unchanged again.
+
+This tightens local inconsistency detection only. It does not attest the provider, prove received or corrected activity coverage, make sequential reads atomic, link fees, verify holds or spendable funds, grant routing permission or approve release. The command remains read-only, vault/network silent and OFF by default. No UI control or modifiable parameter changed.
+
+Exact v0.184.0 commit `e78a4cf59721d0b7eeb0791ae5dc6675fbc8fd5c` passed public-security run 39510620112 and all safety/evidence/browser jobs in run 39510620109. Windows run 39510620199 failed after 3,433 passes, 19 skips and two private-baseline assertions because Windows rejects the POSIX `O_NONBLOCK` bit in `os.open`. v0.185.0 uses only read/binary flags on Windows and preserves `O_NOFOLLOW`/`O_NONBLOCK` hardening on POSIX; direct regression covers both flag sets. Fresh exact-source Windows, safety and security workflows remain required.
+
+Final local validation passed 3,463 tests with one expected non-Windows skip and one existing warning; the release-focused set passed 205 with the same skip. All sixteen profiles and saved-evidence verification matched 347 source files / `1d0c8201dfd7751acb888e9b12c7dfea009b08708ade6ff7559ac2317e93de68`; report SHA256 is `80582377330687e25865d4554aa4f16f8e454359cb2ae0dc0a6e3093f2c466c7`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Fresh exact-source workflows remain required.
 
 ## v0.184.0 reviewed legacy retired-ID baseline migration
 

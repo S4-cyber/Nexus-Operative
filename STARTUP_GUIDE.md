@@ -1,5 +1,11 @@
 # Nexus workspaces and startup checklist
 
+## Optional guarded reconciliation review
+
+The source diagnostic `python -m nexus.paper_reconciliation_acceptance` accepts paired `--pre-opening` and `--post-closing` manifests around the existing required opening/closing inputs. Supply both or neither. With guards, four distinct ordered observations must retain the same declared account/source, contain no open orders, preserve adjacent account and inventory fingerprints, fit inside the accepted declared collection-window envelope and have no retained fill in either guard band. The optional `--pre-opening-encrypted` and `--post-closing-encrypted` flags mirror the existing in-memory encrypted-input handling.
+
+Keep all observation files, journals and output private and outside Git. A successful review is still `REVIEW_REQUIRED`: sequential reads are not quiet/atomic balance instants and do not verify provider source, complete activity, fees, holds, spendable funds or routing permission. The command writes no evidence and accesses no credentials or network.
+
 For a new unused installation, open the EXE, choose Start Portal, then separately confirm Engage Paper when ready. Defaults are already provided; no virtual-budget edit, separate manual account initialization, AI key or payment method is required. Existing choices and recovery blockers are preserved. The To Do introduction explains every step and checkbox.
 
 The interface has seven tabs. Portal observes account movement and controls the fixed experimental paper session. Risk contains virtual allocations, individual entry-tier switches and risk screens. Research contains public data collection, saved model training and historical studies. AI explains the included numerical council and optional paid commentary. Accounts contains virtual balances, recovery diagnostics and future connection/funding plans. To Do contains the automatic setup list, capability inventory and bundled release roadmap. Help explains the workflow and stop controls.

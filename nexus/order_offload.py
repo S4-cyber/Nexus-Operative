@@ -120,10 +120,19 @@ def _archived_fingerprints(report):
     return sorted(values)
 
 
+def _retired_baseline_open_flags(host=None):
+    """Use descriptor flags supported by the host; Windows rejects O_NONBLOCK."""
+    host=os.name if host is None else host
+    flags=os.O_RDONLY|getattr(os,'O_BINARY',0)
+    if host!='nt':
+        flags|=getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0)
+    return flags
+
+
 def _load_retired_baseline(path):
     """Load one private, regular, single-link review file without leaking IDs."""
     path,_=_private_path(path)
-    flags=os.O_RDONLY|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0)
+    flags=_retired_baseline_open_flags()
     try:
         observed=path.lstat()
         if (stat.S_ISLNK(observed.st_mode) or not stat.S_ISREG(observed.st_mode) or

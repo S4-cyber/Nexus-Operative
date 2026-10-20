@@ -621,3 +621,10 @@ def test_fixture_is_bounded_and_grants_no_authority():
     assert report['multi_epoch_max_source_commands']<100
     assert report['multi_epoch_retired_id_reuse_fenced'] is True
     assert all(report[key] is False for key in order_offload.AUTHORITY_FLAGS)
+
+
+def test_private_baseline_open_flags_are_windows_compatible():
+    portable=os.O_RDONLY|getattr(os,'O_BINARY',0)
+    assert order_offload._retired_baseline_open_flags('nt')==portable
+    assert order_offload._retired_baseline_open_flags('posix')==(portable|
+        getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))

@@ -2,6 +2,10 @@
 
 This component prepares and validates fixture data only. It contains no HTTP client, credentials, environment access, account writes or automatic strategy routing. The existing gateway continues to reject Alpaca submissions. No broker was connected or tested.
 
+## v0.185.0 guarded accepted reconciliation
+
+The private accepted-reconciliation tool optionally composes pre-opening and post-closing manifests around its opening/closing comparison. The four manifests must be distinct, strictly ordered and account/source consistent; adjacent account-field and inventory fingerprints must agree; accepted declared collection windows must cover the outer envelope; and retained fills in either guard band are rejected. It then replays the final accepted heads unchanged. This is a read-only local stability diagnostic only. It does not prove a quiet or atomic balance instant, provider authenticity, received/late/corrected or fee-only activity coverage, fee links, holds, spendable funds, routing or broker-paper acceptance.
+
 ## Implemented components
 
 - BTC-only quantity-based IOC limit previews at the fixed paper Trading API URL. Preview output is explicitly unsendable, with outstanding authorization, account and accounting blockers. ETH/SOL, market orders, notional requests, replacements and shorting are outside this contract.

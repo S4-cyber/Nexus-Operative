@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.185.0 guarded reconciliation and Windows baseline portability
+
+The private source-only reconciliation diagnostic can now surround its opening/closing comparison with pre-opening and post-closing manifests. Four distinct strictly ordered observations must share one declared account/source, have no open orders and preserve adjacent account-field and inventory fingerprints. Accepted declared collection windows must cover the full outer envelope, retained fills in either guard band fail closed and the final accepted journal heads are replayed unchanged. This remains sequential local evidence, not a quiet/atomic balance snapshot or provider/source/coverage/fee/hold/funds attestation.
+
+Exact v0.184.0 public security 39510620112 and safety/evidence/browser 39510620109 passed. Windows 39510620199 failed two baseline assertions after 3,433 passes because `os.open` rejects POSIX `O_NONBLOCK` on Windows; packaging did not run. v0.185.0 now uses only read/binary flags there while preserving the descriptor identity fence and POSIX hardening. No UI, permission, broker, money, live, cloud or release authority changed. Progress remains roughly 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local validation passed 3,463 tests with one expected non-Windows skip and one existing warning. The release-focused set passed 205 with the same skip; all sixteen profiles and saved-evidence verification matched 347 source files / `1d0c8201dfd7751acb888e9b12c7dfea009b08708ade6ff7559ac2317e93de68`, report SHA256 `80582377330687e25865d4554aa4f16f8e454359cb2ae0dc0a6e3093f2c466c7`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Exact-source Windows/security/safety evidence remains mandatory.
+
 ## v0.181.1 Windows durable-flush descriptor correction
 
 Exact v0.181.0 commit `fa2f6eead85eaee5366099dbb2899df902ace563` passed public-security run 39455511206 and browser-help in safety run 39455511204. Its release-evidence operations child failed. Retained v0.180 Windows regression logs expose the shared root cause: `_sync_file` opened private files read-only and Windows rejected `fsync` with `EBADF`. v0.181.1 opens the already validated file as `r+b` solely for the flush, writes no content and adds a regression proving unchanged bytes. The lineage, fail-closed marker, halted replacement, OFF defaults and all authority flags are unchanged. Fresh exact-source CI remains mandatory; progress stays about 40% (30–45%, low confidence), with 0/9 fully accepted stages.

@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.184.0, explicit private reviewed legacy retired-ID baseline migration over the fully CI-verified v0.183.1 rotation durability baseline. Read the newest version section and generated roadmap; exact-source v0.184.0 CI, independent private-scope completeness review, physical power-loss/private-volume/ACL acceptance, caller identity/broker-wide idempotency and actual broker/market acceptance remain open.
+Current checkpoint: v0.185.0, optional four-observation paper-reconciliation stability guards plus a Windows private-baseline open-flag correction over v0.184.0. Read the newest version section and generated roadmap; exact-source v0.185.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.185.0 guarded reconciliation and Windows baseline portability
+
+The accepted paper-reconciliation diagnostic optionally requires distinct, ordered pre-opening/opening/closing/post-closing manifests from one declared account/source. Adjacent balance/inventory fingerprints must remain stable, accepted declared collection windows must cover the outer envelope and retained guard-band fills fail closed. Final accepted journals are replayed unchanged. Never promote this to provider/source or received-activity coverage, a quiet/atomic balance instant, fee/hold/funds reconciliation, routing or release approval.
+
+Exact v0.184.0 security run 39510620112 and safety/evidence/browser run 39510620109 passed. Windows run 39510620199 failed two private-baseline assertions after 3,433 passes because Windows rejects `O_NONBLOCK` in `os.open`; packaging did not run. v0.185.0 omits POSIX-only flags on Windows while retaining read/binary mode, identity checks and POSIX hardening. Run focused reconciliation/offload/release tests, all sixteen profiles plus saved-evidence verification, full regression, controllers/Portal/static checks, staged public audit and fresh exact-source workflows. No UI/control changed. Keep rough progress about 40% (30–45%, low confidence), 0/9 accepted.
+
+Final local v0.185.0 validation passed 3,463 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release-focused set passed 205 tests with the same skip. All sixteen profiles and saved-evidence verification matched 347 source files / `1d0c8201dfd7751acb888e9b12c7dfea009b08708ade6ff7559ac2317e93de68`; `validation/release_trials_0_185_0.json` SHA256 is `80582377330687e25865d4554aa4f16f8e454359cb2ae0dc0a6e3093f2c466c7`. Compilation, dependency consistency, all fourteen Node controllers, Portal syntax, generated-roadmap equality and whitespace checks passed. Run the exact staged public audit before publication; local Gitleaks and native Windows execution are unavailable. All external authority flags are false.
 
 ## v0.184.0 reviewed legacy retired-ID baseline migration
 

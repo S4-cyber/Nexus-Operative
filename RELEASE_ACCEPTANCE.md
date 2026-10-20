@@ -1,6 +1,14 @@
 # Nexus Operative release acceptance
 
-Current build: **0.184.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.185.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.185.0 four-observation stability guard
+
+The sixteenth offline profile now requires the optional four-manifest reconciliation guard. Pre-opening, opening, closing and post-closing observations must be distinct and strictly ordered, share one declared account/source, retain stable adjacent balance/inventory fingerprints, fit inside accepted declared collection-window coverage and contain no retained fill in either guard band. Regression also forces changed balances, overlapping windows, reused manifests, source/account disagreement, outside coverage and guard-band fill refusal. The diagnostic rechecks the accepted journals and remains read-only.
+
+These guards detect a narrower class of local inconsistencies; they do not establish quiet or atomic balance instants, authenticated provider source, received/late/corrected or fee-only activity coverage, fee links, holds, spendable funds, routing or release approval. Exact v0.184.0 security and safety/browser workflows passed, but Windows run 39510620199 exposed an unsupported `O_NONBLOCK` flag in private baseline reads and failed two assertions after 3,433 passes. v0.185.0 removes that POSIX-only flag on Windows and requires fresh exact-source CI.
+
+Final local v0.185.0 evidence: 3,463 tests passed with one expected non-Windows skip and one existing warning; the release-focused set passed 205 with the same skip. Sixteen profiles and saved-evidence verification matched 347 source files / `1d0c8201dfd7751acb888e9b12c7dfea009b08708ade6ff7559ac2317e93de68`; report SHA256 `80582377330687e25865d4554aa4f16f8e454359cb2ae0dc0a6e3093f2c466c7`. Controller, Portal syntax, compile, dependency, generated-roadmap and whitespace checks passed. These local results do not establish Windows, broker, market, funds, live, cloud or release acceptance.
 
 ## Repeatable trials
 

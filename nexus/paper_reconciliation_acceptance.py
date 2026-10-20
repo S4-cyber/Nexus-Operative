@@ -18,6 +18,7 @@ from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 from nexus.paper_activity_acceptance_probe import status as acceptance_status
 
 POLICY = 'nexus.paper-reconciliation-acceptance.v2'
+STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v1'
 
 
 def _fail(code):
@@ -140,6 +141,104 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
         limitations='Complete local accepted-history replay binds this supplied observation pair to one exact retained activity head. The union of declared creation windows covers the full observation envelope geometrically only; it does not prove provider boundary semantics or received/late/corrected activity coverage. It does not attest the provider, prove complete activity/fee coverage, turn sequential reads into atomic balances, verify holds or spendable funds, coordinate other hosts/writers, authorize orders or approve release. Keep all journals, observations and output outside Git; never erase uncertainty to retry.')
 
 
+def _guard_windows(pre_opening, opening, closing, post_closing):
+    try:
+        windows = {label:{key:paper_observation_review._instant(observation['read_timing'][key])
+            for key in ('started_at','completed_at')}
+            for label,observation in (('pre_opening',pre_opening),('opening',opening),
+                                      ('closing',closing),('post_closing',post_closing))}
+    except (KeyError, TypeError, ValueError):
+        _fail('GUARD_TIME_INVALID')
+    ordered = ('pre_opening','opening','closing','post_closing')
+    if any(windows[label]['started_at'] > windows[label]['completed_at'] for label in ordered):
+        _fail('GUARD_TIME_INVALID')
+    if any(windows[first]['completed_at'] >= windows[second]['started_at']
+        for first,second in zip(ordered,ordered[1:])):
+        _fail('GUARD_WINDOWS_NOT_ORDERED')
+    return windows
+
+
+def _guard_fill_events(retained, windows):
+    """Return explicit retained fills in either stability band, never infer coverage."""
+    bands=((windows['pre_opening']['started_at'],windows['opening']['completed_at']),
+           (windows['closing']['started_at'],windows['post_closing']['completed_at']))
+    events=[]
+    for row in retained['normalized_activities']:
+        if row['kind']=='FILL' and any(start <= row['occurred_at'] <= end for start,end in bands):
+            events.append(row['activity_id'])
+    return sorted(set(events))
+
+
+def review_with_stability_guards(*, expected_account_id, pacing_path, activity_store_path,
+        acceptance_store_path, expected_activity_head, pre_opening_observation,
+        opening_observation, closing_observation, post_closing_observation):
+    """Bind four ordered supplied observations without promoting them to quiet instants."""
+    status_options=dict(expected_account_id=expected_account_id,pacing_path=pacing_path,
+        activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
+    before=acceptance_status(**status_options)
+    if not _accepted(before): _fail('ACCEPTED_HISTORY_REQUIRED')
+    observations=[portable.validate(value) for value in (pre_opening_observation,
+        opening_observation,closing_observation,post_closing_observation)]
+    pre_opening,opening,closing,post_closing=observations
+    if any(value['account_id']!=expected_account_id for value in observations):
+        _fail('GUARD_ACCOUNT_DISAGREEMENT')
+    if len({value['manifest_sha256'] for value in observations})!=4:
+        _fail('GUARD_MANIFEST_REUSE')
+    if len({value['source'] for value in observations})!=1:
+        _fail('GUARD_SOURCE_DISAGREEMENT')
+    if any(value['checks']!='OBSERVED_FIELDS_COVERED' for value in observations):
+        _fail('GUARD_OBSERVATION_REQUIRES_REVIEW')
+    if any(value['open_order_count']!=0 for value in observations):
+        _fail('GUARD_OPEN_ORDERS_UNRECONCILED')
+    windows=_guard_windows(pre_opening,opening,closing,post_closing)
+    for guard,inner in ((pre_opening,opening),(closing,post_closing)):
+        if (guard['account_fields_sha256']!=inner['account_fields_sha256'] or
+            guard['position_count']!=inner['position_count'] or
+            guard['observed_inventory']!=inner['observed_inventory']):
+            _fail('GUARD_BALANCE_CHANGED')
+
+    accepted=review(expected_account_id=expected_account_id,pacing_path=pacing_path,
+        activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path,
+        expected_activity_head=expected_activity_head,opening_observation=opening,
+        closing_observation=closing)
+    if accepted['observation_review']['arithmetic_evaluated'] is not True:
+        _fail('GUARD_INNER_REVIEW_BLOCKED')
+    store=BrokerActivityStore(activity_store_path,expected_account_id)
+    retained=store.inspect()
+    scopes=PaperActivityAcceptanceStore(acceptance_store_path,expected_account_id).replay_scopes()
+    if retained['head_sha256']!=expected_activity_head or len(scopes)!=before['accepted_transitions']:
+        _fail('JOURNALS_CHANGED_DURING_REVIEW')
+    declared_windows=_declared_window_coverage(retained['receipts'],scopes,pre_opening,post_closing)
+    fill_events=_guard_fill_events(retained,windows)
+    if fill_events: _fail('GUARD_RETAINED_FILL_PRESENT')
+    after=acceptance_status(**status_options)
+    if before!=after or store.inspect()['head_sha256']!=expected_activity_head:
+        _fail('JOURNALS_CHANGED_DURING_REVIEW')
+    scope=dict(policy=STABILITY_POLICY,account_sha256=after['account_sha256'],
+        activity_head_sha256=expected_activity_head,
+        accepted_reconciliation_sha256=accepted['input_sha256'],
+        pre_opening_manifest_sha256=pre_opening['manifest_sha256'],
+        opening_manifest_sha256=opening['manifest_sha256'],
+        closing_manifest_sha256=closing['manifest_sha256'],
+        post_closing_manifest_sha256=post_closing['manifest_sha256'],
+        declared_guard_window_union_sha256=sha(dict(account_sha256=after['account_sha256'],
+            windows=declared_windows)))
+    return dict(mode='PAPER_RECONCILIATION_STABILITY_GUARD_REVIEW',status='REVIEW_REQUIRED',
+        read_only=True,**scope,input_sha256=sha(scope),accepted_reconciliation_review=accepted,
+        guard_windows=windows,guard_manifests_distinct=True,guard_windows_ordered=True,
+        adjacent_guard_balances_stable=True,guard_retained_fill_events=0,
+        accepted_declared_windows_cover_guard_envelope=True,journals_rechecked_unchanged=True,
+        admission_reserved=False,source_attested=False,source_coverage_verified=False,
+        activity_coverage_verified=False,fee_coverage_complete=False,
+        fee_execution_links_verified=False,balance_instants_verified=False,
+        observation_windows_verified_quiet=False,holds_reconciled=False,
+        broker_account_reconciled=False,spendable_funds_verified=False,ledger_applied=False,
+        ready_for_routing=False,broker_connected=False,live_orders_enabled=False,
+        money_movement_enabled=False,automatic_retry=False,automatic_continuation=False,
+        release_approved=False,
+        limitations='Four supplied manifests are distinct, ordered and locally balance-stable around the accepted inner comparison. Accepted declared creation windows cover the outer envelope and no retained fill appears in either guard band. This is not provider/source attestation, received-activity coverage, a quiet or atomic balance instant, fee/hold reconciliation, spendable-funds proof, routing permission or release approval. Missing, late, corrected, fee-only or activity outside retained history remains possible.')
+
+
 def fixture_report():
     """Synthetic disposable acceptance/reconciliation evidence; no external IO."""
     import tempfile
@@ -154,8 +253,10 @@ def fixture_report():
             activity.inspect()['head_sha256']))
         head = activity.inspect()['head_sha256']
         epoch = 1792195200  # 2026-10-17T00:00:00Z: inside the retained requested window.
+        pre_opening = _fixture_observation(ACCOUNT, '1000', '0', epoch+98, epoch+99)
         opening = _fixture_observation(ACCOUNT, '1000', '0', epoch+100, epoch+101)
         closing = _fixture_observation(ACCOUNT, '1000', '0', epoch+102, epoch+103)
+        post_closing = _fixture_observation(ACCOUNT, '1000', '0', epoch+104, epoch+105)
         paths = dict(expected_account_id=ACCOUNT, pacing_path=root/'pacing.sqlite3',
             activity_store_path=root/'activity.sqlite3',
             acceptance_store_path=root/'acceptance.sqlite3',
@@ -164,6 +265,10 @@ def fixture_report():
         result = review(**paths)
         before = tuple((path.name, path.read_bytes()) for path in sorted(root.iterdir()))
         repeated = review(**paths)
+        guarded_paths=dict(paths,pre_opening_observation=pre_opening,
+            post_closing_observation=post_closing)
+        guarded=review_with_stability_guards(**guarded_paths)
+        guarded_repeated=review_with_stability_guards(**guarded_paths)
         after = tuple((path.name, path.read_bytes()) for path in sorted(root.iterdir()))
         unbound_root = root/'unbound'; unbound_root.mkdir()
         _, unbound_activity, _, _ = _scope(unbound_root)
@@ -198,6 +303,24 @@ def fixture_report():
                 closing_observation=_fixture_observation(ACCOUNT,'1000','0',1800000002,1800000003)))
         except ValueError as error:
             outside_rejected = str(error) == 'PAPER_RECONCILIATION_ACCEPTANCE_DECLARED_WINDOWS_DO_NOT_COVER_OBSERVATION_ENVELOPE'
+        changed_guard_rejected = False
+        try:
+            review_with_stability_guards(**dict(guarded_paths,
+                pre_opening_observation=_fixture_observation(ACCOUNT,'999','0',epoch+98,epoch+99)))
+        except ValueError as error:
+            changed_guard_rejected = str(error) == 'PAPER_RECONCILIATION_ACCEPTANCE_GUARD_BALANCE_CHANGED'
+        unordered_guard_rejected = False
+        try:
+            review_with_stability_guards(**dict(guarded_paths,
+                pre_opening_observation=_fixture_observation(ACCOUNT,'1000','0',epoch+99,epoch+100)))
+        except ValueError as error:
+            unordered_guard_rejected = str(error) == 'PAPER_RECONCILIATION_ACCEPTANCE_GUARD_WINDOWS_NOT_ORDERED'
+        outer_guard_coverage_rejected = False
+        try:
+            review_with_stability_guards(**dict(guarded_paths,
+                pre_opening_observation=_fixture_observation(ACCOUNT,'1000','0',epoch-2,epoch-1)))
+        except ValueError as error:
+            outer_guard_coverage_rejected = str(error) == 'PAPER_RECONCILIATION_ACCEPTANCE_DECLARED_WINDOWS_DO_NOT_COVER_OBSERVATION_ENVELOPE'
         exact_bound=(result['activity_head_sha256']==head and
             result['opening_manifest_sha256']==opening['manifest_sha256'] and
             result['closing_manifest_sha256']==closing['manifest_sha256'])
@@ -213,13 +336,30 @@ def fixture_report():
         cursor_complete=result['all_collection_cursor_sequences_complete'] is True
         arithmetic=result['observation_review']['arithmetic_evaluated'] is True
         covered=result['declared_collection_windows_cover_observation_envelope'] is True
-        passed=(result == repeated and before == after and unbound_rejected and continuation_rejected and outside_rejected and covered and
-            exact_bound and replayed and complete and cursor_complete and arithmetic)
+        guard_bound=(guarded['guard_manifests_distinct'] is True and
+            guarded['guard_windows_ordered'] is True and
+            guarded['adjacent_guard_balances_stable'] is True and
+            guarded['guard_retained_fill_events']==0 and
+            guarded['accepted_declared_windows_cover_guard_envelope'] is True and
+            guarded['journals_rechecked_unchanged'] is True and
+            guarded['balance_instants_verified'] is False and
+            guarded['observation_windows_verified_quiet'] is False)
+        passed=(result == repeated and guarded == guarded_repeated and before == after and
+            unbound_rejected and continuation_rejected and outside_rejected and covered and
+            changed_guard_rejected and unordered_guard_rejected and outer_guard_coverage_rejected and
+            exact_bound and replayed and complete and cursor_complete and arithmetic and guard_bound)
         return dict(passed=passed, repeat_review_matches=result == repeated,
+            stability_guard_repeat_matches=guarded == guarded_repeated,
             journals_unchanged=before == after, unbound_history_rejected=unbound_rejected,
             continuation_required_history_rejected=continuation_rejected,
             out_of_window_observations_rejected=outside_rejected,
             declared_windows_cover_observation_envelope=covered,
+            stability_guard_bound=guard_bound,
+            changed_guard_balance_rejected=changed_guard_rejected,
+            unordered_guard_windows_rejected=unordered_guard_rejected,
+            outer_guard_window_coverage_rejected=outer_guard_coverage_rejected,
+            guard_retained_fill_events_absent=guarded['guard_retained_fill_events']==0,
+            guard_balance_instants_verified=False,guard_observation_windows_verified_quiet=False,
             requested_window_boundaries_verified=False,
             exact_activity_head_bound=exact_bound, complete_accepted_history_replayed=replayed,
             legacy_baseline_absent=result['legacy_baseline_absent'],
@@ -248,12 +388,17 @@ def main():
     for name in ('expected-account','pacing','activity-store','acceptance-store',
                  'activity-head','opening','closing'):
         parser.add_argument('--'+name, required=True)
-    for name in ('opening','closing'):
+    for name in ('pre-opening','post-closing'):
+        parser.add_argument('--'+name)
+    for name in ('opening','closing','pre-opening','post-closing'):
         parser.add_argument('--'+name+'-encrypted', action='store_true',
             help='Decrypt this bounded input in memory after a private prompt; write no plaintext file.')
     args = parser.parse_args()
     try:
-        result = review(expected_account_id=args.expected_account,
+        if (bool(args.pre_opening) != bool(args.post_closing) or
+            (args.pre_opening_encrypted or args.post_closing_encrypted) and not args.pre_opening):
+            _fail('BOTH_STABILITY_GUARDS_REQUIRED')
+        inputs=dict(expected_account_id=args.expected_account,
             pacing_path=args.pacing, activity_store_path=args.activity_store,
             acceptance_store_path=args.acceptance_store,
             expected_activity_head=args.activity_head,
@@ -261,6 +406,14 @@ def main():
                 encrypted=args.opening_encrypted, label='Opening'),
             closing_observation=paper_observation_review._load_file(args.closing,
                 encrypted=args.closing_encrypted, label='Closing'))
+        if args.pre_opening:
+            result=review_with_stability_guards(**inputs,
+                pre_opening_observation=paper_observation_review._load_file(args.pre_opening,
+                    encrypted=args.pre_opening_encrypted,label='Pre-opening guard'),
+                post_closing_observation=paper_observation_review._load_file(args.post_closing,
+                    encrypted=args.post_closing_encrypted,label='Post-closing guard'))
+        else:
+            result=review(**inputs)
     except (OSError, ValueError, TypeError, KeyError, sqlite3.Error, EOFError,
             KeyboardInterrupt, MemoryError, RecursionError, getpass.GetPassWarning):
         print('PAPER_RECONCILIATION_ACCEPTANCE_FAILED')

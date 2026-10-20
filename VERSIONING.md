@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.178.0 (pre-release).** The installed/source order-offload tool now has a read-only rotation preflight that binds a verified private copy back to the exact unchanged application-closed live source. It performs no compaction or deletion and reclaims no capacity. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.178.1 (pre-release).** The read-only order-offload rotation preflight is unchanged. This repair makes an intermittent Windows typed-reader trial failure identify the precise fixed invariant before checking its derived summary; it changes no runtime or authority. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.178.1 Windows typed-reader diagnostic ordering
+
+Exact v0.178.0 security run 39401619194 and safety/browser/evidence run 39401619134 passed. Windows run 39401619265 completed 3,386 passes and 19 skips before one intermittent typed-reader release-fixture failure surfaced only as the aggregate envelope; packaging was skipped. The independently budgeted Windows regression and release-evidence jobs passed the same source.
+
+The release validator now checks every fixed typed-reader invariant before its derived summary. A failed invariant retains its content-free allowlisted code, while an inconsistent summary receives a separate fixed code. No test, runtime path, order-offload behavior, UI control, permission, risk limit, account check or authority flag changed. Exact-source Windows regression and the complete packaging/installer lifecycle remain mandatory.
+
+Local validation passed 3,407 tests and the 189-test focused release/evidence/packaging set. All sixteen bounded profiles passed and saved evidence verified against 347 source files / `d0fdeb41ec762b2299c80e09d4cfbe28b690b4aabb205d0463a99966c9896e47`; report SHA256 is `17dfdd6b4ee689a8f9dcb3efe16bae0c573499d4b69538437683a19eed4c2abd`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. This local result does not replace exact-source Windows or security acceptance.
 
 ## v0.178.0 exact-source-bound rotation preflight
 

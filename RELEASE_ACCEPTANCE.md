@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.178.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.178.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,8 +36,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, fourteen Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Bounded offline trials passed | v0.178.0 source-fingerprinted report `validation/release_trials_0_178_0.json` verifies all sixteen local profiles against 347 files / `d4e0278c9ca0e90d52f26b8c59fd15bdae91593823c692a04d98a5ba6dd5bcbd`; report SHA256 `fe93088d748e323377ce55839026baa99360ec029070aa0c70946bcf9764c3a0`; actual broker/market/native-profile acceptance remains open |
-| Windows packaging and data recovery | Exact v0.177.2 security/safety/Windows passed; v0.178.0 pending | Exact v0.177.2 passed security 39393111840, all safety/browser/evidence jobs in 39393111890 and Windows/installer 39393111795. v0.178.0 adds the non-mutating exact-source rotation preflight and must pass its own native regression, release evidence and installed-tool smoke; capacity-reclaiming publication, ordinary-user private-volume/profile/ACL, multi-epoch pressure, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
+| Integrated local trials | Bounded offline trials passed | v0.178.1 source-fingerprinted report `validation/release_trials_0_178_1.json` verifies all sixteen local profiles against 347 files / `d0fdeb41ec762b2299c80e09d4cfbe28b690b4aabb205d0463a99966c9896e47`; report SHA256 `17dfdd6b4ee689a8f9dcb3efe16bae0c573499d4b69538437683a19eed4c2abd`; actual broker/market/native-profile acceptance remains open |
+| Windows packaging and data recovery | Exact v0.178.0 security/safety passed; Windows packaging failed before build | Security 39401619194 and all safety/browser/evidence jobs in 39401619134 passed. Windows 39401619265 reached 3,386 passes / 19 skips, then an intermittent typed-reader fixture failure was hidden by its aggregate envelope and packaging was skipped. v0.178.1 orders the fixed invariant checks before the derived summary without weakening them; its exact-source regression, release evidence and installed-tool/installer lifecycle remain required. Capacity-reclaiming publication, ordinary-user private-volume/profile/ACL, multi-epoch pressure, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |

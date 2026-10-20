@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.178.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.178.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.178.0 adds a read-only order-history rotation preflight to the installed/source offload tool. It verifies the offline copy, requires exact order/portfolio file and recovery-digest agreement with the application-closed live source, then rechecks both sides for change. It creates no replacement, deletes no history, reclaims no capacity and grants no broker, money, live or release authority. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.178.1 preserves the read-only order-history rotation preflight and repairs exact-source Windows release-trial diagnostics: the fixed typed-reader invariants are now checked before their derived summary, so an intermittent failure reports only the precise allowlisted invariant instead of an opaque aggregate envelope. Runtime, storage, UI, permissions and trading authority are unchanged. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

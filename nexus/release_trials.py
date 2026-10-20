@@ -780,13 +780,17 @@ def _validate(profile, result):
     if profile == 'pacing':
         from nexus.paper_read_pacing import OPERATION_CHECKS,OPERATION_FLAGS
         typed=result['typed_operations']
-        _require(typed.get('source')=='INJECTED_TYPED_PAPER_READ_BUDGET_FIXTURE' and typed.get('passed') is True,
+        _require(typed.get('source')=='INJECTED_TYPED_PAPER_READ_BUDGET_FIXTURE',
             'TYPED_READ_OPERATIONS_ENVELOPE')
         # Keep CI diagnostics fixed and content-free while identifying the
         # precise bounded invariant.  This never emits fixture values, paths,
         # account identifiers or arbitrary exception text.
         for name in OPERATION_CHECKS:
             _require(typed.get(name) is True,'TYPED_READ_OPERATIONS_'+name.upper())
+        # The summary is derived from the fixed checks above.  Validate it
+        # after them so an intermittent failure reports the exact allowlisted
+        # invariant instead of collapsing back to the aggregate envelope.
+        _require(typed.get('passed') is True,'TYPED_READ_OPERATIONS_SUMMARY')
         _require(all(typed[k] is False for k in OPERATION_FLAGS),'TYPED_READ_AUTHORITY')
         from nexus.sqlite_journal_guard import PATH_CHECKS,PATH_FLAGS
         paths=result['path_preflight']

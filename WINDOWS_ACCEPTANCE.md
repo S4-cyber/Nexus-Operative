@@ -179,6 +179,14 @@ v0.177.2 retries only SQLite BUSY/LOCKED outcomes for a bounded 30-second monoto
 
 Exact v0.177.2 subsequently passed public-security run 39393111840, all three safety/browser/evidence jobs in run 39393111890 and Windows packaging/installer run 39393111795.
 
+## v0.178.1 candidate status
+
+Exact v0.178.0 security run 39401619194 and every safety/browser/evidence job in run 39401619134 passed. Windows run 39401619265 reached 3,386 passes and 19 skips but stopped in `Install and test` with `RELEASE_TRIAL_TYPED_READ_OPERATIONS_ENVELOPE`; no EXE or installer acceptance can be claimed from that run. The same exact-source typed fixture passed in the separately budgeted regression and release-evidence jobs.
+
+v0.178.1 checks the fixed typed-reader source envelope first, all 25 allowlisted invariants second, and the derived summary last. An intermittent false invariant now produces its precise fixed diagnostic without private values or paths. No retry, acceptance relaxation, runtime change, UI change, authority or broker access was added. Exact-source Windows regression, EXE/startup, installed command smoke, install/reinstall/uninstall and retained evidence are required.
+
+Local validation passed 3,407 tests, the 189-test focused set, all sixteen source-bound profiles and saved-evidence verification. This is not a native Windows pass; exact-source workflow execution remains required.
+
 ## v0.178.0 candidate status
 
 The installed `order-offload rotation-plan` command now verifies that a private offline copy still exactly matches the explicitly application-closed live order journal and linked portfolio, then rechecks both sides. The Windows source/standalone/installed operator smoke invokes it after create and verify, bringing the cross-platform command-prefix count to 21 plus the native read-only-journal emergency fault.

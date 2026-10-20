@@ -2088,6 +2088,16 @@ The fixed 36-request/hour bound, explicit discovery start, commit-before-transpo
 
 Final v0.177.2 local validation passed 3,401 Python tests with one existing warning and a 215-test focused market/release/roadmap/workflow/packaging set. All sixteen bounded profiles and saved-evidence verification matched 347 source files / `3a04e339dd8a1b92669d1a2dae2af3dc806b2cc9572edaac31738518006ce882`; report SHA256 is `2ed3f208329c276fe3a14d9faf3a5a81b965b1b94c194dd3b1e752c7e1de7d9b`.
 
+## v0.178.1 Windows typed-reader diagnostic ordering
+
+Exact v0.178.0 public-security run 39401619194 and all three independent safety/browser/evidence jobs in run 39401619134 passed. Windows packaging run 39401619265 completed 3,386 tests with 19 skips before one intermittent typed-reader fixture failure appeared only as `RELEASE_TRIAL_TYPED_READ_OPERATIONS_ENVELOPE`; the executable and installer stages did not run. The same fixture passed in both other exact-source Windows jobs.
+
+Validate the typed-reader fixture source label, then each of its 25 fixed boolean invariants, and only afterward its derived `passed` summary. Preserve fixed content-free diagnostics and prohibit raw fixture values, paths, account identifiers, request targets and arbitrary exception text. Do not retry or relax a failed invariant. This repair must change no runtime, storage, UI, permission, risk, account, provider, broker, funding, live, cloud or release behavior.
+
+Exact-source security, safety/browser/evidence, regression and the complete Windows EXE/installer lifecycle remain mandatory. Capacity-reclaiming order rotation, authorized private broker paper, sustained real feeds, funding/live/cloud and owner approval remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final v0.178.1 local validation passed 3,407 Python tests with one existing warning and the 189-test focused release/evidence/packaging set. All sixteen bounded offline profiles and saved-evidence verification matched 347 source files / `d0fdeb41ec762b2299c80e09d4cfbe28b690b4aabb205d0463a99966c9896e47`; `validation/release_trials_0_178_1.json` SHA256 is `17dfdd6b4ee689a8f9dcb3efe16bae0c573499d4b69538437683a19eed4c2abd`. All fourteen Node controllers, Portal inline syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Complete the staged public-artifact scan before publication. Exact-source security/safety/Windows CI remains mandatory.
+
 ## v0.178.0 exact-source-bound rotation preflight
 
 Exact v0.177.2 commit `44e77315d518e7cc038401ffb2da49778a61d0b1` passed security 39393111840, all three safety/browser/evidence jobs in 39393111890 and Windows packaging/installer 39393111795. This establishes the bounded shared-budget fix and v0.177.2 installer path, not the new rotation preflight.

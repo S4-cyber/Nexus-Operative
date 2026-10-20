@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.182.2 (pre-release).** The real-loopback release trial now handles Windows abort/reset timing for one pre-credential foreign-origin denial by requiring a bodyless re-probe to return the exact 403/no-store response. Runtime HTTP policy, credentials, engagement permissions and risk controls are unchanged. Extended long-run pressure, caller-ID policy, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.183.0 (pre-release).** Fresh replacement epochs now replay a bounded private fingerprint set for retired client-order IDs and reject cross-epoch reuse before journal mutation. Legacy rotated sources without a complete retired-ID baseline fail closed for explicit review. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Extended long-run pressure, caller identity/broker-wide idempotency, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,16 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.183.0 bounded retired-ID lineage fence
+
+Exact v0.182.2 commit `70e7efdbab7a0cee27da97ef0843c8f74e73d1e3` passed public-security run 39486711199, all safety/evidence/browser jobs in run 39486711203, and Windows regression/EXE/installer run 39486711266. The Windows run completed source binding, 3,435-test regression, Portal syntax, standalone and installed private-tool checks, startup, install/reinstall/uninstall, distribution checksums and retained evidence.
+
+Each new v3 replacement candidate now carries a sorted, bounded private set of 128-bit SHA-256-derived membership fingerprints for all client-order IDs retired across its retained epoch lineage. The lineage and manifest bind the fingerprint policy, exact count and set digest. A reused ID is rejected as `RETIRED_ORDER_ID_REUSE` before a command or linked-ledger mutation. The four-generation fixture proves the set reaches 48 unique retired IDs while every fresh live journal returns to its four-command halted baseline. Existing v1/v2 candidates remain readable. A legacy source already rotated without a complete baseline is not silently upgraded: further replacement preparation fails with `ORDER_OFFLOAD_RETIRED_ORDER_ID_BASELINE_REVIEW_REQUIRED`.
+
+Fingerprints are pseudonymous private operational data, not anonymization; low-entropy IDs may be guessed. They are never emitted in public release evidence or copied to repository fixtures. This local retained-lineage fence does not prove caller identity, coordinate another journal/host/application, attest a broker, or establish broker-wide idempotency. No UI control or parameter changed, and no broker, network, funds, live, cloud or release authority was added. Exact-source v0.183.0 workflows and independent native private-volume/power-loss acceptance remain mandatory.
+
+Final local validation passed 3,443 tests with one existing warning and the final focused set passed 212. All sixteen offline profiles and saved-evidence verification matched 347 source files / `b997a5a54d634202be661f7f8f2d83c7d05885745308b62e9756c97da45ab001`; report SHA256 is `3741cba13a1b83e6eb9698b01825281e29f2c4a06ca723b985b692ea547d9960`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed.
 
 ## v0.182.2 Windows pre-credential denial re-probe
 

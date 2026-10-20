@@ -19,13 +19,16 @@ import tempfile
 
 from nexus.artifact_manifest import file_entry
 from nexus.durable_orders import DurableOrderGateway, ROTATION_MARKER
+from nexus.order_accounting import (MAX_RETIRED_ORDER_ID_FINGERPRINTS, RETIRED_ID_POLICY,
+    order_id_fingerprint, retired_id_set_sha256)
 from nexus.paper_activity_acceptance_probe import _private_path
 
 
 SCHEMA='nexus.order-physical-offload.v1'
 MANIFEST='nexus-order-offload-manifest.json'
 REPLACEMENT_SCHEMA_V1='nexus.order-replacement-candidate.v1'
-REPLACEMENT_SCHEMA='nexus.order-replacement-candidate.v2'
+REPLACEMENT_SCHEMA_V2='nexus.order-replacement-candidate.v2'
+REPLACEMENT_SCHEMA='nexus.order-replacement-candidate.v3'
 REPLACEMENT_MANIFEST='nexus-order-replacement-manifest.json'
 INSTALL_SCHEMA_V1='nexus.order-replacement-install.v1'
 INSTALL_SCHEMA='nexus.order-replacement-install.v2'
@@ -44,7 +47,8 @@ CHECKS=('copy_verified','source_unchanged','archived_order_replay',
         'replacement_candidate_verified','replacement_candidate_non_installing',
         'replacement_install_reclaims_capacity','replacement_rollback_restores_source',
         'incomplete_install_blocks_gateway','multi_epoch_generation_chain',
-        'multi_epoch_capacity_reclaimed','multi_epoch_artifacts_replay')
+        'multi_epoch_capacity_reclaimed','multi_epoch_artifacts_replay',
+        'multi_epoch_retired_id_reuse_fenced')
 MULTI_EPOCH_FIXTURE_GENERATIONS=4
 MULTI_EPOCH_FIXTURE_ORDERS=12
 
@@ -74,11 +78,29 @@ def _digest(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
 
 
-def _next_lineage(source_report,archive_manifest_sha256):
+def _next_lineage(source_report,archive_manifest_sha256,retired_order_id_fingerprints=None):
     source=source_report['lineage'];body=dict(generation=source['generation']+1,
         predecessor_archive_sha256=archive_manifest_sha256,
         predecessor_epoch_sha256=source['epoch_sha256'])
+    if retired_order_id_fingerprints is not None:
+        body.update(retired_order_id_policy=RETIRED_ID_POLICY,
+            retired_order_id_fingerprint_count=len(retired_order_id_fingerprints),
+            retired_order_id_fingerprints_sha256=retired_id_set_sha256(retired_order_id_fingerprints))
     return {**body,'epoch_sha256':_digest(body)}
+
+
+def _retired_fingerprints(path,report):
+    """Carry exact bounded membership keys forward without copying order IDs."""
+    lineage=report['lineage']
+    if (lineage['generation']>0 and
+        'retired_order_id_fingerprints_sha256' not in lineage):
+        _fail('RETIRED_ORDER_ID_BASELINE_REVIEW_REQUIRED')
+    values=set(DurableOrderGateway(path)._retired_order_id_fingerprints())
+    for batch in report['archival']['batches']:
+        values.update(order_id_fingerprint(order_id) for order_id in batch['order_ids'])
+    result=sorted(values)
+    if len(result)>MAX_RETIRED_ORDER_ID_FINGERPRINTS:_fail('RETIRED_ORDER_ID_CAPACITY_REVIEW_REQUIRED')
+    return result
 
 
 def _replay_scope(gateway,report):
@@ -230,10 +252,13 @@ def verify_replacement(archive,directory):
               'replacement_candidate_only','source_preserved','archive_preserved','capacity_reclaimed',
               'source_history_deleted','broker_connected','live_orders_enabled','money_movement_enabled',
               'release_approved','scope'}
-    required=legacy_required|{'source_epoch_sha256','candidate_epoch_sha256','candidate_generation'}
+    v2_required=legacy_required|{'source_epoch_sha256','candidate_epoch_sha256','candidate_generation'}
+    required=v2_required|{'retired_order_id_policy','retired_order_id_fingerprint_count',
+                          'retired_order_id_fingerprints_sha256'}
     if ((document.get('schema')==REPLACEMENT_SCHEMA and set(document)!=required) or
+        (document.get('schema')==REPLACEMENT_SCHEMA_V2 and set(document)!=v2_required) or
         (document.get('schema')==REPLACEMENT_SCHEMA_V1 and set(document)!=legacy_required) or
-        document.get('schema') not in (REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V1) or
+        document.get('schema') not in (REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V2,REPLACEMENT_SCHEMA_V1) or
         document['application_closed_confirmation'] is not True):
         _fail('REPLACEMENT_MANIFEST_INVALID')
     actual=_files(root)
@@ -250,14 +275,22 @@ def verify_replacement(archive,directory):
     if source_account is None or candidate_account is None:_fail('REPLACEMENT_REPLAY_DISAGREEMENT')
     transition_sha=_digest(dict(source_final_account=source_account,replacement_initial_account=candidate_account))
     archive_manifest_sha=_manifest_entry(archive)['sha256']
-    expected_lineage=_next_lineage(source_report,archive_manifest_sha)
+    retired_fingerprints=(_retired_fingerprints(archive/ORDER_FILE,source_report)
+        if document['schema']==REPLACEMENT_SCHEMA else [])
+    expected_lineage=_next_lineage(source_report,archive_manifest_sha,
+        retired_fingerprints if document['schema']==REPLACEMENT_SCHEMA else None)
     lineage_valid=(candidate_report['lineage']==expected_lineage and
         document.get('source_epoch_sha256')==source_report['lineage']['epoch_sha256'] and
         document.get('candidate_epoch_sha256')==expected_lineage['epoch_sha256'] and
         document.get('candidate_generation')==expected_lineage['generation'])
     if document['schema']==REPLACEMENT_SCHEMA_V1:
         lineage_valid=(candidate_report['lineage']['generation']==0)
-    expected_commands=4 if document['schema']==REPLACEMENT_SCHEMA else 3
+    expected_commands=4 if document['schema'] in (REPLACEMENT_SCHEMA,REPLACEMENT_SCHEMA_V2) else 3
+    retired_valid=(document['schema']!=REPLACEMENT_SCHEMA or
+        (document['retired_order_id_policy']==RETIRED_ID_POLICY and
+         document['retired_order_id_fingerprint_count']==len(retired_fingerprints) and
+         document['retired_order_id_fingerprints_sha256']==retired_id_set_sha256(retired_fingerprints) and
+         list(DurableOrderGateway(root/ORDER_FILE)._retired_order_id_fingerprints())==retired_fingerprints))
     if (archive_manifest_sha!=document['archive_manifest_sha256'] or
         source_sha!=document['archive_recovery_sha256'] or candidate_sha!=document['candidate_recovery_sha256'] or
         transition_sha!=document['account_transition_sha256'] or
@@ -265,7 +298,7 @@ def verify_replacement(archive,directory):
         archived['archived_orders']!=document['source_archived_orders'] or
         archived['archive_batches']!=document['source_archive_batches'] or
         candidate_report['commands']!=document['commands'] or candidate_report['commands']!=expected_commands or
-        not lineage_valid or
+        not lineage_valid or not retired_valid or
         candidate_report['orders'] or not candidate_report['halted'] or
         not candidate_report['portfolio_reconciled'] or
         candidate_report['archival']['archived_order_count']!=0 or
@@ -282,6 +315,8 @@ def verify_replacement(archive,directory):
         replacement_candidate_only=True,halted=True,flat=True,portfolio_reconciled=True,
         commands=candidate_report['commands'],source_commands=source_report['commands'],
         generation=candidate_report['lineage']['generation'],epoch_sha256=candidate_report['lineage']['epoch_sha256'],
+        retired_order_id_fingerprint_count=len(DurableOrderGateway(root/ORDER_FILE)._retired_order_id_fingerprints()),
+        cross_epoch_id_reuse_fenced=document['schema']==REPLACEMENT_SCHEMA,
         source_archived_orders=source_report['archival']['archived_order_count'],
         source_archive_batches=len(source_report['archival']['batches']),
         source_preserved=True,archive_preserved=True,automatic_install=False,automatic_resume=False,
@@ -313,9 +348,10 @@ def prepare_replacement(source,archive,destination,*,application_closed=False):
         except ValueError:_fail('REPLACEMENT_BALANCE_REVIEW_REQUIRED')
         candidate.link_portfolio();candidate.emergency_halt()
         archive_manifest_sha=_manifest_entry(archive)['sha256']
-        lineage=_next_lineage(source_report,archive_manifest_sha)
+        retired_fingerprints=_retired_fingerprints(source,source_report)
+        lineage=_next_lineage(source_report,archive_manifest_sha,retired_fingerprints)
         candidate.bind_replacement_epoch(lineage['generation'],lineage['predecessor_archive_sha256'],
-                                         lineage['predecessor_epoch_sha256'])
+                                         lineage['predecessor_epoch_sha256'],retired_fingerprints)
         for name in (ORDER_FILE,PORTFOLIO_FILE):os.chmod(stage/name,0o600)
         candidate_report,candidate_sha=_snapshot(stage/ORDER_FILE)
         candidate_account=candidate_report['execution_account']['account']
@@ -325,6 +361,9 @@ def prepare_replacement(source,archive,destination,*,application_closed=False):
             source_epoch_sha256=source_report['lineage']['epoch_sha256'],
             candidate_epoch_sha256=candidate_report['lineage']['epoch_sha256'],
             candidate_generation=candidate_report['lineage']['generation'],
+            retired_order_id_policy=RETIRED_ID_POLICY,
+            retired_order_id_fingerprint_count=len(retired_fingerprints),
+            retired_order_id_fingerprints_sha256=retired_id_set_sha256(retired_fingerprints),
             account_transition_sha256=_digest(dict(source_final_account=source_account,replacement_initial_account=candidate_account)),
             files=_files(stage),commands=candidate_report['commands'],source_commands=source_report['commands'],
             source_archived_orders=source_report['archival']['archived_order_count'],
@@ -650,15 +689,21 @@ def _multi_epoch_fixture(root):
     This is deliberately synthetic and private.  It proves that repeated
     archive/candidate/install cycles preserve their replay evidence and return
     the live journal to its small halted baseline.  It is not a duration,
-    market-throughput, caller-ID policy, or native power-loss acceptance test.
+    market-throughput, caller-identity policy, or native power-loss acceptance
+    test. The ID fence covers only this bounded retained lineage.
     """
     root=Path(root);root.mkdir();live=root/'multi-live';live.mkdir()
     gateway=DurableOrderGateway(live/ORDER_FILE)
     gateway.initialize_account(1000000);gateway.link_portfolio()
     predecessor_epoch_sha256='0'*64;artifacts=[];max_source_commands=0;max_live_commands=0
-    generation_chain=True;capacity_reclaimed=True
+    generation_chain=True;capacity_reclaimed=True;retired_reuse_fenced=True
     for index in range(MULTI_EPOCH_FIXTURE_GENERATIONS):
-        if index:gateway.reset()
+        if index:
+            gateway.reset();before_reuse=gateway.recovery_report()['commands']
+            try:gateway.submit('epoch-0-order-0','BTC-USD','BUY',50,tier='terrestrial')
+            except ValueError as error:retired_reuse_fenced=(retired_reuse_fenced and str(error)=='RETIRED_ORDER_ID_REUSE')
+            else:retired_reuse_fenced=False
+            retired_reuse_fenced=(retired_reuse_fenced and gateway.recovery_report()['commands']==before_reuse)
         for order_index in range(MULTI_EPOCH_FIXTURE_ORDERS):
             side='BUY' if order_index%2==0 else 'SELL'
             order_id=f'epoch-{index}-order-{order_index}'
@@ -689,11 +734,14 @@ def _multi_epoch_fixture(root):
         verify_replacement(archive,candidate)['verified'] and
         verify_install_recovery(archive,recovery)['rollback_available']
         for archive,candidate,recovery in artifacts)
+    retired_count=gateway.recovery_report()['retired_order_ids']['fingerprint_count']
     return dict(multi_epoch_generation_chain=generation_chain,
         multi_epoch_capacity_reclaimed=capacity_reclaimed,
         multi_epoch_artifacts_replay=artifacts_replay,
+        multi_epoch_retired_id_reuse_fenced=retired_reuse_fenced,
         multi_epoch_generations=MULTI_EPOCH_FIXTURE_GENERATIONS,
         multi_epoch_orders=MULTI_EPOCH_FIXTURE_GENERATIONS*MULTI_EPOCH_FIXTURE_ORDERS,
+        multi_epoch_retired_id_fingerprint_count=retired_count,
         multi_epoch_max_source_commands=max_source_commands,
         multi_epoch_max_live_commands=max_live_commands)
 

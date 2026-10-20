@@ -39,7 +39,7 @@ v0.182.0 adds mandatory bounded multi-epoch replacement-pressure evidence withou
 
 v0.182.1 changes only emergency overload-fixture setup timing. The application, seven tabs, help, startup, OFF defaults, emergency behavior and two-second control-response assertions are unchanged.
 
-v0.182.2 changes only disposable real-loopback denial-trial handling for Windows abort/reset timing. Application startup, the seven tabs, black/bright-purple help, OFF defaults, credential controls, emergency behavior and runtime HTTP policy are unchanged.
+v0.183.0 changes only private order-replacement lineage and retired-ID admission. Application startup, the seven tabs, black/bright-purple help, OFF defaults, credential controls, emergency behavior and runtime HTTP policy are unchanged.
 
 
 v0.86: To Do → View Release Roadmap displays both product stages and technical evidence tracks, including secure deposits/available cash, connected broker paper, governed live execution, computer-off operation and final 1.0 acceptance. These entries are plans, not permissions or connected features. Current funding remains preview-only and current Engage remains virtual/fixed-policy only. The final release requires accepted production workflows, testing, reconciliation, security/risk review, recovery and explicit owner approval; it does not automatically activate live money.

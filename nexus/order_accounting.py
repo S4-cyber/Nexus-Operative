@@ -6,6 +6,7 @@ Unpriced historical events remain explicitly unreconciled; no quantity is inferr
 import copy
 import hashlib
 import json
+from bisect import bisect_left
 from decimal import Decimal, InvalidOperation
 from nexus.order_gateway import OrderGateway
 
@@ -26,7 +27,24 @@ def number(value, zero=False):
 
 MAX_ARCHIVED_INTENTS=10000
 MAX_ARCHIVE_BATCHES=100
+MAX_RETIRED_ORDER_ID_FINGERPRINTS=100000
 ZERO_SHA256='0'*64
+RETIRED_ID_POLICY='nexus.retired-order-id-fingerprint.v1'
+
+
+def order_id_fingerprint(client_order_id):
+    """Return a bounded pseudonymous membership key for a retired ID.
+
+    A truncated digest collision can only reject a new local-paper ID; it can
+    never permit reuse. The original ID is not copied into a fresh epoch, but
+    low-entropy IDs can still be guessed and remain private operational data.
+    """
+    if not isinstance(client_order_id,str):raise ValueError('INVALID_ORDER_ID')
+    return hashlib.sha256((RETIRED_ID_POLICY+'\0'+client_order_id).encode()).hexdigest()[:32]
+
+
+def retired_id_set_sha256(fingerprints):
+    return hashlib.sha256(json.dumps(list(fingerprints),separators=(',',':')).encode()).hexdigest()
 
 class AccountingOrderGateway(OrderGateway):
     def __init__(self, **kwargs):
@@ -41,8 +59,10 @@ class AccountingOrderGateway(OrderGateway):
         self.archive_batches = {}
         self.archival_boundary = 0
         self.epoch_lineage = None
+        self.retired_order_id_fingerprints = []
 
-    def bind_replacement_epoch(self,generation,predecessor_archive_sha256,predecessor_epoch_sha256):
+    def bind_replacement_epoch(self,generation,predecessor_archive_sha256,predecessor_epoch_sha256,
+                               retired_order_id_fingerprints=None):
         """Bind a fresh halted journal to its exact predecessor without importing history."""
         if (type(generation) is not int or not 1<=generation<=1000000 or
             not isinstance(predecessor_archive_sha256,str) or len(predecessor_archive_sha256)!=64 or
@@ -53,16 +73,37 @@ class AccountingOrderGateway(OrderGateway):
             raise ValueError('INVALID_REPLACEMENT_EPOCH_LINEAGE')
         body=dict(generation=generation,predecessor_archive_sha256=predecessor_archive_sha256,
                   predecessor_epoch_sha256=predecessor_epoch_sha256)
+        fingerprints=None if retired_order_id_fingerprints is None else list(retired_order_id_fingerprints)
+        if fingerprints is not None:
+            if (len(fingerprints)>MAX_RETIRED_ORDER_ID_FINGERPRINTS or
+                fingerprints!=sorted(set(fingerprints)) or
+                any(not isinstance(value,str) or len(value)!=32 or
+                    any(character not in '0123456789abcdef' for character in value)
+                    for value in fingerprints)):
+                raise ValueError('INVALID_RETIRED_ORDER_ID_FINGERPRINTS')
+            body.update(retired_order_id_policy=RETIRED_ID_POLICY,
+                retired_order_id_fingerprint_count=len(fingerprints),
+                retired_order_id_fingerprints_sha256=retired_id_set_sha256(fingerprints))
         lineage={**body,'epoch_sha256':hashlib.sha256(json.dumps(body,sort_keys=True,separators=(',',':')).encode()).hexdigest()}
         if self.epoch_lineage is not None:
-            if self.epoch_lineage!=lineage:raise ValueError('REPLACEMENT_EPOCH_LINEAGE_CONFLICT')
+            if self.epoch_lineage!=lineage or (fingerprints is not None and self.retired_order_id_fingerprints!=fingerprints):
+                raise ValueError('REPLACEMENT_EPOCH_LINEAGE_CONFLICT')
             return {**copy.deepcopy(self.epoch_lineage),'idempotent_replay':True}
         if (not self.halted or not self.portfolio_linked or self.account is None or
             self.account['positions'] or self.intents or self.archived_intents or self.executions or
             self.quote_events or self.order_terms or self.archive_batches):
             raise ValueError('REPLACEMENT_EPOCH_REQUIRES_FRESH_HALTED_FLAT_ACCOUNT')
         self.epoch_lineage=lineage
+        if fingerprints is not None:self.retired_order_id_fingerprints=fingerprints
         return {**copy.deepcopy(lineage),'idempotent_replay':False}
+
+    def submit(self,client_order_id,*args,**kwargs):
+        fingerprint=order_id_fingerprint(client_order_id)
+        index=bisect_left(self.retired_order_id_fingerprints,fingerprint)
+        if (index<len(self.retired_order_id_fingerprints) and
+            self.retired_order_id_fingerprints[index]==fingerprint):
+            raise ValueError('RETIRED_ORDER_ID_REUSE')
+        return super().submit(client_order_id,*args,**kwargs)
 
     def lookup(self,client_order_id):
         return self.intents.get(client_order_id) or self.archived_intents.get(client_order_id)

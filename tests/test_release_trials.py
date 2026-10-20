@@ -163,6 +163,7 @@ def test_multi_epoch_order_offload_metrics_are_mandatory():
     result=trials._execute('operations');trials._validate('operations',result)
     offload=result['order_physical_offload']
     for field,value in (('multi_epoch_generations',3),('multi_epoch_orders',47),
+                        ('multi_epoch_retired_id_fingerprint_count',47),
                         ('multi_epoch_max_live_commands',5),('multi_epoch_max_source_commands',100)):
         changed={**result,'order_physical_offload':{**offload,field:value}}
         with pytest.raises(ValueError,match='ORDER_OFFLOAD_MULTI_EPOCH'):

@@ -1,6 +1,10 @@
 # Windows distribution and acceptance evidence
 
-## v0.182.2 candidate status
+## v0.183.0 candidate status
+
+Exact v0.182.2 commit `70e7efdbab7a0cee27da97ef0843c8f74e73d1e3` passed public-security run 39486711199, all safety/evidence/browser jobs in run 39486711203, and Windows regression/EXE/installer run 39486711266. v0.183.0 adds private replayed retired-ID fingerprints to replacement journals and requires fresh exact-source Windows regression, standalone/installed private-tool, startup and installer evidence. Parent success does not certify the new source. Native ordinary-user private-volume/profile/ACL and power-loss behavior at every pair-replacement boundary remain independent gates.
+
+Local v0.183.0 evidence passed all sixteen profiles and saved-evidence verification against 347 source files / `b997a5a54d634202be661f7f8f2d83c7d05885745308b62e9756c97da45ab001`; report SHA256 is `3741cba13a1b83e6eb9698b01825281e29f2c4a06ca723b985b692ea547d9960`. This Linux result sets `native_windows_acceptance: false` and cannot replace fresh v0.183.0 native CI.
 
 Exact v0.182.1 commit `cdd8633e8c55ad619d7df5c105edce8877e179fe` passed public security 39477022644 and Windows regression/packaging/installer 39477022746. Safety run 39477022684 passed release evidence and rendered browser help, while its complete Windows regression failed after 3,409 passes and 19 skips when a disposable foreign-origin credential POST was aborted before urllib exposed its 403 (`WinError 10053`).
 

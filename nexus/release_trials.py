@@ -948,6 +948,7 @@ def _validate(profile, result):
                  all(offload[key] is True for key in OFFLOAD_CHECKS),'ORDER_OFFLOAD')
         _require(offload['multi_epoch_generations']==MULTI_EPOCH_FIXTURE_GENERATIONS and
                  offload['multi_epoch_orders']==MULTI_EPOCH_FIXTURE_GENERATIONS*MULTI_EPOCH_FIXTURE_ORDERS and
+                 offload['multi_epoch_retired_id_fingerprint_count']==offload['multi_epoch_orders'] and
                  offload['multi_epoch_max_live_commands']==4 and
                  type(offload['multi_epoch_max_source_commands']) is int and
                  4<offload['multi_epoch_max_source_commands']<100,

@@ -1,6 +1,6 @@
 # Nexus Operative release acceptance
 
-Current build: **0.182.2 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.183.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## Repeatable trials
 
@@ -36,8 +36,8 @@ The HTTP trial denies/counts non-loopback connections and keyring operations in 
 | Release requirement | Status | Evidence / next acceptance |
 | --- | --- | --- |
 | Source regression, controller help and syntax | Automated checks available | Full regression, compilation, fourteen Node controllers and dependency check are recorded in LAUNCH_DRIVE.md for each push |
-| Integrated local trials | Current bounded offline trials passed | v0.182.2 source-fingerprinted report `validation/release_trials_0_182_2.json` verifies all sixteen local profiles against 347 files / `850bf55bfcd70fd33151fc1dc6fafac2d875b702bc3ed66317bb9ae09029ae3c`; report SHA256 is `98bf4c04d0e0b810ef62fd2a22b82c8d0f74b64229e5ee7384ef14d6c42bad48`. This remains synthetic/offline evidence; actual broker/market/native-profile acceptance is open |
-| Windows packaging and data recovery | Latest published packaging workflow passed; independent regression has a scoped trial failure | Exact v0.182.1 commit `cdd8633e8c55ad619d7df5c105edce8877e179fe` passed public security 39477022644 and Windows regression/EXE/installer 39477022746. Safety run 39477022684 passed release evidence and browser help but its complete Windows regression hit one pre-credential foreign-origin connection abort before exposing the 403. v0.182.2 adds a strictly scoped bodyless denial re-probe and requires fresh exact-source runs. Windows power-loss boundaries, ordinary-user private-volume/profile/ACL, extended long-run pressure, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
+| Integrated local trials | Current bounded offline trials passed | v0.183.0 source-fingerprinted report `validation/release_trials_0_183_0.json` verifies all sixteen local profiles against 347 files / `b997a5a54d634202be661f7f8f2d83c7d05885745308b62e9756c97da45ab001`; report SHA256 is `3741cba13a1b83e6eb9698b01825281e29f2c4a06ca723b985b692ea547d9960`. This remains synthetic/offline evidence; actual broker/market/native-profile acceptance is open |
+| Windows packaging and data recovery | Latest published exact-source workflows passed | Exact v0.182.2 commit `70e7efdbab7a0cee27da97ef0843c8f74e73d1e3` passed public security 39486711199, all safety/evidence/browser jobs in 39486711203 and Windows regression/EXE/installer 39486711266. v0.183.0 changes replacement-journal contents and therefore requires fresh exact-source workflows. Windows power-loss boundaries, ordinary-user private-volume/profile/ACL, extended long-run pressure, clean-machine native window, whole-machine pressure and independent acceptance remain separate |
 | Clean-machine desktop and ordinary-user profile | OPEN | Native window, ACLs, prior-installer upgrade, Windows credential lifecycle and representative owner environment |
 | Independent market-data authenticity | OPEN | Provenance, missing/revised records, independent comparisons and source rights |
 | Scientific strategy and execution realism | OPEN | Chronological independent evaluation, held-out costs/drawdown, depth/liquidity sensitivity and sustained forward observations; no tuning on acceptance data |

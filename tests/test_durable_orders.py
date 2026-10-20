@@ -3,6 +3,7 @@ from contextlib import closing
 from concurrent.futures import ThreadPoolExecutor
 import pytest
 from nexus.durable_orders import DurableOrderGateway
+from nexus.order_accounting import order_id_fingerprint, retired_id_set_sha256
 
 
 def test_restart_preserves_partial_fees_cancel_and_idempotency(tmp_path):
@@ -65,6 +66,36 @@ def test_replacement_epoch_lineage_requires_fresh_halted_flat_state_and_replays(
     restored=DurableOrderGateway(path).recovery_report()
     assert restored['lineage']=={key:value for key,value in bound.items() if key!='idempotent_replay'}
     assert restored['commands']==4 and restored['halted']
+
+
+def test_replacement_epoch_replays_bounded_retired_id_fence_without_retaining_plain_ids(tmp_path):
+    path=tmp_path/'orders.sqlite3';g=DurableOrderGateway(path)
+    g.initialize_account(1000);g.link_portfolio();g.emergency_halt()
+    fingerprints=sorted(order_id_fingerprint(value) for value in ('prior-a','prior-b'))
+    bound=g.bind_replacement_epoch(1,'a'*64,'0'*64,fingerprints)
+    assert bound['retired_order_id_fingerprint_count']==2
+    assert bound['retired_order_id_fingerprints_sha256']==retired_id_set_sha256(fingerprints)
+    restored=DurableOrderGateway(path)
+    report=restored.recovery_report()
+    assert report['retired_order_ids']==dict(policy='nexus.retired-order-id-fingerprint.v1',
+        fingerprint_count=2,fingerprint_set_sha256=retired_id_set_sha256(fingerprints),
+        fingerprint_limit=100000,cross_epoch_reuse_fenced=True)
+    assert 'prior-a' not in path.read_bytes().decode('utf-8',errors='ignore')
+    restored.reset();before=restored.recovery_report()['commands']
+    with pytest.raises(ValueError,match='RETIRED_ORDER_ID_REUSE'):
+        restored.submit('prior-a','BTC-USD','BUY',25)
+    assert restored.recovery_report()['commands']==before
+    assert restored.submit('new-id','BTC-USD','BUY',25)['id']=='new-id'
+
+
+@pytest.mark.parametrize('fingerprints',[
+    ['f'*32,'a'*32],['a'*32,'a'*32],['A'*32],['a'*31],[1],
+])
+def test_invalid_retired_id_fingerprint_sets_are_rejected(tmp_path,fingerprints):
+    g=DurableOrderGateway(tmp_path/'orders.sqlite3')
+    g.initialize_account(1000);g.link_portfolio();g.emergency_halt()
+    with pytest.raises(ValueError,match='INVALID_RETIRED_ORDER_ID_FINGERPRINTS'):
+        g.bind_replacement_epoch(1,'a'*64,'0'*64,fingerprints)
 
 
 @pytest.mark.parametrize('generation,archive,predecessor',[

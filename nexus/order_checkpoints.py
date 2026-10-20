@@ -20,7 +20,7 @@ def encode(gateway):
     return json.dumps(dict(halted=gateway.halted,intents=gateway.intents,account=gateway.account,
         portfolio_linked=gateway.portfolio_linked,order_terms=gateway.order_terms,
         archived_intents=gateway.archived_intents,archive_batches=gateway.archive_batches,archival_boundary=gateway.archival_boundary,
-        epoch_lineage=gateway.epoch_lineage,
+        epoch_lineage=gateway.epoch_lineage,retired_order_id_fingerprints=gateway.retired_order_id_fingerprints,
         executions=[[list(k),v] for k,v in sorted(gateway.executions.items())],
         quote_events=[[list(k),v] for k,v in sorted(gateway.quote_events.items())]),
         sort_keys=True,separators=(',',':'),allow_nan=False)
@@ -29,7 +29,7 @@ def encode(gateway):
 def decode(payload):
     data=json.loads(payload)
     required={'halted','intents','account','portfolio_linked','order_terms','executions','quote_events'}
-    optional={'archived_intents','archive_batches','archival_boundary','epoch_lineage'}
+    optional={'archived_intents','archive_batches','archival_boundary','epoch_lineage','retired_order_id_fingerprints'}
     if not isinstance(data,dict) or not required<=set(data) or set(data)-required-optional:
         raise ValueError('ORDER_CHECKPOINT_SCHEMA_MISMATCH')
     gateway=AccountingOrderGateway(clock=lambda:0)
@@ -39,6 +39,7 @@ def decode(payload):
     gateway.archive_batches=data.get('archive_batches',{})
     gateway.archival_boundary=data.get('archival_boundary',0)
     gateway.epoch_lineage=data.get('epoch_lineage')
+    gateway.retired_order_id_fingerprints=data.get('retired_order_id_fingerprints',[])
     gateway.executions={tuple(k):v for k,v in data['executions']}
     gateway.quote_events={tuple(k):v for k,v in data['quote_events']}
     return gateway

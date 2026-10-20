@@ -114,6 +114,7 @@ def test_prepare_replacement_publishes_halted_candidate_and_preserves_inputs(tmp
     assert result['halted'] and result['flat'] and result['portfolio_reconciled']
     assert result['commands']==4 and result['source_archived_orders']==2
     assert result['generation']==1 and len(result['epoch_sha256'])==64
+    assert result['retired_order_id_fingerprint_count']==2 and result['cross_epoch_id_reuse_fenced']
     assert result['source_preserved'] and result['archive_preserved']
     assert not result['capacity_reclaimed'] and not result['source_history_deleted']
     assert not result['automatic_install'] and not result['automatic_resume']
@@ -156,13 +157,39 @@ def test_v1_replacement_candidate_remains_verifiable(tmp_path):
         db.execute('DELETE FROM commands WHERE sequence=4')
     manifest=candidate/order_offload.REPLACEMENT_MANIFEST;document=json.loads(manifest.read_text())
     document['schema']=order_offload.REPLACEMENT_SCHEMA_V1
-    for key in ('source_epoch_sha256','candidate_epoch_sha256','candidate_generation'):document.pop(key)
+    for key in ('source_epoch_sha256','candidate_epoch_sha256','candidate_generation',
+                'retired_order_id_policy','retired_order_id_fingerprint_count',
+                'retired_order_id_fingerprints_sha256'):document.pop(key)
     document['commands']=3
     document['candidate_recovery_sha256']=order_offload._snapshot(candidate/order_offload.ORDER_FILE)[1]
     document['files']=order_offload._files(candidate)
     manifest.write_text(json.dumps(document,sort_keys=True,indent=2)+'\n')
     verified=order_offload.verify_replacement(archive,candidate)
     assert verified['generation']==0 and verified['commands']==3
+
+
+def test_v2_replacement_candidate_remains_verifiable(tmp_path):
+    gateway=archived(tmp_path);source=gateway.path;archive=tmp_path/'archive';candidate=tmp_path/'candidate'
+    order_offload.create(source,archive,application_closed=True)
+    order_offload.prepare_replacement(source,archive,candidate,application_closed=True)
+    source_report=DurableOrderGateway(archive/order_offload.ORDER_FILE).recovery_report()
+    archive_sha=order_offload._manifest_entry(archive)['sha256']
+    legacy_lineage=order_offload._next_lineage(source_report,archive_sha)
+    with sqlite3.connect(candidate/order_offload.ORDER_FILE) as db:
+        payload=json.loads(db.execute('SELECT payload FROM commands WHERE sequence=4').fetchone()[0])
+        payload['args']=payload['args'][:3]
+        db.execute('UPDATE commands SET payload=? WHERE sequence=4',(json.dumps(payload,allow_nan=False),))
+    manifest=candidate/order_offload.REPLACEMENT_MANIFEST;document=json.loads(manifest.read_text())
+    document['schema']=order_offload.REPLACEMENT_SCHEMA_V2
+    for key in ('retired_order_id_policy','retired_order_id_fingerprint_count',
+                'retired_order_id_fingerprints_sha256'):document.pop(key)
+    document['candidate_epoch_sha256']=legacy_lineage['epoch_sha256']
+    document['candidate_recovery_sha256']=order_offload._snapshot(candidate/order_offload.ORDER_FILE)[1]
+    document['files']=order_offload._files(candidate)
+    manifest.write_text(json.dumps(document,sort_keys=True,indent=2)+'\n')
+    verified=order_offload.verify_replacement(archive,candidate)
+    assert verified['generation']==1 and verified['commands']==4
+    assert verified['cross_epoch_id_reuse_fenced'] is False
 
 
 def test_prepare_replacement_requires_fresh_external_destination_and_closed_assertion(tmp_path):
@@ -175,6 +202,17 @@ def test_prepare_replacement_requires_fresh_external_destination_and_closed_asse
     existing=tmp_path/'existing';existing.mkdir()
     with pytest.raises(ValueError,match='DESTINATION_MUST_BE_NEW'):
         order_offload.prepare_replacement(source,archive,existing,application_closed=True)
+
+
+def test_legacy_rotated_source_requires_explicit_retired_id_baseline_review(tmp_path):
+    live=tmp_path/'live';live.mkdir();source=live/order_offload.ORDER_FILE
+    gateway=DurableOrderGateway(source);gateway.initialize_account(1000);gateway.link_portfolio();gateway.emergency_halt()
+    gateway.bind_replacement_epoch(1,'a'*64,'0'*64)  # v2 lineage had no retired-ID membership set.
+    gateway.reset();gateway.submit('legacy-id','BTC-USD','BUY',25,tier='terrestrial');gateway.cancel('legacy-id')
+    gateway.emergency_halt();gateway.archive_terminal('legacy_epoch')
+    archive=tmp_path/'archive';order_offload.create(source,archive,application_closed=True)
+    with pytest.raises(ValueError,match='RETIRED_ORDER_ID_BASELINE_REVIEW_REQUIRED'):
+        order_offload.prepare_replacement(source,archive,tmp_path/'candidate',application_closed=True)
 
 
 def test_failed_replacement_verification_never_publishes_destination(tmp_path,monkeypatch):
@@ -236,7 +274,7 @@ def test_successive_replacements_form_replay_verified_epoch_lineage(tmp_path):
 
     gateway=DurableOrderGateway(source);gateway.reset()
     for side in ('BUY','SELL'):
-        oid=side.lower();gateway.submit(oid,'BTC-USD',side,50,tier='terrestrial')
+        oid=side.lower()+'-epoch-1';gateway.submit(oid,'BTC-USD',side,50,tier='terrestrial')
         gateway.set_execution_terms(oid,2000,10)
         gateway.simulate_quote_fill(oid,'fill',1,1,25,25,2,2001,2001)
         gateway.cancel(oid)
@@ -250,6 +288,10 @@ def test_successive_replacements_form_replay_verified_epoch_lineage(tmp_path):
     assert second['predecessor_archive_sha256']==order_offload._manifest_entry(archive_1)['sha256']
     installed=order_offload.install_replacement(source,archive_1,candidate_2,tmp_path/'recovery-1',application_closed=True)
     assert installed['generation']==2 and DurableOrderGateway(source).recovery_report()['lineage']==second
+    rotated=DurableOrderGateway(source);rotated.reset();before=rotated.recovery_report()['commands']
+    with pytest.raises(ValueError,match='RETIRED_ORDER_ID_REUSE'):
+        rotated.submit('buy','BTC-USD','BUY',50,tier='terrestrial')
+    assert rotated.recovery_report()['commands']==before
 
 
 def test_interrupted_pair_install_blocks_gateway_until_explicit_recovery(tmp_path,monkeypatch):
@@ -461,6 +503,8 @@ def test_fixture_is_bounded_and_grants_no_authority():
     report=order_offload.fixture_report()
     assert report['passed'] and all(report[key] for key in order_offload.CHECKS)
     assert report['multi_epoch_generations']==4 and report['multi_epoch_orders']==48
+    assert report['multi_epoch_retired_id_fingerprint_count']==48
     assert report['multi_epoch_max_live_commands']==4
     assert report['multi_epoch_max_source_commands']<100
+    assert report['multi_epoch_retired_id_reuse_fenced'] is True
     assert all(report[key] is False for key in order_offload.AUTHORITY_FLAGS)

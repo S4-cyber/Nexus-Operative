@@ -13,7 +13,8 @@ import stat
 from contextlib import closing, contextmanager
 from pathlib import Path
 from nexus.order_gateway import OrderGateway
-from nexus.order_accounting import AccountingOrderGateway, MAX_ARCHIVED_INTENTS, MAX_ARCHIVE_BATCHES
+from nexus.order_accounting import (AccountingOrderGateway, MAX_ARCHIVED_INTENTS, MAX_ARCHIVE_BATCHES,
+    MAX_RETIRED_ORDER_ID_FINGERPRINTS, RETIRED_ID_POLICY, retired_id_set_sha256)
 from nexus import emergency_intent, execution_portfolio, order_checkpoints
 from nexus.execution_capacity import report as capacity_report, CONTROL_RESERVE
 
@@ -154,9 +155,9 @@ class DurableOrderGateway:
                 execution_portfolio.compare(portfolio,gateway.account)
             if method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
                 raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
-        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
         result = getattr(gateway, method)(*args, **kwargs)
-        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
         if before != after:
             if method=='link_portfolio':
                 execution_portfolio.link(portfolio,gateway.account)
@@ -232,8 +233,17 @@ class DurableOrderGateway:
     def archive_terminal(self,batch_id):
         return self._call('archive_terminal',batch_id)
 
-    def bind_replacement_epoch(self,generation,predecessor_archive_sha256,predecessor_epoch_sha256):
-        return self._call('bind_replacement_epoch',generation,predecessor_archive_sha256,predecessor_epoch_sha256)
+    def bind_replacement_epoch(self,generation,predecessor_archive_sha256,predecessor_epoch_sha256,
+                               retired_order_id_fingerprints=None):
+        args=(generation,predecessor_archive_sha256,predecessor_epoch_sha256)
+        if retired_order_id_fingerprints is not None:args=(*args,retired_order_id_fingerprints)
+        return self._call('bind_replacement_epoch',*args)
+
+    def _retired_order_id_fingerprints(self):
+        """Private rotation helper; public status exposes only count and set hash."""
+        with self._read_connection() as db:
+            gateway,_=self._read_restore(db)
+        return tuple(gateway.retired_order_id_fingerprints)
 
     def connections(self):
         from nexus.alpaca_paper_contract import catalogue
@@ -279,6 +289,11 @@ class DurableOrderGateway:
                     lineage=(copy.deepcopy(gateway.epoch_lineage) if gateway.epoch_lineage is not None else
                              dict(generation=0,epoch_sha256='0'*64,predecessor_archive_sha256=None,
                                   predecessor_epoch_sha256=None)),
+                    retired_order_ids=dict(policy=RETIRED_ID_POLICY,
+                        fingerprint_count=len(gateway.retired_order_id_fingerprints),
+                        fingerprint_set_sha256=retired_id_set_sha256(gateway.retired_order_id_fingerprints),
+                        fingerprint_limit=MAX_RETIRED_ORDER_ID_FINGERPRINTS,
+                        cross_epoch_reuse_fenced=('retired_order_id_fingerprints_sha256' in (gateway.epoch_lineage or {}))),
                     archival=dict(active_epoch_commands=count-gateway.archival_boundary,
                                   retained_commands=count,retained_limit=MAX_RETAINED_COMMANDS,
                                   archived_order_count=len(gateway.archived_intents),archived_order_limit=MAX_ARCHIVED_INTENTS,

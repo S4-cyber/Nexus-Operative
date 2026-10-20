@@ -12,6 +12,8 @@ v0.180.0 adds explicit `install-replacement`, `verify-install-recovery`, `recove
 
 v0.182.0 retains the v0.181 schema-v2 lineage and Windows-compatible writable flush descriptor. The operations release profile now repeats four synthetic generations containing 48 terminal orders, reverifies every retained archive/candidate/recovery set and requires each install to return the live journal to its four-command halted baseline. This is bounded regression pressure, not extended-duration, market-throughput or native power-loss acceptance. The verifier still accepts v0.180 v1 candidate and install-recovery manifests plus v1 interrupted-install marker records. Lineage distinguishes audit epochs; it is not a retained-ID index and does not itself prohibit a caller from deliberately reusing an old local-simulation ID. Extended long-run load and ID-policy acceptance remain separate gates.
 
+v0.183.0 replacement schema v3 carries a sorted, bounded private fingerprint set for every retired client-order ID in the retained lineage. The candidate lineage and manifest bind its policy, count and set digest, and later submission rejects reuse before mutation. Existing v1 and v2 candidates remain verifiable. A source already rotated by an older schema has no provably complete baseline, so preparing another replacement fails closed for explicit operator review. Fingerprints are pseudonymous rather than anonymous and must remain on private storage; public output exposes only their count and aggregate digest. The fence covers one retained Nexus lineage, not caller identity, other hosts/journals or broker-wide idempotency.
+
 ## Before creating a copy
 
 - Fully close Nexus. The command requires `--confirm-application-closed`; the flag is an operator assertion, not process detection.
@@ -71,7 +73,7 @@ NexusOperative.exe --paper-tool order-offload verify-replacement PRIVATE_ARCHIVE
 
 Source installations use the same subcommands with `python -m nexus.order_offload`. The destination must be new and outside both the live data directory and archive directory. Preparation repeats the exact-source rotation preflight, creates a fresh halted account using the archived final flat synthetic cash state, links a fresh portfolio, and publishes a path/account-free manifest plus both databases only after replay and SQLite integrity verification. Verification requires the original archive and candidate; it rejects changed manifests, files, account continuity, histories or extra content.
 
-The candidate contains three initialization/link/halt commands but no order IDs or archived orders. Do not copy it over the live files manually. Use only the guarded commands below after preserving private backups.
+The v3 candidate contains four initialization/link/halt/lineage commands but no plaintext order IDs or archived orders. Its private journal contains only the bounded fingerprint membership set. Do not copy it over the live files manually. Use only the guarded commands below after preserving private backups.
 
 ## Install with a separate recovery copy
 

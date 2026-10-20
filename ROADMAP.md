@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.182.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.182.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.182.0 makes a bounded four-generation, 48-order synthetic replacement-pressure fixture mandatory in the operations release profile. Every generation is archived, replayed and retained; installation must return the live journal to its four-command halted baseline while preserving the digest chain. This is not long-run or native power-loss acceptance, cross-epoch caller-ID prevention, automatic resume or any broker, funds, live or release authority. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.182.1 isolates two aggregate-load fixture deadlines from unrelated scheduler stalls: emergency-lane setup is separate from the unchanged two-second control assertion, and a privacy/exit-contract child receives startup budget without becoming a latency benchmark. Runtime behavior, stop authority and risk controls are unchanged. This is test reliability, not sustained-load, whole-machine-pressure, broker or release acceptance. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

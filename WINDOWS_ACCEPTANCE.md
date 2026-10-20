@@ -1,8 +1,10 @@
 # Windows distribution and acceptance evidence
 
-## v0.182.0 candidate status
+## v0.182.1 candidate status
 
-Exact v0.181.1 commit `83e209c96a9544222bb8843fb6225e7a2cecc311` passed public security 39457656564, all safety/browser/evidence jobs in 39457656536 and Windows regression/packaging/installer run 39457656543. v0.182.0 adds a bounded four-generation, 48-order synthetic replacement-pressure fixture to mandatory operations evidence. Fresh exact-source Windows regression, packaged tools, EXE and installer lifecycle remain required; ordinary-user profile/ACL, private-volume and power-loss behavior at every pair-replacement boundary remain independent gates.
+Exact v0.182.0 commit `c21b989380bb0eb2052c2f97f0d60be06bf0cdeb` passed public security 39467696168, all safety/browser/evidence jobs in 39467694519 and Windows regression/packaging/installer run 39467694560. v0.182.1 separates overload-fixture setup tolerance from the unchanged two-second Emergency Stop/status assertions after a local aggregate-load scheduler stall. Fresh exact-source Windows regression, packaged tools, EXE and installer lifecycle remain required; ordinary-user profile/ACL, private-volume and power-loss behavior at every pair-replacement boundary remain independent gates.
+
+The final local corrected run passed 3,429 tests with one existing warning; all sixteen offline profiles and saved evidence matched 347 source files / `6e5857f9890eaebe819b946c93da22c4814b3d3403a229737811f15a8bdb3e18`. This is Linux/local evidence, not native Windows acceptance.
 
 Local focused durability/order-offload/packaging/version/roadmap validation passed 76 tests and all sixteen saved-evidence profiles matched 347 source files / `352f7cdfaf9abfe3f194f3d2a5ab47773426a133b16a46647202a15230f96984`. This is not native Windows acceptance.
 

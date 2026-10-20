@@ -162,9 +162,11 @@ def test_encrypted_cli_inputs_stay_in_memory_and_output_is_private(tmp_path,monk
 def test_cli_bad_input_and_unknown_secret_argument_do_not_echo_private_values(tmp_path):
     args=options(tmp_path);p=tmp_path/'PRIVATE_FIXTURE_PATH.json';p.write_text('PRIVATE_FIXTURE_CONTENT')
     base=[sys.executable,'-m','nexus.paper_account_evidence_review',*command(args,p,tmp_path/'missing.json')]
-    child=subprocess.run(base,capture_output=True,text=True,timeout=10)
+    # This is a privacy/exit-contract check, not a startup-latency benchmark.
+    # Leave enough process budget for aggregate regression scheduler stalls.
+    child=subprocess.run(base,capture_output=True,text=True,timeout=30)
     assert child.returncode==2 and child.stdout=='PAPER_ACCOUNT_EVIDENCE_FAILED\n' and not child.stderr
-    child=subprocess.run(base+['--api-secret','PRIVATE_FIXTURE_SECRET'],capture_output=True,text=True,timeout=10)
+    child=subprocess.run(base+['--api-secret','PRIVATE_FIXTURE_SECRET'],capture_output=True,text=True,timeout=30)
     assert child.returncode==2 and child.stderr=='PAPER_ACCOUNT_EVIDENCE_USAGE_ERROR\n' and not child.stdout
 
 

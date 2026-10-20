@@ -18,8 +18,15 @@ def lane(rig):
     api._drain_emergency_lane()
 
 
-async def until(predicate):
-    loop=asyncio.get_running_loop();deadline=loop.time()+4
+async def until(predicate,timeout=10):
+    """Wait for fixture setup without weakening the timed control assertion.
+
+    Aggregate regression load can suspend this event loop before a worker has
+    entered its deliberately blocked state.  That scheduler delay is not the
+    emergency-lane latency measured below, so keep setup and response budgets
+    separate.
+    """
+    loop=asyncio.get_running_loop();deadline=loop.time()+timeout
     while not predicate():
         assert loop.time()<deadline,'Expected control state not reached'
         await asyncio.sleep(.001)
@@ -29,20 +36,20 @@ async def until(predicate):
 def test_emergency_cut_and_status_bypass_saturated_general_workers(lane,monkeypatch,saturate_default_executor):
     c,g,r,w,starts,obs=lane;c.post('/api/portal',json={'enabled':True});c.post('/api/paper/forward/start',json=START)
     feed_entered=threading.Event();release=threading.Event();general_entered=threading.Event()
-    def slow_quote(*_):feed_entered.set();assert release.wait(5);return {'product':'BTC-USD','read_only':True,'orders_allowed':False}
+    def slow_quote(*_):feed_entered.set();assert release.wait(30);return {'product':'BTC-USD','read_only':True,'orders_allowed':False}
     monkeypatch.setattr(api,'read_ticker',slow_quote)
     async def exercise():
         limiter=anyio.to_thread.current_default_thread_limiter();old=limiter.total_tokens;limiter.total_tokens=1
         loop=asyncio.get_running_loop();general=None
         if saturate_default_executor:
             loop.set_default_executor(ThreadPoolExecutor(max_workers=1,thread_name_prefix='blocked-general-fixture'))
-            def block_general():general_entered.set();assert release.wait(5)
+            def block_general():general_entered.set();assert release.wait(30)
             general=loop.run_in_executor(None,block_general)
-            await until(general_entered.is_set)
+            await until(general_entered.is_set,30)
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=api.app),base_url='http://127.0.0.1') as client:
             feed=asyncio.create_task(client.get('/api/public-quote/BTC-USD'))
             try:
-                await until(feed_entered.is_set)
+                await until(feed_entered.is_set,30)
                 # The old synchronous routes queue behind the blocked feed here.
                 response=await asyncio.wait_for(client.post('/api/simulate/halt'),2)
                 status=await asyncio.wait_for(client.get('/api/status'),2)

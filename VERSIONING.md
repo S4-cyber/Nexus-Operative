@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.182.0 (pre-release).** A bounded four-generation, 48-order synthetic fixture now makes repeated replacement lineage, retained-artifact replay and four-command halted live-capacity recovery mandatory in the operations release profile. Extended long-run pressure, caller-ID policy, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.182.1 (pre-release).** Aggregate-load regression setup and CLI privacy/exit-contract child startup now tolerate unrelated scheduler stalls without changing the two-second emergency response assertions or any runtime behavior. Engagement permissions and risk controls are unchanged. Extended long-run pressure, caller-ID policy, exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.182.1 aggregate-load fixture deadline isolation
+
+Exact v0.182.0 commit `c21b989380bb0eb2052c2f97f0d60be06bf0cdeb` passed public security run 39467696168, all safety/browser/evidence jobs in 39467694519 and Windows regression/packaging/installer run 39467694560. Its earlier complete local run recorded one setup-deadline failure under aggregate scheduler load even though both exact cases passed immediately and exact-source CI later passed them.
+
+The emergency fixture now gives deliberately blocked setup workers a separate bounded 30-second admission window while retaining the existing two-second HTTP Emergency Stop and status response limits. The paper-account evidence CLI privacy/exit-contract fixture also uses a 30-second process budget because it measures sanitized failure behavior, not startup latency. These changes do not widen production deadlines, retry runtime work or weaken functional assertions. Ten consecutive reruns of each affected test passed locally. Exact-source v0.182.1 workflows remain required.
+
+The first complete run passed 3,428 tests and exposed the CLI fixture timeout; the corrected complete rerun passed 3,429 tests with one existing warning. All sixteen profiles and saved-evidence verification matched 347 files / `6e5857f9890eaebe819b946c93da22c4814b3d3403a229737811f15a8bdb3e18`; report SHA256 is `fc7e7772efc261821f0c5246a9faf640c70afff9202e50dcf48e34b0bd719422`.
 
 ## v0.182.0 bounded multi-epoch replacement pressure
 

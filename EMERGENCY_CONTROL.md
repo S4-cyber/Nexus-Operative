@@ -1,5 +1,7 @@
 # Emergency control under feed load
 
+v0.182.1 changes only overload-test setup timing. Deliberately blocked fixture workers receive a separate bounded admission allowance so unrelated aggregate scheduler stalls cannot expire them before the emergency lane is measured. The actual Emergency Stop and status response assertions remain two seconds, and production runtime behavior is unchanged.
+
 Emergency Stop remains an independent paper throttle cut. It leaves the research engine, observer and bounded learning worker in their prior state, preserves committed fills/holdings and attempts durable cancellation of pending simulated remainders. Reset clears only the cut; Engage remains explicit. No broker, deposit, transfer, live order or cloud connection is added.
 
 ## Scheduling and acknowledgment

@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.182.0, bounded multi-epoch replacement-pressure evidence over replay-bound replacement lineage. Read the newest version section and generated roadmap; exact-source CI, extended long-run/native Windows power-loss/private-volume acceptance, caller-ID policy and actual broker/market acceptance remain open.
+Current checkpoint: v0.182.1, aggregate-load fixture deadline isolation over the v0.182.0 bounded multi-epoch replacement evidence. Read the newest version section and generated roadmap; exact-source CI, extended long-run/native Windows power-loss/private-volume acceptance, caller-ID policy and actual broker/market acceptance remain open.
+
+## v0.182.1 aggregate-load fixture deadline isolation
+
+Exact v0.182.0 commit `c21b989380bb0eb2052c2f97f0d60be06bf0cdeb` passed public-security run 39467696168, all safety/browser/evidence jobs in 39467694519 and Windows regression/packaging/installer run 39467694560. The prior local complete run's single emergency overload failure was an aggregate scheduler/setup deadline: both exact cases passed immediately, and exact-source CI later passed the complete regression.
+
+The overload fixture now separates worker-admission/setup tolerance from the existing two-second Emergency Stop and status response assertions. Deliberately blocked setup workers may wait a bounded 30 seconds so unrelated aggregate event-loop stalls cannot expire the blocker before the control path is measured. A paper-account evidence CLI privacy/exit-contract child also receives a 30-second process budget because it does not benchmark startup latency. Runtime code, emergency behavior, permissions, risk controls, UI and authority flags are unchanged. Ten consecutive reruns of each affected test passed before the release checks. Exact-source v0.182.1 workflows remain mandatory; do not infer sustained whole-machine-pressure, broker, market or release acceptance.
+
+Final local v0.182.1 evidence: the first complete run passed 3,428 tests and exposed the second aggregate-load timeout in the CLI privacy fixture; after the targeted correction, the complete rerun passed 3,429 tests with one existing Starlette/httpx warning. All sixteen profiles and saved-evidence verification matched 347 files / `6e5857f9890eaebe819b946c93da22c4814b3d3403a229737811f15a8bdb3e18`; `validation/release_trials_0_182_1.json` SHA256 is `fc7e7772efc261821f0c5246a9faf640c70afff9202e50dcf48e34b0bd719422`. Compilation, dependency consistency, all fourteen Node controllers, Portal syntax, generated-roadmap equality and whitespace checks passed. Run the staged public-artifact audit before publication and require fresh exact-source workflows.
 
 ## v0.182.0 bounded multi-epoch replacement pressure
 

@@ -17,7 +17,7 @@ smoke=importlib.util.module_from_spec(spec);spec.loader.exec_module(smoke)
 
 def test_actual_source_child_smoke_covers_all_ten_tools_without_default_data():
     r=smoke.run([sys.executable,str(ROOT/'portable/desktop.py')])
-    assert r['passed'] and r['tool_invocations']==20+int(os.name=='nt') and all(r[k] is True for k in smoke.CHECKS)
+    assert r['passed'] and r['tool_invocations']==21+int(os.name=='nt') and all(r[k] is True for k in smoke.CHECKS)
     assert r['host_os'] == ('WINDOWS_NT' if os.name=='nt' else 'NON_WINDOWS')
     assert r['native_windows_storage_fault_checked'] is (os.name=='nt')
     assert not r['native_windows_acceptance'] and not r['provider_reads_requested'] and not r['credential_reads_requested']

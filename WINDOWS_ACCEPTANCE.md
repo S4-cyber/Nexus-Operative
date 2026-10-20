@@ -177,6 +177,14 @@ Exact v0.177.1 public-security run 39385781709 and safety/browser/evidence run 3
 
 v0.177.2 retries only SQLite BUSY/LOCKED outcomes for a bounded 30-second monotonic window, closing each attempt. Continued contention remains fail closed under a fixed code, while exhaustion and all non-lock failures are never retried. The native contract now distinguishes the 12 expected successes from 18 exact quota denials. No UI, request cap, provider connection, account, execution or release authority changed. Exact-source Windows regression and the complete packaging/installer lifecycle remain mandatory.
 
+Exact v0.177.2 subsequently passed public-security run 39393111840, all three safety/browser/evidence jobs in run 39393111890 and Windows packaging/installer run 39393111795.
+
+## v0.178.0 candidate status
+
+The installed `order-offload rotation-plan` command now verifies that a private offline copy still exactly matches the explicitly application-closed live order journal and linked portfolio, then rechecks both sides. The Windows source/standalone/installed operator smoke invokes it after create and verify, bringing the cross-platform command-prefix count to 21 plus the native read-only-journal emergency fault.
+
+The new command writes nothing and cannot compact, delete, reclaim capacity, resume, contact a provider or grant authority. Exact-source Windows regression, EXE/startup, installed command, installer lifecycle and retained evidence are required before this candidate is accepted. Ordinary-user private-volume/profile/ACL and capacity-reclaiming multi-epoch recovery remain separate open gates.
+
 ## v0.177.1 candidate status
 
 Exact v0.177.0 security run 39335584198 and the browser-help job in safety run 39335584233 passed, but that run's release-evidence job failed in the operations child. The offload integrity pass used SQLite connection context managers, which finalize transactions but do not close connections. Linux permitted the staged files to be moved and removed with those handles open; Windows correctly retained file locks. v0.177.1 explicitly closes both read-only integrity handles before replay, publication and cleanup, and adds a platform-neutral regression that blocks rename while any tracked integrity handle remains open.

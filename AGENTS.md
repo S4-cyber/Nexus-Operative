@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.177.2, bounded Windows shared-request-budget contention recovery. Read the newest version section and generated roadmap; v0.177.2 exact-source CI, capacity-reclaiming compaction/rotation and actual broker/market acceptance remain open.
+Current checkpoint: v0.178.0, exact-source-bound order rotation preflight. Read the newest version section and generated roadmap; v0.178.0 exact-source CI, capacity-reclaiming compaction/rotation and actual broker/market acceptance remain open.
+
+## v0.178.0 exact-source-bound rotation preflight
+
+Exact v0.177.2 commit `44e77315d518e7cc038401ffb2da49778a61d0b1` passed public-security run 39393111840, all three safety/browser/evidence jobs in run 39393111890 and Windows packaging/installer run 39393111795. The native run completed the regression, Portal syntax, standalone EXE, startup, ten-tool installed smoke, install/reinstall/uninstall and retained installer evidence.
+
+The installed/source `order-offload rotation-plan` command is read-only. It requires explicit application-closed confirmation, verifies the private offline copy, then requires exact order/portfolio hashes, recovery digest, command/archive counts, halted/flat/reconciled state and zero active-epoch commands to match the live source. Both source and archive are replayed and fingerprinted again after comparison. Any stale copy or concurrent change fails closed under fixed public errors.
+
+This is a dry-run prerequisite only: it creates no replacement, deletes or rewrites no history, reclaims no command/ID capacity, resumes nothing and grants no broker, funds, live, cloud or release authority. No Portal control or modifiable parameter was added; the seven tabs and black/bright-purple help contract are unchanged. Capacity-reclaiming implementation, crash-safe publication/recovery, multi-epoch pressure and independent private-volume/native-profile acceptance remain open.
+
+Final v0.178.0 local validation: 3,406 Python tests passed with one existing Starlette/httpx deprecation warning; the focused durability/release set passed 157 tests. All sixteen offline profiles and saved-evidence verification matched 347 source files / `d4e0278c9ca0e90d52f26b8c59fd15bdae91593823c692a04d98a5ba6dd5bcbd`; `validation/release_trials_0_178_0.json` SHA256 is `fe93088d748e323377ce55839026baa99360ec029070aa0c70946bcf9764c3a0`. Compilation, dependency consistency, generated-roadmap equality, all fourteen Node controllers, Portal inline syntax and whitespace checks passed. Run the public-artifact scan before publication. Exact-source Windows/security/safety CI remains mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
 
 ## v0.177.2 bounded shared-budget contention recovery
 

@@ -29,7 +29,7 @@ Engine/throttle verification: tests/test_engine_throttle.py uses actual durable 
 
 For the application-closed, copy-only archived order-journal command introduced in v0.177.0 and corrected for Windows handle closure in v0.177.1, use [ORDER_OFFLOAD.md](ORDER_OFFLOAD.md). It is an advanced private operator tool, not a Portal control or first-run step. It never deletes the source or reclaims live capacity.
 
-v0.177.2 changes no startup or Portal control. It bounds internal SQLite writer-contention recovery for the existing shared public-discovery request budget; the fixed hourly limit and explicit Start Portal behavior remain unchanged.
+v0.178.0 changes no startup or Portal control. Its optional installed/source `order-offload rotation-plan` operator command is a read-only, application-closed exact-copy preflight; ordinary startup, explicit Start Portal behavior, engagement defaults and all permissions remain unchanged.
 
 
 v0.86: To Do → View Release Roadmap displays both product stages and technical evidence tracks, including secure deposits/available cash, connected broker paper, governed live execution, computer-off operation and final 1.0 acceptance. These entries are plans, not permissions or connected features. Current funding remains preview-only and current Engage remains virtual/fixed-policy only. The final release requires accepted production workflows, testing, reconciliation, security/risk review, recovery and explicit owner approval; it does not automatically activate live money.

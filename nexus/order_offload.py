@@ -1,8 +1,9 @@
-"""Create or verify an offline, replay-verified physical order-history copy.
+"""Create, verify, or compare an offline physical order-history copy.
 
 Nexus must be closed before creating a copy.  This tool never deletes or
-compacts the live journal; capacity is not reclaimed until a separately
-reviewed compaction design exists.
+compacts the live journal.  ``rotation-plan`` is a read-only exact-binding
+preflight; capacity is not reclaimed until a separately reviewed compaction
+design exists.
 """
 import argparse
 from contextlib import closing
@@ -29,7 +30,8 @@ MAX_MANIFEST_BYTES=1024*1024
 AUTHORITY_FLAGS=('broker_connected','live_orders_enabled','money_movement_enabled',
                  'release_approved','capacity_reclaimed','source_history_deleted')
 CHECKS=('copy_verified','source_unchanged','archived_order_replay',
-        'new_destination_required','application_closed_required')
+        'new_destination_required','application_closed_required',
+        'rotation_plan_exact_source_bound','rotation_plan_non_mutating')
 
 
 def _fail(code):
@@ -141,6 +143,48 @@ def verify(directory):
                 copy_only=True,automatic_resume=False,**{flag:False for flag in AUTHORITY_FLAGS})
 
 
+def rotation_plan(source,directory,*,application_closed=False):
+    """Prove a verified copy still exactly binds the closed live source.
+
+    This is intentionally a double-ended read-only preflight.  It does not
+    produce a replacement database or grant permission to delete the source.
+    Both the archive and live replay/file identities are checked again after
+    comparison so a concurrent change is rejected rather than acknowledged.
+    """
+    if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
+    source,_=_private_path(source);root,root_resolved=_private_path(directory)
+    _regular(source);portfolio=source.parent/PORTFOLIO_FILE;_regular(portfolio)
+    if root_resolved==source.resolve().parent or root_resolved.is_relative_to(source.resolve().parent):
+        _fail('ARCHIVE_OUTSIDE_LIVE_DATA_REQUIRED')
+    if root.is_symlink() or not root.is_dir():_fail('DIRECTORY_REQUIRED')
+    document=_load_manifest(root)
+    archive_before=[file_entry(root/MANIFEST),*_files(root)]
+    verified=verify(root)
+    if [file_entry(root/MANIFEST),*_files(root)]!=archive_before:
+        _fail('ARCHIVE_CHANGED_DURING_ROTATION_PLAN')
+    live_before=_files(source.parent);report,recovery_sha256=_snapshot(source)
+    if (live_before!=document['files'] or recovery_sha256!=document['recovery_sha256'] or
+        report['commands']!=document['commands'] or
+        report['archival']['archived_order_count']!=document['archived_orders'] or
+        len(report['archival']['batches'])!=document['archive_batches'] or
+        report['orders'] or not report['halted'] or not report['portfolio_reconciled'] or
+        report['archival']['active_epoch_commands']!=0):
+        _fail('ROTATION_SOURCE_DISAGREEMENT')
+    verified_after=verify(root)
+    archive_after=[file_entry(root/MANIFEST),*_files(root)]
+    if verified_after!=verified or archive_after!=archive_before:
+        _fail('ARCHIVE_CHANGED_DURING_ROTATION_PLAN')
+    if _files(source.parent)!=live_before or _snapshot(source)[1]!=recovery_sha256:
+        _fail('SOURCE_CHANGED_DURING_ROTATION_PLAN')
+    return dict(mode='OFFLINE_ORDER_ROTATION_PLAN',verified_copy=True,
+        exact_source_bound=True,application_closed_confirmation=True,
+        source_unchanged=True,archive_unchanged=True,rotation_preflight_only=True,
+        dry_run_only=True,commands=report['commands'],
+        archived_orders=report['archival']['archived_order_count'],
+        archive_batches=len(report['archival']['batches']),compaction_performed=False,
+        automatic_resume=False,**{flag:False for flag in AUTHORITY_FLAGS})
+
+
 def create(source,destination,*,application_closed=False):
     if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
     source,_=_private_path(source);destination,destination_resolved=_private_path(destination)
@@ -202,10 +246,14 @@ def fixture_report():
         gateway.emergency_halt();gateway.archive_terminal('fixture_epoch')
         source_before=(live/ORDER_FILE).read_bytes();result=create(live/ORDER_FILE,output,application_closed=True)
         checked=verify(output);copied=DurableOrderGateway(output/ORDER_FILE)
+        planned=rotation_plan(live/ORDER_FILE,output,application_closed=True)
         checks=dict(copy_verified=result['verified'] and checked['verified'],
             source_unchanged=(live/ORDER_FILE).read_bytes()==source_before and result['source_unchanged'],
             archived_order_replay=copied.order_report('buy')['archived'] and copied.order_report('sell')['archived'],
-            new_destination_required=result['new_destination'],application_closed_required=False)
+            new_destination_required=result['new_destination'],application_closed_required=False,
+            rotation_plan_exact_source_bound=planned['exact_source_bound'],
+            rotation_plan_non_mutating=planned['dry_run_only'] and not planned['compaction_performed'] and
+                (live/ORDER_FILE).read_bytes()==source_before)
         try:create(live/ORDER_FILE,root/'unconfirmed')
         except ValueError as error:checks['application_closed_required']=str(error)=='ORDER_OFFLOAD_APPLICATION_MUST_BE_CLOSED'
         return dict(source='TEMPORARY_OFFLINE_ORDER_OFFLOAD_FIXTURE',passed=all(checks.values()),**checks,
@@ -222,10 +270,15 @@ def main():
     create_command=sub.add_parser('create');create_command.add_argument('source',type=Path)
     create_command.add_argument('destination',type=Path);create_command.add_argument('--confirm-application-closed',action='store_true')
     verify_command=sub.add_parser('verify');verify_command.add_argument('directory',type=Path)
+    plan_command=sub.add_parser('rotation-plan');plan_command.add_argument('source',type=Path)
+    plan_command.add_argument('directory',type=Path);plan_command.add_argument('--confirm-application-closed',action='store_true')
     args=parser.parse_args()
     try:
-        result=(create(args.source,args.destination,application_closed=args.confirm_application_closed)
-                if args.action=='create' else verify(args.directory))
+        if args.action=='create':
+            result=create(args.source,args.destination,application_closed=args.confirm_application_closed)
+        elif args.action=='rotation-plan':
+            result=rotation_plan(args.source,args.directory,application_closed=args.confirm_application_closed)
+        else:result=verify(args.directory)
         print(json.dumps(result,sort_keys=True))
         return 0
     except (ValueError,OSError,sqlite3.Error,TypeError,KeyError):

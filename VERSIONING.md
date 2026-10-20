@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.177.2 (pre-release).** The shared public-discovery request budget now retries only SQLite BUSY/LOCKED writer contention within a bounded window while preserving the fixed hourly cap and fail-closed storage behavior. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.178.0 (pre-release).** The installed/source order-offload tool now has a read-only rotation preflight that binds a verified private copy back to the exact unchanged application-closed live source. It performs no compaction or deletion and reclaims no capacity. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.178.0 exact-source-bound rotation preflight
+
+`order-offload rotation-plan` verifies an existing copy and requires its exact order/portfolio file hashes, full replay digest, command/archive counts and stopped, flat, reconciled boundary to match the explicitly application-closed live source. It rechecks both sides after comparison and rejects stale or changed inputs. The command writes nothing, never constructs a replacement, deletes no history, reclaims no capacity and cannot resume the application.
+
+The common source/standalone/installed operator smoke now executes 21 cross-platform command-prefix children plus the Windows-only read-only-journal emergency fault. No UI control or editable setting changed. Capacity-reclaiming publication, crash recovery, multi-epoch load, native private-volume/profile acceptance and every broker/market/funding/live/cloud/independent/owner gate remain open.
+
+Local validation passed 3,406 Python tests and the 157-test focused durability/release set. All sixteen bounded release profiles passed and saved-evidence verification matched 347 source files / `d4e0278c9ca0e90d52f26b8c59fd15bdae91593823c692a04d98a5ba6dd5bcbd`; report SHA256 is `fe93088d748e323377ce55839026baa99360ec029070aa0c70946bcf9764c3a0`. All fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Exact-source v0.178.0 CI remains required.
 
 ## v0.177.2 bounded shared-budget contention recovery
 

@@ -40,6 +40,66 @@ def test_verified_copy_preserves_source_and_archived_replay(tmp_path):
     assert copied.recovery_report()['portfolio_reconciled']
 
 
+def test_rotation_plan_exactly_binds_copy_and_live_source_without_writes(tmp_path):
+    gateway=archived(tmp_path);source=gateway.path;portfolio=source.parent/order_offload.PORTFOLIO_FILE
+    destination=tmp_path/'off-volume'/'epoch_0'
+    order_offload.create(source,destination,application_closed=True)
+    before=(source.read_bytes(),portfolio.read_bytes(),
+            (destination/order_offload.ORDER_FILE).read_bytes(),
+            (destination/order_offload.PORTFOLIO_FILE).read_bytes(),
+            (destination/order_offload.MANIFEST).read_bytes())
+    result=order_offload.rotation_plan(source,destination,application_closed=True)
+    assert result['mode']=='OFFLINE_ORDER_ROTATION_PLAN'
+    assert result['verified_copy'] and result['exact_source_bound']
+    assert result['source_unchanged'] and result['archive_unchanged']
+    assert result['rotation_preflight_only'] and result['dry_run_only']
+    assert not result['compaction_performed'] and not result['capacity_reclaimed']
+    assert not result['source_history_deleted'] and not result['automatic_resume']
+    assert before==(source.read_bytes(),portfolio.read_bytes(),
+                    (destination/order_offload.ORDER_FILE).read_bytes(),
+                    (destination/order_offload.PORTFOLIO_FILE).read_bytes(),
+                    (destination/order_offload.MANIFEST).read_bytes())
+
+
+def test_rotation_plan_rejects_stale_copy_and_requires_closed_assertion(tmp_path):
+    gateway=archived(tmp_path);source=gateway.path;destination=tmp_path/'archive'
+    order_offload.create(source,destination,application_closed=True)
+    with pytest.raises(ValueError,match='APPLICATION_MUST_BE_CLOSED'):
+        order_offload.rotation_plan(source,destination)
+    gateway.reset();gateway.emergency_halt()
+    with pytest.raises(ValueError,match='ROTATION_SOURCE_DISAGREEMENT'):
+        order_offload.rotation_plan(source,destination,application_closed=True)
+
+
+def test_rotation_plan_rechecks_source_and_archive_after_comparison(tmp_path,monkeypatch):
+    gateway=archived(tmp_path);source=gateway.path;destination=tmp_path/'archive'
+    order_offload.create(source,destination,application_closed=True)
+    original_verify=order_offload.verify;calls=[0]
+    def change_archive(path):
+        result=original_verify(path);calls[0]+=1
+        if calls[0]==1:
+            manifest=destination/order_offload.MANIFEST
+            manifest.write_bytes(manifest.read_bytes()+b' ')
+        return result
+    monkeypatch.setattr(order_offload,'verify',change_archive)
+    with pytest.raises(ValueError,match='MANIFEST_INVALID|ARCHIVE_CHANGED'):
+        order_offload.rotation_plan(source,destination,application_closed=True)
+
+
+def test_rotation_plan_rejects_source_change_after_initial_replay(tmp_path,monkeypatch):
+    gateway=archived(tmp_path);source=gateway.path;destination=tmp_path/'archive'
+    order_offload.create(source,destination,application_closed=True)
+    original_snapshot=order_offload._snapshot;changed=[False]
+    def change_source(path):
+        result=original_snapshot(path)
+        if Path(path)==source and not changed[0]:
+            changed[0]=True;gateway.reset();gateway.emergency_halt()
+        return result
+    monkeypatch.setattr(order_offload,'_snapshot',change_source)
+    with pytest.raises(ValueError,match='SOURCE_CHANGED_DURING_ROTATION_PLAN'):
+        order_offload.rotation_plan(source,destination,application_closed=True)
+
+
 def test_creation_requires_closed_halted_flat_logical_archive(tmp_path):
     live=tmp_path/'live';live.mkdir();source=live/order_offload.ORDER_FILE
     gateway=DurableOrderGateway(source);gateway.initialize_account(1000);gateway.link_portfolio()
@@ -141,10 +201,14 @@ def test_cli_create_and_verify_emit_content_free_status(tmp_path):
     check=subprocess.run([sys.executable,'-m','nexus.order_offload','verify',str(destination)],
                           capture_output=True,text=True,timeout=30)
     assert check.returncode==0 and json.loads(check.stdout)['verified']
+    plan=subprocess.run([sys.executable,'-m','nexus.order_offload','rotation-plan',str(gateway.path),str(destination),
+                         '--confirm-application-closed'],capture_output=True,text=True,timeout=30)
+    assert plan.returncode==0 and json.loads(plan.stdout)['exact_source_bound']
 
 
 @pytest.mark.parametrize('arguments',[
     ['create','PRIVATE_PATH_TOKEN/order_lifecycle.sqlite3','PRIVATE_DEST_TOKEN','--confirm-application-closed'],
+    ['rotation-plan','PRIVATE_PATH_TOKEN/order_lifecycle.sqlite3','PRIVATE_DEST_TOKEN'],
     ['--unknown','PRIVATE_ARGUMENT_TOKEN'],
 ])
 def test_cli_failures_never_echo_private_arguments(arguments):

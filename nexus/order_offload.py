@@ -1,10 +1,10 @@
-"""Create, verify, or compare offline order-history rotation artifacts.
+"""Create, verify, install, recover, or compare offline order-history artifacts.
 
 Nexus must be closed before creating a copy.  This tool never deletes or
 compacts the live journal.  ``rotation-plan`` is a read-only exact-binding
-preflight; capacity is not reclaimed until a separately reviewed compaction
-design exists.  Replacement preparation creates a new halted candidate beside
-the verified archive but never installs it over the live journal.
+preflight.  Replacement preparation creates a new halted candidate beside the
+verified archive.  Explicit installation retains a separate exact recovery
+copy and stays halted; recovery and rollback never resume operation.
 """
 import argparse
 from contextlib import closing
@@ -18,7 +18,7 @@ import stat
 import tempfile
 
 from nexus.artifact_manifest import file_entry
-from nexus.durable_orders import DurableOrderGateway
+from nexus.durable_orders import DurableOrderGateway, ROTATION_MARKER
 from nexus.paper_activity_acceptance_probe import _private_path
 
 
@@ -26,8 +26,12 @@ SCHEMA='nexus.order-physical-offload.v1'
 MANIFEST='nexus-order-offload-manifest.json'
 REPLACEMENT_SCHEMA='nexus.order-replacement-candidate.v1'
 REPLACEMENT_MANIFEST='nexus-order-replacement-manifest.json'
+INSTALL_SCHEMA='nexus.order-replacement-install.v1'
+INSTALL_MANIFEST='nexus-order-install-recovery-manifest.json'
 ORDER_FILE='order_lifecycle.sqlite3'
 PORTFOLIO_FILE='paper_portfolio.sqlite3'
+INSTALL_ORDER_TEMP='.nexus-order-install-order.tmp'
+INSTALL_PORTFOLIO_TEMP='.nexus-order-install-portfolio.tmp'
 MAX_FILE_BYTES=512*1024*1024
 MAX_MANIFEST_BYTES=1024*1024
 AUTHORITY_FLAGS=('broker_connected','live_orders_enabled','money_movement_enabled',
@@ -35,7 +39,9 @@ AUTHORITY_FLAGS=('broker_connected','live_orders_enabled','money_movement_enable
 CHECKS=('copy_verified','source_unchanged','archived_order_replay',
         'new_destination_required','application_closed_required',
         'rotation_plan_exact_source_bound','rotation_plan_non_mutating',
-        'replacement_candidate_verified','replacement_candidate_non_installing')
+        'replacement_candidate_verified','replacement_candidate_non_installing',
+        'replacement_install_reclaims_capacity','replacement_rollback_restores_source',
+        'incomplete_install_blocks_gateway')
 
 
 def _fail(code):
@@ -74,8 +80,8 @@ def _replay_scope(gateway,report):
     return dict(recovery=stable,archived_orders=records)
 
 
-def _snapshot(path):
-    gateway=DurableOrderGateway(path)
+def _snapshot(path,*,rotation_recovery=False):
+    gateway=DurableOrderGateway(path,rotation_recovery=rotation_recovery)
     report=gateway.recovery_report()
     return report,_digest(_replay_scope(gateway,report))
 
@@ -307,6 +313,245 @@ def prepare_replacement(source,archive,destination,*,application_closed=False):
         if stage.exists():shutil.rmtree(stage)
 
 
+def _sync_file(path):
+    with open(path,'rb',buffering=0) as stream:os.fsync(stream.fileno())
+
+
+def _sync_directory(path):
+    # Windows does not expose a portable directory handle suitable for fsync.
+    # File flushes plus atomic replacement are still interruption-recoverable;
+    # native power-loss acceptance remains a separate release gate.
+    if os.name=='nt':return
+    descriptor=os.open(path,os.O_RDONLY|getattr(os,'O_DIRECTORY',0))
+    try:os.fsync(descriptor)
+    finally:os.close(descriptor)
+
+
+def _content(entry):
+    return entry['bytes'],entry['sha256']
+
+
+def _remove_install_temp(path):
+    path=Path(path)
+    try:observed=path.lstat()
+    except FileNotFoundError:return
+    except OSError:_fail('INSTALL_STATE_UNAVAILABLE')
+    if not stat.S_ISREG(observed.st_mode) or observed.st_nlink!=1:
+        _fail('INSTALL_TEMP_REVIEW_REQUIRED')
+    path.unlink()
+
+
+def _write_rotation_marker(root,transaction_sha256):
+    root=Path(root);marker=root/ROTATION_MARKER;temporary=root/(ROTATION_MARKER+'.tmp')
+    if marker.exists() or marker.is_symlink() or temporary.exists() or temporary.is_symlink():
+        _fail('INSTALL_RECOVERY_REQUIRED')
+    document=dict(schema=INSTALL_SCHEMA,transaction_manifest_sha256=transaction_sha256,
+                  application_closed_confirmation=True,automatic_resume=False)
+    flags=os.O_WRONLY|os.O_CREAT|os.O_EXCL|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)
+    try:
+        descriptor=os.open(temporary,flags,0o600)
+        with os.fdopen(descriptor,'wb') as stream:
+            stream.write((json.dumps(document,sort_keys=True)+'\n').encode());stream.flush();os.fsync(stream.fileno())
+        os.replace(temporary,marker);_sync_directory(root)
+    finally:
+        if temporary.exists():_remove_install_temp(temporary)
+    return marker
+
+
+def _load_rotation_marker(root,transaction_sha256):
+    marker=Path(root)/ROTATION_MARKER
+    document=_load_named_manifest(root,ROTATION_MARKER)
+    required={'schema','transaction_manifest_sha256','application_closed_confirmation','automatic_resume'}
+    if (set(document)!=required or document['schema']!=INSTALL_SCHEMA or
+        document['transaction_manifest_sha256']!=transaction_sha256 or
+        document['application_closed_confirmation'] is not True or document['automatic_resume'] is not False):
+        _fail('INSTALL_MARKER_INVALID')
+    return marker
+
+
+def _clear_rotation_marker(root,transaction_sha256):
+    marker=_load_rotation_marker(root,transaction_sha256)
+    try:
+        marker.unlink();_sync_directory(root)
+    except OSError:
+        # If the directory flush cannot confirm that clearing the fence is
+        # durable, put the fence back before reporting failure.  A caller may
+        # retry explicit recovery; ordinary gateway access must stay blocked.
+        if not marker.exists():_write_rotation_marker(root,transaction_sha256)
+        raise
+
+
+def verify_install_recovery(archive,directory):
+    """Verify the immutable source recovery copy retained for install/rollback."""
+    archive,_=_private_path(archive);root,_=_private_path(directory)
+    if archive.is_symlink() or not archive.is_dir() or root.is_symlink() or not root.is_dir():
+        _fail('DIRECTORY_REQUIRED')
+    document=_load_named_manifest(root,INSTALL_MANIFEST)
+    required={'schema','application_closed_confirmation','archive_manifest_sha256',
+              'source_recovery_sha256','candidate_recovery_sha256','source_files','candidate_files',
+              'source_commands','source_archived_orders','source_archive_batches','candidate_commands',
+              'source_recovery_copy','install_requires_closed_application','automatic_resume',
+              'capacity_reclaimed','source_history_deleted','broker_connected','live_orders_enabled',
+              'money_movement_enabled','release_approved','scope'}
+    if (set(document)!=required or document['schema']!=INSTALL_SCHEMA or
+        document['application_closed_confirmation'] is not True):
+        _fail('INSTALL_MANIFEST_INVALID')
+    actual=_files(root)
+    if (actual!=document['source_files'] or [row['name'] for row in actual]!=[ORDER_FILE,PORTFOLIO_FILE] or
+        set(path.name for path in root.iterdir())!={INSTALL_MANIFEST,ORDER_FILE,PORTFOLIO_FILE}):
+        _fail('INSTALL_RECOVERY_CONTENT_DISAGREEMENT')
+    archived=verify(archive);report,recovery_sha=_snapshot(root/ORDER_FILE)
+    if (_manifest_entry(archive)['sha256']!=document['archive_manifest_sha256'] or
+        recovery_sha!=document['source_recovery_sha256'] or
+        report['commands']!=document['source_commands'] or
+        report['archival']['archived_order_count']!=document['source_archived_orders'] or
+        len(report['archival']['batches'])!=document['source_archive_batches'] or
+        archived['commands']!=document['source_commands'] or
+        archived['archived_orders']!=document['source_archived_orders'] or
+        archived['archive_batches']!=document['source_archive_batches']):
+        _fail('INSTALL_RECOVERY_REPLAY_DISAGREEMENT')
+    if (document['source_recovery_copy'] is not True or
+        document['install_requires_closed_application'] is not True or
+        document['automatic_resume'] is not False or
+        any(document[flag] is not False for flag in AUTHORITY_FLAGS)):
+        _fail('INSTALL_MANIFEST_INVALID')
+    if _files(root)!=actual:_fail('CONTENT_CHANGED_DURING_VERIFICATION')
+    return dict(mode='OFFLINE_ORDER_INSTALL_RECOVERY',verified=True,source_preserved=True,
+        source_commands=report['commands'],source_archived_orders=report['archival']['archived_order_count'],
+        source_archive_batches=len(report['archival']['batches']),candidate_commands=document['candidate_commands'],
+        rollback_available=True,automatic_resume=False,**{flag:False for flag in AUTHORITY_FLAGS})
+
+
+def _publish_install_recovery(source,archive,candidate,destination):
+    destination,destination_resolved=_private_path(destination)
+    if destination.exists() or destination.is_symlink():_fail('DESTINATION_MUST_BE_NEW')
+    roots=(source.resolve().parent,archive.resolve(),candidate.resolve())
+    if any(destination_resolved==root or destination_resolved.is_relative_to(root) for root in roots):
+        _fail('DESTINATION_OUTSIDE_SOURCE_ARCHIVE_AND_CANDIDATE_REQUIRED')
+    source_report,source_sha=_snapshot(source);candidate_report,candidate_sha=_snapshot(candidate/ORDER_FILE)
+    destination.parent.mkdir(parents=True,exist_ok=True)
+    stage=Path(tempfile.mkdtemp(prefix='nexus-order-install-recovery-',dir=destination.parent))
+    try:
+        os.chmod(stage,0o700)
+        for original,name in ((source,ORDER_FILE),(source.parent/PORTFOLIO_FILE,PORTFOLIO_FILE)):
+            shutil.copy2(original,stage/name);os.chmod(stage/name,0o600);_sync_file(stage/name)
+        document=dict(schema=INSTALL_SCHEMA,application_closed_confirmation=True,
+            archive_manifest_sha256=_manifest_entry(archive)['sha256'],source_recovery_sha256=source_sha,
+            candidate_recovery_sha256=candidate_sha,source_files=_files(stage),candidate_files=_files(candidate),
+            source_commands=source_report['commands'],
+            source_archived_orders=source_report['archival']['archived_order_count'],
+            source_archive_batches=len(source_report['archival']['batches']),
+            candidate_commands=candidate_report['commands'],source_recovery_copy=True,
+            install_requires_closed_application=True,automatic_resume=False,capacity_reclaimed=False,
+            source_history_deleted=False,broker_connected=False,live_orders_enabled=False,
+            money_movement_enabled=False,release_approved=False,
+            scope='Immutable source recovery copy for one explicit halted replacement install; no resume or authority.')
+        (stage/INSTALL_MANIFEST).write_text(json.dumps(document,sort_keys=True,indent=2)+'\n',encoding='utf-8')
+        os.chmod(stage/INSTALL_MANIFEST,0o600);_sync_file(stage/INSTALL_MANIFEST);_sync_directory(stage)
+        verify_install_recovery(archive,stage)
+        if destination.exists():_fail('DESTINATION_MUST_BE_NEW')
+        os.rename(stage,destination);_sync_directory(destination.parent)
+        return verify_install_recovery(archive,destination)
+    finally:
+        if stage.exists():shutil.rmtree(stage)
+
+
+def _copy_install_pair(root,source_root):
+    order_temp=root/INSTALL_ORDER_TEMP;portfolio_temp=root/INSTALL_PORTFOLIO_TEMP
+    for path in (order_temp,portfolio_temp):_remove_install_temp(path)
+    for original,target in ((source_root/ORDER_FILE,order_temp),(source_root/PORTFOLIO_FILE,portfolio_temp)):
+        _regular(original);shutil.copy2(original,target);os.chmod(target,0o600);_sync_file(target)
+    return order_temp,portfolio_temp
+
+
+def _replace_install_pair(root,order_temp,portfolio_temp):
+    os.replace(order_temp,root/ORDER_FILE);_sync_file(root/ORDER_FILE);_sync_directory(root)
+    os.replace(portfolio_temp,root/PORTFOLIO_FILE);_sync_file(root/PORTFOLIO_FILE);_sync_directory(root)
+
+
+def install_replacement(source,archive,candidate,recovery,*,application_closed=False):
+    """Install a verified halted candidate while retaining an exact rollback copy."""
+    if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
+    source,_=_private_path(source);archive,_=_private_path(archive);candidate,_=_private_path(candidate)
+    _regular(source);_regular(source.parent/PORTFOLIO_FILE)
+    live_root=source.resolve().parent;archive_root=archive.resolve();candidate_root=candidate.resolve()
+    if (candidate_root==live_root or candidate_root.is_relative_to(live_root) or
+        candidate_root==archive_root or candidate_root.is_relative_to(archive_root)):
+        _fail('CANDIDATE_OUTSIDE_SOURCE_AND_ARCHIVE_REQUIRED')
+    rotation_plan(source,archive,application_closed=True);candidate_result=verify_replacement(archive,candidate)
+    recovery_result=_publish_install_recovery(source,archive,candidate,recovery)
+    rotation_plan(source,archive,application_closed=True);verify_replacement(archive,candidate)
+    transaction_sha=_manifest_entry(recovery,INSTALL_MANIFEST)['sha256'];root=source.parent
+    marker=_write_rotation_marker(root,transaction_sha)
+    try:
+        if _files(root)!=_load_named_manifest(recovery,INSTALL_MANIFEST)['source_files']:
+            _fail('SOURCE_CHANGED_DURING_INSTALL')
+        order_temp,portfolio_temp=_copy_install_pair(root,candidate)
+        expected=_load_named_manifest(recovery,INSTALL_MANIFEST)['candidate_files']
+        if [_content(file_entry(order_temp)),_content(file_entry(portfolio_temp))]!=[_content(row) for row in expected]:
+            _fail('INSTALL_STAGE_DISAGREEMENT')
+        _replace_install_pair(root,order_temp,portfolio_temp)
+        report,recovery_sha=_snapshot(source,rotation_recovery=True)
+        document=_load_named_manifest(recovery,INSTALL_MANIFEST)
+        if (_files(root)!=document['candidate_files'] or recovery_sha!=document['candidate_recovery_sha256'] or
+            report['commands']!=document['candidate_commands'] or report['orders'] or not report['halted'] or
+            not report['portfolio_reconciled']):
+            _fail('INSTALLED_REPLACEMENT_DISAGREEMENT')
+        _clear_rotation_marker(root,transaction_sha)
+    except Exception:
+        # The marker intentionally remains. Normal gateway reads/writes fail
+        # closed until explicit recover-install restores the preserved source.
+        if not marker.exists():_fail('INSTALL_MARKER_LOST')
+        raise
+    return dict(mode='OFFLINE_ORDER_REPLACEMENT_INSTALLED',installed=True,halted=True,flat=True,
+        portfolio_reconciled=True,capacity_reclaimed=True,source_history_deleted=False,
+        source_preserved=True,archive_preserved=True,recovery_preserved=True,rollback_available=True,
+        automatic_resume=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
+        release_approved=False,candidate_commands=candidate_result['commands'],
+        source_commands=recovery_result['source_commands'])
+
+
+def _restore_install_source(source,archive,recovery,*,require_marker):
+    source,_=_private_path(source);archive,_=_private_path(archive);recovery,_=_private_path(recovery)
+    _regular(source);_regular(source.parent/PORTFOLIO_FILE)
+    verified=verify_install_recovery(archive,recovery);root=source.parent
+    transaction_sha=_manifest_entry(recovery,INSTALL_MANIFEST)['sha256']
+    marker_path=root/ROTATION_MARKER
+    if require_marker:
+        _load_rotation_marker(root,transaction_sha)
+    else:
+        if marker_path.exists() or marker_path.is_symlink():_fail('INSTALL_RECOVERY_REQUIRED')
+        _write_rotation_marker(root,transaction_sha)
+    try:
+        order_temp,portfolio_temp=_copy_install_pair(root,recovery)
+        _replace_install_pair(root,order_temp,portfolio_temp)
+        document=_load_named_manifest(recovery,INSTALL_MANIFEST)
+        report,recovery_sha=_snapshot(source,rotation_recovery=True)
+        if (_files(root)!=document['source_files'] or recovery_sha!=document['source_recovery_sha256'] or
+            report['commands']!=document['source_commands'] or report['orders'] or not report['halted'] or
+            not report['portfolio_reconciled']):
+            _fail('ROLLBACK_SOURCE_DISAGREEMENT')
+        _clear_rotation_marker(root,transaction_sha)
+    except Exception:
+        if not marker_path.exists():_fail('INSTALL_MARKER_LOST')
+        raise
+    return dict(mode='OFFLINE_ORDER_REPLACEMENT_ROLLED_BACK',restored=True,halted=True,flat=True,
+        portfolio_reconciled=True,capacity_reclaimed=False,source_history_deleted=False,
+        source_preserved=True,archive_preserved=True,recovery_preserved=True,rollback_available=True,
+        automatic_resume=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
+        release_approved=False,source_commands=verified['source_commands'])
+
+
+def recover_install(source,archive,recovery,*,application_closed=False):
+    if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
+    return _restore_install_source(source,archive,recovery,require_marker=True)
+
+
+def rollback_install(source,archive,recovery,*,application_closed=False):
+    if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
+    return _restore_install_source(source,archive,recovery,require_marker=False)
+
+
 def create(source,destination,*,application_closed=False):
     if application_closed is not True:_fail('APPLICATION_MUST_BE_CLOSED')
     source,_=_private_path(source);destination,destination_resolved=_private_path(destination)
@@ -358,7 +603,7 @@ def fixture_report():
     from nexus.tier_permissions import configure
     with tempfile.TemporaryDirectory(prefix='nexus-order-offload-fixture-') as temporary:
         root=Path(temporary);live=root/'live';live.mkdir();output=root/'archive'/'epoch'
-        replacement=root/'replacement'/'epoch'
+        replacement=root/'replacement'/'epoch';install_recovery=root/'install-recovery'/'epoch'
         configure('terrestrial',True)
         gateway=DurableOrderGateway(live/ORDER_FILE);gateway.initialize_account(10000);gateway.link_portfolio()
         for side in ('BUY','SELL'):
@@ -367,23 +612,39 @@ def fixture_report():
             gateway.simulate_quote_fill(oid,'fill',1,1,25,25,2,1001,1001)
             gateway.cancel(oid)
         gateway.emergency_halt();gateway.archive_terminal('fixture_epoch')
-        source_before=(live/ORDER_FILE).read_bytes();result=create(live/ORDER_FILE,output,application_closed=True)
+        source_before=((live/ORDER_FILE).read_bytes(),(live/PORTFOLIO_FILE).read_bytes())
+        result=create(live/ORDER_FILE,output,application_closed=True)
         checked=verify(output);copied=DurableOrderGateway(output/ORDER_FILE)
         planned=rotation_plan(live/ORDER_FILE,output,application_closed=True)
         prepared=prepare_replacement(live/ORDER_FILE,output,replacement,application_closed=True)
         replacement_checked=verify_replacement(output,replacement)
+        candidate_non_installing=((live/ORDER_FILE).read_bytes(),(live/PORTFOLIO_FILE).read_bytes())==source_before
+        installed=install_replacement(live/ORDER_FILE,output,replacement,install_recovery,application_closed=True)
+        installed_report=DurableOrderGateway(live/ORDER_FILE).recovery_report()
+        rolled_back=rollback_install(live/ORDER_FILE,output,install_recovery,application_closed=True)
+        transaction_sha=_manifest_entry(install_recovery,INSTALL_MANIFEST)['sha256']
+        _write_rotation_marker(live,transaction_sha)
+        blocked=False
+        try:DurableOrderGateway(live/ORDER_FILE).recovery_report()
+        except ValueError as error:blocked=str(error)=='ORDER_ROTATION_RECOVERY_REQUIRED'
+        recovered=recover_install(live/ORDER_FILE,output,install_recovery,application_closed=True)
         checks=dict(copy_verified=result['verified'] and checked['verified'],
-            source_unchanged=(live/ORDER_FILE).read_bytes()==source_before and result['source_unchanged'],
+            source_unchanged=((live/ORDER_FILE).read_bytes(),(live/PORTFOLIO_FILE).read_bytes())==source_before and result['source_unchanged'],
             archived_order_replay=copied.order_report('buy')['archived'] and copied.order_report('sell')['archived'],
             new_destination_required=result['new_destination'],application_closed_required=False,
             rotation_plan_exact_source_bound=planned['exact_source_bound'],
             rotation_plan_non_mutating=planned['dry_run_only'] and not planned['compaction_performed'] and
-                (live/ORDER_FILE).read_bytes()==source_before,
+                (live/ORDER_FILE).read_bytes()==source_before[0],
             replacement_candidate_verified=prepared['verified'] and replacement_checked['verified'] and
                 prepared['halted'] and prepared['flat'],
             replacement_candidate_non_installing=not prepared['automatic_install'] and
                 not prepared['capacity_reclaimed'] and not prepared['source_history_deleted'] and
-                (live/ORDER_FILE).read_bytes()==source_before)
+                candidate_non_installing and installed_report['commands']==3,
+            replacement_install_reclaims_capacity=installed['capacity_reclaimed'] and installed['installed'] and
+                not installed['automatic_resume'] and installed['source_preserved'] and installed['rollback_available'],
+            replacement_rollback_restores_source=rolled_back['restored'] and recovered['restored'] and
+                ((live/ORDER_FILE).read_bytes(),(live/PORTFOLIO_FILE).read_bytes())==source_before,
+            incomplete_install_blocks_gateway=blocked and not (live/ROTATION_MARKER).exists())
         try:create(live/ORDER_FILE,root/'unconfirmed')
         except ValueError as error:checks['application_closed_required']=str(error)=='ORDER_OFFLOAD_APPLICATION_MUST_BE_CLOSED'
         return dict(source='TEMPORARY_OFFLINE_ORDER_OFFLOAD_FIXTURE',passed=all(checks.values()),**checks,
@@ -407,6 +668,17 @@ def main():
     prepare_command.add_argument('--confirm-application-closed',action='store_true')
     replacement_command=sub.add_parser('verify-replacement');replacement_command.add_argument('archive',type=Path)
     replacement_command.add_argument('directory',type=Path)
+    install_command=sub.add_parser('install-replacement');install_command.add_argument('source',type=Path)
+    install_command.add_argument('archive',type=Path);install_command.add_argument('candidate',type=Path)
+    install_command.add_argument('recovery',type=Path);install_command.add_argument('--confirm-application-closed',action='store_true')
+    verify_install_command=sub.add_parser('verify-install-recovery');verify_install_command.add_argument('archive',type=Path)
+    verify_install_command.add_argument('directory',type=Path)
+    recover_command=sub.add_parser('recover-install');recover_command.add_argument('source',type=Path)
+    recover_command.add_argument('archive',type=Path);recover_command.add_argument('recovery',type=Path)
+    recover_command.add_argument('--confirm-application-closed',action='store_true')
+    rollback_command=sub.add_parser('rollback-install');rollback_command.add_argument('source',type=Path)
+    rollback_command.add_argument('archive',type=Path);rollback_command.add_argument('recovery',type=Path)
+    rollback_command.add_argument('--confirm-application-closed',action='store_true')
     args=parser.parse_args()
     try:
         if args.action=='create':
@@ -418,6 +690,17 @@ def main():
                 application_closed=args.confirm_application_closed)
         elif args.action=='verify-replacement':
             result=verify_replacement(args.archive,args.directory)
+        elif args.action=='install-replacement':
+            result=install_replacement(args.source,args.archive,args.candidate,args.recovery,
+                application_closed=args.confirm_application_closed)
+        elif args.action=='verify-install-recovery':
+            result=verify_install_recovery(args.archive,args.directory)
+        elif args.action=='recover-install':
+            result=recover_install(args.source,args.archive,args.recovery,
+                application_closed=args.confirm_application_closed)
+        elif args.action=='rollback-install':
+            result=rollback_install(args.source,args.archive,args.recovery,
+                application_closed=args.confirm_application_closed)
         else:result=verify(args.directory)
         print(json.dumps(result,sort_keys=True))
         return 0

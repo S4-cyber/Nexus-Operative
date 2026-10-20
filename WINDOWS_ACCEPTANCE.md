@@ -1,8 +1,10 @@
 # Windows distribution and acceptance evidence
 
-## v0.179.0 candidate status
+## v0.180.0 candidate status
 
-Exact v0.178.1 commit `931062a3edd7f57673e8b09baa6a5f8ff6b7435b` passed Windows 39408328907, safety/browser/evidence 39408328904 and security 39408328998. v0.179.0 extends the installed order-offload smoke with prepare/verify replacement commands for a separate halted candidate while preserving the live source and archive. Exact-source Windows regression, standalone/installed command smoke, EXE startup, installer, install/reinstall/uninstall and evidence retention remain required for this candidate. This does not establish live installation/rollback, capacity reclamation, ordinary-user private-volume/ACL or actual broker/market acceptance.
+Exact v0.179.0 commit `1e3cc62a031470b874bc9c4301e9f4dcd745b240` passed Windows 39415934810, all safety/browser/evidence jobs in 39415934794 and security 39415934750. v0.180.0 extends the installed order-offload smoke through verified halted candidate installation, retained recovery-copy verification and explicit rollback. Fresh exact-source Windows regression, standalone/installed command smoke, EXE startup, installer, install/reinstall/uninstall and evidence retention are required. The local marker/recovery fixtures do not establish Windows power-loss boundaries, ordinary-user private-volume/ACL or actual broker/market acceptance.
+
+Local v0.180.0 validation passed 3,416 Python tests, the 173-test focused set, all sixteen source-fingerprinted profiles, saved-evidence verification, fourteen Node controllers, Portal syntax, compilation, dependency consistency and roadmap equality. This is Linux/local evidence with `native_windows_acceptance: false`; it cannot replace the exact-source Windows run.
 
 ## Verified installer checkpoint — v0.172.3 (2026-10-19 UTC)
 

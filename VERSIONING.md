@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.179.0 (pre-release).** The offline order-offload flow can now publish a separate verified halted replacement candidate after the exact-source archive preflight. It does not install that candidate, delete history, reclaim live capacity, resume operation or grant authority. Exact-source CI remains mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.180.0 (pre-release).** The application-closed order-offload flow can retain an exact source recovery copy, install the verified halted replacement behind a fail-closed interruption marker, explicitly recover an incomplete pair replacement and roll a completed install back. It reclaims live journal capacity while preserving history externally and never resumes operation or grants authority. Exact-source CI and native Windows power-loss/private-volume acceptance remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,16 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.180.0 interruption-recoverable halted replacement installation
+
+Exact v0.179.0 source `1e3cc62a031470b874bc9c4301e9f4dcd745b240` passed security 39415934750, all safety/browser/evidence jobs in 39415934794 and Windows regression/packaging/installer 39415934810.
+
+`install-replacement` revalidates the exact halted/flat source, archive and candidate, creates a new external recovery directory containing the exact source database pair and a path/account-free manifest, then writes a persistent live-data rotation marker before replacing either live database. Ordinary gateway reads and writes refuse to open while the marker exists. A successful install verifies the fresh halted/flat pair before clearing the marker; an interruption requires explicit `recover-install`, while `rollback-install` restores a completed install from the same verified recovery copy.
+
+The live journal regains ordinary command/ID capacity, but the source history remains in the verified archive and recovery copy. Nothing automatically deletes or retires those artifacts, resumes a runner, connects a broker, moves money or grants live/release authority. Portable Windows directory fsync is unavailable, so exact-source native power-loss/private-volume/profile/ACL acceptance and multi-epoch long-run pressure remain open. No UI control or parameter changed.
+
+Local validation passed 3,416 Python tests and the 173-test focused offload/gateway/packaging/release/evidence/roadmap set. All sixteen profiles passed and saved evidence verified against 347 source files / `7c5e9b8af2c9881ec41b5b24d4697cd044fbf31433274d67263916feb5f00642`; report SHA256 is `58e7743d0a7e0ad37e4f11a7a95c1590a80ee1d04fdbf00a599bb3103da70910`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, roadmap equality and whitespace checks passed. Exact-source security, safety/browser/evidence and Windows packaging/installer CI remain required.
 
 ## v0.179.0 verified halted replacement candidate
 

@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -168,6 +169,88 @@ def test_failed_replacement_verification_never_publishes_destination(tmp_path,mo
     with pytest.raises(ValueError,match='INJECTED_REPLACEMENT_VERIFY_FAILURE'):
         order_offload.prepare_replacement(source,archive,destination,application_closed=True)
     assert not destination.exists()
+
+
+def prepared_install(tmp_path):
+    gateway=archived(tmp_path);source=gateway.path;archive=tmp_path/'archive';candidate=tmp_path/'candidate'
+    order_offload.create(source,archive,application_closed=True)
+    order_offload.prepare_replacement(source,archive,candidate,application_closed=True)
+    return gateway,source,archive,candidate
+
+
+def test_install_replacement_reclaims_live_capacity_and_explicit_rollback_restores_source(tmp_path):
+    gateway,source,archive,candidate=prepared_install(tmp_path);recovery=tmp_path/'install-recovery'
+    portfolio=source.parent/order_offload.PORTFOLIO_FILE
+    before=(source.read_bytes(),portfolio.read_bytes());source_commands=gateway.recovery_report()['commands']
+    installed=order_offload.install_replacement(source,archive,candidate,recovery,application_closed=True)
+    assert installed['installed'] and installed['capacity_reclaimed'] and installed['rollback_available']
+    assert installed['source_preserved'] and not installed['source_history_deleted']
+    assert not installed['automatic_resume'] and not installed['live_orders_enabled']
+    report=DurableOrderGateway(source).recovery_report()
+    assert report['commands']==3 and report['halted'] and report['orders']==[]
+    assert not (source.parent/order_offload.ROTATION_MARKER).exists()
+    recovery_report=order_offload.verify_install_recovery(archive,recovery)
+    assert recovery_report['source_commands']==source_commands and recovery_report['rollback_available']
+    rolled_back=order_offload.rollback_install(source,archive,recovery,application_closed=True)
+    assert rolled_back['restored'] and not rolled_back['capacity_reclaimed']
+    assert before==(source.read_bytes(),portfolio.read_bytes())
+    assert DurableOrderGateway(source).recovery_report()['commands']==source_commands
+
+
+def test_interrupted_pair_install_blocks_gateway_until_explicit_recovery(tmp_path,monkeypatch):
+    _,source,archive,candidate=prepared_install(tmp_path);recovery=tmp_path/'install-recovery'
+    portfolio=source.parent/order_offload.PORTFOLIO_FILE
+    before=(source.read_bytes(),portfolio.read_bytes());original_replace=order_offload.os.replace
+    def interrupt(source_path,target_path):
+        if Path(target_path)==portfolio:raise OSError('INJECTED_SECOND_REPLACE_FAILURE')
+        return original_replace(source_path,target_path)
+    monkeypatch.setattr(order_offload.os,'replace',interrupt)
+    with pytest.raises(OSError,match='INJECTED_SECOND_REPLACE_FAILURE'):
+        order_offload.install_replacement(source,archive,candidate,recovery,application_closed=True)
+    marker=source.parent/order_offload.ROTATION_MARKER
+    assert marker.is_file() and source.read_bytes()!=before[0] and portfolio.read_bytes()==before[1]
+    with pytest.raises(ValueError,match='ORDER_ROTATION_RECOVERY_REQUIRED'):
+        DurableOrderGateway(source).recovery_report()
+    monkeypatch.setattr(order_offload.os,'replace',original_replace)
+    recovered=order_offload.recover_install(source,archive,recovery,application_closed=True)
+    assert recovered['restored'] and not marker.exists()
+    assert before==(source.read_bytes(),portfolio.read_bytes())
+    assert DurableOrderGateway(source).recovery_report()['halted']
+
+
+def test_install_requires_closed_assertion_fresh_external_recovery_and_intact_manifest(tmp_path):
+    _,source,archive,candidate=prepared_install(tmp_path)
+    with pytest.raises(ValueError,match='APPLICATION_MUST_BE_CLOSED'):
+        order_offload.install_replacement(source,archive,candidate,tmp_path/'recovery')
+    nested_candidate=source.parent/'nested-candidate'
+    shutil.copytree(candidate,nested_candidate)
+    with pytest.raises(ValueError,match='CANDIDATE_OUTSIDE_SOURCE_AND_ARCHIVE'):
+        order_offload.install_replacement(source,archive,nested_candidate,tmp_path/'nested-recovery',application_closed=True)
+    with pytest.raises(ValueError,match='OUTSIDE_SOURCE_ARCHIVE_AND_CANDIDATE'):
+        order_offload.install_replacement(source,archive,candidate,candidate/'recovery',application_closed=True)
+    recovery=tmp_path/'recovery'
+    order_offload.install_replacement(source,archive,candidate,recovery,application_closed=True)
+    manifest=recovery/order_offload.INSTALL_MANIFEST;document=json.loads(manifest.read_text())
+    document['source_commands']+=1;manifest.write_text(json.dumps(document))
+    with pytest.raises(ValueError,match='INSTALL_RECOVERY_REPLAY_DISAGREEMENT'):
+        order_offload.verify_install_recovery(archive,recovery)
+
+
+def test_uncertain_marker_clear_restores_gateway_fence(tmp_path,monkeypatch):
+    _,source,archive,candidate=prepared_install(tmp_path);recovery=tmp_path/'install-recovery'
+    order_offload.install_replacement(source,archive,candidate,recovery,application_closed=True)
+    transaction_sha=order_offload._manifest_entry(recovery,order_offload.INSTALL_MANIFEST)['sha256']
+    marker=order_offload._write_rotation_marker(source.parent,transaction_sha)
+    original_sync=order_offload._sync_directory
+    def fail_live_sync(path):
+        if Path(path)==source.parent:raise OSError('INJECTED_DIRECTORY_SYNC_FAILURE')
+        return original_sync(path)
+    monkeypatch.setattr(order_offload,'_sync_directory',fail_live_sync)
+    with pytest.raises(OSError,match='INJECTED_DIRECTORY_SYNC_FAILURE'):
+        order_offload._clear_rotation_marker(source.parent,transaction_sha)
+    assert marker.is_file()
+    with pytest.raises(ValueError,match='ORDER_ROTATION_RECOVERY_REQUIRED'):
+        DurableOrderGateway(source).recovery_report()
 
 
 def test_creation_requires_closed_halted_flat_logical_archive(tmp_path):

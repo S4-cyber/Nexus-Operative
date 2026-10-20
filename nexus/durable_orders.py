@@ -18,14 +18,17 @@ from nexus.execution_capacity import report as capacity_report, CONTROL_RESERVE
 
 MAX_COMMANDS = 10000
 MAX_RETAINED_COMMANDS = 100000
+ROTATION_MARKER = 'nexus-order-rotation.intent'
 METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal'))
 
 
 class DurableOrderGateway:
-    def __init__(self, path=None, checkpoints_enabled=True):
+    def __init__(self, path=None, checkpoints_enabled=True, rotation_recovery=False):
         if type(checkpoints_enabled) is not bool:raise ValueError('INVALID_CHECKPOINT_OPTION')
+        if type(rotation_recovery) is not bool:raise ValueError('INVALID_ROTATION_RECOVERY_OPTION')
         self.path = Path(path) if path is not None else None
         self.checkpoints_enabled = checkpoints_enabled
+        self.rotation_recovery = rotation_recovery
         self.restore_diagnostics = {}
 
     def _path(self):
@@ -34,7 +37,16 @@ class DurableOrderGateway:
         root = Path(os.environ.get('NEXUS_PORTABLE_DATA', str(Path.home()/'.nexus-operative')))
         return root.expanduser()/'order_lifecycle.sqlite3'
 
+    def _require_rotation_clear(self):
+        if self.rotation_recovery:return
+        marker=self._path().parent/ROTATION_MARKER
+        try:marker.lstat()
+        except FileNotFoundError:return
+        except OSError:raise ValueError('ORDER_ROTATION_STATE_UNAVAILABLE') from None
+        raise ValueError('ORDER_ROTATION_RECOVERY_REQUIRED')
+
     def _connect(self):
+        self._require_rotation_clear()
         path = self._path()
         path.parent.mkdir(parents=True, exist_ok=True)
         db = sqlite3.connect(path, timeout=10)
@@ -46,6 +58,7 @@ class DurableOrderGateway:
 
     @contextmanager
     def _read_connection(self):
+        self._require_rotation_clear()
         path=self._path()
         if path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
         try:observed=path.stat()

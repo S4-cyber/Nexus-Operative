@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.180.0 interruption-recoverable halted replacement installation
+
+Exact v0.179.0 source `1e3cc62a031470b874bc9c4301e9f4dcd745b240` passed security 39415934750, all safety/browser/evidence jobs in 39415934794 and Windows regression/packaging/installer 39415934810.
+
+The application-closed order-offload flow now retains a second exact source recovery pair before it can replace the live journal with the verified halted candidate. A flushed marker fences ordinary durable gateway reads and writes while either live database may be in transition. Successful installation verifies the new halted/flat pair and clears the marker; an interrupted operation leaves the marker in place until explicit `recover-install` restores the preserved source. `rollback-install` provides the same verified restoration after a completed installation.
+
+This reclaims live command/ID capacity without deleting the archive, candidate or recovery history and without resuming the application. It grants no broker, funds, live, cloud or release authority. Native Windows power-loss behavior, private-volume/ordinary-profile ACLs, source-retirement policy, multi-epoch pressure and independent acceptance remain open. No UI control or editable parameter changed; seven tabs, black/bright-purple help, OFF defaults and account/risk gates are unchanged. The rough estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages because this integration has not completed independent acceptance.
+
+Final local validation passed 3,416 Python tests and the 173-test focused offload/gateway/packaging/release/evidence/roadmap set. All sixteen bounded profiles and saved-evidence verification matched 347 source files / `7c5e9b8af2c9881ec41b5b24d4697cd044fbf31433274d67263916feb5f00642`; report SHA256 is `58e7743d0a7e0ad37e4f11a7a95c1590a80ee1d04fdbf00a599bb3103da70910`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Exact-source CI remains required; synthetic interruption fixtures are not native power-loss evidence.
+
 ## v0.179.0 verified halted replacement candidate
 
 Exact v0.178.1 commit `931062a3edd7f57673e8b09baa6a5f8ff6b7435b` passed security 39408328998, safety/browser/evidence 39408328904 and Windows packaging/installer 39408328907. The order-offload tool now prepares and independently verifies a separate fresh halted/flat candidate bound to the verified archive and final synthetic account state. Staged publication is atomic to a new directory and the live source plus archive are rechecked and retained.

@@ -885,6 +885,7 @@ def _validate(profile, result):
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',
                 'exact_account_response_replayed','exact_activity_response_replayed',
+                'adjacent_account_fields_match','adjacent_account_discontinuity_rejected',
                 'repeat_review_matches','changed_activity_response_rejected',
                 'session_tail_required','journals_unchanged')),'EXACT_RESPONSE_BUNDLE')
         _require(all(response[k] is False for k in (*RESPONSE_FLAGS,

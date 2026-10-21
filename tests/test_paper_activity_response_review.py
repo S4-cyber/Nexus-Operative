@@ -15,6 +15,7 @@ def test_exact_response_bytes_replay_activity_receipt_without_writes(tmp_path):
     assert result['response_bodies']==3 and result['activity_pages']==1
     assert result['rows_received']==result['normalized_activities']==1
     assert result['exact_response_bytes_match'] and result['account_fields_replayed']
+    assert len(result['account_fields_sha256'])==64
     assert result['activity_normalization_replayed'] and result['collection_observation_replayed']
     assert result['retained_receipt_replayed'] and result['journals_rechecked_unchanged']
     assert result['admission_reserved'] is False

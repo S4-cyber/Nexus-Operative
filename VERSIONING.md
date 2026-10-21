@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.193.0 (pre-release).** This milestone composes exact private account/activity response review at one adjacent current journal tail. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.194.0 (pre-release).** This milestone adds normalized account-field continuity across one exact adjacent account/activity response pair. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.194.0 adjacent response account-field continuity
+
+`--paper-tool response-bundle-review` now requires the normalized account fields from the exact ACCOUNT_INVENTORY response to equal those independently reconstructed from the account-before/account-after responses of the immediately following current-tail ACTIVITY_COLLECTION. The shared digest covers normalized status, permission flags, cash, buying power, pending transfers and accrued fees. A discontinuity fails closed even when exact response hashes, normalized-result receipts and both individual component reviews otherwise agree. Output retains only the shared digest, not account values.
+
+This is conservative sequential consistency, not an atomic snapshot, quiet interval, provider/TLS/source attestation, account ownership, received-activity completeness, fee/hold/spendable-funds reconciliation, routing permission or release approval. The tool performs no credential, vault, network, retry, continuation, state repair or evidence write. Exact v0.193.0 commit `1040704d6c2395280fa457dadd68318da016cce1` passed security/history/Gitleaks 39583363314, safety/regression/evidence/browser 39583363227 and Windows regression/EXE/installer 39583363064. Fresh exact-source v0.194.0 workflows remain mandatory. No GUI control or editable parameter changed.
+
+Final local validation passed 3,515 tests with one expected non-Windows skip and one existing warning; the focused response/package/release/evidence/version/roadmap set passed 164 tests. All sixteen profiles and saved-evidence verification matched 357 source files / `25980e9239bc6b515d672205efe8d16cd27ea22a1ad3ef36cc7328d7ea35f902`; report SHA256 is `fbb82b29b3dae0eb1b5a12cf12bb27a12aa654a6e46ccc95a0330ae28b4c80f5`. The common packaged smoke ran 31 cross-platform children. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Staged public-artifact/history audit and fresh exact-source CI remain mandatory.
 
 ## v0.193.0 exact account/activity response bundle review
 

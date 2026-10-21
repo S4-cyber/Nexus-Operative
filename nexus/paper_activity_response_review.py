@@ -133,6 +133,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     scope=dict(mode=MODE,status='REVIEW_REQUIRED',read_only=True,
         account_sha256=gate.account_digest,pacing_head_sha256=expected_pacing_head,
         activity_head_sha256=expected_activity_head,session_head_sha256=session_head,
+        account_fields_sha256=sha(first),
         response_manifest_sha256=sha(list(body_hashes)),retained_receipt_sha256=receipt_id,
         collection_observation_sha256=sha(replayed),normalized_result_sha256=normalized_digest,
         response_bodies=len(bodies),activity_pages=len(pages),rows_received=len(rows),
@@ -150,7 +151,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     return scope
 
 
-def _fixture(root,two_pages=False,pacing_path=None):
+def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000'):
     """Create disposable injected response bytes plus paced retained activity."""
     import io
     from nexus.alpaca_activity_collection import collect_activities
@@ -159,7 +160,7 @@ def _fixture(root,two_pages=False,pacing_path=None):
     account='01234567-89ab-cdef-0123-456789abcdef'
     raw_account=dict(id=account,currency='USD',status='ACTIVE',crypto_status='ACTIVE',
         account_blocked=False,trading_blocked=False,trade_suspended_by_user=False,
-        cash='1000',non_marginable_buying_power='900',pending_transfer_in='0',
+        cash=account_cash,non_marginable_buying_power='900',pending_transfer_in='0',
         pending_transfer_out='0',accrued_fees='0')
     if two_pages:
         orders=[]

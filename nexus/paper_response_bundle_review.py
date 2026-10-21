@@ -86,6 +86,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
             account['pacing_head_sha256']!=activity['pacing_head_sha256'] or
             any(account[flag] is not False or activity[flag] is not False for flag in FLAGS)):
         _fail('COMPONENT_DISAGREEMENT')
+    if account['account_fields_sha256']!=activity['account_fields_sha256']:
+        _fail('ADJACENT_ACCOUNT_FIELDS_CHANGED')
     if gate.inspect()!=pacing_before:_fail('PACING_HEAD_CHANGED')
     if store.inspect()!=activity_before:_fail('ACTIVITY_HEAD_CHANGED')
 
@@ -97,6 +99,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         activity_session_head_sha256=activity_session_head,
         account_response_manifest_sha256=account['response_manifest_sha256'],
         account_observation_manifest_sha256=account['portable_manifest_sha256'],
+        adjacent_account_fields_sha256=account['account_fields_sha256'],
         activity_response_manifest_sha256=activity['response_manifest_sha256'],
         activity_receipt_sha256=activity['retained_receipt_sha256'],
         account_review_sha256=account['review_sha256'],
@@ -107,24 +110,26 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         account_observation_replayed=True,activity_normalization_replayed=True,
         activity_observation_replayed=True,activity_receipt_replayed=True,
         sessions_adjacent=True,activity_session_is_current_tail=True,
+        adjacent_account_fields_match=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
     scope['limitations']=('Exact private bytes locally replay one adjacent ACCOUNT_INVENTORY and current-tail '
-        'ACTIVITY_COLLECTION pair at shared journal heads. Hash agreement is not provider identity, TLS capture, '
+        'ACTIVITY_COLLECTION pair at shared journal heads and requires their normalized account fields to match. '
+        'This detects an adjacent discontinuity but does not make the reads atomic. Hash agreement is not provider identity, TLS capture, '
         'account ownership, source or received-activity coverage, creation/execution/fee coverage, verified '
         'clocks, fee links/posting, holds, settled or spendable funds, broker-wide pacing, routing permission or '
         'release acceptance. Keep all response bodies, observations and output outside Git.')
     return scope
 
 
-def _fixture(root,two_pages=False):
+def _fixture(root,two_pages=False,activity_account_cash='1000'):
     """Create disposable injected responses for one exact adjacent session pair."""
     from pathlib import Path
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
     account=account_review._fixture(root/'account')
     activity=activity_review._fixture(root/'activity',two_pages=two_pages,
-        pacing_path=account['pacing_path'])
+        pacing_path=account['pacing_path'],account_cash=activity_account_cash)
     return dict(pacing_path=account['pacing_path'],
         activity_store_path=activity['activity_store_path'],
         expected_account_id=account['expected_account_id'],
@@ -159,6 +164,11 @@ def fixture_report():
         try:review(**changed)
         except ValueError as error:
             changed_rejected='RESPONSE_DIGEST_DISAGREEMENT' in str(error)
+        discontinuous=_fixture(root/'discontinuous',activity_account_cash='999')
+        discontinuity_rejected=False
+        try:review(**discontinuous)
+        except ValueError as error:
+            discontinuity_rejected='ADJACENT_ACCOUNT_FIELDS_CHANGED' in str(error)
         tail=_fixture(root/'tail');gate=PaperReadPacing(tail['pacing_path'],tail['expected_account_id'])
         with gate.ownership() as owner:
             token=gate.begin(admission=lambda:1792454401,ownership=owner,
@@ -176,7 +186,9 @@ def fixture_report():
                 result['account_observation_replayed'],
             exact_activity_response_replayed=result['activity_normalization_replayed'] and
                 result['activity_observation_replayed'] and result['activity_receipt_replayed'],
+            adjacent_account_fields_match=result['adjacent_account_fields_match'],
             repeat_review_matches=result==repeated,changed_activity_response_rejected=changed_rejected,
+            adjacent_account_discontinuity_rejected=discontinuity_rejected,
             session_tail_required=tail_rejected,journals_unchanged=before==after)
         return dict(source='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE',passed=all(checks.values()),
             **checks,actual_provider_access=False,actual_vault_access=False,

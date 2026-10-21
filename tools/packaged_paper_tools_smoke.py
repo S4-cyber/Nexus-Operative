@@ -295,6 +295,7 @@ def run(command):
         response_review=_json_call(command,response_args,env)
         _require(response_review['mode']=='PAPER_ACCOUNT_RESPONSE_NORMALIZATION_REVIEW' and
             response_review['exact_response_bytes_match'] is True and response_review['normalization_replayed'] is True and
+            len(response_review['account_fields_sha256'])==64 and
             response_review['portable_observation_matches'] is True and response_review['journal_rechecked_unchanged'] is True and
             all(response_review[k] is False for k in RESPONSE_FLAGS),'ACCOUNT_RESPONSE_REVIEW')
         activity_response_args=['--paper-tool','activity-response-review']
@@ -308,6 +309,7 @@ def run(command):
         activity_response_review=_json_call(command,activity_response_args,env)
         _require(activity_response_review['mode']=='PAPER_ACTIVITY_RESPONSE_NORMALIZATION_REVIEW' and
             activity_response_review['exact_response_bytes_match'] is True and
+            len(activity_response_review['account_fields_sha256'])==64 and
             activity_response_review['activity_normalization_replayed'] is True and
             activity_response_review['collection_observation_replayed'] is True and
             activity_response_review['retained_receipt_replayed'] is True and
@@ -333,6 +335,8 @@ def run(command):
             response_bundle['activity_normalization_replayed'] is True and
             response_bundle['sessions_adjacent'] is True and
             response_bundle['activity_session_is_current_tail'] is True and
+            response_bundle['adjacent_account_fields_match'] is True and
+            len(response_bundle['adjacent_account_fields_sha256'])==64 and
             response_bundle['journals_rechecked_unchanged'] is True and
             all(response_bundle[k] is False for k in RESPONSE_BUNDLE_FLAGS),'EXACT_RESPONSE_BUNDLE')
         provider_result=_json_call(command,['--paper-tool','provider-results','--input',str(provider_input)],env)

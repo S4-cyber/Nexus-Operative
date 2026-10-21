@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.193.0, exact-response bundle review over the fully green exact-source v0.192.0 checkpoint. Read the newest version section and generated roadmap; exact-source v0.193.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.194.0, adjacent normalized account-field continuity over the fully green exact-source v0.193.0 response-bundle checkpoint. Read the newest version section and generated roadmap; exact-source v0.194.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.194.0 adjacent response account-field continuity
+
+The private exact-response bundle must compare the normalized account fields reconstructed from the ACCOUNT_INVENTORY response with the independently reconstructed account-before/account-after fields in the immediately following current-tail ACTIVITY_COLLECTION response. Both components remain independently byte-, receipt-, head- and journal-replay validated. A difference in cash, buying power, pending transfers, accrued fees, currency/status or block flags must fail closed even when both sessions are individually valid. Retain only the shared normalized-field digest in output; raw account content remains private.
+
+Matching adjacent sequential fields are not an atomic snapshot, quiet interval, source/provider attestation, account ownership, complete received activity, clock proof, fee/hold/spendable-funds reconciliation or routing/release authority. The installed/source tool stays credential-, vault-, network- and write-silent, all authority flags false, and no GUI control or editable parameter changes. Preserve seven beginner tabs and black/bright-purple bottom-right help. Keep progress about 40% (30–45%, low confidence), 0/9 accepted.
+
+Exact v0.193.0 commit `1040704d6c2395280fa457dadd68318da016cce1` passed security/history/Gitleaks 39583363314, safety/regression/evidence/browser 39583363227 and Windows regression/EXE/installer 39583363064. Those results do not transfer to v0.194.0. Run focused response/package/evidence tests, all profiles and saved evidence, full regression, static/public-artifact checks and fresh exact-source workflows.
+
+Final local v0.194.0 validation passed 3,515 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/package/release/evidence/version/roadmap set passed 164 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `25980e9239bc6b515d672205efe8d16cd27ea22a1ad3ef36cc7328d7ea35f902`; `validation/release_trials_0_194_0.json` SHA256 is `fbb82b29b3dae0eb1b5a12cf12bb27a12aa654a6e46ccc95a0330ae28b4c80f5`. The common packaged smoke executed 31 cross-platform child processes. All fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Run the exact staged public-artifact and reachable-history audits before publication; local Gitleaks and native Windows are unavailable. Fresh exact-source workflows remain mandatory and unclaimed.
 
 ## v0.193.0 exact account/activity response bundle review
 

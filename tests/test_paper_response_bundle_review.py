@@ -44,6 +44,8 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['account_observation_replayed'] and result['activity_normalization_replayed']
     assert result['activity_observation_replayed'] and result['activity_receipt_replayed']
     assert result['sessions_adjacent'] and result['activity_session_is_current_tail']
+    assert result['adjacent_account_fields_match']
+    assert len(result['adjacent_account_fields_sha256'])==64
     assert result['journals_rechecked_unchanged'] and result['admission_reserved'] is False
     assert all(result[flag] is False for flag in subject.FLAGS)
     assert result==subject.review(**options) and snapshot(tmp_path)==before
@@ -74,6 +76,12 @@ def test_bundle_requires_immediate_current_tail_pair(tmp_path):
                 request_sha256=['a'*64],response_sha256=[]))
     with pytest.raises(ValueError,match='SESSION_SEQUENCE_INVALID'):
         subject.review(**dict(options,expected_pacing_head=gate.inspect()['head_sha256']))
+
+
+def test_bundle_rejects_adjacent_normalized_account_field_discontinuity(tmp_path):
+    options=subject._fixture(tmp_path,activity_account_cash='999')
+    with pytest.raises(ValueError,match='ADJACENT_ACCOUNT_FIELDS_CHANGED'):
+        subject.review(**options)
 
 
 def test_component_authority_promotion_is_refused(tmp_path,monkeypatch):

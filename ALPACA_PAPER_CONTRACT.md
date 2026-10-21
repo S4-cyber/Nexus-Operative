@@ -2,6 +2,10 @@
 
 This component prepares and validates fixture data only. It contains no HTTP client, credentials, environment access, account writes or automatic strategy routing. The existing gateway continues to reject Alpaca submissions. No broker was connected or tested.
 
+## v0.188.0 full-envelope fee-date ambiguity fence
+
+The guarded private reconciliation path rejects retained FEE or CFEE records whose reported UTC calendar date falls anywhere inside the inclusive pre-opening through post-closing observation envelope. This includes cross-day dates inside the opening-to-closing comparison, not only edge guard-band dates. Timestamp-shaped fee dates remain unverified dates, and an absence result does not prove activity completeness, fee timing/linkage, holds or spendable funds.
+
 ## v0.187.0 retained fee-date ambiguity fence
 
 The guarded private reconciliation path rejects a retained FEE or CFEE record when its reported UTC calendar date overlaps either stability band. Timestamp-shaped fee dates are deliberately treated the same way: the provider date field is not promoted to a verified posting or execution instant. A zero-overlap result means only that the retained normalized rows did not contain such a date; it does not prove activity completeness, fee timing/linkage, holds or spendable funds.

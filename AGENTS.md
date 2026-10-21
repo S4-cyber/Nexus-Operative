@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.187.0, retained fee-date overlap now fails closed in the guarded private account-evidence path over v0.186.0. Read the newest version section and generated roadmap; exact-source v0.187.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.188.0, retained fee-date overlap now fails closed across the full four-observation calendar-date envelope over v0.187.0. Read the newest version section and generated roadmap; exact-source v0.188.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.188.0 full-envelope retained fee-date guard
+
+The four-observation stability review now rejects retained FEE or CFEE records whose reported UTC calendar date falls anywhere from the pre-opening read date through the post-closing read date. This closes the multi-day inner-comparison gap left by edge-band-only detection. Timestamp-shaped fee dates remain unverified dates rather than posting/execution instants. The private result and public account-evidence summary retain the same zero-count/absence schema; no fee identifiers, dates, amounts, balances or paths are published.
+
+This is a conservative local ambiguity fence only. A non-overlap does not prove complete fee activity, provider posting time, fee links, settled holds or spendable funds. Missing, late, corrected and outside-envelope fees remain possible. No UI/control, permission, broker connection, order, funding, live or cloud behavior changed. Keep rough progress about 40% (30–45%, low confidence), 0/9 accepted. Run focused reconciliation/account-evidence/release/security tests, all sixteen profiles plus saved-evidence verification, full regression, controllers/Portal/static checks, staged public audit and fresh exact-source workflows.
+
+Final local v0.188.0 validation passed 3,470 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release-focused set passed 200 tests. All sixteen profiles and saved-evidence verification matched 347 source files / `c23fe2103249e828d3b415050b036aba0154e21b7b0c20948efa8c02c387eeb9`; `validation/release_trials_0_188_0.json` SHA256 is `72acee3d220c9444096d1ba9bdd859b58c83f7935abe39bbf8427f9a3fb02d4a`. Compilation, dependency consistency, all fourteen controller smokes, Portal syntax, generated-roadmap equality and whitespace checks passed. Run the exact staged public audit and fresh exact-source workflows; do not claim Windows, broker, account, market, funds, live, cloud or release acceptance from local Linux fixtures.
 
 ## v0.187.0 conservative retained fee-date guard
 

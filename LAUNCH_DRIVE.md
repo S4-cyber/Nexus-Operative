@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.188.0 full-envelope retained fee-date fence
+
+The private four-observation reconciliation and composed account-evidence path now fail closed when a retained FEE or CFEE reported UTC calendar date falls anywhere from the pre-opening read date through the post-closing read date. This closes the multi-day inner-comparison gap left by edge-band-only detection. Timestamp-shaped provider fee dates remain unverified dates; the private and allowlisted public schemas remain zero-count/absence only.
+
+This reduces one local false-quietness risk but does not establish complete received activity, provider posting time, fee links, holds, settled or spendable funds. No UI/control, OFF permission, account/risk gate, emergency behavior, broker connection, order, funding, live or cloud path changed. Progress remains roughly 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local validation passed 3,470 tests with one expected non-Windows skip and one existing warning; the release-focused set passed 200 tests. Sixteen profiles and saved-evidence verification matched 347 source files / `c23fe2103249e828d3b415050b036aba0154e21b7b0c20948efa8c02c387eeb9`, report SHA256 `72acee3d220c9444096d1ba9bdd859b58c83f7935abe39bbf8427f9a3fb02d4a`. Exact-source security, safety/evidence/browser and Windows installer workflows remain mandatory.
+
 ## v0.187.0 retained fee-date overlap fence
 
 The private four-observation reconciliation and composed account-evidence path now fail closed when a retained FEE or CFEE reported UTC calendar date overlaps either stability band. Timestamp-shaped provider fee dates remain unverified dates, so the review compares their date component and never treats them as posting or execution instants. Private results expose a zero overlap count; the allowlisted public summary exposes only its absence boolean.

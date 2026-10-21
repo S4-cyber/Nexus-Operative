@@ -18,7 +18,7 @@ from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 from nexus.paper_activity_acceptance_probe import status as acceptance_status
 
 POLICY = 'nexus.paper-reconciliation-acceptance.v2'
-STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v2'
+STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v3'
 
 
 def _fail(code):
@@ -170,18 +170,19 @@ def _guard_fill_events(retained, windows):
 
 
 def _guard_fee_date_events(retained, windows):
-    """Return fee IDs whose unverified reported date overlaps a guard band.
+    """Return fee IDs whose unverified date overlaps the observation envelope.
 
     Fee dates are not posting/execution instants, including when the provider
     supplies a timestamp-shaped value.  Compare UTC calendar dates only and
-    fail closed on overlap rather than inventing a quiet fee interval.
+    fail closed anywhere from the pre-opening read through the post-closing
+    read rather than inventing a quiet fee interval between the edge bands.
     """
-    bands=((windows['pre_opening']['started_at'][:10],windows['opening']['completed_at'][:10]),
-           (windows['closing']['started_at'][:10],windows['post_closing']['completed_at'][:10]))
+    first_date=windows['pre_opening']['started_at'][:10]
+    last_date=windows['post_closing']['completed_at'][:10]
     events=[]
     for row in retained['normalized_activities']:
         if (row['kind'] in ('CFEE','FEE') and
-            any(start <= row['reported_date'][:10] <= end for start,end in bands)):
+            first_date <= row['reported_date'][:10] <= last_date):
             events.append(row['activity_id'])
     return sorted(set(events))
 
@@ -256,7 +257,7 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         ready_for_routing=False,broker_connected=False,live_orders_enabled=False,
         money_movement_enabled=False,automatic_retry=False,automatic_continuation=False,
         release_approved=False,
-        limitations='Four supplied manifests are distinct, ordered and locally balance-stable around the accepted inner comparison. Accepted declared creation windows cover the outer envelope, no retained fill appears in either guard band and no retained fee reported date overlaps either guard band calendar date. Fee dates are not posting/execution instants, so an overlap fails closed and absence does not prove quiet or complete fee history. This is not provider/source attestation, received-activity coverage, a quiet or atomic balance instant, fee/hold reconciliation, spendable-funds proof, routing permission or release approval. Missing, late, corrected, fee-only or activity outside retained history remains possible.')
+        limitations='Four supplied manifests are distinct, ordered and locally balance-stable around the accepted inner comparison. Accepted declared creation windows cover the outer envelope, no retained fill appears in either guard band and no retained fee reported date overlaps any UTC calendar date in the full outer observation envelope. Fee dates are not posting/execution instants, so an overlap fails closed and absence does not prove quiet or complete fee history. This is not provider/source attestation, received-activity coverage, a quiet or atomic balance instant, fee/hold reconciliation, spendable-funds proof, routing permission or release approval. Missing, late, corrected, fee-only or activity outside retained history remains possible.')
 
 
 def fixture_report():
@@ -366,8 +367,10 @@ def fixture_report():
             guarded['balance_instants_verified'] is False and
             guarded['observation_windows_verified_quiet'] is False)
         fee_date_overlap_detected=_guard_fee_date_events({'normalized_activities':[{
-            'kind':'FEE','activity_id':'synthetic-private-id','reported_date':'2026-10-17'}]},
-            guarded['guard_windows'])==['synthetic-private-id']
+            'kind':'FEE','activity_id':'synthetic-private-id','reported_date':'2026-10-18'}]},
+            {'pre_opening':{'started_at':'2026-10-17T23:59:56+00:00'},
+             'post_closing':{'completed_at':'2026-10-19T00:00:04+00:00'}}
+            )==['synthetic-private-id']
         passed=(result == repeated and guarded == guarded_repeated and before == after and
             unbound_rejected and continuation_rejected and outside_rejected and covered and
             changed_guard_rejected and unordered_guard_rejected and outer_guard_coverage_rejected and

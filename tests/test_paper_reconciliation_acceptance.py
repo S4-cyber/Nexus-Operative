@@ -139,6 +139,21 @@ def test_guard_activity_scans_are_inclusive_content_free_and_fee_date_conservati
         'date-only-private-id','timestamp-shaped-private-id']
 
 
+def test_fee_date_scan_covers_multiday_inner_comparison_not_only_edge_bands():
+    windows={
+        'pre_opening':{'started_at':'2026-10-17T23:59:50+00:00','completed_at':'2026-10-17T23:59:51+00:00'},
+        'opening':{'started_at':'2026-10-17T23:59:52+00:00','completed_at':'2026-10-17T23:59:53+00:00'},
+        'closing':{'started_at':'2026-10-20T00:00:04+00:00','completed_at':'2026-10-20T00:00:05+00:00'},
+        'post_closing':{'started_at':'2026-10-20T00:00:06+00:00','completed_at':'2026-10-20T00:00:07+00:00'}}
+    retained={'normalized_activities':[
+        {'kind':'FEE','activity_id':'inner-only-private-id','reported_date':'2026-10-18'},
+        {'kind':'CFEE','activity_id':'later-inner-private-id','reported_date':'2026-10-19T18:00:00+00:00'},
+        {'kind':'FEE','activity_id':'before-private-id','reported_date':'2026-10-16'},
+        {'kind':'FEE','activity_id':'after-private-id','reported_date':'2026-10-21'}]}
+    assert subject._guard_fee_date_events(retained,windows)==[
+        'inner-only-private-id','later-inner-private-id']
+
+
 def test_stability_guard_rejects_retained_fee_date_overlap_without_writes(tmp_path,monkeypatch):
     options=guarded(tmp_path);before=snapshot(tmp_path)
     monkeypatch.setattr(subject,'_guard_fee_date_events',lambda retained,windows:['private-fee-id'])

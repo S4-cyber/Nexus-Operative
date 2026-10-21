@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.187.0'
+REVISION = '0.188.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.187.0 makes retained fee timing fail closed inside the four-observation stability guard. Any retained FEE or CFEE reported date whose UTC calendar date overlaps either guard band now blocks the review; timestamp-shaped fee dates remain unverified dates and are never promoted to posting or execution instants. The private guarded review and allowlisted public account-evidence summary expose only a zero-count/absence result, never fee identifiers, dates or amounts. Sequential reads remain non-atomic and absence of an overlap does not prove provider source, received or fee coverage, posting time, fee links, holds, spendable funds or routing. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.188.0 extends retained fee-date ambiguity detection across every UTC calendar date in the full pre-opening through post-closing observation envelope. This closes the multi-day inner-comparison gap left by edge-band-only detection. Timestamp-shaped FEE and CFEE dates remain unverified dates and are never promoted to posting or execution instants. The private guarded review and allowlisted public account-evidence summary retain the same zero-count/absence schema and expose no fee identifiers, dates or amounts. Sequential reads remain non-atomic and absence of an overlap does not prove provider source, received or fee coverage, posting time, fee links, holds, spendable funds or routing. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

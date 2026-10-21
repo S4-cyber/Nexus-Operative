@@ -1,6 +1,12 @@
 # Nexus Operative release acceptance
 
-Current build: **0.187.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.188.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.188.0 full-envelope retained fee-date guard
+
+The guarded private reconciliation rejects retained FEE/CFEE reported dates on every UTC calendar date from the pre-opening start through post-closing completion, including dates that occur only inside a multi-day opening-to-closing comparison. Reported dates remain unverified posting/execution times. Public output remains an absence boolean, and all provider/source/activity/fee/hold/funds and native acceptance gates remain open.
+
+Final v0.188.0 local evidence: 3,470 tests passed with one expected non-Windows skip and one existing warning; the release-focused set passed 200 tests. Sixteen profiles and saved-evidence verification matched 347 source files / `c23fe2103249e828d3b415050b036aba0154e21b7b0c20948efa8c02c387eeb9`; report SHA256 `72acee3d220c9444096d1ba9bdd859b58c83f7935abe39bbf8427f9a3fb02d4a`. These local results do not establish Windows, broker, market, funds, live, cloud or release acceptance.
 
 ## v0.187.0 conservative retained fee-date guard
 

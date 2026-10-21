@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.187.0 (pre-release).** The four-observation stability guard now rejects retained FEE/CFEE records whose reported UTC calendar date overlaps either guard band. Timestamp-shaped fee dates stay unverified dates rather than posting/execution instants; public summaries expose only an absence boolean. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Sequential reads remain non-atomic; actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.188.0 (pre-release).** The four-observation stability guard now rejects retained FEE/CFEE records whose reported UTC calendar date falls anywhere inside the full outer observation envelope. Timestamp-shaped fee dates stay unverified dates rather than posting/execution instants; public summaries expose only an absence boolean. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Sequential reads remain non-atomic; actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.188.0 full-envelope retained fee-date fence
+
+`nexus.paper_reconciliation_acceptance.review_with_stability_guards` now compares normalized retained FEE and CFEE reported dates with the inclusive UTC calendar-date envelope from the pre-opening read start through the post-closing read completion. A cross-day fee inside the opening-to-closing comparison can no longer evade detection merely because its date differs from both edge guard bands. Timestamp-shaped fee dates receive the same conservative treatment because the source field is not a verified posting or execution instant. The private and public result schemas remain unchanged.
+
+This closes one local false-quietness gap, not fee reconciliation. Missing or late fees, provider/source completeness, fee posting time, execution linkage, holds, settled balances and spendable funds remain unverified. No GUI/API control, credential/provider access, order, ledger, funding, live or cloud behavior changed.
+
+Final local validation passed 3,470 tests with one expected non-Windows skip and one existing warning. The release-focused set passed 200 tests; all sixteen offline profiles and saved-evidence verification matched 347 source files / `c23fe2103249e828d3b415050b036aba0154e21b7b0c20948efa8c02c387eeb9`, report SHA256 `72acee3d220c9444096d1ba9bdd859b58c83f7935abe39bbf8427f9a3fb02d4a`. Exact-source security, safety/evidence/browser and Windows regression/EXE/installer results remain required and unclaimed.
 
 ## v0.187.0 retained fee-date overlap fence
 

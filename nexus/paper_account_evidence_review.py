@@ -19,7 +19,7 @@ from nexus import portable_paper_observation as portable
 from nexus.paper_activity_acceptance_probe import status as acceptance_status, _private_path
 
 POLICY='nexus.paper-account-evidence-review.v1'
-STABILITY_POLICY='nexus.paper-account-evidence-stability-guard.v2'
+STABILITY_POLICY='nexus.paper-account-evidence-stability-guard.v3'
 FLAGS=tuple(dict.fromkeys((*requests.FLAGS,'source_coverage_verified','balance_instants_verified',
     'observation_windows_verified_quiet','atomic_snapshot','automatic_submission',
     'fee_posting_interval_verified','fee_debits_allocated_to_interval','fee_reserved_funding_verified')))
@@ -232,7 +232,7 @@ def review_with_stability_guards(*,expected_account_id,request_journal_path,paci
         guard_retained_fee_date_overlaps_absent=guarded['guard_retained_fee_date_overlaps']==0,
         accepted_declared_windows_cover_guard_envelope=guarded['accepted_declared_windows_cover_guard_envelope'],
         **{flag:False for flag in FLAGS},
-        limitations='One private exact-head account-evidence composition plus four supplied ordered stability observations. The guard detects retained fill overlap, adjacent local balance changes and retained fee reported-date overlap with either guard-band calendar date. Fee dates are not posting/execution instants; overlap fails closed, while absence proves neither quiet nor complete fee history. It does not make sequential reads quiet or atomic, attest provider source, prove received/late/corrected or fee-only coverage, link fees, verify holds or spendable funds, coordinate other writers, authorize routing or approve release. Keep all journals, observations and output outside Git.')
+        limitations='One private exact-head account-evidence composition plus four supplied ordered stability observations. The guard detects retained fill overlap, adjacent local balance changes and retained fee reported-date overlap with any UTC calendar date in the full outer observation envelope. Fee dates are not posting/execution instants; overlap fails closed, while absence proves neither quiet nor complete fee history. It does not make sequential reads quiet or atomic, attest provider source, prove received/late/corrected or fee-only coverage, link fees, verify holds or spendable funds, coordinate other writers, authorize routing or approve release. Keep all journals, observations and output outside Git.')
 
 
 def _fixture(root):

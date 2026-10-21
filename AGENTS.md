@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.191.0, exact-byte account-response normalization review over the fully green exact-source v0.190.0 checkpoint. Read the newest version section and generated roadmap; exact-source v0.191.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.192.0, exact-byte activity-response normalization review over the fully green exact-source v0.191.0 checkpoint. Read the newest version section and generated roadmap; exact-source v0.192.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.192.0 exact-byte activity-response normalization review
+
+The private offline activity-response review must pin the exact current pacing and activity heads plus one exact successful ACTIVITY_COLLECTION session. Require distinct bounded private account/page response files outside source/install roots. Match every response byte digest, replay normalized account fields, production activity normalization and the retained page/cursor observation, reproduce the retained receipt and normalized-result digest, then recheck both journals unchanged. Changed bytes, stale heads, foreign accounts, aliases, wrong-purpose/legacy sessions, missing receipts and malformed inputs must fail closed with fixed output.
+
+The installed/source `activity-response-review` tool is credential-, vault-, network- and write-silent. Hash agreement is local consistency, not provider identity, TLS capture, creation/execution/fee coverage, account ownership, posting time, fee linkage, holds, settled/spendable funds or routing/release authority. Keep every authority flag false. No GUI control or editable parameter changed, so the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Keep progress about 40% (30–45%, low confidence), 0/9 accepted. Require focused response/activity/package tests, all profiles and saved evidence, full regression, static/public-artifact checks and fresh exact-source workflows.
+
+Exact v0.191.0 commit `892713693c1c57c389ea8a37ac5ae121e1478e36` passed security/history/Gitleaks 39557615557, safety/regression/evidence/browser 39557615341 and Windows regression/EXE/installer 39557615316. Those results do not transfer to v0.192.0.
+
+Final local v0.192.0 validation passed 3,507 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the final response/package/evidence/privacy set passed 210 tests. Sixteen profiles and saved-evidence verification matched 355 source files / `33c988cb7eff55a148043f87c96a5edc67b9cf14c69b9333e3aa23bbf8139801`; `validation/release_trials_0_192_0.json` SHA256 is `77ed8f299cd48ec7e66108d344e7960c596169d54385cfc96a0dd67ed8485144`. The common packaged smoke executed 30 cross-platform child processes. All fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The staged 516-path/19,609,210-byte public audit and 688-commit/3,653-blob reachable-history audit had zero findings; local Gitleaks was unavailable, and a bounded high-confidence staged secret-pattern scan had zero matches. These local Linux results do not close native Windows, actual account/provider, market, funds, live, cloud or release gates.
 
 ## v0.191.0 exact-byte account-response normalization review
 

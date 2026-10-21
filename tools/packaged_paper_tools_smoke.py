@@ -12,7 +12,7 @@ import tempfile
 import time
 
 ROOT=Path(__file__).resolve().parents[1]
-CHECKS=('account_response_normalization_checked','provider_results_review_checked','provider_results_changed_result_denied','provider_budget_recovery_checked','account_pacing_recovery_checked','catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
+CHECKS=('account_response_normalization_checked','activity_response_normalization_checked','provider_results_review_checked','provider_results_changed_result_denied','provider_budget_recovery_checked','account_pacing_recovery_checked','catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved',
         'private_account_review_checked','public_current_account_review_checked','private_execution_quality_checked','private_quote_status_checked','unconfirmed_quote_read_denied','encrypted_quote_evidence_checked','invalid_quote_export_denied','private_files_unchanged','invalid_command_denied',
         'emergency_stop_independent','emergency_stop_storage_contention',
         'emergency_stop_cpu_pressure','order_offload_checked','default_data_not_created')
@@ -190,7 +190,7 @@ def run(command):
         env=dict(os.environ,NEXUS_PORTABLE_DATA=str(default),NEXUS_HEADLESS_MODE='1',NEXUS_BROWSER_MODE='1')
         catalog=_json_call(command,['--paper-tool','list'],env)
         _require(catalog['mode']=='NEXUS_PACKAGED_PAPER_TOOLS' and catalog['version']==REVISION and
-            set(catalog['commands'])=={'account-probe','account-recovery','account-response-review','activity','account-review','observation-crypto','order-offload','quality-review','provider-recovery','provider-results','quote-capture','quote-evidence','recovery'} and all(catalog[k] is False for k in
+            set(catalog['commands'])=={'account-probe','account-recovery','account-response-review','activity','activity-response-review','account-review','observation-crypto','order-offload','quality-review','provider-recovery','provider-results','quote-capture','quote-evidence','recovery'} and all(catalog[k] is False for k in
             ('default_data_created','desktop_started','automatic_read','automatic_retry','broker_connected','live_orders_enabled','money_movement_enabled')) and
             catalog['emergency_stop_command']=='--emergency-stop','CATALOG')
         # The fixed encrypted-evidence self-tests are intentionally expensive
@@ -238,6 +238,8 @@ def run(command):
         provider_input=provider_fixture(private/'provider-results')
         from nexus.paper_account_response_review import _fixture as response_fixture,FLAGS as RESPONSE_FLAGS
         response_options=response_fixture(private/'account-response-review')
+        from nexus.paper_activity_response_review import _fixture as activity_response_fixture,FLAGS as ACTIVITY_RESPONSE_FLAGS
+        activity_response_options=activity_response_fixture(private/'activity-response-review')
         changed_provider_input=provider_input.with_name('changed.json')
         changed_provider=json.loads(provider_input.read_text(encoding='utf-8'))
         changed_provider['accounts'][0]['bindings'][0]['normalized_result']['cash']='999'
@@ -293,6 +295,22 @@ def run(command):
             response_review['exact_response_bytes_match'] is True and response_review['normalization_replayed'] is True and
             response_review['portable_observation_matches'] is True and response_review['journal_rechecked_unchanged'] is True and
             all(response_review[k] is False for k in RESPONSE_FLAGS),'ACCOUNT_RESPONSE_REVIEW')
+        activity_response_args=['--paper-tool','activity-response-review']
+        for flag,key in (('pacing','pacing_path'),('activity-store','activity_store_path'),
+                         ('expected-account','expected_account_id'),('expected-pacing-head','expected_pacing_head'),
+                         ('expected-activity-head','expected_activity_head'),('session-head','session_head'),
+                         ('account-before','account_before_path'),('account-after','account_after_path')):
+            activity_response_args+=['--'+flag,str(activity_response_options[key])]
+        for path in activity_response_options['activity_page_paths']:
+            activity_response_args+=['--activity-page',str(path)]
+        activity_response_review=_json_call(command,activity_response_args,env)
+        _require(activity_response_review['mode']=='PAPER_ACTIVITY_RESPONSE_NORMALIZATION_REVIEW' and
+            activity_response_review['exact_response_bytes_match'] is True and
+            activity_response_review['activity_normalization_replayed'] is True and
+            activity_response_review['collection_observation_replayed'] is True and
+            activity_response_review['retained_receipt_replayed'] is True and
+            activity_response_review['journals_rechecked_unchanged'] is True and
+            all(activity_response_review[k] is False for k in ACTIVITY_RESPONSE_FLAGS),'ACTIVITY_RESPONSE_REVIEW')
         provider_result=_json_call(command,['--paper-tool','provider-results','--input',str(provider_input)],env)
         _require(provider_result['local_provider_results_consistent'] is True and provider_result['normalized_sessions_matched']==5 and
             provider_result['status']=='REVIEW_REQUIRED' and all(provider_result[k] is False for k in PROVIDER_RESULT_FLAGS),'PROVIDER_RESULTS')
@@ -403,12 +421,12 @@ def run(command):
                 dict(env,NEXUS_PORTABLE_DATA=str(read_only_root)),read_only_root)
         _require(not default.exists() and not missing.exists(),'DEFAULT_DATA_CREATED')
         return dict(mode='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE',passed=True,**{k:True for k in CHECKS},
-            tool_invocations=29+int(os.name=='nt'),provider_reads_requested=False,credential_reads_requested=False,
+            tool_invocations=30+int(os.name=='nt'),provider_reads_requested=False,credential_reads_requested=False,
             live_orders_enabled=False,money_movement_enabled=False,release_approved=False,
             host_os='WINDOWS_NT' if os.name=='nt' else 'NON_WINDOWS',
             native_windows_storage_fault_checked=os.name=='nt',
             native_windows_acceptance=False,
-            scope='Twenty-nine cross-platform command-prefix child processes, plus one native Windows read-only-journal emergency fault when applicable. The explicit account-response-review command replays four private response bodies and one portable observation against an exact account session without credentials, network access or writes. The explicit account-recovery and provider-recovery commands append reviewed exact-head boundaries to blocked disposable local journals while preserving cooldown, uncertainty, history and capacity. The explicit offline provider-results command checks a real five-reader injected manifest and refuses altered normalized evidence without writing files. The offline order-offload flow copies a stopped, flat, reconciled and logically archived disposable journal, binds a halted replacement to it, installs that candidate behind a persistent recovery marker, verifies the retained rollback copy and explicitly rolls the fixture back. It never resumes, deletes the preserved source copy or grants broker, funds, live or release authority. Explicit cuts run with and without a held SQLite writer and under bounded synthetic CPU pressure, with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. Contended emergency commands must publish the latch before the writer clears, reject new intake without waiting on SQLite and durably cancel after release. A native read-only fault must remain unconfirmed but fenced until one explicit post-recovery retry completes cleanup. Windows requests high, never realtime, process priority; failure never suppresses the cut attempt. Inventory and full-chain quote-evidence self-tests use distinct authenticated encryption formats and retain no ciphertext, password or plaintext bundle. This is bounded same-host evidence, not whole-machine starvation, an OS-level network/vault audit, actual account acceptance, ordinary-user profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
+            scope='Thirty cross-platform command-prefix child processes, plus one native Windows read-only-journal emergency fault when applicable. The explicit account-response-review command replays four private response bodies and one portable observation against an exact account session. The activity-response-review command replays exact private account/page bodies, activity normalization, collection observation and retained receipt against one exact activity session. Both run without credentials, network access or writes. The explicit account-recovery and provider-recovery commands append reviewed exact-head boundaries to blocked disposable local journals while preserving cooldown, uncertainty, history and capacity. The explicit offline provider-results command checks a real five-reader injected manifest and refuses altered normalized evidence without writing files. The offline order-offload flow copies a stopped, flat, reconciled and logically archived disposable journal, binds a halted replacement to it, installs that candidate behind a persistent recovery marker, verifies the retained rollback copy and explicitly rolls the fixture back. It never resumes, deletes the preserved source copy or grants broker, funds, live or release authority. Explicit cuts run with and without a held SQLite writer and under bounded synthetic CPU pressure, with a real in-package authenticated-encryption self-test, disposable local journals, two supplied inventory manifests and a supplied quote benchmark. Pinned private account review and explicitly sampled-current-head public diagnostics must agree without leaking private fields. The quality review derives all retained original-request fills and keeps fees/benchmark authority unknown. Quote capture replays a bound private fixture in status-only mode and refuses an unconfirmed read. The account probe uses its vault/network-silent pacing-status mode; no provider/key read is requested. Contended emergency commands must publish the latch before the writer clears, reject new intake without waiting on SQLite and durably cancel after release. A native read-only fault must remain unconfirmed but fenced until one explicit post-recovery retry completes cleanup. Windows requests high, never realtime, process priority; failure never suppresses the cut attempt. Inventory and full-chain quote-evidence self-tests use distinct authenticated encryption formats and retain no ciphertext, password or plaintext bundle. This is bounded same-host evidence, not whole-machine starvation, an OS-level network/vault audit, actual account acceptance, ordinary-user profile/ACL acceptance or proof of profitability. Private child JSON and paths are omitted.')
 
 
 class _Parser(argparse.ArgumentParser):
@@ -423,7 +441,7 @@ def main():
         report=run([str(args.executable.resolve())]);encoded=json.dumps(report,sort_keys=True,indent=2)+'\n'
         if args.output:args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(encoded,encoding='utf-8')
     except (Exception,KeyboardInterrupt) as error:
-        allowed={'ACCOUNT_RESPONSE_REVIEW','PROVIDER_RESULTS','PROVIDER_BUDGET_RECOVERY','ACCOUNT_PACING_RECOVERY','COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW','QUALITY_REVIEW',
+        allowed={'ACCOUNT_RESPONSE_REVIEW','ACTIVITY_RESPONSE_REVIEW','PROVIDER_RESULTS','PROVIDER_BUDGET_RECOVERY','ACCOUNT_PACING_RECOVERY','COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW','QUALITY_REVIEW',
             'PRIVATE_FILES_CHANGED','ORDER_OFFLOAD','INVALID_COMMAND','EMERGENCY_STOP','EMERGENCY_STOP_CONTENTION','EMERGENCY_STOP_CPU_PRESSURE','DEFAULT_DATA_CREATED','OUTPUT_CAP',
             'EMERGENCY_STOP_READ_ONLY_PLATFORM','EMERGENCY_STOP_READ_ONLY_STORAGE',
             'CHILD_FAILED','CHILD_JSON','CHILD_TIMEOUT','EXECUTABLE_REQUIRED'}

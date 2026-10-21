@@ -17,7 +17,7 @@ smoke=importlib.util.module_from_spec(spec);spec.loader.exec_module(smoke)
 
 def test_actual_source_child_smoke_covers_all_tools_without_default_data():
     r=smoke.run([sys.executable,str(ROOT/'portable/desktop.py')])
-    assert r['passed'] and r['tool_invocations']==29+int(os.name=='nt') and all(r[k] is True for k in smoke.CHECKS)
+    assert r['passed'] and r['tool_invocations']==30+int(os.name=='nt') and all(r[k] is True for k in smoke.CHECKS)
     assert r['host_os'] == ('WINDOWS_NT' if os.name=='nt' else 'NON_WINDOWS')
     assert r['native_windows_storage_fault_checked'] is (os.name=='nt')
     assert not r['native_windows_acceptance'] and not r['provider_reads_requested'] and not r['credential_reads_requested']
@@ -48,7 +48,7 @@ def test_bad_dispatch_never_configures_or_echoes_arguments(monkeypatch,capsys,ar
 def test_catalog_is_available_without_configure(monkeypatch,capsys,args):
     monkeypatch.setattr(desktop,'configure',lambda:pytest.fail('desktop initialized'))
     assert desktop.main(args)==0
-    r=json.loads(capsys.readouterr().out);assert set(r['commands'])=={'account-probe','account-recovery','account-response-review','activity','account-review','observation-crypto','order-offload','quality-review','provider-recovery','provider-results','quote-capture','quote-evidence','recovery'}
+    r=json.loads(capsys.readouterr().out);assert set(r['commands'])=={'account-probe','account-recovery','account-response-review','activity','activity-response-review','account-review','observation-crypto','order-offload','quality-review','provider-recovery','provider-results','quote-capture','quote-evidence','recovery'}
     assert r['emergency_stop_command']=='--emergency-stop'
     assert not r['desktop_started'] and not r['default_data_created']
 

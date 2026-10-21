@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.185.0 (pre-release).** Accepted paper reconciliation can now optionally bind four distinct ordered observations around the balance comparison, require stable adjacent balance/inventory fingerprints, require accepted declared-window coverage of the outer envelope and reject retained guard-band fills. These sequential observations are not quiet or atomic balance instants. A Windows portability fix also removes the unsupported `O_NONBLOCK` flag from private retired-baseline reads while retaining identity checks. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Actual provider source/coverage, fees, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.186.0 (pre-release).** The private account-evidence bundle now composes exact request/activity/pacing/acceptance heads with the four-observation reconciliation guard and rechecks all current heads after both components. Pinned/current-head and encrypted guard inputs share the same fail-closed path; the allowlisted public summary exposes no balances, identifiers, dates, hashes, paths or reasons. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Sequential reads remain non-atomic; actual provider source/coverage, fees, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ## Historical versions
 Earlier development iterations were labeled 1.x, 2.x, and 3.x while the application was still simulation-only. Those labels represented prototype development milestones, **not** production releases or compatibility promises. The development snapshot previously labeled **3.8.0** is now **0.38.0**. Existing Git commits, CI logs, and artifacts retain their original historical names and are not rewritten.
@@ -26,6 +26,14 @@ The primary implementation sequence is [LAUNCH_DRIVE.md](LAUNCH_DRIVE.md). Globa
 10. Explicit owner approval for production release and any *separate* authorization for live-money order activation.
 
 A green CI build alone is not a release acceptance gate. Research profitability cannot be guaranteed. The current branch has **no real-money order authority**.
+
+## v0.186.0 guarded account-evidence bundle
+
+`nexus.paper_account_evidence_review.review_with_stability_guards` composes the existing exact-head account-evidence review with the four-observation stability review. The base result must hash-match the guard's embedded accepted reconciliation, account/activity heads must agree, all authority flags stay false and request/activity/pacing/acceptance heads are sampled again before return. The guarded result binds all four observation manifests plus both component hashes. Its current-head variant samples once and never retries; a changed journal fails closed.
+
+The CLI accepts paired `--pre-opening` and `--post-closing` inputs with matching encrypted switches. Supplying only one guard fails before private reads. The guarded public summary exposes bounded diagnostic booleans and counts only, while the full `PAPER_ACCOUNT_EVIDENCE_STABILITY_GUARD_REVIEW` remains private and is rejected by the public-repository audit even when renamed. Sequential local reads still do not prove atomic balances, provider identity, complete received activity, fee links, holds, spendable funds, broker routing, profitability or release readiness. No GUI/API control, credential/provider access, order, ledger or funding operation was added.
+
+Final local validation passed 3,468 tests with one expected non-Windows skip and one existing warning. The final release-focused set passed 289 tests; all sixteen offline profiles and saved-evidence verification matched 347 source files / `104aa1fe603819bb915e5384d8e16d427284ee7950c3b2a9044aa2e6bde216f4`, report SHA256 `edd5ee5a901257ae8fd9655415a5f9ac6ecce2f850f7e43c063cac8f48ece9af`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Exact-source security, safety/evidence/browser and Windows regression/EXE/installer results remain required and unclaimed.
 
 ## v0.185.0 guarded paper-reconciliation observations
 

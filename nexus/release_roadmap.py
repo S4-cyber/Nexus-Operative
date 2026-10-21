@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.185.0'
+REVISION = '0.186.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.185.0 adds an optional four-observation stability guard around the existing accepted paper-reconciliation comparison. Four distinct, ordered manifests must retain the same account/source and adjacent balance/inventory fingerprints; accepted declared collection windows must cover the outer envelope, and retained fills in either guard band fail closed. The result remains an explicitly unverified diagnostic: sequential reads are not quiet or atomic balance instants, and provider source, received-activity coverage, fees, holds, spendable funds and routing remain unverified. This release also removes the POSIX-only O_NONBLOCK flag from private retired-baseline reads on Windows while retaining descriptor identity checks and POSIX hardening. Runtime permissions, UI, emergency behavior and every authority flag remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.186.0 composes the four-observation stability guard into the private exact-head account-evidence bundle. The guarded review binds original request terms, accepted activity, pacing and acceptance journals, four distinct ordered observations, adjacent balance/inventory stability, accepted declared-window coverage and retained guard-band fill absence, then rechecks every current head. Pinned/current-head and encrypted-input paths share the same fail-closed composition; public summaries expose only bounded booleans and counts, while public-repository auditing rejects the private report even when renamed. Sequential reads remain non-atomic and provider source, received-activity coverage, fees, holds, spendable funds and routing remain unverified. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

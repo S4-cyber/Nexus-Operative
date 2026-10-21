@@ -2,6 +2,12 @@
 
 This component prepares and validates fixture data only. It contains no HTTP client, credentials, environment access, account writes or automatic strategy routing. The existing gateway continues to reject Alpaca submissions. No broker was connected or tested.
 
+## v0.186.0 guarded account-evidence composition
+
+The private account-evidence review can compose its exact request/activity/pacing/acceptance heads with the four-observation stability guard. Its base accepted reconciliation must match the guard's embedded reconciliation exactly; all heads are sampled again after composition. Paired encrypted guard inputs and an explicit current-head mode are available, but neither retries or reserves state. The full result remains private; its public summary includes only bounded diagnostic counts/booleans and no account/order IDs, balances, dates, paths, hashes or reasons.
+
+This is local supplied evidence only. It does not attest the provider, turn sequential observations into an atomic snapshot, prove complete received or corrected activity, link fees, verify holds or spendable funds, authorize an order or approve release.
+
 ## v0.185.0 guarded accepted reconciliation
 
 The private accepted-reconciliation tool optionally composes pre-opening and post-closing manifests around its opening/closing comparison. The four manifests must be distinct, strictly ordered and account/source consistent; adjacent account-field and inventory fingerprints must agree; accepted declared collection windows must cover the outer envelope; and retained fills in either guard band are rejected. It then replays the final accepted heads unchanged. This is a read-only local stability diagnostic only. It does not prove a quiet or atomic balance instant, provider authenticity, received/late/corrected or fee-only activity coverage, fee links, holds, spendable funds, routing or broker-paper acceptance.

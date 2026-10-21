@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.186.0 guarded account-evidence composition
+
+The private exact-head account-evidence bundle now composes its original request/fill agreement and gross-only inventory comparison with pre-opening/opening/closing/post-closing stability observations. All four manifests must remain distinct and ordered on one account/source, adjacent account/inventory fingerprints must be stable, accepted declared windows must cover the guard envelope and retained guard-band fills fail closed. The request, activity, pacing and acceptance heads are rechecked after both components. Explicit current-head selection never retries; encrypted guard inputs remain in memory. Public output is limited to an unsigned boolean/count summary, and the full guarded mode is blocked from public artifacts.
+
+This advances local durable reconciliation only. It does not make sequential reads atomic or verify provider source, complete received activity, fee links, holds, spendable funds, routing, profit or release. No UI/control or OFF-by-default permission changed. Progress remains roughly 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local validation passed 3,468 tests with one expected non-Windows skip and one existing warning; the release-focused set passed 289 tests. Sixteen profiles and saved-evidence verification matched 347 source files / `104aa1fe603819bb915e5384d8e16d427284ee7950c3b2a9044aa2e6bde216f4`, report SHA256 `edd5ee5a901257ae8fd9655415a5f9ac6ecce2f850f7e43c063cac8f48ece9af`. Fourteen controller smokes, Portal syntax, compilation, dependencies, roadmap equality and whitespace checks passed. Exact-source security, safety/evidence/browser and Windows installer workflows remain mandatory.
+
 ## v0.185.0 guarded reconciliation and Windows baseline portability
 
 The private source-only reconciliation diagnostic can now surround its opening/closing comparison with pre-opening and post-closing manifests. Four distinct strictly ordered observations must share one declared account/source, have no open orders and preserve adjacent account-field and inventory fingerprints. Accepted declared collection windows must cover the full outer envelope, retained fills in either guard band fail closed and the final accepted journal heads are replayed unchanged. This remains sequential local evidence, not a quiet/atomic balance snapshot or provider/source/coverage/fee/hold/funds attestation.

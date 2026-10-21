@@ -1,6 +1,10 @@
 # Windows distribution and acceptance evidence
 
-## v0.185.0 candidate status
+## v0.186.0 candidate status
+
+The guarded account-evidence composition adds no Windows-specific runtime or GUI behavior, but its paired plaintext/encrypted CLI paths, current-head path, public-summary privacy and public-artifact rejection require exact-source Windows regression, standalone EXE/tool smoke, packaging and installer validation. No native result is claimed from local Linux validation. Ordinary-user profile/ACL, private-volume and physical power-loss acceptance remain separate.
+
+## v0.185.0 portability correction
 
 Exact v0.184.0 commit `e78a4cf59721d0b7eeb0791ae5dc6675fbc8fd5c` passed public-security run 39510620112 and every safety/evidence/browser job in run 39510620109. Windows run 39510620199 reached the full regression but failed two private reviewed-baseline assertions after 3,433 passes, 19 skips and one existing warning. The retained log shows Windows rejecting `O_NONBLOCK` in the baseline `os.open` call, so packaging and installer stages did not run.
 

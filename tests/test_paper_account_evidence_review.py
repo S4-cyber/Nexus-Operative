@@ -23,6 +23,13 @@ def options(root,prices=('98','100')):
         closing_observation=observations._fixture_observation(account,'802','2',EPOCH+3,EPOCH+4))
 
 
+def guarded_options(root,prices=('98','100')):
+    result=options(root,prices);account=result['expected_account_id']
+    return dict(result,
+        pre_opening_observation=observations._fixture_observation(account,'1000','0',EPOCH-4,EPOCH-3),
+        post_closing_observation=observations._fixture_observation(account,'802','2',EPOCH+6,EPOCH+7))
+
+
 def snapshot(root):return tuple((p.name,p.read_bytes()) for p in sorted(root.iterdir()) if p.is_file())
 
 
@@ -38,6 +45,43 @@ def test_complete_bundle_reuses_one_history_without_writes_or_authority(tmp_path
     assert r['retained_fee_record_counts']=={'USD':0,'BTC':0}
     assert all(r[k] is False for k in subject.FLAGS) and r['status']=='REVIEW_REQUIRED'
     assert snapshot(tmp_path)==before and subject.review(**args)==r
+
+
+def test_guarded_bundle_binds_all_components_without_writes_or_authority(tmp_path,monkeypatch):
+    args=guarded_options(tmp_path);before=snapshot(tmp_path)
+    monkeypatch.setattr(paper_credentials,'_vault',lambda:pytest.fail('vault access'))
+    r=subject.review_with_stability_guards(**args)
+    assert r['mode']=='PAPER_ACCOUNT_EVIDENCE_STABILITY_GUARD_REVIEW'
+    assert r['policy']==subject.STABILITY_POLICY and r['stability_guard_bound']
+    assert r['component_heads_agree'] and r['local_request_terms_agree']
+    assert r['guard_manifests_distinct'] and r['guard_windows_ordered']
+    assert r['adjacent_guard_balances_stable'] and r['guard_retained_fill_events_absent']
+    assert r['accepted_declared_windows_cover_guard_envelope']
+    assert r['gross_only_minus_observed']=={'USD':'0','BTC':'0'}
+    assert r['account_evidence_review']['input_sha256']==r['account_evidence_sha256']
+    assert r['stability_guard_review']['input_sha256']==r['stability_guard_sha256']
+    assert all(r[k] is False for k in subject.FLAGS)
+    assert snapshot(tmp_path)==before and subject.review_with_stability_guards(**args)==r
+
+
+def test_guarded_bundle_rejects_changed_guard_and_post_component_request_race(tmp_path,monkeypatch):
+    args=guarded_options(tmp_path);changed=dict(args,
+        pre_opening_observation=observations._fixture_observation(
+            args['expected_account_id'],'999','0',EPOCH-4,EPOCH-3))
+    with pytest.raises(ValueError,match='GUARD_BALANCE_CHANGED'):
+        subject.review_with_stability_guards(**changed)
+    original=subject.inventory.review_with_stability_guards
+    def append(**kw):
+        result=original(**kw)
+        journal=BrokerRequestJournal(args['request_journal_path'],args['expected_account_id'])
+        asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
+            fractionable=True,min_order_size='.5',min_trade_increment='.5',price_increment='.5')
+        journal.prepare(preview('guard_race','BTC-USD','BUY','2','100',asset,
+            metadata_at=1000,evaluated_at=1001))
+        return result
+    monkeypatch.setattr(subject.inventory,'review_with_stability_guards',append)
+    with pytest.raises(ValueError,match='JOURNALS_CHANGED_DURING_REVIEW'):
+        subject.review_with_stability_guards(**args)
 
 
 def test_good_aggregate_balance_cannot_hide_individual_fill_limit_violation(tmp_path):
@@ -159,6 +203,30 @@ def test_encrypted_cli_inputs_stay_in_memory_and_output_is_private(tmp_path,monk
     assert snapshot(tmp_path)==before
 
 
+def test_guarded_cli_requires_pair_and_supports_encrypted_private_inputs(tmp_path,monkeypatch,capsys):
+    from nexus import encrypted_observation as encryption
+    import getpass
+    args=guarded_options(tmp_path);phrase='fixture phrase for guarded account evidence'
+    paths={}
+    for name in ('pre_opening_observation','opening_observation','closing_observation','post_closing_observation'):
+        path=tmp_path/(name+'.nexusenc');path.write_bytes(encryption.seal(canonical(args[name]).encode(),phrase))
+        paths[name]=path
+    argv=command(args,paths['opening_observation'],paths['closing_observation'])+[
+        '--pre-opening',str(paths['pre_opening_observation']),
+        '--post-closing',str(paths['post_closing_observation'])]
+    monkeypatch.setattr(getpass,'getpass',lambda *a,**k:phrase)
+    monkeypatch.setattr(sys,'argv',['fixture',*argv,'--pre-opening-encrypted','--opening-encrypted',
+        '--closing-encrypted','--post-closing-encrypted'])
+    before=snapshot(tmp_path);assert subject.main()==0
+    output=capsys.readouterr();result=json.loads(output.out)
+    assert not output.err and result['stability_guard_bound'] is True
+    assert snapshot(tmp_path)==before and phrase not in output.out
+    monkeypatch.setattr(sys,'argv',['fixture',*command(args,paths['opening_observation'],paths['closing_observation']),
+        '--pre-opening',str(paths['pre_opening_observation'])])
+    assert subject.main()==2
+    assert capsys.readouterr().out=='PAPER_ACCOUNT_EVIDENCE_FAILED\n'
+
+
 def test_cli_bad_input_and_unknown_secret_argument_do_not_echo_private_values(tmp_path):
     args=options(tmp_path);p=tmp_path/'PRIVATE_FIXTURE_PATH.json';p.write_text('PRIVATE_FIXTURE_CONTENT')
     base=[sys.executable,'-m','nexus.paper_account_evidence_review',*command(args,p,tmp_path/'missing.json')]
@@ -184,6 +252,20 @@ def test_current_heads_uses_same_pinned_result_and_preserves_all_files(tmp_path)
     pinned=subject.review(**args);current=subject.review_current(**current_options(args))
     assert current.pop('head_selection')=='EXPLICIT_CURRENT_LOCAL_HEADS_NO_AUTOMATIC_RETRY'
     assert current==pinned and snapshot(tmp_path)==before
+
+
+def test_guarded_current_heads_matches_pinned_and_public_summary_is_allowlisted(tmp_path):
+    args=guarded_options(tmp_path);before=snapshot(tmp_path)
+    pinned=subject.review_with_stability_guards(**args)
+    current=subject.review_current_with_stability_guards(**current_options(args))
+    assert current.pop('head_selection')=='EXPLICIT_CURRENT_LOCAL_HEADS_NO_AUTOMATIC_RETRY'
+    assert current==pinned and snapshot(tmp_path)==before
+    public=subject.public_summary(pinned);encoded=json.dumps(public)
+    assert public['policy']==subject.STABILITY_POLICY and public['stability_guard_bound'] is True
+    assert public['guard_manifests_distinct'] and public['guard_retained_fill_events_absent']
+    assert all(public[k] is False for k in subject.FLAGS)
+    assert all(pinned[k] not in encoded for k in (*subject.HEADS,'input_sha256',
+        'pre_opening_manifest_sha256','post_closing_manifest_sha256'))
 
 
 def test_current_head_change_is_not_retried_or_repaired(tmp_path,monkeypatch):

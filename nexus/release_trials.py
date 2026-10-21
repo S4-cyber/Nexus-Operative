@@ -871,7 +871,7 @@ def _validate(profile, result):
     if profile == 'reconciliation_acceptance':
         from nexus.paper_account_evidence_review import FLAGS as BUNDLE_FLAGS
         bundle=result['account_evidence_bundle']
-        _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
+        _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
         _require(all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY')
         _require(result['source']=='SYNTHETIC_LOCAL_ACCEPTED_RECONCILIATION_FIXTURE' and
             result['repeat_review_matches'] is True and result['journals_unchanged'] is True and

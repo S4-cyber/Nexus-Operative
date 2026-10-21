@@ -1,6 +1,14 @@
 # Nexus Operative release acceptance
 
-Current build: **0.185.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.186.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.186.0 guarded account-evidence composition
+
+The reconciliation release profile now requires the private account-evidence fixture to compose exact original-request, activity, pacing and acceptance heads with the four-observation stability guard. The guard's embedded accepted reconciliation must hash-match the base account bundle. All journals are rechecked after both components, current-head and pinned-head results must match, encrypted paired guard inputs are supported, and the public summary exposes only allowlisted counts/booleans. Changed adjacent balances, unordered/reused observations, incomplete declared-window coverage, retained guard-band fills, authority promotion, component substitution and post-component journal changes fail closed.
+
+This remains synthetic/local evidence. The observations are sequential, not quiet or atomic; provider/source identity, received/late/corrected and fee-only activity coverage, fee links, holds, spendable funds, broker-wide coordination, actual routing and release approval remain false. No control, credential read, network request, order, ledger mutation or funding operation was added. Fresh exact-source security, safety/evidence/browser and Windows installer workflows remain mandatory.
+
+Final v0.186.0 local evidence: 3,468 tests passed with one expected non-Windows skip and one existing warning; the release-focused set passed 289 tests. Sixteen profiles and saved-evidence verification matched 347 source files / `104aa1fe603819bb915e5384d8e16d427284ee7950c3b2a9044aa2e6bde216f4`; report SHA256 `edd5ee5a901257ae8fd9655415a5f9ac6ecce2f850f7e43c063cac8f48ece9af`. Fourteen controller smokes, Portal syntax, compile, dependency, generated-roadmap and whitespace checks passed. These local results do not establish Windows, broker, market, funds, live, cloud or release acceptance.
 
 ## v0.185.0 four-observation stability guard
 

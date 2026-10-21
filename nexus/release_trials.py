@@ -895,7 +895,8 @@ def _validate(profile, result):
         _require(all(result[name] is True for name in ('stability_guard_bound',
             'stability_guard_repeat_matches','changed_guard_balance_rejected',
             'unordered_guard_windows_rejected','outer_guard_window_coverage_rejected',
-            'guard_retained_fill_events_absent')),
+            'guard_retained_fill_events_absent','guard_retained_fee_date_overlaps_absent',
+            'guard_fee_date_overlap_detected')),
             'RECONCILIATION_STABILITY_GUARD')
         _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access','requested_window_boundaries_verified',
             'guard_balance_instants_verified','guard_observation_windows_verified_quiet',

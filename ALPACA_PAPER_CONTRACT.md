@@ -2,6 +2,10 @@
 
 This component prepares and validates fixture data only. It contains no HTTP client, credentials, environment access, account writes or automatic strategy routing. The existing gateway continues to reject Alpaca submissions. No broker was connected or tested.
 
+## v0.187.0 retained fee-date ambiguity fence
+
+The guarded private reconciliation path rejects a retained FEE or CFEE record when its reported UTC calendar date overlaps either stability band. Timestamp-shaped fee dates are deliberately treated the same way: the provider date field is not promoted to a verified posting or execution instant. A zero-overlap result means only that the retained normalized rows did not contain such a date; it does not prove activity completeness, fee timing/linkage, holds or spendable funds.
+
 ## v0.186.0 guarded account-evidence composition
 
 The private account-evidence review can compose its exact request/activity/pacing/acceptance heads with the four-observation stability guard. Its base accepted reconciliation must match the guard's embedded reconciliation exactly; all heads are sampled again after composition. Paired encrypted guard inputs and an explicit current-head mode are available, but neither retries or reserves state. The full result remains private; its public summary includes only bounded diagnostic counts/booleans and no account/order IDs, balances, dates, paths, hashes or reasons.

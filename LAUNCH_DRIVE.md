@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.187.0 retained fee-date overlap fence
+
+The private four-observation reconciliation and composed account-evidence path now fail closed when a retained FEE or CFEE reported UTC calendar date overlaps either stability band. Timestamp-shaped provider fee dates remain unverified dates, so the review compares their date component and never treats them as posting or execution instants. Private results expose a zero overlap count; the allowlisted public summary exposes only its absence boolean.
+
+This reduces one local false-quietness risk but does not establish complete received activity, provider posting time, fee links, holds, settled or spendable funds. No UI/control, OFF permission, account/risk gate, emergency behavior, broker connection, order, funding, live or cloud path changed. Progress remains roughly 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local validation passed 3,469 tests with one expected non-Windows skip and one existing warning; the release-focused set passed 231 tests. Sixteen profiles and saved-evidence verification matched 347 source files / `1fdea54fed126da914eb9918b61d91a14b55d9f91692a98144e64d9ee2b23a29`, report SHA256 `f0756ff19e97ffaad68a81b4fa1069357bf55d06dc3c99a013c33834bdb9e933`. Exact-source security, safety/evidence/browser and Windows installer workflows remain mandatory.
+
 ## v0.186.0 guarded account-evidence composition
 
 The private exact-head account-evidence bundle now composes its original request/fill agreement and gross-only inventory comparison with pre-opening/opening/closing/post-closing stability observations. All four manifests must remain distinct and ordered on one account/source, adjacent account/inventory fingerprints must be stable, accepted declared windows must cover the guard envelope and retained guard-band fills fail closed. The request, activity, pacing and acceptance heads are rechecked after both components. Explicit current-head selection never retries; encrypted guard inputs remain in memory. Public output is limited to an unsigned boolean/count summary, and the full guarded mode is blocked from public artifacts.

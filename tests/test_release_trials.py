@@ -313,6 +313,8 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('declared_windows_cover_observation_envelope',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('stability_guard_bound',),False,'RECONCILIATION_STABILITY_GUARD'),
         (('guard_retained_fill_events_absent',),False,'RECONCILIATION_STABILITY_GUARD'),
+        (('guard_retained_fee_date_overlaps_absent',),False,'RECONCILIATION_STABILITY_GUARD'),
+        (('guard_fee_date_overlap_detected',),False,'RECONCILIATION_STABILITY_GUARD'),
         (('guard_observation_windows_verified_quiet',),True,'RECONCILIATION_ACCEPTANCE_AUTHORITY'),
         (('requested_window_boundaries_verified',),True,'RECONCILIATION_ACCEPTANCE_AUTHORITY'),
         (('broker_account_reconciled',),True,'RECONCILIATION_ACCEPTANCE_AUTHORITY')):

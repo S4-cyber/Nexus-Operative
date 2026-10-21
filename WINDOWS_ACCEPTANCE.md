@@ -1,5 +1,9 @@
 # Windows distribution and acceptance evidence
 
+## v0.187.0 candidate status
+
+The retained fee-date overlap fence is platform-neutral and adds no Windows runtime or GUI behavior. Its private guarded CLI, packaged-tool smoke, public-summary privacy, full regression, standalone executable and installer still require fresh exact-source Windows validation. Local Linux validation passed 3,469 tests with one expected non-Windows skip and one existing warning; all sixteen offline profiles matched 347 source files / `1fdea54fed126da914eb9918b61d91a14b55d9f91692a98144e64d9ee2b23a29`. No native result is claimed from these fixtures; ordinary-user profile/ACL, private-volume and physical power-loss acceptance remain separate.
+
 ## v0.186.0 candidate status
 
 The guarded account-evidence composition adds no Windows-specific runtime or GUI behavior, but its paired plaintext/encrypted CLI paths, current-head path, public-summary privacy and public-artifact rejection require exact-source Windows regression, standalone EXE/tool smoke, packaging and installer validation. No native result is claimed from local Linux validation. Ordinary-user profile/ACL, private-volume and physical power-loss acceptance remain separate.

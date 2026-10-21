@@ -1,6 +1,14 @@
 # Nexus Operative release acceptance
 
-Current build: **0.186.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.187.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.187.0 conservative retained fee-date guard
+
+The reconciliation release profile now requires both zero retained fill overlap and zero retained FEE/CFEE reported-date overlap across the two stability bands. Synthetic controls prove date-only and timestamp-shaped fee dates on a guard-band UTC calendar date are detected without promoting either to a posting/execution instant. The composed account-evidence public summary exposes only an absence boolean, while the private result remains excluded from public artifacts.
+
+This is fail-closed ambiguity handling, not fee/source coverage or account acceptance. Missing, late, corrected and outside-date fees remain possible; fee links, holds, settled balances, spendable funds, routing and release approval remain false. Fresh exact-source security, safety/evidence/browser and Windows installer workflows are mandatory.
+
+Final v0.187.0 local evidence: 3,469 tests passed with one expected non-Windows skip and one existing warning; the release-focused set passed 231 tests. Sixteen profiles and saved-evidence verification matched 347 source files / `1fdea54fed126da914eb9918b61d91a14b55d9f91692a98144e64d9ee2b23a29`; report SHA256 `f0756ff19e97ffaad68a81b4fa1069357bf55d06dc3c99a013c33834bdb9e933`. These local results do not establish Windows, broker, market, funds, live, cloud or release acceptance.
 
 ## v0.186.0 guarded account-evidence composition
 

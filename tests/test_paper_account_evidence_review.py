@@ -56,6 +56,7 @@ def test_guarded_bundle_binds_all_components_without_writes_or_authority(tmp_pat
     assert r['component_heads_agree'] and r['local_request_terms_agree']
     assert r['guard_manifests_distinct'] and r['guard_windows_ordered']
     assert r['adjacent_guard_balances_stable'] and r['guard_retained_fill_events_absent']
+    assert r['guard_retained_fee_date_overlaps_absent']
     assert r['accepted_declared_windows_cover_guard_envelope']
     assert r['gross_only_minus_observed']=={'USD':'0','BTC':'0'}
     assert r['account_evidence_review']['input_sha256']==r['account_evidence_sha256']

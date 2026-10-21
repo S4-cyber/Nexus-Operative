@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.186.0, guarded four-observation reconciliation composed into the exact-head private account-evidence bundle over v0.185.0. Read the newest version section and generated roadmap; exact-source v0.186.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.187.0, retained fee-date overlap now fails closed in the guarded private account-evidence path over v0.186.0. Read the newest version section and generated roadmap; exact-source v0.187.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.187.0 conservative retained fee-date guard
+
+The four-observation stability review now rejects any retained FEE or CFEE whose reported UTC calendar date overlaps either pre/opening or closing/post-closing guard band. Timestamp-shaped fee dates receive the same treatment because provider-reported dates are not verified posting or execution instants. The private result and public account-evidence summary expose only zero overlap counts/absence booleans; no fee identifiers, dates, amounts, balances or paths are published.
+
+This closes a local false-quietness hole only. A non-overlap does not prove complete fee activity, provider posting time, fee links, settled holds or spendable funds. Missing, late, corrected and outside-date fees remain possible. No UI/control, permission, broker connection, order, funding, live or cloud behavior changed. Keep rough progress about 40% (30–45%, low confidence), 0/9 accepted. Run focused reconciliation/account-evidence/release/security tests, all sixteen profiles plus saved-evidence verification, full regression, controllers/Portal/static checks, staged public audit and fresh exact-source workflows.
+
+Final local v0.187.0 validation passed 3,469 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release-focused set passed 231 tests. All sixteen profiles and saved-evidence verification matched 347 source files / `1fdea54fed126da914eb9918b61d91a14b55d9f91692a98144e64d9ee2b23a29`; `validation/release_trials_0_187_0.json` SHA256 is `f0756ff19e97ffaad68a81b4fa1069357bf55d06dc3c99a013c33834bdb9e933`. Run compilation, dependency, controller/Portal/static, generated-roadmap, whitespace and exact staged public-artifact checks before publication. Do not claim Windows, broker, account, market, funds, live, cloud or release acceptance from local Linux fixtures.
 
 ## v0.186.0 guarded account-evidence composition
 

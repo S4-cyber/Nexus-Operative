@@ -75,6 +75,7 @@ def test_four_observation_stability_guard_is_exact_bound_read_only_and_non_autho
     assert result['guard_manifests_distinct'] and result['guard_windows_ordered']
     assert result['adjacent_guard_balances_stable']
     assert result['guard_retained_fill_events']==0
+    assert result['guard_retained_fee_date_overlaps']==0
     assert result['accepted_declared_windows_cover_guard_envelope']
     assert result['journals_rechecked_unchanged']
     assert result['accepted_reconciliation_review']['observation_review']['arithmetic_evaluated']
@@ -121,7 +122,7 @@ def test_stability_guard_rejects_manifest_reuse_and_declared_source_disagreement
         subject.review_with_stability_guards(**options)
 
 
-def test_guard_fill_scan_is_inclusive_and_content_free():
+def test_guard_activity_scans_are_inclusive_content_free_and_fee_date_conservative():
     windows={
         'pre_opening':{'started_at':'2026-10-17T00:00:00+00:00','completed_at':'2026-10-17T00:00:01+00:00'},
         'opening':{'started_at':'2026-10-17T00:00:02+00:00','completed_at':'2026-10-17T00:00:03+00:00'},
@@ -130,8 +131,20 @@ def test_guard_fill_scan_is_inclusive_and_content_free():
     retained={'normalized_activities':[
         {'kind':'FILL','activity_id':'first-private-id','occurred_at':'2026-10-17T00:00:03+00:00'},
         {'kind':'FILL','activity_id':'second-private-id','occurred_at':'2026-10-17T00:00:04+00:00'},
-        {'kind':'FEE','activity_id':'ignored-fee','reported_date':'2026-10-17'}]}
+        {'kind':'FEE','activity_id':'date-only-private-id','reported_date':'2026-10-17'},
+        {'kind':'CFEE','activity_id':'timestamp-shaped-private-id','reported_date':'2026-10-17T23:00:00+00:00'},
+        {'kind':'FEE','activity_id':'outside-private-id','reported_date':'2026-10-18'}]}
     assert subject._guard_fill_events(retained,windows)==['first-private-id','second-private-id']
+    assert subject._guard_fee_date_events(retained,windows)==[
+        'date-only-private-id','timestamp-shaped-private-id']
+
+
+def test_stability_guard_rejects_retained_fee_date_overlap_without_writes(tmp_path,monkeypatch):
+    options=guarded(tmp_path);before=snapshot(tmp_path)
+    monkeypatch.setattr(subject,'_guard_fee_date_events',lambda retained,windows:['private-fee-id'])
+    with pytest.raises(ValueError,match='GUARD_RETAINED_FEE_TIMING_AMBIGUOUS'):
+        subject.review_with_stability_guards(**options)
+    assert snapshot(tmp_path)==before
 
 
 def test_unbound_or_missing_acceptance_history_fails_before_balance_review(tmp_path, monkeypatch):

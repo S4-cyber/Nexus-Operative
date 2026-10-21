@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.200.0 explicit fee-reference-pair consistency
+
+The private exact response-bundle review now validates every FEE activity that explicitly supplies both an order reference and an execution reference. The execution must resolve to an exact retained FILL, the order must be known, and both records must agree on the same order. Partial pairs, unknown references and mismatched pairs fail closed. Fees without either reference remain allowed and unverified; no missing relationship or timestamp is inferred.
+
+The public result adds only an aggregate consistent-pair count and digest. It does not attest provider semantics or source coverage, prove fee or execution completeness, verify fee posting, reconcile holds or spendable funds, establish account ownership or authorize routing. `fee_execution_links_verified` remains false. No UI control or modifiable parameter changed; the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded risk/account checks, fail-closed exits and independent emergency stop are unchanged.
+
+Exact v0.199.0 source `d58b56ad438f53731e7aac6713b23b025f1421f8` passed security/history/Gitleaks run 39652530643, safety/regression/evidence/browser run 39652530395 and Windows regression/EXE/installer run 39652530357. Fresh exact-source v0.200.0 workflows and every actual authorized provider/account, sustained-market, fee/hold/funds, native-profile, independent and owner gate remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages.
+
+Local v0.200.0 validation passed 3,534 tests with one expected non-Windows skip and one existing warning; the final release-focused set passed 178 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `1bf7fd575b84836964bdfaf15568c9640fcdb468af7e17252518bf4ca843ea15`; report SHA256 is `c80754edb2afe12acdb155fac2e176c9af6a1ca64e6c52e271edf603f26bfd25`. The 31-child source command smoke, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Playwright, Gitleaks and native Windows execution remain unavailable; exact-source workflows are required.
+
 ## v0.199.0 exact response-bundle fill-delta binding
 
 For each order visible in both adjacent exact response components whose cumulative fill increases, require exact retained FILL activities to form a gap-free chain from the earlier quantity to the later quantity. Their event times must fall strictly after the earlier update and no later than the later update. Earlier filled notional plus every new exact fill quantity-times-price must reproduce the later weighted average fill price. Output adds only aggregate delta/activity counts and one digest; private identities, quantities, prices and timestamps remain outside public evidence.

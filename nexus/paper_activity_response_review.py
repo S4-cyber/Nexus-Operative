@@ -156,7 +156,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
 
 
 def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_clock_value=1792368000,
-        order_changes=None,fill_changes=None,include_fill=True):
+        order_changes=None,fill_changes=None,fee_changes=None,include_fill=True):
     """Create disposable injected response bytes plus paced retained activity."""
     import io
     from nexus.alpaca_activity_collection import collect_activities
@@ -179,6 +179,8 @@ def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_cloc
         rows=[fill]+[dict(id='20261017180000000::11234567-89ab-cdef-0123-'+f'{index:012d}',
             activity_type='FEE',status='executed',net_amount='-0.01',date='2026-10-17')
             for index in range(1,101)]
+        rows[1].update(order_id=order['broker_order_id'],execution_id=fill['id'])
+        rows[1].update({} if fee_changes is None else fee_changes)
         pages=[rows[:100],rows[100:]]
     else:
         orders=[order]

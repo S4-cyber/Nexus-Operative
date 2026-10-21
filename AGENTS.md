@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.199.0, exact retained fill-activity delta binding for increased cumulative quantities across overlapping order identities in the private account/activity response bundle. Read the newest version section and generated roadmap; fresh exact-source v0.199.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.200.0, explicit provider-reported fee order/execution reference-pair consistency in the private exact account/activity response bundle. Read the newest version section and generated roadmap; fresh exact-source v0.200.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.200.0 explicit fee-reference-pair consistency
+
+For every exact retained FEE activity that reports both an order reference and an execution reference, require the execution reference to identify an exact retained FILL and require that FILL to carry the same known order identity. Reject one-sided reference pairs, unknown execution references, unknown order references and fill/order disagreement. Unreferenced fees remain allowed: never infer missing links, fabricate event times from date-only fees or claim fee coverage, completeness, posting or economic reconciliation.
+
+Output may expose only the number of consistent reported reference pairs and one SHA256 digest; never expose raw fee, order or execution IDs. `fee_execution_links_verified` and every other authority flag remain false. This is local consistency over supplied private evidence, not provider identity, semantic fee linkage, complete received activity, an atomic snapshot, account ownership, fee posting, holds, settled/spendable funds, routing authority or broker acceptance. No UI control or editable parameter changed. Keep permissions OFF by default and preserve the seven beginner tabs, black/bright-purple bottom-right help, limits, fail-closed exits and independent emergency stop.
+
+Exact v0.199.0 source `d58b56ad438f53731e7aac6713b23b025f1421f8` passed public security/history/Gitleaks run 39652530643, safety/regression/evidence/browser run 39652530395 and Windows regression/EXE/installer run 39652530357. Those results do not transfer to v0.200.0. Run focused response/release/package/version checks, all sixteen profiles and saved-evidence verification, the complete suite, fourteen controllers, Portal syntax, static/public-artifact checks and fresh exact-source workflows.
+
+Local v0.200.0 validation passed 3,534 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the final response/package/evidence/version/roadmap set passed 178 tests. All sixteen bounded offline profiles and saved-evidence verification matched 357 source files / `1bf7fd575b84836964bdfaf15568c9640fcdb468af7e17252518bf4ca843ea15`; `validation/release_trials_0_200_0.json` SHA256 is `c80754edb2afe12acdb155fac2e176c9af6a1ca64e6c52e271edf603f26bfd25`. The common source command smoke executed 31 cross-platform child processes. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Playwright, Gitleaks and native Windows execution remain unavailable; dedicated exact-source browser, security/history and Windows workflows are mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow reported-reference fence does not change release approval, trading permission or any launch-date assessment.
 
 ## v0.199.0 exact response-bundle fill-delta binding
 

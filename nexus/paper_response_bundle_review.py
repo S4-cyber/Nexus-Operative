@@ -164,6 +164,35 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
         fill_deltas,fill_activity_count)
 
 
+def _reported_fee_reference_links(activity_records,activity_orders):
+    """Validate explicit reference pairs without promoting them to attested links."""
+    try:
+        fills={row['activity_id']:row for row in activity_records if row['kind']=='FILL'}
+        order_ids={row['broker_order_id'] for row in activity_orders}
+    except (TypeError,KeyError):
+        _fail('ACTIVITY_FEE_REFERENCE_INVALID')
+    links=[]
+    for fee in activity_records:
+        if fee.get('kind')=='FILL':continue
+        try:
+            order_id=fee['order_reference']
+            execution_id=fee['unverified_execution_reference']
+        except (TypeError,KeyError):
+            _fail('ACTIVITY_FEE_REFERENCE_INVALID')
+        if (order_id is None)!=(execution_id is None):
+            _fail('CROSS_RESPONSE_FEE_REFERENCE_PARTIAL')
+        if order_id is None:continue
+        fill=fills.get(execution_id)
+        if fill is None:_fail('CROSS_RESPONSE_FEE_EXECUTION_REFERENCE_UNKNOWN')
+        if order_id not in order_ids:_fail('CROSS_RESPONSE_FEE_ORDER_REFERENCE_UNKNOWN')
+        if fill['broker_order_id']!=order_id:
+            _fail('CROSS_RESPONSE_FEE_REFERENCE_DISAGREEMENT')
+        links.append(dict(fee_activity_id=fee['activity_id'],fee_kind=fee['kind'],
+            fee_asset=fee['asset'],fee_amount=fee['amount'],reported_date=fee['reported_date'],
+            fill_activity_id=execution_id,broker_order_id=order_id))
+    return sorted(links,key=lambda row:row['fee_activity_id'])
+
+
 def review(*,pacing_path,activity_store_path,expected_account_id,
         expected_pacing_head,expected_activity_head,account_session_head,
         account_before_path,positions_path,orders_path,account_after_path,
@@ -236,6 +265,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     (open_identities,activity_identities,overlap,order_progress,
         order_fill_deltas,order_fill_delta_activities)=_order_identity_maps(
         account_raw_values[2][1],retained_activity['orders'],retained_records,gate.account)
+    reported_fee_links=_reported_fee_reference_links(
+        retained_records,retained_activity['orders'])
     if gate.inspect()!=pacing_before:_fail('PACING_HEAD_CHANGED')
     if store.inspect()!=activity_before:_fail('ACTIVITY_HEAD_CHANGED')
 
@@ -256,6 +287,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         overlapping_order_fill_delta_sha256=sha(order_fill_deltas),
         overlapping_order_fill_deltas=len(order_fill_deltas),
         overlapping_order_fill_delta_activities=order_fill_delta_activities,
+        reported_fee_reference_sha256=sha(reported_fee_links),
+        reported_fee_reference_links=len(reported_fee_links),
         activity_response_manifest_sha256=activity['response_manifest_sha256'],
         activity_receipt_sha256=activity['retained_receipt_sha256'],
         account_review_sha256=account['review_sha256'],
@@ -274,6 +307,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         overlapping_order_identities_match=True,
         overlapping_order_progress_monotonic=True,
         overlapping_order_fill_deltas_bound=True,
+        reported_fee_references_consistent=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
@@ -281,19 +315,20 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'ACTIVITY_COLLECTION pair at shared journal heads, requires their normalized account fields to match, '
         'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
         'identity agreement and non-regressing update time, cumulative fill, unchanged-quantity average price and '
-        'status progression for orders visible in both responses, and binds every increased cumulative fill to an '
-        'exact contiguous retained fill-activity delta with bounded event time and weighted average price. It limits the retained start gap '
+        'status progression for orders visible in both responses, binds every increased cumulative fill to an '
+        'exact contiguous retained fill-activity delta with bounded event time and weighted average price, and '
+        'requires every explicit fee order/execution reference pair to resolve to the same retained fill. It limits the retained start gap '
         'to five minutes. This detects an adjacent discontinuity but does not '
         'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
         'account ownership, source or received-activity coverage, creation/execution/fee coverage, verified '
-        'clocks, fee links/posting, holds, settled or spendable funds, broker-wide pacing, routing permission or '
+        'clocks, semantic fee links, fee coverage/posting, holds, settled or spendable funds, broker-wide pacing, routing permission or '
         'release acceptance. Keep all response bodies, observations and output outside Git.')
     return scope
 
 
 def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clock=1792368000,
         account_order_client_id='fixture_1',account_order_changes=None,activity_order_changes=None,
-        activity_fill_changes=None,activity_include_fill=True):
+        activity_fill_changes=None,activity_fee_changes=None,activity_include_fill=True):
     """Create disposable injected responses for one exact adjacent session pair."""
     from pathlib import Path
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
@@ -309,7 +344,8 @@ def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clo
     activity=activity_review._fixture(root/'activity',two_pages=two_pages,
         pacing_path=account['pacing_path'],account_cash=activity_account_cash,
         wall_clock_value=activity_wall_clock,order_changes=activity_order_changes,
-        fill_changes=activity_fill_changes,include_fill=activity_include_fill)
+        fill_changes=activity_fill_changes,fee_changes=activity_fee_changes,
+        include_fill=activity_include_fill)
     return dict(pacing_path=account['pacing_path'],
         activity_store_path=activity['activity_store_path'],
         expected_account_id=account['expected_account_id'],
@@ -441,6 +477,29 @@ def fixture_report():
         except ValueError as error:
             order_fill_average_disagreement_rejected=(
                 'CROSS_RESPONSE_ORDER_FILL_AVERAGE_DISAGREEMENT' in str(error))
+        fee_execution=_fixture(root/'fee-execution',two_pages=True,
+            activity_fee_changes={'execution_id':
+                '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
+        fee_execution_reference_unknown_rejected=False
+        try:review(**fee_execution)
+        except ValueError as error:
+            fee_execution_reference_unknown_rejected=(
+                'CROSS_RESPONSE_FEE_EXECUTION_REFERENCE_UNKNOWN' in str(error))
+        fee_order=_fixture(root/'fee-order',two_pages=True,
+            activity_fee_changes={'order_id':'01234567-89ab-cdef-0123-456789abcde2'})
+        fee_reference_disagreement_rejected=False
+        try:review(**fee_order)
+        except ValueError as error:
+            fee_reference_disagreement_rejected=(
+                'CROSS_RESPONSE_FEE_ORDER_REFERENCE_UNKNOWN' in str(error) or
+                'CROSS_RESPONSE_FEE_REFERENCE_DISAGREEMENT' in str(error))
+        fee_partial=_fixture(root/'fee-partial',two_pages=True,
+            activity_fee_changes={'execution_id':None})
+        fee_reference_partial_rejected=False
+        try:review(**fee_partial)
+        except ValueError as error:
+            fee_reference_partial_rejected=(
+                'CROSS_RESPONSE_FEE_REFERENCE_PARTIAL' in str(error))
         delayed=_fixture(root/'delayed',activity_wall_clock=1792368241)
         delayed_rejected=False
         try:review(**delayed)
@@ -482,6 +541,9 @@ def fixture_report():
             shared_order_fill_delta_bound=result['overlapping_order_fill_deltas']==1 and
                 result['overlapping_order_fill_delta_activities']==1 and
                 len(result['overlapping_order_fill_delta_sha256'])==64,
+            reported_fee_references_consistent=result['reported_fee_references_consistent'],
+            reported_fee_reference_bound=result['reported_fee_reference_links']==1 and
+                len(result['reported_fee_reference_sha256'])==64,
             repeat_review_matches=result==repeated,changed_activity_response_rejected=changed_rejected,
             adjacent_account_discontinuity_rejected=discontinuity_rejected,
             cross_response_order_identity_conflict_rejected=order_identity_conflict_rejected,
@@ -494,6 +556,10 @@ def fixture_report():
             cross_response_order_fill_activity_time_rejected=order_fill_activity_time_rejected,
             cross_response_order_fill_average_disagreement_rejected=
                 order_fill_average_disagreement_rejected,
+            fee_execution_reference_unknown_rejected=
+                fee_execution_reference_unknown_rejected,
+            fee_reference_disagreement_rejected=fee_reference_disagreement_rejected,
+            fee_reference_partial_rejected=fee_reference_partial_rejected,
             delayed_adjacent_session_rejected=delayed_rejected,
             outside_session_timing_rejected=timing_envelope_rejected,
             session_tail_required=tail_rejected,journals_unchanged=before==after)

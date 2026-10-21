@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.199.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.200.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.199.0 requires every increased cumulative quantity for an order shared by the exact account-inventory and retained activity-collection components to be explained by a contiguous retained fill-activity delta. The delta must begin at the earlier quantity, end at the later quantity, occur after the earlier update and no later than the later update, and reproduce the later weighted average fill price. Reports expose only aggregate delta counts and a digest, never raw order or execution state. This is local supplied-evidence consistency, not provider identity, source/activity completeness, fee linkage, account ownership, holds or spendable funds, and it does not authorize routing. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.200.0 requires every fee activity that explicitly reports both an order reference and an execution reference to resolve to the same exact retained FILL activity and known order. Partial or inconsistent reported pairs fail closed; unreferenced fees remain allowed and explicitly unverified. Reports expose only an aggregate matched-pair count and digest, never raw fee, order or execution identifiers. This is local supplied-evidence reference consistency, not provider identity, source/activity completeness, semantic fee linkage, fee coverage or posting, account ownership, holds or spendable funds, and it does not authorize routing. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

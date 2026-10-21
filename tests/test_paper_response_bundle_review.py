@@ -58,6 +58,9 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['overlapping_order_fill_deltas']==1
     assert result['overlapping_order_fill_delta_activities']==1
     assert len(result['overlapping_order_fill_delta_sha256'])==64
+    assert result['reported_fee_references_consistent']
+    assert result['reported_fee_reference_links']==int(two_pages)
+    assert len(result['reported_fee_reference_sha256'])==64
     assert len(result['reported_open_order_identity_sha256'])==64
     assert len(result['activity_order_identity_sha256'])==64
     assert len(result['adjacent_account_fields_sha256'])==64
@@ -149,6 +152,18 @@ def test_bundle_binds_partial_fill_delta_and_weighted_average(tmp_path):
 def test_bundle_rejects_unbound_order_fill_delta(tmp_path,fill_changes,include_fill,code):
     options=subject._fixture(tmp_path,activity_fill_changes=fill_changes,
         activity_include_fill=include_fill)
+    with pytest.raises(ValueError,match=code):subject.review(**options)
+
+
+@pytest.mark.parametrize('changes,code',[
+    ({'execution_id':'20261017180000000::11234567-89ab-cdef-0123-999999999999'},
+        'FEE_EXECUTION_REFERENCE_UNKNOWN'),
+    ({'order_id':'01234567-89ab-cdef-0123-456789abcde2'},
+        'FEE_ORDER_REFERENCE_UNKNOWN'),
+    ({'execution_id':None},'FEE_REFERENCE_PARTIAL'),
+])
+def test_bundle_rejects_inconsistent_reported_fee_reference_pair(tmp_path,changes,code):
+    options=subject._fixture(tmp_path,two_pages=True,activity_fee_changes=changes)
     with pytest.raises(ValueError,match=code):subject.review(**options)
 
 

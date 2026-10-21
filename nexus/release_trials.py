@@ -890,6 +890,10 @@ def _validate(profile, result):
                 'adjacent_account_fields_match','adjacent_account_discontinuity_rejected',
                 'overlapping_order_identities_match','shared_order_identity_bound',
                 'cross_response_order_identity_conflict_rejected',
+                'overlapping_order_progress_monotonic','shared_order_progress_bound',
+                'cross_response_order_time_regression_rejected',
+                'cross_response_order_fill_regression_rejected',
+                'cross_response_order_status_regression_rejected',
                 'repeat_review_matches','changed_activity_response_rejected',
                 'session_tail_required','journals_unchanged')),'EXACT_RESPONSE_BUNDLE')
         _require(all(response[k] is False for k in (*RESPONSE_FLAGS,

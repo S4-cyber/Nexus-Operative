@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.198.0 exact response-bundle order-progress binding
+
+The private exact-response bundle now requires every order shared by the earlier account-inventory response and later retained activity snapshot to progress monotonically. Update time and cumulative filled quantity cannot regress, a changed state cannot reuse the same update instant, unchanged cumulative quantity cannot change its average fill price, and status must follow the existing conservative transition graph. The report exposes only an aggregate transition count and digest.
+
+This closes a local sequential-state integrity gap only. It does not make the reads atomic, prove provider/source/received-activity coverage, establish account ownership, verify execution or fee completeness, reconcile holds or spendable funds, or authorize routing. Non-overlapping orders remain allowed. Engagement stays OFF by default; limits, fail-closed exits, the independent emergency stop, seven-tab beginner UI and black/bright-purple bottom-right help are unchanged.
+
+Exact v0.197.0 source `7ebaaf19df8e13bd29bf4f56c20ceeeee9bdc6be` passed security/history/Gitleaks run 39634937398, safety/regression/evidence/browser run 39634937109 and Windows regression/EXE/installer run 39634937668. Fresh exact-source v0.198.0 workflows and every actual authorized provider/account, sustained-market, fee/hold/funds, native-profile, independent and owner gate remain open.
+
+Local v0.198.0 validation passed 3,525 tests (one expected non-Windows skip and one existing warning) plus 164 release-focused tests after the new evidence existed. All sixteen offline profiles and saved-evidence verification matched 357 source files / `a49356ebac97648a2c818bc4c4abd848d97233d584aecf0a591757b110ad806a`; the report SHA256 is `ba4610b78d2e87723b57e6de935b313de9a960e04cc3cd171c7425e9974667ec`. The 31-child common packaged smoke, fourteen Node controllers, Portal syntax, compilation, dependency consistency and whitespace checks passed. Playwright, Gitleaks and native Windows execution are unavailable locally; exact-source workflows remain required.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. The progression check does not change release approval, trading permission or a launch-date prediction.
+
 ## v0.197.0 exact response-bundle order-identity binding
 
 The private offline response-bundle review now compares broker order ID, client order ID and side for every normalized order visible in both the exact account-inventory open-order response and retained activity-collection observations. A shared broker or client identity with a changed immutable counterpart fails closed. Output contains only aggregate overlap counts and canonical identity digests, not raw identifiers. Independently sampled components may legitimately contain non-overlapping orders.

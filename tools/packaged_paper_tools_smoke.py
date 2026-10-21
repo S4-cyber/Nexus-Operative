@@ -342,6 +342,9 @@ def run(command):
             response_bundle['adjacent_account_fields_match'] is True and
             response_bundle['overlapping_order_identities_match'] is True and
             response_bundle['overlapping_order_identities']==1 and
+            response_bundle['overlapping_order_progress_monotonic'] is True and
+            response_bundle['overlapping_order_progressions']==1 and
+            len(response_bundle['overlapping_order_progress_sha256'])==64 and
             len(response_bundle['adjacent_account_fields_sha256'])==64 and
             len(response_bundle['reported_open_order_identity_sha256'])==64 and
             len(response_bundle['activity_order_identity_sha256'])==64 and

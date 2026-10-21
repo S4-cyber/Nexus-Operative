@@ -51,6 +51,9 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['adjacent_account_fields_match']
     assert result['overlapping_order_identities_match']
     assert result['overlapping_order_identities']==1
+    assert result['overlapping_order_progress_monotonic']
+    assert result['overlapping_order_progressions']==1
+    assert len(result['overlapping_order_progress_sha256'])==64
     assert len(result['reported_open_order_identity_sha256'])==64
     assert len(result['activity_order_identity_sha256'])==64
     assert len(result['adjacent_account_fields_sha256'])==64
@@ -96,6 +99,26 @@ def test_bundle_rejects_cross_response_order_identity_conflict(tmp_path):
     options=subject._fixture(tmp_path,account_order_client_id='different_client')
     with pytest.raises(ValueError,match='CROSS_RESPONSE_ORDER_IDENTITY_CHANGED'):
         subject.review(**options)
+
+
+@pytest.mark.parametrize('account_changes,activity_changes,fill_changes,include_fill,code',[
+    ({},{'updated_at':'2026-10-17T17:59:58+00:00'},{},True,'ORDER_UPDATE_TIME_REGRESSION'),
+    ({'updated_at':'2026-10-17T18:00:01Z'},{},{},True,'ORDER_UPDATE_TIME_CONFLICT'),
+    ({'filled_qty':'0.5','filled_avg_price':'99','status':'partially_filled'},
+        {'filled_quantity':'0.4','average_fill_price':'100','status':'partially_filled'},
+        {'qty':'0.4','cum_qty':'0.4','leaves_qty':'0.6'},True,'ORDER_FILL_REGRESSION'),
+    ({'filled_qty':'0.5','filled_avg_price':'99','status':'partially_filled'},
+        {'filled_quantity':'0.5','average_fill_price':'100','status':'partially_filled'},
+        {'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5'},True,'ORDER_FILL_CORRECTION'),
+    ({'status':'pending_cancel'},{'status':'new','filled_quantity':'0','average_fill_price':None},
+        {},False,'ORDER_STATUS_REGRESSION'),
+])
+def test_bundle_rejects_cross_response_order_progress_regressions(
+        tmp_path,account_changes,activity_changes,fill_changes,include_fill,code):
+    options=subject._fixture(tmp_path,account_order_changes=account_changes,
+        activity_order_changes=activity_changes,activity_fill_changes=fill_changes,
+        activity_include_fill=include_fill)
+    with pytest.raises(ValueError,match=code):subject.review(**options)
 
 
 def test_bundle_rejects_adjacent_sessions_outside_bounded_start_gap(tmp_path):

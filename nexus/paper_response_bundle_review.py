@@ -16,6 +16,7 @@ import re
 import sqlite3
 
 from nexus.alpaca_paper_contract import canonical, sha
+from nexus import alpaca_paper_contract as contract
 from nexus import paper_account_response_review as account_review
 from nexus import paper_activity_response_review as activity_review
 from nexus.paper_activity_acceptance_probe import _private_path
@@ -38,9 +39,9 @@ def _digest(value):
 
 
 def _order_identity_maps(open_orders,activity_orders,account_id):
-    """Compare immutable identities without exposing private order identifiers."""
+    """Compare identity and monotonic progress without exposing private IDs."""
     from nexus.paper_open_order_terms import _row
-    open_by_broker={};open_by_client={}
+    open_by_broker={};open_by_client={};open_rows={}
     try:
         for raw in open_orders:
             row=_row(raw,account_id)
@@ -53,9 +54,10 @@ def _order_identity_maps(open_orders,activity_orders,account_id):
                 _fail('OPEN_ORDER_IDENTITY_CONFLICT')
             open_by_broker[row['broker_order_id']]=identity
             open_by_client[row['client_order_id']]=identity
+            open_rows[row['broker_order_id']]=row
     except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
         _fail('OPEN_ORDER_TERMS_UNSUPPORTED')
-    activity_by_broker={};activity_by_client={}
+    activity_by_broker={};activity_by_client={};activity_rows={}
     try:
         for row in activity_orders:
             identity=(row['broker_order_id'],row['client_order_id'],row['side'])
@@ -67,6 +69,7 @@ def _order_identity_maps(open_orders,activity_orders,account_id):
                 _fail('ACTIVITY_ORDER_IDENTITY_CONFLICT')
             activity_by_broker[row['broker_order_id']]=identity
             activity_by_client[row['client_order_id']]=identity
+            activity_rows[row['broker_order_id']]=row
     except (TypeError,KeyError):
         _fail('ACTIVITY_ORDER_IDENTITY_INVALID')
     shared_brokers=set(open_by_broker)&set(activity_by_broker)
@@ -77,7 +80,38 @@ def _order_identity_maps(open_orders,activity_orders,account_id):
     open_identities=sorted(set(open_by_broker.values()))
     activity_identities=sorted(set(activity_by_broker.values()))
     overlap=len(set(open_identities)&set(activity_identities))
-    return open_identities,activity_identities,overlap
+    progress=[]
+    active_transitions={
+        'accepted':contract.STATUSES,
+        'pending_new':contract.STATUSES-{'accepted'},
+        'new':contract.STATUSES-{'accepted','pending_new'},
+        'partially_filled':{'partially_filled','pending_cancel','filled','canceled','expired'},
+        'pending_cancel':{'pending_cancel','partially_filled','filled','canceled','expired'},
+    }
+    for broker_id in sorted(shared_brokers):
+        before=open_rows[broker_id];after=activity_rows[broker_id]
+        before_at=contract.timestamp_order_ns(before['updated_at'])
+        after_at=contract.timestamp_order_ns(after['updated_at'])
+        before_qty=contract.number(before['filled_quantity'],zero=True)
+        after_qty=contract.number(after['filled_quantity'],zero=True)
+        if after_at<before_at:_fail('CROSS_RESPONSE_ORDER_UPDATE_TIME_REGRESSION')
+        if (after_at==before_at and (after['status'],after['filled_quantity'],
+                after['average_fill_price'])!=(before['status'],before['filled_quantity'],
+                before['average_fill_price'])):
+            _fail('CROSS_RESPONSE_ORDER_UPDATE_TIME_CONFLICT')
+        if after_qty<before_qty:_fail('CROSS_RESPONSE_ORDER_FILL_REGRESSION')
+        if after_qty==before_qty and after['average_fill_price']!=before['average_fill_price']:
+            _fail('CROSS_RESPONSE_ORDER_FILL_CORRECTION')
+        if after['status'] not in active_transitions[before['status']]:
+            _fail('CROSS_RESPONSE_ORDER_STATUS_REGRESSION')
+        progress.append(dict(identity=open_by_broker[broker_id],
+            before_status=before['status'],after_status=after['status'],
+            before_filled_quantity=contract.text(before_qty),
+            after_filled_quantity=contract.text(after_qty),
+            before_average_fill_price=before['average_fill_price'],
+            after_average_fill_price=after['average_fill_price'],
+            before_updated_at=before['updated_at'],after_updated_at=after['updated_at']))
+    return open_identities,activity_identities,overlap,progress
 
 
 def review(*,pacing_path,activity_store_path,expected_account_id,
@@ -146,7 +180,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         _fail('ACCOUNT_RESPONSE_BYTES_CHANGED')
     retained_activity=activity_before['receipts'].get(activity['retained_receipt_sha256'])
     if retained_activity is None:_fail('ACTIVITY_RECEIPT_CHANGED')
-    open_identities,activity_identities,overlap=_order_identity_maps(
+    open_identities,activity_identities,overlap,order_progress=_order_identity_maps(
         account_raw_values[2][1],retained_activity['orders'],gate.account)
     if gate.inspect()!=pacing_before:_fail('PACING_HEAD_CHANGED')
     if store.inspect()!=activity_before:_fail('ACTIVITY_HEAD_CHANGED')
@@ -163,6 +197,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         reported_open_order_identity_sha256=sha(open_identities),
         activity_order_identity_sha256=sha(activity_identities),
         overlapping_order_identities=overlap,
+        overlapping_order_progress_sha256=sha(order_progress),
+        overlapping_order_progressions=len(order_progress),
         activity_response_manifest_sha256=activity['response_manifest_sha256'],
         activity_receipt_sha256=activity['retained_receipt_sha256'],
         account_review_sha256=account['review_sha256'],
@@ -179,13 +215,15 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         component_session_timing_envelopes_match=True,
         adjacent_account_fields_match=True,
         overlapping_order_identities_match=True,
+        overlapping_order_progress_monotonic=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
     scope['limitations']=('Exact private bytes locally replay one adjacent ACCOUNT_INVENTORY and current-tail '
         'ACTIVITY_COLLECTION pair at shared journal heads, requires their normalized account fields to match, '
         'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
-        'identity agreement for orders visible in both responses, and limits the retained start gap '
+        'identity agreement and non-regressing update time, cumulative fill, unchanged-quantity average price and '
+        'status progression for orders visible in both responses, and limits the retained start gap '
         'to five minutes. This detects an adjacent discontinuity but does not '
         'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
         'account ownership, source or received-activity coverage, creation/execution/fee coverage, verified '
@@ -195,7 +233,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
 
 
 def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clock=1792368000,
-        account_order_client_id='fixture_1'):
+        account_order_client_id='fixture_1',account_order_changes=None,activity_order_changes=None,
+        activity_fill_changes=None,activity_include_fill=True):
     """Create disposable injected responses for one exact adjacent session pair."""
     from pathlib import Path
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
@@ -205,11 +244,13 @@ def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clo
         asset_class='crypto',side='buy',type='limit',time_in_force='ioc',qty='1',
         limit_price='101',filled_qty='0',filled_avg_price=None,status='new',
         updated_at='2026-10-17T17:59:59Z')
+    open_order.update({} if account_order_changes is None else account_order_changes)
     account=account_review._fixture(root/'account',wall_clock_value=1792367940,
         open_orders=[open_order])
     activity=activity_review._fixture(root/'activity',two_pages=two_pages,
         pacing_path=account['pacing_path'],account_cash=activity_account_cash,
-        wall_clock_value=activity_wall_clock)
+        wall_clock_value=activity_wall_clock,order_changes=activity_order_changes,
+        fill_changes=activity_fill_changes,include_fill=activity_include_fill)
     return dict(pacing_path=account['pacing_path'],
         activity_store_path=activity['activity_store_path'],
         expected_account_id=account['expected_account_id'],
@@ -294,6 +335,30 @@ def fixture_report():
         try:review(**order_conflict)
         except ValueError as error:
             order_identity_conflict_rejected='CROSS_RESPONSE_ORDER_IDENTITY_CHANGED' in str(error)
+        time_regression=_fixture(root/'time-regression',
+            activity_order_changes={'updated_at':'2026-10-17T17:59:58+00:00'})
+        order_time_regression_rejected=False
+        try:review(**time_regression)
+        except ValueError as error:
+            order_time_regression_rejected='CROSS_RESPONSE_ORDER_UPDATE_TIME_REGRESSION' in str(error)
+        fill_regression=_fixture(root/'fill-regression',
+            account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
+                'status':'partially_filled'},
+            activity_order_changes={'filled_quantity':'0.4','average_fill_price':'100',
+                'status':'partially_filled'},
+            activity_fill_changes={'qty':'0.4','cum_qty':'0.4','leaves_qty':'0.6'})
+        order_fill_regression_rejected=False
+        try:review(**fill_regression)
+        except ValueError as error:
+            order_fill_regression_rejected='CROSS_RESPONSE_ORDER_FILL_REGRESSION' in str(error)
+        status_regression=_fixture(root/'status-regression',
+            account_order_changes={'status':'pending_cancel'},
+            activity_order_changes={'status':'new','filled_quantity':'0','average_fill_price':None},
+            activity_include_fill=False)
+        order_status_regression_rejected=False
+        try:review(**status_regression)
+        except ValueError as error:
+            order_status_regression_rejected='CROSS_RESPONSE_ORDER_STATUS_REGRESSION' in str(error)
         delayed=_fixture(root/'delayed',activity_wall_clock=1792368241)
         delayed_rejected=False
         try:review(**delayed)
@@ -328,9 +393,15 @@ def fixture_report():
             adjacent_account_fields_match=result['adjacent_account_fields_match'],
             overlapping_order_identities_match=result['overlapping_order_identities_match'],
             shared_order_identity_bound=result['overlapping_order_identities']==1,
+            overlapping_order_progress_monotonic=result['overlapping_order_progress_monotonic'],
+            shared_order_progress_bound=result['overlapping_order_progressions']==1 and
+                len(result['overlapping_order_progress_sha256'])==64,
             repeat_review_matches=result==repeated,changed_activity_response_rejected=changed_rejected,
             adjacent_account_discontinuity_rejected=discontinuity_rejected,
             cross_response_order_identity_conflict_rejected=order_identity_conflict_rejected,
+            cross_response_order_time_regression_rejected=order_time_regression_rejected,
+            cross_response_order_fill_regression_rejected=order_fill_regression_rejected,
+            cross_response_order_status_regression_rejected=order_status_regression_rejected,
             delayed_adjacent_session_rejected=delayed_rejected,
             outside_session_timing_rejected=timing_envelope_rejected,
             session_tail_required=tail_rejected,journals_unchanged=before==after)

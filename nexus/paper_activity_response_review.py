@@ -155,7 +155,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     return scope
 
 
-def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_clock_value=1792368000):
+def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_clock_value=1792368000,
+        order_changes=None,fill_changes=None,include_fill=True):
     """Create disposable injected response bytes plus paced retained activity."""
     import io
     from nexus.alpaca_activity_collection import collect_activities
@@ -166,19 +167,21 @@ def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_cloc
         account_blocked=False,trading_blocked=False,trade_suspended_by_user=False,
         cash=account_cash,non_marginable_buying_power='900',pending_transfer_in='0',
         pending_transfer_out='0',accrued_fees='0')
+    order=dict(fixture_inputs()['orders'][0],**({} if order_changes is None else order_changes))
     if two_pages:
-        orders=[fixture_inputs()['orders'][0]]
+        orders=[order]
         rows=[dict(id='20261017180000000::11234567-89ab-cdef-0123-'+f'{index:012d}',
             activity_type='FEE',status='executed',net_amount='-0.01',date='2026-10-17')
             for index in range(1,102)]
         pages=[rows[:100],rows[100:]]
     else:
-        order=fixture_inputs()['orders'][0];orders=[order]
+        orders=[order]
         row=dict(id='20261017180000000::11234567-89ab-cdef-0123-000000000001',
             activity_type='FILL',order_id=order['broker_order_id'],client_order_id=order['client_order_id'],
             symbol='BTCUSD',side='buy',type='fill',qty='1',cum_qty='1',leaves_qty='0',
             price='100',transaction_time='2026-10-17T18:00:01Z')
-        pages=[[row]]
+        row.update({} if fill_changes is None else fill_changes)
+        pages=[[row] if include_fill else []]
     values=[raw_account,*pages,raw_account]
     bodies=[json.dumps(value,separators=(',',':')).encode() for value in values]
     class Response:

@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.197.0, immutable order-identity agreement across the private exact account/activity response bundle. Read the newest version section and generated roadmap; fresh exact-source v0.197.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.198.0, monotonic state progression across overlapping order identities in the private exact account/activity response bundle. Read the newest version section and generated roadmap; fresh exact-source v0.198.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.198.0 exact response-bundle order-progress binding
+
+For every order visible in both the earlier exact ACCOUNT_INVENTORY open-order response and the later retained ACTIVITY_COLLECTION order snapshot, require non-regressing update time, cumulative filled quantity and status progression. If cumulative quantity is unchanged, average fill price must also remain unchanged. A changed state at the same update instant fails closed. Preserve v0.197.0 broker/client/side identity agreement and allow independently sampled non-overlapping orders.
+
+Output may expose only the overlapping transition count and one SHA256 digest of canonical transitions; never expose raw order IDs, timestamps, quantities, prices or status. This is sequential supplied-evidence consistency, not an atomic broker snapshot, source/coverage attestation, account ownership, execution completeness, fee linkage, hold/funds reconciliation or routing authority. Keep permissions OFF by default and preserve the seven beginner tabs, black/bright-purple bottom-right help, limits, fail-closed exits and independent emergency stop.
+
+Exact v0.197.0 source `7ebaaf19df8e13bd29bf4f56c20ceeeee9bdc6be` passed public security/history/Gitleaks run 39634937398, safety/regression/evidence/browser run 39634937109 and Windows regression/EXE/installer run 39634937668. Those results do not transfer to v0.198.0. Run focused response/release/package/version checks, all sixteen profiles and saved-evidence verification, the complete suite, fourteen controllers, Portal syntax, static/public-artifact checks and fresh exact-source workflows.
+
+Local v0.198.0 validation passed 3,525 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release-focused response/package/evidence/version/roadmap set passed 164 tests after the new saved evidence existed. All sixteen bounded offline profiles and saved-evidence verification matched 357 source files / `a49356ebac97648a2c818bc4c4abd848d97233d584aecf0a591757b110ad806a`; `validation/release_trials_0_198_0.json` SHA256 is `ba4610b78d2e87723b57e6de935b313de9a960e04cc3cd171c7425e9974667ec`. The common packaged smoke executed 31 cross-platform child processes. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency and whitespace checks passed. Playwright, Gitleaks and native Windows execution are unavailable locally; the dedicated exact-source browser, security/history and Windows workflows remain mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local progression fence does not change release approval, trading permission or any launch-date assessment.
 
 ## v0.197.0 exact response-bundle order-identity binding
 

@@ -1,5 +1,19 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.201.0 shared-order retained-fill temporal partition
+
+Continued from exact verified branch head `d19a08275ce17560eff9b7f3bc971d4e37c26989` (v0.200.0). Its public security/history/Gitleaks run 39660190612, safety/regression/evidence/browser run 39660190667 and Windows regression/EXE/installer run 39660190638 passed. These results do not transfer to the new source.
+
+The private exact response-bundle review now partitions every retained fill for an order visible in both the earlier account inventory and later activity order snapshot. Retained fills at or below the earlier cumulative quantity must occur no later than the earlier order update. Fills above it remain subject to exact contiguous cumulative progression, `(earlier update, later update]` event time and weighted-average agreement. A late fill can no longer be silently accepted as already-accounted history.
+
+Only aggregate historical/retained counts and a SHA256 partition digest are public. This does not attest the provider, timestamps, source/activity completeness, atomicity, account ownership, execution/fee completeness, fee posting/linkage, holds or spendable funds. No UI, credential, network, permission, risk, emergency, funding or trading path changed. Seven beginner tabs, black/bright-purple bottom-right help, OFF defaults and fail-closed exits remain intact.
+
+The first complete run exposed a pre-existing nondeterministic privacy-fixture assertion after 3,536 passes: it searched opaque SQLite/hash bytes for the common text `1000`. The corrected fixture checks decoded exact scalars for that ordinary balance while retaining raw-byte checks for distinctive private values. This is test-evidence reliability only; runtime journal schemas, deadlines and safety controls are unchanged.
+
+Next: authenticated broker-paper source/activity/correction evidence, execution and fee completeness, fee posting, cash/position/hold/spendable-funds reconciliation and monitored provider-paper lifecycle, followed by sustained genuine-market trials and native profile/ACL/power-loss acceptance. Funding/live/cloud, independent review, owner approval and 1.0 remain separate gates. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages.
+
+Final local v0.201.0 validation passed 3,538 tests with one expected non-Windows skip and one existing warning; the final release-focused set passed 176 tests, and the corrected aggregate fixture passed 100 repeated runs. Sixteen profiles and saved-evidence verification matched 357 source files / `4b965469e4b18aeaa877d1c2efc98cc8d59486945b8528f96ffdc1e14e12d579`; report SHA256 is `6ed4d773094538876d3ae03bb955f12eeaa673607b16b2be49a9421d191a5b6c`. The 31-child source command smoke, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The staged 528-path/21,138,179-byte public audit found nothing disallowed. Local Playwright, Gitleaks and native Windows execution remain unavailable; exact-source workflows are required.
+
 ## v0.200.0 explicit fee-reference-pair consistency
 
 The private exact response-bundle review now validates every FEE activity that explicitly supplies both an order reference and an execution reference. The execution must resolve to an exact retained FILL, the order must be known, and both records must agree on the same order. Partial pairs, unknown references and mismatched pairs fail closed. Fees without either reference remain allowed and unverified; no missing relationship or timestamp is inferred.

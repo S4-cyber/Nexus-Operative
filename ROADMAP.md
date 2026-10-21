@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.200.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.201.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.200.0 requires every fee activity that explicitly reports both an order reference and an execution reference to resolve to the same exact retained FILL activity and known order. Partial or inconsistent reported pairs fail closed; unreferenced fees remain allowed and explicitly unverified. Reports expose only an aggregate matched-pair count and digest, never raw fee, order or execution identifiers. This is local supplied-evidence reference consistency, not provider identity, source/activity completeness, semantic fee linkage, fee coverage or posting, account ownership, holds or spendable funds, and it does not authorize routing. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.201.0 partitions every retained FILL for an order shared by the earlier account inventory and later activity snapshot. A fill at or below the earlier cumulative quantity must occur no later than the earlier order update; every later fill remains subject to the exact contiguous delta, bounded event-time and weighted-average checks. Reports expose only aggregate counts and a digest, never raw identities, quantities, prices or timestamps. This is local supplied-evidence chronology consistency, not provider identity, source/activity completeness, broker event ordering, execution or fee coverage, account ownership, holds or spendable funds, and it does not authorize routing. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

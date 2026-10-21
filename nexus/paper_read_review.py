@@ -30,6 +30,17 @@ def _fail(code):raise ValueError('PAPER_READ_REVIEW_'+code) from None
 def _hash(value):return type(value) is str and re.fullmatch('[0-9a-f]{64}',value) is not None
 
 
+def _contains_exact_scalar(value,target):
+    """Inspect decoded evidence without substring-matching opaque hashes/bytes."""
+    stack=[value]
+    while stack:
+        item=stack.pop()
+        if type(item) is dict:stack.extend(item.values())
+        elif type(item) in (list,tuple):stack.extend(item)
+        elif item==target:return True
+    return False
+
+
 def _structure(value):
     stack=[(value,0)];nodes=0;text_units=0
     while stack:
@@ -232,5 +243,6 @@ def fixture_report():
             review_preserved_files=unchanged,
             durable_receipt_replays=retained['retained_receipts']==1 and retained['head_sha256']==receipt['head_sha256'],
             private_results_not_retained=all(token not in store_bytes for token in
-                (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD',b'1000')))
+                (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
+                not _contains_exact_scalar(retained,'1000'))
         return dict(source='TEMPORARY_INJECTED_MIXED_READ_REVIEW',passed=all(checks.values()),**checks,**{flag:False for flag in FLAGS})

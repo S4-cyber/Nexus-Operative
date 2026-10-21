@@ -349,6 +349,10 @@ def run(command):
             response_bundle['overlapping_order_fill_deltas']==1 and
             response_bundle['overlapping_order_fill_delta_activities']==1 and
             len(response_bundle['overlapping_order_fill_delta_sha256'])==64 and
+            response_bundle['overlapping_order_fill_activities_partitioned'] is True and
+            response_bundle['overlapping_order_historical_fill_activities']==0 and
+            response_bundle['overlapping_order_retained_fill_activities']==1 and
+            len(response_bundle['overlapping_order_fill_partition_sha256'])==64 and
             response_bundle['reported_fee_references_consistent'] is True and
             response_bundle['reported_fee_reference_links']==0 and
             len(response_bundle['reported_fee_reference_sha256'])==64 and

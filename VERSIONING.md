@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.200.0 (pre-release).** This minor build validates explicit provider-reported fee order/execution reference pairs against exact retained FILL activity and known order identity in the private account/activity response bundle. It grants no provider, semantic fee-link, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.201.0 (pre-release).** This minor build fail-closed partitions every retained fill for a shared account/activity order into already-accounted history or the exact later fill delta. It grants no provider, event-order, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.201.0 shared-order retained-fill temporal partition
+
+`--paper-tool response-bundle-review` now evaluates every retained FILL for each order shared by the earlier exact account-inventory response and later activity order snapshot. A fill whose cumulative quantity is at or below the earlier snapshot must occur no later than that snapshot's update time. Fills above the earlier quantity remain bound to the exact contiguous later delta inside the response interval and to the later weighted average. A late or post-snapshot fill can no longer be silently treated as historical.
+
+Public output retains only aggregate historical/retained fill counts and a SHA256 partition digest. This remains local supplied-evidence chronology consistency, not provider/source attestation, authenticated event ordering, received-activity or execution completeness, an atomic snapshot, account ownership, fee coverage/posting/linkage, hold/funds reconciliation or routing authority. No credential, network, evidence-write, UI, permission, risk, emergency or execution path changed. Exact v0.200.0 source `d19a08275ce17560eff9b7f3bc971d4e37c26989` passed security/history/Gitleaks run 39660190612, safety/regression/evidence/browser run 39660190667 and Windows regression/EXE/installer run 39660190638. Fresh exact-source v0.201.0 workflows remain mandatory.
+
+The first complete run also exposed a pre-existing collision-prone fixture check after 3,536 passes: raw SQLite/hash bytes could coincidentally contain the common balance text `1000`. The fixture now inspects decoded exact scalars for that value and retains raw-byte checks for distinctive private fixtures. Runtime storage and privacy schemas are unchanged.
 
 ## v0.200.0 explicit fee-reference-pair consistency
 

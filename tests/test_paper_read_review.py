@@ -196,6 +196,11 @@ def test_mandatory_fixture_preserves_authority_boundary():
     assert all(result[k] is False for k in module.FLAGS)
 
 
+def test_private_scalar_check_does_not_confuse_opaque_hash_substrings():
+    assert module._contains_exact_scalar({'cash':'1000'},'1000')
+    assert not module._contains_exact_scalar({'digest':'a'*30+'1000'+'b'*30},'1000')
+
+
 def test_two_page_nonempty_activity_scope_revalidates_canonical_content(tmp_path):
     gate,bindings=module._fixture(tmp_path,full_activity=True)
     assert review(gate,bindings)['complete_mixed_history_consistent']

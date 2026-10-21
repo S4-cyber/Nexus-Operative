@@ -82,6 +82,7 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
     activity_identities=sorted(set(activity_by_broker.values()))
     overlap=len(set(open_identities)&set(activity_identities))
     progress=[];fill_deltas=[];fill_activity_count=0
+    fill_partitions=[];historical_fill_activity_count=0
     fills_by_broker={}
     try:
         for record in activity_records:
@@ -121,6 +122,14 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INVALID')
         if any(cumulative>after_qty for cumulative,_,_ in parsed):
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_AHEAD')
+        historical=[]
+        for cumulative,occurred_at,fill in parsed:
+            if cumulative<=before_qty:
+                if occurred_at>before_at:
+                    _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_LATE_HISTORICAL')
+                historical.append(dict(activity_id=fill['activity_id'],
+                    cumulative_quantity=fill['cumulative_quantity'],
+                    occurred_at=fill['occurred_at']))
         delta=[]
         if after_qty>before_qty:
             delta=[item for item in parsed if item[0]>before_qty]
@@ -153,6 +162,12 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
                 fills=[dict(activity_id=fill['activity_id'],quantity=fill['quantity'],
                     price=fill['price'],cumulative_quantity=fill['cumulative_quantity'],
                     occurred_at=fill['occurred_at']) for _,_,fill in delta]))
+        historical_fill_activity_count+=len(historical)
+        fill_partitions.append(dict(identity=open_by_broker[broker_id],
+            historical=historical,
+            interval=[dict(activity_id=fill['activity_id'],
+                cumulative_quantity=fill['cumulative_quantity'],occurred_at=fill['occurred_at'])
+                for _,_,fill in delta]))
         progress.append(dict(identity=open_by_broker[broker_id],
             before_status=before['status'],after_status=after['status'],
             before_filled_quantity=contract.text(before_qty),
@@ -161,7 +176,7 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
             after_average_fill_price=after['average_fill_price'],
             before_updated_at=before['updated_at'],after_updated_at=after['updated_at']))
     return (open_identities,activity_identities,overlap,progress,
-        fill_deltas,fill_activity_count)
+        fill_deltas,fill_activity_count,fill_partitions,historical_fill_activity_count)
 
 
 def _reported_fee_reference_links(activity_records,activity_orders):
@@ -263,7 +278,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     try:retained_records=[retained_by_id[key] for key in retained_activity['activity_ids']]
     except KeyError:_fail('ACTIVITY_RECEIPT_CHANGED')
     (open_identities,activity_identities,overlap,order_progress,
-        order_fill_deltas,order_fill_delta_activities)=_order_identity_maps(
+        order_fill_deltas,order_fill_delta_activities,order_fill_partitions,
+        order_historical_fill_activities)=_order_identity_maps(
         account_raw_values[2][1],retained_activity['orders'],retained_records,gate.account)
     reported_fee_links=_reported_fee_reference_links(
         retained_records,retained_activity['orders'])
@@ -287,6 +303,10 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         overlapping_order_fill_delta_sha256=sha(order_fill_deltas),
         overlapping_order_fill_deltas=len(order_fill_deltas),
         overlapping_order_fill_delta_activities=order_fill_delta_activities,
+        overlapping_order_fill_partition_sha256=sha(order_fill_partitions),
+        overlapping_order_historical_fill_activities=order_historical_fill_activities,
+        overlapping_order_retained_fill_activities=(order_historical_fill_activities+
+            order_fill_delta_activities),
         reported_fee_reference_sha256=sha(reported_fee_links),
         reported_fee_reference_links=len(reported_fee_links),
         activity_response_manifest_sha256=activity['response_manifest_sha256'],
@@ -307,6 +327,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         overlapping_order_identities_match=True,
         overlapping_order_progress_monotonic=True,
         overlapping_order_fill_deltas_bound=True,
+        overlapping_order_fill_activities_partitioned=True,
         reported_fee_references_consistent=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
@@ -316,7 +337,9 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
         'identity agreement and non-regressing update time, cumulative fill, unchanged-quantity average price and '
         'status progression for orders visible in both responses, binds every increased cumulative fill to an '
-        'exact contiguous retained fill-activity delta with bounded event time and weighted average price, and '
+        'exact contiguous retained fill-activity delta with bounded event time and weighted average price, '
+        'requires every retained fill at or below the earlier cumulative quantity to occur no later than the '
+        'earlier order update, and '
         'requires every explicit fee order/execution reference pair to resolve to the same retained fill. It limits the retained start gap '
         'to five minutes. This detects an adjacent discontinuity but does not '
         'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
@@ -477,6 +500,18 @@ def fixture_report():
         except ValueError as error:
             order_fill_average_disagreement_rejected=(
                 'CROSS_RESPONSE_ORDER_FILL_AVERAGE_DISAGREEMENT' in str(error))
+        late_historical_fill=_fixture(root/'late-historical-fill',
+            account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
+                'status':'partially_filled'},
+            activity_order_changes={'filled_quantity':'0.5','average_fill_price':'99',
+                'status':'partially_filled'},
+            activity_fill_changes={'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5',
+                'price':'99','transaction_time':'2026-10-17T18:00:00Z'})
+        late_historical_fill_rejected=False
+        try:review(**late_historical_fill)
+        except ValueError as error:
+            late_historical_fill_rejected=(
+                'CROSS_RESPONSE_ORDER_FILL_ACTIVITY_LATE_HISTORICAL' in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -541,6 +576,12 @@ def fixture_report():
             shared_order_fill_delta_bound=result['overlapping_order_fill_deltas']==1 and
                 result['overlapping_order_fill_delta_activities']==1 and
                 len(result['overlapping_order_fill_delta_sha256'])==64,
+            overlapping_order_fill_activities_partitioned=
+                result['overlapping_order_fill_activities_partitioned'],
+            shared_order_fill_partition_bound=
+                result['overlapping_order_historical_fill_activities']==0 and
+                result['overlapping_order_retained_fill_activities']==1 and
+                len(result['overlapping_order_fill_partition_sha256'])==64,
             reported_fee_references_consistent=result['reported_fee_references_consistent'],
             reported_fee_reference_bound=result['reported_fee_reference_links']==1 and
                 len(result['reported_fee_reference_sha256'])==64,
@@ -556,6 +597,7 @@ def fixture_report():
             cross_response_order_fill_activity_time_rejected=order_fill_activity_time_rejected,
             cross_response_order_fill_average_disagreement_rejected=
                 order_fill_average_disagreement_rejected,
+            late_historical_fill_activity_rejected=late_historical_fill_rejected,
             fee_execution_reference_unknown_rejected=
                 fee_execution_reference_unknown_rejected,
             fee_reference_disagreement_rejected=fee_reference_disagreement_rejected,

@@ -58,6 +58,10 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['overlapping_order_fill_deltas']==1
     assert result['overlapping_order_fill_delta_activities']==1
     assert len(result['overlapping_order_fill_delta_sha256'])==64
+    assert result['overlapping_order_fill_activities_partitioned']
+    assert result['overlapping_order_historical_fill_activities']==0
+    assert result['overlapping_order_retained_fill_activities']==1
+    assert len(result['overlapping_order_fill_partition_sha256'])==64
     assert result['reported_fee_references_consistent']
     assert result['reported_fee_reference_links']==int(two_pages)
     assert len(result['reported_fee_reference_sha256'])==64
@@ -140,6 +144,35 @@ def test_bundle_binds_partial_fill_delta_and_weighted_average(tmp_path):
     assert result['overlapping_order_fill_deltas_bound']
     assert result['overlapping_order_fill_deltas']==1
     assert result['overlapping_order_fill_delta_activities']==1
+
+
+def test_bundle_partitions_retained_historical_fill_at_earlier_update(tmp_path):
+    options=subject._fixture(tmp_path,
+        account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
+            'status':'partially_filled'},
+        activity_order_changes={'filled_quantity':'0.5','average_fill_price':'99',
+            'status':'partially_filled'},
+        activity_fill_changes={'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5',
+            'price':'99','transaction_time':'2026-10-17T17:59:59Z'})
+    result=subject.review(**options)
+    assert result['overlapping_order_fill_activities_partitioned']
+    assert result['overlapping_order_historical_fill_activities']==1
+    assert result['overlapping_order_fill_delta_activities']==0
+    assert result['overlapping_order_retained_fill_activities']==1
+
+
+@pytest.mark.parametrize('transaction_time',[
+    '2026-10-17T18:00:00Z','2026-10-17T18:00:02Z'])
+def test_bundle_rejects_late_historical_fill_activity(tmp_path,transaction_time):
+    options=subject._fixture(tmp_path,
+        account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
+            'status':'partially_filled'},
+        activity_order_changes={'filled_quantity':'0.5','average_fill_price':'99',
+            'status':'partially_filled'},
+        activity_fill_changes={'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5',
+            'price':'99','transaction_time':transaction_time})
+    with pytest.raises(ValueError,match='FILL_ACTIVITY_LATE_HISTORICAL'):
+        subject.review(**options)
 
 
 @pytest.mark.parametrize('fill_changes,include_fill,code',[

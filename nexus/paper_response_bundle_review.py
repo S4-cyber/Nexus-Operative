@@ -9,6 +9,7 @@ a provider, writes evidence or grants account, source, funds, routing or
 release authority.
 """
 import argparse
+from contextlib import closing
 import json
 import re
 import sqlite3
@@ -165,7 +166,10 @@ def _retime_fixture_pacing(options,*,account_times=None,activity_times=None):
     changes={}
     if account_times is not None:changes.update({1:account_times[0],2:account_times[1]})
     if activity_times is not None:changes.update({3:activity_times[0],4:activity_times[1]})
-    with sqlite3.connect(options['pacing_path']) as db:
+    # A sqlite3.Connection context manager commits or rolls back but does not
+    # close the handle.  Close it explicitly so Windows can remove the
+    # disposable timing-negative-control directory immediately after review.
+    with closing(sqlite3.connect(options['pacing_path'])) as db:
         rows=db.execute('SELECT seq,body FROM events ORDER BY seq').fetchall()
         if [row[0] for row in rows]!=list(range(5)):_fail('FIXTURE_SHAPE_INVALID')
         previous=ZERO;heads=[];begin_head=None;before_head=None;operation=None

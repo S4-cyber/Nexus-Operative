@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.196.0 (pre-release).** This milestone binds each exact response observation's sampled read interval inside its retained pacing-session interval. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.196.1 (pre-release).** This patch closes the disposable SQLite handle used by the paced-session timing negative control. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.196.1 Windows timing-fixture handle closure
+
+The chain-valid timing-envelope negative control now wraps its SQLite rewrite connection in `contextlib.closing`. Python's connection context manager handles transactions but does not close the connection, so exact-source v0.196.0 Windows cleanup could not delete the still-open disposable `pacing.sqlite3`. A tracked-connection regression requires explicit closure. The rebuilt hash chain, v3 receipts and intentional timing disagreement remain unchanged.
+
+Exact v0.196.0 public-security run 39615688188 passed. Safety run 39615688197 identified the shared failure: release evidence returned its fixed child-failure code after Windows could not clean up the disposable journal, and its complete regression reported 3,499 passes, 19 skips and one `WinError 32` cleanup failure. Windows build run 39615688049 independently failed at the identical path after the same 3,499 passes and 19 skips. This patch changes no production connection lifetime, deadline, permission, UI control, credential/provider behavior or authority. Fresh exact-source v0.196.1 workflows remain mandatory.
+
+Local validation passed 3,519 tests with one expected non-Windows skip and one existing warning; the focused response/release/package/version set passed 168 tests. All sixteen offline profiles and saved-evidence verification matched 357 source files / `577b9c2f3b1bcd6172566bb82b4474580218e8b568424c7c48979a90a84b6148`; report SHA256 is `babc852860cd6f5bf19c0a70c19b60e1d2598586e97fa784d0b4d604bca2614e`.
 
 ## v0.196.0 paced-session timing-envelope binding
 

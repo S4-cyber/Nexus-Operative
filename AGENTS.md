@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.196.0, paced-session timing-envelope binding over the fully green exact-source v0.195.0 bounded adjacent response checkpoint. Read the newest version section and generated roadmap; exact-source v0.196.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.196.1, Windows-safe timing-fixture handle closure over the v0.196.0 paced-session timing-envelope binding. Read the newest version section and generated roadmap; fresh exact-source v0.196.1 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.196.1 Windows timing-fixture handle closure
+
+The disposable release negative control must explicitly close its SQLite rewrite connection after rebuilding the pacing hash chain and v3 receipts. Python's `sqlite3.Connection` context manager commits or rolls back but does not close the handle. Linux allowed the temporary directory to be unlinked anyway; exact-source v0.196.0 Windows CI correctly exposed the retained handle when cleanup failed on `timing/account/pacing.sqlite3`. Use `contextlib.closing` and keep a direct tracked-connection regression.
+
+This changes only disposable synthetic evidence cleanup. The timing-envelope rule, negative control, runtime database lifetimes, production deadlines, permissions, UI, emergency behavior and false authority flags are unchanged. Preserve seven beginner tabs and black/bright-purple bottom-right help. Keep progress about 40% (30–45%, low confidence), 0/9 accepted.
+
+Exact v0.196.0 public-security run 39615688188 passed its trusted-history audit and Gitleaks scan. Safety run 39615688197 failed the evidence child and complete Windows regression because the same disposable pacing journal remained open; Windows build run 39615688049 independently failed at the identical path. Both regressions had already passed 3,499 tests with 19 skips before the one cleanup failure. These results diagnose the fix but do not transfer to v0.196.1. Run focused response/release tests, all profiles and saved evidence, the complete suite, static/public-artifact checks and fresh exact-source workflows.
+
+Local v0.196.1 validation passed 3,519 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/package/version set passed 168 tests. All sixteen offline profiles and saved-evidence verification matched 357 source files / `577b9c2f3b1bcd6172566bb82b4474580218e8b568424c7c48979a90a84b6148`; `validation/release_trials_0_196_1.json` SHA256 is `babc852860cd6f5bf19c0a70c19b60e1d2598586e97fa784d0b4d604bca2614e`. Fresh exact-source workflows remain mandatory.
 
 ## v0.196.0 paced-session timing-envelope binding
 

@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.196.1 Windows timing-fixture handle closure
+
+The disposable paced-session timing negative control now explicitly closes its SQLite rewrite connection after rebuilding the valid hash chain and receipts. The ordinary SQLite context manager does not close the handle; exact-source v0.196.0 Windows CI therefore rejected temporary-directory cleanup with `WinError 32`. A direct regression tracks and requires connection closure.
+
+The fail-closed timing rule, synthetic negative control, production database handling, deadlines, permissions, seven-tab beginner UI, black/bright-purple bottom-right help and every false authority flag remain unchanged. Exact v0.196.0 public-security run 39615688188 passed; safety run 39615688197 and Windows build run 39615688049 independently diagnosed the same open handle after 3,499 other regression tests passed with 19 skips. Fresh v0.196.1 exact-source CI and every actual provider/account, market, funds, native-profile, independent and owner gate remain open.
+
+Local v0.196.1 validation passed 3,519 tests (one expected non-Windows skip and one existing warning) plus 168 focused tests. All sixteen offline profiles and saved evidence verified against 357 source files / `577b9c2f3b1bcd6172566bb82b4474580218e8b568424c7c48979a90a84b6148`; report SHA256 is `babc852860cd6f5bf19c0a70c19b60e1d2598586e97fa784d0b4d604bca2614e`.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. A CI-only fixture cleanup correction does not change accepted integration scope, release approval, trading permission or any launch-date assessment.
+
 ## v0.196.0 paced-session timing-envelope binding
 
 The private offline exact account-response and activity-response reviewers now require each sampled observation read interval to be contained by its exact retained pacing-session BEGIN/RESULT interval. The composed response bundle requires both component envelopes and release evidence rejects a recomputed, chain-valid pacing fixture when an observation falls outside its session. Exact response bytes, normalized account continuity, retained observations/receipt, shared current heads, adjacency, unchanged journals and the five-minute inter-session start-gap fence remain required.

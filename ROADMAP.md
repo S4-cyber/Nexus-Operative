@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.196.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.196.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.196.0 binds the sampled read interval from each exact account/activity observation inside the corresponding retained pacing-session interval. A locally self-consistent response projection no longer suffices when its sampled read timestamps fall before the paced BEGIN or after the paced RESULT. Exact bytes, normalized account fields, retained observations/receipt, current heads, journal adjacency and the five-minute inter-session start-gap fence remain mandatory. Inputs remain private and outside Git; the tool never schedules a read, opens credentials, contacts a provider, writes evidence, retries, continues or grants provider/source/account/activity/fee/hold/funds/routing/release authority. Local timestamp containment is not provider clock attestation, an atomic snapshot, a quiet interval or provider/source/coverage/funds acceptance. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.196.1 closes the disposable SQLite connection used to rebuild the paced-session timing negative control. Python sqlite3 context management commits or rolls back but does not close the handle; exact-source v0.196.0 Windows CI therefore could not remove the temporary pacing journal after the intended timing rejection. The negative control, journal/receipt recomputation and fail-closed timing rule are unchanged, while an explicit regression now requires the fixture connection to close. No production database lifetime, runtime deadline, credential/provider access, permission, UI, emergency behavior or authority flag changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

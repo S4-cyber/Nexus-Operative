@@ -105,6 +105,23 @@ def test_bundle_rejects_observation_outside_paced_session_envelope(tmp_path,comp
         subject.review(**options)
 
 
+def test_timing_negative_control_closes_rewrite_connection(tmp_path,monkeypatch):
+    options=subject._fixture(tmp_path);connections=[]
+    original=subject.sqlite3.connect
+    class TrackedConnection(subject.sqlite3.Connection):
+        closed=False
+        def close(self):
+            self.closed=True
+            return super().close()
+    def tracked(*args,**kwargs):
+        connection=original(*args,**dict(kwargs,factory=TrackedConnection))
+        connections.append(connection)
+        return connection
+    monkeypatch.setattr(subject.sqlite3,'connect',tracked)
+    subject._retime_fixture_pacing(options,account_times=(1792367939,1792367939))
+    assert len(connections)==1 and connections[0].closed is True
+
+
 def test_component_authority_promotion_is_refused(tmp_path,monkeypatch):
     options=subject._fixture(tmp_path);original=subject.activity_review.review
     def promoted(**kwargs):

@@ -49,6 +49,10 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['adjacent_session_start_gap_limit_seconds']==300
     assert result['component_session_timing_envelopes_match']
     assert result['adjacent_account_fields_match']
+    assert result['overlapping_order_identities_match']
+    assert result['overlapping_order_identities']==1
+    assert len(result['reported_open_order_identity_sha256'])==64
+    assert len(result['activity_order_identity_sha256'])==64
     assert len(result['adjacent_account_fields_sha256'])==64
     assert result['journals_rechecked_unchanged'] and result['admission_reserved'] is False
     assert all(result[flag] is False for flag in subject.FLAGS)
@@ -85,6 +89,12 @@ def test_bundle_requires_immediate_current_tail_pair(tmp_path):
 def test_bundle_rejects_adjacent_normalized_account_field_discontinuity(tmp_path):
     options=subject._fixture(tmp_path,activity_account_cash='999')
     with pytest.raises(ValueError,match='ADJACENT_ACCOUNT_FIELDS_CHANGED'):
+        subject.review(**options)
+
+
+def test_bundle_rejects_cross_response_order_identity_conflict(tmp_path):
+    options=subject._fixture(tmp_path,account_order_client_id='different_client')
+    with pytest.raises(ValueError,match='CROSS_RESPONSE_ORDER_IDENTITY_CHANGED'):
         subject.review(**options)
 
 

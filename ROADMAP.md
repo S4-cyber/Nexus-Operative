@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.196.1. Branch: `development/windows-portal-foundation`.
+Revision: 0.197.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.196.1 closes the disposable SQLite connection used to rebuild the paced-session timing negative control. Python sqlite3 context management commits or rolls back but does not close the handle; exact-source v0.196.0 Windows CI therefore could not remove the temporary pacing journal after the intended timing rejection. The negative control, journal/receipt recomputation and fail-closed timing rule are unchanged, while an explicit regression now requires the fixture connection to close. No production database lifetime, runtime deadline, credential/provider access, permission, UI, emergency behavior or authority flag changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.197.0 binds immutable order identity across the exact account-inventory and retained activity-collection components of the private paper response-bundle review. For each order visible in both components, the broker order ID, client order ID and side must agree; conflicting shared broker/client identities fail closed. Reports expose only aggregate counts and digests, never raw IDs. This does not require either component to cover every order, prove provider identity or source/activity coverage, or establish account ownership, fees, holds, funds or routing authority. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

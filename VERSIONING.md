@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.196.1 (pre-release).** This patch closes the disposable SQLite handle used by the paced-session timing negative control. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.197.0 (pre-release).** This minor build binds immutable order identity across the private exact account/activity response bundle. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.197.0 exact response-bundle order-identity binding
+
+`--paper-tool response-bundle-review` now canonicalizes the account response's normalized open orders and the activity collection's retained order observations. Any order present in both domains must preserve broker order ID, client order ID and side. A shared broker or client identifier mapped to a different immutable counterpart is rejected. The allowlisted report contains only overlap counts and SHA256 digests, never raw IDs; orders present in only one independently sampled response remain allowed.
+
+This is a local consistency boundary, not an atomic provider snapshot, provider/source attestation, received-activity coverage proof or acceptance of account ownership, state, fees, holds, funds or routing. No credential, network, evidence-write, UI, permission, risk, emergency or execution path changed. Exact v0.196.1 source `c63c6bbf6db2bcd39830d601ec749a574777edc2` passed security/history/Gitleaks run 39620344366, safety/regression/evidence/browser run 39620344460 and Windows regression/EXE/installer run 39620344405. Fresh exact-source v0.197.0 workflows remain mandatory.
+
+Local validation passed 3,520 tests with one expected non-Windows skip and one existing warning; the clean release-focused set passed 169 tests after its saved evidence was generated and verified. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. These local injected/offline results are not provider, Windows, market, profitability or release acceptance.
 
 ## v0.196.1 Windows timing-fixture handle closure
 

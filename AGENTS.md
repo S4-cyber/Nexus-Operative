@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.196.1, Windows-safe timing-fixture handle closure over the v0.196.0 paced-session timing-envelope binding. Read the newest version section and generated roadmap; fresh exact-source v0.196.1 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.197.0, immutable order-identity agreement across the private exact account/activity response bundle. Read the newest version section and generated roadmap; fresh exact-source v0.197.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.197.0 exact response-bundle order-identity binding
+
+The private exact-response bundle must compare immutable identity for every normalized order visible in both the exact ACCOUNT_INVENTORY open-order response and retained ACTIVITY_COLLECTION observations. Broker order ID, client order ID and side must agree. A shared broker or client identity with a changed counterpart fails closed. Reports expose only aggregate overlap counts and SHA256 digests of canonical identities, never raw IDs. Do not require either independently sampled component to cover every order in the other.
+
+This boundary does not make the sequential reads atomic, establish provider identity or received-activity coverage, or accept account ownership, fees, holds, funds, order state, routing or trading permission. Keep credentials, exact response bodies, observations and account data private and outside Git. Permissions remain OFF by default; the seven beginner tabs, black/bright-purple bottom-right help, limits, fail-closed exits and independent emergency stop are unchanged because no GUI, network, credential or execution path changed.
+
+Exact v0.196.1 source `c63c6bbf6db2bcd39830d601ec749a574777edc2` passed public security/history/Gitleaks run 39620344366, safety/regression/evidence/browser run 39620344460 and Windows regression/EXE/installer run 39620344405. Those results do not transfer to v0.197.0. Run focused response/release/package/version checks, all sixteen profiles and saved-evidence verification, the complete suite, fourteen controllers, Portal syntax, static/public-artifact checks and fresh exact-source workflows.
+
+Local v0.197.0 validation passed 3,520 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release-focused response/package/evidence/version/roadmap set passed 169 tests. The first versioned focused run correctly refused 39 saved-evidence-dependent cases before the new report existed; after all profiles and verification, the clean focused run passed. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Gitleaks is unavailable; exact-source security remains mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This new local integrity boundary does not change release approval, trading permission or any launch-date assessment.
 
 ## v0.196.1 Windows timing-fixture handle closure
 

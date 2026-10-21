@@ -126,7 +126,7 @@ def review(*,pacing_path,expected_account_id,expected_head,session_head,
     return scope
 
 
-def _fixture(root,wall_clock_value=1000):
+def _fixture(root,wall_clock_value=1000,open_orders=None):
     """Create disposable injected bodies plus a real reader/pacing receipt."""
     import io
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
@@ -135,7 +135,8 @@ def _fixture(root,wall_clock_value=1000):
         account_blocked=False,trading_blocked=False,trade_suspended_by_user=False,
         cash='1000',non_marginable_buying_power='900',pending_transfer_in='0',
         pending_transfer_out='0',accrued_fees='0')
-    rows=[raw_account,[dict(symbol='BTCUSD',asset_class='crypto',side='long',qty='2',qty_available='1.9')],[],raw_account]
+    rows=[raw_account,[dict(symbol='BTCUSD',asset_class='crypto',side='long',qty='2',qty_available='1.9')],
+        [] if open_orders is None else open_orders,raw_account]
     bodies=[json.dumps(value,separators=(',',':')).encode() for value in rows]
     class Response:
         status=200;headers={'Content-Type':'application/json'}

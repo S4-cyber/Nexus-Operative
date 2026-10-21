@@ -10,6 +10,7 @@ release authority.
 """
 import argparse
 from contextlib import closing
+import hashlib
 import json
 import re
 import sqlite3
@@ -34,6 +35,49 @@ def _digest(value):
     if type(value) is not str or re.fullmatch(r'[0-9a-f]{64}',value) is None:
         _fail('HEAD_INVALID')
     return value
+
+
+def _order_identity_maps(open_orders,activity_orders,account_id):
+    """Compare immutable identities without exposing private order identifiers."""
+    from nexus.paper_open_order_terms import _row
+    open_by_broker={};open_by_client={}
+    try:
+        for raw in open_orders:
+            row=_row(raw,account_id)
+            identity=(row['broker_order_id'],row['client_order_id'],row['side'])
+            if (row['broker_order_id'] in open_by_broker and
+                    open_by_broker[row['broker_order_id']]!=identity):
+                _fail('OPEN_ORDER_IDENTITY_CONFLICT')
+            if (row['client_order_id'] in open_by_client and
+                    open_by_client[row['client_order_id']]!=identity):
+                _fail('OPEN_ORDER_IDENTITY_CONFLICT')
+            open_by_broker[row['broker_order_id']]=identity
+            open_by_client[row['client_order_id']]=identity
+    except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+        _fail('OPEN_ORDER_TERMS_UNSUPPORTED')
+    activity_by_broker={};activity_by_client={}
+    try:
+        for row in activity_orders:
+            identity=(row['broker_order_id'],row['client_order_id'],row['side'])
+            if (row['broker_order_id'] in activity_by_broker and
+                    activity_by_broker[row['broker_order_id']]!=identity):
+                _fail('ACTIVITY_ORDER_IDENTITY_CONFLICT')
+            if (row['client_order_id'] in activity_by_client and
+                    activity_by_client[row['client_order_id']]!=identity):
+                _fail('ACTIVITY_ORDER_IDENTITY_CONFLICT')
+            activity_by_broker[row['broker_order_id']]=identity
+            activity_by_client[row['client_order_id']]=identity
+    except (TypeError,KeyError):
+        _fail('ACTIVITY_ORDER_IDENTITY_INVALID')
+    shared_brokers=set(open_by_broker)&set(activity_by_broker)
+    shared_clients=set(open_by_client)&set(activity_by_client)
+    if (any(open_by_broker[key]!=activity_by_broker[key] for key in shared_brokers) or
+            any(open_by_client[key]!=activity_by_client[key] for key in shared_clients)):
+        _fail('CROSS_RESPONSE_ORDER_IDENTITY_CHANGED')
+    open_identities=sorted(set(open_by_broker.values()))
+    activity_identities=sorted(set(activity_by_broker.values()))
+    overlap=len(set(open_identities)&set(activity_identities))
+    return open_identities,activity_identities,overlap
 
 
 def review(*,pacing_path,activity_store_path,expected_account_id,
@@ -95,6 +139,15 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         _fail('COMPONENT_DISAGREEMENT')
     if account['account_fields_sha256']!=activity['account_fields_sha256']:
         _fail('ADJACENT_ACCOUNT_FIELDS_CHANGED')
+    account_raw_values=[account_review._raw(path) for path in
+        (account_before_path,positions_path,orders_path,account_after_path)]
+    account_manifest=sha([hashlib.sha256(raw).hexdigest() for raw,_ in account_raw_values])
+    if account_manifest!=account['response_manifest_sha256']:
+        _fail('ACCOUNT_RESPONSE_BYTES_CHANGED')
+    retained_activity=activity_before['receipts'].get(activity['retained_receipt_sha256'])
+    if retained_activity is None:_fail('ACTIVITY_RECEIPT_CHANGED')
+    open_identities,activity_identities,overlap=_order_identity_maps(
+        account_raw_values[2][1],retained_activity['orders'],gate.account)
     if gate.inspect()!=pacing_before:_fail('PACING_HEAD_CHANGED')
     if store.inspect()!=activity_before:_fail('ACTIVITY_HEAD_CHANGED')
 
@@ -107,6 +160,9 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         account_response_manifest_sha256=account['response_manifest_sha256'],
         account_observation_manifest_sha256=account['portable_manifest_sha256'],
         adjacent_account_fields_sha256=account['account_fields_sha256'],
+        reported_open_order_identity_sha256=sha(open_identities),
+        activity_order_identity_sha256=sha(activity_identities),
+        overlapping_order_identities=overlap,
         activity_response_manifest_sha256=activity['response_manifest_sha256'],
         activity_receipt_sha256=activity['retained_receipt_sha256'],
         account_review_sha256=account['review_sha256'],
@@ -122,12 +178,14 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         bounded_adjacent_session_start_gap=True,
         component_session_timing_envelopes_match=True,
         adjacent_account_fields_match=True,
+        overlapping_order_identities_match=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
     scope['limitations']=('Exact private bytes locally replay one adjacent ACCOUNT_INVENTORY and current-tail '
         'ACTIVITY_COLLECTION pair at shared journal heads, requires their normalized account fields to match, '
-        'requires each retained read timing to stay inside its paced session, and limits the retained start gap '
+        'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
+        'identity agreement for orders visible in both responses, and limits the retained start gap '
         'to five minutes. This detects an adjacent discontinuity but does not '
         'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
         'account ownership, source or received-activity coverage, creation/execution/fee coverage, verified '
@@ -136,11 +194,19 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     return scope
 
 
-def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clock=1792368000):
+def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clock=1792368000,
+        account_order_client_id='fixture_1'):
     """Create disposable injected responses for one exact adjacent session pair."""
     from pathlib import Path
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
-    account=account_review._fixture(root/'account',wall_clock_value=1792367940)
+    open_order=dict(id='01234567-89ab-cdef-0123-456789abcde1',
+        client_order_id=account_order_client_id,
+        account_id='01234567-89ab-cdef-0123-456789abcdef',symbol='BTCUSD',
+        asset_class='crypto',side='buy',type='limit',time_in_force='ioc',qty='1',
+        limit_price='101',filled_qty='0',filled_avg_price=None,status='new',
+        updated_at='2026-10-17T17:59:59Z')
+    account=account_review._fixture(root/'account',wall_clock_value=1792367940,
+        open_orders=[open_order])
     activity=activity_review._fixture(root/'activity',two_pages=two_pages,
         pacing_path=account['pacing_path'],account_cash=activity_account_cash,
         wall_clock_value=activity_wall_clock)
@@ -223,6 +289,11 @@ def fixture_report():
         try:review(**discontinuous)
         except ValueError as error:
             discontinuity_rejected='ADJACENT_ACCOUNT_FIELDS_CHANGED' in str(error)
+        order_conflict=_fixture(root/'order-conflict',account_order_client_id='different_client')
+        order_identity_conflict_rejected=False
+        try:review(**order_conflict)
+        except ValueError as error:
+            order_identity_conflict_rejected='CROSS_RESPONSE_ORDER_IDENTITY_CHANGED' in str(error)
         delayed=_fixture(root/'delayed',activity_wall_clock=1792368241)
         delayed_rejected=False
         try:review(**delayed)
@@ -255,8 +326,11 @@ def fixture_report():
             component_session_timing_envelopes_match=
                 result['component_session_timing_envelopes_match'],
             adjacent_account_fields_match=result['adjacent_account_fields_match'],
+            overlapping_order_identities_match=result['overlapping_order_identities_match'],
+            shared_order_identity_bound=result['overlapping_order_identities']==1,
             repeat_review_matches=result==repeated,changed_activity_response_rejected=changed_rejected,
             adjacent_account_discontinuity_rejected=discontinuity_rejected,
+            cross_response_order_identity_conflict_rejected=order_identity_conflict_rejected,
             delayed_adjacent_session_rejected=delayed_rejected,
             outside_session_timing_rejected=timing_envelope_rejected,
             session_tail_required=tail_rejected,journals_unchanged=before==after)

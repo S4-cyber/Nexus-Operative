@@ -167,7 +167,7 @@ def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_cloc
         cash=account_cash,non_marginable_buying_power='900',pending_transfer_in='0',
         pending_transfer_out='0',accrued_fees='0')
     if two_pages:
-        orders=[]
+        orders=[fixture_inputs()['orders'][0]]
         rows=[dict(id='20261017180000000::11234567-89ab-cdef-0123-'+f'{index:012d}',
             activity_type='FEE',status='executed',net_amount='-0.01',date='2026-10-17')
             for index in range(1,102)]

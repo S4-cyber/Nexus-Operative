@@ -340,7 +340,11 @@ def run(command):
                 response_bundle['adjacent_session_start_gap_limit_seconds']==300 and
             response_bundle['component_session_timing_envelopes_match'] is True and
             response_bundle['adjacent_account_fields_match'] is True and
+            response_bundle['overlapping_order_identities_match'] is True and
+            response_bundle['overlapping_order_identities']==1 and
             len(response_bundle['adjacent_account_fields_sha256'])==64 and
+            len(response_bundle['reported_open_order_identity_sha256'])==64 and
+            len(response_bundle['activity_order_identity_sha256'])==64 and
             response_bundle['journals_rechecked_unchanged'] is True and
             all(response_bundle[k] is False for k in RESPONSE_BUNDLE_FLAGS),'EXACT_RESPONSE_BUNDLE')
         provider_result=_json_call(command,['--paper-tool','provider-results','--input',str(provider_input)],env)

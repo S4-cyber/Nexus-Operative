@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.196.1'
+REVISION = '0.197.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -161,7 +161,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.196.1 closes the disposable SQLite connection used to rebuild the paced-session timing negative control. Python sqlite3 context management commits or rolls back but does not close the handle; exact-source v0.196.0 Windows CI therefore could not remove the temporary pacing journal after the intended timing rejection. The negative control, journal/receipt recomputation and fail-closed timing rule are unchanged, while an explicit regression now requires the fixture connection to close. No production database lifetime, runtime deadline, credential/provider access, permission, UI, emergency behavior or authority flag changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.197.0 binds immutable order identity across the exact account-inventory and retained activity-collection components of the private paper response-bundle review. For each order visible in both components, the broker order ID, client order ID and side must agree; conflicting shared broker/client identities fail closed. Reports expose only aggregate counts and digests, never raw IDs. This does not require either component to cover every order, prove provider identity or source/activity coverage, or establish account ownership, fees, holds, funds or routing authority. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

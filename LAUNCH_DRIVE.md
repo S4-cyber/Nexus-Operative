@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.197.0 exact response-bundle order-identity binding
+
+The private offline response-bundle review now compares broker order ID, client order ID and side for every normalized order visible in both the exact account-inventory open-order response and retained activity-collection observations. A shared broker or client identity with a changed immutable counterpart fails closed. Output contains only aggregate overlap counts and canonical identity digests, not raw identifiers. Independently sampled components may legitimately contain non-overlapping orders.
+
+This closes a local cross-response integrity gap only. It does not make sequential responses atomic, prove provider identity or source/activity coverage, or establish account ownership, order status, fee, hold, funds or routing authority. The tool remains credential-, vault-, network- and evidence-write-silent. Engagement stays OFF by default; limits, fail-closed exits, the independent emergency stop, seven-tab beginner UI and black/bright-purple bottom-right help are unchanged.
+
+Exact v0.196.1 source `c63c6bbf6db2bcd39830d601ec749a574777edc2` passed security/history/Gitleaks run 39620344366, safety/regression/evidence/browser run 39620344460 and Windows regression/EXE/installer run 39620344405. Fresh exact-source v0.197.0 workflows and every actual authorized provider/account, sustained-market, fee/hold/funds, native-profile, independent and owner gate remain open.
+
+Local v0.197.0 validation passed 3,520 tests (one expected non-Windows skip and one existing warning) plus 169 release-focused tests after the new saved evidence existed. All fourteen Node controllers and the static checks passed. Local Gitleaks and native Windows execution remain unavailable; exact-source workflows are required.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. The integrity check does not change release approval, trading permission or a launch-date prediction.
+
 ## v0.196.1 Windows timing-fixture handle closure
 
 The disposable paced-session timing negative control now explicitly closes its SQLite rewrite connection after rebuilding the valid hash chain and receipts. The ordinary SQLite context manager does not close the handle; exact-source v0.196.0 Windows CI therefore rejected temporary-directory cleanup with `WinError 32`. A direct regression tracks and requires connection closure.

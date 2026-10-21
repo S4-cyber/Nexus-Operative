@@ -1012,14 +1012,21 @@ def _validate(profile, result):
 
 
 def source_digest(root):
-    """Fingerprint executed source and test inputs; excludes generated reports/docs."""
+    """Fingerprint executed text inputs independent of checkout line endings.
+
+    Git's ordinary Windows checkout may materialize text as CRLF while Linux
+    materializes the same tree as LF.  These inputs are all text source or
+    configuration, so normalize only CRLF pairs before hashing.  Lone CR bytes
+    and every other byte remain significant.
+    """
     root = Path(root); entries = []
     paths = set(root.glob('nexus/*.py')) | set(root.glob('tests/*.py')) | set(root.glob('tools/*.py')) | set(root.glob('tools/*.cjs')) | set(root.glob('tools/*.ps1'))
     paths |= set(root.glob('.github/workflows/*.yml')) | set(root.glob('portable/*.py'))
     paths |= {root/'pyproject.toml', root/'dashboard/portal_preview.html', root/'installer/NexusOperative.iss'}
     paths |= {root/name for name in ('.gitignore','.gitleaks.toml','.github/CODEOWNERS','.github/dependabot.yml') if (root/name).is_file()}
     for path in sorted(paths):
-        entries.append((path.relative_to(root).as_posix(), hashlib.sha256(path.read_bytes()).hexdigest()))
+        source=path.read_bytes().replace(b'\r\n',b'\n')
+        entries.append((path.relative_to(root).as_posix(), hashlib.sha256(source).hexdigest()))
     return dict(files=len(entries), sha256=hashlib.sha256(json.dumps(entries, separators=(',', ':')).encode()).hexdigest())
 
 

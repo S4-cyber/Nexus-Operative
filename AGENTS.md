@@ -1,6 +1,20 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.204.0, fail-closed exact fee-timestamp capture upper bound for every retained fee in the private account/activity response bundle, including unreferenced fees. Read the newest version section and generated roadmap; fresh exact-source v0.204.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.204.1, cross-platform canonical release source fingerprints over the v0.204.0 all-retained-fee capture upper bound. Read the newest version section and generated roadmap; fresh exact-source v0.204.1 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.204.1 cross-platform source fingerprint
+
+`nexus.release_trials.source_digest` fingerprints text source and configuration after canonicalizing CRLF pairs to LF. This is required because ordinary Git checkouts of the exact v0.204.0 tree produced `19dd54be...` on LF and `64ed444e...` on Windows CRLF despite containing the same 357 logical source files. The canonical digest must now be identical on both checkouts. Normalize only the CRLF pair; a lone carriage return and every other byte remain significant. Tests must prove both equivalence and retained change detection.
+
+This makes saved offline evidence portable across ordinary Git line-ending materialization. It is not a signature, source or CI attestation, evidence of test execution, provider/broker/market acceptance, release approval or trading authority. Preserve the v0.204.0 retained-fee capture fence and every false authority flag. No UI control or editable parameter changed; keep the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop unchanged.
+
+Before publication, require the v0.204.0 parent Windows/security/safety workflows to finish successfully, then run release/version/roadmap tests, all sixteen profiles and saved-evidence verification, the complete suite, controllers, Portal syntax, compilation, dependency and public-artifact checks. Publish with the expected v0.204.0 head lease and require fresh exact-source v0.204.1 workflows.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Cross-platform evidence identity improves release verification but does not complete an external acceptance stage, change release approval, grant trading permission or predict a launch date.
+
+Exact v0.204.0 source `518f38428f163bffe631917d74f46fb0f0712640` passed public security/history/Gitleaks run 39693164596, safety/regression/evidence/browser run 39693164613 and Windows regression/EXE/installer/reinstall/uninstall run 39693164703. Both Windows regression lanes passed 3,529 tests with 19 platform skips and one existing warning. Those successful parent results do not transfer to v0.204.1.
+
+Final local v0.204.1 validation passed 3,548 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the response/release/package/evidence/version/roadmap set passed 203 tests. All sixteen bounded profiles and saved-evidence verification matched both the LF checkout and a full simulated CRLF checkout at 357 source files / `bf7da746abc2eeb75c93a142260dc9a61e90ff1e027cee03f595dfaaea8f0807`; `validation/release_trials_0_204_1.json` SHA256 is `eac7ddfc45379d529ba94664f1bd602349f0c03b0c80143a167b4b5712114a19`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. The exact staged 532-path / 21,745,141-byte public snapshot passed the private-artifact audit with zero findings. Local Gitleaks, rendered-browser and native Windows execution remain unavailable; dedicated exact-source v0.204.1 workflows are mandatory.
 
 ## v0.204.0 all-retained-fee capture upper bound
 

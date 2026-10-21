@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.204.1 cross-platform source fingerprint
+
+Release source fingerprints now canonicalize CRLF pairs to LF across the selected text source/configuration inputs. The exact v0.204.0 Git tree produced different local and Windows digests solely because ordinary checkouts materialized those same files with LF versus CRLF. Canonicalization gives one logical-source identity while retaining sensitivity to lone carriage returns and every other byte.
+
+This improves saved-evidence portability only. It is not a signature, source/CI attestation, proof of trial execution, provider or broker acceptance, genuine-market evidence, release approval or trading authority. The v0.204.0 retained-fee capture rule remains unchanged. No UI, credential, network, evidence-write, permission, risk, emergency or execution path changed; the seven beginner tabs and black/bright-purple bottom-right help remain unchanged.
+
+Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Exact-source security, safety/browser/evidence and Windows installer workflows remain required before treating v0.204.1 as verified.
+
+Exact v0.204.0 source `518f38428f163bffe631917d74f46fb0f0712640` passed security/history/Gitleaks run 39693164596, safety/regression/evidence/browser run 39693164613 and Windows regression/EXE/installer/reinstall/uninstall run 39693164703. Both Windows regression lanes passed 3,529 tests with 19 platform skips and one existing warning; those parent results do not transfer to v0.204.1.
+
+Final local v0.204.1 validation passed 3,548 tests with one expected non-Windows skip and one existing warning; the response/release/package set passed 203 tests. Sixteen profiles and saved-evidence verification matched the LF and simulated CRLF trees at 357 source files / `bf7da746abc2eeb75c93a142260dc9a61e90ff1e027cee03f595dfaaea8f0807`; report SHA256 is `eac7ddfc45379d529ba94664f1bd602349f0c03b0c80143a167b4b5712114a19`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The staged 532-path / 21,745,141-byte public snapshot passed the artifact audit with zero findings. Fresh exact-source v0.204.1 workflows remain mandatory.
+
 ## v0.204.0 all-retained-fee capture upper bound
 
 The private exact account/activity response bundle now rejects every exact timestamped retained FEE/CFEE record later than the replay-validated activity collection completion instant, including fees without explicit order/execution references. Explicitly referenced fees retain the separate requirement to resolve to one retained fill and not precede that fill. Calendar-date-only fees remain accepted but temporally unverified; no timezone, time of day or posting instant is invented.

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.204.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.204.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.204.0 requires every retained fee carrying an exact timestamp to be no later than the replay-validated activity collection completion instant, including fees without explicit order/execution references. Explicitly referenced fees retain the separate lower bound against their referenced fills. Date-only records remain allowed and explicitly temporally unverified because no timezone, time of day or posting instant is inferred. Reports expose only aggregate retained, referenced, unreferenced and timestamp/date-only counts plus the existing reference digest, never raw fee, order or execution identities, amounts or times. This is local supplied-evidence capture consistency, not provider-clock or source attestation, semantic fee linkage, fee coverage or posting, source/activity completeness, account ownership, holds or spendable funds, and it does not authorize routing. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.204.1 makes the 357-file release source fingerprint stable across ordinary LF and CRLF Git checkouts by canonicalizing only CRLF pairs before hashing. Lone carriage returns and every other byte remain significant. This fixes cross-platform evidence identity for the same source tree; it is not a signature, source attestation, CI proof or release approval. The v0.204.0 all-retained-fee capture fence remains unchanged. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.204.0 (pre-release).** This minor build fail-closed rejects every exact timestamped retained fee after the replay-validated retained activity collection completion instant, including unreferenced fees, while preserving the referenced-fill lower bound and keeping date-only fee timing unverified. It grants no provider-clock, semantic fee-link, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.204.1 (pre-release).** This patch makes release source fingerprints stable across ordinary LF and CRLF Git checkouts of the same source tree. It preserves the v0.204.0 all-retained-fee capture fence and grants no provider-clock, semantic fee-link, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.204.1 cross-platform source fingerprint
+
+Release trials and saved-evidence verification now canonicalize CRLF pairs to LF before hashing the selected 357 text source/configuration inputs. The exact v0.204.0 tree previously produced the local LF digest `19dd54be4b8fc29f4967f76184f03e97aabd82920555116657ddf2089296245c` and Windows CRLF digest `64ed444e928fbcc6eddc723aaffcdb5494bbced94b678b0799c562f4c24b6775`; an in-memory reproduction confirmed line endings were the complete cause. A lone carriage return and every other byte remain significant.
+
+This is portability for source-bound offline evidence, not signature verification, CI provenance, source authenticity or proof that tests executed. No credential, network, evidence-write, UI, permission, risk, emergency or execution path changed. Fresh exact-source v0.204.1 security, safety/browser/evidence and Windows installer workflows remain mandatory.
+
+Exact v0.204.0 source `518f38428f163bffe631917d74f46fb0f0712640` passed security/history/Gitleaks run 39693164596, safety/regression/evidence/browser run 39693164613 and Windows regression/EXE/installer/reinstall/uninstall run 39693164703. Both Windows regression lanes passed 3,529 tests with 19 platform skips and one existing warning. Those parent results do not transfer to v0.204.1.
+
+Local validation passed 3,548 tests with one expected non-Windows skip and one existing warning; the response/release/package set passed 203 tests. All sixteen offline profiles and saved evidence verified against the same canonical 357-file digest `bf7da746abc2eeb75c93a142260dc9a61e90ff1e027cee03f595dfaaea8f0807` for LF and simulated CRLF materialization; report SHA256 is `eac7ddfc45379d529ba94664f1bd602349f0c03b0c80143a167b4b5712114a19`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The exact staged 532-path / 21,745,141-byte public snapshot passed the artifact audit with zero findings. Fresh exact-source workflows remain mandatory.
 
 ## v0.204.0 all-retained-fee capture upper bound
 

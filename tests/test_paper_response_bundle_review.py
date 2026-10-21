@@ -65,6 +65,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['reported_fee_references_consistent']
     assert result['reported_fee_reference_links']==int(two_pages)
     assert result['reported_fee_exact_timestamp_chronology_checked']
+    assert result['reported_fee_exact_timestamp_capture_upper_bound_checked']
     assert result['reported_fee_timestamped_links']==0
     assert result['reported_fee_date_only_links']==int(two_pages)
     assert len(result['reported_fee_reference_sha256'])==64
@@ -212,13 +213,25 @@ def test_bundle_rejects_exact_fee_timestamp_before_referenced_fill(tmp_path,repo
         subject.review(**options)
 
 
-def test_bundle_accepts_exact_fee_timestamp_at_referenced_fill(tmp_path):
+@pytest.mark.parametrize('reported_at',[
+    '2026-10-17T18:00:01Z','2026-10-19T00:00:00Z'])
+def test_bundle_accepts_exact_fee_timestamp_inside_capture_bounds(tmp_path,reported_at):
     options=subject._fixture(tmp_path,two_pages=True,
-        activity_fee_changes={'date':'2026-10-17T18:00:01Z'})
+        activity_fee_changes={'date':reported_at})
     result=subject.review(**options)
     assert result['reported_fee_timestamped_links']==1
     assert result['reported_fee_date_only_links']==0
     assert result['reported_fee_exact_timestamp_chronology_checked']
+    assert result['reported_fee_exact_timestamp_capture_upper_bound_checked']
+
+
+@pytest.mark.parametrize('reported_at',[
+    '2026-10-19T00:00:00.000000001Z','2026-10-20T00:00:00Z'])
+def test_bundle_rejects_exact_fee_timestamp_after_retained_capture(tmp_path,reported_at):
+    options=subject._fixture(tmp_path,two_pages=True,
+        activity_fee_changes={'date':reported_at})
+    with pytest.raises(ValueError,match='FEE_TIMESTAMP_AFTER_CAPTURE'):
+        subject.review(**options)
 
 
 def test_bundle_rejects_adjacent_sessions_outside_bounded_start_gap(tmp_path):

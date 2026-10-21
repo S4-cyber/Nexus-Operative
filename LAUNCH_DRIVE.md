@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.203.0 exact fee capture upper bound
+
+The private exact response-bundle review now rejects an explicitly referenced retained fee whose full timestamp is later than the replay-validated retained activity collection completion instant. The existing lower bound against the referenced fill remains in force. Date-only fees remain temporally unverified without an invented timezone, time of day or posting instant.
+
+The public result adds only a boolean local upper-bound-check marker; aggregate timestamped/date-only counts and the existing digest remain the only fee-link detail. This does not attest either clock or source, prove semantic fee links, execution/fee completeness or posting, reconcile holds or spendable funds, establish account ownership or authorize routing. `fee_execution_links_verified` remains false. No UI control or modifiable parameter changed; the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded risk/account checks, fail-closed exits and independent emergency stop are unchanged.
+
+Exact v0.202.0 source `b4254d0f54bec7259d88a893c67dd6a9e5ec24d0` passed security/history/Gitleaks run 39677941919, safety/regression/evidence/browser run 39677941779 and Windows regression/EXE/installer run 39677941777. Fresh exact-source v0.203.0 workflows and every actual authorized provider/account, sustained-market, fee/hold/funds, native-profile, independent and owner gate remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages.
+
+Final local v0.203.0 validation passed 3,544 tests with one expected non-Windows skip and one existing warning; the clean release-focused set passed 187 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `a78a4c44e46c093ed1411cb33d5a66919c44ae334fe605129efc34fd008cf07c`; report SHA256 is `cbd44f5a8f3df5e07a35674503625ff121d24b4b41d7f173a8ee1da9c4d5c971`. The 31-child source command smoke, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The exact staged 530-path public audit found nothing disallowed. Local Gitleaks, rendered browser and native Windows execution remain unavailable; exact-source workflows are required.
+
 ## v0.202.0 explicit fee-timestamp chronology
 
 The private exact response-bundle review now rejects any explicitly referenced retained fee whose exact timestamp precedes its referenced retained fill. Date-only fee records remain allowed and explicitly temporally unverified; the application does not invent a timezone, time of day or posting instant.

@@ -904,10 +904,12 @@ def _validate(profile, result):
                 'late_historical_fill_activity_rejected',
                 'reported_fee_references_consistent','reported_fee_reference_bound',
                 'reported_fee_exact_timestamp_chronology_checked',
+                'reported_fee_exact_timestamp_capture_upper_bound_checked',
                 'reported_fee_date_only_scope_preserved',
                 'fee_execution_reference_unknown_rejected',
                 'fee_reference_disagreement_rejected','fee_reference_partial_rejected',
                 'fee_timestamp_before_fill_rejected',
+                'fee_timestamp_after_capture_rejected',
                 'repeat_review_matches','changed_activity_response_rejected',
                 'session_tail_required','journals_unchanged')),'EXACT_RESPONSE_BUNDLE')
         _require(all(response[k] is False for k in (*RESPONSE_FLAGS,

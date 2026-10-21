@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.202.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.203.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.202.0 requires every exact timestamp carried by an explicitly referenced retained fee to be no earlier than its referenced fill. Date-only fee records remain allowed and explicitly temporally unverified because no timezone or posting instant is inferred. Reports expose only aggregate timestamped/date-only counts and the existing reference digest, never raw fee, order or execution identities, amounts or times. This is local supplied-evidence chronology consistency, not provider identity, semantic fee linkage, fee coverage or posting, source/activity completeness, account ownership, holds or spendable funds, and it does not authorize routing. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.203.0 requires every exact timestamp carried by an explicitly referenced retained fee to be no earlier than its referenced fill and no later than the replay-validated retained activity collection completion instant. Date-only fee records remain allowed and explicitly temporally unverified because no timezone, time of day or posting instant is inferred. Reports expose only aggregate timestamped/date-only counts and the existing reference digest, never raw fee, order or execution identities, amounts or times. This is local supplied-evidence chronology and capture consistency, not provider-clock or source attestation, semantic fee linkage, fee coverage or posting, source/activity completeness, account ownership, holds or spendable funds, and it does not authorize routing. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

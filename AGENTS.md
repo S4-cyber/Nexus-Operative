@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.188.0, retained fee-date overlap now fails closed across the full four-observation calendar-date envelope over v0.187.0. Read the newest version section and generated roadmap; exact-source v0.188.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.188.1, exact-source Windows concurrency/metadata/controller-fixture corrections over v0.188.0. Read the newest version section and generated roadmap; exact-source v0.188.1 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.188.1 exact-source Windows CI corrections
+
+The shared local Found Markets request budget must retain its O_EXCL creator role through transient SQLite lock contention. Non-creators wait boundedly for the creator's committed schema and never initialize a pre-existing empty file. Preserve the existing timestamp-only journal, full synchronization, fail-closed malformed-file behavior and 36-per-hour cooperating-data-root scope; this is not provider/IP-wide pacing.
+
+Private reviewed retired-ID baselines compare file identity, size and modification time across every path/handle snapshot. POSIX additionally compares metadata-change time. Windows creation-time fields can disagree between path and handle APIs and are not an identity fence. Keep regular-file/single-link/size bounds, descriptor reads, final path validation and content binding. The broker request controller fixture validates invariants rather than startup latency and may use a bounded 60-second process allowance under aggregate Windows CI; no runtime deadline changed.
+
+Exact v0.188.0 security run 39530812778 passed. Safety run 39530812934 failed only the shared-budget first-use concurrency case after 3,451 passes; three contenders returned schema errors while 12 admissions remained bounded. Windows run 39530812977 failed the controller fixture deadline and the valid-baseline completeness case after 3,450 passes; packaging was skipped. No UI/control, permission, broker, order, funding, live or cloud behavior changes. Keep progress about 40% (30–45%, low confidence), 0/9 accepted, and require fresh exact-source security, safety/evidence/browser and Windows packaging/installer workflows.
+
+Final local v0.188.1 validation passed 3,472 tests with one expected non-Windows skip and one existing Starlette/httpx warning. The release-focused set passed 90 tests with the same skip and warning, and 20 repeated creator/concurrency runs passed. All sixteen offline profiles and saved-evidence verification matched 347 source files / `c18fc56ac6195c0fa9cfa919e6b1d6e98d3228e0d14c0c1e1b486a734412e345`; `validation/release_trials_0_188_1.json` SHA256 is `3a7e239edc42e61a9d834a4b6170d184c0831c517ea917a4acb92f9fcf1529e8`. Compilation, dependency consistency, all fourteen controller smokes, Portal syntax, generated-roadmap equality and whitespace checks passed. Local Linux evidence does not close the fresh exact-source Windows, broker, market, funds, live, cloud or release gates.
 
 ## v0.188.0 full-envelope retained fee-date guard
 

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.188.1 exact-source Windows CI corrections
+
+The shared local Found Markets request budget now preserves its O_EXCL creator role through transient SQLite writer contention. Other contenders wait boundedly for the committed schema and cannot initialize an unrelated pre-existing empty file. Windows reviewed-baseline reads keep identity, size, modification-time, regular-file, single-link and final-path checks while omitting creation-time equality that differs across Windows path and handle APIs; POSIX retains the stronger metadata-change-time comparison. A controller-invariant fixture receives a bounded 60-second aggregate-CI process allowance without changing any runtime deadline.
+
+Exact v0.188.0 security passed. Its safety regression exposed the first-use budget race after 3,451 passes, while its Windows run exposed the baseline metadata mismatch and one loaded-suite controller timeout after 3,450 passes. These are narrow CI/runtime-portability corrections. No UI/control, OFF permission, account/risk gate, emergency behavior, broker connection, order, funding, live or cloud path changed. Progress remains roughly 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh exact-source security, safety/evidence/browser and Windows regression/EXE/installer workflows remain mandatory.
+
+Final local validation passed 3,472 tests with one expected non-Windows skip and one existing warning. The release-focused set passed 90 tests; 20 repeated creator/concurrency runs passed. Sixteen profiles and saved-evidence verification matched 347 source files / `c18fc56ac6195c0fa9cfa919e6b1d6e98d3228e0d14c0c1e1b486a734412e345`, report SHA256 `3a7e239edc42e61a9d834a4b6170d184c0831c517ea917a4acb92f9fcf1529e8`. All fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. This local Linux evidence does not establish native Windows packaging or any external acceptance gate.
+
 ## v0.188.0 full-envelope retained fee-date fence
 
 The private four-observation reconciliation and composed account-evidence path now fail closed when a retained FEE or CFEE reported UTC calendar date falls anywhere from the pre-opening read date through the post-closing read date. This closes the multi-day inner-comparison gap left by edge-band-only detection. Timestamp-shaped provider fee dates remain unverified dates; the private and allowlisted public schemas remain zero-count/absence only.

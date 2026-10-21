@@ -2,6 +2,10 @@
 
 This component prepares and validates fixture data only. It contains no HTTP client, credentials, environment access, account writes or automatic strategy routing. The existing gateway continues to reject Alpaca submissions. No broker was connected or tested.
 
+## v0.188.1 portability-only correction
+
+This patch changes shared local discovery-budget initialization, private retired-ID baseline metadata comparison and one controller-fixture process allowance. It does not change this disconnected broker contract, enable credentials or transport, create broker orders, or alter fee/funds authority.
+
 ## v0.188.0 full-envelope fee-date ambiguity fence
 
 The guarded private reconciliation path rejects retained FEE or CFEE records whose reported UTC calendar date falls anywhere inside the inclusive pre-opening through post-closing observation envelope. This includes cross-day dates inside the opening-to-closing comparison, not only edge guard-band dates. Timestamp-shaped fee dates remain unverified dates, and an absence result does not prove activity completeness, fee timing/linkage, holds or spendable funds.

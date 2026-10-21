@@ -1,5 +1,13 @@
 # Windows distribution and acceptance evidence
 
+## v0.188.1 portability correction
+
+Exact v0.188.0 Windows run 39530812977 failed after 3,450 passes and 19 skips. One invariant-only Node controller child exceeded its 20-second loaded-suite allowance; a valid private retired-ID baseline was rejected before completeness review because Windows path and handle stat APIs disagreed on creation-time metadata. Packaging and installer stages were skipped. Independent safety run 39530812934 also exposed a shared-budget first-use creator race after 3,451 passes.
+
+v0.188.1 retains the shared-budget O_EXCL creator role across transient SQLite contention, excludes only Windows creation-time equality from the baseline snapshot fence, and gives the invariant-only controller child a bounded 60-second aggregate-CI allowance. Identity, size, modification time, regular-file, single-link, final-path and content checks remain. No application deadline, UI, permission, broker or order behavior changed. Fresh Windows regression, standalone/installed tools, EXE startup, packaging, install/reinstall/uninstall and retained evidence remain mandatory.
+
+Local Linux validation passed 3,472 tests with one expected non-Windows skip and one existing warning; all sixteen offline profiles matched 347 source files / `c18fc56ac6195c0fa9cfa919e6b1d6e98d3228e0d14c0c1e1b486a734412e345`. All fourteen controller smokes and extracted Portal syntax passed. This does not validate the Windows metadata behavior, EXE, installer, ordinary-user profile/ACL, private volume or physical power-loss behavior; fresh exact-source Windows execution remains mandatory.
+
 ## v0.188.0 candidate status
 
 The full-envelope retained fee-date fence is platform-neutral and adds no Windows runtime or GUI behavior. Its cross-day private guarded CLI, packaged-tool smoke, public-summary privacy, full regression, standalone executable and installer require fresh exact-source Windows validation. No native result is claimed from local Linux fixtures; ordinary-user profile/ACL, private-volume and physical power-loss acceptance remain separate.

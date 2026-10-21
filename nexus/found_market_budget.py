@@ -61,15 +61,21 @@ class SharedRequestBudget:
         return check_existing(self.path, MAX_DATABASE_BYTES, 'FOUND_MARKET_BUDGET_')
 
     def _connect(self, write=False):
-        for attempt in range(101):
+        # Keep the O_EXCL creator role across transient SQLite contention.  If
+        # the creator were to return that role to admit(), the next call would
+        # see an existing empty file and no contender would be authorized to
+        # install the schema.  Non-creators wait for the creator's commit and
+        # never initialize a pre-existing empty file themselves.
+        initialization_owner = False
+        initialization_deadline = time.monotonic() + LOCK_RETRY_SECONDS
+        while True:
             exists = self._check()
-            new = False
-            if write and not exists:
+            if write and not exists and not initialization_owner:
                 self.path.parent.mkdir(parents=True, exist_ok=True)
                 try:
                     fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
                     os.close(fd)
-                    new = True
+                    initialization_owner = True
                 except FileExistsError:
                     pass
                 self._check()
@@ -86,30 +92,38 @@ class SharedRequestBudget:
                 # Only the O_EXCL winner sets the persistent journal mode. Other
                 # first-use contenders take/release the SQLite writer lock until
                 # the winner has installed the binding.
-                if new:
+                if initialization_owner:
                     db.execute('PRAGMA journal_mode=DELETE')
                 db.execute('PRAGMA synchronous=FULL')
                 page_size = db.execute('PRAGMA page_size').fetchone()[0]
                 db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES // page_size}')
                 db.execute('BEGIN IMMEDIATE')
                 objects = db.execute("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'").fetchall()
-                if new:
+                if initialization_owner:
                     if objects:
                         _fail('INITIALIZATION_RACE')
                     db.execute('CREATE TABLE binding (schema TEXT NOT NULL, last_seen REAL NOT NULL)')
                     db.execute('CREATE TABLE admissions (seq INTEGER PRIMARY KEY, admitted_at REAL NOT NULL)')
                     db.execute('INSERT INTO binding VALUES (?, ?)', (SCHEMA, 0.0))
-                elif not objects and attempt < 100:
-                    db.rollback();db.close();time.sleep(.01);continue
+                elif not objects:
+                    db.rollback();db.close()
+                    remaining = initialization_deadline - time.monotonic()
+                    if remaining <= 0:
+                        _fail('INITIALIZATION_INCOMPLETE')
+                    time.sleep(min(LOCK_RETRY_INTERVAL_SECONDS, remaining))
+                    continue
                 return db
             except ValueError:
                 db.close();raise
             except sqlite3.Error as error:
                 db.close()
                 if _lock_contention(error):
-                    raise _LockContention from None
+                    remaining = initialization_deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise _LockContention from None
+                    time.sleep(min(LOCK_RETRY_INTERVAL_SECONDS, remaining))
+                    continue
                 _fail('DATABASE_INVALID')
-        _fail('INITIALIZATION_INCOMPLETE')
 
     def _load(self, db):
         try:

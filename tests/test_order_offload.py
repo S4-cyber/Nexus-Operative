@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 import pytest
+from types import SimpleNamespace
 
 from nexus.durable_orders import DurableOrderGateway
 from nexus import order_offload
@@ -289,6 +290,16 @@ def test_legacy_baseline_rejects_unsorted_duplicate_or_malformed_ids(tmp_path,id
     document['retired_client_order_ids']=ids;baseline.write_text(json.dumps(document))
     with pytest.raises(ValueError,match='BASELINE_INVALID'):
         order_offload.review_retired_id_baseline(source,archive,baseline,application_closed=True)
+
+
+def test_retired_baseline_windows_snapshot_uses_stable_path_handle_fields():
+    values=dict(st_dev=1,st_ino=2,st_size=3,st_mtime_ns=4,st_ctime_ns=5)
+    path_stat=SimpleNamespace(**values)
+    handle_stat=SimpleNamespace(**{**values,'st_ctime_ns':6})
+    assert order_offload._retired_baseline_snapshot_equal(path_stat,handle_stat,host='nt')
+    assert not order_offload._retired_baseline_snapshot_equal(path_stat,handle_stat,host='posix')
+    changed=SimpleNamespace(**{**values,'st_mtime_ns':7})
+    assert not order_offload._retired_baseline_snapshot_equal(path_stat,changed,host='nt')
 
 
 def test_failed_replacement_verification_never_publishes_destination(tmp_path,monkeypatch):

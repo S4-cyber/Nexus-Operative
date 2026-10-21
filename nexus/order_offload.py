@@ -129,6 +129,18 @@ def _retired_baseline_open_flags(host=None):
     return flags
 
 
+def _retired_baseline_snapshot_equal(first,second,host=None):
+    """Compare stable identity/content metadata across path and handle APIs."""
+    host=os.name if host is None else host
+    fields=('st_dev','st_ino','st_size','st_mtime_ns')
+    if host!='nt':
+        # Windows creation-time values can differ between path and handle stat
+        # APIs.  File identity, size and modification time remain mandatory;
+        # POSIX additionally keeps the metadata-change-time fence.
+        fields+=('st_ctime_ns',)
+    return all(getattr(first,key)==getattr(second,key) for key in fields)
+
+
 def _load_retired_baseline(path):
     """Load one private, regular, single-link review file without leaking IDs."""
     path,_=_private_path(path)
@@ -142,10 +154,12 @@ def _load_retired_baseline(path):
             opened=os.fstat(stream.fileno());raw=stream.read(MAX_RETIRED_BASELINE_BYTES+1)
             closed=os.fstat(stream.fileno())
         final=path.lstat()
-        identity=('st_dev','st_ino','st_size','st_mtime_ns','st_ctime_ns')
-        if (len(raw)!=opened.st_size or any(getattr(observed,key)!=getattr(opened,key) for key in identity) or
-            any(getattr(opened,key)!=getattr(closed,key) for key in identity) or
-            any(getattr(observed,key)!=getattr(final,key) for key in identity)):
+        snapshots=(observed,opened,closed,final)
+        if (len(raw)!=opened.st_size or
+            any(not stat.S_ISREG(item.st_mode) or item.st_nlink!=1 for item in snapshots) or
+            not _retired_baseline_snapshot_equal(observed,opened) or
+            not _retired_baseline_snapshot_equal(opened,closed) or
+            not _retired_baseline_snapshot_equal(observed,final)):
             _fail('RETIRED_ORDER_ID_BASELINE_INVALID')
     except (OSError,ValueError):_fail('RETIRED_ORDER_ID_BASELINE_INVALID')
     def pairs(items):

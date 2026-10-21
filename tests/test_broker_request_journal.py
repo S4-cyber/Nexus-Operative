@@ -237,7 +237,9 @@ def test_actual_portal_request_recovery_controller():
     node=shutil.which('node')
     if not node:pytest.skip('Node required for actual PORTAL controller')
     root=Path(__file__).resolve().parents[1]
-    result=subprocess.run([node,str(root/'tools/broker_request_smoke.cjs')],cwd=root,capture_output=True,text=True,timeout=20)
+    # This fixture validates controller invariants, not Node startup latency.
+    # Aggregate Windows CI may be CPU-constrained while the full suite drains.
+    result=subprocess.run([node,str(root/'tools/broker_request_smoke.cjs')],cwd=root,capture_output=True,text=True,timeout=60)
     assert result.returncode==0,result.stderr
 
 

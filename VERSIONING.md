@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.188.0 (pre-release).** The four-observation stability guard now rejects retained FEE/CFEE records whose reported UTC calendar date falls anywhere inside the full outer observation envelope. Timestamp-shaped fee dates stay unverified dates rather than posting/execution instants; public summaries expose only an absence boolean. Runtime HTTP policy, engagement permissions and risk controls are unchanged. Sequential reads remain non-atomic; actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.188.1 (pre-release).** This patch corrects exact-source Windows shared-budget initialization, private-baseline metadata portability and a fixture-only aggregate-CI process allowance. Runtime HTTP policy, engagement permissions, risk controls and the v0.188.0 retained fee-date guard are unchanged. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.188.1 Windows concurrency and metadata portability
+
+The O_EXCL creator of a missing shared Found Markets budget now retains schema-initialization authority across transient SQLite contention. Other processes wait boundedly for its committed schema and never treat an arbitrary pre-existing empty file as trusted. This prevents first-use contenders from returning schema errors while preserving the exact durable admission limit and fail-closed file checks.
+
+The private retired-ID baseline reader now compares identity, size and modification time across Windows path/handle snapshots without requiring creation-time equality between APIs. POSIX keeps its metadata-change-time comparison. Regular-file, single-link, bounded-size, descriptor and final-path checks remain. The actual broker-request controller fixture receives 60 seconds only as an aggregate CI process allowance; no runtime latency or safety deadline changed.
+
+Exact v0.188.0 public security passed. Its safety regression failed one budget-concurrency assertion after 3,451 passes, and its Windows build failed the controller deadline plus baseline completeness assertion after 3,450 passes; packaging did not execute. Fresh exact-source workflows are mandatory. No UI, broker, account, order, funding, live, cloud or release authority changed.
+
+Final local validation passed 3,472 tests with one expected non-Windows skip and one existing warning. The release-focused set passed 90 tests; 20 repeated creator/concurrency runs passed. All sixteen offline profiles and saved-evidence verification matched 347 source files / `c18fc56ac6195c0fa9cfa919e6b1d6e98d3228e0d14c0c1e1b486a734412e345`, report SHA256 `3a7e239edc42e61a9d834a4b6170d184c0831c517ea917a4acb92f9fcf1529e8`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Fresh exact-source workflows remain required and unclaimed.
 
 ## v0.188.0 full-envelope retained fee-date fence
 

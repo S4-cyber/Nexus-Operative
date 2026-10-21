@@ -1,6 +1,14 @@
 # Nexus Operative release acceptance
 
-Current build: **0.188.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.188.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.188.1 exact-source Windows CI corrections
+
+The shared-budget first-use creator now survives transient SQLite contention while non-creators wait boundedly and never initialize an arbitrary empty file. Windows private-baseline validation compares stable identity, size and modification-time fields across path/handle APIs; POSIX retains creation/metadata-change-time checking. The broker controller smoke's 60-second child allowance is fixture-only and does not relax runtime performance or safety contracts.
+
+Exact v0.188.0 public security passed. Safety regression failed only the budget-concurrency case after 3,451 passes. Windows regression failed the controller fixture deadline and valid-baseline completeness case after 3,450 passes, so EXE/installer stages were skipped. Fresh exact-source workflows are required; no broker, market, funds, live, cloud or release acceptance follows from the correction.
+
+Final v0.188.1 local evidence: 3,472 tests passed with one expected non-Windows skip and one existing warning; the release-focused set passed 90 tests and 20 repeated creator/concurrency runs passed. Sixteen profiles and saved-evidence verification matched 347 source files / `c18fc56ac6195c0fa9cfa919e6b1d6e98d3228e0d14c0c1e1b486a734412e345`; report SHA256 `3a7e239edc42e61a9d834a4b6170d184c0831c517ea917a4acb92f9fcf1529e8`. Fourteen controller smokes, Portal syntax, compilation, dependencies, generated-roadmap equality and whitespace checks passed. These local results do not establish Windows, broker, market, funds, live, cloud or release acceptance.
 
 ## v0.188.0 full-envelope retained fee-date guard
 
@@ -115,7 +123,7 @@ Public-repository hardening (v0.111) adds reachable-history artifact/secret chec
 
 ## Verify saved evidence before considering a release
 
-Run `python -m nexus.release_evidence validation/release_trials_0_154_0.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all sixteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check. If execution fails, the CLI emits only an allowlisted `RELEASE_TRIAL_*` code identifying the failing profile or timeout; child stderr, arbitrary exception text, paths and environment values remain suppressed.
+Run `python -m nexus.release_evidence validation/release_trials_0_188_1.json` from the matching source checkout. The checker bounds and strictly parses the report, requires the current version, exact source fingerprint, all sixteen expected profiles and retained false authority flags, then reruns every profile's acceptance assertions and rechecks source stability. It emits only an allowlisted summary and the supplied report hash; it does not rerun trials or open account storage. Changed source bytes, including line endings, invalidate the match; never edit a fingerprint to bypass a failed check. If execution fails, the CLI emits only an allowlisted `RELEASE_TRIAL_*` code identifying the failing profile or timeout; child stderr, arbitrary exception text, paths and environment values remain suppressed.
 
 The safety workflow revalidates its saved report. Windows distribution creation runs and validates its own offline trials, includes `release-trial-evidence.json` in the distribution and hashes it in `artifact-manifest.json` alongside both binaries. Verify the manifest first, then verify the report from the exact source checkout. Matching hashes are not signatures, authenticated CI provenance or proof the workload actually ran. A self-consistent fabricated report remains possible; workflow results and independent acceptance still matter. A successful offline evidence check always retains production/native/provider/market/funds/release approval flags as false and cannot close the open gates above.
 

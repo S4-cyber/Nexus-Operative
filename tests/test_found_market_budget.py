@@ -73,6 +73,26 @@ def test_transient_sqlite_writer_contention_retries_without_losing_capacity(tmp_
     assert raised==[True] and budget.inspect()['admissions']==2
 
 
+def test_first_use_creator_keeps_initialization_role_across_contention(tmp_path,monkeypatch):
+    path=tmp_path/'budget.sqlite3';real_connect=sqlite3.connect;raised=[]
+    class BusyCreatorOnce:
+        def __init__(self,db):self.db=db
+        def __getattr__(self,name):return getattr(self.db,name)
+        def execute(self,sql,*args):
+            if sql=='BEGIN IMMEDIATE' and not raised:
+                raised.append(True);error=sqlite3.OperationalError('private contention detail')
+                error.args=('database is locked',)
+                raise error
+            return self.db.execute(sql,*args)
+    def connect(*args,**kwargs):
+        db=real_connect(*args,**kwargs)
+        return BusyCreatorOnce(db) if not raised else db
+    monkeypatch.setattr(budget_module.sqlite3,'connect',connect)
+    assert SharedRequestBudget(path,limit=2).admit(lambda:NOW)['remaining']==1
+    assert raised==[True]
+    assert SharedRequestBudget(path,limit=2).inspect()['admissions']==1
+
+
 def test_sqlite_writer_contention_timeout_is_fixed_and_preserves_history(tmp_path,monkeypatch):
     path=tmp_path/'budget.sqlite3';budget=SharedRequestBudget(path,limit=2)
     budget.admit(lambda:NOW);before=path.read_bytes();real_connect=sqlite3.connect

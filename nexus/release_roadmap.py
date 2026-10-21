@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.188.1'
+REVISION = '0.189.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -158,7 +158,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.188.1 corrects three exact-source Windows CI defects without changing trading behavior. The O_EXCL creator of the shared local Found Markets request budget now retains exclusive schema-initialization authority through transient SQLite contention while other contenders wait boundedly and never initialize a pre-existing empty file. Private retired-ID baseline reads compare stable file identity, size and modification time across Windows path/handle APIs without requiring their inconsistent creation-time values; POSIX retains the metadata-change-time fence. A controller-invariant fixture receives a bounded aggregate-CI process allowance that is not a runtime latency contract. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.189.0 adds explicit reviewed recovery for a blocked local provider paper-read budget. Recovery requires the exact current head, exact blocked account, live local ownership and separate reviewed-block/uncertainty confirmations. Authentication, unsupported-result and interrupted-unknown tails remain immutable; interruption now stays blocked after its full-day cooldown until review. Recovery never shortens cooldown, reclaims session capacity, reads credentials, contacts a provider, retries, resumes or grants authority. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

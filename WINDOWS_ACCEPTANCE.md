@@ -1,5 +1,13 @@
 # Windows distribution and acceptance evidence
 
+## v0.189.0 provider-budget recovery candidate
+
+The installed/source tool catalogue adds `provider-recovery`, an explicit mutation of an existing private provider-budget journal. Native acceptance must verify exact-head/account/ownership fencing, private path/profile/ACL behavior, interrupted full-day cooldown preservation, no journal creation on missing input, sanitized failures and packaged/installed parity. It must not open Windows Credential Manager, contact a provider, reclaim capacity, retry, resume, enable routing or change any Portal control/help behavior.
+
+Exact parent v0.188.1 passed Windows regression/EXE/installer run 39539251929. Fresh v0.189.0 Windows execution is required; local Linux fixtures do not establish ordinary-user profile/ACL, private-volume, physical power-loss, actual broker or release acceptance.
+
+Local Linux validation passed 3,483 tests with one expected non-Windows skip and one existing warning; sixteen offline profiles matched 349 files / `44fa33ed9fd5e9336013a4bc6f427628bcb3a8bfe796fb186916188193b7a43a`. The source packaged-tool smoke exercised all eleven allowlisted tools and 27 cross-platform child invocations; this does not validate the EXE, installer or Windows file-lock/ACL behavior.
+
 ## v0.188.1 portability correction
 
 Exact v0.188.0 Windows run 39530812977 failed after 3,450 passes and 19 skips. One invariant-only Node controller child exceeded its 20-second loaded-suite allowance; a valid private retired-ID baseline was rejected before completeness review because Windows path and handle stat APIs disagreed on creation-time metadata. Packaging and installer stages were skipped. Independent safety run 39530812934 also exposed a shared-budget first-use creator race after 3,451 passes.

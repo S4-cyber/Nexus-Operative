@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.188.1, exact-source Windows concurrency/metadata/controller-fixture corrections over v0.188.0. Read the newest version section and generated roadmap; exact-source v0.188.1 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.189.0, exact reviewed provider-budget recovery over the fully green exact-source v0.188.1 checkpoint. Read the newest version section and generated roadmap; exact-source v0.189.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.189.0 reviewed provider-budget recovery
+
+Provider-budget recovery must require the exact current journal head, exact blocked paper account, live local ownership and separate reviewed-block/uncertainty confirmations. Preserve the AUTH_DENIED, REVIEW_REQUIRED or INTERRUPTED_UNKNOWN session unchanged. Interrupted unknown remains blocked even after the retained full-day cooldown until review. Recovery may clear only the review latch: never shorten cooldown, reclaim session capacity, delete/rewrite history, retry, continue, open credentials or contact a provider. A missing/stale/foreign/unconfirmed command must not create a provider journal or echo private inputs.
+
+The allowlisted installed/source `provider-recovery` tool is an explicit operator mutation, not a background or Portal action. Keep all broker/provider/source/funds/routing/live/release flags false. Older readers reject the new recovery event; require a stopped private backup and matching/newer reader, never downgrade or switch journals to bypass the block. No GUI button or editable parameter changed, so the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Keep progress about 40% (30–45%, low confidence), 0/9 accepted, and require focused recovery/provider/package tests, all offline profiles and saved evidence, full regression, static/public-artifact checks and fresh exact-source workflows.
+
+Exact v0.188.1 commit `3b6d5cfe100949e00f7b8d35bdde13576d13f4b8` passed security 39539251915, safety/browser/evidence 39539251886 and Windows regression/EXE/installer 39539251929. These results do not transfer to v0.189.0.
+
+Final local v0.189.0 validation passed 3,483 tests with one expected non-Windows skip and one existing Starlette/httpx warning. The focused provider/recovery/package/version/roadmap set passed 222 tests and release negative controls passed 90. Sixteen profiles and saved-evidence verification matched 349 source files / `44fa33ed9fd5e9336013a4bc6f427628bcb3a8bfe796fb186916188193b7a43a`; `validation/release_trials_0_189_0.json` SHA256 is `d218f42aed0aa840d667cbf94236804ad7865a43d86a3a0a272697c9513e6836`. All fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. These local Linux results do not close native Windows, actual account/provider, market, funds, live, cloud or release gates.
 
 ## v0.188.1 exact-source Windows CI corrections
 

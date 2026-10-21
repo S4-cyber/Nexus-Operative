@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.188.1 (pre-release).** This patch corrects exact-source Windows shared-budget initialization, private-baseline metadata portability and a fixture-only aggregate-CI process allowance. Runtime HTTP policy, engagement permissions, risk controls and the v0.188.0 retained fee-date guard are unchanged. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.189.0 (pre-release).** This milestone adds explicit reviewed recovery for the local provider paper-read budget. It preserves the blocked tail, cooldown, uncertainty and session capacity and grants no read, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.189.0 exact reviewed provider-budget recovery
+
+`PaperProviderReadBudget.recover_review_block` accepts only an existing blocked journal, its exact current head, the exact blocked paper account, a live local ownership lease and two explicit operator confirmations. AUTH_DENIED, unsupported REVIEW_REQUIRED and INTERRUPTED_UNKNOWN tails remain immutable. An interrupted unknown now remains review-blocked after its full-day cooldown until this recovery is reviewed; the recovery event never shortens `next_allowed_at`, deletes history, changes the retained outcome, reclaims the 256-session cap, reserves admission, retries or continues automatically.
+
+The installed/source `--paper-tool provider-recovery` command exposes that bounded mutation without opening credentials, contacting a provider or starting the desktop. Missing/stale/foreign/unconfirmed inputs fail without creating a provider journal or echoing private arguments. Recovery output keeps provider-wide quota, distributed ownership, routing, live orders, money movement and release authority false. Older binaries do not understand the appended recovery event; preserve a private backup, stop cooperating readers and use the matching or newer reader rather than rewriting or downgrading the journal.
+
+Exact v0.188.1 commit `3b6d5cfe100949e00f7b8d35bdde13576d13f4b8` passed public security run 39539251915, safety/browser/evidence run 39539251886 and Windows regression/EXE/installer run 39539251929. Fresh exact-source v0.189.0 workflows remain mandatory. No actual broker, credential, account, market, funds, live or cloud operation occurred in this implementation.
+
+Final local validation passed 3,483 tests with one expected non-Windows skip and one existing warning. The focused provider/recovery/package/version/roadmap set passed 222 tests, and the release negative-control set passed 90. All sixteen offline profiles and saved-evidence verification matched 349 source files / `44fa33ed9fd5e9336013a4bc6f427628bcb3a8bfe796fb186916188193b7a43a`; report SHA256 `d218f42aed0aa840d667cbf94236804ad7865a43d86a3a0a272697c9513e6836`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Fresh exact-source workflows remain required and unclaimed.
 
 ## v0.188.1 Windows concurrency and metadata portability
 

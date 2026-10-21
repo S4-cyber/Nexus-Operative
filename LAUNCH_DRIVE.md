@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.189.0 exact reviewed provider-budget recovery
+
+The shared local provider paper-read budget can now append one bounded reviewed recovery after AUTH_DENIED, unsupported REVIEW_REQUIRED or an explicitly retained INTERRUPTED_UNKNOWN tail. Admission requires the exact journal head, exact blocked account, the journal's live local ownership lease and separate confirmations that the block was reviewed and its uncertainty must remain. Interruption now retains a review latch after the full-day cooldown; recovery clears only that latch while leaving the original session/outcome, cooldown, counts and capacity unchanged.
+
+The installed/source `--paper-tool provider-recovery` entry point refuses missing, stale, foreign or unconfirmed inputs without creating a provider journal or exposing private arguments. It never opens the vault, contacts a provider, reserves a read, retries, resumes, resets the cap, enables routing or grants release authority. The packaged-tool smoke executes this exact mutation on a disposable auth-blocked journal and requires all authority flags false. No Portal control or editable parameter changed, preserving the existing seven tabs and black/bright-purple help behavior.
+
+Exact v0.188.1 commit `3b6d5cfe100949e00f7b8d35bdde13576d13f4b8` passed security 39539251915, safety/browser/evidence 39539251886 and Windows regression/EXE/installer 39539251929. v0.189.0 still requires fresh exact-source workflows plus actual authorized broker-paper/native-profile recovery and reconciliation, sustained real-feed trials, provider/source/fee/hold/funds acceptance, independent review and owner approval. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local validation passed 3,483 tests with one expected non-Windows skip and one existing warning. The focused set passed 222 and release negative controls passed 90. Sixteen profiles and saved-evidence verification matched 349 files / `44fa33ed9fd5e9336013a4bc6f427628bcb3a8bfe796fb186916188193b7a43a`; report SHA256 is `d218f42aed0aa840d667cbf94236804ad7865a43d86a3a0a272697c9513e6836`. Fourteen controllers, Portal syntax, compilation, dependencies, generated-roadmap equality and whitespace passed. This is local injected/offline evidence only.
+
 ## v0.188.1 exact-source Windows CI corrections
 
 The shared local Found Markets request budget now preserves its O_EXCL creator role through transient SQLite writer contention. Other contenders wait boundedly for the committed schema and cannot initialize an unrelated pre-existing empty file. Windows reviewed-baseline reads keep identity, size, modification-time, regular-file, single-link and final-path checks while omitting creation-time equality that differs across Windows path and handle APIs; POSIX retains the stronger metadata-change-time comparison. A controller-invariant fixture receives a bounded 60-second aggregate-CI process allowance without changing any runtime deadline.

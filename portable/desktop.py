@@ -49,6 +49,7 @@ PAPER_TOOLS={
     'order-offload':'nexus.order_offload',
     'quality-review':'nexus.paper_execution_quality_review',
     'provider-results':'nexus.paper_provider_result_tool',
+    'provider-recovery':'nexus.paper_provider_budget_recovery',
     'quote-capture':'nexus.paper_quote_capture',
     'quote-evidence':'nexus.paper_quote_bundle',
     'recovery':'nexus.paper_recovery_step',
@@ -65,7 +66,7 @@ def _paper_tool(args):
             emergency_stop_command='--emergency-stop',
             default_data_created=False,desktop_started=False,automatic_read=False,
             automatic_retry=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
-            scope='Explicit private paper diagnostics only. Account/activity/quote/recovery reads require their own confirmation and saved Windows keys. Read-only status/reviews, observation/quote-evidence encryption and offline order-history copy need no broker keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. Observation crypto creates a separate authenticated encrypted copy and never stores its password. Order offload requires a stopped, flat, reconciled, logically archived journal and an application-closed confirmation. Rotation-plan is read-only; replacement install requires verified archive/candidate inputs plus separate exact recovery storage, stays halted, and supports explicit recovery/rollback without deleting preserved history. No order submission or automatic continuation.'),sort_keys=True,indent=2))
+            scope='Explicit private paper diagnostics only. Account/activity/quote/recovery reads require their own confirmation and saved Windows keys. Provider-recovery appends one exact-head, account- and ownership-fenced reviewed boundary without reading keys, shortening cooldown, erasing uncertainty, reclaiming capacity, retrying or continuing. Read-only status/reviews, observation/quote-evidence encryption and offline order-history copy need no broker keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. Observation crypto creates a separate authenticated encrypted copy and never stores its password. Order offload requires a stopped, flat, reconciled, logically archived journal and an application-closed confirmation. Rotation-plan is read-only; replacement install requires verified archive/candidate inputs plus separate exact recovery storage, stays halted, and supports explicit recovery/rollback without deleting preserved history. No order submission or automatic continuation.'),sort_keys=True,indent=2))
         return 0
     if len(args)<2 or args[0]!='--paper-tool' or args[1] not in PAPER_TOOLS:
         print('NEXUS_PAPER_TOOL_USAGE_ERROR',file=sys.stderr);return 2

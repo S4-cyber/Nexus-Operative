@@ -20,7 +20,9 @@ from nexus.paper_read_pacing import OPERATIONS, OPERATION_PATTERNS
 from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.paper-provider-read-budget.v1'
+RECOVERY_POLICY = 'nexus.paper-provider-read-budget-recovery.v1'
 MAX_SESSIONS = 256
+MAX_RECOVERIES = MAX_SESSIONS
 MAX_DATABASE_BYTES = 4 * 1024 * 1024
 MIN_COOLDOWN = 60
 INTERRUPTED_COOLDOWN = 86400
@@ -91,7 +93,8 @@ class PaperProviderReadBudget:
     def _empty():
         return dict(head_sha256=ZERO, events=0, sessions=0, pending=None,
                     last_evaluated_at=0, next_allowed_at=0, review_required=False,
-                    last_outcome=None, completed=[], interruptions=0)
+                    last_outcome=None, completed=[], interruptions=0,
+                    recoveries=0, last_recovery=None)
 
     @staticmethod
     def _admit(state, now):
@@ -102,10 +105,11 @@ class PaperProviderReadBudget:
         if state['sessions'] >= MAX_SESSIONS: _fail('SESSION_CAP')
 
     def _load(self, db):
+        max_events = 2 * MAX_SESSIONS + MAX_RECOVERIES
         rows = db.execute('SELECT seq,body,previous,digest FROM events ORDER BY seq LIMIT ?',
-                          (2 * MAX_SESSIONS + 2,)).fetchall()
+                          (max_events + 2,)).fetchall()
         if not rows: _fail('BINDING_MISSING')
-        if len(rows) > 2 * MAX_SESSIONS + 1: _fail('EVENT_CAP')
+        if len(rows) > max_events + 1: _fail('EVENT_CAP')
         state = self._empty()
         for index, (seq, encoded, previous, digest) in enumerate(rows):
             if type(encoded) is not str or len(encoded.encode()) > MAX_EVENT_BYTES:
@@ -166,7 +170,36 @@ class PaperProviderReadBudget:
                         account_after_head_sha256=None, actual_gets=None, outcome='INTERRUPTED_UNKNOWN'))
                     state['pending'] = None; state['last_outcome'] = 'INTERRUPTED_UNKNOWN'
                     state['next_allowed_at'] = max(state['next_allowed_at'], now + INTERRUPTED_COOLDOWN)
-                    state['interruptions'] += 1
+                    state['interruptions'] += 1; state['review_required'] = True
+                elif kind == 'RECOVERY' and set(body) == {
+                        'kind','policy','evaluated_at','expected_head','account_sha256',
+                        'blocked_session_head_sha256','blocked_outcome','owner_sha256',
+                        'confirm_block_reviewed','confirm_uncertainty_preserved'}:
+                    now = clock(body['evaluated_at'])
+                    if body['policy'] != RECOVERY_POLICY: _fail('RECOVERY_POLICY_INVALID')
+                    if body['expected_head'] != previous: _fail('HEAD_DISAGREEMENT')
+                    if state['pending'] is not None: _fail('PENDING_REVIEW')
+                    if not state['review_required'] or not state['completed']:
+                        _fail('RECOVERY_NOT_REQUIRED')
+                    if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
+                    last = state['completed'][-1]
+                    _digest(body['account_sha256'], 'ACCOUNT_DIGEST_INVALID')
+                    _digest(body['blocked_session_head_sha256'], 'HEAD_INVALID')
+                    _digest(body['owner_sha256'], 'OWNER_MARKER_INVALID')
+                    if (body['account_sha256'] != last['account_sha256'] or
+                            body['blocked_session_head_sha256'] != last['after_head_sha256'] or
+                            body['blocked_outcome'] != last['outcome'] or
+                            body['blocked_outcome'] not in ('AUTH_DENIED','REVIEW_REQUIRED','INTERRUPTED_UNKNOWN')):
+                        _fail('RECOVERY_SCOPE_DISAGREEMENT')
+                    if (body['confirm_block_reviewed'] is not True or
+                            body['confirm_uncertainty_preserved'] is not True):
+                        _fail('CONFIRMATION_REQUIRED')
+                    if state['recoveries'] >= MAX_RECOVERIES: _fail('RECOVERY_CAP')
+                    state['review_required'] = False
+                    state['recoveries'] += 1
+                    state['last_recovery'] = dict(recovered_at=now,
+                        blocked_session_head_sha256=last['after_head_sha256'],
+                        blocked_outcome=last['outcome'], recovery_head_sha256=digest)
                 else:
                     _fail('PAYLOAD_INVALID')
                 state['last_evaluated_at'] = now
@@ -186,6 +219,8 @@ class PaperProviderReadBudget:
                     pending_token=None if pending is None else pending['token'],
                     pending_operation=None if pending is None else pending['operation'],
                     min_post_result_cooldown_seconds=MIN_COOLDOWN, automatic_retry=False,
+                    recovery_policy=RECOVERY_POLICY, automatic_recovery=False,
+                    uncertainty_preserved=True,
                     local_provider_scope_coordinated=bool(completed), broker_wide_quota_verified=False,
                     distributed_ownership_verified=False, ready_for_routing=False, release_approved=False,
                     limitations='One explicitly shared local provider-scope journal for cooperating callers only. It cannot discover another process using another path, credential, host or machine and does not attest provider quotas, source, coverage, funds, routing or release.')
@@ -273,6 +308,49 @@ class PaperProviderReadBudget:
                     self._owned(owner)
                 return dict(head_sha256=head, interruption_recorded=True,
                             automatic_retry=False, ready_for_routing=False)
+
+    def recover_review_block(self, *, expected_head, expected_account_id,
+            confirm_block_reviewed=False, confirm_uncertainty_preserved=False,
+            admission, ownership):
+        """Append one reviewed unblock without shortening cooldown or erasing history."""
+        head = _digest(expected_head, 'HEAD_INVALID')
+        account = _uuid(expected_account_id)
+        if confirm_block_reviewed is not True or confirm_uncertainty_preserved is not True:
+            _fail('CONFIRMATION_REQUIRED')
+        self._owned(ownership)
+        with closing(self._connect(write=True)) as db:
+            with db:
+                state = self._load(db); self._owned(ownership); now = clock(admission())
+                if state['head_sha256'] != head: _fail('HEAD_DISAGREEMENT')
+                if state['pending'] is not None: _fail('PENDING_REVIEW')
+                if not state['review_required'] or not state['completed']:
+                    _fail('RECOVERY_NOT_REQUIRED')
+                if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
+                last = state['completed'][-1]
+                account_sha256 = hashlib.sha256(account.encode()).hexdigest()
+                if account_sha256 != last['account_sha256']:
+                    _fail('RECOVERY_SCOPE_DISAGREEMENT')
+                body = dict(kind='RECOVERY', policy=RECOVERY_POLICY,
+                    evaluated_at=now, expected_head=head,
+                    account_sha256=account_sha256,
+                    blocked_session_head_sha256=last['after_head_sha256'],
+                    blocked_outcome=last['outcome'], owner_sha256=ownership.identity(),
+                    confirm_block_reviewed=True, confirm_uncertainty_preserved=True)
+                recovered_head = self._append(db, state['events'] + 1, body, head)
+                recovered = self._load(db)
+                if clock(admission()) < now: _fail('CLOCK_REGRESSION')
+                self._owned(ownership)
+            return dict(mode='PAPER_PROVIDER_READ_BUDGET_REVIEWED_RECOVERY',
+                status='REVIEW_REQUIRED', head_sha256=recovered_head,
+                blocked_outcome=last['outcome'], review_block_cleared=True,
+                next_allowed_at=recovered['next_allowed_at'],
+                cooldown_shortened=False, uncertainty_preserved=True,
+                history_rewritten=False, session_capacity_reclaimed=False,
+                admission_reserved=False, automatic_retry=False,
+                automatic_continuation=False, broker_wide_quota_verified=False,
+                distributed_ownership_verified=False, ready_for_routing=False,
+                live_orders_enabled=False, money_movement_enabled=False,
+                release_approved=False)
 
 
 class _ProviderOwnership:

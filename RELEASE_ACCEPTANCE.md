@@ -1,6 +1,14 @@
 # Nexus Operative release acceptance
 
-Current build: **0.188.1 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.189.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.189.0 reviewed provider-budget recovery
+
+Acceptance must prove that authentication, unsupported-result and interrupted-unknown tails remain immutable while exact-head/account/ownership-fenced recovery clears only the review latch. The full-day interrupted cooldown, original outcome, session count and capacity must remain unchanged; stale heads, foreign accounts, missing confirmations, pending sessions, nonblocked tails and cap-reset attempts must fail without mutation. Missing CLI input must not create a journal or expose private arguments. Source, packaged and installed tool paths must exercise the same behavior with all credential/network/routing/live/funds/release flags false.
+
+Exact v0.188.1 passed security 39539251915, safety/browser/evidence 39539251886 and Windows regression/EXE/installer 39539251929. Those results are the verified parent only. v0.189.0 requires focused and full regression, all sixteen profiles, saved-evidence verification, staged public-artifact/secret checks and fresh exact-source Windows/package execution. Actual account recovery, provider-wide pacing, reconciliation and independent operator review remain open.
+
+Final local v0.189.0 evidence: 3,483 tests passed with one expected non-Windows skip and one existing warning; the focused set passed 222 and release negative controls passed 90. Sixteen profiles and saved-evidence verification matched 349 files / `44fa33ed9fd5e9336013a4bc6f427628bcb3a8bfe796fb186916188193b7a43a`; report SHA256 `d218f42aed0aa840d667cbf94236804ad7865a43d86a3a0a272697c9513e6836`. Fourteen controllers, Portal syntax, compilation, dependencies, generated-roadmap equality and whitespace passed. These results do not establish native Windows, broker, market, funds, live, cloud or release acceptance.
 
 ## v0.188.1 exact-source Windows CI corrections
 

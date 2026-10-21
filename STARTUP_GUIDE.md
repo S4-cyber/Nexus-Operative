@@ -1,5 +1,11 @@
 # Nexus workspaces and startup checklist
 
+## Recovering a reviewed provider-read block
+
+Use `NexusOperative.exe --paper-tool provider-recovery` only after independently reviewing an existing private provider-budget tail. Supply `--provider-budget`, its exact current `--expected-head`, the exact blocked `--expected-account`, `--confirm-reviewed-block` and `--confirm-preserve-uncertainty`. The command appends one recovery boundary; it does not open saved keys, contact the broker, retry or start the desktop. It preserves the original authentication/review/interruption outcome, all history, the retained cooldown and session capacity. An interrupted unknown remains blocked even after its full-day cooldown until this review is recorded.
+
+Stop cooperating readers first and keep a private backup outside the app/source directory. Do not use a different journal, delete history or downgrade to bypass a block; older binaries cannot replay the recovery event. A successful command remains `REVIEW_REQUIRED` and does not prove quota ownership, source/activity completeness, fees, holds, funds, routing permission or release readiness.
+
 ## Optional guarded reconciliation review
 
 The source diagnostic `python -m nexus.paper_reconciliation_acceptance` accepts paired `--pre-opening` and `--post-closing` manifests around the existing required opening/closing inputs. Supply both or neither. With guards, four distinct ordered observations must retain the same declared account/source, contain no open orders, preserve adjacent account and inventory fingerprints, fit inside the accepted declared collection-window envelope, have no retained fill in either guard band and have no retained FEE/CFEE reported date on any UTC calendar date in the full outer observation envelope. Reported fee dates are not verified posting/execution instants. The optional `--pre-opening-encrypted` and `--post-closing-encrypted` flags mirror the existing in-memory encrypted-input handling.

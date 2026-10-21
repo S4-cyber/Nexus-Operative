@@ -1,5 +1,11 @@
 # Windows distribution and acceptance evidence
 
+## v0.191.0 account-response normalization candidate
+
+The installed/source tool catalogue adds `account-response-review`, a network-, vault- and write-silent private review of one exact retained ACCOUNT_INVENTORY session. Native acceptance must verify bounded regular private files, distinct/source-install-external paths, byte-exact response matching, production normalizer replay, portable-observation equality, exact-head/session fencing, unchanged input files, sanitized failures and standalone/installed parity. It must not contact a provider, create storage, retry, grant account/funds authority or start the Portal.
+
+Exact parent v0.190.0 passed Windows regression/EXE/installer run 39550185572; its security and safety workflows also passed. Fresh v0.191.0 Windows execution is required. Local Linux/injected bodies do not establish provider identity, ordinary-user profile/ACL, private-volume, physical power-loss, actual account/fee/hold/funds or release acceptance.
+
 ## v0.190.0 account-pacing recovery candidate
 
 The installed/source tool catalogue adds `account-recovery`, an explicit mutation of an existing private account pacing journal. Native acceptance must verify exact-head/account/ownership fencing, private path/profile/ACL behavior, interrupted full-day cooldown and review-block preservation, no journal creation on missing input, sanitized failures and packaged/installed parity. It must not open Windows Credential Manager, contact a provider, reclaim capacity, retry, resume, enable routing or change any Portal control/help behavior.

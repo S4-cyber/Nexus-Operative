@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.190.0, explicit reviewed account-pacing recovery over the fully green exact-source v0.189.0 checkpoint. Read the newest version section and generated roadmap; exact-source v0.190.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.191.0, exact-byte account-response normalization review over the fully green exact-source v0.190.0 checkpoint. Read the newest version section and generated roadmap; exact-source v0.191.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.191.0 exact-byte account-response normalization review
+
+The private offline account-response review must pin the exact current pacing head and one exact successful ACCOUNT_INVENTORY session. Require four distinct bounded private response files plus one portable observation outside source/install roots. Match response bytes to all retained response hashes, replay the production account normalizer, reproduce the portable observation and match the retained normalized-result digest. Recheck the pacing journal unchanged. Self-consistent altered observations, changed response bytes, stale heads, foreign accounts, reused paths, legacy/unbound sessions and malformed inputs must fail closed with fixed output.
+
+The installed/source `account-response-review` tool is credential-, vault-, network- and write-silent. Hash agreement is local consistency, not proof of provider identity, TLS capture, account ownership, completeness, clocks, fee posting/linkage, holds, settled/spendable funds or routing/release authority. Keep every authority flag false. No GUI control or editable parameter changed, so the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Keep progress about 40% (30–45%, low confidence), 0/9 accepted. Require focused response/package tests, all profiles and saved evidence, full regression, static/public-artifact checks and fresh exact-source workflows.
+
+Exact v0.190.0 commit `fab2fd67c3cf1f4b24c510cf2b0aaceb4ffbe359` passed security 39550185581, safety/browser/evidence 39550185672 and Windows regression/EXE/installer 39550185572. These results do not transfer to v0.191.0.
+
+Final local v0.191.0 validation passed 3,501 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the final evidence/privacy-dependent set passed 374 tests. Sixteen profiles and saved-evidence verification matched 353 source files / `f7bf1c1a8cb901b763414431b4479e7d0cf7eff2865c3cde90a5b54e7dee2363`; `validation/release_trials_0_191_0.json` SHA256 is `f10ac6941f2dd1826f79328f15642daf78992cd287e07ee1bd0c79c630decc19`. All fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The public audit explicitly rejects renamed account-response review reports. These local Linux results do not close native Windows, actual account/provider, market, funds, live, cloud or release gates.
 
 ## v0.190.0 reviewed account-pacing recovery
 

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.191.0 exact-byte account-response normalization review
+
+The installed/source `account-response-review` command now binds four caller-preserved private response bodies to one exact successful ACCOUNT_INVENTORY pacing session. It pins the current journal and session heads, requires the fixed account request targets and v3 result receipt, matches each response body byte hash, replays the production account normalizer, reproduces the supplied portable observation and normalized-result digest, and finally replays the journal unchanged. Distinct private paths outside the source/installation root are mandatory; altered bytes, self-consistent observation rewrites, stale or legacy sessions and aliases fail closed with fixed output.
+
+This is an offline local-consistency tool. It performs no credential/vault read, network request, journal/receipt write, retry, repair, continuation, order or funds action. Supplied bytes are not provider/TLS attestation and do not prove account ownership, completeness, clocks, activity/fee coverage, fee links, holds or settled/spendable funds. No Portal control or editable parameter changed, preserving seven tabs, OFF defaults and black/bright-purple bottom-right help. Progress remains roughly 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Exact v0.190.0 source `fab2fd67c3cf1f4b24c510cf2b0aaceb4ffbe359` passed security 39550185581, safety/browser/evidence 39550185672 and Windows regression/EXE/installer 39550185572. Fresh v0.191.0 exact-source CI, actual authorized response capture/review, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance, sustained market trials and independent/owner approval remain open.
+
 ## v0.190.0 reviewed account-pacing recovery
 
 The account-scoped pacing journal now retains a content-free recovery event after an operator explicitly reviews an exact blocked AUTH_DENIED, REVIEW_REQUIRED or INTERRUPTED_UNKNOWN tail. Account interruptions remain review-blocked even after the full-day cooldown. The event requires the exact current head/account, live local ownership and separate reviewed-block/uncertainty confirmations. It preserves the original outcome, operation history, cooldown and session count and does not reserve or perform another read.

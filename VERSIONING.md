@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.190.0 (pre-release).** This milestone adds explicit reviewed recovery for the account-scoped local paper-read pacing journal. It preserves the blocked tail, cooldown, uncertainty and session capacity and grants no read, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.191.0 (pre-release).** This milestone adds private exact-byte normalization review for one retained account-inventory session. It grants no provider, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.191.0 exact-byte account-response normalization review
+
+`--paper-tool account-response-review` accepts one exact current pacing head, one exact successful ACCOUNT_INVENTORY session, its four private response-body files and the corresponding portable observation. It requires distinct paths outside source/install roots, exact retained response-byte hashes, fixed account request targets, a v3 normalized-result receipt, production normalizer replay, exact portable-observation equality and a final unchanged-journal replay. Changed bodies, self-consistent observation rewrites, stale/foreign/unbound sessions and path aliases fail closed. It performs no credential, vault, network, retry, state repair or receipt write.
+
+This establishes only local consistency between supplied private bytes, the portable observation and the retained journal. It does not authenticate a provider or TLS session, prove response completeness, account ownership, clock domains, activity/fee coverage, fee links, holds, settled/spendable funds, routing permission or release acceptance. Exact v0.190.0 commit `fab2fd67c3cf1f4b24c510cf2b0aaceb4ffbe359` passed security 39550185581, safety/browser/evidence 39550185672 and Windows regression/EXE/installer 39550185572. Fresh exact-source v0.191.0 workflows remain mandatory. No GUI control or editable parameter changed.
+
+Final local validation passed 3,501 tests with one expected non-Windows skip and one existing warning. The final evidence/privacy-dependent set passed 374 tests. All sixteen offline profiles and saved-evidence verification matched 353 source files / `f7bf1c1a8cb901b763414431b4479e7d0cf7eff2865c3cde90a5b54e7dee2363`; report SHA256 `f10ac6941f2dd1826f79328f15642daf78992cd287e07ee1bd0c79c630decc19`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The public audit rejects renamed private account-response review reports. Fresh exact-source workflows remain required and unclaimed.
 
 ## v0.190.0 exact reviewed account-pacing recovery
 

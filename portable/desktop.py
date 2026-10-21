@@ -42,6 +42,7 @@ def wait_for_ready(port, timeout=25):
     return False
 
 PAPER_TOOLS={
+    'account-response-review':'nexus.paper_account_response_review',
     'account-recovery':'nexus.paper_read_pacing_recovery',
     'activity':'nexus.paper_activity_acceptance_probe',
     'account-probe':'nexus.paper_acceptance_probe',
@@ -67,7 +68,7 @@ def _paper_tool(args):
             emergency_stop_command='--emergency-stop',
             default_data_created=False,desktop_started=False,automatic_read=False,
             automatic_retry=False,broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
-            scope='Explicit private paper diagnostics only. Account/activity/quote/recovery reads require their own confirmation and saved Windows keys. Account-recovery and provider-recovery append exact-head, account- and ownership-fenced reviewed boundaries without reading keys, shortening cooldown, erasing uncertainty, reclaiming capacity, retrying or continuing. Read-only status/reviews, observation/quote-evidence encryption and offline order-history copy need no broker keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. Observation crypto creates a separate authenticated encrypted copy and never stores its password. Order offload requires a stopped, flat, reconciled, logically archived journal and an application-closed confirmation. Rotation-plan is read-only; replacement install requires verified archive/candidate inputs plus separate exact recovery storage, stays halted, and supports explicit recovery/rollback without deleting preserved history. No order submission or automatic continuation.'),sort_keys=True,indent=2))
+            scope='Explicit private paper diagnostics only. Account/activity/quote/recovery reads require their own confirmation and saved Windows keys. Account-response-review replays four private response bodies against one exact retained account session without credentials or network access. Account-recovery and provider-recovery append exact-head, account- and ownership-fenced reviewed boundaries without reading keys, shortening cooldown, erasing uncertainty, reclaiming capacity, retrying or continuing. Read-only status/reviews, observation/quote-evidence encryption and offline order-history copy need no broker keys. Supply private paths outside the app/source folder; encrypted-input reviews decrypt in memory and print private plaintext. Observation crypto creates a separate authenticated encrypted copy and never stores its password. Order offload requires a stopped, flat, reconciled, logically archived journal and an application-closed confirmation. Rotation-plan is read-only; replacement install requires verified archive/candidate inputs plus separate exact recovery storage, stays halted, and supports explicit recovery/rollback without deleting preserved history. No order submission or automatic continuation.'),sort_keys=True,indent=2))
         return 0
     if len(args)<2 or args[0]!='--paper-tool' or args[1] not in PAPER_TOOLS:
         print('NEXUS_PAPER_TOOL_USAGE_ERROR',file=sys.stderr);return 2

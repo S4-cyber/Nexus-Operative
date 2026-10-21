@@ -1,6 +1,14 @@
 # Nexus Operative release acceptance
 
-Current build: **0.190.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.191.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.191.0 exact-byte account-response normalization
+
+Require exact pacing/session heads, one successful v3 ACCOUNT_INVENTORY receipt, fixed request targets, four exact response-byte digest matches, production normalizer replay, exact portable-observation equality, an unchanged final journal replay, bounded distinct private paths, fixed failures, no input writes and source/standalone/installed command parity. Changed bodies, self-consistent observation rewrites, stale heads, aliases and legacy/unbound sessions must fail closed. Every provider/source/account/activity/fee/hold/funds/routing/live/release flag remains false.
+
+Exact v0.190.0 passed security 39550185581, safety/browser/evidence 39550185672 and Windows regression/EXE/installer 39550185572. Those results are the verified parent only. v0.191.0 requires focused and full regression, all sixteen profiles, saved-evidence verification, staged public-artifact/secret checks and fresh exact-source Windows/package execution. Actual retained provider bytes and independent source/account review remain open.
+
+Final local v0.191.0 evidence: 3,501 tests passed with one expected non-Windows skip and one existing warning; the evidence/privacy-dependent set passed 374 tests. Sixteen profiles and saved-evidence verification matched 353 files / `f7bf1c1a8cb901b763414431b4479e7d0cf7eff2865c3cde90a5b54e7dee2363`; report SHA256 `f10ac6941f2dd1826f79328f15642daf78992cd287e07ee1bd0c79c630decc19`. Fourteen controllers, Portal syntax, compilation, dependencies, generated-roadmap equality and whitespace passed. The public audit rejects renamed private account-response review reports. These results do not establish native Windows, broker, market, funds, live, cloud or release acceptance.
 
 ## v0.190.0 reviewed account-pacing recovery
 

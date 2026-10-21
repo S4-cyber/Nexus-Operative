@@ -2,6 +2,12 @@
 
 This component prepares and validates fixture data only. It contains no HTTP client, credentials, environment access, account writes or automatic strategy routing. The existing gateway continues to reject Alpaca submissions. No broker was connected or tested.
 
+## v0.191.0 exact-byte account-response review
+
+`NexusOperative.exe --paper-tool account-response-review` can replay one successful retained ACCOUNT_INVENTORY result from four private response-body files and its portable observation. The operator must pin the exact current pacing head and exact session head. The tool matches all retained response-byte hashes, fixed request targets, the v3 normalized-result receipt, production account normalization and the portable manifest, then rechecks the journal unchanged. Inputs must be distinct and outside source/install roots; failures are fixed and do not echo private paths or bodies.
+
+The tool never opens credentials, contacts Alpaca, retries, writes a receipt or changes the journal. Supplied byte/hash equality is not provider/TLS authentication, account ownership, completeness, fee timing/linkage, hold reconciliation, settled/spendable funds or routing permission. All broker, funds, live and release flags remain false.
+
 ## v0.190.0 reviewed account-pacing recovery
 
 `PaperReadPacing.recover_review_block` can append one content-free recovery boundary to an exact blocked account journal only under live local ownership. It requires the exact current head and account plus separate confirmations that the block was reviewed and uncertainty remains. The AUTH_DENIED, REVIEW_REQUIRED or INTERRUPTED_UNKNOWN session is not modified. Account interruption remains review-blocked after its full-day cooldown; recovery never shortens that cooldown, reclaims session capacity, creates a read reservation, retries or continues.

@@ -170,9 +170,15 @@ def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_cloc
     order=dict(fixture_inputs()['orders'][0],**({} if order_changes is None else order_changes))
     if two_pages:
         orders=[order]
-        rows=[dict(id='20261017180000000::11234567-89ab-cdef-0123-'+f'{index:012d}',
+        fill=dict(id='20261017180000000::11234567-89ab-cdef-0123-000000000000',
+            activity_type='FILL',order_id=order['broker_order_id'],
+            client_order_id=order['client_order_id'],symbol='BTCUSD',side='buy',type='fill',
+            qty='1',cum_qty='1',leaves_qty='0',price='100',
+            transaction_time='2026-10-17T18:00:01Z')
+        fill.update({} if fill_changes is None else fill_changes)
+        rows=[fill]+[dict(id='20261017180000000::11234567-89ab-cdef-0123-'+f'{index:012d}',
             activity_type='FEE',status='executed',net_amount='-0.01',date='2026-10-17')
-            for index in range(1,102)]
+            for index in range(1,101)]
         pages=[rows[:100],rows[100:]]
     else:
         orders=[order]

@@ -894,6 +894,11 @@ def _validate(profile, result):
                 'cross_response_order_time_regression_rejected',
                 'cross_response_order_fill_regression_rejected',
                 'cross_response_order_status_regression_rejected',
+                'overlapping_order_fill_deltas_bound','shared_order_fill_delta_bound',
+                'cross_response_order_fill_activity_missing_rejected',
+                'cross_response_order_fill_activity_gap_rejected',
+                'cross_response_order_fill_activity_time_rejected',
+                'cross_response_order_fill_average_disagreement_rejected',
                 'repeat_review_matches','changed_activity_response_rejected',
                 'session_tail_required','journals_unchanged')),'EXACT_RESPONSE_BUNDLE')
         _require(all(response[k] is False for k in (*RESPONSE_FLAGS,

@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.198.0 (pre-release).** This minor build binds monotonic state progression across overlapping order identities in the private exact account/activity response bundle. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.199.0 (pre-release).** This minor build binds every increased overlapping-order cumulative fill to a contiguous exact retained FILL-activity delta and weighted average price in the private account/activity response bundle. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.199.0 exact response-bundle fill-delta binding
+
+An overlapping order whose cumulative filled quantity increases must now have exact retained FILL activities that continue without a quantity gap from the earlier snapshot through the later snapshot. Fill event time must be later than the earlier update and no later than the later update. The earlier notional and exact new fill prices/quantities must reproduce the later average fill price. A missing, incomplete, gapped, late, early or average-inconsistent delta fails closed.
+
+Public output retains only an aggregate order-delta count, aggregate fill-activity count and SHA256 digest. This remains local sequential consistency over supplied private evidence, not provider/source attestation, complete received activity, an atomic snapshot, account ownership, fee linkage/posting, hold/funds reconciliation or routing authority. No credential, network, evidence-write, UI, permission, risk, emergency or execution path changed. Exact v0.198.0 source `9def496572d7347190ef52eaf828b84837e74b4e` passed security/history/Gitleaks run 39644084915, safety/regression/evidence/browser run 39644084989 and Windows regression/EXE/installer run 39644084960. Fresh exact-source v0.199.0 workflows remain mandatory.
+
+Local validation passed 3,531 tests with one expected non-Windows skip and one existing warning; the final focused set passed 143. All sixteen profiles and saved-evidence verification matched 357 source files / `411252e865991ae42f9c732c67dc4219a38bc4659d26b4f8a772f3fcce30b23b`; report SHA256 is `8ddf924b74c14e1bd049016b66a7b09283c2bf52337ae55d1089407774f80558`. The 31-child source command smoke, fourteen controller smokes, Portal syntax, compilation, dependency integrity, generated-roadmap equality and whitespace checks passed. Fresh exact-source security, safety/browser/evidence and Windows installer workflows remain mandatory.
 
 ## v0.198.0 exact response-bundle order-progress binding
 

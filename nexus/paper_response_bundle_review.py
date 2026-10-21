@@ -10,6 +10,7 @@ release authority.
 """
 import argparse
 from contextlib import closing
+from decimal import Decimal, InvalidOperation, localcontext
 import hashlib
 import json
 import re
@@ -38,8 +39,8 @@ def _digest(value):
     return value
 
 
-def _order_identity_maps(open_orders,activity_orders,account_id):
-    """Compare identity and monotonic progress without exposing private IDs."""
+def _order_identity_maps(open_orders,activity_orders,activity_records,account_id):
+    """Compare identity, progress and fill deltas without exposing private IDs."""
     from nexus.paper_open_order_terms import _row
     open_by_broker={};open_by_client={};open_rows={}
     try:
@@ -80,7 +81,14 @@ def _order_identity_maps(open_orders,activity_orders,account_id):
     open_identities=sorted(set(open_by_broker.values()))
     activity_identities=sorted(set(activity_by_broker.values()))
     overlap=len(set(open_identities)&set(activity_identities))
-    progress=[]
+    progress=[];fill_deltas=[];fill_activity_count=0
+    fills_by_broker={}
+    try:
+        for record in activity_records:
+            if record['kind']=='FILL':
+                fills_by_broker.setdefault(record['broker_order_id'],[]).append(record)
+    except (TypeError,KeyError):
+        _fail('ACTIVITY_FILL_RECORD_INVALID')
     active_transitions={
         'accepted':contract.STATUSES,
         'pending_new':contract.STATUSES-{'accepted'},
@@ -104,6 +112,47 @@ def _order_identity_maps(open_orders,activity_orders,account_id):
             _fail('CROSS_RESPONSE_ORDER_FILL_CORRECTION')
         if after['status'] not in active_transitions[before['status']]:
             _fail('CROSS_RESPONSE_ORDER_STATUS_REGRESSION')
+        fills=fills_by_broker.get(broker_id,())
+        try:
+            parsed=sorted(((contract.number(fill['cumulative_quantity']),
+                    contract.timestamp_order_ns(fill['occurred_at']),fill) for fill in fills),
+                key=lambda item:(item[0],item[1],item[2]['activity_id']))
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INVALID')
+        if any(cumulative>after_qty for cumulative,_,_ in parsed):
+            _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_AHEAD')
+        delta=[]
+        if after_qty>before_qty:
+            delta=[item for item in parsed if item[0]>before_qty]
+            if not delta:_fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_MISSING')
+            running=before_qty
+            try:
+                with localcontext() as context:
+                    context.prec=80
+                    notional=(Decimal(0) if before_qty==0 else
+                        before_qty*contract.number(before['average_fill_price']))
+                    for cumulative,occurred_at,fill in delta:
+                        quantity=contract.number(fill['quantity'])
+                        notional+=quantity*contract.number(fill['price'])
+                        if cumulative!=running+quantity:_fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_GAP')
+                        if not before_at<occurred_at<=after_at:_fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_TIME')
+                        running=cumulative
+                    after_average=contract.number(after['average_fill_price'])
+                    expected_average=notional/after_qty
+            except (TypeError,KeyError,OverflowError,AttributeError,ArithmeticError,InvalidOperation):
+                _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INVALID')
+            if running!=after_qty:_fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INCOMPLETE')
+            if after_average!=expected_average:
+                _fail('CROSS_RESPONSE_ORDER_FILL_AVERAGE_DISAGREEMENT')
+            fill_activity_count+=len(delta)
+            fill_deltas.append(dict(identity=open_by_broker[broker_id],
+                before_filled_quantity=contract.text(before_qty),
+                after_filled_quantity=contract.text(after_qty),
+                before_average_fill_price=before['average_fill_price'],
+                after_average_fill_price=after['average_fill_price'],
+                fills=[dict(activity_id=fill['activity_id'],quantity=fill['quantity'],
+                    price=fill['price'],cumulative_quantity=fill['cumulative_quantity'],
+                    occurred_at=fill['occurred_at']) for _,_,fill in delta]))
         progress.append(dict(identity=open_by_broker[broker_id],
             before_status=before['status'],after_status=after['status'],
             before_filled_quantity=contract.text(before_qty),
@@ -111,7 +160,8 @@ def _order_identity_maps(open_orders,activity_orders,account_id):
             before_average_fill_price=before['average_fill_price'],
             after_average_fill_price=after['average_fill_price'],
             before_updated_at=before['updated_at'],after_updated_at=after['updated_at']))
-    return open_identities,activity_identities,overlap,progress
+    return (open_identities,activity_identities,overlap,progress,
+        fill_deltas,fill_activity_count)
 
 
 def review(*,pacing_path,activity_store_path,expected_account_id,
@@ -180,8 +230,12 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         _fail('ACCOUNT_RESPONSE_BYTES_CHANGED')
     retained_activity=activity_before['receipts'].get(activity['retained_receipt_sha256'])
     if retained_activity is None:_fail('ACTIVITY_RECEIPT_CHANGED')
-    open_identities,activity_identities,overlap,order_progress=_order_identity_maps(
-        account_raw_values[2][1],retained_activity['orders'],gate.account)
+    retained_by_id={row['activity_id']:row for row in activity_before['normalized_activities']}
+    try:retained_records=[retained_by_id[key] for key in retained_activity['activity_ids']]
+    except KeyError:_fail('ACTIVITY_RECEIPT_CHANGED')
+    (open_identities,activity_identities,overlap,order_progress,
+        order_fill_deltas,order_fill_delta_activities)=_order_identity_maps(
+        account_raw_values[2][1],retained_activity['orders'],retained_records,gate.account)
     if gate.inspect()!=pacing_before:_fail('PACING_HEAD_CHANGED')
     if store.inspect()!=activity_before:_fail('ACTIVITY_HEAD_CHANGED')
 
@@ -199,6 +253,9 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         overlapping_order_identities=overlap,
         overlapping_order_progress_sha256=sha(order_progress),
         overlapping_order_progressions=len(order_progress),
+        overlapping_order_fill_delta_sha256=sha(order_fill_deltas),
+        overlapping_order_fill_deltas=len(order_fill_deltas),
+        overlapping_order_fill_delta_activities=order_fill_delta_activities,
         activity_response_manifest_sha256=activity['response_manifest_sha256'],
         activity_receipt_sha256=activity['retained_receipt_sha256'],
         account_review_sha256=account['review_sha256'],
@@ -216,6 +273,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         adjacent_account_fields_match=True,
         overlapping_order_identities_match=True,
         overlapping_order_progress_monotonic=True,
+        overlapping_order_fill_deltas_bound=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
@@ -223,7 +281,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'ACTIVITY_COLLECTION pair at shared journal heads, requires their normalized account fields to match, '
         'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
         'identity agreement and non-regressing update time, cumulative fill, unchanged-quantity average price and '
-        'status progression for orders visible in both responses, and limits the retained start gap '
+        'status progression for orders visible in both responses, and binds every increased cumulative fill to an '
+        'exact contiguous retained fill-activity delta with bounded event time and weighted average price. It limits the retained start gap '
         'to five minutes. This detects an adjacent discontinuity but does not '
         'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
         'account ownership, source or received-activity coverage, creation/execution/fee coverage, verified '
@@ -359,6 +418,29 @@ def fixture_report():
         try:review(**status_regression)
         except ValueError as error:
             order_status_regression_rejected='CROSS_RESPONSE_ORDER_STATUS_REGRESSION' in str(error)
+        missing_fill=_fixture(root/'missing-fill',activity_include_fill=False)
+        order_fill_activity_missing_rejected=False
+        try:review(**missing_fill)
+        except ValueError as error:
+            order_fill_activity_missing_rejected='CROSS_RESPONSE_ORDER_FILL_ACTIVITY_MISSING' in str(error)
+        fill_gap=_fixture(root/'fill-gap',
+            activity_fill_changes={'qty':'0.5','cum_qty':'1','leaves_qty':'0.5'})
+        order_fill_activity_gap_rejected=False
+        try:review(**fill_gap)
+        except ValueError as error:
+            order_fill_activity_gap_rejected='CROSS_RESPONSE_ORDER_FILL_ACTIVITY_GAP' in str(error)
+        fill_time=_fixture(root/'fill-time',
+            activity_fill_changes={'transaction_time':'2026-10-17T17:59:58Z'})
+        order_fill_activity_time_rejected=False
+        try:review(**fill_time)
+        except ValueError as error:
+            order_fill_activity_time_rejected='CROSS_RESPONSE_ORDER_FILL_ACTIVITY_TIME' in str(error)
+        fill_average=_fixture(root/'fill-average',activity_fill_changes={'price':'99'})
+        order_fill_average_disagreement_rejected=False
+        try:review(**fill_average)
+        except ValueError as error:
+            order_fill_average_disagreement_rejected=(
+                'CROSS_RESPONSE_ORDER_FILL_AVERAGE_DISAGREEMENT' in str(error))
         delayed=_fixture(root/'delayed',activity_wall_clock=1792368241)
         delayed_rejected=False
         try:review(**delayed)
@@ -396,12 +478,22 @@ def fixture_report():
             overlapping_order_progress_monotonic=result['overlapping_order_progress_monotonic'],
             shared_order_progress_bound=result['overlapping_order_progressions']==1 and
                 len(result['overlapping_order_progress_sha256'])==64,
+            overlapping_order_fill_deltas_bound=result['overlapping_order_fill_deltas_bound'],
+            shared_order_fill_delta_bound=result['overlapping_order_fill_deltas']==1 and
+                result['overlapping_order_fill_delta_activities']==1 and
+                len(result['overlapping_order_fill_delta_sha256'])==64,
             repeat_review_matches=result==repeated,changed_activity_response_rejected=changed_rejected,
             adjacent_account_discontinuity_rejected=discontinuity_rejected,
             cross_response_order_identity_conflict_rejected=order_identity_conflict_rejected,
             cross_response_order_time_regression_rejected=order_time_regression_rejected,
             cross_response_order_fill_regression_rejected=order_fill_regression_rejected,
             cross_response_order_status_regression_rejected=order_status_regression_rejected,
+            cross_response_order_fill_activity_missing_rejected=
+                order_fill_activity_missing_rejected,
+            cross_response_order_fill_activity_gap_rejected=order_fill_activity_gap_rejected,
+            cross_response_order_fill_activity_time_rejected=order_fill_activity_time_rejected,
+            cross_response_order_fill_average_disagreement_rejected=
+                order_fill_average_disagreement_rejected,
             delayed_adjacent_session_rejected=delayed_rejected,
             outside_session_timing_rejected=timing_envelope_rejected,
             session_tail_required=tail_rejected,journals_unchanged=before==after)

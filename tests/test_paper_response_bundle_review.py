@@ -54,6 +54,10 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['overlapping_order_progress_monotonic']
     assert result['overlapping_order_progressions']==1
     assert len(result['overlapping_order_progress_sha256'])==64
+    assert result['overlapping_order_fill_deltas_bound']
+    assert result['overlapping_order_fill_deltas']==1
+    assert result['overlapping_order_fill_delta_activities']==1
+    assert len(result['overlapping_order_fill_delta_sha256'])==64
     assert len(result['reported_open_order_identity_sha256'])==64
     assert len(result['activity_order_identity_sha256'])==64
     assert len(result['adjacent_account_fields_sha256'])==64
@@ -117,6 +121,33 @@ def test_bundle_rejects_cross_response_order_progress_regressions(
         tmp_path,account_changes,activity_changes,fill_changes,include_fill,code):
     options=subject._fixture(tmp_path,account_order_changes=account_changes,
         activity_order_changes=activity_changes,activity_fill_changes=fill_changes,
+        activity_include_fill=include_fill)
+    with pytest.raises(ValueError,match=code):subject.review(**options)
+
+
+def test_bundle_binds_partial_fill_delta_and_weighted_average(tmp_path):
+    options=subject._fixture(tmp_path,
+        account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
+            'status':'partially_filled'},
+        activity_order_changes={'filled_quantity':'1','average_fill_price':'100',
+            'status':'filled'},
+        activity_fill_changes={'qty':'0.5','cum_qty':'1','leaves_qty':'0',
+            'price':'101'})
+    result=subject.review(**options)
+    assert result['overlapping_order_fill_deltas_bound']
+    assert result['overlapping_order_fill_deltas']==1
+    assert result['overlapping_order_fill_delta_activities']==1
+
+
+@pytest.mark.parametrize('fill_changes,include_fill,code',[
+    ({},False,'FILL_ACTIVITY_MISSING'),
+    ({'qty':'0.5','cum_qty':'1','leaves_qty':'0.5'},True,'FILL_ACTIVITY_GAP'),
+    ({'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5'},True,'FILL_ACTIVITY_INCOMPLETE'),
+    ({'transaction_time':'2026-10-17T17:59:58Z'},True,'FILL_ACTIVITY_TIME'),
+    ({'price':'99'},True,'FILL_AVERAGE_DISAGREEMENT'),
+])
+def test_bundle_rejects_unbound_order_fill_delta(tmp_path,fill_changes,include_fill,code):
+    options=subject._fixture(tmp_path,activity_fill_changes=fill_changes,
         activity_include_fill=include_fill)
     with pytest.raises(ValueError,match=code):subject.review(**options)
 

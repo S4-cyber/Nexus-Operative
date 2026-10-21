@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.199.0 exact response-bundle fill-delta binding
+
+For each order visible in both adjacent exact response components whose cumulative fill increases, require exact retained FILL activities to form a gap-free chain from the earlier quantity to the later quantity. Their event times must fall strictly after the earlier update and no later than the later update. Earlier filled notional plus every new exact fill quantity-times-price must reproduce the later weighted average fill price. Output adds only aggregate delta/activity counts and one digest; private identities, quantities, prices and timestamps remain outside public evidence.
+
+This strengthens local execution consistency but does not attest the provider, prove complete received activity, make sequential reads atomic, link or post fees, reconcile holds or spendable funds, establish account ownership, or authorize routing. No UI control or editable parameter changed. Seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, risk/account gates, fail-closed exits and independent emergency stop are unchanged.
+
+Exact v0.198.0 source `9def496572d7347190ef52eaf828b84837e74b4e` passed security/history/Gitleaks run 39644084915, safety/regression/evidence/browser run 39644084989 and Windows regression/EXE/installer run 39644084960. Fresh exact-source v0.199.0 workflows and every actual authorized provider/account, sustained-market, fee/hold/funds, native-profile, independent and owner gate remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages.
+
+Local v0.199.0 validation passed 3,531 tests with one expected non-Windows skip and one existing warning; the final release-focused set passed 143 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `411252e865991ae42f9c732c67dc4219a38bc4659d26b4f8a772f3fcce30b23b`; report SHA256 is `8ddf924b74c14e1bd049016b66a7b09283c2bf52337ae55d1089407774f80558`. The 31-child source command smoke, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Playwright, Gitleaks and native Windows execution remain unavailable; exact-source workflows are required.
+
 ## v0.198.0 exact response-bundle order-progress binding
 
 The private exact-response bundle now requires every order shared by the earlier account-inventory response and later retained activity snapshot to progress monotonically. Update time and cumulative filled quantity cannot regress, a changed state cannot reuse the same update instant, unchanged cumulative quantity cannot change its average fill price, and status must follow the existing conservative transition graph. The report exposes only an aggregate transition count and digest.

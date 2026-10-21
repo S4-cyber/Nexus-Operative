@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.198.0, monotonic state progression across overlapping order identities in the private exact account/activity response bundle. Read the newest version section and generated roadmap; fresh exact-source v0.198.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.199.0, exact retained fill-activity delta binding for increased cumulative quantities across overlapping order identities in the private account/activity response bundle. Read the newest version section and generated roadmap; fresh exact-source v0.199.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.199.0 exact response-bundle fill-delta binding
+
+For every order shared by the earlier exact ACCOUNT_INVENTORY open-order response and later retained ACTIVITY_COLLECTION order snapshot whose cumulative filled quantity increases, require a contiguous chain of exact retained FILL activities. The first new activity must continue from the earlier quantity, the last must reach the later quantity, every event must occur after the earlier update and no later than the later update, and the earlier notional plus exact new fill quantity-times-price must reproduce the later average fill price. Retained fill cumulative quantity may never exceed the later snapshot.
+
+Output may expose only the number of bound order deltas, number of bound fill activities and one SHA256 digest; never expose raw order IDs, execution IDs, quantities, prices or timestamps. This is sequential local consistency over supplied private evidence, not provider identity, source/activity completeness, an atomic snapshot, account ownership, fee linkage/posting, holds, settled/spendable funds, routing authority or broker acceptance. Keep all authority false, permissions OFF by default and preserve the seven beginner tabs, black/bright-purple bottom-right help, limits, fail-closed exits and independent emergency stop.
+
+Exact v0.198.0 source `9def496572d7347190ef52eaf828b84837e74b4e` passed public security/history/Gitleaks run 39644084915, safety/regression/evidence/browser run 39644084989 and Windows regression/EXE/installer run 39644084960. Those results do not transfer to v0.199.0. Run focused response/release/package/version checks, all sixteen profiles and saved-evidence verification, the complete suite, fourteen controllers, Portal syntax, static/public-artifact checks and fresh exact-source workflows.
+
+Local v0.199.0 validation passed 3,531 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release-focused response/package/evidence/version/roadmap set passed 143 tests. All sixteen bounded offline profiles and saved-evidence verification matched 357 source files / `411252e865991ae42f9c732c67dc4219a38bc4659d26b4f8a772f3fcce30b23b`; `validation/release_trials_0_199_0.json` SHA256 is `8ddf924b74c14e1bd049016b66a7b09283c2bf52337ae55d1089407774f80558`. The common source command smoke executed 31 cross-platform child processes. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Playwright, Gitleaks and native Windows execution remain unavailable; dedicated exact-source browser, security/history and Windows workflows are mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local execution-binding increment does not change release approval, trading permission or any launch-date assessment.
 
 ## v0.198.0 exact response-bundle order-progress binding
 

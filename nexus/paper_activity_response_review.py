@@ -150,7 +150,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     return scope
 
 
-def _fixture(root,two_pages=False):
+def _fixture(root,two_pages=False,pacing_path=None):
     """Create disposable injected response bytes plus paced retained activity."""
     import io
     from nexus.alpaca_activity_collection import collect_activities
@@ -186,7 +186,7 @@ def _fixture(root,two_pages=False):
     class Opener:
         def __init__(self):self.items=iter(bodies)
         def open(self,request,timeout):return Response(request.full_url,next(self.items))
-    gate=PaperReadPacing(root/'pacing.sqlite3',account)
+    gate=PaperReadPacing(pacing_path or root/'pacing.sqlite3',account)
     store=BrokerActivityStore(root/'activity.sqlite3',account)
     collect_activities('fixture_key_only_123','fixture_secret_only_123',orders,
         expected_account_id=account,after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z',

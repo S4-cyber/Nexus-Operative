@@ -604,7 +604,9 @@ def _execute(profile):
     if profile == 'reconciliation_acceptance':
         from nexus.paper_reconciliation_acceptance import fixture_report
         from nexus.paper_account_evidence_review import fixture_report as bundle_fixture
-        result=fixture_report();result['account_evidence_bundle']=bundle_fixture();return result
+        from nexus.paper_response_bundle_review import fixture_report as response_fixture
+        result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
+        result['exact_response_bundle']=response_fixture();return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -678,7 +680,7 @@ def _validate(profile, result):
         native_windows_required=tools['host_os']=='WINDOWS_NT'
         _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and
             tools['host_os'] in ('WINDOWS_NT','NON_WINDOWS') and
-            tools['tool_invocations']==30+int(native_windows_required) and
+            tools['tool_invocations']==31+int(native_windows_required) and
             tools['native_windows_storage_fault_checked'] is native_windows_required and
             all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
@@ -875,9 +877,18 @@ def _validate(profile, result):
             'money_movement_enabled','release_approved')), 'ACTIVITY_ACCEPTANCE_AUTHORITY')
     if profile == 'reconciliation_acceptance':
         from nexus.paper_account_evidence_review import FLAGS as BUNDLE_FLAGS
+        from nexus.paper_response_bundle_review import FLAGS as RESPONSE_FLAGS
         bundle=result['account_evidence_bundle']
         _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
         _require(all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY')
+        response=result['exact_response_bundle']
+        _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
+            all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',
+                'exact_account_response_replayed','exact_activity_response_replayed',
+                'repeat_review_matches','changed_activity_response_rejected',
+                'session_tail_required','journals_unchanged')),'EXACT_RESPONSE_BUNDLE')
+        _require(all(response[k] is False for k in (*RESPONSE_FLAGS,
+            'actual_provider_access','actual_vault_access')),'EXACT_RESPONSE_BUNDLE_AUTHORITY')
         _require(result['source']=='SYNTHETIC_LOCAL_ACCEPTED_RECONCILIATION_FIXTURE' and
             result['repeat_review_matches'] is True and result['journals_unchanged'] is True and
             result['unbound_history_rejected'] is True and

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.192.0'
+REVISION = '0.193.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -109,6 +109,7 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
+    'Use the private exact-response bundle review on an authorized adjacent ACCOUNT_INVENTORY and current-tail ACTIVITY_COLLECTION pair: preserve every exact response body plus the portable account observation outside Git, pin the shared current pacing/activity heads and both session heads, and independently review the composed normalization result. Local byte/hash agreement is not provider identity, source or received-activity coverage, account ownership, fee/hold/funds acceptance or routing permission.',
     'Use the private account-response review on an authorized retained ACCOUNT_INVENTORY session: preserve the exact four response bodies and portable observation outside Git, pin the current pacing head and session head, and independently review the normalization result. Exact local byte/hash agreement is not provider identity, source coverage, account ownership, fee/hold/funds acceptance or routing permission.',
     'Use the private activity-response review on an authorized retained ACTIVITY_COLLECTION session: preserve the exact account and one/two page response bodies outside Git, pin the current pacing/activity heads and session head, and independently replay the retained normalized receipt. Exact local byte/hash agreement does not prove source or creation/execution/fee coverage, posting times, fee links, holds, funds or routing permission.',
     'Accept retained checked-admission samples on authorized native paper histories, including full prefix replay and later cross-request clock regression. Keep older markers untimed. Independently review actual send/arrival event capture, clock domains and contemporaneous quotes before creating execution benchmarks; admission is not proof of transport or broker arrival.',
@@ -160,7 +161,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.192.0 adds an explicit offline activity-response review for one exact successful ACTIVITY_COLLECTION session. It pins the current pacing and activity heads plus the exact session head, matches the private account and one/two activity-page response bodies byte-for-byte, replays account fields, production activity normalization, page/cursor observations and the retained normalized receipt, then rechecks both journals unchanged. Inputs remain private and outside Git; the tool never opens credentials, contacts a provider, writes a receipt, retries, continues or grants provider/source/account/activity/fee/hold/funds/routing/release authority. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.193.0 adds an explicit offline exact-response bundle review for one adjacent ACCOUNT_INVENTORY and current-tail ACTIVITY_COLLECTION pair. It pins the shared current pacing/activity heads, requires globally distinct private response/observation paths, composes both production normalization reviews, binds the account observation and retained activity receipt, and rechecks both journals unchanged. Inputs remain private and outside Git; the tool never opens credentials, contacts a provider, writes evidence, retries, continues or grants provider/source/account/activity/fee/hold/funds/routing/release authority. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

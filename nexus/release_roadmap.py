@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.195.0'
+REVISION = '0.196.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -161,7 +161,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.195.0 adds a fixed five-minute start-gap fence to the exact adjacent response bundle. The immediately following current-tail ACTIVITY_COLLECTION must begin no more than 300 seconds after the ACCOUNT_INVENTORY completes, in addition to matching normalized account fields and exact private response evidence. A delayed pair now fails closed even when both sessions are individually valid and journal-adjacent. Inputs remain private and outside Git; the tool never schedules a read, opens credentials, contacts a provider, writes evidence, retries, continues or grants provider/source/account/activity/fee/hold/funds/routing/release authority. A bounded sequential gap is not an atomic snapshot, quiet interval or provider/source/coverage/funds attestation. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.196.0 binds the sampled read interval from each exact account/activity observation inside the corresponding retained pacing-session interval. A locally self-consistent response projection no longer suffices when its sampled read timestamps fall before the paced BEGIN or after the paced RESULT. Exact bytes, normalized account fields, retained observations/receipt, current heads, journal adjacency and the five-minute inter-session start-gap fence remain mandatory. Inputs remain private and outside Git; the tool never schedules a read, opens credentials, contacts a provider, writes evidence, retries, continues or grants provider/source/account/activity/fee/hold/funds/routing/release authority. Local timestamp containment is not provider clock attestation, an atomic snapshot, a quiet interval or provider/source/coverage/funds acceptance. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

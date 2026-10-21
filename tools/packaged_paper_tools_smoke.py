@@ -338,6 +338,7 @@ def run(command):
             response_bundle['bounded_adjacent_session_start_gap'] is True and
             response_bundle['adjacent_session_start_gap_seconds']<=
                 response_bundle['adjacent_session_start_gap_limit_seconds']==300 and
+            response_bundle['component_session_timing_envelopes_match'] is True and
             response_bundle['adjacent_account_fields_match'] is True and
             len(response_bundle['adjacent_account_fields_sha256'])==64 and
             response_bundle['journals_rechecked_unchanged'] is True and

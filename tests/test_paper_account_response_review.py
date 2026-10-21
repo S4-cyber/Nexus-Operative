@@ -16,6 +16,7 @@ def test_exact_response_bytes_replay_normalization_without_writes(tmp_path):
     assert result['mode']==subject.MODE and result['status']=='REVIEW_REQUIRED'
     assert result['response_bodies']==4 and result['exact_response_bytes_match']
     assert result['normalization_replayed'] and result['portable_observation_matches']
+    assert result['session_timing_envelope_match']
     assert len(result['account_fields_sha256'])==64
     assert result['journal_rechecked_unchanged'] and result['admission_reserved'] is False
     assert all(result[flag] is False for flag in subject.FLAGS)

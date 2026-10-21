@@ -13,7 +13,7 @@ import json
 import re
 import sqlite3
 
-from nexus.alpaca_paper_contract import sha
+from nexus.alpaca_paper_contract import canonical, sha
 from nexus import paper_account_response_review as account_review
 from nexus import paper_activity_response_review as activity_review
 from nexus.paper_activity_acceptance_probe import _private_path
@@ -88,6 +88,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         account_after_path=activity_account_after_path)
     if (account['account_sha256']!=activity['account_sha256'] or
             account['pacing_head_sha256']!=activity['pacing_head_sha256'] or
+            account['session_timing_envelope_match'] is not True or
+            activity['session_timing_envelope_match'] is not True or
             any(account[flag] is not False or activity[flag] is not False for flag in FLAGS)):
         _fail('COMPONENT_DISAGREEMENT')
     if account['account_fields_sha256']!=activity['account_fields_sha256']:
@@ -117,13 +119,15 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         adjacent_session_start_gap_seconds=adjacent_start_gap,
         adjacent_session_start_gap_limit_seconds=MAX_ADJACENT_START_GAP_SECONDS,
         bounded_adjacent_session_start_gap=True,
+        component_session_timing_envelopes_match=True,
         adjacent_account_fields_match=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
     scope['limitations']=('Exact private bytes locally replay one adjacent ACCOUNT_INVENTORY and current-tail '
         'ACTIVITY_COLLECTION pair at shared journal heads, requires their normalized account fields to match, '
-        'and limits the retained start gap to five minutes. This detects an adjacent discontinuity but does not '
+        'requires each retained read timing to stay inside its paced session, and limits the retained start gap '
+        'to five minutes. This detects an adjacent discontinuity but does not '
         'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
         'account ownership, source or received-activity coverage, creation/execution/fee coverage, verified '
         'clocks, fee links/posting, holds, settled or spendable funds, broker-wide pacing, routing permission or '
@@ -155,6 +159,43 @@ def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clo
         activity_account_after_path=activity['account_after_path'])
 
 
+def _retime_fixture_pacing(options,*,account_times=None,activity_times=None):
+    """Rewrite a disposable fixture chain to exercise timing-envelope rejection."""
+    from nexus.paper_read_pacing import RECEIPT_PROFILE_V3, ZERO
+    changes={}
+    if account_times is not None:changes.update({1:account_times[0],2:account_times[1]})
+    if activity_times is not None:changes.update({3:activity_times[0],4:activity_times[1]})
+    with sqlite3.connect(options['pacing_path']) as db:
+        rows=db.execute('SELECT seq,body FROM events ORDER BY seq').fetchall()
+        if [row[0] for row in rows]!=list(range(5)):_fail('FIXTURE_SHAPE_INVALID')
+        previous=ZERO;heads=[];begin_head=None;before_head=None;operation=None
+        for seq,encoded in rows:
+            body=json.loads(encoded)
+            if seq in changes:body['evaluated_at']=changes[seq]
+            if body.get('kind')=='BEGIN':
+                before_head=ZERO if seq==1 else previous
+                operation=body['operation']
+            elif body.get('kind')=='RESULT':
+                body['token']=begin_head
+                if body.get('receipt_profile')!=RECEIPT_PROFILE_V3:_fail('FIXTURE_SHAPE_INVALID')
+                receipt=dict(profile=body['receipt_profile'],operation=operation,
+                    before_head_sha256=before_head,begin_head_sha256=begin_head,
+                    evaluated_at=body['evaluated_at'],outcome=body['outcome'],
+                    request_kinds=body['request_kinds'],response_sha256=body['response_sha256'],
+                    request_sha256=body['request_sha256'],
+                    result_projection_sha256=body['result_projection_sha256'])
+                body['receipt_sha256']=sha(receipt)
+            digest=sha(dict(seq=seq,body=body,previous=previous))
+            db.execute('UPDATE events SET body=?,previous=?,digest=? WHERE seq=?',
+                (canonical(body),previous,digest,seq))
+            previous=digest;heads.append(digest)
+            if body.get('kind')=='BEGIN':begin_head=digest
+        db.commit()
+    options.update(account_session_head=heads[2],activity_session_head=heads[4],
+        expected_pacing_head=heads[4])
+    return options
+
+
 def fixture_report():
     """Bounded injected bundle evidence for release trials; no external IO."""
     import tempfile
@@ -183,6 +224,12 @@ def fixture_report():
         try:review(**delayed)
         except ValueError as error:
             delayed_rejected='ADJACENT_SESSION_GAP_EXCEEDED' in str(error)
+        timing=_fixture(root/'timing')
+        _retime_fixture_pacing(timing,account_times=(1792367939,1792367939))
+        timing_envelope_rejected=False
+        try:review(**timing)
+        except ValueError as error:
+            timing_envelope_rejected='SESSION_TIMING_DISAGREEMENT' in str(error)
         tail=_fixture(root/'tail');gate=PaperReadPacing(tail['pacing_path'],tail['expected_account_id'])
         with gate.ownership() as owner:
             token=gate.begin(admission=lambda:1792454401,ownership=owner,
@@ -201,10 +248,13 @@ def fixture_report():
             exact_activity_response_replayed=result['activity_normalization_replayed'] and
                 result['activity_observation_replayed'] and result['activity_receipt_replayed'],
             bounded_adjacent_session_start_gap=result['bounded_adjacent_session_start_gap'],
+            component_session_timing_envelopes_match=
+                result['component_session_timing_envelopes_match'],
             adjacent_account_fields_match=result['adjacent_account_fields_match'],
             repeat_review_matches=result==repeated,changed_activity_response_rejected=changed_rejected,
             adjacent_account_discontinuity_rejected=discontinuity_rejected,
             delayed_adjacent_session_rejected=delayed_rejected,
+            outside_session_timing_rejected=timing_envelope_rejected,
             session_tail_required=tail_rejected,journals_unchanged=before==after)
         return dict(source='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE',passed=all(checks.values()),
             **checks,actual_provider_access=False,actual_vault_access=False,

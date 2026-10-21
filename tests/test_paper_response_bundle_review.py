@@ -47,6 +47,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['bounded_adjacent_session_start_gap']
     assert result['adjacent_session_start_gap_seconds']==60
     assert result['adjacent_session_start_gap_limit_seconds']==300
+    assert result['component_session_timing_envelopes_match']
     assert result['adjacent_account_fields_match']
     assert len(result['adjacent_account_fields_sha256'])==64
     assert result['journals_rechecked_unchanged'] and result['admission_reserved'] is False
@@ -90,6 +91,17 @@ def test_bundle_rejects_adjacent_normalized_account_field_discontinuity(tmp_path
 def test_bundle_rejects_adjacent_sessions_outside_bounded_start_gap(tmp_path):
     options=subject._fixture(tmp_path,activity_wall_clock=1792368241)
     with pytest.raises(ValueError,match='ADJACENT_SESSION_GAP_EXCEEDED'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('component,times',[
+    ('account',(1792367939,1792367939)),
+    ('activity',(1792368001,1792368001)),
+])
+def test_bundle_rejects_observation_outside_paced_session_envelope(tmp_path,component,times):
+    options=subject._fixture(tmp_path)
+    subject._retime_fixture_pacing(options,**{component+'_times':times})
+    with pytest.raises(ValueError,match='SESSION_TIMING_DISAGREEMENT'):
         subject.review(**options)
 
 

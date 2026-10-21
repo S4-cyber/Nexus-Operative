@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.195.0 (pre-release).** This milestone adds a fixed five-minute start-gap fence to one exact adjacent account/activity response pair. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.196.0 (pre-release).** This milestone binds each exact response observation's sampled read interval inside its retained pacing-session interval. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.196.0 paced-session timing-envelope binding
+
+The exact account-response and activity-response reviewers now require the sampled observation start/completion timestamps to lie inside the matching retained pacing-session BEGIN/RESULT timestamps. `--paper-tool response-bundle-review` composes both checks and reports only the containment result, not private timestamps. Release evidence independently rebuilds a valid pacing hash chain and receipt after moving a session outside its observation interval, then requires fixed fail-closed rejection. Exact bytes, normalized account fields, retained observations/receipt, current heads, adjacency, unchanged journals and the five-minute inter-session fence remain mandatory.
+
+This proves only local containment between two retained clock records. It is not provider clock attestation, provider identity, TLS capture, a scheduler, retry, atomic snapshot, quiet interval, latency measurement or source/coverage/funds acceptance. The tools perform no credential, vault, network or evidence write. Exact v0.195.0 commit `91e6265c7fe77ae7e3d8b5c7f4f8d13f3882680b` passed security/history/Gitleaks 39607935619, safety/regression/evidence/browser 39607935520 and Windows regression/EXE/installer 39607935478. Fresh exact-source v0.196.0 workflows remain mandatory. No GUI control or editable parameter changed.
+
+Final local validation passed 3,518 tests with one expected non-Windows skip and one existing warning; the focused response/package/evidence/version/roadmap set passed 135 tests. All sixteen profiles and saved-evidence verification matched 357 source files / `cce87301d621190bf49fcbf404b9bb28f545d2012a237c3659a0b7c28660e8ce`; report SHA256 is `58dd94d5e7727ad63342b06796b0b2619549d6be9492cbf14dfcd000688215b9`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The staged 522-path public audit and 695-commit/3,750-blob reachable-history audit had zero findings. Fresh exact-source CI remains mandatory.
 
 ## v0.195.0 bounded adjacent response timing
 

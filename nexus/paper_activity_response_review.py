@@ -123,6 +123,9 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     except (ValueError,TypeError,KeyError,AttributeError,OverflowError,RecursionError,MemoryError):
         _fail('OBSERVATION_INVALID')
     if replayed!=observed:_fail('OBSERVATION_DISAGREEMENT')
+    if not (operation['started_at']<=replayed['read_started_at']<=
+            replayed['read_completed_at']<=operation['completed_at']):
+        _fail('SESSION_TIMING_DISAGREEMENT')
     normalized_receipt=sha(dict(account_sha256=store.account_digest,after=receipt['after'],
         until=receipt['until'],**normalized,collection_observation=replayed))
     if normalized_receipt!=receipt_id:_fail('RETAINED_RECEIPT_DISAGREEMENT')
@@ -140,6 +143,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         normalized_activities=len(normalized['activities']),exact_response_bytes_match=True,
         account_fields_replayed=True,activity_normalization_replayed=True,
         collection_observation_replayed=True,retained_receipt_replayed=True,
+        session_timing_envelope_match=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)

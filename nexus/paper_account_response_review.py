@@ -101,6 +101,9 @@ def review(*,pacing_path,expected_account_id,expected_head,session_head,
     except (ValueError,TypeError,KeyError,OverflowError,RecursionError,MemoryError):
         _fail('NORMALIZATION_INVALID')
     if result['portable_observation']!=observation:_fail('OBSERVATION_DISAGREEMENT')
+    timing=result['read_timing']
+    if not (record['started_at']<=timing['started_at']<=timing['completed_at']<=record['completed_at']):
+        _fail('SESSION_TIMING_DISAGREEMENT')
     normalized_digest=projection.digest('ACCOUNT_INVENTORY',result)
     if normalized_digest!=record['result_projection_sha256']:_fail('NORMALIZED_RESULT_DISAGREEMENT')
     if gate.inspect()!=before:_fail('HEAD_CHANGED')
@@ -111,7 +114,8 @@ def review(*,pacing_path,expected_account_id,expected_head,session_head,
         account_fields_sha256=result['account_fields_sha256'],
         normalized_result_sha256=normalized_digest,response_bodies=4,
         exact_response_bytes_match=True,normalization_replayed=True,
-        portable_observation_matches=True,journal_rechecked_unchanged=True,
+        portable_observation_matches=True,session_timing_envelope_match=True,
+        journal_rechecked_unchanged=True,
         admission_reserved=False,**{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
     scope['limitations']=('Exact private response bytes and one caller-supplied portable observation match a '

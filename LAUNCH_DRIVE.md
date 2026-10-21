@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.196.0 paced-session timing-envelope binding
+
+The private offline exact account-response and activity-response reviewers now require each sampled observation read interval to be contained by its exact retained pacing-session BEGIN/RESULT interval. The composed response bundle requires both component envelopes and release evidence rejects a recomputed, chain-valid pacing fixture when an observation falls outside its session. Exact response bytes, normalized account continuity, retained observations/receipt, shared current heads, adjacency, unchanged journals and the five-minute inter-session start-gap fence remain required.
+
+This is local timestamp-containment evidence only. It does not attest provider clocks or identity, authenticate TLS capture, make sequential reads atomic, prove a quiet interval, validate latency or establish source/activity/fee/hold/funds coverage. The installed/source tools remain credential-, vault-, network- and write-silent, every authority flag remains false, and the seven-tab beginner UI plus black/bright-purple bottom-right help contract is unchanged.
+
+Exact v0.195.0 source `91e6265c7fe77ae7e3d8b5c7f4f8d13f3882680b` passed security/history/Gitleaks 39607935619, safety/regression/evidence/browser 39607935520 and Windows regression/EXE/installer 39607935478. Fresh v0.196.0 exact-source CI and every actual authorized provider/account, source/coverage, fee/hold/funds, sustained-market, native-profile and independent/owner gate remain open.
+
+Local v0.196.0 validation passed 3,518 tests (one skip, one existing warning), 135 focused tests, all sixteen offline profiles, saved-evidence verification, fourteen controller smokes and the static checks. Evidence matched 357 source files / `cce87301d621190bf49fcbf404b9bb28f545d2012a237c3659a0b7c28660e8ce`; report SHA256 is `58dd94d5e7727ad63342b06796b0b2619549d6be9492cbf14dfcd000688215b9`. These injected/offline results are not provider, market, native Windows, profitability or release acceptance.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This did not change accepted integration scope, release approval, trading permission or any launch-date assessment.
+
 ## v0.195.0 bounded adjacent response timing
 
 The installed/source `response-bundle-review` now rejects an adjacent pair unless the immediately following current-tail ACTIVITY_COLLECTION starts within 300 seconds after the ACCOUNT_INVENTORY completes. It reports the retained start gap and fixed limit, while release evidence must prove that a 301-second gap fails closed. The existing normalized account-field match, exact response-byte review, private observations/receipt replay, exact current heads and unchanged-journal checks remain mandatory.

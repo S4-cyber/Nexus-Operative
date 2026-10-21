@@ -886,6 +886,7 @@ def _validate(profile, result):
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',
                 'exact_account_response_replayed','exact_activity_response_replayed',
                 'bounded_adjacent_session_start_gap','delayed_adjacent_session_rejected',
+                'component_session_timing_envelopes_match','outside_session_timing_rejected',
                 'adjacent_account_fields_match','adjacent_account_discontinuity_rejected',
                 'repeat_review_matches','changed_activity_response_rejected',
                 'session_tail_required','journals_unchanged')),'EXACT_RESPONSE_BUNDLE')

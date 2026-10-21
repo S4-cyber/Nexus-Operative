@@ -310,6 +310,8 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('exact_response_bundle','session_tail_required'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','bounded_adjacent_session_start_gap'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','delayed_adjacent_session_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
+        (('exact_response_bundle','component_session_timing_envelopes_match'),False,'EXACT_RESPONSE_BUNDLE'),
+        (('exact_response_bundle','outside_session_timing_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','adjacent_account_fields_match'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','adjacent_account_discontinuity_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','ready_for_routing'),True,'EXACT_RESPONSE_BUNDLE_AUTHORITY'),

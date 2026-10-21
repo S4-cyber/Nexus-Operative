@@ -17,7 +17,8 @@ def test_exact_response_bytes_replay_activity_receipt_without_writes(tmp_path):
     assert result['exact_response_bytes_match'] and result['account_fields_replayed']
     assert len(result['account_fields_sha256'])==64
     assert result['activity_normalization_replayed'] and result['collection_observation_replayed']
-    assert result['retained_receipt_replayed'] and result['journals_rechecked_unchanged']
+    assert result['retained_receipt_replayed'] and result['session_timing_envelope_match']
+    assert result['journals_rechecked_unchanged']
     assert result['admission_reserved'] is False
     assert all(result[flag] is False for flag in subject.FLAGS)
     assert result==subject.review(**options)

@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.195.0, bounded adjacent response timing over the fully green exact-source v0.194.0 account-field continuity checkpoint. Read the newest version section and generated roadmap; exact-source v0.195.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.196.0, paced-session timing-envelope binding over the fully green exact-source v0.195.0 bounded adjacent response checkpoint. Read the newest version section and generated roadmap; exact-source v0.196.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.196.0 paced-session timing-envelope binding
+
+Each exact ACCOUNT_INVENTORY portable observation and ACTIVITY_COLLECTION retained observation must place its sampled read start/completion inside the corresponding retained pacing-session BEGIN/RESULT timestamps. A response projection and journal may each be internally valid but must fail closed when their timing domains disagree. The composed exact-response bundle must report that both component envelopes match and release evidence must reject a recomputed, chain-valid fixture whose observation lies outside its paced session.
+
+This is local timestamp-containment evidence, not provider clock attestation, TLS capture, a scheduler, automatic retry, atomic snapshot, quiet interval or latency claim. The installed/source tools remain credential-, vault-, network- and write-silent, all authority flags false, and no GUI control or editable parameter changes. Preserve seven beginner tabs and black/bright-purple bottom-right help. Keep progress about 40% (30–45%, low confidence), 0/9 accepted.
+
+Exact v0.195.0 commit `91e6265c7fe77ae7e3d8b5c7f4f8d13f3882680b` passed security/history/Gitleaks 39607935619, safety/regression/evidence/browser 39607935520 and Windows regression/EXE/installer 39607935478. Those results do not transfer to v0.196.0. Run focused response/package/evidence tests, all profiles and saved evidence, full regression, static/public-artifact checks and fresh exact-source workflows.
+
+Final v0.196.0 local validation passed 3,518 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release-focused response/package/evidence/version/roadmap set passed 135 tests. All sixteen bounded offline profiles and saved-evidence verification matched 357 source files / `cce87301d621190bf49fcbf404b9bb28f545d2012a237c3659a0b7c28660e8ce`; `validation/release_trials_0_196_0.json` SHA256 is `58dd94d5e7727ad63342b06796b0b2619549d6be9492cbf14dfcd000688215b9`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. The staged 522-path/20,225,220-byte public audit and 695-commit/3,750-blob reachable-history audit had zero findings. Local Gitleaks and native Windows execution are unavailable; exact-source security/history, safety/browser/evidence and Windows packaging/installer CI remain mandatory.
 
 ## v0.195.0 bounded adjacent response timing
 

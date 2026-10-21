@@ -402,7 +402,12 @@ def _pacing_trial():
         owned.interrupt(snapshot['pending_token'], expected_head=snapshot['head_sha256'],
             expected_account_id=account, confirm_interrupted=True, admission=lambda:1001)
         interrupted_state = PaperReadPacing(owned.path,account).inspect()
-        explicit_review = interrupted_state['last_outcome'] == 'INTERRUPTED_UNKNOWN' and interrupted_state['sessions'] == 1
+        explicit_review = (interrupted_state['last_outcome'] == 'INTERRUPTED_UNKNOWN' and
+            interrupted_state['sessions'] == 1 and interrupted_state['review_required'] is True)
+        with owned.ownership() as owner:
+            owned.recover_review_block(expected_head=interrupted_state['head_sha256'],
+                expected_account_id=account,confirm_block_reviewed=True,
+                confirm_uncertainty_preserved=True,admission=lambda:1002,ownership=owner)
         long_wait = denied(lambda:owned.begin(admission=lambda:87400), 'COOLDOWN')
         state = PaperReadPacing(path,account).inspect()
         wal = PaperReadPacing(Path(directory)/'wal.sqlite3', account)
@@ -673,7 +678,7 @@ def _validate(profile, result):
         native_windows_required=tools['host_os']=='WINDOWS_NT'
         _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and
             tools['host_os'] in ('WINDOWS_NT','NON_WINDOWS') and
-            tools['tool_invocations']==27+int(native_windows_required) and
+            tools['tool_invocations']==28+int(native_windows_required) and
             tools['native_windows_storage_fault_checked'] is native_windows_required and
             all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')

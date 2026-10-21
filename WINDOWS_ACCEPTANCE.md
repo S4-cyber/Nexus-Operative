@@ -1,5 +1,11 @@
 # Windows distribution and acceptance evidence
 
+## v0.190.0 account-pacing recovery candidate
+
+The installed/source tool catalogue adds `account-recovery`, an explicit mutation of an existing private account pacing journal. Native acceptance must verify exact-head/account/ownership fencing, private path/profile/ACL behavior, interrupted full-day cooldown and review-block preservation, no journal creation on missing input, sanitized failures and packaged/installed parity. It must not open Windows Credential Manager, contact a provider, reclaim capacity, retry, resume, enable routing or change any Portal control/help behavior.
+
+Exact parent v0.189.0 passed Windows regression/EXE/installer run 39545086363. Fresh v0.190.0 Windows execution is required; local Linux fixtures do not establish ordinary-user profile/ACL, private-volume, physical power-loss, actual broker or release acceptance.
+
 ## v0.189.0 provider-budget recovery candidate
 
 The installed/source tool catalogue adds `provider-recovery`, an explicit mutation of an existing private provider-budget journal. Native acceptance must verify exact-head/account/ownership fencing, private path/profile/ACL behavior, interrupted full-day cooldown preservation, no journal creation on missing input, sanitized failures and packaged/installed parity. It must not open Windows Credential Manager, contact a provider, reclaim capacity, retry, resume, enable routing or change any Portal control/help behavior.

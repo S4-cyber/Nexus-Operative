@@ -1,6 +1,14 @@
 # Nexus Operative release acceptance
 
-Current build: **0.189.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.190.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.190.0 reviewed account-pacing recovery
+
+Require exact head/account/ownership fencing, separate confirmations, immutable blocked history/outcome, unchanged cooldown and session capacity, interrupted full-day cooldown plus review block, no missing-input creation, fixed private failures, source/standalone/installed command parity, all false authority flags and compatibility warnings for older readers. This explicit diagnostic is not provider/account/source/funds acceptance and grants no subsequent read.
+
+Exact v0.189.0 passed security 39545086361, safety/browser/evidence 39545086364 and Windows regression/EXE/installer 39545086363. Those results are the verified parent only. v0.190.0 requires focused and full regression, all sixteen profiles, saved-evidence verification, staged public-artifact/secret checks and fresh exact-source Windows/package execution.
+
+Final local v0.190.0 evidence: 3,495 tests passed with one expected non-Windows skip and one existing warning. Sixteen profiles and saved-evidence verification matched 351 files / `38bcb2a4a1d404bcfdd81afb1b4d3c5434b77248e5ff861822a1edfe56d5dd0c`; report SHA256 `af29c195fd1c78695b21f78ec0ca54162e61a473c8e81bd9915e8fd6012af31f`. Fourteen controllers, Portal syntax, compilation, dependencies, generated-roadmap equality and whitespace passed. These results do not establish native Windows, broker, market, funds, live, cloud or release acceptance.
 
 ## v0.189.0 reviewed provider-budget recovery
 

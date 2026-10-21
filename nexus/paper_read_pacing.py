@@ -1,7 +1,8 @@
 """Explicit account-bound local paper-read reservations, never provider authority.
 
 One <=4-GET session per journal, with a fixed 60-second recorded-result cooldown.
-No default path, retries, expiry, repair, eviction or clearing of auth/review blocks.
+No default path, retries, expiry, repair or eviction. Explicit reviewed recovery
+may clear only the admission latch while retaining the blocked outcome/history.
 Explicit owned interruption retains an unknown outcome and full-day cooldown.
 Hashes detect inconsistent history, not valid-tail deletion or broker identity.
 """
@@ -20,7 +21,9 @@ from nexus.broker_lookup_policy import classify, clock
 from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.paper-read-pacing.v1'
+RECOVERY_POLICY = 'nexus.paper-read-pacing-recovery.v1'
 MAX_SESSIONS = 256
+MAX_RECOVERIES = MAX_SESSIONS
 MAX_DATABASE_BYTES = 4 * 1024 * 1024
 MIN_COOLDOWN = 60
 INTERRUPTED_COOLDOWN = 86400
@@ -108,13 +111,15 @@ class PaperReadPacing:
         return digest
 
     def _load(self, db):
-        rows = db.execute('SELECT seq,body,previous,digest FROM events ORDER BY seq LIMIT ?', (2 * MAX_SESSIONS + 2,)).fetchall()
+        max_events = 2 * MAX_SESSIONS + MAX_RECOVERIES
+        rows = db.execute('SELECT seq,body,previous,digest FROM events ORDER BY seq LIMIT ?', (max_events + 2,)).fetchall()
         if not rows: _fail('BINDING_MISSING')
-        if len(rows) > 2 * MAX_SESSIONS + 1: _fail('EVENT_CAP')
+        if len(rows) > max_events + 1: _fail('EVENT_CAP')
         state = dict(head_sha256=ZERO, events=0, sessions=0, pending_token=None,
                      last_evaluated_at=0, next_allowed_at=0, review_required=False, last_outcome=None,
                      pending_owner_fenced=False, pending_owner_sha256=None, pending_before_head_sha256=None,
-                     completed_sessions=[], operation_sessions=[], interruptions=0, last_interruption=None, last_interruption_head=None)
+                     completed_sessions=[], operation_sessions=[], interruptions=0, last_interruption=None,
+                     last_interruption_head=None, recoveries=0, last_recovery=None)
         for index, (seq, encoded, parent, digest) in enumerate(rows):
             if not isinstance(encoded, str) or len(encoded.encode()) > MAX_EVENT_BYTES: _fail('EVENT_CAP')
             try: body = json.loads(encoded)
@@ -214,8 +219,38 @@ class PaperReadPacing:
                     state['last_outcome'] = 'INTERRUPTED_UNKNOWN'
                     state['operation_sessions'][-1].update(completed_at=now,after_head_sha256=digest,outcome='INTERRUPTED_UNKNOWN')
                     state['interruptions'] += 1
+                    state['review_required'] = True
                     state['last_interruption'] = body
                     state['last_interruption_head'] = digest
+                elif kind == 'RECOVERY' and set(body) == {
+                        'kind','policy','evaluated_at','expected_head','account_sha256',
+                        'blocked_session_head_sha256','blocked_outcome','owner_sha256',
+                        'confirm_block_reviewed','confirm_uncertainty_preserved'}:
+                    now = clock(body['evaluated_at'])
+                    if body['policy'] != RECOVERY_POLICY: _fail('RECOVERY_POLICY_INVALID')
+                    if body['expected_head'] != parent: _fail('HEAD_DISAGREEMENT')
+                    if state['pending_token'] is not None: _fail('PENDING_REVIEW')
+                    if not state['review_required'] or not state['operation_sessions']:
+                        _fail('RECOVERY_NOT_REQUIRED')
+                    if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
+                    last = state['operation_sessions'][-1]
+                    if (body['account_sha256'] != self.account_digest or
+                            body['blocked_session_head_sha256'] != last['after_head_sha256'] or
+                            body['blocked_outcome'] != last['outcome'] or
+                            body['blocked_outcome'] not in ('AUTH_DENIED','REVIEW_REQUIRED','INTERRUPTED_UNKNOWN')):
+                        _fail('RECOVERY_SCOPE_DISAGREEMENT')
+                    if (type(body['owner_sha256']) is not str or
+                            re.fullmatch(r'[0-9a-f]{64}',body['owner_sha256']) is None):
+                        _fail('OWNER_MARKER_INVALID')
+                    if (body['confirm_block_reviewed'] is not True or
+                            body['confirm_uncertainty_preserved'] is not True):
+                        _fail('CONFIRMATION_REQUIRED')
+                    if state['recoveries'] >= MAX_RECOVERIES: _fail('RECOVERY_CAP')
+                    state['review_required'] = False
+                    state['recoveries'] += 1
+                    state['last_recovery'] = dict(recovered_at=now,
+                        blocked_session_head_sha256=last['after_head_sha256'],
+                        blocked_outcome=last['outcome'],recovery_head_sha256=digest)
                 else: _fail('PAYLOAD_INVALID')
                 state['last_evaluated_at'] = now
             state['head_sha256'] = digest
@@ -237,7 +272,8 @@ class PaperReadPacing:
             state = dict(head_sha256=ZERO, events=0, sessions=0, pending_token=None,
                          last_evaluated_at=0, next_allowed_at=0, review_required=False, last_outcome=None,
                      pending_owner_fenced=False, pending_owner_sha256=None, pending_before_head_sha256=None,
-                     completed_sessions=[], operation_sessions=[], interruptions=0, last_interruption=None, last_interruption_head=None)
+                     completed_sessions=[], operation_sessions=[], interruptions=0, last_interruption=None,
+                     last_interruption_head=None, recoveries=0, last_recovery=None)
         else:
             with closing(self._connect()) as db: state = self._load(db)
         public=dict(state);public.pop('pending_before_head_sha256');public.pop('completed_sessions');operations=public.pop('operation_sessions')
@@ -415,6 +451,47 @@ class PaperReadPacing:
                     self._owned(owner)
                 return dict(head_sha256=head, duplicate=False, interruption_recorded=True,
                             automatic_retry=False, ready_for_routing=False)
+
+    def recover_review_block(self, *, expected_head, expected_account_id,
+            confirm_block_reviewed=False, confirm_uncertainty_preserved=False,
+            admission, ownership):
+        """Append one reviewed account unblock without changing retained uncertainty."""
+        if (type(expected_head) is not str or
+                re.fullmatch(r'[0-9a-f]{64}',expected_head) is None):
+            _fail('HEAD_INVALID')
+        if _uuid(expected_account_id) != self.account: _fail('ACCOUNT_DISAGREEMENT')
+        if confirm_block_reviewed is not True or confirm_uncertainty_preserved is not True:
+            _fail('CONFIRMATION_REQUIRED')
+        self._owned(ownership)
+        with closing(self._connect(write=True)) as db:
+            with db:
+                state=self._load(db);self._owned(ownership);now=clock(admission())
+                if state['head_sha256'] != expected_head:_fail('HEAD_DISAGREEMENT')
+                if state['pending_token'] is not None:_fail('PENDING_REVIEW')
+                if not state['review_required'] or not state['operation_sessions']:
+                    _fail('RECOVERY_NOT_REQUIRED')
+                if now < state['last_evaluated_at']:_fail('CLOCK_REGRESSION')
+                last=state['operation_sessions'][-1]
+                if last['outcome'] not in ('AUTH_DENIED','REVIEW_REQUIRED','INTERRUPTED_UNKNOWN'):
+                    _fail('RECOVERY_SCOPE_DISAGREEMENT')
+                body=dict(kind='RECOVERY',policy=RECOVERY_POLICY,evaluated_at=now,
+                    expected_head=expected_head,account_sha256=self.account_digest,
+                    blocked_session_head_sha256=last['after_head_sha256'],
+                    blocked_outcome=last['outcome'],owner_sha256=ownership.identity(),
+                    confirm_block_reviewed=True,confirm_uncertainty_preserved=True)
+                head=self._append(db,state['events']+1,body,state['head_sha256']);self._load(db)
+                if clock(admission()) < now:_fail('CLOCK_REGRESSION')
+                self._owned(ownership)
+            return dict(mode='PAPER_READ_PACING_REVIEWED_RECOVERY',
+                head_sha256=head,blocked_session_head_sha256=last['after_head_sha256'],
+                blocked_outcome=last['outcome'],review_block_cleared=True,
+                uncertainty_preserved=True,next_allowed_at=state['next_allowed_at'],
+                cooldown_shortened=False,history_rewritten=False,
+                session_capacity_reclaimed=False,admission_reserved=False,
+                automatic_retry=False,automatic_continuation=False,
+                broker_wide_quota_verified=False,distributed_ownership_verified=False,
+                ready_for_routing=False,live_orders_enabled=False,
+                money_movement_enabled=False,release_approved=False)
 
 
 class _ReadOwnership:

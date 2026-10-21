@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.189.0 (pre-release).** This milestone adds explicit reviewed recovery for the local provider paper-read budget. It preserves the blocked tail, cooldown, uncertainty and session capacity and grants no read, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.190.0 (pre-release).** This milestone adds explicit reviewed recovery for the account-scoped local paper-read pacing journal. It preserves the blocked tail, cooldown, uncertainty and session capacity and grants no read, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.190.0 exact reviewed account-pacing recovery
+
+`PaperReadPacing.recover_review_block` accepts only an existing blocked journal, its exact current head, the exact bound paper account, a live local ownership lease and two explicit operator confirmations. AUTH_DENIED, unsupported REVIEW_REQUIRED and INTERRUPTED_UNKNOWN tails remain immutable. An interrupted account read now remains review-blocked after its full-day cooldown until recovery is reviewed; the recovery event never shortens `next_allowed_at`, deletes history, changes the retained outcome, reclaims the 256-session cap, reserves admission, retries or continues automatically.
+
+The installed/source `--paper-tool account-recovery` command exposes that bounded mutation without opening credentials, contacting a provider or starting the desktop. Missing/stale/foreign/unconfirmed inputs fail without creating a pacing journal or echoing private arguments. Recovery output keeps provider-wide quota, distributed ownership, routing, live orders, money movement and release authority false. Older binaries do not understand the appended recovery event; preserve a private backup, stop cooperating readers and use the matching or newer reader rather than rewriting or downgrading the journal.
+
+Exact v0.189.0 commit `e929886dbd7f8b342e14bd993a930fb2e531a9e4` passed public security run 39545086361, safety/browser/evidence run 39545086364 and Windows regression/EXE/installer run 39545086363. Fresh exact-source v0.190.0 workflows remain mandatory. No actual broker, credential, account, market, funds, live or cloud operation occurred in this implementation.
+
+Final local validation passed 3,495 tests with one expected non-Windows skip and one existing warning. All sixteen offline profiles and saved-evidence verification matched 351 source files / `38bcb2a4a1d404bcfdd81afb1b4d3c5434b77248e5ff861822a1edfe56d5dd0c`; report SHA256 `af29c195fd1c78695b21f78ec0ca54162e61a473c8e81bd9915e8fd6012af31f`. Fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Fresh exact-source workflows remain required and unclaimed.
 
 ## v0.189.0 exact reviewed provider-budget recovery
 

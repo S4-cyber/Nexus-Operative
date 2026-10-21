@@ -1,5 +1,9 @@
 # Nexus workspaces and startup checklist
 
+## Recovering a reviewed account read-pacing block
+
+Use `NexusOperative.exe --paper-tool account-recovery` only after independently reviewing an existing private account pacing tail. Supply `--pacing`, its exact current `--expected-head`, the exact bound `--expected-account`, `--confirm-reviewed-block` and `--confirm-preserve-uncertainty`. The command appends one recovery boundary; it does not open saved keys, contact the broker, retry or start the desktop. It preserves the original authentication/review/interruption outcome, all operation history, the retained cooldown and session capacity. An interrupted unknown remains blocked even after its full-day cooldown until this review is recorded.
+
 ## Recovering a reviewed provider-read block
 
 Use `NexusOperative.exe --paper-tool provider-recovery` only after independently reviewing an existing private provider-budget tail. Supply `--provider-budget`, its exact current `--expected-head`, the exact blocked `--expected-account`, `--confirm-reviewed-block` and `--confirm-preserve-uncertainty`. The command appends one recovery boundary; it does not open saved keys, contact the broker, retry or start the desktop. It preserves the original authentication/review/interruption outcome, all history, the retained cooldown and session capacity. An interrupted unknown remains blocked even after its full-day cooldown until this review is recorded.

@@ -2,6 +2,12 @@
 
 This component prepares and validates fixture data only. It contains no HTTP client, credentials, environment access, account writes or automatic strategy routing. The existing gateway continues to reject Alpaca submissions. No broker was connected or tested.
 
+## v0.190.0 reviewed account-pacing recovery
+
+`PaperReadPacing.recover_review_block` can append one content-free recovery boundary to an exact blocked account journal only under live local ownership. It requires the exact current head and account plus separate confirmations that the block was reviewed and uncertainty remains. The AUTH_DENIED, REVIEW_REQUIRED or INTERRUPTED_UNKNOWN session is not modified. Account interruption remains review-blocked after its full-day cooldown; recovery never shortens that cooldown, reclaims session capacity, creates a read reservation, retries or continues.
+
+`NexusOperative.exe --paper-tool account-recovery --pacing PRIVATE.sqlite3 --expected-head SHA256 --expected-account UUID --confirm-reviewed-block --confirm-preserve-uncertainty` exposes the same boundary. Keep the journal and output private. Missing/stale/foreign/unconfirmed inputs fail closed without creating pacing state. Older readers reject the appended event; preserve a stopped private backup and use a compatible newer reader rather than rewriting, deleting or switching journals. Provider-wide quota, distributed ownership, source/coverage, fees/holds/funds, routing, live and release authority remain unverified and false.
+
 ## v0.189.0 reviewed provider-budget recovery
 
 An existing local provider-budget AUTH_DENIED, unsupported REVIEW_REQUIRED or INTERRUPTED_UNKNOWN tail may be followed by one content-free reviewed recovery event. The caller must pin the exact current head and exact blocked account, hold the journal's live local ownership lease and confirm both completed review and preservation of uncertainty. Interrupted unknown now remains blocked after its full-day cooldown until recovery review. Recovery clears only the review latch: it does not shorten the cooldown, alter the blocked session/outcome, reclaim capacity, reserve a read, retry, continue, read credentials or contact Alpaca.

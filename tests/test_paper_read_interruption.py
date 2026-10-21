@@ -40,8 +40,8 @@ def test_owned_interruption_preserves_unknown_history_and_full_day_cooldown(gate
     assert state['last_interruption']['token'] == token
     assert state['last_interruption']['expected_head'] == before['head_sha256']
     assert not result['automatic_retry'] and not result['ready_for_routing']
-    with pytest.raises(ValueError, match='COOLDOWN'): begin(gate, 87400.99)
-    assert begin(gate, 87401)
+    with pytest.raises(ValueError, match='BLOCKED_REVIEW'): begin(gate, 87400.99)
+    with pytest.raises(ValueError, match='BLOCKED_REVIEW'): begin(gate, 87401)
 
 
 @pytest.mark.parametrize('consent', [False, None, 1, 'true'])
@@ -97,7 +97,12 @@ def test_latest_interruption_replay_is_idempotent_without_extending_or_shortenin
     before = gate.inspect()
     result = interrupt(gate, token=token, expected_head=head, admission=lambda:2000)
     assert result['duplicate'] and gate.inspect() == before
-    begin(gate, 87401)
+    with pytest.raises(ValueError,match='BLOCKED_REVIEW'):begin(gate,87401)
+    with gate.ownership() as owner:
+        gate.recover_review_block(expected_head=before['head_sha256'],expected_account_id=ACCOUNT,
+            confirm_block_reviewed=True,confirm_uncertainty_preserved=True,
+            admission=lambda:2001,ownership=owner)
+    begin(gate,87401)
     later = gate.inspect()
     with pytest.raises(ValueError, match='HEAD_DISAGREEMENT'):
         interrupt(gate, token=token, expected_head=head, admission=lambda:87402)
@@ -221,8 +226,12 @@ def test_interrupt_last_session_uses_reserved_completion_space(gate, monkeypatch
     monkeypatch.setattr(policy,'MAX_SESSIONS',1)
     pending(gate); interrupt(gate); before = gate.inspect()
     assert before['events'] == 2 and before['sessions'] == 1
+    with gate.ownership() as owner:
+        gate.recover_review_block(expected_head=before['head_sha256'],expected_account_id=ACCOUNT,
+            confirm_block_reviewed=True,confirm_uncertainty_preserved=True,
+            admission=lambda:1002,ownership=owner)
     with pytest.raises(ValueError, match='SESSION_CAP'): begin(gate, 87401)
-    assert gate.inspect() == before
+    assert gate.inspect()['sessions']==before['sessions']==1
 
 
 def test_owner_rejects_wrong_instance_closed_lease_and_replaced_file(gate, tmp_path):

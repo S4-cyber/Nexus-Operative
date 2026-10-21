@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.189.0, exact reviewed provider-budget recovery over the fully green exact-source v0.188.1 checkpoint. Read the newest version section and generated roadmap; exact-source v0.189.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.190.0, explicit reviewed account-pacing recovery over the fully green exact-source v0.189.0 checkpoint. Read the newest version section and generated roadmap; exact-source v0.190.0 CI, provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.190.0 reviewed account-pacing recovery
+
+Account pacing recovery must require the exact current journal head, exact blocked paper account, live local ownership and separate reviewed-block/uncertainty confirmations. Preserve the AUTH_DENIED, REVIEW_REQUIRED or INTERRUPTED_UNKNOWN session unchanged. An account interruption is now review-blocked even after its full-day cooldown until recovery is explicitly recorded. Recovery clears only the review latch: never shorten cooldown, reclaim the 256-session cap, delete/rewrite history, retry, continue, open credentials or contact a provider.
+
+The allowlisted installed/source `account-recovery` tool is an explicit operator mutation, not a background or Portal action. Missing/stale/foreign/unconfirmed inputs must not create a journal or echo private inputs. Keep provider/source/funds/routing/live/release flags false. Older readers reject the recovery event; require a stopped private backup and matching/newer reader rather than downgrade, deletion or a replacement journal. No GUI control or editable parameter changed, so the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Keep progress about 40% (30–45%, low confidence), 0/9 accepted. Require focused recovery/pacing/package tests, all profiles and saved evidence, full regression, static/public-artifact checks and fresh exact-source workflows.
+
+Exact v0.189.0 commit `e929886dbd7f8b342e14bd993a930fb2e531a9e4` passed security 39545086361, safety/browser/evidence 39545086364 and Windows regression/EXE/installer 39545086363. These results do not transfer to v0.190.0.
+
+Final local v0.190.0 validation passed 3,495 tests with one expected non-Windows skip and one existing Starlette/httpx warning. The final release/evidence set passed 156 tests. Sixteen profiles and saved-evidence verification matched 351 source files / `38bcb2a4a1d404bcfdd81afb1b4d3c5434b77248e5ff861822a1edfe56d5dd0c`; `validation/release_trials_0_190_0.json` SHA256 is `af29c195fd1c78695b21f78ec0ca54162e61a473c8e81bd9915e8fd6012af31f`. All fourteen controller smokes, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. These local Linux results do not close native Windows, actual account/provider, market, funds, live, cloud or release gates.
 
 ## v0.189.0 reviewed provider-budget recovery
 

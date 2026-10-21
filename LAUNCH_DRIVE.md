@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.190.0 reviewed account-pacing recovery
+
+The account-scoped pacing journal now retains a content-free recovery event after an operator explicitly reviews an exact blocked AUTH_DENIED, REVIEW_REQUIRED or INTERRUPTED_UNKNOWN tail. Account interruptions remain review-blocked even after the full-day cooldown. The event requires the exact current head/account, live local ownership and separate reviewed-block/uncertainty confirmations. It preserves the original outcome, operation history, cooldown and session count and does not reserve or perform another read.
+
+The installed/source `--paper-tool account-recovery` entry point refuses missing, stale, foreign or unconfirmed inputs without creating a pacing journal or exposing private arguments. It never opens the vault, contacts a provider, reserves a read, retries, resumes, resets the cap, enables routing or grants release authority. The packaged-tool smoke executes the exact mutation on a disposable auth-blocked journal and requires all authority flags false. No Portal control or editable parameter changed, preserving the existing seven tabs and black/bright-purple help behavior.
+
+Exact v0.189.0 source `e929886dbd7f8b342e14bd993a930fb2e531a9e4` passed security 39545086361, safety/browser/evidence 39545086364 and Windows regression/EXE/installer 39545086363. Exact-source v0.190.0 CI, actual account/provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance, sustained market trials and every independent/owner gate remain open. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 accepted.
+
+Final local validation passed 3,495 tests with one expected non-Windows skip and one existing warning. Sixteen profiles and saved-evidence verification matched 351 files / `38bcb2a4a1d404bcfdd81afb1b4d3c5434b77248e5ff861822a1edfe56d5dd0c`; report SHA256 is `af29c195fd1c78695b21f78ec0ca54162e61a473c8e81bd9915e8fd6012af31f`. Fourteen controllers, Portal syntax, compilation, dependencies, generated-roadmap equality and whitespace passed. This is local injected/offline evidence only.
+
 ## v0.189.0 exact reviewed provider-budget recovery
 
 The shared local provider paper-read budget can now append one bounded reviewed recovery after AUTH_DENIED, unsupported REVIEW_REQUIRED or an explicitly retained INTERRUPTED_UNKNOWN tail. Admission requires the exact journal head, exact blocked account, the journal's live local ownership lease and separate confirmations that the block was reviewed and its uncertainty must remain. Interruption now retains a review latch after the full-day cooldown; recovery clears only that latch while leaving the original session/outcome, cooldown, counts and capacity unchanged.

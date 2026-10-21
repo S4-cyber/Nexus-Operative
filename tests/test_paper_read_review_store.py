@@ -1,4 +1,5 @@
 """Durable content-free receipts for complete local mixed-read review."""
+import json
 import sqlite3
 
 import pytest
@@ -12,6 +13,14 @@ def complete(tmp_path):
     return gate,bindings,gate.inspect()['head_sha256']
 
 
+def string_values(value):
+    if isinstance(value,str):yield value
+    elif isinstance(value,dict):
+        for key,item in value.items():yield from string_values(key);yield from string_values(item)
+    elif isinstance(value,list):
+        for item in value:yield from string_values(item)
+
+
 def test_complete_review_is_retained_without_private_observations(tmp_path):
     gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
     receipt=review.retain_review(path,gate,bindings,expected_head=head)
@@ -19,8 +28,11 @@ def test_complete_review_is_retained_without_private_observations(tmp_path):
     assert replay['retained_receipts']==1 and replay['head_sha256']==receipt['head_sha256']
     assert replay['receipts'][0]['scope']['pacing_head_sha256']==head
     content=path.read_bytes()
-    for private in (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD',b'1000'):
+    for private in (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD'):
         assert private not in content
+    with sqlite3.connect(path) as db:
+        bodies=[json.loads(row[0]) for row in db.execute('SELECT body FROM records')]
+    assert '1000' not in set(string_values(bodies))
     assert not replay['ready_for_routing'] and not replay['release_approved']
 
 

@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.202.0 explicit fee-timestamp chronology
+
+The private exact response-bundle review now rejects any explicitly referenced retained fee whose exact timestamp precedes its referenced retained fill. Date-only fee records remain allowed and explicitly temporally unverified; the application does not invent a timezone, time of day or posting instant.
+
+The public result adds only aggregate timestamped/date-only reference counts. It does not attest provider semantics or source coverage, prove fee or execution completeness, verify fee posting, reconcile holds or spendable funds, establish account ownership or authorize routing. `fee_execution_links_verified` remains false. No UI control or modifiable parameter changed; the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded risk/account checks, fail-closed exits and independent emergency stop are unchanged.
+
+Exact v0.201.0 source `7e77dd36922ea3e2d9a54b7e74bf3e775ebe4a17` passed security/history/Gitleaks run 39669945896, safety/regression/evidence/browser run 39669945738 and Windows regression/EXE/installer run 39669945696. Fresh exact-source v0.202.0 workflows and every actual authorized provider/account, sustained-market, fee/hold/funds, native-profile, independent and owner gate remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages.
+
+Final local v0.202.0 validation passed 3,541 tests with one expected non-Windows skip and one existing warning; the clean release-focused set passed 184 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `d30883217d7c18868bdc26bcc4ecbdccab0ab2d8e409ea38728227ad1108bdab`; report SHA256 is `d2fffcb056f5917866919354f5eb80d7f94ad890db6cc5a1f987809dde15b58e`. The 31-child source command smoke, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The exact staged 529-path/21,291,299-byte public audit found nothing disallowed. Local Gitleaks, rendered browser and native Windows execution remain unavailable; exact-source workflows are required.
+
 ## v0.201.0 shared-order retained-fill temporal partition
 
 Continued from exact verified branch head `d19a08275ce17560eff9b7f3bc971d4e37c26989` (v0.200.0). Its public security/history/Gitleaks run 39660190612, safety/regression/evidence/browser run 39660190667 and Windows regression/EXE/installer run 39660190638 passed. These results do not transfer to the new source.

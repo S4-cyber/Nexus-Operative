@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.201.0 (pre-release).** This minor build fail-closed partitions every retained fill for a shared account/activity order into already-accounted history or the exact later fill delta. It grants no provider, event-order, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.202.0 (pre-release).** This minor build fail-closed rejects an exact timestamped retained fee that predates its explicitly referenced fill while keeping date-only fee timing unverified. It grants no provider, semantic fee-link, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.202.0 explicit fee-timestamp chronology
+
+`--paper-tool response-bundle-review` now checks the chronology of each explicit fee reference pair when the fee carries a full timestamp. The normalized fee timestamp must be at or after the referenced retained fill. A calendar-date-only fee remains allowed and separately counted without an invented timezone, time of day or posting instant.
+
+Public output retains only timestamped/date-only aggregate counts and the existing SHA256 reference digest. `fee_execution_links_verified` and all other authority flags remain false. This is local supplied-evidence chronology consistency, not provider/source attestation, semantic fee linkage, fee coverage or posting, account ownership, hold/funds reconciliation or routing authority. No credential, network, evidence-write, UI, permission, risk, emergency or execution path changed. Exact v0.201.0 source `7e77dd36922ea3e2d9a54b7e74bf3e775ebe4a17` passed security/history/Gitleaks run 39669945896, safety/regression/evidence/browser run 39669945738 and Windows regression/EXE/installer run 39669945696. Fresh exact-source v0.202.0 workflows remain mandatory.
+
+Local validation passed 3,541 tests with one expected non-Windows skip and one existing warning; the clean focused set passed 184. All sixteen profiles and saved-evidence verification matched 357 source files / `d30883217d7c18868bdc26bcc4ecbdccab0ab2d8e409ea38728227ad1108bdab`; report SHA256 is `d2fffcb056f5917866919354f5eb80d7f94ad890db6cc5a1f987809dde15b58e`. The 31-child source command smoke, fourteen controller smokes, Portal syntax, compilation, dependency integrity, generated-roadmap equality, whitespace checks and exact staged 529-path public-artifact audit passed. Fresh exact-source security, safety/browser/evidence and Windows installer workflows remain mandatory.
 
 ## v0.201.0 shared-order retained-fill temporal partition
 

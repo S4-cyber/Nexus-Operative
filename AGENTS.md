@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.201.0, fail-closed temporal partitioning of retained fills for orders shared by the exact account/activity response bundle. Read the newest version section and generated roadmap; fresh exact-source v0.201.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.202.0, fail-closed exact fee-timestamp chronology for explicitly referenced retained fills in the private account/activity response bundle. Read the newest version section and generated roadmap; fresh exact-source v0.202.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.202.0 explicit fee-timestamp chronology
+
+For every retained FEE/CFEE activity that explicitly reports a matching order/execution reference pair and supplies an exact timestamp, require that timestamp to be no earlier than its referenced exact retained FILL. Refuse impossible pre-fill fee timestamps. Continue allowing a calendar-date-only fee without inventing a timezone, time of day or posting instant; count it separately as temporally unverified.
+
+Output may expose only aggregate timestamped/date-only link counts and the existing SHA256 reference digest; never expose raw fee, order or execution IDs, amounts, prices or timestamps. `fee_execution_links_verified`, fee coverage, posting, holds, funds and every authority flag remain false. This is local consistency over supplied private evidence, not provider identity, semantic fee linkage, complete received activity, account ownership, an atomic snapshot, broker clock attestation, fee posting, routing authority or broker acceptance. No UI control or editable parameter changed. Keep permissions OFF by default and preserve the seven beginner tabs, black/bright-purple bottom-right help, limits, fail-closed exits and independent emergency stop.
+
+Exact v0.201.0 source `7e77dd36922ea3e2d9a54b7e74bf3e775ebe4a17` passed public security/history/Gitleaks run 39669945896, safety/regression/evidence/browser run 39669945738 and Windows regression/EXE/installer run 39669945696. Both regression lanes passed 3,520 tests with 19 platform skips and one existing warning. Those results do not transfer to v0.202.0. Run focused response/release/package/version checks, all sixteen profiles and saved-evidence verification, the complete suite, fourteen controllers, Portal syntax, static/public-artifact checks and fresh exact-source workflows.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow fee chronology fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.202.0 validation passed 3,541 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the clean response/release/package/evidence/version/roadmap set passed 184 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `d30883217d7c18868bdc26bcc4ecbdccab0ab2d8e409ea38728227ad1108bdab`; `validation/release_trials_0_202_0.json` SHA256 is `d2fffcb056f5917866919354f5eb80d7f94ad890db6cc5a1f987809dde15b58e`. The full suite exercised the common source command smoke across 31 child processes. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. The exact staged 529-path/21,291,299-byte public snapshot passed the private-artifact audit with zero findings. Local Gitleaks, rendered-browser and native Windows execution remain unavailable; dedicated exact-source security/history, safety/browser/evidence and Windows packaging/installer workflows are mandatory.
 
 ## v0.201.0 shared-order retained-fill temporal partition
 

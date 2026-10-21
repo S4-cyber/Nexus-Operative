@@ -355,6 +355,9 @@ def run(command):
             len(response_bundle['overlapping_order_fill_partition_sha256'])==64 and
             response_bundle['reported_fee_references_consistent'] is True and
             response_bundle['reported_fee_reference_links']==0 and
+            response_bundle['reported_fee_exact_timestamp_chronology_checked'] is True and
+            response_bundle['reported_fee_timestamped_links']==0 and
+            response_bundle['reported_fee_date_only_links']==0 and
             len(response_bundle['reported_fee_reference_sha256'])==64 and
             len(response_bundle['adjacent_account_fields_sha256'])==64 and
             len(response_bundle['reported_open_order_identity_sha256'])==64 and

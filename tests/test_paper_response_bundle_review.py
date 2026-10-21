@@ -64,6 +64,9 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert len(result['overlapping_order_fill_partition_sha256'])==64
     assert result['reported_fee_references_consistent']
     assert result['reported_fee_reference_links']==int(two_pages)
+    assert result['reported_fee_exact_timestamp_chronology_checked']
+    assert result['reported_fee_timestamped_links']==0
+    assert result['reported_fee_date_only_links']==int(two_pages)
     assert len(result['reported_fee_reference_sha256'])==64
     assert len(result['reported_open_order_identity_sha256'])==64
     assert len(result['activity_order_identity_sha256'])==64
@@ -198,6 +201,24 @@ def test_bundle_rejects_unbound_order_fill_delta(tmp_path,fill_changes,include_f
 def test_bundle_rejects_inconsistent_reported_fee_reference_pair(tmp_path,changes,code):
     options=subject._fixture(tmp_path,two_pages=True,activity_fee_changes=changes)
     with pytest.raises(ValueError,match=code):subject.review(**options)
+
+
+@pytest.mark.parametrize('reported_at',[
+    '2026-10-17T18:00:00Z','2026-10-17T18:00:00.999999999Z'])
+def test_bundle_rejects_exact_fee_timestamp_before_referenced_fill(tmp_path,reported_at):
+    options=subject._fixture(tmp_path,two_pages=True,
+        activity_fee_changes={'date':reported_at})
+    with pytest.raises(ValueError,match='FEE_TIMESTAMP_PRECEDES_FILL'):
+        subject.review(**options)
+
+
+def test_bundle_accepts_exact_fee_timestamp_at_referenced_fill(tmp_path):
+    options=subject._fixture(tmp_path,two_pages=True,
+        activity_fee_changes={'date':'2026-10-17T18:00:01Z'})
+    result=subject.review(**options)
+    assert result['reported_fee_timestamped_links']==1
+    assert result['reported_fee_date_only_links']==0
+    assert result['reported_fee_exact_timestamp_chronology_checked']
 
 
 def test_bundle_rejects_adjacent_sessions_outside_bounded_start_gap(tmp_path):

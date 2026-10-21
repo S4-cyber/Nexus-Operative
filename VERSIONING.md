@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.194.0 (pre-release).** This milestone adds normalized account-field continuity across one exact adjacent account/activity response pair. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.195.0 (pre-release).** This milestone adds a fixed five-minute start-gap fence to one exact adjacent account/activity response pair. It grants no provider, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.195.0 bounded adjacent response timing
+
+`--paper-tool response-bundle-review` now requires the immediately following current-tail ACTIVITY_COLLECTION to start within 300 seconds after the ACCOUNT_INVENTORY completes. Journal adjacency without the bounded retained timestamps fails closed. Output includes the observed start gap and fixed limit; the release fixture independently proves rejection at 301 seconds. Exact bytes, normalized account fields, retained observations/receipt, current heads and unchanged journals remain mandatory.
+
+This is an offline evidence-coherence rule, not a scheduler, provider latency claim, atomic snapshot or quiet interval. The tool performs no credential, vault, network, retry, continuation, state repair or evidence write. Exact v0.194.0 commit `e49a262350c0db3e65e19a4dc8bb995af729eef4` passed security/history/Gitleaks 39599948458, safety/regression/evidence/browser 39599948731 and Windows regression/EXE/installer 39599948432. Fresh exact-source v0.195.0 workflows remain mandatory. No GUI control or editable parameter changed.
+
+Final local validation passed a clean 3,516-test complete rerun with one skip and one existing warning, plus 124 focused tests. Sixteen offline profiles and saved-evidence verification matched 357 source files / `13e2db81a6fb07f7ac157bc8ec1c221d4e695de5b2f68d488327d6fa016ebc58`; the report SHA256 is `5caacbe39962d6be305276154b0b857ffbfcfa34632afb3ce91602c77577d0f0`. Controller/static checks also passed. Exact-source CI, actual provider/account acceptance and all 1.0 approvals remain separate.
 
 ## v0.194.0 adjacent response account-field continuity
 

@@ -22,6 +22,7 @@ from nexus.broker_activity_store import BrokerActivityStore
 
 MODE='PAPER_EXACT_RESPONSE_BUNDLE_REVIEW'
 FLAGS=tuple(dict.fromkeys((*account_review.FLAGS,*activity_review.FLAGS)))
+MAX_ADJACENT_START_GAP_SECONDS=300
 
 
 def _fail(code):
@@ -69,6 +70,9 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     if (history[account_index]['operation']!='ACCOUNT_INVENTORY' or
             history[activity_index]['operation']!='ACTIVITY_COLLECTION'):
         _fail('SESSION_SEQUENCE_INVALID')
+    adjacent_start_gap=history[activity_index]['started_at']-history[account_index]['completed_at']
+    if not 0<=adjacent_start_gap<=MAX_ADJACENT_START_GAP_SECONDS:
+        _fail('ADJACENT_SESSION_GAP_EXCEEDED')
 
     account=account_review.review(pacing_path=pacing_path,
         expected_account_id=expected_account_id,expected_head=expected_pacing_head,
@@ -110,26 +114,31 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         account_observation_replayed=True,activity_normalization_replayed=True,
         activity_observation_replayed=True,activity_receipt_replayed=True,
         sessions_adjacent=True,activity_session_is_current_tail=True,
+        adjacent_session_start_gap_seconds=adjacent_start_gap,
+        adjacent_session_start_gap_limit_seconds=MAX_ADJACENT_START_GAP_SECONDS,
+        bounded_adjacent_session_start_gap=True,
         adjacent_account_fields_match=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
     scope['limitations']=('Exact private bytes locally replay one adjacent ACCOUNT_INVENTORY and current-tail '
-        'ACTIVITY_COLLECTION pair at shared journal heads and requires their normalized account fields to match. '
-        'This detects an adjacent discontinuity but does not make the reads atomic. Hash agreement is not provider identity, TLS capture, '
+        'ACTIVITY_COLLECTION pair at shared journal heads, requires their normalized account fields to match, '
+        'and limits the retained start gap to five minutes. This detects an adjacent discontinuity but does not '
+        'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
         'account ownership, source or received-activity coverage, creation/execution/fee coverage, verified '
         'clocks, fee links/posting, holds, settled or spendable funds, broker-wide pacing, routing permission or '
         'release acceptance. Keep all response bodies, observations and output outside Git.')
     return scope
 
 
-def _fixture(root,two_pages=False,activity_account_cash='1000'):
+def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clock=1792368000):
     """Create disposable injected responses for one exact adjacent session pair."""
     from pathlib import Path
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
-    account=account_review._fixture(root/'account')
+    account=account_review._fixture(root/'account',wall_clock_value=1792367940)
     activity=activity_review._fixture(root/'activity',two_pages=two_pages,
-        pacing_path=account['pacing_path'],account_cash=activity_account_cash)
+        pacing_path=account['pacing_path'],account_cash=activity_account_cash,
+        wall_clock_value=activity_wall_clock)
     return dict(pacing_path=account['pacing_path'],
         activity_store_path=activity['activity_store_path'],
         expected_account_id=account['expected_account_id'],
@@ -169,6 +178,11 @@ def fixture_report():
         try:review(**discontinuous)
         except ValueError as error:
             discontinuity_rejected='ADJACENT_ACCOUNT_FIELDS_CHANGED' in str(error)
+        delayed=_fixture(root/'delayed',activity_wall_clock=1792368241)
+        delayed_rejected=False
+        try:review(**delayed)
+        except ValueError as error:
+            delayed_rejected='ADJACENT_SESSION_GAP_EXCEEDED' in str(error)
         tail=_fixture(root/'tail');gate=PaperReadPacing(tail['pacing_path'],tail['expected_account_id'])
         with gate.ownership() as owner:
             token=gate.begin(admission=lambda:1792454401,ownership=owner,
@@ -186,9 +200,11 @@ def fixture_report():
                 result['account_observation_replayed'],
             exact_activity_response_replayed=result['activity_normalization_replayed'] and
                 result['activity_observation_replayed'] and result['activity_receipt_replayed'],
+            bounded_adjacent_session_start_gap=result['bounded_adjacent_session_start_gap'],
             adjacent_account_fields_match=result['adjacent_account_fields_match'],
             repeat_review_matches=result==repeated,changed_activity_response_rejected=changed_rejected,
             adjacent_account_discontinuity_rejected=discontinuity_rejected,
+            delayed_adjacent_session_rejected=delayed_rejected,
             session_tail_required=tail_rejected,journals_unchanged=before==after)
         return dict(source='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE',passed=all(checks.values()),
             **checks,actual_provider_access=False,actual_vault_access=False,

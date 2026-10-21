@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.195.0 bounded adjacent response timing
+
+The installed/source `response-bundle-review` now rejects an adjacent pair unless the immediately following current-tail ACTIVITY_COLLECTION starts within 300 seconds after the ACCOUNT_INVENTORY completes. It reports the retained start gap and fixed limit, while release evidence must prove that a 301-second gap fails closed. The existing normalized account-field match, exact response-byte review, private observations/receipt replay, exact current heads and unchanged-journal checks remain mandatory.
+
+This is a fixed offline evidence-coherence rule, not a read schedule, automatic continuation, provider latency promise, atomic snapshot or quiet interval. The tool still performs no credential, vault, network, retry, order, funding or state-write action and grants no routing, live or release authority. No GUI control or editable parameter changed, so seven workspaces and black/bright-purple bottom-right hover help remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Exact v0.194.0 source `e49a262350c0db3e65e19a4dc8bb995af729eef4` passed security/history/Gitleaks 39599948458, safety/regression/evidence/browser 39599948731 and Windows regression/EXE/installer 39599948432. Fresh v0.195.0 exact-source CI and every actual authorized provider/account, source/coverage, fee/hold/funds, sustained-market, native-profile and independent/owner gate remain open.
+
+Local v0.195.0 validation passed a clean 3,516-test complete rerun (one skip, one existing warning), 124 focused tests, all sixteen offline profiles, saved-evidence verification, fourteen controller smokes and the static checks. Evidence matched 357 source files / `13e2db81a6fb07f7ac157bc8ec1c221d4e695de5b2f68d488327d6fa016ebc58`; report SHA256 is `5caacbe39962d6be305276154b0b857ffbfcfa34632afb3ce91602c77577d0f0`. These injected/offline results are not provider, market, native Windows, profitability or release acceptance.
+
 ## v0.194.0 adjacent response account-field continuity
 
 The installed/source `response-bundle-review` now requires the normalized account fields reconstructed from the exact ACCOUNT_INVENTORY response bytes to match those independently reconstructed from the account-before/account-after bytes of the immediately following current-tail ACTIVITY_COLLECTION. The check covers normalized cash, non-margin buying power, pending transfers, accrued fees, currency/status and account block flags. Each component still independently validates exact response bytes, normalized-result receipts, private observations and unchanged journals. A cross-session field discontinuity now fails closed even if both sessions are individually valid.

@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.194.0, adjacent normalized account-field continuity over the fully green exact-source v0.193.0 response-bundle checkpoint. Read the newest version section and generated roadmap; exact-source v0.194.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.195.0, bounded adjacent response timing over the fully green exact-source v0.194.0 account-field continuity checkpoint. Read the newest version section and generated roadmap; exact-source v0.195.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.195.0 bounded adjacent response timing
+
+The private exact-response bundle must require the immediately following current-tail ACTIVITY_COLLECTION to start within 300 seconds after the ACCOUNT_INVENTORY completes. Journal adjacency alone is insufficient. Retain the bounded gap and fixed limit in output, and require a delayed-pair negative control in release evidence. Continue to require identical normalized account fields, exact private response bytes, retained observations/receipts, current heads and unchanged journals.
+
+The five-minute bound is a conservative offline evidence rule, not a scheduler, automatic retry, atomic snapshot, quiet interval, provider clock attestation or latency claim. The installed/source tool remains credential-, vault-, network- and write-silent, all authority flags false, and no GUI control or editable parameter changes. Preserve seven beginner tabs and black/bright-purple bottom-right help. Keep progress about 40% (30–45%, low confidence), 0/9 accepted.
+
+Exact v0.194.0 commit `e49a262350c0db3e65e19a4dc8bb995af729eef4` passed security/history/Gitleaks 39599948458, safety/regression/evidence/browser 39599948731 and Windows regression/EXE/installer 39599948432. Those results do not transfer to v0.195.0. Run focused response/package/evidence tests, all profiles and saved evidence, full regression, static/public-artifact checks and fresh exact-source workflows.
+
+Final v0.195.0 local validation: the clean complete rerun passed 3,516 tests with one skip and one existing Starlette/httpx deprecation warning; the focused response/package/evidence set passed 124 tests. A first complete run had one nonrepeatable mixed-history fixture failure after 3,515 passes; that case then passed alone, its fixture passed 100 consecutive reruns, and the clean complete rerun passed. All sixteen bounded offline profiles and saved-evidence verification matched 357 source files / `13e2db81a6fb07f7ac157bc8ec1c221d4e695de5b2f68d488327d6fa016ebc58`; `validation/release_trials_0_195_0.json` SHA256 is `5caacbe39962d6be305276154b0b857ffbfcfa34632afb3ce91602c77577d0f0`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Gitleaks and native Windows execution are unavailable; exact-source security/history, safety/browser/evidence and Windows packaging/installer CI remain mandatory.
 
 ## v0.194.0 adjacent response account-field continuity
 

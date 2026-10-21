@@ -151,7 +151,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     return scope
 
 
-def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000'):
+def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_clock_value=1792368000):
     """Create disposable injected response bytes plus paced retained activity."""
     import io
     from nexus.alpaca_activity_collection import collect_activities
@@ -191,7 +191,7 @@ def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000'):
     store=BrokerActivityStore(root/'activity.sqlite3',account)
     collect_activities('fixture_key_only_123','fixture_secret_only_123',orders,
         expected_account_id=account,after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z',
-        confirm_read_only_paper=True,opener=Opener(),wall_clock=lambda:1792368000,
+        confirm_read_only_paper=True,opener=Opener(),wall_clock=lambda:wall_clock_value,
         elapsed_clock=lambda:50,activity_store=store,pacing=gate)
     paths=[];names=['account-before',*(f'activity-page-{index}' for index in range(len(pages))),'account-after']
     for name,raw in zip(names,bodies):

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.194.0'
+REVISION = '0.195.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -161,7 +161,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.194.0 adds a normalized account-field continuity fence to the exact adjacent response bundle. The account fields reconstructed from the ACCOUNT_INVENTORY response must exactly match the fields reconstructed independently from the immediately following current-tail ACTIVITY_COLLECTION account-before/account-after responses. A discontinuity now fails closed even when each component is internally valid. Inputs remain private and outside Git; the tool never opens credentials, contacts a provider, writes evidence, retries, continues or grants provider/source/account/activity/fee/hold/funds/routing/release authority. Matching sequential fields are not an atomic snapshot or provider/source/coverage/funds attestation. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.195.0 adds a fixed five-minute start-gap fence to the exact adjacent response bundle. The immediately following current-tail ACTIVITY_COLLECTION must begin no more than 300 seconds after the ACCOUNT_INVENTORY completes, in addition to matching normalized account fields and exact private response evidence. A delayed pair now fails closed even when both sessions are individually valid and journal-adjacent. Inputs remain private and outside Git; the tool never schedules a read, opens credentials, contacts a provider, writes evidence, retries, continues or grants provider/source/account/activity/fee/hold/funds/routing/release authority. A bounded sequential gap is not an atomic snapshot, quiet interval or provider/source/coverage/funds attestation. Runtime permissions, UI, emergency behavior and every authority flag are unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

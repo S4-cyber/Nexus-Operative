@@ -122,7 +122,7 @@ def review(*,pacing_path,expected_account_id,expected_head,session_head,
     return scope
 
 
-def _fixture(root):
+def _fixture(root,wall_clock_value=1000):
     """Create disposable injected bodies plus a real reader/pacing receipt."""
     import io
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
@@ -146,7 +146,7 @@ def _fixture(root):
     gate=PaperReadPacing(root/'pacing.sqlite3',account)
     report=inspection.inspect_account('fixture_key_only_123','fixture_secret_only_123',
         confirm_read_only_paper=True,expected_account_id=account,pacing=gate,opener=Opener(),
-        wall_clock=lambda:1000,elapsed_clock=lambda:50)
+        wall_clock=lambda:wall_clock_value,elapsed_clock=lambda:50)
     body_paths=[]
     for index,raw in enumerate(bodies):
         path=root/f'response-{index}.json';path.write_bytes(raw);body_paths.append(path)

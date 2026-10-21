@@ -180,7 +180,7 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
 
 
 def _reported_fee_reference_links(activity_records,activity_orders,read_completed_at):
-    """Validate explicit pairs and exact timestamps without attesting fee links."""
+    """Validate fee capture times and explicit pairs without attesting links."""
     try:
         read_completed_ns=int(Decimal(str(read_completed_at))*Decimal(1_000_000_000))
     except (InvalidOperation,ValueError,TypeError,OverflowError):
@@ -191,8 +191,11 @@ def _reported_fee_reference_links(activity_records,activity_orders,read_complete
     except (TypeError,KeyError):
         _fail('ACTIVITY_FEE_REFERENCE_INVALID')
     links=[];timestamped=0;date_only=0
+    retained=0;retained_timestamped=0;retained_date_only=0
+    unreferenced=0;unreferenced_timestamped=0;unreferenced_date_only=0
     for fee in activity_records:
         if fee.get('kind')=='FILL':continue
+        retained+=1
         try:
             order_id=fee['order_reference']
             execution_id=fee['unverified_execution_reference']
@@ -200,32 +203,43 @@ def _reported_fee_reference_links(activity_records,activity_orders,read_complete
             _fail('ACTIVITY_FEE_REFERENCE_INVALID')
         if (order_id is None)!=(execution_id is None):
             _fail('CROSS_RESPONSE_FEE_REFERENCE_PARTIAL')
-        if order_id is None:continue
-        fill=fills.get(execution_id)
-        if fill is None:_fail('CROSS_RESPONSE_FEE_EXECUTION_REFERENCE_UNKNOWN')
-        if order_id not in order_ids:_fail('CROSS_RESPONSE_FEE_ORDER_REFERENCE_UNKNOWN')
-        if fill['broker_order_id']!=order_id:
-            _fail('CROSS_RESPONSE_FEE_REFERENCE_DISAGREEMENT')
+        fill=None
+        if order_id is not None:
+            fill=fills.get(execution_id)
+            if fill is None:_fail('CROSS_RESPONSE_FEE_EXECUTION_REFERENCE_UNKNOWN')
+            if order_id not in order_ids:_fail('CROSS_RESPONSE_FEE_ORDER_REFERENCE_UNKNOWN')
+            if fill['broker_order_id']!=order_id:
+                _fail('CROSS_RESPONSE_FEE_REFERENCE_DISAGREEMENT')
         reported=fee['reported_date']
         try:
             if 'T' in reported:
                 fee_at=contract.timestamp_order_ns(reported)
-                fill_at=contract.timestamp_order_ns(fill['occurred_at'])
-                timestamped+=1
+                retained_timestamped+=1
             else:
                 # A calendar date has no accepted timezone or posting instant.
                 # Retain it as an unverified reference without inventing time.
-                date_only+=1
+                retained_date_only+=1
         except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
             _fail('ACTIVITY_FEE_REFERENCE_INVALID')
-        if 'T' in reported and fee_at<fill_at:
-            _fail('CROSS_RESPONSE_FEE_TIMESTAMP_PRECEDES_FILL')
         if 'T' in reported and fee_at>read_completed_ns:
             _fail('CROSS_RESPONSE_FEE_TIMESTAMP_AFTER_CAPTURE')
+        if order_id is None:
+            unreferenced+=1
+            if 'T' in reported:unreferenced_timestamped+=1
+            else:unreferenced_date_only+=1
+            continue
+        if 'T' in reported:
+            fill_at=contract.timestamp_order_ns(fill['occurred_at'])
+            timestamped+=1
+            if fee_at<fill_at:_fail('CROSS_RESPONSE_FEE_TIMESTAMP_PRECEDES_FILL')
+        else:date_only+=1
         links.append(dict(fee_activity_id=fee['activity_id'],fee_kind=fee['kind'],
             fee_asset=fee['asset'],fee_amount=fee['amount'],reported_date=fee['reported_date'],
             fill_activity_id=execution_id,broker_order_id=order_id))
-    return sorted(links,key=lambda row:row['fee_activity_id']),timestamped,date_only
+    return (sorted(links,key=lambda row:row['fee_activity_id']),timestamped,date_only,
+        dict(retained=retained,timestamped=retained_timestamped,date_only=retained_date_only,
+            unreferenced=unreferenced,unreferenced_timestamped=unreferenced_timestamped,
+            unreferenced_date_only=unreferenced_date_only))
 
 
 def review(*,pacing_path,activity_store_path,expected_account_id,
@@ -302,7 +316,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         order_historical_fill_activities)=_order_identity_maps(
         account_raw_values[2][1],retained_activity['orders'],retained_records,gate.account)
     (reported_fee_links,reported_fee_timestamped_links,
-        reported_fee_date_only_links)=_reported_fee_reference_links(
+        reported_fee_date_only_links,retained_fee_scope)=_reported_fee_reference_links(
         retained_records,retained_activity['orders'],
         retained_activity['collection_observation']['read_completed_at'])
     if gate.inspect()!=pacing_before:_fail('PACING_HEAD_CHANGED')
@@ -333,6 +347,13 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         reported_fee_reference_links=len(reported_fee_links),
         reported_fee_timestamped_links=reported_fee_timestamped_links,
         reported_fee_date_only_links=reported_fee_date_only_links,
+        retained_fee_records=retained_fee_scope['retained'],
+        retained_fee_timestamped_records=retained_fee_scope['timestamped'],
+        retained_fee_date_only_records=retained_fee_scope['date_only'],
+        unreferenced_fee_records=retained_fee_scope['unreferenced'],
+        unreferenced_fee_timestamped_records=
+            retained_fee_scope['unreferenced_timestamped'],
+        unreferenced_fee_date_only_records=retained_fee_scope['unreferenced_date_only'],
         activity_response_manifest_sha256=activity['response_manifest_sha256'],
         activity_receipt_sha256=activity['retained_receipt_sha256'],
         account_review_sha256=account['review_sha256'],
@@ -355,6 +376,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         reported_fee_references_consistent=True,
         reported_fee_exact_timestamp_chronology_checked=True,
         reported_fee_exact_timestamp_capture_upper_bound_checked=True,
+        retained_fee_exact_timestamp_capture_upper_bound_checked=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
@@ -366,7 +388,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'exact contiguous retained fill-activity delta with bounded event time and weighted average price, '
         'requires every retained fill at or below the earlier cumulative quantity to occur no later than the '
         'earlier order update, and '
-        'requires every explicit fee order/execution reference pair to resolve to the same retained fill, and refuses an exact fee timestamp that precedes that fill or exceeds the retained collection completion instant. Date-only fee records remain temporally unverified. It limits the retained start gap '
+        'requires every explicit fee order/execution reference pair to resolve to the same retained fill, refuses a referenced exact fee timestamp that precedes that fill, and refuses any retained exact fee timestamp beyond the retained collection completion instant. Date-only fee records remain temporally unverified. It limits the retained start gap '
         'to five minutes. This detects an adjacent discontinuity but does not '
         'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
         'account ownership, source or received-activity coverage, creation/execution/fee coverage, verified '
@@ -575,6 +597,28 @@ def fixture_report():
         except ValueError as error:
             fee_timestamp_after_capture_rejected=(
                 'CROSS_RESPONSE_FEE_TIMESTAMP_AFTER_CAPTURE' in str(error))
+        unreferenced_fee=_fixture(root/'unreferenced-fee',two_pages=True,
+            activity_fee_changes={'order_id':None,'execution_id':None,
+                'date':'2026-10-19T00:00:00Z'})
+        unreferenced_result=review(**unreferenced_fee)
+        unreferenced_fee_capture_scope_bound=(
+            unreferenced_result['retained_fee_records']==100 and
+            unreferenced_result['retained_fee_timestamped_records']==1 and
+            unreferenced_result['retained_fee_date_only_records']==99 and
+            unreferenced_result['unreferenced_fee_records']==100 and
+            unreferenced_result['unreferenced_fee_timestamped_records']==1 and
+            unreferenced_result['unreferenced_fee_date_only_records']==99 and
+            unreferenced_result['reported_fee_reference_links']==0 and
+            unreferenced_result[
+                'retained_fee_exact_timestamp_capture_upper_bound_checked'] is True)
+        unreferenced_fee_after_capture=_fixture(root/'unreferenced-fee-after-capture',
+            two_pages=True,activity_fee_changes={'order_id':None,'execution_id':None,
+                'date':'2026-10-19T00:00:00.000000001Z'})
+        unreferenced_fee_timestamp_after_capture_rejected=False
+        try:review(**unreferenced_fee_after_capture)
+        except ValueError as error:
+            unreferenced_fee_timestamp_after_capture_rejected=(
+                'CROSS_RESPONSE_FEE_TIMESTAMP_AFTER_CAPTURE' in str(error))
         delayed=_fixture(root/'delayed',activity_wall_clock=1792368241)
         delayed_rejected=False
         try:review(**delayed)
@@ -629,6 +673,9 @@ def fixture_report():
                 result['reported_fee_exact_timestamp_chronology_checked'],
             reported_fee_exact_timestamp_capture_upper_bound_checked=
                 result['reported_fee_exact_timestamp_capture_upper_bound_checked'],
+            retained_fee_exact_timestamp_capture_upper_bound_checked=
+                result['retained_fee_exact_timestamp_capture_upper_bound_checked'],
+            unreferenced_fee_capture_scope_bound=unreferenced_fee_capture_scope_bound,
             reported_fee_date_only_scope_preserved=
                 result['reported_fee_timestamped_links']==0 and
                 result['reported_fee_date_only_links']==1,
@@ -651,6 +698,8 @@ def fixture_report():
             fee_reference_partial_rejected=fee_reference_partial_rejected,
             fee_timestamp_before_fill_rejected=fee_timestamp_before_fill_rejected,
             fee_timestamp_after_capture_rejected=fee_timestamp_after_capture_rejected,
+            unreferenced_fee_timestamp_after_capture_rejected=
+                unreferenced_fee_timestamp_after_capture_rejected,
             delayed_adjacent_session_rejected=delayed_rejected,
             outside_session_timing_rejected=timing_envelope_rejected,
             session_tail_required=tail_rejected,journals_unchanged=before==after)

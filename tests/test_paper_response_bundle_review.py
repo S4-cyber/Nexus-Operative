@@ -66,8 +66,15 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['reported_fee_reference_links']==int(two_pages)
     assert result['reported_fee_exact_timestamp_chronology_checked']
     assert result['reported_fee_exact_timestamp_capture_upper_bound_checked']
+    assert result['retained_fee_exact_timestamp_capture_upper_bound_checked']
     assert result['reported_fee_timestamped_links']==0
     assert result['reported_fee_date_only_links']==int(two_pages)
+    assert result['retained_fee_records']==100*int(two_pages)
+    assert result['retained_fee_timestamped_records']==0
+    assert result['retained_fee_date_only_records']==100*int(two_pages)
+    assert result['unreferenced_fee_records']==99*int(two_pages)
+    assert result['unreferenced_fee_timestamped_records']==0
+    assert result['unreferenced_fee_date_only_records']==99*int(two_pages)
     assert len(result['reported_fee_reference_sha256'])==64
     assert len(result['reported_open_order_identity_sha256'])==64
     assert len(result['activity_order_identity_sha256'])==64
@@ -230,6 +237,34 @@ def test_bundle_accepts_exact_fee_timestamp_inside_capture_bounds(tmp_path,repor
 def test_bundle_rejects_exact_fee_timestamp_after_retained_capture(tmp_path,reported_at):
     options=subject._fixture(tmp_path,two_pages=True,
         activity_fee_changes={'date':reported_at})
+    with pytest.raises(ValueError,match='FEE_TIMESTAMP_AFTER_CAPTURE'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('reported_at,timestamped,date_only',[
+    ('2026-10-19T00:00:00Z',1,0),('2026-10-18',0,1)])
+def test_bundle_bounds_unreferenced_fee_capture_without_inventing_link(
+        tmp_path,reported_at,timestamped,date_only):
+    options=subject._fixture(tmp_path,two_pages=True,
+        activity_fee_changes={'order_id':None,'execution_id':None,'date':reported_at})
+    result=subject.review(**options)
+    assert result['retained_fee_exact_timestamp_capture_upper_bound_checked']
+    assert result['reported_fee_reference_links']==0
+    assert result['reported_fee_timestamped_links']==0
+    assert result['reported_fee_date_only_links']==0
+    assert result['retained_fee_records']==100
+    assert result['retained_fee_timestamped_records']==timestamped
+    assert result['retained_fee_date_only_records']==99+date_only
+    assert result['unreferenced_fee_records']==100
+    assert result['unreferenced_fee_timestamped_records']==timestamped
+    assert result['unreferenced_fee_date_only_records']==99+date_only
+    assert not result['fee_execution_links_verified']
+
+
+def test_bundle_rejects_unreferenced_exact_fee_timestamp_after_capture(tmp_path):
+    options=subject._fixture(tmp_path,two_pages=True,activity_fee_changes={
+        'order_id':None,'execution_id':None,
+        'date':'2026-10-19T00:00:00.000000001Z'})
     with pytest.raises(ValueError,match='FEE_TIMESTAMP_AFTER_CAPTURE'):
         subject.review(**options)
 

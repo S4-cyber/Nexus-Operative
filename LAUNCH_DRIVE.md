@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.204.0 all-retained-fee capture upper bound
+
+The private exact account/activity response bundle now rejects every exact timestamped retained FEE/CFEE record later than the replay-validated activity collection completion instant, including fees without explicit order/execution references. Explicitly referenced fees retain the separate requirement to resolve to one retained fill and not precede that fill. Calendar-date-only fees remain accepted but temporally unverified; no timezone, time of day or posting instant is invented.
+
+Public output adds only bounded aggregate retained, referenced, unreferenced and timestamp/date-only counts plus the all-retained-fee upper-bound marker. It exposes no raw private identifiers, amounts or timestamps. Fee association, coverage, posting, source/activity completeness, account ownership, holds, funds, routing, trading and release authority all remain false. No UI, credential, network, evidence-write, permission, risk, emergency or execution path changed; the seven beginner tabs and black/bright-purple bottom-right help remain unchanged.
+
+Exact v0.203.0 source `21792d3248027a29b0d73380e3bbe951c6876bb5` passed public security/history/Gitleaks run 39685720091, safety/regression/evidence/browser run 39685720189 and Windows regression/EXE/installer run 39685720241. Both regression lanes passed 3,526 tests with 19 platform skips and one existing warning. Fresh exact-source v0.204.0 workflows and every actual authorized provider/account, sustained-market, fee/hold/funds, native-profile, independent and owner gate remain open. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages.
+
+Final local v0.204.0 validation passed 3,547 tests with one expected non-Windows skip and one existing warning; the clean release-focused set passed 192 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `19dd54be4b8fc29f4967f76184f03e97aabd82920555116657ddf2089296245c`; report SHA256 is `aab8a0b935673497b53904cdaa98fcf349852339585be8d4f2783bf75169b035`. The 31-child source command smoke, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The exact staged 531-path public audit found nothing disallowed. Local Gitleaks, rendered browser and native Windows execution remain unavailable; exact-source workflows are required.
+
 ## v0.203.0 exact fee capture upper bound
 
 The private exact response-bundle review now rejects an explicitly referenced retained fee whose full timestamp is later than the replay-validated retained activity collection completion instant. The existing lower bound against the referenced fill remains in force. Date-only fees remain temporally unverified without an invented timezone, time of day or posting instant.

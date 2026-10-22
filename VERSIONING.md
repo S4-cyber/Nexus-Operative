@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.209.0 (pre-release).** This minor build makes exact shared-order retained fill sequences fail closed on repeated cumulative states or backward event time as cumulative quantity rises. It preserves the existing quantity, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.210.0 (pre-release).** This minor build makes exact shared-order retained fill sequences fail closed when cumulative filled quantity plus leaves quantity changes across the sequence. It preserves the existing cumulative, event-time, delta, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.210.0 retained fill requested-quantity continuity
+
+`paper_response_bundle_review` now requires every retained fill activity for a shared order to imply the same requested quantity: cumulative filled quantity plus leaves quantity must remain constant. This catches internally contradictory two-fill histories before historical/interval partition and delta arithmetic, while permitting incomplete retained history and equal event timestamps. A mandatory exact-response negative control proves that an otherwise coherent two-fill progression with a stale nonzero final leaves quantity fails closed, and the reconciliation-acceptance profile requires that rejection.
+
+This is local consistency over supplied private evidence, not provider identity, source or clock attestation, complete execution/activity/fee coverage, account ownership, an atomic snapshot, funds reconciliation, broker acceptance or routing authority. No UI control, editable parameter, credential, provider call, evidence write, permission, risk, emergency or execution path changed.
+
+Exact v0.209.0 source `1775b690f2e9d6f7cbdff2ae43450215a80a8c92` has no visible commit statuses or pull-request workflow runs through the available GitHub endpoint at this checkpoint. Parent results do not transfer to v0.210.0; fresh exact-source workflows remain mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow reconciliation fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local validation passed 3,562 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 205 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `40ef92ad2dde79e624763735482df247bce58b6d3bc3ff57f169f779e2840698`; report SHA256 is `65314cbf56c6c5e74ff946d2552e56578a80ee0b201444931705cacdf16cc929`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The 538-path proposed snapshot and reachable 595-commit / 3,896-blob history passed the private-artifact audit with zero findings. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
 
 ## v0.209.0 retained fill-sequence monotonicity
 

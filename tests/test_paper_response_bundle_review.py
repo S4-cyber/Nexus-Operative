@@ -220,6 +220,16 @@ def test_bundle_rejects_cumulative_fill_time_regression(tmp_path):
         subject.review(**options)
 
 
+def test_bundle_rejects_cumulative_fill_remaining_quantity_conflict(tmp_path):
+    options=subject._fixture(tmp_path,
+        activity_fill_changes={'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5',
+            'transaction_time':'2026-10-17T18:00:00Z'},
+        activity_extra_fill_changes={'qty':'0.5','cum_qty':'1','leaves_qty':'0.5',
+            'transaction_time':'2026-10-17T18:00:01Z'})
+    with pytest.raises(ValueError,match='FILL_ACTIVITY_REMAINING_CONFLICT'):
+        subject.review(**options)
+
+
 @pytest.mark.parametrize('fill_changes,include_fill,code',[
     ({},False,'FILL_ACTIVITY_MISSING'),
     ({'qty':'0.5','cum_qty':'1','leaves_qty':'0.5'},True,'FILL_ACTIVITY_GAP'),

@@ -120,6 +120,13 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
                 key=lambda item:(item[0],item[1],item[2]['activity_id']))
         except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INVALID')
+        try:
+            requested_quantities={cumulative+contract.number(
+                fill['leaves_quantity'],zero=True) for cumulative,_,fill in parsed}
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INVALID')
+        if len(requested_quantities)>1:
+            _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_REMAINING_CONFLICT')
         if any(cumulative>after_qty for cumulative,_,_ in parsed):
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_AHEAD')
         for previous,current in zip(parsed,parsed[1:]):
@@ -719,6 +726,16 @@ def fixture_report():
         except ValueError as error:
             cumulative_fill_time_regression_rejected=(
                 'CROSS_RESPONSE_ORDER_FILL_ACTIVITY_TIME_REGRESSION' in str(error))
+        remaining_conflict=_fixture(root/'remaining-conflict',
+            activity_fill_changes={'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5',
+                'transaction_time':'2026-10-17T18:00:00Z'},
+            activity_extra_fill_changes={'qty':'0.5','cum_qty':'1','leaves_qty':'0.5',
+                'transaction_time':'2026-10-17T18:00:01Z'})
+        cumulative_fill_remaining_conflict_rejected=False
+        try:review(**remaining_conflict)
+        except ValueError as error:
+            cumulative_fill_remaining_conflict_rejected=(
+                'CROSS_RESPONSE_ORDER_FILL_ACTIVITY_REMAINING_CONFLICT' in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -892,6 +909,8 @@ def fixture_report():
                 repeated_cumulative_fill_state_rejected,
             cumulative_fill_time_regression_rejected=
                 cumulative_fill_time_regression_rejected,
+            cumulative_fill_remaining_conflict_rejected=
+                cumulative_fill_remaining_conflict_rejected,
             reported_fee_references_consistent=result['reported_fee_references_consistent'],
             reported_fee_reference_bound=result['reported_fee_reference_links']==1 and
                 len(result['reported_fee_reference_sha256'])==64,

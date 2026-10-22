@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.210.0 retained fill requested-quantity continuity
+
+The private offline exact response-bundle review now requires cumulative filled quantity plus leaves quantity to remain constant across every retained fill for a shared order. An otherwise coherent two-fill history with a stale final leaves quantity now fails closed before historical/interval partition and delta arithmetic. Existing cumulative uniqueness, event-time ordering, quantity continuity, weighted-average, capture-completion and earliest-page-receipt checks remain unchanged.
+
+The mandatory synthetic exact-response control is required by the reconciliation-acceptance profile. Public evidence exposes only a boolean rejection result and aggregate counts, never raw IDs, times, quantities or prices. This is deterministic consistency over supplied private evidence; it does not attest provider identity, source, clocks, activity or fee completeness, broker acceptance, funds, routing, trading or release authority. No UI control or modifiable parameter changed; the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded risk/account checks, fail-closed exits and independent emergency stop remain unchanged.
+
+Exact v0.209.0 source `1775b690f2e9d6f7cbdff2ae43450215a80a8c92` has no visible commit statuses or pull-request workflow runs through the available GitHub endpoint at this checkpoint. Parent results do not transfer to v0.210.0; fresh exact-source workflows remain mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow reconciliation fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.210.0 validation passed 3,562 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 205 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `40ef92ad2dde79e624763735482df247bce58b6d3bc3ff57f169f779e2840698`; `validation/release_trials_0_210_0.json` SHA256 is `65314cbf56c6c5e74ff946d2552e56578a80ee0b201444931705cacdf16cc929`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The 538-path proposed snapshot and reachable 595-commit / 3,896-blob history passed the private-artifact audit with zero findings. Exact-source workflows remain required; local Gitleaks, rendered-browser and native Windows execution are unavailable.
+
 ## v0.209.0 retained fill-sequence monotonicity
 
 The private offline exact response-bundle review now rejects two ambiguous shared-order fill sequences before delta arithmetic: two distinct retained activities cannot claim the same cumulative filled quantity, and event time cannot move backward as cumulative quantity rises. Existing quantity continuity, weighted-average, historical/interval, capture-completion and earliest-page-receipt checks remain unchanged.

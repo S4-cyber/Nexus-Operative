@@ -275,6 +275,23 @@ def _retained_order_fill_capture_scope(
     return dict(orders=orders,fills=fills)
 
 
+def _reported_account_order_capture_scope(open_orders,read_completed_at):
+    """Fence exact account-response order updates at read completion."""
+    try:
+        read_completed_ns=int(Decimal(str(read_completed_at))*Decimal(1_000_000_000))
+    except (InvalidOperation,ValueError,TypeError,OverflowError):
+        _fail('ACCOUNT_ORDER_TIME_INVALID')
+    orders=0
+    for order in open_orders:
+        try:updated_at=contract.timestamp_order_ns(order['updated_at'])
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('ACCOUNT_ORDER_TIME_INVALID')
+        orders+=1
+        if updated_at>read_completed_ns:
+            _fail('CROSS_RESPONSE_ACCOUNT_ORDER_UPDATE_AFTER_CAPTURE')
+    return orders
+
+
 def _retained_activity_page_capture_scope(activity_records,pages):
     """Fence each exact activity time at its earliest retained page receipt."""
     try:
@@ -382,6 +399,21 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     account_manifest=sha([hashlib.sha256(raw).hexdigest() for raw,_ in account_raw_values])
     if account_manifest!=account['response_manifest_sha256']:
         _fail('ACCOUNT_RESPONSE_BYTES_CHANGED')
+    try:
+        account_observation_file,_=_private_path(account_observation_path)
+        account_observation_raw=account_review._read(account_observation_file)
+        account_observation=account_review.portable.loads(account_observation_raw)
+        account_observation_manifest=account_observation['manifest_sha256']
+        account_read_completed_at=account_observation['read_timing']['completed_at']
+    except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+        _fail('ACCOUNT_ORDER_TIME_INVALID')
+    if account_observation_manifest!=account['portable_manifest_sha256']:
+        _fail('ACCOUNT_RESPONSE_BYTES_CHANGED')
+    if (hashlib.sha256(account_observation_raw).hexdigest()!=
+            account['portable_observation_file_sha256']):
+        _fail('ACCOUNT_RESPONSE_BYTES_CHANGED')
+    reported_account_orders=_reported_account_order_capture_scope(
+        account_raw_values[2][1],account_read_completed_at)
     retained_activity=activity_before['receipts'].get(activity['retained_receipt_sha256'])
     if retained_activity is None:_fail('ACTIVITY_RECEIPT_CHANGED')
     retained_by_id={row['activity_id']:row for row in activity_before['normalized_activities']}
@@ -437,6 +469,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
             retained_fee_scope['unreferenced_timestamped'],
         unreferenced_fee_date_only_records=retained_fee_scope['unreferenced_date_only'],
         retained_activity_order_snapshots=retained_order_fill_scope['orders'],
+        reported_account_order_snapshots=reported_account_orders,
         retained_fill_records=retained_order_fill_scope['fills'],
         page_receipt_bounded_fill_records=retained_page_capture_scope['fills'],
         page_receipt_bounded_fee_exact_timestamp_records=
@@ -467,6 +500,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         reported_fee_exact_timestamp_capture_upper_bound_checked=True,
         retained_fee_exact_timestamp_capture_upper_bound_checked=True,
         retained_order_update_capture_upper_bound_checked=True,
+        reported_account_order_update_capture_upper_bound_checked=True,
         retained_order_update_collection_start_upper_bound_checked=True,
         retained_fill_timestamp_capture_upper_bound_checked=True,
         retained_exact_activity_capture_upper_bound_checked=True,
@@ -484,6 +518,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'exact contiguous retained fill-activity delta with bounded event time and weighted average price, '
         'requires every retained fill at or below the earlier cumulative quantity to occur no later than the '
         'earlier order update, and '
+        'requires every exact account-response order update to be no later than that account read completion, '
         'requires every explicit fee order/execution reference pair to resolve to the same retained fill, refuses a referenced exact fee timestamp that precedes that fill, requires every caller-supplied order snapshot frozen before collection to be updated no later than the retained collection start, refuses any retained fill or exact fee timestamp beyond collection completion, and requires every exact retained fill or fee timestamp to be no later than the earliest page receipt that contained it. Date-only fee records remain temporally unverified. It limits the retained start gap '
         'to five minutes. This detects an adjacent discontinuity but does not '
         'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
@@ -701,6 +736,15 @@ def fixture_report():
         except ValueError as error:
             order_update_after_capture_rejected=(
                 'CROSS_RESPONSE_ORDER_UPDATE_AFTER_CAPTURE' in str(error))
+        account_order_after_capture=_fixture(root/'account-order-after-capture',
+            account_order_changes={'updated_at':'2026-10-18T23:59:00.000000001Z'},
+            activity_order_changes={'updated_at':'2026-10-19T00:00:00Z'},
+            activity_fill_changes={'transaction_time':'2026-10-19T00:00:00Z'})
+        account_order_update_after_capture_rejected=False
+        try:review(**account_order_after_capture)
+        except ValueError as error:
+            account_order_update_after_capture_rejected=(
+                'CROSS_RESPONSE_ACCOUNT_ORDER_UPDATE_AFTER_CAPTURE' in str(error))
         order_after_start=_fixture(root/'order-after-start',
             activity_response_time_offsets=(0,0,2,3),
             activity_order_changes={'updated_at':'2026-10-19T00:00:01Z'},
@@ -828,6 +872,8 @@ def fixture_report():
                 result['retained_fee_exact_timestamp_capture_upper_bound_checked'],
             retained_order_update_capture_upper_bound_checked=
                 result['retained_order_update_capture_upper_bound_checked'],
+            reported_account_order_update_capture_upper_bound_checked=
+                result['reported_account_order_update_capture_upper_bound_checked'],
             retained_order_update_collection_start_upper_bound_checked=
                 result['retained_order_update_collection_start_upper_bound_checked'],
             retained_fill_timestamp_capture_upper_bound_checked=
@@ -866,6 +912,8 @@ def fixture_report():
             fee_timestamp_before_fill_rejected=fee_timestamp_before_fill_rejected,
             fee_timestamp_after_capture_rejected=fee_timestamp_after_capture_rejected,
             order_update_after_capture_rejected=order_update_after_capture_rejected,
+            account_order_update_after_capture_rejected=
+                account_order_update_after_capture_rejected,
             order_update_after_collection_start_rejected=
                 order_update_after_collection_start_rejected,
             fill_timestamp_after_capture_rejected=fill_timestamp_after_capture_rejected,

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.207.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.208.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.207.0 requires every caller-supplied order snapshot frozen before an ACTIVITY_COLLECTION read to have updated_at no later than the replay-validated collection start. The exact boundary is accepted; snapshots updated during the later read fail closed. Existing collection-completion and earliest-page-receipt bounds for exact fills and fees remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.208.0 requires every exact ACCOUNT_INVENTORY open-order response snapshot to have updated_at no later than that replay-validated account read completion. Exact equality is accepted; a future-dated response order fails closed. The v0.207.0 activity-order collection-start fence and existing fill/fee completion and page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

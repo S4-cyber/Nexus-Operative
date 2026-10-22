@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.207.0, frozen caller-supplied order snapshots bounded at activity-collection start over the v0.206.0 exact activity page-receipt fence. Read the newest version section and generated roadmap; fresh exact-source v0.207.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.208.0, exact account-response order snapshots bounded at account-read completion over the v0.207.0 activity-order collection-start fence. Read the newest version section and generated roadmap; fresh exact-source v0.208.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.208.0 account-response order capture upper bound
+
+Require every exact ACCOUNT_INVENTORY open-order response snapshot `updated_at` to be no later than that replay-validated account read completion. Accept the exact boundary and fail closed one nanosecond later. Preserve the v0.207.0 activity-order collection-start bound and every fill/fee completion and earliest-page-receipt fence.
+
+Output adds only an aggregate account-order count, a true capture upper-bound marker and mandatory synthetic negative control. Bind the bundle re-read to the exact portable-observation bytes validated by the account component; an internal manifest alone is insufficient. Never expose raw IDs, timestamps, amounts or prices. Every provider/source/clock, coverage, fee-link, posting, hold, funds and authority flag remains false. This is local supplied-evidence consistency, not provider time attestation, account ownership, complete activity, an atomic snapshot, broker acceptance, routing authority or release approval. No UI control or editable parameter changed; keep the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop unchanged.
+
+Exact v0.207.0 source `e0db0eb14828c97309d1204be765f285149b0182` passed public security/history/Gitleaks run 39839444709, safety/regression/evidence/browser run 39839444890 and Windows regression/EXE/installer/reinstall/uninstall run 39839444673. Both exact-source regression lanes passed 3,538 tests with 19 platform skips and one existing warning. Those successful parent results do not transfer to v0.208.0. Run focused response/release/package/version checks, all sixteen profiles and saved-evidence verification, the complete suite, fourteen controllers, Portal syntax, static/public-artifact checks and fresh exact-source workflows.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow consistency fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.208.0 validation passed 3,559 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap/packaging set passed 197 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `ae2fb18baadac0d7568526a8dfe4f469bd18fb21cb3b7ea16dc50cd1284df8f6`; `validation/release_trials_0_208_0.json` SHA256 is `61d23241b8c6a97ef24c16e187c46d36d8e3cf1ccc90d6c0be9cb6680441e210`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; dedicated exact-source v0.208.0 workflows are mandatory.
 
 ## v0.207.0 frozen order-snapshot collection-start upper bound
 

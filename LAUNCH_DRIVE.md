@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.208.0 account-response order capture upper bound
+
+The private offline response-bundle review now requires every exact ACCOUNT_INVENTORY open-order response snapshot to have `updated_at` no later than the replay-validated completion of that account read. Exact equality is accepted and one nanosecond beyond completion fails closed. The v0.207.0 activity-order collection-start bound and all fill/fee completion and earliest-page-receipt fences remain unchanged.
+
+Only an aggregate account-order count, a true capture-bound marker and a mandatory synthetic negative control are added. The bundle also binds its re-read to the SHA-256 of the exact portable-observation bytes validated by the account component, so an internal-manifest-only swap fails closed. Raw IDs, timestamps, prices and amounts stay private. This is deterministic supplied-evidence consistency only: it does not attest provider identity, source or clocks; prove account, order, activity or fee coverage; make sequential reads atomic; reconcile fee posting, holds or spendable funds; or grant broker, routing, trading or release authority. No UI control or modifiable parameter changed; the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded risk/account checks, fail-closed exits and independent emergency stop remain unchanged.
+
+Exact v0.207.0 source `e0db0eb14828c97309d1204be765f285149b0182` passed security/history/Gitleaks run 39839444709, safety/regression/evidence/browser run 39839444890 and Windows regression/EXE/installer/reinstall/uninstall run 39839444673. Both exact-source regression lanes passed 3,538 tests with 19 platform skips and one existing warning. Those successful parent results do not transfer to v0.208.0; fresh exact-source workflows remain mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow consistency fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.208.0 validation passed 3,559 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 197 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `ae2fb18baadac0d7568526a8dfe4f469bd18fb21cb3b7ea16dc50cd1284df8f6`; `validation/release_trials_0_208_0.json` SHA256 is `61d23241b8c6a97ef24c16e187c46d36d8e3cf1ccc90d6c0be9cb6680441e210`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Exact-source workflows remain required; local Gitleaks, rendered-browser and native Windows execution are unavailable.
+
 ## v0.207.0 frozen order-snapshot collection-start upper bound
 
 The private offline response-bundle review now requires every retained caller-supplied activity-order snapshot to have `updated_at` no later than the replay-validated collection start at which those terms had already been frozen. Exact equality is accepted. A snapshot updated during the later read fails closed even if it remains earlier than collection completion; snapshots beyond completion retain the existing after-capture refusal. Exact fills and fees keep the v0.205.0 completion and v0.206.0 earliest-page-receipt bounds.

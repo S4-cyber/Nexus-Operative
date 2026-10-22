@@ -68,6 +68,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['reported_fee_exact_timestamp_capture_upper_bound_checked']
     assert result['retained_fee_exact_timestamp_capture_upper_bound_checked']
     assert result['retained_order_update_capture_upper_bound_checked']
+    assert result['reported_account_order_update_capture_upper_bound_checked']
     assert result['retained_order_update_collection_start_upper_bound_checked']
     assert result['retained_fill_timestamp_capture_upper_bound_checked']
     assert result['retained_exact_activity_capture_upper_bound_checked']
@@ -75,6 +76,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['retained_fee_exact_timestamp_page_receipt_upper_bound_checked']
     assert result['retained_exact_activity_page_receipt_upper_bound_checked']
     assert result['retained_activity_order_snapshots']==1
+    assert result['reported_account_order_snapshots']==1
     assert result['retained_fill_records']==1
     assert result['page_receipt_bounded_fill_records']==1
     assert result['page_receipt_bounded_fee_exact_timestamp_records']==0
@@ -285,6 +287,38 @@ def test_bundle_rejects_retained_order_update_after_capture(tmp_path):
     options=subject._fixture(tmp_path,activity_order_changes={
         'updated_at':'2026-10-19T00:00:00.000000001Z'})
     with pytest.raises(ValueError,match='ORDER_UPDATE_AFTER_CAPTURE'):
+        subject.review(**options)
+
+
+def test_bundle_rejects_account_order_update_after_its_read_capture(tmp_path):
+    options=subject._fixture(tmp_path,
+        account_order_changes={'updated_at':'2026-10-18T23:59:00.000000001Z'},
+        activity_order_changes={'updated_at':'2026-10-19T00:00:00Z'},
+        activity_fill_changes={'transaction_time':'2026-10-19T00:00:00Z'})
+    with pytest.raises(ValueError,match='ACCOUNT_ORDER_UPDATE_AFTER_CAPTURE'):
+        subject.review(**options)
+
+
+def test_bundle_accepts_account_order_update_at_read_capture_boundary(tmp_path):
+    options=subject._fixture(tmp_path,
+        account_order_changes={'updated_at':'2026-10-18T23:59:00Z'},
+        activity_order_changes={'updated_at':'2026-10-19T00:00:00Z'},
+        activity_fill_changes={'transaction_time':'2026-10-19T00:00:00Z'})
+    result=subject.review(**options)
+    assert result['reported_account_order_snapshots']==1
+    assert result['reported_account_order_update_capture_upper_bound_checked']
+
+
+def test_bundle_rejects_observation_changed_after_component_review(tmp_path,monkeypatch):
+    options=subject._fixture(tmp_path)
+    original=subject.account_review.review
+    def changed_after_review(**review_options):
+        result=original(**review_options)
+        path=review_options['observation_path']
+        path.write_bytes(path.read_bytes()+b'\n')
+        return result
+    monkeypatch.setattr(subject.account_review,'review',changed_after_review)
+    with pytest.raises(ValueError,match='ACCOUNT_RESPONSE_BYTES_CHANGED'):
         subject.review(**options)
 
 

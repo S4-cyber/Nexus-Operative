@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.205.0, all-retained exact activity-time capture upper bounds over the v0.204.1 cross-platform canonical release fingerprint. Read the newest version section and generated roadmap; fresh exact-source v0.205.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.206.0, exact retained activity page-receipt upper bounds over the v0.205.0 collection-completion fence. Read the newest version section and generated roadmap; fresh exact-source v0.206.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.206.0 exact activity page-receipt upper bound
+
+Bind every retained normalized activity to the earliest replay-validated page receipt containing its activity ID. Require exact FILL `occurred_at` and timestamp-shaped FEE/CFEE `reported_date` to be no later than that receipt. Accept the exact boundary, keep the earliest bound when an activity appears on duplicate pages, and leave calendar-date-only fees temporally unverified rather than inventing a timezone, time of day or posting instant.
+
+Output adds only aggregate page-bounded fill, exact-fee and date-only-fee counts plus true fill, fee and combined local upper-bound markers. Never expose raw IDs, timestamps, amounts or prices. Every provider/source/clock, coverage, semantic fee-link, posting, hold, funds and authority flag remains false. This is deterministic local consistency over supplied private evidence and replayed receipt timing, not provider time attestation, complete received activity, account ownership, an atomic snapshot, broker acceptance, routing authority or release approval. No UI control or editable parameter changed; keep the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop unchanged.
+
+Exact v0.205.0 source `4d9f63d30f48a0faae46a5dd0426e43dbcc70a7b` passed public security/history/Gitleaks run 39704656293, safety/regression/evidence/browser run 39704656261 and Windows regression/EXE/installer/reinstall/uninstall run 39704656316. Both exact-source regression lanes passed 3,533 tests with 19 platform skips and one existing warning. Those successful parent results do not transfer to v0.206.0. Run focused response/release/package/version checks, all sixteen profiles and saved-evidence verification, the complete suite, fourteen controllers, Portal syntax, static/public-artifact checks and fresh exact-source workflows.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow consistency fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.206.0 validation passed 3,555 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap set passed 182 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `d9ffcae67b6e24434605b5d894b46e28e3204462c1b6e6aaea9f6a96a241686e`; `validation/release_trials_0_206_0.json` SHA256 is `4e50699498b695ff4ed7940a950dde65a46acfa5dab1021d4d0c2be5eea93355`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; dedicated exact-source v0.206.0 workflows are mandatory.
 
 ## v0.205.0 all-retained exact activity-time capture upper bound
 

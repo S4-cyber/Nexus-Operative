@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.206.0 exact activity page-receipt upper bound
+
+The private offline response-bundle review now binds every retained normalized activity to the earliest replay-validated page receipt containing its activity ID. An exact FILL `occurred_at` or timestamp-shaped FEE/CFEE `reported_date` later than that receipt fails closed even when it remains earlier than the overall collection completion instant. Exact equality is accepted, duplicate appearances retain the earliest bound, and calendar-date-only fees remain explicitly temporally unverified.
+
+Only aggregate page-bounded fill, exact-fee and date-only-fee counts plus true local upper-bound markers are added to output. Raw IDs, timestamps, prices and amounts stay private. This is deterministic consistency over supplied bytes and replayed receipt timing only: it does not attest provider identity, source or clocks; prove received-activity coverage, fee linkage or posting; reconcile holds or spendable funds; establish account ownership; or grant broker, routing, trading or release authority. No UI control or modifiable parameter changed; the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded risk/account checks, fail-closed exits and independent emergency stop remain unchanged.
+
+Exact v0.205.0 source `4d9f63d30f48a0faae46a5dd0426e43dbcc70a7b` passed security/history/Gitleaks run 39704656293, safety/regression/evidence/browser run 39704656261 and Windows regression/EXE/installer/reinstall/uninstall run 39704656316. Both exact-source regression lanes passed 3,533 tests with 19 platform skips and one existing warning. Those successful parent results do not transfer to v0.206.0; fresh exact-source workflows remain mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow consistency fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.206.0 validation passed 3,555 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap set passed 182 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `d9ffcae67b6e24434605b5d894b46e28e3204462c1b6e6aaea9f6a96a241686e`; `validation/release_trials_0_206_0.json` SHA256 is `4e50699498b695ff4ed7940a950dde65a46acfa5dab1021d4d0c2be5eea93355`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Exact-source workflows remain required.
+
 ## v0.205.0 all-retained exact activity-time capture upper bound
 
 The private offline response-bundle review now refuses an activity-order update or exact retained fill timestamp later than the replay-validated activity collection completion instant. The exact completion boundary is accepted and one nanosecond beyond it fails closed. Together with v0.204.0's all-retained exact-fee rule, the new combined marker covers every retained exact activity time while continuing to leave calendar-date-only fee records temporally unverified.

@@ -156,7 +156,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
 
 
 def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_clock_value=1792368000,
-        order_changes=None,fill_changes=None,fee_changes=None,include_fill=True):
+        order_changes=None,fill_changes=None,fee_changes=None,include_fill=True,
+        response_time_offsets=None):
     """Create disposable injected response bytes plus paced retained activity."""
     import io
     from nexus.alpaca_activity_collection import collect_activities
@@ -200,14 +201,26 @@ def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_cloc
         def __enter__(self):return self
         def __exit__(self,*args):self.body.close()
     class Opener:
-        def __init__(self):self.items=iter(bodies)
-        def open(self,request,timeout):return Response(request.full_url,next(self.items))
+        def __init__(self):self.items=iter(bodies);self.calls=0
+        def open(self,request,timeout):
+            self.calls+=1
+            return Response(request.full_url,next(self.items))
     gate=PaperReadPacing(pacing_path or root/'pacing.sqlite3',account)
     store=BrokerActivityStore(root/'activity.sqlite3',account)
+    opener=Opener()
+    if response_time_offsets is None:
+        wall_clock=lambda:wall_clock_value
+    else:
+        if (type(response_time_offsets) not in (tuple,list) or
+                len(response_time_offsets)!=len(bodies)+1):
+            raise ValueError('PAPER_ACTIVITY_RESPONSE_FIXTURE_TIME_OFFSETS')
+        offsets=tuple(response_time_offsets)
+        wall_clock=lambda:wall_clock_value+offsets[opener.calls]
     collect_activities('fixture_key_only_123','fixture_secret_only_123',orders,
         expected_account_id=account,after='2026-10-17T00:00:00Z',until='2026-10-18T00:00:00Z',
-        confirm_read_only_paper=True,opener=Opener(),wall_clock=lambda:wall_clock_value,
-        elapsed_clock=lambda:50,activity_store=store,pacing=gate)
+        confirm_read_only_paper=True,opener=opener,wall_clock=wall_clock,
+        elapsed_clock=(wall_clock if response_time_offsets is not None else lambda:50),
+        activity_store=store,pacing=gate)
     paths=[];names=['account-before',*(f'activity-page-{index}' for index in range(len(pages))),'account-after']
     for name,raw in zip(names,bodies):
         path=root/(name+'.json');path.write_bytes(raw);paths.append(path)

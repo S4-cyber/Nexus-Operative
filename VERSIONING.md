@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.205.0 (pre-release).** This minor build requires every retained activity-order update and exact fill timestamp to be no later than its replay-validated collection completion instant, complementing the existing all-retained-fee upper bound. It grants no provider-clock, semantic fee-link, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.206.0 (pre-release).** This minor build requires every exact retained fill or fee timestamp to be no later than the earliest replay-validated page receipt containing that activity. It preserves the v0.205.0 collection-completion bounds and grants no provider-clock, semantic fee-link, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper, sustained trials and exact-source CI remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.206.0 exact activity page-receipt upper bound
+
+The exact offline response-bundle review now binds every retained normalized activity to the earliest retained page receipt containing its activity ID. An exact FILL `occurred_at` or timestamp-shaped FEE/CFEE `reported_date` later than that page receipt fails closed even if it remains earlier than the overall collection completion instant. An activity repeated on a later page keeps the earlier bound. Exact equality is accepted; calendar-date-only fees remain explicitly temporally unverified.
+
+Public output adds only aggregate page-bounded fill, exact-fee and date-only-fee counts plus true fill, fee and combined page-receipt upper-bound markers. It emits no raw IDs, amounts, prices or timestamps. This is local consistency over caller-supplied private bytes and replayed page timing, not provider identity, transport or clock attestation, received-activity coverage, semantic fee linkage, fee posting, account ownership, an atomic snapshot, holds/funds reconciliation, routing permission or broker acceptance. No credential, network, evidence-write, UI, permission, risk, emergency or execution path changed.
+
+Exact v0.205.0 source `4d9f63d30f48a0faae46a5dd0426e43dbcc70a7b` passed security/history/Gitleaks run 39704656293, safety/regression/evidence/browser run 39704656261 and Windows regression/EXE/installer/reinstall/uninstall run 39704656316. Both exact-source regression lanes passed 3,533 tests with 19 platform skips and one existing warning. Those parent results do not transfer to v0.206.0; fresh exact-source workflows remain mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This deterministic consistency fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local validation passed 3,555 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap set passed 182 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `d9ffcae67b6e24434605b5d894b46e28e3204462c1b6e6aaea9f6a96a241686e`; report SHA256 is `4e50699498b695ff4ed7940a950dde65a46acfa5dab1021d4d0c2be5eea93355`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Fresh exact-source security, safety/browser/evidence and Windows installer workflows remain mandatory.
 
 ## v0.205.0 all-retained exact activity-time capture upper bound
 

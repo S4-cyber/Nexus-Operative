@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.204.1. Branch: `development/windows-portal-foundation`.
+Revision: 0.205.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.204.1 makes the 357-file release source fingerprint stable across ordinary LF and CRLF Git checkouts by canonicalizing only CRLF pairs before hashing. Lone carriage returns and every other byte remain significant. This fixes cross-platform evidence identity for the same source tree; it is not a signature, source attestation, CI proof or release approval. The v0.204.0 all-retained-fee capture fence remains unchanged. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.205.0 requires every retained activity-order update and exact fill timestamp to be no later than the replay-validated collection completion instant, extending the existing all-retained-fee upper bound across every exact retained activity time. Date-only fee records remain temporally unverified. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

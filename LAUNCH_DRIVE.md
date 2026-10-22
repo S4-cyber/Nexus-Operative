@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.205.0 all-retained exact activity-time capture upper bound
+
+The private offline response-bundle review now refuses an activity-order update or exact retained fill timestamp later than the replay-validated activity collection completion instant. The exact completion boundary is accepted and one nanosecond beyond it fails closed. Together with v0.204.0's all-retained exact-fee rule, the new combined marker covers every retained exact activity time while continuing to leave calendar-date-only fee records temporally unverified.
+
+Only aggregate retained order/fill counts and content-free upper-bound booleans are added to output. Raw IDs, timestamps, prices and amounts stay private. This is supplied-evidence chronology consistency only: it does not attest provider/source clocks, completeness, account ownership, atomicity, fee linkage/posting, holds, funds, routing or broker acceptance. No UI/control, credential, provider call, evidence write, automatic retry, order permission, funding, live/cloud operation or release authority was added. The seven beginner tabs, black/bright-purple bottom-right help, OFF defaults, bounded limits, account checks, fail-closed exits and independent emergency stop are unchanged.
+
+Exact v0.204.1 source `68d0de0e213c39dbdc05488419e144cbca5f64b3` passed public-security 39696509436, safety/browser/evidence 39696509461 and Windows regression/packaging/installer 39696509457. Both Windows regression lanes passed 3,530 tests with 19 platform skips and one existing warning. Fresh exact-source v0.205.0 workflows remain required. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages; this narrow consistency fence does not justify a reassessment.
+
+Final local v0.205.0 validation passed 3,551 tests with one expected non-Windows skip and one existing warning; the focused set passed 173 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `3f5339856ce387352da0fad30bcb8fba3bfb0dcb9e42279146a024f7be114f77`; report SHA256 is `3bf1662fd64fd6055e4c55576f8dcc191bca1d9805d959eee3cc934801394aa8`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality, whitespace checks and the staged 533-path public audit passed. Fresh exact-source security, safety/browser/evidence and Windows packaging/installer workflows remain mandatory.
+
 ## v0.204.1 cross-platform source fingerprint
 
 Release source fingerprints now canonicalize CRLF pairs to LF across the selected text source/configuration inputs. The exact v0.204.0 Git tree produced different local and Windows digests solely because ordinary checkouts materialized those same files with LF versus CRLF. Canonicalization gives one logical-source identity while retaining sensitivity to lone carriage returns and every other byte.

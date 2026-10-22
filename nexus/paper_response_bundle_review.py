@@ -242,6 +242,34 @@ def _reported_fee_reference_links(activity_records,activity_orders,read_complete
             unreferenced_date_only=unreferenced_date_only))
 
 
+def _retained_order_fill_capture_scope(activity_records,activity_orders,read_completed_at):
+    """Fence exact retained order/fill times at collection completion."""
+    try:
+        read_completed_ns=int(Decimal(str(read_completed_at))*Decimal(1_000_000_000))
+    except (InvalidOperation,ValueError,TypeError,OverflowError):
+        _fail('ACTIVITY_ORDER_FILL_TIME_INVALID')
+    orders=0
+    for order in activity_orders:
+        try:updated_at=contract.timestamp_order_ns(order['updated_at'])
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('ACTIVITY_ORDER_FILL_TIME_INVALID')
+        orders+=1
+        if updated_at>read_completed_ns:
+            _fail('CROSS_RESPONSE_ORDER_UPDATE_AFTER_CAPTURE')
+    fills=0
+    for record in activity_records:
+        try:kind=record['kind']
+        except (TypeError,KeyError):_fail('ACTIVITY_ORDER_FILL_TIME_INVALID')
+        if kind!='FILL':continue
+        try:occurred_at=contract.timestamp_order_ns(record['occurred_at'])
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('ACTIVITY_ORDER_FILL_TIME_INVALID')
+        fills+=1
+        if occurred_at>read_completed_ns:
+            _fail('CROSS_RESPONSE_FILL_TIMESTAMP_AFTER_CAPTURE')
+    return dict(orders=orders,fills=fills)
+
+
 def review(*,pacing_path,activity_store_path,expected_account_id,
         expected_pacing_head,expected_activity_head,account_session_head,
         account_before_path,positions_path,orders_path,account_after_path,
@@ -311,6 +339,9 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     retained_by_id={row['activity_id']:row for row in activity_before['normalized_activities']}
     try:retained_records=[retained_by_id[key] for key in retained_activity['activity_ids']]
     except KeyError:_fail('ACTIVITY_RECEIPT_CHANGED')
+    retained_order_fill_scope=_retained_order_fill_capture_scope(
+        retained_records,retained_activity['orders'],
+        retained_activity['collection_observation']['read_completed_at'])
     (open_identities,activity_identities,overlap,order_progress,
         order_fill_deltas,order_fill_delta_activities,order_fill_partitions,
         order_historical_fill_activities)=_order_identity_maps(
@@ -354,6 +385,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         unreferenced_fee_timestamped_records=
             retained_fee_scope['unreferenced_timestamped'],
         unreferenced_fee_date_only_records=retained_fee_scope['unreferenced_date_only'],
+        retained_activity_order_snapshots=retained_order_fill_scope['orders'],
+        retained_fill_records=retained_order_fill_scope['fills'],
         activity_response_manifest_sha256=activity['response_manifest_sha256'],
         activity_receipt_sha256=activity['retained_receipt_sha256'],
         account_review_sha256=account['review_sha256'],
@@ -377,6 +410,9 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         reported_fee_exact_timestamp_chronology_checked=True,
         reported_fee_exact_timestamp_capture_upper_bound_checked=True,
         retained_fee_exact_timestamp_capture_upper_bound_checked=True,
+        retained_order_update_capture_upper_bound_checked=True,
+        retained_fill_timestamp_capture_upper_bound_checked=True,
+        retained_exact_activity_capture_upper_bound_checked=True,
         journals_rechecked_unchanged=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
@@ -388,7 +424,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'exact contiguous retained fill-activity delta with bounded event time and weighted average price, '
         'requires every retained fill at or below the earlier cumulative quantity to occur no later than the '
         'earlier order update, and '
-        'requires every explicit fee order/execution reference pair to resolve to the same retained fill, refuses a referenced exact fee timestamp that precedes that fill, and refuses any retained exact fee timestamp beyond the retained collection completion instant. Date-only fee records remain temporally unverified. It limits the retained start gap '
+        'requires every explicit fee order/execution reference pair to resolve to the same retained fill, refuses a referenced exact fee timestamp that precedes that fill, and refuses any retained order-update, fill or exact fee timestamp beyond the retained collection completion instant. Date-only fee records remain temporally unverified. It limits the retained start gap '
         'to five minutes. This detects an adjacent discontinuity but does not '
         'make the reads atomic or prove a quiet interval. Hash agreement is not provider identity, TLS capture, '
         'account ownership, source or received-activity coverage, creation/execution/fee coverage, verified '
@@ -597,6 +633,21 @@ def fixture_report():
         except ValueError as error:
             fee_timestamp_after_capture_rejected=(
                 'CROSS_RESPONSE_FEE_TIMESTAMP_AFTER_CAPTURE' in str(error))
+        order_after_capture=_fixture(root/'order-after-capture',
+            activity_order_changes={'updated_at':'2026-10-19T00:00:00.000000001Z'})
+        order_update_after_capture_rejected=False
+        try:review(**order_after_capture)
+        except ValueError as error:
+            order_update_after_capture_rejected=(
+                'CROSS_RESPONSE_ORDER_UPDATE_AFTER_CAPTURE' in str(error))
+        fill_after_capture=_fixture(root/'fill-after-capture',
+            activity_order_changes={'updated_at':'2026-10-19T00:00:00Z'},
+            activity_fill_changes={'transaction_time':'2026-10-19T00:00:00.000000001Z'})
+        fill_timestamp_after_capture_rejected=False
+        try:review(**fill_after_capture)
+        except ValueError as error:
+            fill_timestamp_after_capture_rejected=(
+                'CROSS_RESPONSE_FILL_TIMESTAMP_AFTER_CAPTURE' in str(error))
         unreferenced_fee=_fixture(root/'unreferenced-fee',two_pages=True,
             activity_fee_changes={'order_id':None,'execution_id':None,
                 'date':'2026-10-19T00:00:00Z'})
@@ -675,6 +726,12 @@ def fixture_report():
                 result['reported_fee_exact_timestamp_capture_upper_bound_checked'],
             retained_fee_exact_timestamp_capture_upper_bound_checked=
                 result['retained_fee_exact_timestamp_capture_upper_bound_checked'],
+            retained_order_update_capture_upper_bound_checked=
+                result['retained_order_update_capture_upper_bound_checked'],
+            retained_fill_timestamp_capture_upper_bound_checked=
+                result['retained_fill_timestamp_capture_upper_bound_checked'],
+            retained_exact_activity_capture_upper_bound_checked=
+                result['retained_exact_activity_capture_upper_bound_checked'],
             unreferenced_fee_capture_scope_bound=unreferenced_fee_capture_scope_bound,
             reported_fee_date_only_scope_preserved=
                 result['reported_fee_timestamped_links']==0 and
@@ -698,6 +755,8 @@ def fixture_report():
             fee_reference_partial_rejected=fee_reference_partial_rejected,
             fee_timestamp_before_fill_rejected=fee_timestamp_before_fill_rejected,
             fee_timestamp_after_capture_rejected=fee_timestamp_after_capture_rejected,
+            order_update_after_capture_rejected=order_update_after_capture_rejected,
+            fill_timestamp_after_capture_rejected=fill_timestamp_after_capture_rejected,
             unreferenced_fee_timestamp_after_capture_rejected=
                 unreferenced_fee_timestamp_after_capture_rejected,
             delayed_adjacent_session_rejected=delayed_rejected,

@@ -67,6 +67,11 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['reported_fee_exact_timestamp_chronology_checked']
     assert result['reported_fee_exact_timestamp_capture_upper_bound_checked']
     assert result['retained_fee_exact_timestamp_capture_upper_bound_checked']
+    assert result['retained_order_update_capture_upper_bound_checked']
+    assert result['retained_fill_timestamp_capture_upper_bound_checked']
+    assert result['retained_exact_activity_capture_upper_bound_checked']
+    assert result['retained_activity_order_snapshots']==1
+    assert result['retained_fill_records']==1
     assert result['reported_fee_timestamped_links']==0
     assert result['reported_fee_date_only_links']==int(two_pages)
     assert result['retained_fee_records']==100*int(two_pages)
@@ -267,6 +272,31 @@ def test_bundle_rejects_unreferenced_exact_fee_timestamp_after_capture(tmp_path)
         'date':'2026-10-19T00:00:00.000000001Z'})
     with pytest.raises(ValueError,match='FEE_TIMESTAMP_AFTER_CAPTURE'):
         subject.review(**options)
+
+
+def test_bundle_rejects_retained_order_update_after_capture(tmp_path):
+    options=subject._fixture(tmp_path,activity_order_changes={
+        'updated_at':'2026-10-19T00:00:00.000000001Z'})
+    with pytest.raises(ValueError,match='ORDER_UPDATE_AFTER_CAPTURE'):
+        subject.review(**options)
+
+
+def test_bundle_rejects_retained_fill_timestamp_after_capture(tmp_path):
+    options=subject._fixture(tmp_path,
+        activity_order_changes={'updated_at':'2026-10-19T00:00:00Z'},
+        activity_fill_changes={'transaction_time':'2026-10-19T00:00:00.000000001Z'})
+    with pytest.raises(ValueError,match='FILL_TIMESTAMP_AFTER_CAPTURE'):
+        subject.review(**options)
+
+
+def test_bundle_accepts_retained_order_and_fill_at_capture_boundary(tmp_path):
+    options=subject._fixture(tmp_path,
+        activity_order_changes={'updated_at':'2026-10-19T00:00:00Z'},
+        activity_fill_changes={'transaction_time':'2026-10-19T00:00:00Z'})
+    result=subject.review(**options)
+    assert result['retained_activity_order_snapshots']==1
+    assert result['retained_fill_records']==1
+    assert result['retained_exact_activity_capture_upper_bound_checked']
 
 
 def test_bundle_rejects_adjacent_sessions_outside_bounded_start_gap(tmp_path):

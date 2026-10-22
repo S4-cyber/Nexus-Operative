@@ -68,6 +68,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['reported_fee_exact_timestamp_capture_upper_bound_checked']
     assert result['retained_fee_exact_timestamp_capture_upper_bound_checked']
     assert result['retained_order_update_capture_upper_bound_checked']
+    assert result['retained_order_update_collection_start_upper_bound_checked']
     assert result['retained_fill_timestamp_capture_upper_bound_checked']
     assert result['retained_exact_activity_capture_upper_bound_checked']
     assert result['retained_fill_timestamp_page_receipt_upper_bound_checked']
@@ -287,6 +288,15 @@ def test_bundle_rejects_retained_order_update_after_capture(tmp_path):
         subject.review(**options)
 
 
+def test_bundle_rejects_frozen_order_update_after_collection_start(tmp_path):
+    options=subject._fixture(tmp_path,
+        activity_response_time_offsets=(0,0,2,3),
+        activity_order_changes={'updated_at':'2026-10-19T00:00:01Z'},
+        activity_fill_changes={'transaction_time':'2026-10-19T00:00:00Z'})
+    with pytest.raises(ValueError,match='ORDER_UPDATE_AFTER_COLLECTION_START'):
+        subject.review(**options)
+
+
 def test_bundle_rejects_retained_fill_timestamp_after_capture(tmp_path):
     options=subject._fixture(tmp_path,
         activity_order_changes={'updated_at':'2026-10-19T00:00:00Z'},
@@ -303,15 +313,15 @@ def test_bundle_accepts_retained_order_and_fill_at_capture_boundary(tmp_path):
     assert result['retained_activity_order_snapshots']==1
     assert result['retained_fill_records']==1
     assert result['retained_exact_activity_capture_upper_bound_checked']
+    assert result['retained_order_update_collection_start_upper_bound_checked']
 
 
-def test_bundle_rejects_fill_timestamp_after_its_first_page_receipt(tmp_path):
-    options=subject._fixture(tmp_path,two_pages=True,
-        activity_response_time_offsets=(0,0,1,3,4),
-        activity_order_changes={'updated_at':'2026-10-19T00:00:02Z'},
-        activity_fill_changes={'transaction_time':'2026-10-19T00:00:02Z'})
+def test_page_scope_rejects_fill_timestamp_after_its_first_page_receipt():
+    records=[dict(activity_id='fill-1',kind='FILL',
+        occurred_at='2026-10-19T00:00:02Z')]
+    pages=[dict(received_at='1792368001',activity_ids=['fill-1'])]
     with pytest.raises(ValueError,match='FILL_TIMESTAMP_AFTER_PAGE_RECEIPT'):
-        subject.review(**options)
+        subject._retained_activity_page_capture_scope(records,pages)
 
 
 def test_bundle_rejects_fee_timestamp_after_its_first_page_receipt(tmp_path):
@@ -324,10 +334,10 @@ def test_bundle_rejects_fee_timestamp_after_its_first_page_receipt(tmp_path):
 
 def test_bundle_accepts_exact_activity_at_first_page_receipt_boundary(tmp_path):
     options=subject._fixture(tmp_path,two_pages=True,
-        activity_response_time_offsets=(0,0,1,3,4),
-        activity_order_changes={'updated_at':'2026-10-19T00:00:01Z'},
-        activity_fill_changes={'transaction_time':'2026-10-19T00:00:01Z'},
-        activity_fee_changes={'date':'2026-10-19T00:00:01Z'})
+        activity_response_time_offsets=(0,0,0,3,4),
+        activity_order_changes={'updated_at':'2026-10-19T00:00:00Z'},
+        activity_fill_changes={'transaction_time':'2026-10-19T00:00:00Z'},
+        activity_fee_changes={'date':'2026-10-19T00:00:00Z'})
     result=subject.review(**options)
     assert result['page_receipt_bounded_fill_records']==1
     assert result['page_receipt_bounded_fee_exact_timestamp_records']==1

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.208.0'
+REVISION = '0.209.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -161,7 +161,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.208.0 requires every exact ACCOUNT_INVENTORY open-order response snapshot to have updated_at no later than that replay-validated account read completion. Exact equality is accepted; a future-dated response order fails closed. The v0.207.0 activity-order collection-start fence and existing fill/fee completion and page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.209.0 makes the exact response bundle reject ambiguous retained fill sequences for each shared order: cumulative quantities must not repeat, and event time must not move backward as cumulative quantity rises. The existing before/after quantity, weighted-average, capture-completion and earliest-page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

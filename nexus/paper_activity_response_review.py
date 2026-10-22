@@ -156,7 +156,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
 
 
 def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_clock_value=1792368000,
-        order_changes=None,fill_changes=None,fee_changes=None,include_fill=True,
+        order_changes=None,fill_changes=None,extra_fill_changes=None,fee_changes=None,include_fill=True,
         response_time_offsets=None):
     """Create disposable injected response bytes plus paced retained activity."""
     import io
@@ -190,7 +190,13 @@ def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_cloc
             symbol='BTCUSD',side='buy',type='fill',qty='1',cum_qty='1',leaves_qty='0',
             price='100',transaction_time='2026-10-17T18:00:01Z')
         row.update({} if fill_changes is None else fill_changes)
-        pages=[[row] if include_fill else []]
+        rows=[row] if include_fill else []
+        if extra_fill_changes is not None:
+            extra=dict(row,
+                id='20261017180000000::11234567-89ab-cdef-0123-000000000002')
+            extra.update(extra_fill_changes)
+            rows.append(extra)
+        pages=[rows]
     values=[raw_account,*pages,raw_account]
     bodies=[json.dumps(value,separators=(',',':')).encode() for value in values]
     class Response:

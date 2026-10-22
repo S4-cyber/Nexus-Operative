@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.208.0 (pre-release).** This minor build requires each exact account-inventory open-order response snapshot to have `updated_at` no later than its replay-validated read completion. It preserves the v0.207.0 activity-order collection-start fence and every fill/fee completion and page-receipt bound, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.209.0 (pre-release).** This minor build makes exact shared-order retained fill sequences fail closed on repeated cumulative states or backward event time as cumulative quantity rises. It preserves the existing quantity, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.209.0 retained fill-sequence monotonicity
+
+`paper_response_bundle_review` now rejects distinct retained fill activities for a shared order when their cumulative quantities repeat, because that sequence is ambiguous duplicate/correction evidence. After sorting by cumulative quantity, it also rejects a higher cumulative state whose event timestamp is earlier than its predecessor. These checks run before historical/interval partition and delta arithmetic. Mandatory exact-response fixtures cover both malformed two-fill sequences, and the reconciliation-acceptance profile requires both negative controls.
+
+This is local consistency over supplied private evidence, not provider identity, source or clock attestation, complete execution/activity/fee coverage, account ownership, an atomic snapshot, funds reconciliation, broker acceptance or routing authority. No UI control, editable parameter, credential, provider call, evidence write, permission, risk, emergency or execution path changed.
+
+Exact v0.208.0 source `0d49f95d815d00a9c4260dec57dbda19819e10d4` passed security/history/Gitleaks run 39851503258, safety/regression/evidence/browser run 39851503275 and Windows regression/EXE/installer/reinstall/uninstall run 39851503245. Both exact-source regression lanes passed 3,541 tests with 19 platform skips and one existing warning. Those parent results do not transfer to v0.209.0; fresh exact-source workflows remain mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow reconciliation fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local validation passed 3,561 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 213 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `dd4b2c45d584ac95da3564a0e916ecdc1d8ffe14752e874b11c1bb07b875bedd`; report SHA256 is `1f09496bacc04a3ff7866a076e4dcb065b976f73634a7514f95dde29bc4e15c7`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The 536-path proposed public snapshot passed the private-artifact audit with zero findings. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
 
 ## v0.208.0 account-response order capture upper bound
 

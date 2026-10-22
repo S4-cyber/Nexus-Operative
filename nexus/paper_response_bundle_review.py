@@ -122,6 +122,11 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INVALID')
         if any(cumulative>after_qty for cumulative,_,_ in parsed):
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_AHEAD')
+        for previous,current in zip(parsed,parsed[1:]):
+            if current[0]==previous[0]:
+                _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_CUMULATIVE_CONFLICT')
+            if current[1]<previous[1]:
+                _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_TIME_REGRESSION')
         historical=[]
         for cumulative,occurred_at,fill in parsed:
             if cumulative<=before_qty:
@@ -530,7 +535,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
 
 def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clock=1792368000,
         account_order_client_id='fixture_1',account_order_changes=None,activity_order_changes=None,
-        activity_fill_changes=None,activity_fee_changes=None,activity_include_fill=True,
+        activity_fill_changes=None,activity_extra_fill_changes=None,
+        activity_fee_changes=None,activity_include_fill=True,
         activity_response_time_offsets=None):
     """Create disposable injected responses for one exact adjacent session pair."""
     from pathlib import Path
@@ -547,7 +553,8 @@ def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clo
     activity=activity_review._fixture(root/'activity',two_pages=two_pages,
         pacing_path=account['pacing_path'],account_cash=activity_account_cash,
         wall_clock_value=activity_wall_clock,order_changes=activity_order_changes,
-        fill_changes=activity_fill_changes,fee_changes=activity_fee_changes,
+        fill_changes=activity_fill_changes,extra_fill_changes=activity_extra_fill_changes,
+        fee_changes=activity_fee_changes,
         include_fill=activity_include_fill,response_time_offsets=activity_response_time_offsets)
     return dict(pacing_path=account['pacing_path'],
         activity_store_path=activity['activity_store_path'],
@@ -692,6 +699,26 @@ def fixture_report():
         except ValueError as error:
             late_historical_fill_rejected=(
                 'CROSS_RESPONSE_ORDER_FILL_ACTIVITY_LATE_HISTORICAL' in str(error))
+        cumulative_conflict=_fixture(root/'cumulative-conflict',
+            activity_fill_changes={'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5',
+                'transaction_time':'2026-10-17T18:00:00Z'},
+            activity_extra_fill_changes={'qty':'0.5','cum_qty':'0.5',
+                'leaves_qty':'0.5','transaction_time':'2026-10-17T18:00:01Z'})
+        repeated_cumulative_fill_state_rejected=False
+        try:review(**cumulative_conflict)
+        except ValueError as error:
+            repeated_cumulative_fill_state_rejected=(
+                'CROSS_RESPONSE_ORDER_FILL_ACTIVITY_CUMULATIVE_CONFLICT' in str(error))
+        fill_time_regression=_fixture(root/'fill-time-regression',
+            activity_fill_changes={'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5',
+                'transaction_time':'2026-10-17T18:00:01Z'},
+            activity_extra_fill_changes={'qty':'0.5','cum_qty':'1','leaves_qty':'0',
+                'transaction_time':'2026-10-17T18:00:00Z'})
+        cumulative_fill_time_regression_rejected=False
+        try:review(**fill_time_regression)
+        except ValueError as error:
+            cumulative_fill_time_regression_rejected=(
+                'CROSS_RESPONSE_ORDER_FILL_ACTIVITY_TIME_REGRESSION' in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -861,6 +888,10 @@ def fixture_report():
                 result['overlapping_order_historical_fill_activities']==0 and
                 result['overlapping_order_retained_fill_activities']==1 and
                 len(result['overlapping_order_fill_partition_sha256'])==64,
+            repeated_cumulative_fill_state_rejected=
+                repeated_cumulative_fill_state_rejected,
+            cumulative_fill_time_regression_rejected=
+                cumulative_fill_time_regression_rejected,
             reported_fee_references_consistent=result['reported_fee_references_consistent'],
             reported_fee_reference_bound=result['reported_fee_reference_links']==1 and
                 len(result['reported_fee_reference_sha256'])==64,

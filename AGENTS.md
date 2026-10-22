@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.208.0, exact account-response order snapshots bounded at account-read completion over the v0.207.0 activity-order collection-start fence. Read the newest version section and generated roadmap; fresh exact-source v0.208.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.209.0, exact retained shared-order fill sequences reject repeated cumulative states and cumulative-time regression. Read the newest version section and generated roadmap; fresh exact-source v0.209.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.209.0 retained fill-sequence monotonicity
+
+Require retained fills for every shared account/activity order in the exact private response bundle to have unique cumulative quantities and nondecreasing event time as cumulative quantity rises. Repeated cumulative states are ambiguous duplicate/correction evidence; a later cumulative state with an earlier timestamp contradicts chronological progression. Both now fail closed before delta arithmetic. Preserve quantity continuity, weighted-average agreement, historical/interval partitioning, capture-completion and earliest-page-receipt fences.
+
+Mandatory exact-response fixtures exercise both malformed two-fill sequences, and the reconciliation-acceptance profile requires both negative controls. No raw IDs, timestamps, quantities or prices enter public evidence. This is supplied private-evidence consistency only, not provider/source/clock attestation, complete execution or fee coverage, broker acceptance, routing permission or release approval. No UI control or editable parameter changed; keep the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop unchanged.
+
+Exact v0.208.0 source `0d49f95d815d00a9c4260dec57dbda19819e10d4` passed public security/history/Gitleaks run 39851503258, safety/regression/evidence/browser run 39851503275 and Windows regression/EXE/installer/reinstall/uninstall run 39851503245. Both exact-source regression lanes passed 3,541 tests with 19 platform skips and one existing warning. Those successful parent results do not transfer to v0.209.0. Run focused response/release/package/version checks, all sixteen profiles and saved-evidence verification, the complete suite, fourteen controllers, Portal syntax, static/public-artifact checks and fresh exact-source workflows.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow reconciliation fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.209.0 validation passed 3,561 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap/packaging set passed 213 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `dd4b2c45d584ac95da3564a0e916ecdc1d8ffe14752e874b11c1bb07b875bedd`; `validation/release_trials_0_209_0.json` SHA256 is `1f09496bacc04a3ff7866a076e4dcb065b976f73634a7514f95dde29bc4e15c7`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. The 536-path proposed public snapshot passed the private-artifact audit with zero findings. Local Gitleaks, rendered-browser and native Windows execution are unavailable; dedicated exact-source v0.209.0 workflows are mandatory.
 
 ## v0.208.0 account-response order capture upper bound
 

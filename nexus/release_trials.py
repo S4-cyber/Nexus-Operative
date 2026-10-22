@@ -902,6 +902,8 @@ def _validate(profile, result):
                 'overlapping_order_fill_activities_partitioned',
                 'shared_order_fill_partition_bound',
                 'late_historical_fill_activity_rejected',
+                'repeated_cumulative_fill_state_rejected',
+                'cumulative_fill_time_regression_rejected',
                 'reported_fee_references_consistent','reported_fee_reference_bound',
                 'reported_fee_exact_timestamp_chronology_checked',
                 'reported_fee_exact_timestamp_capture_upper_bound_checked',

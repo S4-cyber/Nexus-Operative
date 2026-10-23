@@ -2,7 +2,17 @@
 
 ## Delivery planning update — 2026-10-23
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The reviewed parent source is exact v0.229.0 commit `c27371feabfbf6db68a77812e249c12386d61c47`; this v0.230.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are 2–6 weeks for a connected broker-paper prototype and 12–24+ weeks for the full agreed 1.0 candidate; these are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize the paper submission lifecycle, actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The reviewed parent source is exact v0.230.0 commit `9c3b3098ecdeba38198d24c0ecaad3253e5d38b9`; this v0.231.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are 2–6 weeks for a connected broker-paper prototype and 12–24+ weeks for the full agreed 1.0 candidate; these are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize the paper submission lifecycle, actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.231.0 provider POST outcome/request-prefix binding
+
+The bounded provider POST/request history review now verifies the durable outcome as well as the admission marker. A `RESPONSE_OBSERVED` attempt must point to an exact request prefix containing a normalized snapshot. A zero-POST `NOT_SENT` attempt must point to a prefix without one. A contradiction remains read-only and produces a dedicated review reason.
+
+`OUTCOME_UNKNOWN` remains unresolved with or without a retained snapshot because journal append return can be lost. The review cannot clear that uncertainty, retry, rearm, resubmit, infer execution, reconcile the account or grant routing permission. The mandatory pacing profile now includes a mixed two-account outcome history and an outcome contradiction control.
+
+No Portal control or editable parameter changed. Existing beginner tabs and black/bright-purple bottom-right help are unchanged, permissions remain OFF, the emergency stop remains independent and every provider/account/reconciliation/routing/funds/live/release flag remains false. Exact v0.230.0 source `9c3b3098ecdeba38198d24c0ecaad3253e5d38b9` passed all five hosted checks; v0.231.0 requires fresh exact-source CI and authorized-account acceptance. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.231.0 validation passed 3,632 tests with one expected non-Windows skip and one existing warning; the focused provider/request/submission/recovery/release set passed 156. All sixteen profiles and saved-evidence verification matched 365 source files / `eaebf42b4c24e3cde9156832e33db3b91ee5b905446ebd2acd2173abab0c4a93`; report SHA256 is `1fc8095b7cb959e9d7452b34f0197bb42d569d861be2eb9004ca577fc6364e76`. Fourteen controllers and local syntax/compile/dependency/roadmap/whitespace checks passed. The exact 570-path staged snapshot and available 570-path / 621-commit / 4,221-blob history audit had zero findings; fresh exact-source workflows remain mandatory.
 
 ## v0.230.0 exact provider POST/request-history composition
 

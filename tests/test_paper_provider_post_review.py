@@ -6,12 +6,12 @@ import pytest
 from nexus import paper_provider_post_review as subject
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_provider_post_budget import PaperProviderPostBudget, ZERO
-from test_alpaca_paper_contract import plan
+from test_alpaca_paper_contract import plan, response
 from test_broker_request_journal import ACCOUNT, OTHER
 
 
 def retained(tmp_path, *, account=ACCOUNT, identity='nx_fixture', outcome='NOT_SENT',
-        post_head=ZERO, at=1000, budget=None):
+        post_head=ZERO, at=1000, budget=None, observed=False):
     prepared = plan(client_order_id=identity)
     journal = BrokerRequestJournal(tmp_path/f'{identity}.sqlite3', account)
     journal.prepare(prepared); selected = journal.lookup_request(identity)
@@ -24,6 +24,8 @@ def retained(tmp_path, *, account=ACCOUNT, identity='nx_fixture', outcome='NOT_S
         journal.begin_submission_checked(identity,
             expected_head=selected['head_sha256'],
             expected_payload_sha256=prepared['payload_sha256'], admission=lambda:at)
+        if observed:
+            journal.observe(identity,response(client_order_id=identity))
         head = budget.finish(token, outcome=outcome,
             request_after_head_sha256=journal.recovery()['head_sha256'],
             actual_posts=0 if outcome == 'NOT_SENT' else 1,
@@ -38,16 +40,45 @@ def binding(journal):
 def test_complete_multi_account_checked_history_is_read_only(tmp_path):
     first,budget,head=retained(tmp_path,at=1000)
     second,budget,head=retained(tmp_path,account=OTHER,identity='nx_other',
-        post_head=head,at=1061,budget=budget)
+        outcome='RESPONSE_OBSERVED',post_head=head,at=1061,budget=budget,
+        observed=True)
     before={path:path.read_bytes() for path in (budget.path,first.path,second.path)}
     result=subject.review(budget,expected_post_head=head,
         request_bindings=[binding(first),binding(second)])
     assert result['status']=='COMPLETE_LOCAL_HISTORY_CONSISTENT'
     assert result['post_attempts']==result['exact_attempt_bindings']==2
+    assert result['outcome_bound_attempts']==2
     assert result['retained_checked_request_markers']==2
     assert result['reasons']==[] and result['read_only']
     assert all(result[field] is False for field in subject.FLAGS)
     assert before=={path:path.read_bytes() for path in before}
+
+
+@pytest.mark.parametrize('outcome,observed',[
+    ('RESPONSE_OBSERVED',False),('NOT_SENT',True)])
+def test_provider_outcome_must_match_exact_request_after_prefix(
+        tmp_path,outcome,observed):
+    journal,budget,head=retained(tmp_path,outcome=outcome,observed=observed)
+    result=subject.review(budget,expected_post_head=head,
+        request_bindings=[binding(journal)])
+    assert not result['complete_local_history_consistent']
+    assert result['exact_attempt_bindings']==1
+    assert result['outcome_bound_attempts']==0
+    assert result['outcome_request_history_disagreements']==1
+    assert result['reasons']==['POST_OUTCOME_REQUEST_HISTORY_DISAGREEMENT']
+
+
+@pytest.mark.parametrize('observed',[False,True])
+def test_unknown_outcome_preserves_uncertainty_with_or_without_snapshot(
+        tmp_path,observed):
+    journal,budget,head=retained(tmp_path,outcome='OUTCOME_UNKNOWN',
+        observed=observed)
+    result=subject.review(budget,expected_post_head=head,
+        request_bindings=[binding(journal)])
+    assert result['complete_local_history_consistent']
+    assert result['outcome_bound_attempts']==1
+    assert result['uncertainty_preserved']
+    assert not result['automatic_recovery'] and not result['ready_for_routing']
 
 
 def test_stale_heads_and_related_paths_fail_before_mutation(tmp_path):

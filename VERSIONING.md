@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.230.0 (pre-release).** This build adds a bounded read-only exact-head composition across the shared-local provider POST budget and up to seven account-bound request journals. It verifies every retained checked attempt against its before/after request prefixes, refuses pending/interrupted or unbound history and performs no provider/vault IO or writes. It has no Portal route, saved write credential scope, automatic strategy route, ledger application, live endpoint or funding authority. Actual provider/account acceptance, broker-wide/distributed POST coordination, execution/fee/hold/funds reconciliation and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.231.0 (pre-release).** This build strengthens the bounded read-only exact-head provider POST/request composition. Beyond exact attempt markers, RESPONSE_OBSERVED must retain a normalized request snapshot at the recorded after head and NOT_SENT must retain none; OUTCOME_UNKNOWN stays explicitly unresolved. It performs no provider/vault IO or writes and has no Portal route, saved write credential scope, automatic strategy route, ledger application, live endpoint or funding authority. Actual provider/account acceptance, broker-wide/distributed POST coordination, execution/fee/hold/funds reconciliation and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.231.0 provider POST outcome/request-prefix binding
+
+The history review now reports marker binding and outcome binding independently. A locally recorded successful response without a retained normalized request snapshot is contradictory. A locally recorded zero-POST `NOT_SENT` result with a snapshot is also contradictory. Both fail closed with a fixed outcome/history reason, without mutating either journal.
+
+Ambiguous `OUTCOME_UNKNOWN` attempts remain bound whether or not a snapshot survived because a lost return can occur across a durable append boundary. This does not resolve the order, clear review, reclaim capacity or authorize retry. The mixed-outcome release fixture and mutation coverage require every new fence and false authority flag. No UI or modifiable setting changed.
+
+Exact v0.230.0 source `9c3b3098ecdeba38198d24c0ecaad3253e5d38b9` passed all five hosted checks. Those parent results do not transfer. Fresh exact-source security, safety/browser/evidence and Windows packaging/installer checks remain mandatory.
+
+Final local validation passed 3,632 tests with one expected non-Windows skip and one existing warning; the focused provider/request/submission/recovery/release set passed 156. Sixteen profiles and saved-evidence verification matched 365 source files / `eaebf42b4c24e3cde9156832e33db3b91ee5b905446ebd2acd2173abab0c4a93`; report SHA256 is `1fc8095b7cb959e9d7452b34f0197bb42d569d861be2eb9004ca577fc6364e76`. Fourteen controllers and all local static/version/roadmap checks passed. The exact 570-path staged snapshot and available 570-path / 621-commit / 4,221-blob history audit had zero findings; fresh exact-source CI remains mandatory.
 
 ## v0.230.0 exact provider POST/request-history composition
 

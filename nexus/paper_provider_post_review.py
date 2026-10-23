@@ -105,6 +105,9 @@ def review(post_budget, *, expected_post_head, request_bindings):
             _fail('REQUEST_HISTORY_CHANGED')
 
     exact = 0
+    outcome_bound = 0
+    outcome_disagreements = 0
+    binding_disagreements = 0
     interrupted = 0
     unbound = missing_accounts
     duplicate_attempt_bindings = 0
@@ -128,18 +131,28 @@ def review(post_budget, *, expected_post_head, request_bindings):
             evaluated_at=marker.get('evaluated_at') if type(marker) is dict else None,
             expected_head_sha256=attempt['request_before_head_sha256'],
             payload_sha256=attempt['payload_sha256'])
-        valid = (before is not None and after is not None and
+        binding_valid = (before is not None and after is not None and
             before['payload_sha256'] == after['payload_sha256'] == attempt['payload_sha256'] and
             before['submission_attempt_marked'] is False and
             before['submission_admission'] is None and
             after['submission_attempt_marked'] is True and
             marker == expected_marker)
-        if valid:
+        if binding_valid:
             key = (account, attempt['client_order_sha256'],
                 attempt['payload_sha256'], attempt['request_before_head_sha256'])
             bound_marker_keys.append(key)
             exact += 1
+            snapshot = after['snapshot']
+            outcome_valid = (attempt['outcome'] == 'OUTCOME_UNKNOWN' or
+                attempt['outcome'] == 'NOT_SENT' and snapshot is None or
+                attempt['outcome'] == 'RESPONSE_OBSERVED' and type(snapshot) is dict)
+            if outcome_valid:
+                outcome_bound += 1
+            else:
+                outcome_disagreements += 1
+                unbound += 1
         else:
+            binding_disagreements += 1
             unbound += 1
     duplicate_attempt_bindings = len(bound_marker_keys) - len(set(bound_marker_keys))
 
@@ -166,17 +179,21 @@ def review(post_budget, *, expected_post_head, request_bindings):
     if first_post['pending_token'] is not None:
         reasons.append('POST_ATTEMPT_PENDING')
     if missing_accounts: reasons.append('POST_ACCOUNT_JOURNAL_MISSING')
-    if unbound > missing_accounts: reasons.append('POST_ATTEMPT_BINDING_DISAGREEMENT')
+    if binding_disagreements: reasons.append('POST_ATTEMPT_BINDING_DISAGREEMENT')
+    if outcome_disagreements: reasons.append('POST_OUTCOME_REQUEST_HISTORY_DISAGREEMENT')
     if interrupted: reasons.append('INTERRUPTED_POST_ATTEMPT_UNBOUND')
     if unbound_markers: reasons.append('CHECKED_REQUEST_MARKER_UNBOUND')
     if legacy_markers: reasons.append('LEGACY_REQUEST_MARKER_UNBOUND')
     if duplicate_attempt_bindings or duplicate_markers:
         reasons.append('DUPLICATE_ATTEMPT_BINDING')
-    complete = not reasons and exact == len(attempts) == len(retained_markers)
+    complete = (not reasons and exact == outcome_bound == len(attempts) ==
+        len(retained_markers))
     return dict(mode='READ_ONLY_PAPER_PROVIDER_POST_HISTORY_REVIEW', read_only=True,
         status='COMPLETE_LOCAL_HISTORY_CONSISTENT' if complete else 'REVIEW_REQUIRED',
         complete_local_history_consistent=complete,
         post_attempts=len(attempts), exact_attempt_bindings=exact,
+        outcome_bound_attempts=outcome_bound,
+        outcome_request_history_disagreements=outcome_disagreements,
         interrupted_unknown_attempts=interrupted, unbound_post_attempts=unbound,
         retained_checked_request_markers=len(retained_markers),
         unbound_checked_request_markers=unbound_markers,
@@ -219,9 +236,17 @@ def fixture_report():
                     expected_head=selected['head_sha256'],
                     expected_payload_sha256=plan['payload_sha256'],
                     admission=lambda value=1000 + index * 61: value)
-                head = budget.finish(token, outcome='NOT_SENT',
+                outcome = 'NOT_SENT'
+                if index:
+                    outcome = 'RESPONSE_OBSERVED'
+                    journal.observe(identity, dict(id=account, client_order_id=identity,
+                        symbol='BTC/USD', side='buy', type='limit', time_in_force='ioc',
+                        asset_class='crypto', qty='2', limit_price='100', status='new',
+                        filled_qty='0', filled_avg_price=None,
+                        updated_at='2026-10-23T17:00:00Z'))
+                head = budget.finish(token, outcome=outcome,
                     request_after_head_sha256=journal.recovery()['head_sha256'],
-                    actual_posts=0, admission=lambda value=1001 + index * 61: value,
+                    actual_posts=index, admission=lambda value=1001 + index * 61: value,
                     ownership=owner)
             journals.append(journal)
         bindings = [dict(journal=journal,
@@ -234,8 +259,36 @@ def fixture_report():
             changed_head_denied = True
         omitted_account_requires_review = not review(budget, expected_post_head=head,
             request_bindings=bindings[:1])['complete_local_history_consistent']
+        mismatch_journal = BrokerRequestJournal(root/'mismatch.sqlite3',
+            '21234567-89ab-cdef-0123-456789abcdef')
+        mismatch_plan = contract.preview('nx_post_review_mismatch', 'BTC-USD', 'BUY',
+            '2', '100', asset, metadata_at=2000, evaluated_at=2001)
+        mismatch_journal.prepare(mismatch_plan)
+        mismatch_selected = mismatch_journal.lookup_request('nx_post_review_mismatch')
+        mismatch_budget = PaperProviderPostBudget(root/'mismatch-post.sqlite3')
+        with mismatch_budget.ownership() as owner:
+            mismatch_token = mismatch_budget.begin(
+                account_id='21234567-89ab-cdef-0123-456789abcdef',
+                request_before_head_sha256=mismatch_selected['head_sha256'],
+                payload_sha256=mismatch_plan['payload_sha256'],
+                client_order_id='nx_post_review_mismatch', admission=lambda: 2000,
+                ownership=owner, expected_head=ZERO)
+            mismatch_journal.begin_submission_checked('nx_post_review_mismatch',
+                expected_head=mismatch_selected['head_sha256'],
+                expected_payload_sha256=mismatch_plan['payload_sha256'],
+                admission=lambda: 2000)
+            mismatch_head = mismatch_budget.finish(mismatch_token,
+                outcome='RESPONSE_OBSERVED',
+                request_after_head_sha256=mismatch_journal.recovery()['head_sha256'],
+                actual_posts=1, admission=lambda: 2001, ownership=owner)
+        mismatch = review(mismatch_budget, expected_post_head=mismatch_head,
+            request_bindings=[dict(journal=mismatch_journal,
+                expected_head=mismatch_journal.recovery()['head_sha256'])])
         checks = dict(exact_multi_account_history=result['complete_local_history_consistent'],
             every_attempt_bound=result['exact_attempt_bindings'] == 2,
+            every_outcome_bound=result['outcome_bound_attempts'] == 2,
+            outcome_disagreement_requires_review=(
+                'POST_OUTCOME_REQUEST_HISTORY_DISAGREEMENT' in mismatch['reasons']),
             changed_head_denied=changed_head_denied,
             omitted_account_requires_review=omitted_account_requires_review,
             output_never_authoritative=all(result[flag] is False for flag in FLAGS))

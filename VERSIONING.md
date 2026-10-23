@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.224.0 (pre-release).** This build rejects an accepted retained receipt containing a `FEE` or `CFEE` when its collection read interval touches the outer four-observation stability envelope, including historical fees outside the reported-date guard. It preserves the v0.223.0 fill receipt-time guard and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.225.0 (pre-release).** This build requires the higher-level account-evidence composition and allowlisted public summary to retain both fill and fee collection-time stability checks. Missing, malformed or nonzero nested counts fail closed. It grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.225.0 account-evidence collection-timing propagation
+
+`paper_account_evidence_review` now binds the v0.223.0 retained-fill and v0.224.0 retained-fee receipt-time guards into its private stability composition and allowlisted public summary. The composition rejects missing, malformed or nonzero collection-timing counts rather than silently producing a higher-level guarded bundle without those checks.
+
+The reconciliation release fixture requires both composed/public absence markers. Direct tests cover nonzero nested fill and fee counts, public-summary marker removal, repeat/current-head equivalence and unchanged private journals. Public output exposes fixed booleans only; it contains no receipt, activity, time, balance or retained-evidence identifiers.
+
+This is local evidence composition, not provider/source/clock attestation, received-activity or fee coverage, a quiet or atomic balance instant, fee/hold/funds reconciliation, broker acceptance, routing authority or release approval. No UI, credential, network, permission, risk, emergency-stop, funding or execution path changed. Exact v0.224.0 source `652a016bbde7ac9aa2ee9fa4de208820a2f7fccd` passed all three exact-source workflows. Fresh v0.225.0 workflows and every external acceptance gate remain mandatory.
+
+Final local v0.225.0 validation passed 3,590 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused account-evidence/reconciliation/release/evidence/version/roadmap/packaging set passed 246 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `cd5005a7af2d05e66cd372eadd3ee438dd41a06cd9a0b2e3f6e47aebcb474c83`; `validation/release_trials_0_225_0.json` SHA256 is `955c65c1f328253382a65c875420b58a627cb9356fb1076fda234ef0492f8872`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality, whitespace, the 554-path proposed public snapshot audit and reachable 613-commit / 4,117-blob history audit passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
 
 ## v0.224.0 late historical-fee collection guard
 

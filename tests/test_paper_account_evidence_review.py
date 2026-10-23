@@ -56,6 +56,8 @@ def test_guarded_bundle_binds_all_components_without_writes_or_authority(tmp_pat
     assert r['component_heads_agree'] and r['local_request_terms_agree']
     assert r['guard_manifests_distinct'] and r['guard_windows_ordered']
     assert r['adjacent_guard_balances_stable'] and r['guard_retained_fill_events_absent']
+    assert r['guard_collection_observed_fill_events_absent']
+    assert r['guard_collection_observed_fee_events_absent']
     assert r['guard_retained_fee_date_overlaps_absent']
     assert r['accepted_declared_windows_cover_guard_envelope']
     assert r['gross_only_minus_observed']=={'USD':'0','BTC':'0'}
@@ -82,6 +84,17 @@ def test_guarded_bundle_rejects_changed_guard_and_post_component_request_race(tm
         return result
     monkeypatch.setattr(subject.inventory,'review_with_stability_guards',append)
     with pytest.raises(ValueError,match='JOURNALS_CHANGED_DURING_REVIEW'):
+        subject.review_with_stability_guards(**args)
+
+
+@pytest.mark.parametrize('field',[
+    'guard_collection_observed_fill_events','guard_collection_observed_fee_events'])
+def test_guarded_bundle_rejects_nonzero_collection_timing_component(tmp_path,monkeypatch,field):
+    args=guarded_options(tmp_path);original=subject.inventory.review_with_stability_guards
+    def altered(**kw):
+        result=original(**kw);result[field]=1;return result
+    monkeypatch.setattr(subject.inventory,'review_with_stability_guards',altered)
+    with pytest.raises(ValueError,match='COMPONENT_GUARD_DISAGREEMENT'):
         subject.review_with_stability_guards(**args)
 
 
@@ -264,9 +277,20 @@ def test_guarded_current_heads_matches_pinned_and_public_summary_is_allowlisted(
     public=subject.public_summary(pinned);encoded=json.dumps(public)
     assert public['policy']==subject.STABILITY_POLICY and public['stability_guard_bound'] is True
     assert public['guard_manifests_distinct'] and public['guard_retained_fill_events_absent']
+    assert public['guard_collection_observed_fill_events_absent']
+    assert public['guard_collection_observed_fee_events_absent']
     assert all(public[k] is False for k in subject.FLAGS)
     assert all(pinned[k] not in encoded for k in (*subject.HEADS,'input_sha256',
         'pre_opening_manifest_sha256','post_closing_manifest_sha256'))
+
+
+@pytest.mark.parametrize('field',[
+    'guard_collection_observed_fill_events_absent',
+    'guard_collection_observed_fee_events_absent'])
+def test_guarded_public_summary_requires_collection_timing_markers(tmp_path,field):
+    result=subject.review_with_stability_guards(**guarded_options(tmp_path));result[field]=False
+    with pytest.raises(ValueError,match='PUBLIC_SUMMARY_INVALID'):
+        subject.public_summary(result)
 
 
 def test_current_head_change_is_not_retried_or_repaired(tmp_path,monkeypatch):

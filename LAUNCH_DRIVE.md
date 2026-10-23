@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.225.0 account-evidence collection-timing propagation
+
+The private account-evidence stability composition and its allowlisted public summary now explicitly bind both accepted-receipt timing guards: no retained fill-bearing receipt and no retained fee-bearing receipt may have been collected during the outer four-observation stability envelope. Missing, malformed or nonzero nested counts fail closed, and the reconciliation release profile requires both composed/public absence markers.
+
+This closes an evidence-layer propagation gap without claiming provider identity, received-activity or fee completeness, clock trust, fee posting time, a quiet or atomic balance instant, fee/hold/funds reconciliation, broker acceptance or execution authority. No UI control, permission, risk limit, account check, emergency stop, credential, network or execution path changed. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Exact v0.224.0 source `652a016bbde7ac9aa2ee9fa4de208820a2f7fccd` passed all three exact-source workflows; those results do not transfer. Fresh v0.225.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.225.0 validation passed 3,590 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused account-evidence/reconciliation/release/evidence/version/roadmap/packaging set passed 246 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `cd5005a7af2d05e66cd372eadd3ee438dd41a06cd9a0b2e3f6e47aebcb474c83`; `validation/release_trials_0_225_0.json` SHA256 is `955c65c1f328253382a65c875420b58a627cb9356fb1076fda234ef0492f8872`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality, whitespace, the 554-path proposed public snapshot audit and reachable 613-commit / 4,117-blob history audit passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
+
 ## v0.224.0 late historical-fee collection guard
 
 The private four-observation stability review now rejects any accepted retained receipt containing a `FEE` or `CFEE` when that receipt's collection read interval overlaps or exactly touches the outer pre-opening through post-closing observation envelope. This catches a historical fee first observed during the stability sequence while its old reported date remains outside the existing calendar-date guard.

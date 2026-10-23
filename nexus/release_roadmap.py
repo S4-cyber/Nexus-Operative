@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.224.0'
+REVISION = '0.225.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -161,7 +161,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.224.0 rejects an accepted retained receipt that contains a FEE or CFEE when its collection read interval touches the outer four-observation stability envelope, even if the fee reported date is historical and outside the existing calendar-date guard. The fill receipt-time guard remains intact. The release profile requires both the fee zero-count marker and a late historical-fee negative control. This is local retained-history timing consistency, not provider/source/clock attestation, received-activity or fee coverage, a quiet balance instant, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.225.0 propagates the retained fill/fee collection-time stability checks through the higher-level private account-evidence composition and its allowlisted public summary. The composition rejects a missing, malformed or nonzero nested collection-timing count, and release evidence requires both public absence markers. This binds local evidence layers without claiming provider/source/clock attestation, received-activity or fee coverage, a quiet balance instant, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

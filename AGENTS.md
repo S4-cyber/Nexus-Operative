@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.224.0 rejects accepted fee-bearing collection receipts whose read interval touches the outer four-observation stability envelope, including historical fees outside the existing reported-date guard. Read the newest version section and generated roadmap; fresh exact-source v0.224.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.225.0 binds the v0.223.0/v0.224.0 fill and fee collection-time stability checks through the higher-level account-evidence composition and public summary. Read the newest version section and generated roadmap; fresh exact-source v0.225.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.225.0 account-evidence collection-timing propagation
+
+The private account-evidence stability composition must require the nested retained fill and fee collection-time counts to exist, be exact integers and equal zero. Copy both checks as explicit absence booleans into the private composed review and its allowlisted public summary. The reconciliation release profile must require a synthetic marker proving both layers retain these checks. Missing, malformed, nonzero or removed markers fail closed.
+
+This is local evidence-layer composition only. It does not turn collection-time absence into provider/source/received-activity or fee coverage, a posting instant, quiet or atomic balance instant, fee/hold/funds reconciliation, broker acceptance, routing permission or release approval. No UI or modifiable parameter changed; preserve the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Run focused account-evidence/reconciliation/release/version/roadmap/packaging tests, all sixteen profiles, saved-evidence verification, the complete suite, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality, whitespace and public snapshot/history scans. Fresh exact-source security, safety/browser/evidence and Windows installer workflows remain mandatory.
+
+Exact v0.224.0 source `652a016bbde7ac9aa2ee9fa4de208820a2f7fccd` passed public-security/history run 39960321374, safety/regression/evidence/browser run 39960321176 and Windows regression/EXE/installer run 39960321247. Those parent results do not transfer.
+
+Final local v0.225.0 validation passed 3,590 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused account-evidence/reconciliation/release/evidence/version/roadmap/packaging set passed 246 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `cd5005a7af2d05e66cd372eadd3ee438dd41a06cd9a0b2e3f6e47aebcb474c83`; `validation/release_trials_0_225_0.json` SHA256 is `955c65c1f328253382a65c875420b58a627cb9356fb1076fda234ef0492f8872`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality, whitespace, the 554-path proposed public snapshot audit and reachable 613-commit / 4,117-blob history audit passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
 
 ## v0.224.0 late historical-fee collection guard
 

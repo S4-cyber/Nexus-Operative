@@ -19,7 +19,7 @@ from nexus import portable_paper_observation as portable
 from nexus.paper_activity_acceptance_probe import status as acceptance_status, _private_path
 
 POLICY='nexus.paper-account-evidence-review.v1'
-STABILITY_POLICY='nexus.paper-account-evidence-stability-guard.v3'
+STABILITY_POLICY='nexus.paper-account-evidence-stability-guard.v4'
 FLAGS=tuple(dict.fromkeys((*requests.FLAGS,'source_coverage_verified','balance_instants_verified',
     'observation_windows_verified_quiet','atomic_snapshot','automatic_submission',
     'fee_posting_interval_verified','fee_debits_allocated_to_interval','fee_reserved_funding_verified')))
@@ -113,6 +113,8 @@ def public_summary(result):
     guarded=result['policy']==STABILITY_POLICY
     guard_checks=('stability_guard_bound','guard_manifests_distinct','guard_windows_ordered',
         'adjacent_guard_balances_stable','guard_retained_fill_events_absent',
+        'guard_collection_observed_fill_events_absent',
+        'guard_collection_observed_fee_events_absent',
         'guard_retained_fee_date_overlaps_absent',
         'accepted_declared_windows_cover_guard_envelope')
     if guarded and any(result.get(k) is not True for k in guard_checks):
@@ -201,6 +203,10 @@ def review_with_stability_guards(*,expected_account_id,request_journal_path,paci
     if (guarded.get('read_only') is not True or guarded.get('status')!='REVIEW_REQUIRED' or
         any(guarded.get(k) is not False for k in FLAGS if k in guarded)):
         _fail('COMPONENT_AUTHORITY_DISAGREEMENT')
+    guard_counts=('guard_retained_fill_events','guard_collection_observed_fill_events',
+        'guard_collection_observed_fee_events','guard_retained_fee_date_overlaps')
+    if any(type(guarded.get(k)) is not int or guarded[k]!=0 for k in guard_counts):
+        _fail('COMPONENT_GUARD_DISAGREEMENT')
     current=acceptance_status(expected_account_id=expected_account_id,pacing_path=pacing_path,
         activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
     request=BrokerRequestJournal(request_journal_path,expected_account_id).recovery()
@@ -229,10 +235,14 @@ def review_with_stability_guards(*,expected_account_id,request_journal_path,paci
         guard_windows_ordered=guarded['guard_windows_ordered'],
         adjacent_guard_balances_stable=guarded['adjacent_guard_balances_stable'],
         guard_retained_fill_events_absent=guarded['guard_retained_fill_events']==0,
+        guard_collection_observed_fill_events_absent=
+            guarded['guard_collection_observed_fill_events']==0,
+        guard_collection_observed_fee_events_absent=
+            guarded['guard_collection_observed_fee_events']==0,
         guard_retained_fee_date_overlaps_absent=guarded['guard_retained_fee_date_overlaps']==0,
         accepted_declared_windows_cover_guard_envelope=guarded['accepted_declared_windows_cover_guard_envelope'],
         **{flag:False for flag in FLAGS},
-        limitations='One private exact-head account-evidence composition plus four supplied ordered stability observations. The guard detects retained fill overlap, adjacent local balance changes and retained fee reported-date overlap with any UTC calendar date in the full outer observation envelope. Fee dates are not posting/execution instants; overlap fails closed, while absence proves neither quiet nor complete fee history. It does not make sequential reads quiet or atomic, attest provider source, prove received/late/corrected or fee-only coverage, link fees, verify holds or spendable funds, coordinate other writers, authorize routing or approve release. Keep all journals, observations and output outside Git.')
+        limitations='One private exact-head account-evidence composition plus four supplied ordered stability observations. The guard detects retained fill overlap, accepted fill/fee receipt collection during the full outer observation envelope, adjacent local balance changes and retained fee reported-date overlap with any UTC calendar date in that envelope. Fee dates are not posting/execution instants; overlap fails closed, while absence proves neither quiet nor complete fee history. Collection-time absence is local retained-history evidence only. It does not make sequential reads quiet or atomic, attest provider source, prove received/late/corrected or fee-only coverage, link fees, verify holds or spendable funds, coordinate other writers, authorize routing or approve release. Keep all journals, observations and output outside Git.')
 
 
 def _fixture(root):
@@ -286,6 +296,11 @@ def fixture_report():
             guarded_public_summary_checked=guarded_public['stability_guard_bound'] is True and
                 guarded_public['gross_difference_status']=='NO_GROSS_DIFFERENCE' and
                 all(guarded_public[k] is False for k in FLAGS),
+            guarded_collection_timing_summary_checked=
+                guarded['guard_collection_observed_fill_events_absent'] is True and
+                guarded['guard_collection_observed_fee_events_absent'] is True and
+                guarded_public['guard_collection_observed_fill_events_absent'] is True and
+                guarded_public['guard_collection_observed_fee_events_absent'] is True,
             journals_unchanged=unchanged)
         return dict(source='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE',passed=all(checks.values()),
             **checks,actual_provider_access=False,actual_vault_access=False,**{flag:False for flag in FLAGS})

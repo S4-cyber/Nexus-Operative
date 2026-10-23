@@ -322,6 +322,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('account_evidence_bundle','stability_guard_bound'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
         (('account_evidence_bundle','guarded_current_head_review_matches'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
         (('account_evidence_bundle','guarded_public_summary_checked'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
+        (('account_evidence_bundle','guarded_collection_timing_summary_checked'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
         (('account_evidence_bundle','ready_for_routing'),True,'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY'),
         (('exact_response_bundle','session_tail_required'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','bounded_adjacent_session_start_gap'),False,'EXACT_RESPONSE_BUNDLE'),

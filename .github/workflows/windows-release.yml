@@ -20,7 +20,11 @@ permissions:
 jobs:
   test-and-build:
     runs-on: windows-latest
-    timeout-minutes: 35
+    # Full regression, PyInstaller, prior-version install/reinstall/uninstall,
+    # and fresh release-evidence generation are intentionally one source-bound
+    # acceptance lane. Allow slower hosted runners to finish those checks rather
+    # than cancelling an otherwise healthy distribution before its final gates.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:

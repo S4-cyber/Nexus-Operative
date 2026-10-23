@@ -1066,6 +1066,20 @@ def fixture_report():
             activity_only_unobserved_average_limit_disagreement_rejected=(
                 'RETAINED_ACTIVITY_ORDER_UNOBSERVED_FILL_AVERAGE_LIMIT_PRICE_DISAGREEMENT'
                 in str(error))
+        activity_only_unobserved_average_invalid=_fixture(
+            root/'activity-only-unobserved-average-invalid',
+            account_order_client_id='other_client',
+            account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+            activity_order_changes={'status':'filled','filled_quantity':'1',
+                'average_fill_price':'50'},
+            activity_fill_changes={'type':'fill','qty':'0.5','cum_qty':'1',
+                'leaves_qty':'0','price':'100'})
+        activity_only_unobserved_average_invalid_rejected=False
+        try:review(**activity_only_unobserved_average_invalid)
+        except ValueError as error:
+            activity_only_unobserved_average_invalid_rejected=(
+                'RETAINED_ACTIVITY_ORDER_UNOBSERVED_FILL_AVERAGE_INVALID'
+                in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -1277,6 +1291,8 @@ def fixture_report():
                 activity_only_complete_fill_average_disagreement_rejected,
             activity_only_unobserved_average_limit_disagreement_rejected=
                 activity_only_unobserved_average_limit_disagreement_rejected,
+            activity_only_unobserved_average_invalid_rejected=
+                activity_only_unobserved_average_invalid_rejected,
             filled_status_quantity_disagreement_rejected=
                 filled_status_quantity_disagreement_rejected,
             completion_status_disagreement_rejected=

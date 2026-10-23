@@ -366,6 +366,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('exact_response_bundle','activity_only_average_limit_disagreement_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','activity_only_complete_fill_average_disagreement_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','activity_only_unobserved_average_limit_disagreement_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
+        (('exact_response_bundle','activity_only_unobserved_average_invalid_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','filled_status_quantity_disagreement_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','completion_status_disagreement_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','reported_fee_references_consistent'),False,'EXACT_RESPONSE_BUNDLE'),

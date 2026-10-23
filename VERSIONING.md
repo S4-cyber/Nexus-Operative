@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.221.0 (pre-release).** This minor build binds the aggregate unobserved portion of activity-only fill history to the exact reported order average, retained fills and retained limit without inventing missing events. It preserves shared-order delta and activity-only completion/requested/remainder, adjacent-fill, fill-type, chronology, individual and aggregate limit-price, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.221.1 (pre-release).** This patch makes the existing fail-closed positivity check for the aggregate unobserved portion of activity-only fill history a mandatory reconciliation-release negative control. It preserves every v0.221.0 arithmetic and limit fence, invents no missing event, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.221.1 mandatory unobserved-notional positivity evidence
+
+The exact response-bundle release fixture now supplies an activity-only order whose reported average and individually limit-compliant retained fill mathematically leave a zero unobserved notional for positive missing quantity. Reconciliation acceptance requires the existing `RETAINED_ACTIVITY_ORDER_UNOBSERVED_FILL_AVERAGE_INVALID` fail-closed result, and mutation tests prevent dropping the public aggregate rejection marker.
+
+This is evidence coverage for an existing runtime fence, not a new provider assumption or execution behavior. No raw identifiers, times, quantities or prices enter public evidence. No UI, credential, network, permission, risk, emergency-stop, funding or execution path changed. Fresh exact-source v0.221.1 workflows and every external acceptance gate remain mandatory.
+
+Final local v0.221.1 validation passed 3,581 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 219 tests. Sixteen bounded profiles and saved evidence matched 357 files / `0e4c5903d5dd37c45946a5afa6384af54112c6ec57fc6e2ce7f6406b6fdee811`; report SHA256 is `be5f1f63ddf92ca9f2e7d7f0d2ff3417392b19c74fd02cdcb8b181347fd5d85b`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality, whitespace and the 550-path proposed public snapshot audit passed. Fresh exact-source workflows remain mandatory.
 
 ## v0.221.0 unobserved fill-average limit binding
 

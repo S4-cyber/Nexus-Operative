@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.221.1 mandatory unobserved-notional positivity evidence
+
+The reconciliation release fixture now proves that positive unobserved fill quantity cannot be paired with a zero or negative implied notional. Its reported activity-only average and individually valid retained fill are constructed to reach the existing dedicated fail-closed diagnostic, and mutation coverage requires the resulting aggregate rejection marker.
+
+This strengthens required evidence for existing runtime behavior only. It creates no missing fill, price, time or coverage claim and changes no UI control, permission, risk limit, account check, emergency stop, credential, network or execution path. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh v0.221.1 validation and all external acceptance gates remain mandatory.
+
+Final local v0.221.1 validation passed 3,581 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 219 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `0e4c5903d5dd37c45946a5afa6384af54112c6ec57fc6e2ce7f6406b6fdee811`; `validation/release_trials_0_221_1.json` SHA256 is `be5f1f63ddf92ca9f2e7d7f0d2ff3417392b19c74fd02cdcb8b181347fd5d85b`. Fourteen Node controllers, Portal inline syntax, compilation, dependency consistency, generated-roadmap equality, whitespace and the 550-path proposed public snapshot audit passed. Fresh exact-source workflows remain mandatory.
+
 ## v0.221.0 unobserved fill-average limit binding
 
 The exact private response-bundle review now decomposes an activity-only order's reported aggregate notional into retained and unobserved portions. When retained activity omits a prefix or suffix, the residual quantity and notional must remain positive and respect the retained buy/sell limit. This rejects evidence that looks compliant in the aggregate and in every visible fill but can only be reconciled through an out-of-limit missing execution.

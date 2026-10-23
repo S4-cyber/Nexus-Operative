@@ -921,6 +921,7 @@ def _validate(profile, result):
                 'activity_only_average_limit_disagreement_rejected',
                 'activity_only_complete_fill_average_disagreement_rejected',
                 'activity_only_unobserved_average_limit_disagreement_rejected',
+                'activity_only_unobserved_average_invalid_rejected',
                 'filled_status_quantity_disagreement_rejected',
                 'completion_status_disagreement_rejected',
                 'reported_fee_references_consistent','reported_fee_reference_bound',

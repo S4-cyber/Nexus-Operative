@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.229.0'
+REVISION = '0.230.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -36,7 +36,7 @@ MILESTONES = (
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence.replace(
         'validated with injected responses only, with order adapters still disconnected;',
-        'an internal explicitly confirmed single-attempt Alpaca paper POST boundary now checks fixed account/position/asset endpoints, requires an exact-head shared-local provider POST budget, commits both reservations before IO, rechecks permission/stop/credentials after the marker and never retries; a separate explicit reviewed recovery boundary clears only an ambiguous shared-budget latch after two exact-head replays prove the original client ID has a retained terminal observation, while preserving the full cooldown/history and permanently attempted request; validated with injected responses only, with no Portal, saved-write-credential or strategy route;'),
+        'an internal explicitly confirmed single-attempt Alpaca paper POST boundary now checks fixed account/position/asset endpoints, requires an exact-head shared-local provider POST budget, commits both reservations before IO, rechecks permission/stop/credentials after the marker and never retries; a separate explicit reviewed recovery boundary clears only an ambiguous shared-budget latch after two exact-head replays prove the original client ID has a retained terminal observation, while preserving the full cooldown/history and permanently attempted request; a bounded read-only exact-head history composition now joins every completed POST attempt to the checked submission marker in up to seven account request journals and refuses pending/interrupted, omitted, stale, changing, legacy, unbound, duplicate or related-path evidence; validated with injected responses only, with no Portal, saved-write-credential or strategy route;'),
     ('Accept the internal paper POST boundary, shared-local provider budget and terminal original-ID recovery against an authorized account; add separately scoped saved write credentials, broker-wide/distributed POST coordination and explicit operator controls only after review; complete actual execution/fee/hold/funds reconciliation and sustained acceptance. IBKR paper then Coinbase Advanced expansion.'
      if item.id=='M8' else item.remaining)) for item in MILESTONES)
 
@@ -75,7 +75,7 @@ DELIVERY_STAGES = (
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'].replace(
         'injected tests do not attest an account and no external order adapter is connected.',
-        'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget now exists with injected tests only; it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
+        'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal history review now exists with injected tests only; it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
@@ -178,7 +178,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.229.0 adds an explicit reviewed recovery boundary for one ambiguous shared-local provider POST-budget tail. It requires exact POST-budget and request-journal heads, account/payload/client-order bindings, two stable request-journal replays and a retained terminal original-ID observation. Recovery appends a content-free boundary without shortening the full-day cooldown, rewriting unknown history, reclaiming the attempt or rearming the original request. It performs no provider IO and grants no retry, broker/account, routing, funds, live or release authority. Interrupted tails remain blocked because they lack a request-after head. Broker-wide quota, distributed ownership, actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.230.0 adds a bounded read-only exact-head composition across one shared-local provider POST budget and up to seven account-bound request journals. It replays every retained checked attempt at its before/after request heads, requires matching account/payload/client bindings and submission-admission markers, and refuses pending/interrupted tails, omitted accounts, stale or changing heads, legacy/unbound markers, duplicate bindings and related paths. It writes nothing, performs no provider or vault IO and grants no retry, source, broker-wide quota, distributed ownership, account, routing, funds, live or release authority. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

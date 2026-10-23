@@ -309,6 +309,20 @@ def test_pacing_profile_requires_resolved_unknown_post_recovery_fences():
             trials._validate('pacing',changed)
 
 
+def test_pacing_profile_requires_provider_post_history_review_fences():
+    from nexus.paper_provider_post_review import FLAGS
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    for field in ('exact_multi_account_history','every_attempt_bound','changed_head_denied',
+                  'omitted_account_requires_review','output_never_authoritative'):
+        changed=copy.deepcopy(result);changed['provider_post_history_review'][field]=False
+        with pytest.raises(ValueError,match='POST_HISTORY_REVIEW_FENCES'):
+            trials._validate('pacing',changed)
+    for field in FLAGS:
+        changed=copy.deepcopy(result);changed['provider_post_history_review'][field]=True
+        with pytest.raises(ValueError,match='POST_HISTORY_REVIEW_AUTHORITY'):
+            trials._validate('pacing',changed)
+
+
 def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim_authority():
     from nexus.paper_activity_acceptance_evidence import fixture_report
     result=fixture_report();trials._validate('activity_acceptance',result)

@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.220.0 activity-only average-price binding
+
+The exact private response-bundle review now requires every filled activity-only order average to respect its retained limit even if earlier fills are outside the retained window. If the retained fill chain starts at zero and reaches the order cumulative filled quantity, its exact quantity-weighted price must equal the reported order average. An unknown prefix stays explicitly unknown; it is not reconstructed or promoted to complete coverage.
+
+Two mandatory negative controls cover the out-of-limit unknown-prefix case and complete-chain average disagreement. Existing individual-fill limit diagnostics retain precedence. Public evidence adds only aggregate true markers and fixed rejection results; raw retained evidence stays outside Git. No UI control, permission, risk limit, account check, emergency stop, credential, network or execution path changed. This is not provider/source/clock attestation, complete broker activity, funds reconciliation, broker acceptance, trading authority or release approval.
+
+Exact v0.219.0 source `9ec2fceaec140f755f2b513899e2b950ece65967` completed public-security/history run 39924023407, safety/regression/evidence/browser run 39924023482 and Windows regression/EXE/installer run 39924023432 successfully. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh v0.220.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.220.0 validation passed 3,578 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 184 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `d50ffcd959a535ce142fb2cdc595142e57e1125e68eb05f5ca41435cab9f9f7b`; `validation/release_trials_0_220_0.json` SHA256 is `382ebcde994caec431aabc14cf28fe9d2abd0d2ddea6615bd20448ffbb4f5fed`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Public artifact/history review and fresh exact-source workflows remain mandatory.
+
 ## v0.219.0 activity-only cumulative fill-delta binding
 
 The exact private response-bundle review now binds every adjacent activity-only cumulative advance to the later fill quantity. A monotonic two-fill chain can no longer conceal missing quantity between retained events merely because the order was absent from the preceding open-order response. The first retained fill may still follow history outside the captured window, so this check does not invent coverage or require a zero baseline.

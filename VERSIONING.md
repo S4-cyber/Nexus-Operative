@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.219.0 (pre-release).** This minor build requires each adjacent cumulative advance in a retained activity-only fill chain to equal the later fill quantity while preserving unknown history before the first retained fill. It preserves shared-order delta and activity-only completion/requested/remainder, fill-type, chronology, limit-price, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.220.0 (pre-release).** This minor build binds activity-only order averages to retained limits and to exact complete retained fill chains while preserving unknown history before the first retained fill. It preserves shared-order delta and activity-only completion/requested/remainder, adjacent-fill, fill-type, chronology, individual limit-price, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.220.0 activity-only average-price binding
+
+`paper_response_bundle_review` now rejects a filled activity-only order whose reported average violates its retained buy/sell limit. When its retained fills form a complete zero-origin chain through the reported cumulative filled quantity, their exact quantity-weighted price must also reproduce the reported order average. An incomplete chain with an unknown historical prefix remains allowed and is never treated as complete coverage.
+
+Mandatory negative controls cover an out-of-limit average with an unknown prefix and a complete chain whose exact fills disagree with the reported average. Existing individual-fill limit diagnostics retain precedence. Only aggregate booleans, counts and the existing private-field digest are public; raw identifiers, times, quantities and prices remain private.
+
+No UI, credential, network, permission, risk, emergency-stop, funding or execution path changed. Exact v0.219.0 source `9ec2fceaec140f755f2b513899e2b950ece65967` passed public-security/history run 39924023407, safety/regression/evidence/browser run 39924023482 and Windows regression/EXE/installer run 39924023432. Fresh exact-source v0.220.0 workflows and every external acceptance gate remain mandatory.
+
+Final local v0.220.0 validation passed 3,578 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 184 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `d50ffcd959a535ce142fb2cdc595142e57e1125e68eb05f5ca41435cab9f9f7b`; report SHA256 is `382ebcde994caec431aabc14cf28fe9d2abd0d2ddea6615bd20448ffbb4f5fed`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Public artifact/history review and fresh exact-source workflows remain mandatory.
 
 ## v0.219.0 activity-only cumulative fill-delta binding
 

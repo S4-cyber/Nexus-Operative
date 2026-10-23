@@ -56,6 +56,8 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert len(result['overlapping_order_progress_sha256'])==64
     assert result['overlapping_order_fill_deltas_bound']
     assert result['retained_fill_limit_prices_checked']
+    assert result['activity_only_order_average_limit_prices_checked']
+    assert result['complete_activity_only_fill_averages_checked']
     assert result['retained_fill_type_remainders_checked']
     assert result['retained_activity_fill_deltas_checked']
     assert result['retained_activity_order_fill_semantics_bound']
@@ -311,6 +313,31 @@ def test_bundle_allows_unobserved_activity_only_history_before_first_fill(tmp_pa
     assert result['retained_activity_fill_deltas_checked']
     assert result['activity_only_orders_fill_semantics_bound']==1
     assert result['activity_only_fills_semantics_bound']==2
+
+
+def test_bundle_rejects_activity_only_average_outside_buy_limit_with_unknown_prefix(
+        tmp_path):
+    options=subject._fixture(tmp_path,account_order_client_id='other_client',
+        account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+        activity_order_changes={'status':'partially_filled','filled_quantity':'0.5',
+            'average_fill_price':'102'},
+        activity_fill_changes={'type':'partial_fill','qty':'0.25','cum_qty':'0.5',
+            'leaves_qty':'0.5','price':'100'})
+    with pytest.raises(ValueError,
+            match='RETAINED_ACTIVITY_ORDER_AVERAGE_LIMIT_PRICE_DISAGREEMENT'):
+        subject.review(**options)
+
+
+def test_bundle_rejects_complete_activity_only_fill_average_disagreement(tmp_path):
+    options=subject._fixture(tmp_path,account_order_client_id='other_client',
+        account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+        activity_order_changes={'status':'filled','filled_quantity':'1',
+            'average_fill_price':'99'},
+        activity_fill_changes={'type':'fill','qty':'1','cum_qty':'1',
+            'leaves_qty':'0','price':'100'})
+    with pytest.raises(ValueError,
+            match='RETAINED_ACTIVITY_ORDER_FILL_AVERAGE_DISAGREEMENT'):
+        subject.review(**options)
 
 
 def test_bundle_partitions_retained_historical_fill_at_earlier_update(tmp_path):

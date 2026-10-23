@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.219.0, adjacent retained fills for activity-only orders now bind each cumulative advance to the later fill quantity without inventing history before the first retained fill. Read the newest version section and generated roadmap; fresh exact-source v0.219.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.220.0, activity-only order averages must respect their retained limits and complete retained fill chains must reproduce the reported average without inventing an unknown prefix. Read the newest version section and generated roadmap; fresh exact-source v0.220.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.220.0 activity-only average-price binding
+
+For every filled retained activity order absent from the preceding account open-order response, require the reported average fill price to respect the retained buy/sell limit even when earlier fills fall outside the retained window. When the first retained cumulative quantity equals its fill quantity and the last retained cumulative quantity equals the order filled quantity, the retained chain is locally complete: require its exact quantity-weighted price to equal the reported order average. Preserve an unknown prefix otherwise and do not infer missing fills or prices.
+
+Mandatory direct and release controls cover an out-of-limit activity-only average with an unknown prefix and a complete retained chain whose reported average disagrees with its exact fills. Existing individual-fill limit diagnostics retain precedence. The private digest already binds the order and retained fill price/quantity fields; public evidence adds aggregate true markers only. No UI or modifiable parameter changed; preserve the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop.
+
+Exact v0.219.0 source `9ec2fceaec140f755f2b513899e2b950ece65967` passed public-security/history run 39924023407, safety/regression/evidence/browser run 39924023482 and Windows regression/EXE/installer run 39924023432. Both exact-source regression lanes passed 3,558 tests with 19 platform skips and one existing warning; EXE, private tools, startup, installer, reinstall, data-preserving uninstall, checksums and six evidence artifacts completed successfully. Those parent results do not transfer. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Fresh v0.220.0 validation and exact-source workflows remain mandatory. This narrow supplied-evidence fence does not attest provider semantics, clocks, source or coverage, reconcile fees/holds/funds, authorize routing, approve release or permit live trading.
+
+Final local v0.220.0 validation passed 3,578 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap/packaging set passed 184 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `d50ffcd959a535ce142fb2cdc595142e57e1125e68eb05f5ca41435cab9f9f7b`; `validation/release_trials_0_220_0.json` SHA256 is `382ebcde994caec431aabc14cf28fe9d2abd0d2ddea6615bd20448ffbb4f5fed`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Public snapshot/history audit and fresh exact-source security, safety/browser/evidence and Windows workflows remain mandatory. Local Gitleaks, rendered-browser and native Windows execution are unavailable.
 
 ## v0.219.0 activity-only cumulative fill-delta binding
 

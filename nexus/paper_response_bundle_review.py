@@ -63,6 +63,8 @@ def _retained_activity_order_fill_semantics(
             requested=contract.number(order['requested_quantity'])
             filled=contract.number(order['filled_quantity'],zero=True)
             limit=contract.number(order['limit_price'])
+            average=(contract.number(order['average_fill_price'])
+                if filled else None)
             parsed=sorted(((contract.number(fill['cumulative_quantity']),
                     contract.timestamp_order_ns(fill['occurred_at']),fill)
                 for fill in fills_by_broker.get(broker_id,())),
@@ -110,6 +112,25 @@ def _retained_activity_order_fill_semantics(
             _fail('RETAINED_ACTIVITY_ORDER_FILL_REMAINING_CONFLICT')
         if requested_quantities and requested_quantities!={requested}:
             _fail('RETAINED_ACTIVITY_ORDER_FILL_REQUESTED_QUANTITY_DISAGREEMENT')
+        if filled and ((order['side']=='buy' and average>limit) or
+                (order['side']=='sell' and average<limit)):
+            _fail('RETAINED_ACTIVITY_ORDER_AVERAGE_LIMIT_PRICE_DISAGREEMENT')
+        complete=False;retained_average=None
+        if parsed:
+            try:
+                first_quantity=contract.number(parsed[0][2]['quantity'])
+                complete=(parsed[0][0]==first_quantity and parsed[-1][0]==filled)
+                if complete:
+                    with localcontext() as context:
+                        context.prec=80
+                        retained_average=sum((contract.number(fill['quantity'])*
+                            contract.number(fill['price']) for _,_,fill in parsed),
+                            Decimal(0))/filled
+            except (ValueError,TypeError,KeyError,OverflowError,AttributeError,
+                    ArithmeticError,InvalidOperation):
+                _fail('RETAINED_ACTIVITY_ORDER_FILL_INVALID')
+        if complete and retained_average!=average:
+            _fail('RETAINED_ACTIVITY_ORDER_FILL_AVERAGE_DISAGREEMENT')
         fill_count+=len(parsed)
         summaries.append(dict(broker_order_id=broker_id,status=order['status'],
             requested_quantity=order['requested_quantity'],
@@ -631,6 +652,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         overlapping_order_progress_monotonic=True,
         overlapping_order_fill_deltas_bound=True,
         retained_fill_limit_prices_checked=True,
+        activity_only_order_average_limit_prices_checked=True,
+        complete_activity_only_fill_averages_checked=True,
         retained_fill_type_remainders_checked=True,
         retained_activity_fill_deltas_checked=True,
         retained_activity_order_fill_semantics_bound=True,
@@ -655,7 +678,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
         'identity agreement and non-regressing update time, cumulative fill, unchanged-quantity average price and '
         'status progression for orders visible in both responses, binds retained activity-order completion, '
-        'requested/remainder quantities, adjacent cumulative fill deltas, fill type and individual limit-price semantics even when an order is '
+        'requested/remainder quantities, adjacent cumulative fill deltas, fill type, order-average limit '
+        'compliance, complete retained-chain average arithmetic and individual limit-price semantics even when an order is '
         'not present in the preceding open-order snapshot, binds every increased cumulative fill to an '
         'exact contiguous retained fill-activity delta with bounded event time, an individual execution price '
         'that respects the immutable order limit, fill/partial-fill type consistent with the retained remainder, '
@@ -986,6 +1010,34 @@ def fixture_report():
         except ValueError as error:
             activity_only_fill_chain_gap_rejected=(
                 'RETAINED_ACTIVITY_ORDER_FILL_CHAIN_GAP' in str(error))
+        activity_only_average_limit_disagreement=_fixture(
+            root/'activity-only-average-limit-disagreement',
+            account_order_client_id='other_client',
+            account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+            activity_order_changes={'status':'partially_filled',
+                'filled_quantity':'0.5','average_fill_price':'102'},
+            activity_fill_changes={'type':'partial_fill','qty':'0.25',
+                'cum_qty':'0.5','leaves_qty':'0.5','price':'100'})
+        activity_only_average_limit_disagreement_rejected=False
+        try:review(**activity_only_average_limit_disagreement)
+        except ValueError as error:
+            activity_only_average_limit_disagreement_rejected=(
+                'RETAINED_ACTIVITY_ORDER_AVERAGE_LIMIT_PRICE_DISAGREEMENT'
+                in str(error))
+        activity_only_complete_fill_average_disagreement=_fixture(
+            root/'activity-only-complete-fill-average-disagreement',
+            account_order_client_id='other_client',
+            account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+            activity_order_changes={'status':'filled','filled_quantity':'1',
+                'average_fill_price':'99'},
+            activity_fill_changes={'type':'fill','qty':'1','cum_qty':'1',
+                'leaves_qty':'0','price':'100'})
+        activity_only_complete_fill_average_disagreement_rejected=False
+        try:review(**activity_only_complete_fill_average_disagreement)
+        except ValueError as error:
+            activity_only_complete_fill_average_disagreement_rejected=(
+                'RETAINED_ACTIVITY_ORDER_FILL_AVERAGE_DISAGREEMENT'
+                in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -1148,6 +1200,10 @@ def fixture_report():
             overlapping_order_fill_deltas_bound=result['overlapping_order_fill_deltas_bound'],
             retained_fill_limit_prices_checked=
                 result['retained_fill_limit_prices_checked'],
+            activity_only_order_average_limit_prices_checked=
+                result['activity_only_order_average_limit_prices_checked'],
+            complete_activity_only_fill_averages_checked=
+                result['complete_activity_only_fill_averages_checked'],
             retained_fill_type_remainders_checked=
                 result['retained_fill_type_remainders_checked'],
             retained_activity_fill_deltas_checked=
@@ -1185,6 +1241,10 @@ def fixture_report():
                 activity_only_order_fill_semantic_disagreement_rejected,
             activity_only_fill_chain_gap_rejected=
                 activity_only_fill_chain_gap_rejected,
+            activity_only_average_limit_disagreement_rejected=
+                activity_only_average_limit_disagreement_rejected,
+            activity_only_complete_fill_average_disagreement_rejected=
+                activity_only_complete_fill_average_disagreement_rejected,
             filled_status_quantity_disagreement_rejected=
                 filled_status_quantity_disagreement_rejected,
             completion_status_disagreement_rejected=

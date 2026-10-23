@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.221.1, the existing fail-closed positivity fence for an activity-only order's aggregate unobserved fill notional is now a mandatory reconciliation release control. Read the newest version section and generated roadmap; fresh exact-source v0.221.1 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.222.0 binds an activity-only fill's exact time to the update time of the retained order snapshot that already claims it. Read the newest version section and generated roadmap; fresh exact-source v0.222.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.222.0 activity-only fill/order chronology binding
+
+For every retained activity-only order, require each exact retained fill time to be no later than that order snapshot's update time. Exact equality is valid. A later fill must fail with `RETAINED_ACTIVITY_ORDER_FILL_AFTER_ORDER_UPDATE`, and the reconciliation profile plus mutation coverage must require the aggregate rejection marker. Preserve existing shared-order time diagnostics and activity-only cumulative, remainder, limit and average precedence.
+
+The source normalizer may retain this shape under an explicit review reason, so the exact response-bundle gate must promote it to fail-closed acceptance rather than treating that review reason as proof. No UI or modifiable parameter changed; preserve the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Run focused response/release/version/roadmap/packaging tests, all sixteen profiles, saved-evidence verification, the complete suite, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality, whitespace and public snapshot/history scans. Fresh exact-source security, safety/browser/evidence and Windows installer workflows remain mandatory.
+
+Exact v0.221.1 source `af14ca9744622b788a555d5de6b0abea81cf432a` passed public-security/history run 39946333787, safety/regression/evidence/browser run 39946333790 and Windows regression/EXE/installer run 39946333712. Those parent results do not transfer.
+
+Final local v0.222.0 validation passed 3,582 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap/packaging set passed 225 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `8c45d3014972b8dfbbd5e35613e1078439c030ea57339e36e7db04ed5c715f41`; `validation/release_trials_0_222_0.json` SHA256 is `6e966fb6cbd78a61678f2e4406e96edc918f39a8c8f81c5722ea096c17edddbf`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality, whitespace and the 551-path proposed public snapshot audit passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
 
 ## v0.221.1 mandatory unobserved-notional positivity evidence
 

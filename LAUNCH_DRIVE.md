@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.222.0 activity-only fill/order chronology binding
+
+The exact private response-bundle review now requires every retained fill for an activity-only order to occur no later than the update time of the order snapshot that already claims its cumulative execution. Equality remains valid; a later fill reaches a dedicated fail-closed diagnostic. The reconciliation release profile requires both the aggregate chronology marker and its negative control.
+
+This closes a supplied-evidence chronology gap without claiming provider identity, clock trust, source or activity coverage, fee/hold/funds reconciliation, broker acceptance or execution authority. No UI control, permission, risk limit, account check, emergency stop, credential, network or execution path changed. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Exact v0.221.1 source `af14ca9744622b788a555d5de6b0abea81cf432a` passed all three source-bound workflows; those results do not transfer. Fresh v0.222.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.222.0 validation passed 3,582 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap/packaging set passed 225 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `8c45d3014972b8dfbbd5e35613e1078439c030ea57339e36e7db04ed5c715f41`; `validation/release_trials_0_222_0.json` SHA256 is `6e966fb6cbd78a61678f2e4406e96edc918f39a8c8f81c5722ea096c17edddbf`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality, whitespace and the 551-path proposed public snapshot audit passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
+
 ## v0.221.1 mandatory unobserved-notional positivity evidence
 
 The reconciliation release fixture now proves that positive unobserved fill quantity cannot be paired with a zero or negative implied notional. Its reported activity-only average and individually valid retained fill are constructed to reach the existing dedicated fail-closed diagnostic, and mutation coverage requires the resulting aggregate rejection marker.

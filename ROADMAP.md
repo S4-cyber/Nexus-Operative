@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.221.1. Branch: `development/windows-portal-foundation`.
+Revision: 0.222.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.221.1 makes the existing fail-closed positivity check for an unobserved activity-only fill notional a mandatory reconciliation release negative control. A reported aggregate average and individually valid retained fill can no longer reach release evidence while implying a zero or negative missing-execution notional. The control preserves the v0.221.0 buy/sell residual-limit checks and does not invent missing fills or coverage. This is local supplied-evidence arithmetic, not provider/source/clock attestation, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.222.0 binds every exact retained fill for an activity-only order to the update time of the order snapshot that already claims its cumulative execution. A fill later than that snapshot now fails closed; exact equality remains valid. The release profile requires the dedicated negative control. This is local supplied-evidence chronology, not provider/source/clock attestation, activity coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

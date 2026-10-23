@@ -143,6 +143,11 @@ def _retained_activity_order_fill_semantics(
                         (order['side']=='sell' and
                         unobserved_notional<unobserved_limit_notional)):
                     _fail('RETAINED_ACTIVITY_ORDER_UNOBSERVED_FILL_AVERAGE_LIMIT_PRICE_DISAGREEMENT')
+        try:order_at=contract.timestamp_order_ns(order['updated_at'])
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('RETAINED_ACTIVITY_ORDER_FILL_INVALID')
+        if any(occurred_at>order_at for _,occurred_at,_ in parsed):
+            _fail('RETAINED_ACTIVITY_ORDER_FILL_AFTER_ORDER_UPDATE')
         fill_count+=len(parsed)
         summaries.append(dict(broker_order_id=broker_id,status=order['status'],
             requested_quantity=order['requested_quantity'],
@@ -667,6 +672,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         activity_only_order_average_limit_prices_checked=True,
         complete_activity_only_fill_averages_checked=True,
         unobserved_activity_fill_average_limits_checked=True,
+        activity_only_fill_order_update_bounds_checked=True,
         retained_fill_type_remainders_checked=True,
         retained_activity_fill_deltas_checked=True,
         retained_activity_order_fill_semantics_bound=True,
@@ -691,7 +697,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
         'identity agreement and non-regressing update time, cumulative fill, unchanged-quantity average price and '
         'status progression for orders visible in both responses, binds retained activity-order completion, '
-        'requested/remainder quantities, adjacent cumulative fill deltas, fill type, order-average limit '
+        'requested/remainder quantities, fill times no later than the claiming order update, adjacent cumulative '
+        'fill deltas, fill type, order-average limit '
         'compliance, exact retained-versus-unobserved notional decomposition, complete retained-chain average '
         'arithmetic and individual limit-price semantics even when an order is '
         'not present in the preceding open-order snapshot, binds every increased cumulative fill to an '
@@ -1024,6 +1031,16 @@ def fixture_report():
         except ValueError as error:
             activity_only_fill_chain_gap_rejected=(
                 'RETAINED_ACTIVITY_ORDER_FILL_CHAIN_GAP' in str(error))
+        activity_only_fill_after_order_update=_fixture(
+            root/'activity-only-fill-after-order-update',
+            account_order_client_id='other_client',
+            account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+            activity_fill_changes={'transaction_time':'2026-10-17T18:00:02Z'})
+        activity_only_fill_after_order_update_rejected=False
+        try:review(**activity_only_fill_after_order_update)
+        except ValueError as error:
+            activity_only_fill_after_order_update_rejected=(
+                'RETAINED_ACTIVITY_ORDER_FILL_AFTER_ORDER_UPDATE' in str(error))
         activity_only_average_limit_disagreement=_fixture(
             root/'activity-only-average-limit-disagreement',
             account_order_client_id='other_client',
@@ -1248,6 +1265,8 @@ def fixture_report():
                 result['complete_activity_only_fill_averages_checked'],
             unobserved_activity_fill_average_limits_checked=
                 result['unobserved_activity_fill_average_limits_checked'],
+            activity_only_fill_order_update_bounds_checked=
+                result['activity_only_fill_order_update_bounds_checked'],
             retained_fill_type_remainders_checked=
                 result['retained_fill_type_remainders_checked'],
             retained_activity_fill_deltas_checked=
@@ -1285,6 +1304,8 @@ def fixture_report():
                 activity_only_order_fill_semantic_disagreement_rejected,
             activity_only_fill_chain_gap_rejected=
                 activity_only_fill_chain_gap_rejected,
+            activity_only_fill_after_order_update_rejected=
+                activity_only_fill_after_order_update_rejected,
             activity_only_average_limit_disagreement_rejected=
                 activity_only_average_limit_disagreement_rejected,
             activity_only_complete_fill_average_disagreement_rejected=

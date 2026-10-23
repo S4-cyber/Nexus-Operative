@@ -59,6 +59,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['activity_only_order_average_limit_prices_checked']
     assert result['complete_activity_only_fill_averages_checked']
     assert result['unobserved_activity_fill_average_limits_checked']
+    assert result['activity_only_fill_order_update_bounds_checked']
     assert result['retained_fill_type_remainders_checked']
     assert result['retained_activity_fill_deltas_checked']
     assert result['retained_activity_order_fill_semantics_bound']
@@ -296,6 +297,15 @@ def test_bundle_rejects_activity_only_adjacent_fill_chain_gap(tmp_path):
             'leaves_qty':'0','price':'100',
             'transaction_time':'2026-10-17T18:00:01Z'})
     with pytest.raises(ValueError,match='RETAINED_ACTIVITY_ORDER_FILL_CHAIN_GAP'):
+        subject.review(**options)
+
+
+def test_bundle_rejects_activity_only_fill_after_order_update(tmp_path):
+    options=subject._fixture(tmp_path,account_order_client_id='other_client',
+        account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+        activity_fill_changes={'transaction_time':'2026-10-17T18:00:02Z'})
+    with pytest.raises(ValueError,
+            match='RETAINED_ACTIVITY_ORDER_FILL_AFTER_ORDER_UPDATE'):
         subject.review(**options)
 
 

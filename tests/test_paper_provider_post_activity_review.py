@@ -128,6 +128,18 @@ def test_account_scope_and_binding_shape_fail_closed(tmp_path):
             account_bindings=[malformed])
 
 
+def test_path_guard_supports_full_seven_account_shape_and_rejects_aliases(
+        tmp_path):
+    paths = [tmp_path / 'post.sqlite3']
+    for index in range(7):
+        paths.extend(tmp_path / f'account-{index}-{name}.sqlite3'
+            for name in ('request', 'pacing', 'activity', 'acceptance'))
+    subject._check_related_paths(paths)
+    paths[-1] = paths[1].with_name(paths[1].name + '-wal')
+    with pytest.raises(ValueError, match='RELATED_PATHS_REQUIRED_DISTINCT'):
+        subject._check_related_paths(paths)
+
+
 def test_fixture_is_private_and_never_authoritative():
     result = subject.fixture_report()
     assert result['passed']

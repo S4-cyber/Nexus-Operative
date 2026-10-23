@@ -24,6 +24,9 @@ PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
     'removal_completed_during_read', 'revoked_read_returned_no_observation',
     'pending_history_preserved', 'fresh_process_preserved_pending_history')
 SAFE_FAILURE_CODE = re.compile(r'RELEASE_TRIAL_[A-Z0-9_]+\Z')
+CHILD_FAILURE_LINE = re.compile(
+    r'^nexus\.release_trials\.ReleaseTrialError: (RELEASE_TRIAL_[A-Z0-9_]+)$',
+    re.MULTILINE)
 
 
 class ReleaseTrialError(ValueError):
@@ -40,6 +43,14 @@ def _safe_failure_code(error):
     if isinstance(error, ReleaseTrialError) and SAFE_FAILURE_CODE.fullmatch(value):
         return value
     return 'RELEASE_TRIAL_INTERNAL_ERROR'
+
+
+def _child_failure(profile, child):
+    """Preserve only our typed fixed code; discard every other child byte."""
+    for value in reversed(CHILD_FAILURE_LINE.findall(child.stderr or '')):
+        if SAFE_FAILURE_CODE.fullmatch(value):
+            raise ReleaseTrialError(value)
+    raise ReleaseTrialError('RELEASE_TRIAL_' + profile.upper() + '_CHILD_FAILED')
 
 
 def _http_trial_response_body(response, *, tolerate_precredential_denial_reset=False):
@@ -1130,7 +1141,8 @@ def run():
                                        capture_output=True, text=True, timeout=240)
             except subprocess.TimeoutExpired:
                 raise ReleaseTrialError('RELEASE_TRIAL_' + profile.upper() + '_CHILD_TIMEOUT') from None
-            _require(child.returncode == 0, profile.upper() + '_CHILD_FAILED')
+            if child.returncode != 0:
+                _child_failure(profile, child)
             try: result = json.loads(child.stdout)
             except ValueError: raise ReleaseTrialError('RELEASE_TRIAL_INVALID_CHILD_REPORT') from None
             _validate(profile, result)

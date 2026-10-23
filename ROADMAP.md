@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.233.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.233.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.233.0 composes the bounded exact-head provider POST/request history with complete accepted local activity histories for up to seven accounts. RESPONSE_OBSERVED and explicitly recovered unknown attempts must bind the same request and retained order/fill evidence; NOT_SENT must retain no observation or fills; unresolved unknown outcomes remain blocked. The review is aggregate-only, read-only and private-journal selected. It performs no provider or vault IO and grants no source, coverage, fee, hold, funds, broker-wide quota, distributed ownership, ledger, routing, live or release authority. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.233.1 closes the Windows fixture database handle explicitly and applies the existing related-path guard pairwise so the documented one-to-seven-account POST/activity review remains bounded and usable. Fixed-code child diagnostics discard all other child output. The v0.233.0 reconciliation semantics remain aggregate-only, read-only and private-journal selected; unresolved outcomes still block and no provider, vault, retry, ledger, routing, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

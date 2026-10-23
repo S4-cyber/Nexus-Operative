@@ -207,6 +207,18 @@ def test_nonzero_child_failure_is_sanitized_and_never_reported_as_passed(monkeyp
     assert 'SECRET' not in str(error.value)
 
 
+def test_nonzero_child_preserves_only_nested_fixed_failure_code(monkeypatch):
+    child = subprocess.CompletedProcess([], 1, 'PRIVATE_STDOUT',
+        'private path\nnexus.release_trials.ReleaseTrialError: '
+        'RELEASE_TRIAL_POST_ACTIVITY_REVIEW_FENCES\n'
+        'ValueError: RELEASE_TRIAL_SECRET_MUST_NOT_ESCAPE')
+    monkeypatch.setattr(trials.subprocess, 'run', lambda *a, **k: child)
+    with pytest.raises(ValueError,
+            match='^RELEASE_TRIAL_POST_ACTIVITY_REVIEW_FENCES$') as error:
+        trials.run()
+    assert 'PRIVATE' not in str(error.value) and 'SECRET' not in str(error.value)
+
+
 def test_release_trial_failure_diagnostics_allow_only_fixed_codes():
     assert trials._safe_failure_code(trials.ReleaseTrialError('RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED')) == \
         'RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED'

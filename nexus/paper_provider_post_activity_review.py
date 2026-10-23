@@ -39,6 +39,15 @@ def _client_digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
 
 
+def _check_related_paths(paths):
+    """Apply the existing bounded relationship guard to every selected pair."""
+    if type(paths) not in (list, tuple) or not 5 <= len(paths) <= 29:
+        _fail('PATH_SET_INVALID')
+    for index, path in enumerate(paths):
+        for other in paths[index + 1:]:
+            check_path_set((path, other), 'PAPER_PROVIDER_POST_ACTIVITY_')
+
+
 def review(post_budget, *, expected_post_head, account_bindings):
     """Join exact POST outcomes to fully replayed accepted activity histories.
 
@@ -80,7 +89,7 @@ def review(post_budget, *, expected_post_head, account_bindings):
         bindings.append(current)
         paths.extend((journal.path, current['pacing_path'],
             current['activity_store_path'], current['acceptance_store_path']))
-    check_path_set(tuple(paths), 'PAPER_PROVIDER_POST_ACTIVITY_')
+    _check_related_paths(paths)
 
     first_post = post_budget.inspect()
     if first_post['events'] == 0 or first_post['head_sha256'] != expected_post_head:
@@ -260,9 +269,12 @@ def _case(root, *, resolve_unknown):
     options, _ = activity._fixture(root, submission_admission=1000)
     journal = BrokerRequestJournal(options['request_journal_path'],
         options['expected_account_id'])
-    with sqlite3.connect(journal.path) as db:
+    db = sqlite3.connect(journal.path)
+    try:
         events = db.execute(
             'SELECT kind,digest FROM events ORDER BY seq').fetchall()
+    finally:
+        db.close()
     before = next(digest for kind, digest in events if kind == 'PREPARE')
     marker = next(digest for kind, digest in events
         if kind == 'SUBMISSION_UNCERTAIN')

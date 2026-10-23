@@ -53,6 +53,10 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['review_block_cleared'] and result['original_request_rearmed'] is False
     assert result['cooldown_shortened'] is False and result['uncertainty_preserved']
     assert state['recoveries']==1 and state['review_required'] is False
+    recovery=budget.recovery_history()
+    assert len(recovery)==1
+    assert recovery[0]['request_resolution_head_sha256']==request_head
+    assert recovery[0]['blocked_attempt_head_sha256']==saved_history[0]['after_head_sha256']
     assert state['next_allowed_at']==87401 and budget.history()==saved_history
     assert request['submission_attempt_marked'] and request['snapshot']['terminal']
     assert request['recovery_state']=='OBSERVED_TERMINAL_RECONCILIATION_REQUIRED'

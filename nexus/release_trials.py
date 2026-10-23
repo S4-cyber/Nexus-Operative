@@ -882,6 +882,7 @@ def _validate(profile, result):
         _require(post_review['source']=='TEMPORARY_LOCAL_PROVIDER_POST_HISTORY_REVIEW_FIXTURE' and
             post_review['passed'] is True and all(post_review[k] is True for k in
             ('exact_multi_account_history','every_attempt_bound','every_outcome_bound',
+             'exact_terminal_recovery_history',
              'outcome_disagreement_requires_review','changed_head_denied',
              'omitted_account_requires_review','output_never_authoritative')),
             'POST_HISTORY_REVIEW_FENCES')

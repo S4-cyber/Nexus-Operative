@@ -3,6 +3,7 @@ import sqlite3
 
 import pytest
 
+from nexus import paper_provider_post_recovery
 from nexus import paper_provider_post_review as subject
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_provider_post_budget import PaperProviderPostBudget, ZERO
@@ -35,6 +36,19 @@ def retained(tmp_path, *, account=ACCOUNT, identity='nx_fixture', outcome='NOT_S
 
 def binding(journal):
     return dict(journal=journal, expected_head=journal.recovery()['head_sha256'])
+
+
+def resolved_unknown(tmp_path):
+    journal,budget,_=retained(tmp_path,outcome='OUTCOME_UNKNOWN')
+    journal.observe('nx_fixture',response(status='filled',filled_qty='2',
+        filled_avg_price='99'))
+    request_head=journal.recovery()['head_sha256']
+    result=paper_provider_post_recovery.recover(budget.path,journal.path,
+        expected_account_id=ACCOUNT,client_order_id='nx_fixture',
+        expected_post_budget_head=budget.inspect()['head_sha256'],
+        expected_request_head=request_head,confirm_original_id_resolved=True,
+        confirm_no_resubmission=True,admission=lambda:1002)
+    return journal,budget,result['head_sha256']
 
 
 def test_complete_multi_account_checked_history_is_read_only(tmp_path):
@@ -79,6 +93,33 @@ def test_unknown_outcome_preserves_uncertainty_with_or_without_snapshot(
     assert result['outcome_bound_attempts']==1
     assert result['uncertainty_preserved']
     assert not result['automatic_recovery'] and not result['ready_for_routing']
+
+
+def test_resolved_unknown_recovery_binds_exact_terminal_request_prefix(tmp_path):
+    journal,budget,head=resolved_unknown(tmp_path)
+    before=(budget.path.read_bytes(),journal.path.read_bytes())
+    result=subject.review(budget,expected_post_head=head,
+        request_bindings=[binding(journal)])
+    assert result['complete_local_history_consistent']
+    assert result['post_recoveries']==result['exact_recovery_bindings']==1
+    assert result['recovery_request_history_disagreements']==0
+    assert result['uncertainty_preserved'] and not result['automatic_recovery']
+    assert before==(budget.path.read_bytes(),journal.path.read_bytes())
+
+
+def test_recovery_resolution_prefix_disagreement_requires_review(
+        tmp_path,monkeypatch):
+    journal,budget,head=resolved_unknown(tmp_path)
+    recoveries=budget.recovery_history()
+    monkeypatch.setattr(budget,'recovery_history',lambda:(dict(recoveries[0],
+        request_resolution_head_sha256='f'*64),))
+    result=subject.review(budget,expected_post_head=head,
+        request_bindings=[binding(journal)])
+    assert not result['complete_local_history_consistent']
+    assert result['exact_attempt_bindings']==result['outcome_bound_attempts']==1
+    assert result['exact_recovery_bindings']==0
+    assert result['recovery_request_history_disagreements']==1
+    assert result['reasons']==['POST_RECOVERY_REQUEST_HISTORY_DISAGREEMENT']
 
 
 def test_stale_heads_and_related_paths_fail_before_mutation(tmp_path):

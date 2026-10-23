@@ -2,7 +2,17 @@
 
 ## Delivery planning update — 2026-10-23
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The reviewed parent source is exact v0.230.0 commit `9c3b3098ecdeba38198d24c0ecaad3253e5d38b9`; this v0.231.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are 2–6 weeks for a connected broker-paper prototype and 12–24+ weeks for the full agreed 1.0 candidate; these are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize the paper submission lifecycle, actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The reviewed parent source is exact v0.231.0 commit `850d73720984169bcc3e4b7a341e26827ee0970b`; this v0.232.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are 2–6 weeks for a connected broker-paper prototype and 12–24+ weeks for the full agreed 1.0 candidate; these are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize the paper submission lifecycle, actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.232.0 terminal provider POST recovery/request-prefix binding
+
+The read-only provider POST history review now replays the provider budget's complete content-free recovery history. Each recovery must resolve to its exact earlier `OUTCOME_UNKNOWN` attempt and an exact request-journal prefix with matching account, payload and hashed original client ID. That prefix must retain a terminal normalized observation, the conservative terminal-reconciliation state and no outstanding original-ID lookup requirement.
+
+Missing, foreign or contradictory recovery evidence receives a separate fail-closed reason and cannot be hidden by otherwise valid attempt/outcome bindings. This does not make an unknown POST certain, infer fills or fees, shorten cooldown, reclaim capacity, retry, rearm or resubmit. It performs no provider/vault IO and grants no routing, funds, live or release authority.
+
+No Portal control or editable parameter changed. Existing beginner tabs and black/bright-purple bottom-right help are unchanged, permissions remain OFF and the emergency stop remains independent. Exact v0.231.0 source `850d73720984169bcc3e4b7a341e26827ee0970b` passed all five hosted checks; v0.232.0 requires fresh exact-source CI and authorized-account acceptance. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.232.0 validation passed 3,634 tests with one expected non-Windows skip and one existing warning; the focused provider budget/recovery/review/release/evidence/version/roadmap set passed 159. All sixteen profiles and saved-evidence verification matched 365 source files / `02b7a39766996b57f5b5617f43667988036e6df42379e746c70918b026fc6ef6`; report SHA256 is `9ffddd5dfb208fa0404052727e2889e285cb728fa5db7f3ca9180f639f8acd1d`. Fourteen controllers and local syntax/compile/dependency/roadmap/whitespace checks passed. The exact 571-path staged snapshot and available 571-path / 622-commit / 4,235-blob history audit had zero findings; fresh exact-source workflows remain mandatory.
 
 ## v0.231.0 provider POST outcome/request-prefix binding
 

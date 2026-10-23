@@ -1,10 +1,10 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-23 (America/Los_Angeles).
-Parent source reviewed: `9c3b3098ecdeba38198d24c0ecaad3253e5d38b9` (v0.230.0); v0.231.0 is the current candidate and requires fresh exact-source checks.
+Parent source reviewed: `850d73720984169bcc3e4b7a341e26827ee0970b` (v0.231.0); v0.232.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.231.0 strengthens the bounded read-only exact-head provider POST/request review with explicit durable outcome binding. RESPONSE_OBSERVED must retain a normalized request snapshot, NOT_SENT must retain none and OUTCOME_UNKNOWN remains unresolved. It is not yet a connected broker-paper prototype because saved write credentials, explicit operator integration, broker-wide/distributed POST coordination and actual-account acceptance remain absent. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.232.0 extends the bounded read-only exact-head provider POST/request review through terminal unknown-outcome recovery. Each retained recovery must bind the exact unknown attempt to the matching terminal request prefix; disagreement fails closed without repair or inference. It is not yet a connected broker-paper prototype because saved write credentials, explicit operator integration, broker-wide/distributed POST coordination and actual-account acceptance remain absent. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 
@@ -13,7 +13,7 @@ Engineering checkpoint note: v0.231.0 strengthens the bounded read-only exact-he
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- At this checkpoint, exact v0.230.0 passed all five hosted checks: public security/history, safety/regression/evidence/browser, offline regression, offline release evidence and Windows regression/EXE/installer. Those parent results do not transfer to v0.231.0.
+- At this checkpoint, exact v0.231.0 passed all five hosted checks: public security/history, safety/regression/evidence/browser, offline regression, offline release evidence and Windows regression/EXE/installer. Those parent results do not transfer to v0.232.0.
 
 ## Roadmap coverage
 

@@ -93,7 +93,7 @@ class PaperProviderPostBudget:
         return dict(head_sha256=ZERO, events=0, attempts=0, pending=None,
                     last_evaluated_at=0, next_allowed_at=0, review_required=False,
                     last_outcome=None, completed=[], recoveries=0,
-                    last_recovery=None)
+                    recovery_history=[], last_recovery=None)
 
     @staticmethod
     def _admit(state, now):
@@ -197,10 +197,15 @@ class PaperProviderPostBudget:
                 if state['recoveries'] >= MAX_RECOVERIES: _fail('RECOVERY_CAP')
                 state['review_required'] = False; state['recoveries'] += 1
                 state['last_evaluated_at'] = now
-                state['last_recovery'] = dict(recovered_at=now,
+                recovery = dict(recovered_at=now,
+                    account_sha256=body['account_sha256'],
+                    payload_sha256=body['payload_sha256'],
+                    client_order_sha256=body['client_order_sha256'],
                     blocked_attempt_head_sha256=last['after_head_sha256'],
                     request_resolution_head_sha256=body['request_resolution_head_sha256'],
                     recovery_head_sha256=digest)
+                state['recovery_history'].append(recovery)
+                state['last_recovery'] = dict(recovery)
             elif index:
                 _fail('PAYLOAD_INVALID')
             state['head_sha256'] = digest; state['events'] = index
@@ -211,7 +216,8 @@ class PaperProviderPostBudget:
         if not self.path.exists(): state = self._empty()
         else:
             with closing(self._connect()) as db: state = self._load(db)
-        completed = state.pop('completed'); pending = state.pop('pending')
+        completed = state.pop('completed'); state.pop('recovery_history')
+        pending = state.pop('pending')
         return dict(state, provider_sha256=self.provider_digest,
             completed_attempts=len(completed), pending_token=None if pending is None else pending['token'],
             min_post_cooldown_seconds=MIN_COOLDOWN, unknown_cooldown_seconds=UNKNOWN_COOLDOWN,
@@ -226,6 +232,13 @@ class PaperProviderPostBudget:
         if not self.path.exists(): return ()
         with closing(self._connect()) as db: state = self._load(db)
         return tuple(dict(row) for row in state['completed'])
+
+    def recovery_history(self):
+        """Return content-free recovery bindings after full chain replay."""
+        self._path_check()
+        if not self.path.exists(): return ()
+        with closing(self._connect()) as db: state = self._load(db)
+        return tuple(dict(row) for row in state['recovery_history'])
 
     def ownership(self):
         return _PostOwnership(self)

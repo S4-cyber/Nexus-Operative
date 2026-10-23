@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.231.0'
+REVISION = '0.232.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -75,7 +75,7 @@ DELIVERY_STAGES = (
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'].replace(
         'injected tests do not attest an account and no external order adapter is connected.',
-        'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome history review now exists with injected tests only; it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
+        'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
@@ -178,7 +178,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.231.0 strengthens the bounded read-only exact-head provider POST/request history composition. A retained RESPONSE_OBSERVED attempt must end at a request prefix with a normalized snapshot, while NOT_SENT must end without one; OUTCOME_UNKNOWN remains locally bound but unresolved. Outcome disagreement is a separate fail-closed reason from account/payload/client/admission-marker disagreement. It writes nothing, performs no provider or vault IO and grants no retry, source, broker-wide quota, distributed ownership, account, reconciliation, routing, funds, live or release authority. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.232.0 strengthens the bounded read-only exact-head provider POST/request history composition across terminal unknown-outcome recovery. Every retained provider-budget recovery must bind to its original unknown attempt and the exact request prefix containing the same account, payload, hashed original client ID and terminal normalized observation. Missing or contradictory recovery evidence fails closed separately from attempt and outcome disagreement. It writes nothing, performs no provider or vault IO and grants no retry, source, broker-wide quota, distributed ownership, account, reconciliation, routing, funds, live or release authority. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

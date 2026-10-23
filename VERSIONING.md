@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.231.0 (pre-release).** This build strengthens the bounded read-only exact-head provider POST/request composition. Beyond exact attempt markers, RESPONSE_OBSERVED must retain a normalized request snapshot at the recorded after head and NOT_SENT must retain none; OUTCOME_UNKNOWN stays explicitly unresolved. It performs no provider/vault IO or writes and has no Portal route, saved write credential scope, automatic strategy route, ledger application, live endpoint or funding authority. Actual provider/account acceptance, broker-wide/distributed POST coordination, execution/fee/hold/funds reconciliation and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.232.0 (pre-release).** This build strengthens the bounded read-only exact-head provider POST/request composition across terminal unknown-outcome recovery. Every retained recovery must bind its exact original attempt to the matching terminal request prefix; contradictions fail closed separately from attempt and outcome disagreement. It performs no provider/vault IO or writes and has no Portal route, saved write credential scope, automatic strategy route, ledger application, live endpoint or funding authority. Actual provider/account acceptance, broker-wide/distributed POST coordination, execution/fee/hold/funds reconciliation and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.232.0 terminal provider POST recovery/request-prefix binding
+
+The provider POST budget now exposes a bounded content-free recovery projection after full hash-chain replay. The combined history review requires each recovery to match the original `OUTCOME_UNKNOWN` attempt by attempt head, account, payload and hashed original client ID, then reconstructs the exact request resolution prefix and requires a terminal normalized observation with the conservative terminal-reconciliation state.
+
+A mismatch returns `POST_RECOVERY_REQUEST_HISTORY_DISAGREEMENT` without mutation. This review neither performs nor clears recovery, retries an order, rearms the original request, shortens cooldown, reclaims capacity, infers execution, or reconciles fills, fees, holds or funds. All authority flags remain false, and unresolved unknown attempts remain uncertain.
+
+Exact v0.231.0 source `850d73720984169bcc3e4b7a341e26827ee0970b` passed all five hosted checks. Those parent results do not transfer. Fresh exact-source security, safety/browser/evidence and Windows packaging/installer checks remain mandatory.
+
+Final local validation passed 3,634 tests with one expected non-Windows skip and one existing warning; the focused provider budget/recovery/review/release/evidence/version/roadmap set passed 159. Sixteen profiles and saved-evidence verification matched 365 source files / `02b7a39766996b57f5b5617f43667988036e6df42379e746c70918b026fc6ef6`; report SHA256 is `9ffddd5dfb208fa0404052727e2889e285cb728fa5db7f3ca9180f639f8acd1d`. Fourteen controllers and all local static/version/roadmap checks passed. The exact 571-path staged snapshot and available 571-path / 622-commit / 4,235-blob history audit had zero findings; fresh exact-source CI remains mandatory.
 
 ## v0.231.0 provider POST outcome/request-prefix binding
 

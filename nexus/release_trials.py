@@ -905,6 +905,7 @@ def _validate(profile, result):
                 'repeated_cumulative_fill_state_rejected',
                 'cumulative_fill_time_regression_rejected',
                 'cumulative_fill_remaining_conflict_rejected',
+                'fill_requested_quantity_disagreement_rejected',
                 'reported_fee_references_consistent','reported_fee_reference_bound',
                 'reported_fee_exact_timestamp_chronology_checked',
                 'reported_fee_exact_timestamp_capture_upper_bound_checked',

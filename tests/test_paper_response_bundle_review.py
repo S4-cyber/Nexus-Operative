@@ -230,6 +230,12 @@ def test_bundle_rejects_cumulative_fill_remaining_quantity_conflict(tmp_path):
         subject.review(**options)
 
 
+def test_bundle_rejects_fill_requested_quantity_disagreement(tmp_path):
+    options=subject._fixture(tmp_path,activity_fill_changes={'leaves_qty':'1'})
+    with pytest.raises(ValueError,match='FILL_ACTIVITY_REQUESTED_QUANTITY_DISAGREEMENT'):
+        subject.review(**options)
+
+
 @pytest.mark.parametrize('fill_changes,include_fill,code',[
     ({},False,'FILL_ACTIVITY_MISSING'),
     ({'qty':'0.5','cum_qty':'1','leaves_qty':'0.5'},True,'FILL_ACTIVITY_GAP'),

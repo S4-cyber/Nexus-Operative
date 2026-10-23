@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.210.0, exact retained shared-order fill sequences reject contradictory cumulative-plus-leaves requested quantities. Read the newest version section and generated roadmap; fresh exact-source v0.210.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.211.0, retained fill-implied requested quantities are bound to the exact preceding account snapshot. Read the newest version section and generated roadmap; fresh exact-source v0.211.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.211.0 retained fill/account requested-quantity binding
+
+For each shared order in the exact private account/activity response bundle, require the requested quantity implied by every retained fill (`cumulative_quantity + leaves_quantity`) to equal the exact requested quantity normalized from the preceding account response. Run this after established delta arithmetic so existing malformed-delta diagnostics keep their precedence. Preserve within-sequence requested-quantity continuity, cumulative uniqueness, nondecreasing event time, weighted-average agreement, capture-completion and earliest-page-receipt fences.
+
+The mandatory exact-response fixture supplies a single arithmetically coherent fill whose nonzero leaves imply twice the preceding order size, and the reconciliation-acceptance profile requires its rejection. No raw IDs, timestamps, quantities or prices enter public evidence. This is supplied private-evidence consistency only, not provider/source/clock attestation, complete execution or fee coverage, broker acceptance, routing permission or release approval. No UI control or editable parameter changed; keep the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop unchanged.
+
+Exact v0.210.0 source `7bcf95d52727ba227f3bf102486b8c47c9a5ce47` has no visible commit statuses or pull-request workflow runs through the available GitHub endpoint at this checkpoint. Parent results do not transfer to v0.211.0. Run focused response/release/package/version checks, all sixteen profiles and saved-evidence verification, the complete suite, fourteen controllers, Portal syntax, static/public-artifact checks and fresh exact-source workflows.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow reconciliation fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.211.0 validation passed 3,563 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap/packaging set passed 206 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `26bacd181e58345afd62b3b7932f77b16dfd2205cb3d980f7909b60abc789989`; `validation/release_trials_0_211_0.json` SHA256 is `b6199fd7956d2aa72dfa5e130ccf782fa97ad4fd5d66aec7b43f60603005061a`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. The exact 539-path proposed public snapshot and reachable 596-commit / 3,909-blob history passed the private-artifact audit with zero findings. Local Gitleaks, rendered-browser and native Windows execution are unavailable; dedicated exact-source v0.211.0 workflows are mandatory.
 
 ## v0.210.0 retained fill requested-quantity continuity
 

@@ -4,6 +4,18 @@
 
 See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The reviewed v0.226.0 source is `8a38aae7a47dddd56b4843a5264fbae6788986d4`. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are 2–6 weeks for a connected broker-paper prototype and 12–24+ weeks for the full agreed 1.0 candidate; these are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize the paper submission lifecycle, actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
 
+## v0.229.0 terminal original-ID POST-budget recovery
+
+The ambiguous shared-local provider POST-budget latch now has one explicit, fail-closed reviewed recovery path. The operator must supply exact current heads for both private journals, the exact paper account and original client order ID, and two confirmations. The request journal must retain a terminal original-ID observation with the same account/payload/client binding. That proof is replayed before and after the content-free recovery append while the POST-budget ownership lease and database transaction are held.
+
+Recovery preserves the full-day cooldown, ambiguous-attempt history, consumed attempt and permanent request attempt marker. It neither resubmits nor rearms the original request, and it cannot recover an interrupted tail that lacks a request-after head. Stale heads, unresolved/nonterminal requests, cross-scope data, confirmation loss and proof changes fail without mutation. The mandatory pacing release profile includes positive and mutation-tested negative controls.
+
+This is injected local durability evidence only. It performs no provider or vault access and does not establish broker/account acceptance, response authenticity, fill/fee/hold/funds reconciliation, broker-wide/distributed quota ownership, routing readiness, live permission or release approval. No UI or modifiable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; no acceptance gate closed.
+
+Published v0.228.0 source `be3ebc0a64d725b262434aa2c466ff68687290ba` is the parent. Its local results and absent PR-only workflow listing do not transfer; fresh exact-source security, safety/browser/evidence and Windows packaging/installer results are mandatory.
+
+Final local v0.229.0 validation passed 3,620 tests with one expected non-Windows skip and one existing warning; the focused recovery/submission/release/evidence/version/roadmap set passed 185. All sixteen profiles and saved-evidence verification matched 363 source files / `d33d01f64a6b694adaeda38b1aea9e270978451a2cc452dff29c0fd75ae15d3b`; report SHA256 is `98e6daea93832144955f079facbc272db846caa9ef32347a55dea895eb608269`. Fourteen controllers and local syntax/compile/dependency/roadmap/whitespace checks passed. Public snapshot/history and fresh exact-source workflows remain mandatory.
+
 ## v0.228.0 shared-local provider POST budget
 
 The internal single-attempt paper submission boundary now requires a distinct private `PaperProviderPostBudget` plus its exact expected head. Cooperating callers that share the same path are serialized under one OS ownership lease. A bounded hash chain binds the account, request head, payload and hashed client-order identity, retains a minimum cooldown, and turns an attempted or explicitly interrupted unknown outcome into a full-day review block. It never retries, clears review, reclaims capacity or claims broker-wide/distributed ownership.

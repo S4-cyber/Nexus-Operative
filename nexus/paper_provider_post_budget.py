@@ -19,7 +19,9 @@ from nexus.broker_lookup_policy import clock
 from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.paper-provider-post-budget.v1'
+RECOVERY_POLICY = 'nexus.paper-provider-post-budget-resolved-unknown.v1'
 MAX_ATTEMPTS = 256
+MAX_RECOVERIES = MAX_ATTEMPTS
 MAX_DATABASE_BYTES = 2 * 1024 * 1024
 MAX_EVENT_BYTES = 1024
 MIN_COOLDOWN = 60
@@ -90,7 +92,8 @@ class PaperProviderPostBudget:
     def _empty():
         return dict(head_sha256=ZERO, events=0, attempts=0, pending=None,
                     last_evaluated_at=0, next_allowed_at=0, review_required=False,
-                    last_outcome=None, completed=[])
+                    last_outcome=None, completed=[], recoveries=0,
+                    last_recovery=None)
 
     @staticmethod
     def _admit(state, now):
@@ -101,10 +104,11 @@ class PaperProviderPostBudget:
         if state['attempts'] >= MAX_ATTEMPTS: _fail('ATTEMPT_CAP')
 
     def _load(self, db):
+        max_events = 2 * MAX_ATTEMPTS + MAX_RECOVERIES
         rows = db.execute('SELECT seq,body,previous,digest FROM events ORDER BY seq LIMIT ?',
-                          (2 * MAX_ATTEMPTS + 2,)).fetchall()
+                          (max_events + 2,)).fetchall()
         if not rows: _fail('BINDING_MISSING')
-        if len(rows) > 2 * MAX_ATTEMPTS + 1: _fail('EVENT_CAP')
+        if len(rows) > max_events + 1: _fail('EVENT_CAP')
         state = self._empty()
         for index, (seq, encoded, previous, digest) in enumerate(rows):
             if type(encoded) is not str or len(encoded.encode()) > MAX_EVENT_BYTES: _fail('EVENT_CAP')
@@ -162,6 +166,41 @@ class PaperProviderPostBudget:
                 state['last_outcome'] = 'INTERRUPTED_UNKNOWN'
                 state['next_allowed_at'] = now + UNKNOWN_COOLDOWN
                 state['review_required'] = True
+            elif body.get('kind') == 'RECOVERY' and set(body) == {
+                    'kind','policy','evaluated_at','expected_head','account_sha256',
+                    'payload_sha256','client_order_sha256','blocked_attempt_head_sha256',
+                    'blocked_outcome','request_resolution_head_sha256','owner_sha256',
+                    'confirm_original_id_resolved','confirm_no_resubmission'}:
+                now = clock(body['evaluated_at'])
+                if body['policy'] != RECOVERY_POLICY: _fail('RECOVERY_POLICY_INVALID')
+                if body['expected_head'] != previous: _fail('HEAD_DISAGREEMENT')
+                if state['pending'] is not None: _fail('PENDING_REVIEW')
+                if not state['review_required'] or not state['completed']:
+                    _fail('RECOVERY_NOT_REQUIRED')
+                if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
+                last = state['completed'][-1]
+                for key in ('account_sha256','payload_sha256','client_order_sha256',
+                            'blocked_attempt_head_sha256','request_resolution_head_sha256',
+                            'owner_sha256'):
+                    _digest(body[key], key.upper() + '_INVALID')
+                if (last['outcome'] != 'OUTCOME_UNKNOWN' or
+                        body['account_sha256'] != last['account_sha256'] or
+                        body['payload_sha256'] != last['payload_sha256'] or
+                        body['client_order_sha256'] != last['client_order_sha256'] or
+                        body['blocked_attempt_head_sha256'] != last['after_head_sha256'] or
+                        body['blocked_outcome'] != last['outcome'] or
+                        body['request_resolution_head_sha256'] == last['request_after_head_sha256']):
+                    _fail('RECOVERY_SCOPE_DISAGREEMENT')
+                if (body['confirm_original_id_resolved'] is not True or
+                        body['confirm_no_resubmission'] is not True):
+                    _fail('CONFIRMATION_REQUIRED')
+                if state['recoveries'] >= MAX_RECOVERIES: _fail('RECOVERY_CAP')
+                state['review_required'] = False; state['recoveries'] += 1
+                state['last_evaluated_at'] = now
+                state['last_recovery'] = dict(recovered_at=now,
+                    blocked_attempt_head_sha256=last['after_head_sha256'],
+                    request_resolution_head_sha256=body['request_resolution_head_sha256'],
+                    recovery_head_sha256=digest)
             elif index:
                 _fail('PAYLOAD_INVALID')
             state['head_sha256'] = digest; state['events'] = index
@@ -176,6 +215,7 @@ class PaperProviderPostBudget:
         return dict(state, provider_sha256=self.provider_digest,
             completed_attempts=len(completed), pending_token=None if pending is None else pending['token'],
             min_post_cooldown_seconds=MIN_COOLDOWN, unknown_cooldown_seconds=UNKNOWN_COOLDOWN,
+            recovery_policy=RECOVERY_POLICY,
             automatic_retry=False, automatic_recovery=False, uncertainty_preserved=True,
             local_provider_scope_coordinated=bool(completed), broker_wide_quota_verified=False,
             distributed_ownership_verified=False, ready_for_routing=False, release_approved=False,
@@ -270,6 +310,76 @@ class PaperProviderPostBudget:
                     outcome='INTERRUPTED_UNKNOWN', uncertainty_preserved=True,
                     automatic_retry=False, automatic_recovery=False,
                     ready_for_routing=False, release_approved=False)
+
+    def recover_resolved_unknown(self, *, expected_head, expected_account_id,
+            expected_payload_sha256, expected_client_order_id,
+            expected_request_resolution_head, resolution_check,
+            confirm_original_id_resolved=False, confirm_no_resubmission=False,
+            admission, ownership):
+        """Clear one exact block only after a terminal original-ID proof.
+
+        The caller-supplied check is sampled twice under this journal's write
+        ownership.  It must return the exact content-free proof each time.
+        """
+        head = _digest(expected_head, 'HEAD_INVALID')
+        account = _uuid(expected_account_id)
+        payload = _digest(expected_payload_sha256, 'PAYLOAD_DIGEST_INVALID')
+        request_head = _digest(expected_request_resolution_head, 'REQUEST_HEAD_INVALID')
+        if type(expected_client_order_id) is not str or not 1 <= len(expected_client_order_id.encode()) <= 128:
+            _fail('CLIENT_ORDER_ID_INVALID')
+        if not callable(resolution_check): _fail('RESOLUTION_CHECK_REQUIRED')
+        if confirm_original_id_resolved is not True or confirm_no_resubmission is not True:
+            _fail('CONFIRMATION_REQUIRED')
+        proof = dict(account_sha256=hashlib.sha256(account.encode()).hexdigest(),
+            payload_sha256=payload,
+            client_order_sha256=hashlib.sha256(expected_client_order_id.encode()).hexdigest(),
+            request_resolution_head_sha256=request_head,
+            recovery_state='OBSERVED_TERMINAL_RECONCILIATION_REQUIRED',
+            lookup_by_original_client_id_required=False)
+        self._owned(ownership)
+        with closing(self._connect(write=True)) as db:
+            with db:
+                state = self._load(db); self._owned(ownership); now = clock(admission())
+                if state['head_sha256'] != head: _fail('HEAD_DISAGREEMENT')
+                if state['pending'] is not None: _fail('PENDING_REVIEW')
+                if not state['review_required'] or not state['completed']:
+                    _fail('RECOVERY_NOT_REQUIRED')
+                if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
+                last = state['completed'][-1]
+                if (last['outcome'] != 'OUTCOME_UNKNOWN' or
+                        proof['account_sha256'] != last['account_sha256'] or
+                        proof['payload_sha256'] != last['payload_sha256'] or
+                        proof['client_order_sha256'] != last['client_order_sha256'] or
+                        request_head == last['request_after_head_sha256']):
+                    _fail('RECOVERY_SCOPE_DISAGREEMENT')
+                if resolution_check() != proof: _fail('RESOLUTION_PROOF_DISAGREEMENT')
+                body = dict(kind='RECOVERY', policy=RECOVERY_POLICY,
+                    evaluated_at=now, expected_head=head,
+                    account_sha256=proof['account_sha256'], payload_sha256=payload,
+                    client_order_sha256=proof['client_order_sha256'],
+                    blocked_attempt_head_sha256=last['after_head_sha256'],
+                    blocked_outcome=last['outcome'],
+                    request_resolution_head_sha256=request_head,
+                    owner_sha256=ownership.identity(),
+                    confirm_original_id_resolved=True, confirm_no_resubmission=True)
+                recovered_head = self._append(db, state['events'] + 1, body, head)
+                recovered = self._load(db)
+                if resolution_check() != proof: _fail('RESOLUTION_PROOF_CHANGED')
+                if clock(admission()) < now: _fail('CLOCK_REGRESSION')
+                self._owned(ownership)
+            return dict(mode='PAPER_PROVIDER_POST_BUDGET_RESOLVED_UNKNOWN_RECOVERY',
+                status='REVIEW_REQUIRED', head_sha256=recovered_head,
+                request_resolution_head_sha256=request_head,
+                blocked_outcome=last['outcome'], review_block_cleared=True,
+                next_allowed_at=recovered['next_allowed_at'],
+                cooldown_shortened=False, uncertainty_preserved=True,
+                original_request_rearmed=False, history_rewritten=False,
+                attempt_capacity_reclaimed=False, admission_reserved=False,
+                automatic_retry=False, automatic_continuation=False,
+                broker_wide_quota_verified=False, distributed_ownership_verified=False,
+                broker_account_reconciled=False, ready_for_routing=False,
+                live_orders_enabled=False, money_movement_enabled=False,
+                release_approved=False)
 
 
 class _PostOwnership:

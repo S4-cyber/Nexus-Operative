@@ -424,6 +424,8 @@ def _pacing_trial():
         submission=submission_admission_fixture()
         from nexus.alpaca_paper_submission import fixture_report as submission_transport_fixture
         submission_transport=submission_transport_fixture()
+        from nexus.paper_provider_post_recovery import fixture_report as post_recovery_fixture
+        post_recovery=post_recovery_fixture()
         from nexus.paper_recovery_step import fixture_report as recovery_step_fixture
         bounded_step=recovery_step_fixture()
         from nexus.paper_recovery_drill import fixture_report as crash_fixture
@@ -431,7 +433,7 @@ def _pacing_trial():
         from nexus.sqlite_journal_guard import path_fixture_report
         from nexus.alpaca_paper_contract import timestamp_fixture_report
         from nexus.paper_read_pacing import completion_fixture_report
-        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -864,6 +866,16 @@ def _validate(profile, result):
             'broker_account_reconciled','spendable_funds_verified','ready_for_routing',
             'live_orders_enabled','money_movement_enabled','release_approved')),
             'SUBMISSION_TRANSPORT_AUTHORITY')
+        post_recovery=result['resolved_unknown_post_recovery']
+        _require(post_recovery['source']=='TEMPORARY_RESOLVED_UNKNOWN_POST_RECOVERY_FIXTURE' and
+            post_recovery['passed'] is True and all(post_recovery[k] is True for k in
+            ('unresolved_request_denied','exact_terminal_resolution_bound',
+             'original_request_not_rearmed','unknown_history_preserved','cooldown_preserved')),
+            'POST_RECOVERY_FENCES')
+        _require(all(post_recovery[k] is False for k in ('actual_provider_access',
+            'actual_vault_access','broker_account_reconciled','spendable_funds_verified',
+            'ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')),
+            'POST_RECOVERY_AUTHORITY')
         _require(result['completed_sessions'] == 3 and result['replayed_events'] == 6, 'PACING_HISTORY')
         _require(all(result[name] is True for name in ('cooldown_enforced', 'retry_after_retained',
             'authentication_block_retained', 'pending_read_not_auto_released',

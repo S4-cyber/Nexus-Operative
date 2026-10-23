@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.228.0 (pre-release).** This build makes a separate exact-head shared-local provider POST budget mandatory at the internal single-attempt Alpaca paper-only boundary. It serializes cooperating callers sharing one private path, retains cooldown and unknown/interrupted review blocks, and never retries or recovers automatically. It has no Portal route, saved write credential scope, automatic strategy route, ledger application, live endpoint or funding authority. Actual provider/account acceptance, broker-wide/distributed POST coordination, execution/fee/hold/funds reconciliation and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.229.0 (pre-release).** This build adds an explicit exact-head recovery tool for one ambiguous shared-local provider POST-budget tail after terminal original-ID resolution. It preserves cooldown, unknown history and the consumed attempt, never rearms the original request, and performs no provider IO. It has no Portal route, saved write credential scope, automatic strategy route, ledger application, live endpoint or funding authority. Actual provider/account acceptance, broker-wide/distributed POST coordination, execution/fee/hold/funds reconciliation and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.229.0 terminal original-ID POST-budget recovery
+
+`paper_provider_post_recovery` requires exact current heads for the private POST-budget and request journals, the exact account and original client order ID, and two explicit confirmations. The request journal must retain a terminal observation whose account and payload match the ambiguous POST attempt. The proof is sampled twice inside the provider-budget write transaction; stale or changing proof rolls back.
+
+The append clears only the local review latch. It does not shorten the full-day cooldown, rewrite unknown history, reclaim the attempt, rearm or resubmit the request, contact a provider, infer execution or reconcile an account. Interrupted tails without a request-after head remain blocked. All broker-wide quota, distributed ownership, account, routing, funds, live and release flags stay false. The pacing release profile requires the successful composition and mutation-tested unresolved/scope/authority failures.
+
+No UI or modifiable setting changed. This is local injected durability evidence, not actual provider/account acceptance, execution/fee/hold/funds reconciliation, routing permission, release approval or a future-profit prediction. Published v0.228.0 source `be3ebc0a64d725b262434aa2c466ff68687290ba` is the parent; its results do not transfer.
+
+Final local validation passed 3,620 tests with one expected non-Windows skip and one existing warning; the focused set passed 185. Sixteen profiles and saved-evidence verification matched 363 source files / `d33d01f64a6b694adaeda38b1aea9e270978451a2cc452dff29c0fd75ae15d3b`; report SHA256 is `98e6daea93832144955f079facbc272db846caa9ef32347a55dea895eb608269`. Fourteen controllers and all local static/version/roadmap checks passed; public snapshot/history and fresh exact-source CI remain mandatory.
 
 ## v0.228.0 shared-local provider POST budget
 

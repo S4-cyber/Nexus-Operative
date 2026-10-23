@@ -294,6 +294,21 @@ def test_pacing_profile_requires_single_attempt_submission_transport_fences():
             trials._validate('pacing',changed)
 
 
+def test_pacing_profile_requires_resolved_unknown_post_recovery_fences():
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    for field in ('unresolved_request_denied','exact_terminal_resolution_bound',
+                  'original_request_not_rearmed','unknown_history_preserved','cooldown_preserved'):
+        changed=copy.deepcopy(result);changed['resolved_unknown_post_recovery'][field]=False
+        with pytest.raises(ValueError,match='POST_RECOVERY_FENCES'):
+            trials._validate('pacing',changed)
+    for field in ('actual_provider_access','actual_vault_access','broker_account_reconciled',
+                  'spendable_funds_verified','ready_for_routing','live_orders_enabled',
+                  'money_movement_enabled','release_approved'):
+        changed=copy.deepcopy(result);changed['resolved_unknown_post_recovery'][field]=True
+        with pytest.raises(ValueError,match='POST_RECOVERY_AUTHORITY'):
+            trials._validate('pacing',changed)
+
+
 def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim_authority():
     from nexus.paper_activity_acceptance_evidence import fixture_report
     result=fixture_report();trials._validate('activity_acceptance',result)

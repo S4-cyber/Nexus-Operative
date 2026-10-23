@@ -65,14 +65,19 @@ def unique(rows,limit,key,normalize):
 def order_record(raw):
     if raw.get('symbol')!='BTC/USD' or raw.get('side') not in ('buy','sell') or raw.get('status') not in STATUSES:
         raise ValueError('BROKER_PROJECTION_ORDER_SCOPE')
+    requested=(number(raw['requested_quantity'])
+        if 'requested_quantity' in raw else None)
     qty=number(raw['filled_quantity'],zero=True)
     average=number(raw['average_fill_price']) if qty else None
     if not qty and raw.get('average_fill_price') is not None and number(raw['average_fill_price'],zero=True)!=0:raise ValueError('BROKER_AVERAGE_WITHOUT_FILL')
     if raw['status'] in ('accepted','pending_new','new','rejected') and qty:raise ValueError('BROKER_STATUS_QUANTITY_DISAGREEMENT')
     if raw['status'] in ('filled','partially_filled') and not qty:raise ValueError('BROKER_STATUS_QUANTITY_DISAGREEMENT')
-    return dict(broker_order_id=broker_id(raw['broker_order_id']),client_order_id=identifier(raw['client_order_id']),
-                side=raw['side'],status=raw['status'],filled_quantity=text(qty),average_fill_price=text(average) if average is not None else None,
+    result=dict(broker_order_id=broker_id(raw['broker_order_id']),client_order_id=identifier(raw['client_order_id']),
+                side=raw['side'],status=raw['status'],filled_quantity=text(qty),
+                average_fill_price=text(average) if average is not None else None,
                 updated_at=timestamp(raw['updated_at']).isoformat())
+    if requested is not None:result['requested_quantity']=text(requested)
+    return result
 
 
 def execution_record(raw):

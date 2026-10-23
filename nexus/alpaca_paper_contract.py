@@ -118,7 +118,8 @@ def normalize(response,payload):
         raise ValueError('BROKER_STATUS_QUANTITY_DISAGREEMENT')
     updated=response.get('updated_at');timestamp_order_ns(updated)
     return dict(broker_order_id=broker_id,client_order_id=payload['client_order_id'],symbol=payload['symbol'],
-                side=payload['side'],status=status,filled_quantity=text(qty),average_fill_price=text(average) if average is not None else None,
+                side=payload['side'],status=status,requested_quantity=text(requested),filled_quantity=text(qty),
+                average_fill_price=text(average) if average is not None else None,
                 updated_at=updated,terminal=status in TERMINAL,cancellation_confirmed=status=='canceled',
                 fee_reconciled=False,position_reconciled=False,ledger_applied=False)
 

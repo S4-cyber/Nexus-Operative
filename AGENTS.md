@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.213.0, a retained activity snapshot that reaches the exact requested quantity must claim `filled`. Read the newest version section and generated roadmap; fresh exact-source v0.213.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.214.0, canonical broker-order snapshots preserve the validated request quantity and the exact response bundle requires activity/account agreement. Read the newest version section and generated roadmap; fresh exact-source v0.214.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.214.0 canonical requested-quantity binding
+
+Preserve the submitted quantity in new canonical broker-order observations. For every shared order in the exact private account/activity response bundle, require the activity-side requested quantity to exist, parse exactly and equal the independently normalized quantity in the preceding account response. Run this before fill and status progression checks. Older or incomplete activity snapshots cannot satisfy this exact gate.
+
+The mandatory fixture changes only the activity-side requested quantity and reconciliation acceptance requires rejection. No raw identifiers, timestamps, quantities or prices enter public evidence. This is local supplied-evidence consistency, not provider/source/clock attestation, complete activity or fee coverage, broker acceptance, routing permission or release approval. No UI control or editable parameter changed; preserve the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop.
+
+Exact v0.213.0 source `955f629e843cb3da1134d72175d7fd933afce418` has no visible commit statuses or pull-request workflow runs through the available endpoint. Parent results do not transfer. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.214.0 validation passed 3,566 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the clean release/evidence/version/roadmap set passed 188 tests and the broader reconciliation/schema focus passed 293. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `56359fd4e0d9af99c27e54d5f40eb6e2ac477e770a89ab03aedfcb66b9d9b0d1`; `validation/release_trials_0_214_0.json` SHA256 is `47f40304c0b6dd010ae9fbbce3ff785d446208365d1f88910aea4d988718ab85`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Gitleaks, rendered-browser and native Windows execution remain unavailable; dedicated exact-source workflows are mandatory.
 
 ## v0.213.0 complete-quantity/status binding
 

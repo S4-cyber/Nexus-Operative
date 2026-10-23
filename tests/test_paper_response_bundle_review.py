@@ -193,6 +193,13 @@ def test_bundle_rejects_complete_quantity_without_filled_status(tmp_path):
         subject.review(**options)
 
 
+def test_bundle_rejects_changed_activity_requested_quantity(tmp_path):
+    options=subject._fixture(tmp_path,
+        activity_order_changes={'requested_quantity':'2'})
+    with pytest.raises(ValueError,match='REQUESTED_QUANTITY_CHANGED'):
+        subject.review(**options)
+
+
 def test_bundle_partitions_retained_historical_fill_at_earlier_update(tmp_path):
     options=subject._fixture(tmp_path,
         account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',

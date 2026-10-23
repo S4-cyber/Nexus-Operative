@@ -92,7 +92,7 @@ def _request_order_values(rows,account):
         snapshot=row['snapshot']
         if snapshot is None:_fail()
         orders.append({k:snapshot[k] for k in ('broker_order_id','client_order_id','symbol','side',
-            'status','filled_quantity','average_fill_price','updated_at')})
+            'status','requested_quantity','filled_quantity','average_fill_price','updated_at')})
     _,order_map,_,_,duplicates=adapter.canonical_inputs([],orders,expected_account_id=account)
     if not order_map or duplicates:_fail()
     return orders,len(order_map),duplicates

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.214.0 canonical requested-quantity binding
+
+New canonical broker-order snapshots now preserve the requested quantity that was already checked against the submitted IOC terms. The private exact response-bundle review requires the later retained activity snapshot to carry that field and match the independently normalized quantity from the preceding account response. Missing, malformed or changed values fail closed, and the reconciliation-acceptance profile requires the changed-quantity negative control.
+
+This exposes only a boolean rejection result and changes no UI control, permission, risk limit, account check, emergency stop, credential, network or execution path. It is not provider/source/clock attestation, complete broker activity, funds reconciliation, broker acceptance, trading authority or release approval. Exact v0.213.0 source `955f629e843cb3da1134d72175d7fd933afce418` has no visible status contexts or pull-request workflow runs through the available endpoint. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh exact-source validation and all external acceptance gates remain mandatory.
+
+Final local v0.214.0 validation passed 3,566 tests with one expected non-Windows skip and one existing warning. The clean release/evidence/version/roadmap set passed 188 tests; the broader reconciliation/schema focus passed 293. Sixteen bounded profiles and saved evidence matched 357 files / `56359fd4e0d9af99c27e54d5f40eb6e2ac477e770a89ab03aedfcb66b9d9b0d1`; report SHA256 is `47f40304c0b6dd010ae9fbbce3ff785d446208365d1f88910aea4d988718ab85`. Fourteen controllers, Portal syntax, compilation, dependency consistency, roadmap equality and whitespace checks passed. Exact-source hosted workflows remain mandatory.
+
 ## v0.213.0 complete-quantity/status binding
 
 The exact private response-bundle review now rejects a later order snapshot that reaches the exact requested quantity but does not claim `filled`. The check runs after retained-fill delta, weighted-average and requested-quantity validation to preserve more specific evidence diagnostics. A mandatory coherent half-to-full synthetic fill retaining `partially_filled` must fail closed.

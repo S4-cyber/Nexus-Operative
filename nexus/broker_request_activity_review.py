@@ -54,7 +54,8 @@ def review(journal,store,*,expected_request_head,expected_activity_head):
             oid=snapshot['broker_order_id'];bound[oid]=identity;order=orders.get(oid)
             if order is None:reasons.add('ACTIVITY_ORDER_SNAPSHOT_MISSING')
             elif any(order[key]!=(adapter._instant(snapshot[key]) if key=='updated_at' else snapshot[key])
-                for key in ('broker_order_id','client_order_id','side','status','filled_quantity','average_fill_price','updated_at')):
+                for key in ('broker_order_id','client_order_id','side','status','filled_quantity',
+                    'average_fill_price','updated_at')):
                 reasons.add('REQUEST_ACTIVITY_SNAPSHOT_DISAGREEMENT')
         fills=[] if snapshot is None else [r for r in retained['normalized_activities'] if r['kind']=='FILL' and r['broker_order_id']==snapshot['broker_order_id']]
         with localcontext() as context:
@@ -96,7 +97,8 @@ def fixture_report():
     plan=preview('nx_link_fixture','BTC-USD','BUY','2','100',asset,metadata_at=1000,evaluated_at=1001)
     oid='01234567-89ab-cdef-0123-456789abcdef';account='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
     raw=dict(**plan['payload'],id=oid,asset_class='crypto',status='filled',filled_qty='2',filled_avg_price='99',updated_at='2026-10-17T18:00:02+00:00')
-    order=dict(broker_order_id=oid,client_order_id='nx_link_fixture',symbol='BTC/USD',side='buy',status='filled',filled_quantity='2',average_fill_price='99',updated_at=raw['updated_at'])
+    order=dict(broker_order_id=oid,client_order_id='nx_link_fixture',symbol='BTC/USD',side='buy',status='filled',
+        requested_quantity='2',filled_quantity='2',average_fill_price='99',updated_at=raw['updated_at'])
     fills=[dict(id='20261017180000000::'+f'01234567-89ab-cdef-0123-{i:012d}',activity_type='FILL',order_id=oid,
         symbol='BTCUSD',side='buy',type='partial_fill' if i==1 else 'fill',qty='1',price=price,cum_qty=str(i),leaves_qty=str(2-i),transaction_time=f'2026-10-17T18:00:0{i}Z') for i,price in ((1,'98'),(2,'100'))]
     with tempfile.TemporaryDirectory(prefix='nexus-request-activity-') as directory:

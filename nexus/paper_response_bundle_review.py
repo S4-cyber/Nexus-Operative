@@ -104,11 +104,16 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
         before_qty=contract.number(before['filled_quantity'],zero=True)
         after_qty=contract.number(after['filled_quantity'],zero=True)
         requested_qty=contract.number(before['requested_quantity'])
+        try:activity_requested_qty=contract.number(after['requested_quantity'])
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('CROSS_RESPONSE_ORDER_REQUESTED_QUANTITY_INVALID')
         if after_at<before_at:_fail('CROSS_RESPONSE_ORDER_UPDATE_TIME_REGRESSION')
         if (after_at==before_at and (after['status'],after['filled_quantity'],
                 after['average_fill_price'])!=(before['status'],before['filled_quantity'],
                 before['average_fill_price'])):
             _fail('CROSS_RESPONSE_ORDER_UPDATE_TIME_CONFLICT')
+        if activity_requested_qty!=requested_qty:
+            _fail('CROSS_RESPONSE_ORDER_REQUESTED_QUANTITY_CHANGED')
         if after_qty<before_qty:_fail('CROSS_RESPONSE_ORDER_FILL_REGRESSION')
         if after_qty==before_qty and after['average_fill_price']!=before['average_fill_price']:
             _fail('CROSS_RESPONSE_ORDER_FILL_CORRECTION')
@@ -773,6 +778,14 @@ def fixture_report():
             fill_requested_quantity_disagreement_rejected=(
                 'CROSS_RESPONSE_ORDER_FILL_ACTIVITY_REQUESTED_QUANTITY_DISAGREEMENT'
                 in str(error))
+        activity_requested_quantity_changed=_fixture(
+            root/'activity-requested-quantity-changed',
+            activity_order_changes={'requested_quantity':'2'})
+        activity_requested_quantity_changed_rejected=False
+        try:review(**activity_requested_quantity_changed)
+        except ValueError as error:
+            activity_requested_quantity_changed_rejected=(
+                'CROSS_RESPONSE_ORDER_REQUESTED_QUANTITY_CHANGED' in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -950,6 +963,8 @@ def fixture_report():
                 cumulative_fill_remaining_conflict_rejected,
             fill_requested_quantity_disagreement_rejected=
                 fill_requested_quantity_disagreement_rejected,
+            activity_requested_quantity_changed_rejected=
+                activity_requested_quantity_changed_rejected,
             filled_status_quantity_disagreement_rejected=
                 filled_status_quantity_disagreement_rejected,
             completion_status_disagreement_rejected=

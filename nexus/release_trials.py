@@ -906,6 +906,7 @@ def _validate(profile, result):
                 'cumulative_fill_time_regression_rejected',
                 'cumulative_fill_remaining_conflict_rejected',
                 'fill_requested_quantity_disagreement_rejected',
+                'activity_requested_quantity_changed_rejected',
                 'filled_status_quantity_disagreement_rejected',
                 'completion_status_disagreement_rejected',
                 'reported_fee_references_consistent','reported_fee_reference_bound',

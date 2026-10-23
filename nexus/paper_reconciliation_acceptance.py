@@ -18,7 +18,7 @@ from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 from nexus.paper_activity_acceptance_probe import status as acceptance_status
 
 POLICY = 'nexus.paper-reconciliation-acceptance.v2'
-STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v4'
+STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v5'
 
 
 def _fail(code):
@@ -187,18 +187,19 @@ def _guard_fee_date_events(retained, windows):
     return sorted(set(events))
 
 
-def _guard_collection_fill_events(retained, scopes, windows):
-    """Return fills read by accepted collection during the outer envelope.
+def _guard_collection_events(retained, scopes, windows, kinds):
+    """Return selected activities read during the outer envelope.
 
-    Event time alone cannot prove stability: an older fill may first become
-    visible in a collection read while the four account observations are in
-    progress.  Treat touching collection intervals as overlapping and report
-    identifiers only to the private caller; public evidence retains counts.
+    Event/reporting time alone cannot prove stability: an older fill or fee may
+    first become visible in a collection read while the four account
+    observations are in progress.  Treat touching collection intervals as
+    overlapping and report identifiers only to the private caller; public
+    evidence retains counts.
     """
     envelope=(windows['pre_opening']['started_at'],
         windows['post_closing']['completed_at'])
-    fill_ids={row['activity_id'] for row in retained['normalized_activities']
-        if row['kind']=='FILL'}
+    event_ids={row['activity_id'] for row in retained['normalized_activities']
+        if row['kind'] in kinds}
     events=[]
     for scope in scopes:
         receipt=retained['receipts'].get(scope['retained_receipt_sha256'])
@@ -212,8 +213,16 @@ def _guard_collection_fill_events(retained, scopes, windows):
             _fail('GUARD_COLLECTION_TIME_INVALID')
         if started>completed: _fail('GUARD_COLLECTION_TIME_INVALID')
         if started<=envelope[1] and completed>=envelope[0]:
-            events.extend(fill_ids.intersection(receipt['activity_ids']))
+            events.extend(event_ids.intersection(receipt['activity_ids']))
     return sorted(set(events))
+
+
+def _guard_collection_fill_events(retained, scopes, windows):
+    return _guard_collection_events(retained,scopes,windows,('FILL',))
+
+
+def _guard_collection_fee_events(retained, scopes, windows):
+    return _guard_collection_events(retained,scopes,windows,('CFEE','FEE'))
 
 
 def review_with_stability_guards(*, expected_account_id, pacing_path, activity_store_path,
@@ -260,6 +269,8 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
     if fill_events: _fail('GUARD_RETAINED_FILL_PRESENT')
     collection_fill_events=_guard_collection_fill_events(retained,scopes,windows)
     if collection_fill_events: _fail('GUARD_COLLECTION_FILL_PRESENT')
+    collection_fee_events=_guard_collection_fee_events(retained,scopes,windows)
+    if collection_fee_events: _fail('GUARD_COLLECTION_FEE_PRESENT')
     fee_date_events=_guard_fee_date_events(retained,windows)
     if fee_date_events: _fail('GUARD_RETAINED_FEE_TIMING_AMBIGUOUS')
     after=acceptance_status(**status_options)
@@ -279,6 +290,7 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         guard_windows=windows,guard_manifests_distinct=True,guard_windows_ordered=True,
         adjacent_guard_balances_stable=True,guard_retained_fill_events=0,
         guard_collection_observed_fill_events=0,
+        guard_collection_observed_fee_events=0,
         guard_retained_fee_date_overlaps=0,
         accepted_declared_windows_cover_guard_envelope=True,journals_rechecked_unchanged=True,
         admission_reserved=False,source_attested=False,source_coverage_verified=False,
@@ -289,7 +301,7 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         ready_for_routing=False,broker_connected=False,live_orders_enabled=False,
         money_movement_enabled=False,automatic_retry=False,automatic_continuation=False,
         release_approved=False,
-        limitations='Four supplied manifests are distinct, ordered and locally balance-stable around the accepted inner comparison. Accepted declared creation windows cover the outer envelope, no retained fill appears in either guard band, no accepted receipt containing a retained fill was collected during the outer observation envelope, and no retained fee reported date overlaps any UTC calendar date in that envelope. Collection-time absence is local retained-history evidence only. Fee dates are not posting/execution instants, so an overlap fails closed and absence does not prove quiet or complete fee history. This is not provider/source attestation, received-activity coverage, a quiet or atomic balance instant, fee/hold reconciliation, spendable-funds proof, routing permission or release approval. Missing, late, corrected, fee-only or activity outside retained history remains possible.')
+        limitations='Four supplied manifests are distinct, ordered and locally balance-stable around the accepted inner comparison. Accepted declared creation windows cover the outer envelope, no retained fill appears in either guard band, no accepted receipt containing a retained fill or fee was collected during the outer observation envelope, and no retained fee reported date overlaps any UTC calendar date in that envelope. Collection-time absence is local retained-history evidence only. Fee dates are not posting/execution instants, so an overlap fails closed and absence does not prove quiet or complete fee history. This is not provider/source attestation, received-activity coverage, a quiet or atomic balance instant, fee/hold reconciliation, spendable-funds proof, routing permission or release approval. Missing, late, corrected, fee-only or activity outside retained history remains possible.')
 
 
 def fixture_report():
@@ -394,6 +406,7 @@ def fixture_report():
             guarded['adjacent_guard_balances_stable'] is True and
             guarded['guard_retained_fill_events']==0 and
             guarded['guard_collection_observed_fill_events']==0 and
+            guarded['guard_collection_observed_fee_events']==0 and
             guarded['guard_retained_fee_date_overlaps']==0 and
             guarded['accepted_declared_windows_cover_guard_envelope'] is True and
             guarded['journals_rechecked_unchanged'] is True and
@@ -411,11 +424,20 @@ def fixture_report():
                      'read_completed_at':epoch+99}}}},
             [{'retained_receipt_sha256':'receipt'}],_guard_windows(
                 pre_opening,opening,closing,post_closing))==['synthetic-private-id']
+        late_collection_fee_detected=_guard_collection_fee_events(
+            {'normalized_activities':[{'kind':'FEE','activity_id':'synthetic-private-fee',
+                'reported_date':'2026-10-01'}],
+             'receipts':{'receipt':{'activity_ids':['synthetic-private-fee'],
+                 'collection_observation':{'read_started_at':epoch+99,
+                     'read_completed_at':epoch+99}}}},
+            [{'retained_receipt_sha256':'receipt'}],_guard_windows(
+                pre_opening,opening,closing,post_closing))==['synthetic-private-fee']
         passed=(result == repeated and guarded == guarded_repeated and before == after and
             unbound_rejected and continuation_rejected and outside_rejected and covered and
             changed_guard_rejected and unordered_guard_rejected and outer_guard_coverage_rejected and
             exact_bound and replayed and complete and cursor_complete and arithmetic and guard_bound and
-            fee_date_overlap_detected and late_collection_fill_detected)
+            fee_date_overlap_detected and late_collection_fill_detected and
+            late_collection_fee_detected)
         return dict(passed=passed, repeat_review_matches=result == repeated,
             stability_guard_repeat_matches=guarded == guarded_repeated,
             journals_unchanged=before == after, unbound_history_rejected=unbound_rejected,
@@ -430,6 +452,9 @@ def fixture_report():
             guard_collection_observed_fill_events_absent=
                 guarded['guard_collection_observed_fill_events']==0,
             late_collected_historical_fill_rejected=late_collection_fill_detected,
+            guard_collection_observed_fee_events_absent=
+                guarded['guard_collection_observed_fee_events']==0,
+            late_collected_historical_fee_rejected=late_collection_fee_detected,
             guard_retained_fee_date_overlaps_absent=guarded['guard_retained_fee_date_overlaps']==0,
             guard_fee_date_overlap_detected=fee_date_overlap_detected,
             guard_balance_instants_verified=False,guard_observation_windows_verified_quiet=False,

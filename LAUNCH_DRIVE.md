@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.224.0 late historical-fee collection guard
+
+The private four-observation stability review now rejects any accepted retained receipt containing a `FEE` or `CFEE` when that receipt's collection read interval overlaps or exactly touches the outer pre-opening through post-closing observation envelope. This catches a historical fee first observed during the stability sequence while its old reported date remains outside the existing calendar-date guard.
+
+Release evidence requires the fee zero-count marker and a synthetic late historical-fee negative control; public output retains no identifiers or market evidence. This is local retained-history timing consistency only, not proof of provider identity, received-activity or fee completeness, clock trust, fee posting time, a quiet or atomic balance instant, fee/hold/funds reconciliation, broker acceptance or execution authority. No UI control, permission, risk limit, account check, emergency stop, credential, network or execution path changed. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Exact v0.223.0 source `2dabfae7e7364a56ba888aa0a3faf56c484a2383` passed public-security/history run 39957242833; its safety and Windows runs were still active when this sprint started. Fresh v0.224.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.224.0 validation passed 3,586 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused reconciliation/release/evidence/version/roadmap/packaging set passed 192 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `f332f5dec5e548a8d7169767717f6829aa65d5187ca0311878e7e1a794d4462b`; `validation/release_trials_0_224_0.json` SHA256 is `1c90b71c56f5e87f88d4df31c6a28069d63f835c1ca6072428f4ab0f1c46ecc2`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality, whitespace, the 553-path proposed public snapshot audit and reachable 612-commit / 4,104-blob history audit passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
+
 ## v0.223.0 late historical-fill collection guard
 
 The private four-observation stability review now rejects any accepted retained receipt containing a fill when that receipt's collection read interval overlaps or exactly touches the outer pre-opening through post-closing observation envelope. This catches a historical fill that arrives during the stability sequence while its old event timestamp remains outside the existing event-time guard bands.

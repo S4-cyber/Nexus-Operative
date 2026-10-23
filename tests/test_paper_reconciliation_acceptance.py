@@ -76,6 +76,7 @@ def test_four_observation_stability_guard_is_exact_bound_read_only_and_non_autho
     assert result['adjacent_guard_balances_stable']
     assert result['guard_retained_fill_events']==0
     assert result['guard_collection_observed_fill_events']==0
+    assert result['guard_collection_observed_fee_events']==0
     assert result['guard_retained_fee_date_overlaps']==0
     assert result['accepted_declared_windows_cover_guard_envelope']
     assert result['journals_rechecked_unchanged']
@@ -158,11 +159,39 @@ def test_collection_fill_scan_rejects_old_fills_read_during_or_touching_outer_en
         [{'retained_receipt_sha256':'touching'}],windows)==['old-private-fill']
 
 
+def test_collection_fee_scan_rejects_old_fees_read_during_outer_envelope():
+    windows={
+        'pre_opening':{'started_at':'2026-10-17T00:00:00+00:00'},
+        'post_closing':{'completed_at':'2026-10-17T00:00:07+00:00'}}
+    retained={'normalized_activities':[
+        {'kind':'FEE','activity_id':'old-private-fee','reported_date':'2026-10-01'},
+        {'kind':'CFEE','activity_id':'old-private-crypto-fee','reported_date':'2026-10-01'}],
+        'receipts':{
+            'outside':{'activity_ids':['old-private-fee'],
+                'collection_observation':{'read_started_at':1792195198,'read_completed_at':1792195199}},
+            'inside':{'activity_ids':['old-private-fee','old-private-crypto-fee'],
+                'collection_observation':{'read_started_at':1792195201,'read_completed_at':1792195202}}}}
+    assert subject._guard_collection_fee_events(retained,
+        [{'retained_receipt_sha256':'outside'}],windows)==[]
+    assert subject._guard_collection_fee_events(retained,
+        [{'retained_receipt_sha256':'inside'}],windows)==[
+            'old-private-crypto-fee','old-private-fee']
+
+
 def test_stability_guard_rejects_fill_collected_during_outer_envelope_without_writes(tmp_path,monkeypatch):
     options=guarded(tmp_path);before=snapshot(tmp_path)
     monkeypatch.setattr(subject,'_guard_collection_fill_events',
         lambda retained,scopes,windows:['private-fill-id'])
     with pytest.raises(ValueError,match='GUARD_COLLECTION_FILL_PRESENT'):
+        subject.review_with_stability_guards(**options)
+    assert snapshot(tmp_path)==before
+
+
+def test_stability_guard_rejects_fee_collected_during_outer_envelope_without_writes(tmp_path,monkeypatch):
+    options=guarded(tmp_path);before=snapshot(tmp_path)
+    monkeypatch.setattr(subject,'_guard_collection_fee_events',
+        lambda retained,scopes,windows:['private-fee-id'])
+    with pytest.raises(ValueError,match='GUARD_COLLECTION_FEE_PRESENT'):
         subject.review_with_stability_guards(**options)
     assert snapshot(tmp_path)==before
 
@@ -349,6 +378,8 @@ def test_release_fixture_is_repeatable_vault_and_provider_silent():
     assert result['guard_retained_fill_events_absent']
     assert result['guard_collection_observed_fill_events_absent']
     assert result['late_collected_historical_fill_rejected']
+    assert result['guard_collection_observed_fee_events_absent']
+    assert result['late_collected_historical_fee_rejected']
     assert result['guard_balance_instants_verified'] is False
     assert result['guard_observation_windows_verified_quiet'] is False
     assert result['actual_provider_access'] is result['actual_vault_access'] is False

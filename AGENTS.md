@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.217.0, every retained exact fill type must agree with its reported remaining quantity: partial_fill requires a positive remainder and fill requires zero. Read the newest version section and generated roadmap; fresh exact-source v0.217.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.218.0, retained activity-only orders now fail closed on completion, requested/remainder, fill-type, chronology and individual limit-price semantics instead of bypassing shared-order checks. Read the newest version section and generated roadmap; fresh exact-source v0.218.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.218.0 activity-only order/fill semantic binding
+
+Validate each retained activity order that is absent from the preceding account open-order response without requiring false overlap. Bind `filled` status to exact requested quantity, exact completion to `filled`, cumulative quantity to the retained order quantity, cumulative-plus-remainder to requested quantity, fill/partial-fill type to remainder, cumulative/time monotonicity and every buy/sell execution to its retained limit. Keep established shared-order diagnostics first for overlapping orders.
+
+Mandatory direct controls cover activity-only filled/quantity, fill-type/remainder and individual limit-price contradictions. The release fixture reproduces the original combined fail-open case and requires rejection. Public evidence exposes only aggregate counts, booleans and a digest; raw identifiers, times, quantities and prices stay private. This does not attest provider semantics, clocks, source or coverage, reconcile fees/holds/funds, or authorize broker routing. No UI or modifiable parameter changed; preserve the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop.
+
+Exact v0.217.0 source `8eb35769b713f6e734b525dde80e6e2d1f1607a1` passed public-security/history run 39911452029, safety/regression/evidence/browser run 39911451975 and Windows regression/EXE/installer run 39911451954. Both exact-source regression lanes passed 3,553 tests with 19 platform skips and one existing warning. Those parent results do not transfer. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.218.0 validation passed 3,574 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap/packaging set passed 217 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `84cc204f82f0ab89ff828612a83414a0e90b68201d063027c5087b57cd85b7ad`; `validation/release_trials_0_218_0.json` SHA256 is `2fbddf7ead2b6e687f4fbe04f229fe0833b04a56f761c3ba14094a6549ade9ed`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Gitleaks, rendered-browser and native Windows execution remain unavailable; run public snapshot/history audits before publication and require fresh exact-source workflows.
 
 ## v0.217.0 retained fill-type/remainder binding
 

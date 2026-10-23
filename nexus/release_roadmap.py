@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.217.0'
+REVISION = '0.218.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -161,7 +161,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.217.0 binds each retained exact fill event type to its reported remainder: partial_fill requires a positive remaining quantity and fill requires zero remainder. Both contradictions fail closed after established chronology, cumulative, delta, requested-quantity and status checks so their diagnostics keep precedence. Existing request-term, limit-price, weighted-average, capture-completion and earliest-page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.218.0 closes the activity-only order gap in the exact response bundle. A retained activity order absent from the preceding open-order snapshot must still bind completion status to requested and filled quantity, each fill type to its remainder, each cumulative-plus-remainder value to requested quantity, monotonic cumulative/time ordering and each execution price to the retained limit. Existing shared-order delta, weighted-average, capture-completion and earliest-page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

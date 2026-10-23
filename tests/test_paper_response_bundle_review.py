@@ -57,6 +57,10 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['overlapping_order_fill_deltas_bound']
     assert result['retained_fill_limit_prices_checked']
     assert result['retained_fill_type_remainders_checked']
+    assert result['retained_activity_order_fill_semantics_bound']
+    assert result['activity_only_orders_fill_semantics_bound']==0
+    assert result['activity_only_fills_semantics_bound']==0
+    assert len(result['retained_activity_order_fill_semantics_sha256'])==64
     assert result['overlapping_order_fill_deltas']==1
     assert result['overlapping_order_fill_delta_activities']==1
     assert len(result['overlapping_order_fill_delta_sha256'])==64
@@ -253,6 +257,26 @@ def test_bundle_rejects_fill_type_remainder_disagreement(tmp_path,fill_changes):
     options=subject._fixture(tmp_path,account_order_changes=order_changes,
         activity_order_changes=activity_changes,activity_fill_changes=fill_changes)
     with pytest.raises(ValueError,match='FILL_TYPE_REMAINDER_DISAGREEMENT'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('activity_changes,fill_changes,code',[
+    ({'status':'filled','filled_quantity':'0.5','average_fill_price':'100'},
+        {'type':'partial_fill','qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5'},
+        'RETAINED_ACTIVITY_ORDER_FILLED_QUANTITY_DISAGREEMENT'),
+    ({'status':'partially_filled','filled_quantity':'0.5','average_fill_price':'100'},
+        {'type':'fill','qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5'},
+        'RETAINED_ACTIVITY_ORDER_FILL_TYPE_REMAINDER_DISAGREEMENT'),
+    ({'status':'filled','filled_quantity':'1','average_fill_price':'102'},
+        {'type':'fill','qty':'1','cum_qty':'1','leaves_qty':'0','price':'102'},
+        'RETAINED_ACTIVITY_ORDER_FILL_LIMIT_PRICE_DISAGREEMENT'),
+])
+def test_bundle_rejects_activity_only_order_fill_semantic_disagreement(
+        tmp_path,activity_changes,fill_changes,code):
+    options=subject._fixture(tmp_path,account_order_client_id='other_client',
+        account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+        activity_order_changes=activity_changes,activity_fill_changes=fill_changes)
+    with pytest.raises(ValueError,match=code):
         subject.review(**options)
 
 

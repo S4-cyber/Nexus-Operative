@@ -39,6 +39,78 @@ def _digest(value):
     return value
 
 
+def _retained_activity_order_fill_semantics(
+        activity_orders,activity_records,*,excluded_brokers=()):
+    """Fail closed on retained order/fill semantics even without open-order overlap."""
+    orders={};fills_by_broker={}
+    try:
+        for order in activity_orders:
+            broker_id=order['broker_order_id']
+            if broker_id in orders and orders[broker_id]!=order:
+                _fail('RETAINED_ACTIVITY_ORDER_CONFLICT')
+            orders[broker_id]=order
+        for record in activity_records:
+            if record['kind']=='FILL':
+                fills_by_broker.setdefault(record['broker_order_id'],[]).append(record)
+    except (TypeError,KeyError):
+        _fail('RETAINED_ACTIVITY_ORDER_FILL_INVALID')
+    excluded_brokers=set(excluded_brokers)
+    summaries=[];fill_count=0
+    for broker_id in sorted(orders):
+        if broker_id in excluded_brokers:continue
+        order=orders[broker_id]
+        try:
+            requested=contract.number(order['requested_quantity'])
+            filled=contract.number(order['filled_quantity'],zero=True)
+            limit=contract.number(order['limit_price'])
+            parsed=sorted(((contract.number(fill['cumulative_quantity']),
+                    contract.timestamp_order_ns(fill['occurred_at']),fill)
+                for fill in fills_by_broker.get(broker_id,())),
+                key=lambda item:(item[0],item[1],item[2]['activity_id']))
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('RETAINED_ACTIVITY_ORDER_FILL_INVALID')
+        if filled>requested:
+            _fail('RETAINED_ACTIVITY_ORDER_OVERFILLED')
+        if order['status']=='filled' and filled!=requested:
+            _fail('RETAINED_ACTIVITY_ORDER_FILLED_QUANTITY_DISAGREEMENT')
+        if filled==requested and order['status']!='filled':
+            _fail('RETAINED_ACTIVITY_ORDER_COMPLETION_STATUS_DISAGREEMENT')
+        requested_quantities=set()
+        for previous,current in zip(parsed,parsed[1:]):
+            if current[0]==previous[0]:
+                _fail('RETAINED_ACTIVITY_ORDER_FILL_CUMULATIVE_CONFLICT')
+            if current[1]<previous[1]:
+                _fail('RETAINED_ACTIVITY_ORDER_FILL_TIME_REGRESSION')
+        retained=[]
+        for cumulative,_,fill in parsed:
+            try:
+                leaves=contract.number(fill['leaves_quantity'],zero=True)
+                price=contract.number(fill['price'])
+            except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+                _fail('RETAINED_ACTIVITY_ORDER_FILL_INVALID')
+            if cumulative>filled:
+                _fail('RETAINED_ACTIVITY_ORDER_FILL_AHEAD')
+            requested_quantities.add(cumulative+leaves)
+            if ((order['side']=='buy' and price>limit) or
+                    (order['side']=='sell' and price<limit)):
+                _fail('RETAINED_ACTIVITY_ORDER_FILL_LIMIT_PRICE_DISAGREEMENT')
+            if ((fill['fill_type']=='partial_fill' and leaves==0) or
+                    (fill['fill_type']=='fill' and leaves!=0)):
+                _fail('RETAINED_ACTIVITY_ORDER_FILL_TYPE_REMAINDER_DISAGREEMENT')
+            retained.append(dict(activity_id=fill['activity_id'],
+                cumulative_quantity=fill['cumulative_quantity'],
+                leaves_quantity=fill['leaves_quantity'],fill_type=fill['fill_type']))
+        if len(requested_quantities)>1:
+            _fail('RETAINED_ACTIVITY_ORDER_FILL_REMAINING_CONFLICT')
+        if requested_quantities and requested_quantities!={requested}:
+            _fail('RETAINED_ACTIVITY_ORDER_FILL_REQUESTED_QUANTITY_DISAGREEMENT')
+        fill_count+=len(parsed)
+        summaries.append(dict(broker_order_id=broker_id,status=order['status'],
+            requested_quantity=order['requested_quantity'],
+            filled_quantity=order['filled_quantity'],fills=retained))
+    return dict(orders=len(summaries),fills=fill_count,summary_sha256=sha(summaries))
+
+
 def _order_identity_maps(open_orders,activity_orders,activity_records,account_id):
     """Compare identity, progress and fill deltas without exposing private IDs."""
     from nexus.paper_open_order_terms import _row
@@ -477,6 +549,9 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         order_fill_deltas,order_fill_delta_activities,order_fill_partitions,
         order_historical_fill_activities)=_order_identity_maps(
         account_raw_values[2][1],retained_activity['orders'],retained_records,gate.account)
+    shared_brokers={identity[0] for identity in set(open_identities)&set(activity_identities)}
+    retained_order_fill_semantics=_retained_activity_order_fill_semantics(
+        retained_activity['orders'],retained_records,excluded_brokers=shared_brokers)
     (reported_fee_links,reported_fee_timestamped_links,
         reported_fee_date_only_links,retained_fee_scope)=_reported_fee_reference_links(
         retained_records,retained_activity['orders'],
@@ -519,6 +594,11 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
             retained_fee_scope['unreferenced_timestamped'],
         unreferenced_fee_date_only_records=retained_fee_scope['unreferenced_date_only'],
         retained_activity_order_snapshots=retained_order_fill_scope['orders'],
+        retained_activity_order_fill_semantics_sha256=
+            retained_order_fill_semantics['summary_sha256'],
+        activity_only_orders_fill_semantics_bound=
+            retained_order_fill_semantics['orders'],
+        activity_only_fills_semantics_bound=retained_order_fill_semantics['fills'],
         reported_account_order_snapshots=reported_account_orders,
         retained_fill_records=retained_order_fill_scope['fills'],
         page_receipt_bounded_fill_records=retained_page_capture_scope['fills'],
@@ -546,6 +626,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         overlapping_order_fill_deltas_bound=True,
         retained_fill_limit_prices_checked=True,
         retained_fill_type_remainders_checked=True,
+        retained_activity_order_fill_semantics_bound=True,
         overlapping_order_fill_activities_partitioned=True,
         reported_fee_references_consistent=True,
         reported_fee_exact_timestamp_chronology_checked=True,
@@ -566,7 +647,9 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'ACTIVITY_COLLECTION pair at shared journal heads, requires their normalized account fields to match, '
         'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
         'identity agreement and non-regressing update time, cumulative fill, unchanged-quantity average price and '
-        'status progression for orders visible in both responses, binds every increased cumulative fill to an '
+        'status progression for orders visible in both responses, binds retained activity-order completion, '
+        'requested/remainder quantities, fill type and individual limit-price semantics even when an order is '
+        'not present in the preceding open-order snapshot, binds every increased cumulative fill to an '
         'exact contiguous retained fill-activity delta with bounded event time, an individual execution price '
         'that respects the immutable order limit, fill/partial-fill type consistent with the retained remainder, '
         'and weighted average price, '
@@ -865,6 +948,20 @@ def fixture_report():
             terminal_fill_with_remainder_rejected=(
                 'CROSS_RESPONSE_ORDER_FILL_TYPE_REMAINDER_DISAGREEMENT'
                 in str(error))
+        activity_only_semantic_disagreement=_fixture(
+            root/'activity-only-semantic-disagreement',
+            account_order_client_id='other_client',
+            account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+            activity_order_changes={'status':'filled','filled_quantity':'0.5',
+                'average_fill_price':'100'},
+            activity_fill_changes={'type':'fill','qty':'0.5','cum_qty':'0.5',
+                'leaves_qty':'0.5','price':'100'})
+        activity_only_order_fill_semantic_disagreement_rejected=False
+        try:review(**activity_only_semantic_disagreement)
+        except ValueError as error:
+            activity_only_order_fill_semantic_disagreement_rejected=(
+                'RETAINED_ACTIVITY_ORDER_FILLED_QUANTITY_DISAGREEMENT'
+                in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -1029,6 +1126,8 @@ def fixture_report():
                 result['retained_fill_limit_prices_checked'],
             retained_fill_type_remainders_checked=
                 result['retained_fill_type_remainders_checked'],
+            retained_activity_order_fill_semantics_bound=
+                result['retained_activity_order_fill_semantics_bound'],
             shared_order_fill_delta_bound=result['overlapping_order_fill_deltas']==1 and
                 result['overlapping_order_fill_delta_activities']==1 and
                 len(result['overlapping_order_fill_delta_sha256'])==64,
@@ -1056,6 +1155,8 @@ def fixture_report():
                 partial_fill_without_remainder_rejected,
             terminal_fill_with_remainder_rejected=
                 terminal_fill_with_remainder_rejected,
+            activity_only_order_fill_semantic_disagreement_rejected=
+                activity_only_order_fill_semantic_disagreement_rejected,
             filled_status_quantity_disagreement_rejected=
                 filled_status_quantity_disagreement_rejected,
             completion_status_disagreement_rejected=

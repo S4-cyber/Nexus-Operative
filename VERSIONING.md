@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.217.0 (pre-release).** This minor build requires each retained exact fill event type to agree with its reported remainder: partial_fill requires a positive remainder and fill requires zero. It preserves request-term, limit-price, status, cumulative, event-time, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.218.0 (pre-release).** This minor build requires retained activity-only orders to satisfy completion, requested/remainder, fill-type, chronology and individual limit-price semantics instead of bypassing checks limited to shared open orders. It preserves shared-order delta, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.218.0 activity-only order/fill semantic binding
+
+For retained activity orders absent from the preceding open-order snapshot, bind filled/completion status, requested and cumulative/remainder quantities, fill type, cumulative/time ordering and every individual execution price to the retained activity-order terms. Do not require artificial overlap: a newly terminal order may legitimately be activity-only, but its internal evidence must be self-consistent. Existing shared-order checks retain diagnostic precedence.
+
+Only aggregate booleans, counts and a digest are exposed. This does not attest provider semantics, clocks or source, prove received execution coverage, reconcile fees, holds or spendable funds, or authorize broker routing. No UI, credential, network, permission, risk, emergency-stop, funding or execution path changed. Exact v0.217.0 source `8eb35769b713f6e734b525dde80e6e2d1f1607a1` passed all exact-source security, safety/browser/evidence and Windows workflows. Fresh exact-source v0.218.0 workflows remain mandatory.
+
+Final local v0.218.0 validation passed 3,574 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 217 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `84cc204f82f0ab89ff828612a83414a0e90b68201d063027c5087b57cd85b7ad`; report SHA256 is `2fbddf7ead2b6e687f4fbe04f229fe0833b04a56f761c3ba14094a6549ade9ed`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Fresh exact-source workflows remain mandatory.
 
 ## v0.217.0 retained fill-type/remainder binding
 

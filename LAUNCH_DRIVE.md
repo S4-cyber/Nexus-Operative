@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.218.0 activity-only order/fill semantic binding
+
+The exact private response-bundle review now validates retained activity orders even when they are absent from the preceding open-order response. It fails closed on inconsistent filled/completion status, requested/cumulative/remainder quantity, fill type, cumulative/time ordering and individual buy/sell limit price while leaving legitimate newly terminal order absence intact. Shared-order progression and delta checks keep precedence and remain unchanged.
+
+Public release evidence adds only aggregate true markers, counts and a digest; raw retained evidence stays outside Git. This changes no UI control, permission, risk limit, account check, emergency stop, credential, network or execution path. It is not provider/source/clock attestation, complete broker activity, funds reconciliation, broker acceptance, trading authority or release approval. Exact v0.217.0 source `8eb35769b713f6e734b525dde80e6e2d1f1607a1` completed all exact-source security, safety/browser/evidence and Windows workflows successfully. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh exact-source v0.218.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.218.0 validation passed 3,574 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 217 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `84cc204f82f0ab89ff828612a83414a0e90b68201d063027c5087b57cd85b7ad`; `validation/release_trials_0_218_0.json` SHA256 is `2fbddf7ead2b6e687f4fbe04f229fe0833b04a56f761c3ba14094a6549ade9ed`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Gitleaks, rendered-browser and native Windows execution remain unavailable; public snapshot/history audits and fresh exact-source workflows are required before claiming those gates.
+
 ## v0.217.0 retained fill-type/remainder binding
 
 The exact private account/activity response bundle now rejects a retained `partial_fill` whose reported remaining quantity is zero and a retained terminal `fill` whose reported remainder is positive. The new rule is evaluated after established chronology, cumulative, delta, requested-quantity and completion-status checks so their diagnostics keep precedence. Mandatory reciprocal negative controls prove both contradictions fail closed.

@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.221.0 unobserved fill-average limit binding
+
+The exact private response-bundle review now decomposes an activity-only order's reported aggregate notional into retained and unobserved portions. When retained activity omits a prefix or suffix, the residual quantity and notional must remain positive and respect the retained buy/sell limit. This rejects evidence that looks compliant in the aggregate and in every visible fill but can only be reconciled through an out-of-limit missing execution.
+
+Direct negative controls cover both sides and the release fixture requires rejection of the buy contradiction. Missing events remain unknown; the check does not invent a fill, source, timestamp or coverage. Public output exposes only aggregate true/rejection markers and the existing private-field digest. No UI control, permission, risk limit, account check, emergency stop, credential, network or execution path changed.
+
+Exact v0.220.0 source `7395557dd2f6eb5cd5ffe981c8c2e0e65185f77a` completed public-security/history run 39932179291, safety/regression/evidence/browser run 39932179435 and Windows regression/EXE/installer run 39932179496 successfully. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh v0.221.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.221.0 validation passed 3,580 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 186 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `587b42cd656cb950cc3c0745ab689294ba45f8675b3438f3874be5a41ba2820a`; `validation/release_trials_0_221_0.json` SHA256 is `c6dbeffd16ddbdd1a8107666e385ad5702b00410b6d906559ec1196d07800602`. Fourteen Node controllers, Portal inline syntax, compilation and dependency consistency passed. Roadmap equality, whitespace, public snapshot/history review and fresh exact-source workflows remain mandatory.
+
 ## v0.220.0 activity-only average-price binding
 
 The exact private response-bundle review now requires every filled activity-only order average to respect its retained limit even if earlier fills are outside the retained window. If the retained fill chain starts at zero and reaches the order cumulative filled quantity, its exact quantity-weighted price must equal the reported order average. An unknown prefix stays explicitly unknown; it is not reconstructed or promoted to complete coverage.

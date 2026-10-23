@@ -58,6 +58,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['retained_fill_limit_prices_checked']
     assert result['activity_only_order_average_limit_prices_checked']
     assert result['complete_activity_only_fill_averages_checked']
+    assert result['unobserved_activity_fill_average_limits_checked']
     assert result['retained_fill_type_remainders_checked']
     assert result['retained_activity_fill_deltas_checked']
     assert result['retained_activity_order_fill_semantics_bound']
@@ -337,6 +338,24 @@ def test_bundle_rejects_complete_activity_only_fill_average_disagreement(tmp_pat
             'leaves_qty':'0','price':'100'})
     with pytest.raises(ValueError,
             match='RETAINED_ACTIVITY_ORDER_FILL_AVERAGE_DISAGREEMENT'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('side,average,retained_price',[
+    ('buy','90','78'),
+    ('sell','112','124'),
+])
+def test_bundle_rejects_activity_only_unobserved_average_outside_limit(
+        tmp_path,side,average,retained_price):
+    options=subject._fixture(tmp_path,account_order_client_id='other_client',
+        account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9',
+            'side':side},
+        activity_order_changes={'side':side,'status':'filled','filled_quantity':'1',
+            'average_fill_price':average},
+        activity_fill_changes={'side':side,'type':'fill','qty':'0.5','cum_qty':'1',
+            'leaves_qty':'0','price':retained_price})
+    with pytest.raises(ValueError,
+            match='RETAINED_ACTIVITY_ORDER_UNOBSERVED_FILL_AVERAGE_LIMIT_PRICE_DISAGREEMENT'):
         subject.review(**options)
 
 

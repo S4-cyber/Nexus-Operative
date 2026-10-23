@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.220.0 (pre-release).** This minor build binds activity-only order averages to retained limits and to exact complete retained fill chains while preserving unknown history before the first retained fill. It preserves shared-order delta and activity-only completion/requested/remainder, adjacent-fill, fill-type, chronology, individual limit-price, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.221.0 (pre-release).** This minor build binds the aggregate unobserved portion of activity-only fill history to the exact reported order average, retained fills and retained limit without inventing missing events. It preserves shared-order delta and activity-only completion/requested/remainder, adjacent-fill, fill-type, chronology, individual and aggregate limit-price, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.221.0 unobserved fill-average limit binding
+
+`paper_response_bundle_review` now subtracts all retained activity-only fill quantities and notionals from the exact reported filled quantity and aggregate order notional. A nonzero residual represents only an aggregate unobserved portion; its implied notional must be positive and comply with the retained buy/sell limit. This detects histories whose visible fills and overall average are each apparently compliant but mathematically require an out-of-limit missing execution.
+
+Mandatory direct tests cover buy and sell contradictions, with the buy shape required by reconciliation release evidence. Unknown events remain unobserved: no identifier, price, timestamp, order or coverage is invented. Only aggregate booleans, counts and the existing private-field digest are public.
+
+No UI, credential, network, permission, risk, emergency-stop, funding or execution path changed. Exact v0.220.0 source `7395557dd2f6eb5cd5ffe981c8c2e0e65185f77a` passed public-security/history run 39932179291, safety/regression/evidence/browser run 39932179435 and Windows regression/EXE/installer run 39932179496. Fresh exact-source v0.221.0 workflows and every external acceptance gate remain mandatory.
+
+Final local v0.221.0 validation passed 3,580 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 186 tests. Sixteen bounded profiles and saved evidence matched 357 files / `587b42cd656cb950cc3c0745ab689294ba45f8675b3438f3874be5a41ba2820a`; report SHA256 is `c6dbeffd16ddbdd1a8107666e385ad5702b00410b6d906559ec1196d07800602`. Fourteen Node controllers, Portal syntax, compilation and dependency consistency passed. Roadmap equality, whitespace, public artifact/history review and exact-source workflows remain mandatory.
 
 ## v0.220.0 activity-only average-price binding
 

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.220.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.221.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.220.0 closes two activity-only average-price gaps in the exact response bundle. Every filled activity-only order average must respect its retained limit even when earlier fills are outside the retained window. When retained fills form a complete zero-origin chain through the order cumulative quantity, their exact quantity-weighted price must equal the reported order average. Unknown prefixes remain allowed and are never invented. Existing shared-order delta, activity-only completion/requested/remainder, adjacent-fill, fill-type, chronology, individual limit-price, capture-completion and earliest-page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.221.0 binds the unobserved portion of activity-only fill history without pretending to observe it. The exact order average and filled quantity minus every retained fill notional and quantity now imply one aggregate unobserved notional. That residual must remain positive and respect the retained buy/sell limit. Complete retained chains still reproduce the reported average exactly, while unknown prefixes and suffixes remain explicitly unobserved. Existing shared-order delta, activity-only completion/requested/remainder, adjacent-fill, fill-type, chronology, individual and order-average limit-price, capture-completion and earliest-page-receipt bounds remain. This is local supplied-evidence arithmetic, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

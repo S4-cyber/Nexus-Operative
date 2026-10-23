@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.220.0, activity-only order averages must respect their retained limits and complete retained fill chains must reproduce the reported average without inventing an unknown prefix. Read the newest version section and generated roadmap; fresh exact-source v0.220.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.221.0, the reported activity-only order average and every retained fill now bind the aggregate unobserved fill notional to the retained limit without claiming the missing events were observed. Read the newest version section and generated roadmap; fresh exact-source v0.221.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.221.0 unobserved fill-average limit binding
+
+For each filled activity-only order, subtract every retained fill quantity and notional from the exact reported filled quantity and aggregate order notional. If any fill quantity remains unobserved, its implied aggregate notional must be positive and respect the retained buy/sell limit. This catches a compliant-looking overall average plus compliant retained suffix that can only be explained by an out-of-limit missing prefix or suffix. Do not invent individual missing fills, prices, event times or coverage.
+
+Mandatory direct controls cover both buy and sell residual-limit contradictions. The reconciliation release fixture reproduces the buy case, and public evidence adds only aggregate true/rejection markers. Existing individual-fill, whole-order-average and complete-chain diagnostics retain precedence. No UI or modifiable parameter changed; preserve the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop.
+
+Exact v0.220.0 source `7395557dd2f6eb5cd5ffe981c8c2e0e65185f77a` passed public-security/history run 39932179291, safety/regression/evidence/browser run 39932179435 and Windows regression/EXE/installer run 39932179496. Both exact-source Windows regression lanes, all sixteen profiles, real-browser help, EXE/private tools/startup, installer/reinstall/data-preserving uninstall, checksums and six evidence artifacts completed successfully. Those parent results do not transfer. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Fresh v0.221.0 validation and exact-source workflows remain mandatory. This supplied-evidence residual check does not attest provider semantics, clocks, source, event coverage, fees, holds or funds; authorize routing; approve release; or permit live trading.
+
+Final local v0.221.0 validation passed 3,580 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap/packaging set passed 186 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `587b42cd656cb950cc3c0745ab689294ba45f8675b3438f3874be5a41ba2820a`; `validation/release_trials_0_221_0.json` SHA256 is `c6dbeffd16ddbdd1a8107666e385ad5702b00410b6d906559ec1196d07800602`. Fourteen Node controllers, Portal inline syntax, compileall and dependency consistency passed. Generated-roadmap equality, whitespace, public snapshot/history audit and fresh exact-source workflows remain mandatory; local Gitleaks, rendered-browser and native Windows execution are unavailable.
 
 ## v0.220.0 activity-only average-price binding
 

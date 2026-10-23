@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.225.0 binds the v0.223.0/v0.224.0 fill and fee collection-time stability checks through the higher-level account-evidence composition and public summary. Read the newest version section and generated roadmap; fresh exact-source v0.225.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.225.1 repairs the bounded Windows recovery-acceptance process allowance exposed by exact-source v0.225.0 CI. Read the newest version section and generated roadmap; fresh exact-source v0.225.1 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.225.1 bounded Windows recovery-fixture allowance
+
+Exact-source v0.225.0 security and safety passed, including browser help and release evidence. Its Windows lane completed 3,571 tests with 19 platform skips before the disposable fresh-process recovery fixture exceeded its hard-coded 60-second child budget under hosted-runner load. The failure occurred before packaging and did not identify a recovery-state disagreement.
+
+Use one `CHILD_TIMEOUT_SECONDS=180` constant for source recovery children, the recovery CLI test and the packaged prior-version fixture creator. The recovery drill remains bounded and retains every database-presence, linked-ledger, halted/stopped, archive, fingerprint, quote-chain, backup/restore and no-resume assertion. This timeout is acceptance-harness headroom, not a production startup or recovery latency target. No UI or modifiable parameter changed; preserve seven tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and the independent emergency stop.
+
+Run focused recovery/packaging/version/roadmap tests, all sixteen profiles, saved-evidence verification, the complete suite, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality, whitespace and public snapshot/history scans. Fresh exact-source security, safety/browser/evidence and Windows installer workflows remain mandatory. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.225.1 validation passed 3,591 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused recovery/release/evidence/version/roadmap set passed 146 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `a1ca87e2db0fe501cbd6b579994f65965a27527232fd8b4de8cedb4a95b7309b`; `validation/release_trials_0_225_1.json` SHA256 is `aa20e2cf3efca5de0cc50de6dd1d5fc63794c560ac10f8d8f770054d2a6123fd`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality, whitespace, the 555-path proposed public snapshot audit and reachable 614-commit / 4,130-blob history audit passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
 
 ## v0.225.0 account-evidence collection-timing propagation
 

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.225.0'
+REVISION = '0.225.1'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -161,7 +161,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.225.0 propagates the retained fill/fee collection-time stability checks through the higher-level private account-evidence composition and its allowlisted public summary. The composition rejects a missing, malformed or nonzero nested collection-timing count, and release evidence requires both public absence markers. This binds local evidence layers without claiming provider/source/clock attestation, received-activity or fee coverage, a quiet balance instant, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.225.1 gives the disposable fresh-process recovery fixture one shared bounded 180-second allowance after exact-source Windows v0.225.0 completed 3,571 tests before the previous 60-second child budget expired under hosted-runner load. Recovery, fingerprint, halted-state, backup-integrity and prior-version assertions are unchanged. This repairs acceptance portability without changing runtime deadlines, UI, credentials, permissions, emergency behavior or trading paths. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

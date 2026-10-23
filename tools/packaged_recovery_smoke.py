@@ -11,7 +11,7 @@ import tempfile
 # Running a file under tools/ must also work before editable installation.
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from nexus.recovery_bundle import backup,restore,verify
-from nexus.recovery_drill import _child
+from nexus.recovery_drill import CHILD_TIMEOUT_SECONDS,_child
 
 
 def prior_fixture(source,commit,data):
@@ -36,7 +36,7 @@ print(json.dumps(expected))
 """
     result=subprocess.run([sys.executable,'-c',code],cwd=source,
                           env={**os.environ,'PYTHONPATH':str(source),'NEXUS_PORTABLE_DATA':str(Path(data).resolve())},
-                          check=True,capture_output=True,text=True,timeout=60)
+                          check=True,capture_output=True,text=True,timeout=CHILD_TIMEOUT_SECONDS)
     expected=json.loads(result.stdout);expected['fixture_source_commit']=commit
     return expected
 

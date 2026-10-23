@@ -3,6 +3,7 @@ import os
 import sqlite3
 import subprocess
 import sys
+from types import SimpleNamespace
 import pytest
 from nexus import recovery_drill as drill
 
@@ -48,6 +49,17 @@ def test_drill_rejects_restored_fingerprint_mismatch(monkeypatch):
 
 
 def test_recovery_drill_cli():
-    result=subprocess.run([sys.executable,'-m','nexus.recovery_drill'],capture_output=True,text=True,timeout=60)
+    result=subprocess.run([sys.executable,'-m','nexus.recovery_drill'],capture_output=True,text=True,
+                          timeout=drill.CHILD_TIMEOUT_SECONDS)
     assert result.returncode==0,result.stderr
     assert json.loads(result.stdout)['passed']
+
+
+def test_recovery_child_uses_bounded_windows_ci_allowance(tmp_path,monkeypatch):
+    captured={}
+    def run(*args,**kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(returncode=0,stdout='{}',stderr='')
+    monkeypatch.setattr(drill.subprocess,'run',run)
+    assert drill._child(tmp_path)=={}
+    assert captured['timeout']==drill.CHILD_TIMEOUT_SECONDS==180

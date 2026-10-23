@@ -7,6 +7,8 @@ import subprocess
 import sys
 import tempfile
 
+CHILD_TIMEOUT_SECONDS=180
+
 
 def canonical(value):
     return json.dumps(value,sort_keys=True,separators=(',',':'))
@@ -76,7 +78,13 @@ def _create():
 def _child(directory,session=None):
     expression='from nexus.recovery_drill import _create,_review; import json; print(json.dumps('+('_create()' if session is None else '_review('+repr(session)+')')+'))'
     env={**os.environ,'NEXUS_PORTABLE_DATA':str(directory)}
-    result=subprocess.run([sys.executable,'-c',expression],env=env,capture_output=True,text=True,timeout=60)
+    # SQLite setup can be substantially slower on a busy hosted Windows runner
+    # because antivirus and filesystem filters inspect each fresh database.  The
+    # drill is an offline acceptance fixture, not a runtime latency contract, so
+    # retain a bounded allowance that covers that platform without weakening any
+    # recovery assertion.
+    result=subprocess.run([sys.executable,'-c',expression],env=env,capture_output=True,text=True,
+                          timeout=CHILD_TIMEOUT_SECONDS)
     if result.returncode:raise ValueError('RECOVERY_DRILL_CHILD_FAILED: '+result.stderr[-2000:])
     return json.loads(result.stdout)
 

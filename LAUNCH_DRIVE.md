@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.225.1 bounded Windows recovery-fixture allowance
+
+Exact-source v0.225.0 security and safety passed. Its Windows lane completed 3,571 tests with 19 platform skips before the disposable fresh-process recovery setup exceeded its fixed 60-second child budget under hosted-runner filesystem load. v0.225.1 centralizes a bounded 180-second allowance across the source recovery child, CLI regression and packaged prior-version fixture creation.
+
+No recovery assertion is relaxed: missing databases, linked-ledger disagreement, resumed forward operation, unhalted state, archive mismatch, fingerprint drift, quote-chain drift and changed backup bytes still fail. The allowance is acceptance-harness headroom, not a runtime latency promise. No UI, credential, permission, risk, account, emergency-stop, funding or execution path changed. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh exact-source v0.225.1 Windows packaging/installer, safety and security results remain mandatory.
+
+Final local v0.225.1 validation passed 3,591 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused recovery/release/evidence/version/roadmap set passed 146 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `a1ca87e2db0fe501cbd6b579994f65965a27527232fd8b4de8cedb4a95b7309b`; report SHA256 is `aa20e2cf3efca5de0cc50de6dd1d5fc63794c560ac10f8d8f770054d2a6123fd`. Fourteen controller smokes, Portal syntax, compilation, dependencies, roadmap equality, whitespace and the 555-path proposed / 614-commit, 4,130-blob reachable-history audits passed with zero findings. Fresh exact-source workflows remain mandatory.
+
 ## v0.225.0 account-evidence collection-timing propagation
 
 The private account-evidence stability composition and its allowlisted public summary now explicitly bind both accepted-receipt timing guards: no retained fill-bearing receipt and no retained fee-bearing receipt may have been collected during the outer four-observation stability envelope. Missing, malformed or nonzero nested counts fail closed, and the reconciliation release profile requires both composed/public absence markers.

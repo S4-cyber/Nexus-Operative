@@ -56,6 +56,7 @@ def test_guarded_bundle_binds_all_components_without_writes_or_authority(tmp_pat
     assert r['component_heads_agree'] and r['local_request_terms_agree']
     assert r['guard_manifests_distinct'] and r['guard_windows_ordered']
     assert r['adjacent_guard_balances_stable'] and r['guard_retained_fill_events_absent']
+    assert r['guard_declared_sources_agree']
     assert r['guard_collection_observed_fill_events_absent']
     assert r['guard_collection_observed_fee_events_absent']
     assert r['guard_retained_fee_date_overlaps_absent']
@@ -87,12 +88,14 @@ def test_guarded_bundle_rejects_changed_guard_and_post_component_request_race(tm
         subject.review_with_stability_guards(**args)
 
 
-@pytest.mark.parametrize('field',[
-    'guard_collection_observed_fill_events','guard_collection_observed_fee_events'])
-def test_guarded_bundle_rejects_nonzero_collection_timing_component(tmp_path,monkeypatch,field):
+@pytest.mark.parametrize('field,value',[
+    ('guard_collection_observed_fill_events',1),
+    ('guard_collection_observed_fee_events',1),
+    ('guard_declared_sources_agree',False)])
+def test_guarded_bundle_rejects_invalid_guard_component(tmp_path,monkeypatch,field,value):
     args=guarded_options(tmp_path);original=subject.inventory.review_with_stability_guards
     def altered(**kw):
-        result=original(**kw);result[field]=1;return result
+        result=original(**kw);result[field]=value;return result
     monkeypatch.setattr(subject.inventory,'review_with_stability_guards',altered)
     with pytest.raises(ValueError,match='COMPONENT_GUARD_DISAGREEMENT'):
         subject.review_with_stability_guards(**args)
@@ -277,6 +280,7 @@ def test_guarded_current_heads_matches_pinned_and_public_summary_is_allowlisted(
     public=subject.public_summary(pinned);encoded=json.dumps(public)
     assert public['policy']==subject.STABILITY_POLICY and public['stability_guard_bound'] is True
     assert public['guard_manifests_distinct'] and public['guard_retained_fill_events_absent']
+    assert public['guard_declared_sources_agree']
     assert public['guard_collection_observed_fill_events_absent']
     assert public['guard_collection_observed_fee_events_absent']
     assert all(public[k] is False for k in subject.FLAGS)
@@ -285,6 +289,7 @@ def test_guarded_current_heads_matches_pinned_and_public_summary_is_allowlisted(
 
 
 @pytest.mark.parametrize('field',[
+    'guard_declared_sources_agree',
     'guard_collection_observed_fill_events_absent',
     'guard_collection_observed_fee_events_absent'])
 def test_guarded_public_summary_requires_collection_timing_markers(tmp_path,field):

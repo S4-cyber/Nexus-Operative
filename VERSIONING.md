@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.225.1 (pre-release).** This patch repairs Windows acceptance-harness headroom after v0.225.0 completed 3,571 tests before its disposable recovery child exceeded 60 seconds. Recovery assertions remain unchanged. It grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.226.0 (pre-release).** This build requires every accepted activity receipt and all four balance observations in a stability review to carry the same declared source label. Label equality remains unverified and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.226.0 declared activity/balance source binding
+
+`paper_reconciliation_acceptance` now compares each accepted receipt's allowlisted `declared_transport` with the one common source label already required across the pre-opening, opening, closing and post-closing balance observations. A mismatch between `INJECTED_UNATTESTED` and `PAPER_HTTPS_READS` fails closed without changing private journals. `paper_account_evidence_review` requires and copies the exact true marker, while its public summary exposes only that boolean.
+
+The reconciliation fixture includes a content-valid all-four-observation relabel negative control, and the release profile requires both the lower-level mismatch rejection and higher-level/public propagation. This prevents explicit synthetic/HTTPS evidence mixing; it does not attest either label, prove provider identity or coverage, link fees, reconcile holds/funds, authorize routing or approve release. No UI, credential, network, permission, risk, emergency-stop, funding or execution path changed.
+
+Exact v0.225.1 source `8998818f754abcd5a2d12a1809d1ba49689c2e96` passed safety/browser/evidence run 39977750335, public security/history run 39977750383 and Windows regression/EXE/installer run 39977750373. Those parent results do not transfer. Fresh exact-source v0.226.0 workflows and all external acceptance gates remain mandatory.
+
+Final local v0.226.0 validation passed 3,594 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused reconciliation/account-evidence/release/evidence/version/roadmap/packaging set passed 250 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `64e82b7163b1c74057ef36ec489db2393183b14489b8462e7646f5cce9578f66`; `validation/release_trials_0_226_0.json` SHA256 is `4a12caee7b0edc14c51bf8636dcb8835432614bff11400343ec1fee906ca4f68`. Fourteen Node controllers, Portal inline syntax, compilation, dependency consistency, generated-roadmap equality, whitespace, the 556-path proposed snapshot audit and reachable 615-commit / 4,142-blob history audit passed. Local Gitleaks and native Windows execution are unavailable; exact-source workflows remain mandatory.
 
 ## v0.225.1 bounded Windows recovery-fixture allowance
 

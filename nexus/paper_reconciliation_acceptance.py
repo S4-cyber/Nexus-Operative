@@ -18,7 +18,7 @@ from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 from nexus.paper_activity_acceptance_probe import status as acceptance_status
 
 POLICY = 'nexus.paper-reconciliation-acceptance.v2'
-STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v5'
+STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v6'
 
 
 def _fail(code):
@@ -225,6 +225,23 @@ def _guard_collection_fee_events(retained, scopes, windows):
     return _guard_collection_events(retained,scopes,windows,('CFEE','FEE'))
 
 
+def _guard_declared_sources_agree(retained, scopes, source):
+    """Bind every accepted activity receipt to the observations' source label.
+
+    Both labels remain unverified declarations.  Equality only prevents a
+    composed review from silently mixing injected history with HTTPS-labelled
+    balances (or the reverse); it does not attest either source.
+    """
+    for scope in scopes:
+        receipt=retained['receipts'].get(scope['retained_receipt_sha256'])
+        if receipt is None: _fail('ACCEPTED_RECEIPT_CHANGED')
+        observation=receipt.get('collection_observation')
+        if not isinstance(observation,dict): _fail('ACCEPTED_HISTORY_REQUIRED')
+        if observation.get('declared_transport')!=source:
+            return False
+    return True
+
+
 def review_with_stability_guards(*, expected_account_id, pacing_path, activity_store_path,
         acceptance_store_path, expected_activity_head, pre_opening_observation,
         opening_observation, closing_observation, post_closing_observation):
@@ -264,6 +281,8 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
     scopes=PaperActivityAcceptanceStore(acceptance_store_path,expected_account_id).replay_scopes()
     if retained['head_sha256']!=expected_activity_head or len(scopes)!=before['accepted_transitions']:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
+    if not _guard_declared_sources_agree(retained,scopes,pre_opening['source']):
+        _fail('GUARD_DECLARED_SOURCE_DISAGREEMENT')
     declared_windows=_declared_window_coverage(retained['receipts'],scopes,pre_opening,post_closing)
     fill_events=_guard_fill_events(retained,windows)
     if fill_events: _fail('GUARD_RETAINED_FILL_PRESENT')
@@ -288,7 +307,8 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
     return dict(mode='PAPER_RECONCILIATION_STABILITY_GUARD_REVIEW',status='REVIEW_REQUIRED',
         read_only=True,**scope,input_sha256=sha(scope),accepted_reconciliation_review=accepted,
         guard_windows=windows,guard_manifests_distinct=True,guard_windows_ordered=True,
-        adjacent_guard_balances_stable=True,guard_retained_fill_events=0,
+        adjacent_guard_balances_stable=True,guard_declared_sources_agree=True,
+        guard_retained_fill_events=0,
         guard_collection_observed_fill_events=0,
         guard_collection_observed_fee_events=0,
         guard_retained_fee_date_overlaps=0,
@@ -301,7 +321,7 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         ready_for_routing=False,broker_connected=False,live_orders_enabled=False,
         money_movement_enabled=False,automatic_retry=False,automatic_continuation=False,
         release_approved=False,
-        limitations='Four supplied manifests are distinct, ordered and locally balance-stable around the accepted inner comparison. Accepted declared creation windows cover the outer envelope, no retained fill appears in either guard band, no accepted receipt containing a retained fill or fee was collected during the outer observation envelope, and no retained fee reported date overlaps any UTC calendar date in that envelope. Collection-time absence is local retained-history evidence only. Fee dates are not posting/execution instants, so an overlap fails closed and absence does not prove quiet or complete fee history. This is not provider/source attestation, received-activity coverage, a quiet or atomic balance instant, fee/hold reconciliation, spendable-funds proof, routing permission or release approval. Missing, late, corrected, fee-only or activity outside retained history remains possible.')
+        limitations='Four supplied manifests are distinct, ordered and locally balance-stable around the accepted inner comparison. Every accepted activity receipt and all four balance observations carry the same unverified declared source label; equality is not source attestation. Accepted declared creation windows cover the outer envelope, no retained fill appears in either guard band, no accepted receipt containing a retained fill or fee was collected during the outer observation envelope, and no retained fee reported date overlaps any UTC calendar date in that envelope. Collection-time absence is local retained-history evidence only. Fee dates are not posting/execution instants, so an overlap fails closed and absence does not prove quiet or complete fee history. This is not provider/source attestation, received-activity coverage, a quiet or atomic balance instant, fee/hold reconciliation, spendable-funds proof, routing permission or release approval. Missing, late, corrected, fee-only or activity outside retained history remains possible.')
 
 
 def fixture_report():
@@ -334,6 +354,26 @@ def fixture_report():
             post_closing_observation=post_closing)
         guarded=review_with_stability_guards(**guarded_paths)
         guarded_repeated=review_with_stability_guards(**guarded_paths)
+        def relabel_source(observation):
+            value=dict(observation,source='PAPER_HTTPS_READS')
+            timing={key:float(token) if '.' in token or 'e' in token else int(token)
+                for key,token in value['read_timing'].items()}
+            observation_scope=dict(profile='nexus.paper-account-observation.v1',
+                **{key:value[key] for key in ('account_fields_sha256',
+                    'reported_inventory_sha256','position_count','open_order_count','source')},
+                read_timing=timing)
+            value['observation_sha256']=sha(observation_scope)
+            value['manifest_sha256']=sha({key:item for key,item in value.items()
+                if key!='manifest_sha256'})
+            return portable.validate(value)
+        source_mismatch_paths=dict(guarded_paths,**{field:relabel_source(guarded_paths[field])
+            for field in ('pre_opening_observation','opening_observation',
+                          'closing_observation','post_closing_observation')})
+        declared_source_mismatch_rejected=False
+        try: review_with_stability_guards(**source_mismatch_paths)
+        except ValueError as error:
+            declared_source_mismatch_rejected=(str(error)==
+                'PAPER_RECONCILIATION_ACCEPTANCE_GUARD_DECLARED_SOURCE_DISAGREEMENT')
         after = tuple((path.name, path.read_bytes()) for path in sorted(root.iterdir()))
         unbound_root = root/'unbound'; unbound_root.mkdir()
         _, unbound_activity, _, _ = _scope(unbound_root)
@@ -404,6 +444,7 @@ def fixture_report():
         guard_bound=(guarded['guard_manifests_distinct'] is True and
             guarded['guard_windows_ordered'] is True and
             guarded['adjacent_guard_balances_stable'] is True and
+            guarded['guard_declared_sources_agree'] is True and
             guarded['guard_retained_fill_events']==0 and
             guarded['guard_collection_observed_fill_events']==0 and
             guarded['guard_collection_observed_fee_events']==0 and
@@ -436,7 +477,7 @@ def fixture_report():
             unbound_rejected and continuation_rejected and outside_rejected and covered and
             changed_guard_rejected and unordered_guard_rejected and outer_guard_coverage_rejected and
             exact_bound and replayed and complete and cursor_complete and arithmetic and guard_bound and
-            fee_date_overlap_detected and late_collection_fill_detected and
+            declared_source_mismatch_rejected and fee_date_overlap_detected and late_collection_fill_detected and
             late_collection_fee_detected)
         return dict(passed=passed, repeat_review_matches=result == repeated,
             stability_guard_repeat_matches=guarded == guarded_repeated,
@@ -445,6 +486,8 @@ def fixture_report():
             out_of_window_observations_rejected=outside_rejected,
             declared_windows_cover_observation_envelope=covered,
             stability_guard_bound=guard_bound,
+            declared_source_mismatch_rejected=declared_source_mismatch_rejected,
+            guard_declared_sources_agree=guarded['guard_declared_sources_agree'],
             changed_guard_balance_rejected=changed_guard_rejected,
             unordered_guard_windows_rejected=unordered_guard_rejected,
             outer_guard_window_coverage_rejected=outer_guard_coverage_rejected,

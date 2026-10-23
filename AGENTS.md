@@ -1,6 +1,18 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.225.1 repairs the bounded Windows recovery-acceptance process allowance exposed by exact-source v0.225.0 CI. Read the newest version section and generated roadmap; fresh exact-source v0.225.1 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.226.0 fails closed when accepted activity receipts and the four balance observations carry different declared source labels. Read the newest version section and generated roadmap; fresh exact-source v0.226.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.226.0 declared activity/balance source binding
+
+The four-observation reconciliation stability composition must require every accepted retained activity receipt's declared transport to equal the common declared source label on all four portable balance observations. Mixing `INJECTED_UNATTESTED` activity with `PAPER_HTTPS_READS` balances, or the reverse, fails closed before a guarded review is produced. The private account-evidence composition and allowlisted public summary must retain an exact true boolean, and the reconciliation profile must require both positive and negative controls.
+
+This is declared-label consistency only. It does not authenticate a provider, verify source or received activity/fee coverage, establish quiet or atomic balance instants, link fees, reconcile holds or spendable funds, accept a broker, authorize routing or approve release. No UI or modifiable parameter changed; preserve seven tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and the independent emergency stop.
+
+Exact v0.225.1 source `8998818f754abcd5a2d12a1809d1ba49689c2e96` passed safety/browser/evidence run 39977750335, public security/history run 39977750383 and Windows regression/EXE/installer run 39977750373. Those parent results do not transfer. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Run focused reconciliation/account-evidence/release/version/roadmap/packaging tests, all sixteen profiles, saved-evidence verification, the complete suite, fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality, whitespace and public snapshot/history scans. Fresh exact-source security, safety/browser/evidence and Windows installer workflows remain mandatory.
+
+Final local v0.226.0 validation passed 3,594 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused reconciliation/account-evidence/release/evidence/version/roadmap/packaging set passed 250 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `64e82b7163b1c74057ef36ec489db2393183b14489b8462e7646f5cce9578f66`; `validation/release_trials_0_226_0.json` SHA256 is `4a12caee7b0edc14c51bf8636dcb8835432614bff11400343ec1fee906ca4f68`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality, whitespace, the 556-path proposed public snapshot audit and reachable 615-commit / 4,142-blob history audit passed. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
 
 ## v0.225.1 bounded Windows recovery-fixture allowance
 

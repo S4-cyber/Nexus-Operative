@@ -39,6 +39,18 @@ def guarded(tmp_path):
     return options
 
 
+def relabel_source(observation, source):
+    result=copy.deepcopy(observation);result['source']=source
+    timing={key:float(value) if '.' in value or 'e' in value else int(value)
+        for key,value in result['read_timing'].items()}
+    scope=dict(profile='nexus.paper-account-observation.v1',**{k:result[k] for k in
+        ('account_fields_sha256','reported_inventory_sha256','position_count',
+         'open_order_count','source')},read_timing=timing)
+    result['observation_sha256']=subject.sha(scope)
+    result['manifest_sha256']=subject.sha({k:v for k,v in result.items() if k!='manifest_sha256'})
+    return result
+
+
 def test_complete_accepted_history_binds_exact_observations_and_head_without_writes(tmp_path):
     options=prepared(tmp_path);before=snapshot(tmp_path);result=subject.review(**options)
     assert result['mode']=='PAPER_RECONCILIATION_ACCEPTANCE_REVIEW'
@@ -74,6 +86,7 @@ def test_four_observation_stability_guard_is_exact_bound_read_only_and_non_autho
     assert result['mode']=='PAPER_RECONCILIATION_STABILITY_GUARD_REVIEW'
     assert result['guard_manifests_distinct'] and result['guard_windows_ordered']
     assert result['adjacent_guard_balances_stable']
+    assert result['guard_declared_sources_agree']
     assert result['guard_retained_fill_events']==0
     assert result['guard_collection_observed_fill_events']==0
     assert result['guard_collection_observed_fee_events']==0
@@ -122,6 +135,17 @@ def test_stability_guard_rejects_manifest_reuse_and_declared_source_disagreement
     foreign['manifest_sha256']=subject.sha({k:v for k,v in foreign.items() if k!='manifest_sha256'})
     with pytest.raises(ValueError,match='GUARD_SOURCE_DISAGREEMENT'):
         subject.review_with_stability_guards(**options)
+
+
+def test_stability_guard_rejects_activity_and_balance_declared_source_mismatch(tmp_path):
+    options=guarded(tmp_path)
+    for field in ('pre_opening_observation','opening_observation',
+                  'closing_observation','post_closing_observation'):
+        options[field]=relabel_source(options[field],'PAPER_HTTPS_READS')
+    before=snapshot(tmp_path)
+    with pytest.raises(ValueError,match='GUARD_DECLARED_SOURCE_DISAGREEMENT'):
+        subject.review_with_stability_guards(**options)
+    assert snapshot(tmp_path)==before
 
 
 def test_guard_activity_scans_are_inclusive_content_free_and_fee_date_conservative():

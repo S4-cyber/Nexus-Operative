@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.226.0 declared activity/balance source binding
+
+The private four-observation reconciliation guard now fails closed unless every accepted activity receipt and all four portable balance observations carry the same allowlisted declared source label. A synthetically valid `INJECTED_UNATTESTED` / `PAPER_HTTPS_READS` mismatch is a mandatory negative control, and the composed private/public account-evidence layers retain only an exact boolean.
+
+This prevents explicit local evidence-source mixing without authenticating either label or claiming provider identity, source/received activity or fee coverage, a quiet/atomic balance instant, fee linkage, hold/funds reconciliation, broker acceptance or execution authority. No UI control, permission, risk limit, account check, emergency stop, credential, network or execution path changed. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Exact v0.225.1 source `8998818f754abcd5a2d12a1809d1ba49689c2e96` passed safety/browser/evidence run 39977750335, public security/history run 39977750383 and Windows regression/EXE/installer run 39977750373. Those parent results do not transfer. Fresh exact-source v0.226.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.226.0 validation passed 3,594 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused reconciliation/account-evidence/release/evidence/version/roadmap/packaging set passed 250 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `64e82b7163b1c74057ef36ec489db2393183b14489b8462e7646f5cce9578f66`; report SHA256 is `4a12caee7b0edc14c51bf8636dcb8835432614bff11400343ec1fee906ca4f68`. Fourteen controller smokes, Portal syntax, compilation, dependencies, roadmap equality, whitespace and the 556-path proposed / 615-commit, 4,142-blob reachable-history audits passed with zero findings. Fresh exact-source workflows remain mandatory.
+
 ## v0.225.1 bounded Windows recovery-fixture allowance
 
 Exact-source v0.225.0 security and safety passed. Its Windows lane completed 3,571 tests with 19 platform skips before the disposable fresh-process recovery setup exceeded its fixed 60-second child budget under hosted-runner filesystem load. v0.225.1 centralizes a bounded 180-second allowance across the source recovery child, CLI regression and packaged prior-version fixture creation.

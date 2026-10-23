@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.213.0 complete-quantity/status binding
+
+The exact private response-bundle review now rejects a later order snapshot that reaches the exact requested quantity but does not claim `filled`. The check runs after retained-fill delta, weighted-average and requested-quantity validation to preserve more specific evidence diagnostics. A mandatory coherent half-to-full synthetic fill retaining `partially_filled` must fail closed.
+
+This exposes only a boolean rejection result and changes no UI control, permission, risk limit, account check, emergency stop, credential, network or execution path. It is not provider/source/clock attestation, complete broker activity, funds reconciliation, broker acceptance, trading authority or release approval. Exact v0.212.0 source `546ca81e76f75c43139b63a8740a6b518b14e3bd` has no visible status contexts or pull-request workflow runs through the available endpoint. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Final local v0.213.0 validation passed 3,565 tests with one expected skip and one existing warning; the focused set passed 208 tests. Sixteen profiles and saved evidence matched 357 files / `3edd030309a20acb623299c40315179139b5c2decfe3e2ba7b38adb030721810`; report SHA256 is `525b31b092b5e283992ec8b839270cc9473cbbc6ed280f7e4581f729a146107d`.
+
 ## v0.212.0 filled-status/requested-quantity binding
 
 The private offline exact response-bundle review now rejects a retained activity order that claims `filled` unless its cumulative filled quantity equals the exact requested quantity captured in the preceding account response. This closes a terminal-status gap that previously accepted an unchanged partial quantity when the retained interval contained no fill. Established update-time, fill-regression, average-correction and status-transition diagnostics retain precedence.

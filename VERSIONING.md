@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.212.0 (pre-release).** This minor build requires a retained activity snapshot that claims `filled` to equal the exact requested quantity captured in the preceding account response. It preserves the existing status-transition, retained-fill, requested-quantity, cumulative, event-time, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.213.0 (pre-release).** This minor build requires a retained activity snapshot whose filled quantity reaches the exact requested quantity to claim `filled`. It preserves the reciprocal filled-status quantity, transition, retained-fill, requested-quantity, cumulative, event-time, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.213.0 complete-quantity/status binding
+
+`paper_response_bundle_review` now rejects a shared-order activity snapshot whose cumulative filled quantity equals the exact preceding requested quantity unless status is `filled`. The check follows established delta, weighted-average and retained-fill requested-quantity validation, preserving their diagnostic precedence. A mandatory negative control supplies a coherent half-to-full fill while retaining `partially_filled`; reconciliation acceptance requires rejection. This is private supplied-evidence consistency only and changes no UI, credentials, permissions, risk, emergency or execution path.
+
+Exact v0.212.0 source `546ca81e76f75c43139b63a8740a6b518b14e3bd` has no visible status contexts or pull-request workflow runs through the available endpoint. Parent results do not transfer. Final local v0.213.0 validation passed 3,565 tests with one expected skip and one existing warning; the focused set passed 208 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `3edd030309a20acb623299c40315179139b5c2decfe3e2ba7b38adb030721810`; report SHA256 is `525b31b092b5e283992ec8b839270cc9473cbbc6ed280f7e4581f729a146107d`. External gates remain open.
 
 ## v0.212.0 filled-status/requested-quantity binding
 

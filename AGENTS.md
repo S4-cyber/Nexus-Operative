@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.212.0, a retained `filled` activity snapshot must equal the exact requested quantity captured immediately beforehand. Read the newest version section and generated roadmap; fresh exact-source v0.212.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.213.0, a retained activity snapshot that reaches the exact requested quantity must claim `filled`. Read the newest version section and generated roadmap; fresh exact-source v0.213.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.213.0 complete-quantity/status binding
+
+For each shared order in the exact private account/activity response bundle, require a later snapshot whose cumulative filled quantity equals the exact requested quantity from the preceding account response to claim `filled`. Apply this only after update-time, transition, retained-fill delta, weighted-average and requested-quantity checks so established malformed-evidence diagnostics retain precedence. A mandatory coherent half-to-full fill fixture keeps `partially_filled` and must fail closed.
+
+No raw identifiers, timestamps, quantities or prices enter public evidence. This is local supplied-evidence consistency, not provider/source/clock attestation, complete execution or fee coverage, broker acceptance, routing permission or release approval. No UI control or editable parameter changed; preserve the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop.
+
+Exact v0.212.0 source `546ca81e76f75c43139b63a8740a6b518b14e3bd` has no visible commit statuses or pull-request workflow runs through the available endpoint. Parent results do not transfer to v0.213.0. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.213.0 validation passed 3,565 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 208 tests. All sixteen profiles and saved-evidence verification matched 357 source files / `3edd030309a20acb623299c40315179139b5c2decfe3e2ba7b38adb030721810`; report SHA256 is `525b31b092b5e283992ec8b839270cc9473cbbc6ed280f7e4581f729a146107d`. Local Gitleaks, rendered-browser and native Windows execution remain unavailable; fresh exact-source workflows are mandatory.
 
 ## v0.212.0 filled-status/requested-quantity binding
 

@@ -181,6 +181,18 @@ def test_bundle_rejects_filled_status_below_exact_requested_quantity(tmp_path):
         subject.review(**options)
 
 
+def test_bundle_rejects_complete_quantity_without_filled_status(tmp_path):
+    options=subject._fixture(tmp_path,
+        account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
+            'status':'partially_filled'},
+        activity_order_changes={'status':'partially_filled','filled_quantity':'1',
+            'average_fill_price':'100'},
+        activity_fill_changes={'qty':'0.5','cum_qty':'1','leaves_qty':'0',
+            'price':'101'})
+    with pytest.raises(ValueError,match='COMPLETION_STATUS_DISAGREEMENT'):
+        subject.review(**options)
+
+
 def test_bundle_partitions_retained_historical_fill_at_earlier_update(tmp_path):
     options=subject._fixture(tmp_path,
         account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',

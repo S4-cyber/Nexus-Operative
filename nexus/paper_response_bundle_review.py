@@ -179,6 +179,8 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
                     occurred_at=fill['occurred_at']) for _,_,fill in delta]))
         if requested_quantities and requested_quantities!={requested_qty}:
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_REQUESTED_QUANTITY_DISAGREEMENT')
+        if after_qty==requested_qty and after['status']!='filled':
+            _fail('CROSS_RESPONSE_ORDER_COMPLETION_STATUS_DISAGREEMENT')
         historical_fill_activity_count+=len(historical)
         fill_partitions.append(dict(identity=open_by_broker[broker_id],
             historical=historical,
@@ -686,6 +688,18 @@ def fixture_report():
         except ValueError as error:
             filled_status_quantity_disagreement_rejected=(
                 'CROSS_RESPONSE_ORDER_FILLED_QUANTITY_DISAGREEMENT' in str(error))
+        completion_status_disagreement=_fixture(root/'completion-status-disagreement',
+            account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
+                'status':'partially_filled'},
+            activity_order_changes={'status':'partially_filled','filled_quantity':'1',
+                'average_fill_price':'100'},
+            activity_fill_changes={'qty':'0.5','cum_qty':'1','leaves_qty':'0',
+                'price':'101'})
+        completion_status_disagreement_rejected=False
+        try:review(**completion_status_disagreement)
+        except ValueError as error:
+            completion_status_disagreement_rejected=(
+                'CROSS_RESPONSE_ORDER_COMPLETION_STATUS_DISAGREEMENT' in str(error))
         missing_fill=_fixture(root/'missing-fill',activity_include_fill=False)
         order_fill_activity_missing_rejected=False
         try:review(**missing_fill)
@@ -938,6 +952,8 @@ def fixture_report():
                 fill_requested_quantity_disagreement_rejected,
             filled_status_quantity_disagreement_rejected=
                 filled_status_quantity_disagreement_rejected,
+            completion_status_disagreement_rejected=
+                completion_status_disagreement_rejected,
             reported_fee_references_consistent=result['reported_fee_references_consistent'],
             reported_fee_reference_bound=result['reported_fee_reference_links']==1 and
                 len(result['reported_fee_reference_sha256'])==64,

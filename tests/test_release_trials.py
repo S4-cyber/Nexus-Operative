@@ -352,6 +352,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('exact_response_bundle','cumulative_fill_remaining_conflict_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','fill_requested_quantity_disagreement_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','filled_status_quantity_disagreement_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
+        (('exact_response_bundle','completion_status_disagreement_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','reported_fee_references_consistent'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','reported_fee_reference_bound'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','reported_fee_exact_timestamp_chronology_checked'),False,'EXACT_RESPONSE_BUNDLE'),

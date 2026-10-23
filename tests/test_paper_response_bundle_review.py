@@ -171,6 +171,16 @@ def test_bundle_binds_partial_fill_delta_and_weighted_average(tmp_path):
     assert result['overlapping_order_fill_delta_activities']==1
 
 
+def test_bundle_rejects_filled_status_below_exact_requested_quantity(tmp_path):
+    options=subject._fixture(tmp_path,
+        account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
+            'status':'partially_filled'},
+        activity_order_changes={'status':'filled','filled_quantity':'0.5',
+            'average_fill_price':'99'},activity_include_fill=False)
+    with pytest.raises(ValueError,match='FILLED_QUANTITY_DISAGREEMENT'):
+        subject.review(**options)
+
+
 def test_bundle_partitions_retained_historical_fill_at_earlier_update(tmp_path):
     options=subject._fixture(tmp_path,
         account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',

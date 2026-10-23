@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.211.0 (pre-release).** This minor build binds every retained fill-implied requested quantity to the exact preceding account snapshot for each shared order. It preserves the existing within-sequence, cumulative, event-time, delta, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.212.0 (pre-release).** This minor build requires a retained activity snapshot that claims `filled` to equal the exact requested quantity captured in the preceding account response. It preserves the existing status-transition, retained-fill, requested-quantity, cumulative, event-time, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.212.0 filled-status/requested-quantity binding
+
+`paper_response_bundle_review` now rejects a shared-order activity snapshot that claims `filled` unless its cumulative filled quantity equals the exact requested quantity normalized from the preceding account response. The comparison follows update-time, fill-regression, average-correction and status-transition validation, preserving their established diagnostics, and precedes retained-fill delta processing so a false terminal claim cannot pass merely because the interval retained no fill activity. A mandatory negative control starts from a coherent half-filled account snapshot and claims `filled` later without increasing quantity; the reconciliation-acceptance profile requires rejection.
+
+This is local consistency over supplied private evidence, not provider identity, source or clock attestation, complete execution/activity/fee coverage, account ownership, an atomic snapshot, funds reconciliation, broker acceptance or routing authority. No UI control, editable parameter, credential, provider call, evidence write, permission, risk, emergency or execution path changed.
+
+Exact v0.211.0 source `2ace58beefbb7c4e972f412854bfcfc093c71db7` has no visible commit statuses or pull-request workflow runs through the available GitHub endpoint at this checkpoint. Parent results do not transfer to v0.212.0; fresh exact-source workflows remain mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow reconciliation fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.212.0 validation passed 3,564 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 207 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `6289e27070da95e41e2a6719d12925e04108088660d3e190a22522607a80d0b1`; report SHA256 is `454fc7047f66be3ae0c5181719958f12bc98b4e23bc82d68363f7fac3017bd3c`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The 540-path proposed snapshot and the local reachable-history superset passed the private-artifact audit with zero findings. Local Gitleaks, rendered-browser and native Windows execution are unavailable; fresh exact-source workflows remain mandatory.
 
 ## v0.211.0 retained fill/account requested-quantity binding
 

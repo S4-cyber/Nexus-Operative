@@ -103,6 +103,7 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
         after_at=contract.timestamp_order_ns(after['updated_at'])
         before_qty=contract.number(before['filled_quantity'],zero=True)
         after_qty=contract.number(after['filled_quantity'],zero=True)
+        requested_qty=contract.number(before['requested_quantity'])
         if after_at<before_at:_fail('CROSS_RESPONSE_ORDER_UPDATE_TIME_REGRESSION')
         if (after_at==before_at and (after['status'],after['filled_quantity'],
                 after['average_fill_price'])!=(before['status'],before['filled_quantity'],
@@ -113,6 +114,8 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
             _fail('CROSS_RESPONSE_ORDER_FILL_CORRECTION')
         if after['status'] not in active_transitions[before['status']]:
             _fail('CROSS_RESPONSE_ORDER_STATUS_REGRESSION')
+        if after['status']=='filled' and after_qty!=requested_qty:
+            _fail('CROSS_RESPONSE_ORDER_FILLED_QUANTITY_DISAGREEMENT')
         fills=fills_by_broker.get(broker_id,())
         try:
             parsed=sorted(((contract.number(fill['cumulative_quantity']),
@@ -174,8 +177,7 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
                 fills=[dict(activity_id=fill['activity_id'],quantity=fill['quantity'],
                     price=fill['price'],cumulative_quantity=fill['cumulative_quantity'],
                     occurred_at=fill['occurred_at']) for _,_,fill in delta]))
-        if requested_quantities and requested_quantities!={
-                contract.number(before['requested_quantity'])}:
+        if requested_quantities and requested_quantities!={requested_qty}:
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_REQUESTED_QUANTITY_DISAGREEMENT')
         historical_fill_activity_count+=len(historical)
         fill_partitions.append(dict(identity=open_by_broker[broker_id],
@@ -674,6 +676,16 @@ def fixture_report():
         try:review(**status_regression)
         except ValueError as error:
             order_status_regression_rejected='CROSS_RESPONSE_ORDER_STATUS_REGRESSION' in str(error)
+        filled_quantity_disagreement=_fixture(root/'filled-quantity-disagreement',
+            account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
+                'status':'partially_filled'},
+            activity_order_changes={'status':'filled','filled_quantity':'0.5',
+                'average_fill_price':'99'},activity_include_fill=False)
+        filled_status_quantity_disagreement_rejected=False
+        try:review(**filled_quantity_disagreement)
+        except ValueError as error:
+            filled_status_quantity_disagreement_rejected=(
+                'CROSS_RESPONSE_ORDER_FILLED_QUANTITY_DISAGREEMENT' in str(error))
         missing_fill=_fixture(root/'missing-fill',activity_include_fill=False)
         order_fill_activity_missing_rejected=False
         try:review(**missing_fill)
@@ -924,6 +936,8 @@ def fixture_report():
                 cumulative_fill_remaining_conflict_rejected,
             fill_requested_quantity_disagreement_rejected=
                 fill_requested_quantity_disagreement_rejected,
+            filled_status_quantity_disagreement_rejected=
+                filled_status_quantity_disagreement_rejected,
             reported_fee_references_consistent=result['reported_fee_references_consistent'],
             reported_fee_reference_bound=result['reported_fee_reference_links']==1 and
                 len(result['reported_fee_reference_sha256'])==64,

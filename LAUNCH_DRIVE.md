@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.212.0 filled-status/requested-quantity binding
+
+The private offline exact response-bundle review now rejects a retained activity order that claims `filled` unless its cumulative filled quantity equals the exact requested quantity captured in the preceding account response. This closes a terminal-status gap that previously accepted an unchanged partial quantity when the retained interval contained no fill. Established update-time, fill-regression, average-correction and status-transition diagnostics retain precedence.
+
+The mandatory synthetic control starts from a coherent half-filled account snapshot and supplies a later `filled` activity snapshot at the same half-filled quantity with no interval fill; the reconciliation-acceptance profile requires its rejection. Public evidence exposes only a boolean rejection result and aggregate counts, never raw IDs, times, quantities or prices. This is deterministic consistency over supplied private evidence; it does not attest provider identity, source, clocks, activity or fee completeness, broker acceptance, funds, routing, trading or release authority. No UI control or modifiable parameter changed; the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded risk/account checks, fail-closed exits and independent emergency stop remain unchanged.
+
+Exact v0.211.0 source `2ace58beefbb7c4e972f412854bfcfc093c71db7` has no visible commit statuses or pull-request workflow runs through the available GitHub endpoint at this checkpoint. Parent results do not transfer to v0.212.0; fresh exact-source workflows remain mandatory.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This narrow reconciliation fence does not change release approval, trading permission or any launch-date assessment.
+
+Final local v0.212.0 validation passed 3,564 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 207 tests. Sixteen profiles and saved-evidence verification matched 357 source files / `6289e27070da95e41e2a6719d12925e04108088660d3e190a22522607a80d0b1`; `validation/release_trials_0_212_0.json` SHA256 is `454fc7047f66be3ae0c5181719958f12bc98b4e23bc82d68363f7fac3017bd3c`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The 540-path proposed snapshot and the local reachable-history superset passed the private-artifact audit with zero findings. Exact-source workflows remain required; local Gitleaks, rendered-browser and native Windows execution are unavailable.
+
 ## v0.211.0 retained fill/account requested-quantity binding
 
 The private offline exact response-bundle review now binds the requested quantity implied by every retained fill for a shared order to the exact requested quantity in the preceding account response. This rejects histories that agree internally yet contradict the known order size. The comparison follows existing delta arithmetic and weighted-average validation so established malformed-delta diagnostics keep their precedence.

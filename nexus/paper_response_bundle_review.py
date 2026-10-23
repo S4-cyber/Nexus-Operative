@@ -104,6 +104,7 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
         before_qty=contract.number(before['filled_quantity'],zero=True)
         after_qty=contract.number(after['filled_quantity'],zero=True)
         requested_qty=contract.number(before['requested_quantity'])
+        requested_limit=contract.number(before['limit_price'])
         try:activity_requested_qty=contract.number(after['requested_quantity'])
         except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
             _fail('CROSS_RESPONSE_ORDER_REQUESTED_QUANTITY_INVALID')
@@ -138,6 +139,15 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
                 fill['leaves_quantity'],zero=True) for cumulative,_,fill in parsed}
         except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INVALID')
+        try:
+            fill_limit_disagreement=any(
+                (before['side']=='buy' and contract.number(fill['price'])>requested_limit) or
+                (before['side']=='sell' and contract.number(fill['price'])<requested_limit)
+                for _,_,fill in parsed)
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INVALID')
+        if fill_limit_disagreement:
+            _fail('CROSS_RESPONSE_ORDER_FILL_LIMIT_PRICE_DISAGREEMENT')
         if len(requested_quantities)>1:
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_REMAINING_CONFLICT')
         if any(cumulative>after_qty for cumulative,_,_ in parsed):
@@ -523,6 +533,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         overlapping_order_identities_match=True,
         overlapping_order_progress_monotonic=True,
         overlapping_order_fill_deltas_bound=True,
+        retained_fill_limit_prices_checked=True,
         overlapping_order_fill_activities_partitioned=True,
         reported_fee_references_consistent=True,
         reported_fee_exact_timestamp_chronology_checked=True,
@@ -544,7 +555,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
         'identity agreement and non-regressing update time, cumulative fill, unchanged-quantity average price and '
         'status progression for orders visible in both responses, binds every increased cumulative fill to an '
-        'exact contiguous retained fill-activity delta with bounded event time and weighted average price, '
+        'exact contiguous retained fill-activity delta with bounded event time, an individual execution price '
+        'that respects the immutable order limit, and weighted average price, '
         'requires every retained fill at or below the earlier cumulative quantity to occur no later than the '
         'earlier order update, and '
         'requires every exact account-response order update to be no later than that account read completion, '
@@ -801,6 +813,21 @@ def fixture_report():
         except ValueError as error:
             activity_limit_price_changed_rejected=(
                 'CROSS_RESPONSE_ORDER_LIMIT_PRICE_CHANGED' in str(error))
+        fill_limit_price_disagreement=_fixture(
+            root/'fill-limit-price-disagreement',
+            activity_order_changes={'status':'filled','filled_quantity':'1',
+                'average_fill_price':'101'},
+            activity_fill_changes={'type':'partial_fill','qty':'0.5',
+                'cum_qty':'0.5','leaves_qty':'0.5','price':'100',
+                'transaction_time':'2026-10-17T18:00:00Z'},
+            activity_extra_fill_changes={'type':'fill','qty':'0.5','cum_qty':'1',
+                'leaves_qty':'0','price':'102',
+                'transaction_time':'2026-10-17T18:00:01Z'})
+        fill_limit_price_disagreement_rejected=False
+        try:review(**fill_limit_price_disagreement)
+        except ValueError as error:
+            fill_limit_price_disagreement_rejected=(
+                'CROSS_RESPONSE_ORDER_FILL_LIMIT_PRICE_DISAGREEMENT' in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -961,6 +988,8 @@ def fixture_report():
             shared_order_progress_bound=result['overlapping_order_progressions']==1 and
                 len(result['overlapping_order_progress_sha256'])==64,
             overlapping_order_fill_deltas_bound=result['overlapping_order_fill_deltas_bound'],
+            retained_fill_limit_prices_checked=
+                result['retained_fill_limit_prices_checked'],
             shared_order_fill_delta_bound=result['overlapping_order_fill_deltas']==1 and
                 result['overlapping_order_fill_delta_activities']==1 and
                 len(result['overlapping_order_fill_delta_sha256'])==64,
@@ -982,6 +1011,8 @@ def fixture_report():
                 activity_requested_quantity_changed_rejected,
             activity_limit_price_changed_rejected=
                 activity_limit_price_changed_rejected,
+            fill_limit_price_disagreement_rejected=
+                fill_limit_price_disagreement_rejected,
             filled_status_quantity_disagreement_rejected=
                 filled_status_quantity_disagreement_rejected,
             completion_status_disagreement_rejected=

@@ -55,6 +55,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['overlapping_order_progressions']==1
     assert len(result['overlapping_order_progress_sha256'])==64
     assert result['overlapping_order_fill_deltas_bound']
+    assert result['retained_fill_limit_prices_checked']
     assert result['overlapping_order_fill_deltas']==1
     assert result['overlapping_order_fill_delta_activities']==1
     assert len(result['overlapping_order_fill_delta_sha256'])==64
@@ -204,6 +205,34 @@ def test_bundle_rejects_changed_activity_limit_price(tmp_path):
     options=subject._fixture(tmp_path,
         activity_order_changes={'limit_price':'102'})
     with pytest.raises(ValueError,match='LIMIT_PRICE_CHANGED'):
+        subject.review(**options)
+
+
+def test_bundle_rejects_individual_fill_worse_than_limit_with_compliant_average(tmp_path):
+    options=subject._fixture(tmp_path,
+        activity_order_changes={'status':'filled','filled_quantity':'1',
+            'average_fill_price':'101'},
+        activity_fill_changes={'type':'partial_fill','qty':'0.5','cum_qty':'0.5',
+            'leaves_qty':'0.5','price':'100',
+            'transaction_time':'2026-10-17T18:00:00Z'},
+        activity_extra_fill_changes={'type':'fill','qty':'0.5','cum_qty':'1',
+            'leaves_qty':'0','price':'102',
+            'transaction_time':'2026-10-17T18:00:01Z'})
+    with pytest.raises(ValueError,match='FILL_LIMIT_PRICE_DISAGREEMENT'):
+        subject.review(**options)
+
+
+def test_bundle_rejects_individual_sell_fill_below_limit_with_compliant_average(tmp_path):
+    options=subject._fixture(tmp_path,account_order_changes={'side':'sell'},
+        activity_order_changes={'side':'sell','status':'filled','filled_quantity':'1',
+            'average_fill_price':'101'},
+        activity_fill_changes={'side':'sell','type':'partial_fill','qty':'0.5',
+            'cum_qty':'0.5','leaves_qty':'0.5','price':'102',
+            'transaction_time':'2026-10-17T18:00:00Z'},
+        activity_extra_fill_changes={'side':'sell','type':'fill','qty':'0.5',
+            'cum_qty':'1','leaves_qty':'0','price':'100',
+            'transaction_time':'2026-10-17T18:00:01Z'})
+    with pytest.raises(ValueError,match='FILL_LIMIT_PRICE_DISAGREEMENT'):
         subject.review(**options)
 
 

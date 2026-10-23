@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.215.0, canonical broker-order snapshots preserve the validated IOC limit price and the exact response bundle requires activity/account agreement. Read the newest version section and generated roadmap; fresh exact-source v0.215.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.216.0, every retained fill for a shared account/activity order must respect the immutable IOC limit price even when the blended average appears compliant. Read the newest version section and generated roadmap; fresh exact-source v0.216.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.216.0 individual fill-limit binding
+
+For every shared order in the exact private account/activity response bundle, require each retained buy fill to be at or below the immutable limit price and each retained sell fill to be at or above it. Check every historical and interval fill before delta arithmetic. Average-price compliance alone is insufficient because a favorable execution can conceal another execution outside the submitted limit.
+
+The mandatory negative control retains two exact fills whose weighted average equals the order limit while one buy execution is worse than that limit; release reconciliation requires rejection. Direct tests cover the reciprocal sell case. No raw identifiers, timestamps, quantities or prices enter public evidence. This is local supplied-evidence consistency, not provider/source/clock attestation, complete execution coverage, broker acceptance, routing permission or release approval. No UI control or editable parameter changed; preserve the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop.
+
+Exact v0.215.0 source `45dac03fa188a283302ce806b91549f8594337ee` passed public-security/history run 39899546735, safety/regression/evidence/browser run 39899546751 and Windows regression/EXE/installer run 39899546649. Those parent results do not transfer. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.216.0 validation passed 3,569 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the clean release/evidence/version/roadmap set passed 212 tests and the broader response/activity/release focus passed 365. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `3d2495467b95e5df20dd488eaf1bbc94c8e413ec32289f8c057971f2c7fe5db3`; `validation/release_trials_0_216_0.json` SHA256 is `94f08038a9d94e8c030a11bb00a86d8c5e12de88b3fe575761c5d31267e87639`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local rendered-browser and native Windows execution remain unavailable; dedicated exact-source workflows are mandatory.
 
 ## v0.215.0 canonical limit-price binding
 

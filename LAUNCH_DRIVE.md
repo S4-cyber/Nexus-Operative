@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.216.0 individual fill-limit binding
+
+The private exact response-bundle review now rejects any retained buy execution above the immutable limit price or sell execution below it. This applies to every historical and interval fill, so a favorable execution cannot conceal a worse-than-limit execution inside an otherwise compliant weighted average. The mandatory two-fill negative control keeps the weighted average exactly at the limit while one execution violates it; the release profile requires rejection, with direct tests for both sides.
+
+This exposes only boolean verification results and changes no UI control, permission, risk limit, account check, emergency stop, credential, network or execution path. It is not provider/source/clock attestation, complete broker activity, funds reconciliation, broker acceptance, trading authority or release approval. Exact v0.215.0 source `45dac03fa188a283302ce806b91549f8594337ee` completed all three exact-source security, safety/browser and Windows workflows successfully. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh exact-source v0.216.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.216.0 validation passed 3,569 tests with one expected non-Windows skip and one existing warning. The clean release/evidence/version/roadmap set passed 212 tests; the broader response/activity/release focus passed 365. Sixteen bounded profiles and saved evidence matched 357 files / `3d2495467b95e5df20dd488eaf1bbc94c8e413ec32289f8c057971f2c7fe5db3`; report SHA256 is `94f08038a9d94e8c030a11bb00a86d8c5e12de88b3fe575761c5d31267e87639`. Fourteen controllers, Portal syntax, compilation, dependency consistency, roadmap equality and whitespace checks passed. Exact-source hosted workflows remain mandatory.
+
 ## v0.215.0 canonical limit-price binding
 
 New canonical broker-order snapshots now preserve the IOC limit price already checked against the submitted terms. The private exact response-bundle review requires the later retained activity snapshot to carry that price and match the independently normalized limit price in the preceding account response. Missing, malformed or changed values fail closed, and reconciliation acceptance requires the changed-price negative control.

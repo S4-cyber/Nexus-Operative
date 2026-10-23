@@ -1,5 +1,9 @@
 # Nexus Operative continuity instructions
 
+## Delivery planning update — 2026-10-23
+
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The reviewed v0.226.0 source is `8a38aae7a47dddd56b4843a5264fbae6788986d4`. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are 2–6 weeks for a connected broker-paper prototype and 12–24+ weeks for the full agreed 1.0 candidate; these are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize the paper submission lifecycle, actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
 Current checkpoint: v0.226.0 fails closed when accepted activity receipts and the four balance observations carry different declared source labels. Read the newest version section and generated roadmap; fresh exact-source v0.226.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
 
 ## v0.226.0 declared activity/balance source binding

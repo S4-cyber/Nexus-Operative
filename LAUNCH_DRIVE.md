@@ -1,5 +1,9 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## Delivery planning update — 2026-10-23
+
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The reviewed v0.226.0 source is `8a38aae7a47dddd56b4843a5264fbae6788986d4`. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are 2–6 weeks for a connected broker-paper prototype and 12–24+ weeks for the full agreed 1.0 candidate; these are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize the paper submission lifecycle, actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
 ## v0.226.0 declared activity/balance source binding
 
 The private four-observation reconciliation guard now fails closed unless every accepted activity receipt and all four portable balance observations carry the same allowlisted declared source label. A synthetically valid `INJECTED_UNATTESTED` / `PAPER_HTTPS_READS` mismatch is a mandatory negative control, and the composed private/public account-evidence layers retain only an exact boolean.

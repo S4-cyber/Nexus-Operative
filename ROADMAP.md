@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.214.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.215.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.214.0 preserves the request quantity in new canonical broker-order snapshots and requires a retained activity snapshot to match the exact requested quantity in the preceding account response. Older or incomplete snapshots cannot satisfy this exact response-bundle gate. Existing status, retained-fill, cumulative, event-time, weighted-average, capture-completion and earliest-page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.215.0 preserves the validated limit price in new canonical broker-order snapshots and requires a retained activity snapshot to match the exact limit price in the preceding account response. Older or incomplete snapshots cannot satisfy this exact response-bundle gate. Existing requested-quantity, status, retained-fill, cumulative, event-time, weighted-average, capture-completion and earliest-page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

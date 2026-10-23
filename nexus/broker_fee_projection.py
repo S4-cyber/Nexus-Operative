@@ -67,6 +67,7 @@ def order_record(raw):
         raise ValueError('BROKER_PROJECTION_ORDER_SCOPE')
     requested=(number(raw['requested_quantity'])
         if 'requested_quantity' in raw else None)
+    limit=(number(raw['limit_price']) if 'limit_price' in raw else None)
     qty=number(raw['filled_quantity'],zero=True)
     average=number(raw['average_fill_price']) if qty else None
     if not qty and raw.get('average_fill_price') is not None and number(raw['average_fill_price'],zero=True)!=0:raise ValueError('BROKER_AVERAGE_WITHOUT_FILL')
@@ -77,6 +78,7 @@ def order_record(raw):
                 average_fill_price=text(average) if average is not None else None,
                 updated_at=timestamp(raw['updated_at']).isoformat())
     if requested is not None:result['requested_quantity']=text(requested)
+    if limit is not None:result['limit_price']=text(limit)
     return result
 
 

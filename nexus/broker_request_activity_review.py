@@ -98,7 +98,7 @@ def fixture_report():
     oid='01234567-89ab-cdef-0123-456789abcdef';account='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
     raw=dict(**plan['payload'],id=oid,asset_class='crypto',status='filled',filled_qty='2',filled_avg_price='99',updated_at='2026-10-17T18:00:02+00:00')
     order=dict(broker_order_id=oid,client_order_id='nx_link_fixture',symbol='BTC/USD',side='buy',status='filled',
-        requested_quantity='2',filled_quantity='2',average_fill_price='99',updated_at=raw['updated_at'])
+        requested_quantity='2',limit_price='100',filled_quantity='2',average_fill_price='99',updated_at=raw['updated_at'])
     fills=[dict(id='20261017180000000::'+f'01234567-89ab-cdef-0123-{i:012d}',activity_type='FILL',order_id=oid,
         symbol='BTCUSD',side='buy',type='partial_fill' if i==1 else 'fill',qty='1',price=price,cum_qty=str(i),leaves_qty=str(2-i),transaction_time=f'2026-10-17T18:00:0{i}Z') for i,price in ((1,'98'),(2,'100'))]
     with tempfile.TemporaryDirectory(prefix='nexus-request-activity-') as directory:

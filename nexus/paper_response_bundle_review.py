@@ -107,6 +107,9 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
         try:activity_requested_qty=contract.number(after['requested_quantity'])
         except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
             _fail('CROSS_RESPONSE_ORDER_REQUESTED_QUANTITY_INVALID')
+        try:activity_limit_price=contract.number(after['limit_price'])
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('CROSS_RESPONSE_ORDER_LIMIT_PRICE_INVALID')
         if after_at<before_at:_fail('CROSS_RESPONSE_ORDER_UPDATE_TIME_REGRESSION')
         if (after_at==before_at and (after['status'],after['filled_quantity'],
                 after['average_fill_price'])!=(before['status'],before['filled_quantity'],
@@ -114,6 +117,8 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
             _fail('CROSS_RESPONSE_ORDER_UPDATE_TIME_CONFLICT')
         if activity_requested_qty!=requested_qty:
             _fail('CROSS_RESPONSE_ORDER_REQUESTED_QUANTITY_CHANGED')
+        if activity_limit_price!=contract.number(before['limit_price']):
+            _fail('CROSS_RESPONSE_ORDER_LIMIT_PRICE_CHANGED')
         if after_qty<before_qty:_fail('CROSS_RESPONSE_ORDER_FILL_REGRESSION')
         if after_qty==before_qty and after['average_fill_price']!=before['average_fill_price']:
             _fail('CROSS_RESPONSE_ORDER_FILL_CORRECTION')
@@ -569,9 +574,11 @@ def _fixture(root,two_pages=False,activity_account_cash='1000',activity_wall_clo
     open_order.update({} if account_order_changes is None else account_order_changes)
     account=account_review._fixture(root/'account',wall_clock_value=1792367940,
         open_orders=[open_order])
+    activity_order={'limit_price':'101'}
+    activity_order.update({} if activity_order_changes is None else activity_order_changes)
     activity=activity_review._fixture(root/'activity',two_pages=two_pages,
         pacing_path=account['pacing_path'],account_cash=activity_account_cash,
-        wall_clock_value=activity_wall_clock,order_changes=activity_order_changes,
+        wall_clock_value=activity_wall_clock,order_changes=activity_order,
         fill_changes=activity_fill_changes,extra_fill_changes=activity_extra_fill_changes,
         fee_changes=activity_fee_changes,
         include_fill=activity_include_fill,response_time_offsets=activity_response_time_offsets)
@@ -786,6 +793,14 @@ def fixture_report():
         except ValueError as error:
             activity_requested_quantity_changed_rejected=(
                 'CROSS_RESPONSE_ORDER_REQUESTED_QUANTITY_CHANGED' in str(error))
+        activity_limit_price_changed=_fixture(
+            root/'activity-limit-price-changed',
+            activity_order_changes={'limit_price':'102'})
+        activity_limit_price_changed_rejected=False
+        try:review(**activity_limit_price_changed)
+        except ValueError as error:
+            activity_limit_price_changed_rejected=(
+                'CROSS_RESPONSE_ORDER_LIMIT_PRICE_CHANGED' in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -965,6 +980,8 @@ def fixture_report():
                 fill_requested_quantity_disagreement_rejected,
             activity_requested_quantity_changed_rejected=
                 activity_requested_quantity_changed_rejected,
+            activity_limit_price_changed_rejected=
+                activity_limit_price_changed_rejected,
             filled_status_quantity_disagreement_rejected=
                 filled_status_quantity_disagreement_rejected,
             completion_status_disagreement_rejected=

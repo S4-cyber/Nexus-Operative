@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.215.0 canonical limit-price binding
+
+New canonical broker-order snapshots now preserve the IOC limit price already checked against the submitted terms. The private exact response-bundle review requires the later retained activity snapshot to carry that price and match the independently normalized limit price in the preceding account response. Missing, malformed or changed values fail closed, and reconciliation acceptance requires the changed-price negative control.
+
+This exposes only a boolean rejection result and changes no UI control, permission, risk limit, account check, emergency stop, credential, network or execution path. It is not provider/source/clock attestation, complete broker activity, funds reconciliation, broker acceptance, trading authority or release approval. Exact v0.214.0 source `71dd4e020a86a7f865764b92e7df4b0f9a504e58` has no visible status contexts or pull-request workflow runs through the available endpoint. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh exact-source validation and all external acceptance gates remain mandatory.
+
+Final local v0.215.0 validation passed 3,567 tests with one expected non-Windows skip and one existing warning. The clean release/evidence/version/roadmap set passed 189 tests; the broader reconciliation/schema focus passed 376. Sixteen bounded profiles and saved evidence matched 357 files / `4e16352457120eb50e3219a24c483a9f4c0d1845dc6c37c97b4de0b0607770f8`; report SHA256 is `5658a78b4c4083a2e5ffd0d18e38a1844ce249a667cb2a429d73f0a3e5725489`. Fourteen controllers, Portal syntax, compilation, dependency consistency, roadmap equality and whitespace checks passed. Exact-source hosted workflows remain mandatory.
+
 ## v0.214.0 canonical requested-quantity binding
 
 New canonical broker-order snapshots now preserve the requested quantity that was already checked against the submitted IOC terms. The private exact response-bundle review requires the later retained activity snapshot to carry that field and match the independently normalized quantity from the preceding account response. Missing, malformed or changed values fail closed, and the reconciliation-acceptance profile requires the changed-quantity negative control.

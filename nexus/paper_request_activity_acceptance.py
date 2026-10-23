@@ -151,7 +151,8 @@ def _fixture(root,*,submission_admission=None):
             expected_payload_sha256=plan['payload_sha256'],admission=lambda:submission_admission)
     requests.observe('nx_accept_fixture',raw)
     order=dict(broker_order_id=broker_id,client_order_id='nx_accept_fixture',symbol='BTC/USD',
-        side='buy',status='filled',requested_quantity='2',filled_quantity='2',average_fill_price='99',
+        side='buy',status='filled',requested_quantity='2',limit_price='100',
+        filled_quantity='2',average_fill_price='99',
         updated_at=raw['updated_at'])
     fills=[dict(id='20261017180000000::'+f'01234567-89ab-cdef-0123-{i:012d}',
         activity_type='FILL',order_id=broker_id,symbol='BTCUSD',side='buy',

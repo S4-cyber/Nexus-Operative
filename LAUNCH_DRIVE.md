@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.219.0 activity-only cumulative fill-delta binding
+
+The exact private response-bundle review now binds every adjacent activity-only cumulative advance to the later fill quantity. A monotonic two-fill chain can no longer conceal missing quantity between retained events merely because the order was absent from the preceding open-order response. The first retained fill may still follow history outside the captured window, so this check does not invent coverage or require a zero baseline.
+
+The release fixture requires rejection of the original gap and direct tests preserve the valid missing-prefix case. Public output adds only true markers and a digest that binds the checked quantities; raw retained evidence stays outside Git. This changes no UI control, permission, risk limit, account check, emergency stop, credential, network or execution path. It is not provider/source/clock attestation, complete broker activity, funds reconciliation, broker acceptance, trading authority or release approval.
+
+Exact v0.218.0 source `49e80cdfb78fc5f64261016577fb479f8cda14a8` completed public-security/history run 39916063646, safety/regression/evidence/browser run 39916063689 and Windows regression/EXE/installer run 39916063688 successfully. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh v0.219.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.219.0 validation passed 3,576 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 219 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `aae1278774b53618a364970c316197481029da6df157bbe2ca5ff274956611e7`; `validation/release_trials_0_219_0.json` SHA256 is `2781e3989688442515c03c9402505c74e03b630ed8da39c23889bbc71aa8efe1`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. The exact staged snapshot and reachable history passed the private-artifact audit with zero findings. Local Gitleaks, rendered-browser and native Windows execution remain unavailable; fresh exact-source workflows remain mandatory.
+
 ## v0.218.0 activity-only order/fill semantic binding
 
 The exact private response-bundle review now validates retained activity orders even when they are absent from the preceding open-order response. It fails closed on inconsistent filled/completion status, requested/cumulative/remainder quantity, fill type, cumulative/time ordering and individual buy/sell limit price while leaving legitimate newly terminal order absence intact. Shared-order progression and delta checks keep precedence and remain unchanged.

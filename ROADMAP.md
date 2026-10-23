@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.218.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.219.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.218.0 closes the activity-only order gap in the exact response bundle. A retained activity order absent from the preceding open-order snapshot must still bind completion status to requested and filled quantity, each fill type to its remainder, each cumulative-plus-remainder value to requested quantity, monotonic cumulative/time ordering and each execution price to the retained limit. Existing shared-order delta, weighted-average, capture-completion and earliest-page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.219.0 closes an activity-only cumulative-fill gap in the exact response bundle. For adjacent retained fills of an order absent from the preceding open-order snapshot, each later cumulative quantity must equal the preceding cumulative quantity plus that later fill quantity. The first retained fill may still begin after unobserved history, so this does not invent coverage. Existing shared-order delta, activity-only completion/requested/remainder, fill-type, chronology, limit-price, capture-completion and earliest-page-receipt bounds remain. This is local supplied-evidence consistency, not provider/source/clock attestation, coverage, broker acceptance or release approval. Permissions remain OFF by default and no UI, credential, network, emergency or trading path changed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

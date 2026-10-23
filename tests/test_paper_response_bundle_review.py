@@ -57,6 +57,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert result['overlapping_order_fill_deltas_bound']
     assert result['retained_fill_limit_prices_checked']
     assert result['retained_fill_type_remainders_checked']
+    assert result['retained_activity_fill_deltas_checked']
     assert result['retained_activity_order_fill_semantics_bound']
     assert result['activity_only_orders_fill_semantics_bound']==0
     assert result['activity_only_fills_semantics_bound']==0
@@ -278,6 +279,38 @@ def test_bundle_rejects_activity_only_order_fill_semantic_disagreement(
         activity_order_changes=activity_changes,activity_fill_changes=fill_changes)
     with pytest.raises(ValueError,match=code):
         subject.review(**options)
+
+
+def test_bundle_rejects_activity_only_adjacent_fill_chain_gap(tmp_path):
+    options=subject._fixture(tmp_path,account_order_client_id='other_client',
+        account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+        activity_order_changes={'status':'filled','filled_quantity':'1',
+            'average_fill_price':'100'},
+        activity_fill_changes={'type':'partial_fill','qty':'0.5','cum_qty':'0.5',
+            'leaves_qty':'0.5','price':'100',
+            'transaction_time':'2026-10-17T18:00:00Z'},
+        activity_extra_fill_changes={'type':'fill','qty':'0.25','cum_qty':'1',
+            'leaves_qty':'0','price':'100',
+            'transaction_time':'2026-10-17T18:00:01Z'})
+    with pytest.raises(ValueError,match='RETAINED_ACTIVITY_ORDER_FILL_CHAIN_GAP'):
+        subject.review(**options)
+
+
+def test_bundle_allows_unobserved_activity_only_history_before_first_fill(tmp_path):
+    options=subject._fixture(tmp_path,account_order_client_id='other_client',
+        account_order_changes={'id':'01234567-89ab-cdef-0123-456789abcde9'},
+        activity_order_changes={'status':'filled','filled_quantity':'1',
+            'average_fill_price':'100'},
+        activity_fill_changes={'type':'partial_fill','qty':'0.25','cum_qty':'0.5',
+            'leaves_qty':'0.5','price':'100',
+            'transaction_time':'2026-10-17T18:00:00Z'},
+        activity_extra_fill_changes={'type':'fill','qty':'0.5','cum_qty':'1',
+            'leaves_qty':'0','price':'100',
+            'transaction_time':'2026-10-17T18:00:01Z'})
+    result=subject.review(**options)
+    assert result['retained_activity_fill_deltas_checked']
+    assert result['activity_only_orders_fill_semantics_bound']==1
+    assert result['activity_only_fills_semantics_bound']==2
 
 
 def test_bundle_partitions_retained_historical_fill_at_earlier_update(tmp_path):

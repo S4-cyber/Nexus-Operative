@@ -201,6 +201,17 @@ def _order_identity_maps(open_orders,activity_orders,activity_records,account_id
             _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_REQUESTED_QUANTITY_DISAGREEMENT')
         if after_qty==requested_qty and after['status']!='filled':
             _fail('CROSS_RESPONSE_ORDER_COMPLETION_STATUS_DISAGREEMENT')
+        try:
+            fill_type_remainder_disagreement=any(
+                (fill['fill_type']=='partial_fill' and
+                    contract.number(fill['leaves_quantity'],zero=True)==0) or
+                (fill['fill_type']=='fill' and
+                    contract.number(fill['leaves_quantity'],zero=True)!=0)
+                for _,_,fill in parsed)
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('CROSS_RESPONSE_ORDER_FILL_ACTIVITY_INVALID')
+        if fill_type_remainder_disagreement:
+            _fail('CROSS_RESPONSE_ORDER_FILL_TYPE_REMAINDER_DISAGREEMENT')
         historical_fill_activity_count+=len(historical)
         fill_partitions.append(dict(identity=open_by_broker[broker_id],
             historical=historical,
@@ -534,6 +545,7 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         overlapping_order_progress_monotonic=True,
         overlapping_order_fill_deltas_bound=True,
         retained_fill_limit_prices_checked=True,
+        retained_fill_type_remainders_checked=True,
         overlapping_order_fill_activities_partitioned=True,
         reported_fee_references_consistent=True,
         reported_fee_exact_timestamp_chronology_checked=True,
@@ -556,7 +568,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'identity agreement and non-regressing update time, cumulative fill, unchanged-quantity average price and '
         'status progression for orders visible in both responses, binds every increased cumulative fill to an '
         'exact contiguous retained fill-activity delta with bounded event time, an individual execution price '
-        'that respects the immutable order limit, and weighted average price, '
+        'that respects the immutable order limit, fill/partial-fill type consistent with the retained remainder, '
+        'and weighted average price, '
         'requires every retained fill at or below the earlier cumulative quantity to occur no later than the '
         'earlier order update, and '
         'requires every exact account-response order update to be no later than that account read completion, '
@@ -828,6 +841,30 @@ def fixture_report():
         except ValueError as error:
             fill_limit_price_disagreement_rejected=(
                 'CROSS_RESPONSE_ORDER_FILL_LIMIT_PRICE_DISAGREEMENT' in str(error))
+        partial_fill_without_remainder=_fixture(
+            root/'partial-fill-without-remainder',
+            activity_fill_changes={'type':'partial_fill','qty':'1','cum_qty':'1',
+                'leaves_qty':'0','price':'100'})
+        partial_fill_without_remainder_rejected=False
+        try:review(**partial_fill_without_remainder)
+        except ValueError as error:
+            partial_fill_without_remainder_rejected=(
+                'CROSS_RESPONSE_ORDER_FILL_TYPE_REMAINDER_DISAGREEMENT'
+                in str(error))
+        terminal_fill_with_remainder=_fixture(
+            root/'terminal-fill-with-remainder',
+            account_order_changes={'filled_qty':'0.25','filled_avg_price':'100',
+                'status':'partially_filled'},
+            activity_order_changes={'status':'partially_filled',
+                'filled_quantity':'0.5','average_fill_price':'100'},
+            activity_fill_changes={'type':'fill','qty':'0.25','cum_qty':'0.5',
+                'leaves_qty':'0.5','price':'100'})
+        terminal_fill_with_remainder_rejected=False
+        try:review(**terminal_fill_with_remainder)
+        except ValueError as error:
+            terminal_fill_with_remainder_rejected=(
+                'CROSS_RESPONSE_ORDER_FILL_TYPE_REMAINDER_DISAGREEMENT'
+                in str(error))
         fee_execution=_fixture(root/'fee-execution',two_pages=True,
             activity_fee_changes={'execution_id':
                 '20261017180000000::11234567-89ab-cdef-0123-999999999999'})
@@ -990,6 +1027,8 @@ def fixture_report():
             overlapping_order_fill_deltas_bound=result['overlapping_order_fill_deltas_bound'],
             retained_fill_limit_prices_checked=
                 result['retained_fill_limit_prices_checked'],
+            retained_fill_type_remainders_checked=
+                result['retained_fill_type_remainders_checked'],
             shared_order_fill_delta_bound=result['overlapping_order_fill_deltas']==1 and
                 result['overlapping_order_fill_delta_activities']==1 and
                 len(result['overlapping_order_fill_delta_sha256'])==64,
@@ -1013,6 +1052,10 @@ def fixture_report():
                 activity_limit_price_changed_rejected,
             fill_limit_price_disagreement_rejected=
                 fill_limit_price_disagreement_rejected,
+            partial_fill_without_remainder_rejected=
+                partial_fill_without_remainder_rejected,
+            terminal_fill_with_remainder_rejected=
+                terminal_fill_with_remainder_rejected,
             filled_status_quantity_disagreement_rejected=
                 filled_status_quantity_disagreement_rejected,
             completion_status_disagreement_rejected=

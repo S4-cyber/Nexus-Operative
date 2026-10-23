@@ -1,6 +1,16 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.216.0, every retained fill for a shared account/activity order must respect the immutable IOC limit price even when the blended average appears compliant. Read the newest version section and generated roadmap; fresh exact-source v0.216.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+Current checkpoint: v0.217.0, every retained exact fill type must agree with its reported remaining quantity: partial_fill requires a positive remainder and fill requires zero. Read the newest version section and generated roadmap; fresh exact-source v0.217.0 CI, actual provider/source/activity/fee/hold/funds reconciliation, native profile/ACL/power-loss acceptance and actual broker/market acceptance remain open.
+
+## v0.217.0 retained fill-type/remainder binding
+
+For every exact retained fill in a shared account/activity order, require `partial_fill` to report a positive remaining quantity and terminal `fill` to report zero remainder. Apply the check after established cumulative, chronology, delta, requested-quantity and completion-status checks so existing malformed-evidence diagnostics retain precedence. Mandatory reciprocal negative controls cover both contradictory labels.
+
+No raw identifiers, timestamps, quantities or prices enter public evidence. This is local supplied-evidence consistency, not provider/source/clock attestation, complete execution coverage, broker acceptance, routing permission or release approval. No UI control or editable parameter changed; preserve the seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and independent emergency stop.
+
+Exact v0.216.0 source `b815dc51a45f5a60b5fc6a4c42523fdf6b2bd4e0` passed public-security/history run 39905708354, safety/regression/evidence/browser run 39905708291 and Windows regression/EXE/installer run 39905708312. Both exact-source regression lanes passed 3,551 tests with 19 platform skips and one existing warning. Those parent results do not transfer. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.217.0 validation passed 3,571 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused response/release/evidence/version/roadmap/packaging set passed 177 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `44dcc943c648b5ba3f04e6f82e11e6f7d6a51c32ca4f3ec1dd07290d60bdc1e8`; `validation/release_trials_0_217_0.json` SHA256 is `5cc1d3d447b1714b20d6da3ae646526ced2a7aa1d3f0838d207b73d7d0dc168c`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Gitleaks, rendered-browser and native Windows execution remain unavailable; run public snapshot/history audits before publication and require fresh exact-source workflows.
 
 ## v0.216.0 individual fill-limit binding
 

@@ -56,6 +56,7 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert len(result['overlapping_order_progress_sha256'])==64
     assert result['overlapping_order_fill_deltas_bound']
     assert result['retained_fill_limit_prices_checked']
+    assert result['retained_fill_type_remainders_checked']
     assert result['overlapping_order_fill_deltas']==1
     assert result['overlapping_order_fill_delta_activities']==1
     assert len(result['overlapping_order_fill_delta_sha256'])==64
@@ -236,13 +237,32 @@ def test_bundle_rejects_individual_sell_fill_below_limit_with_compliant_average(
         subject.review(**options)
 
 
+@pytest.mark.parametrize('fill_changes',[
+    {'type':'partial_fill','qty':'1','cum_qty':'1','leaves_qty':'0','price':'100'},
+    {'type':'fill','qty':'0.25','cum_qty':'0.5','leaves_qty':'0.5','price':'100'},
+])
+def test_bundle_rejects_fill_type_remainder_disagreement(tmp_path,fill_changes):
+    if fill_changes['type']=='partial_fill':
+        order_changes={}
+        activity_changes={}
+    else:
+        order_changes={'filled_qty':'0.25','filled_avg_price':'100',
+            'status':'partially_filled'}
+        activity_changes={'status':'partially_filled','filled_quantity':'0.5',
+            'average_fill_price':'100'}
+    options=subject._fixture(tmp_path,account_order_changes=order_changes,
+        activity_order_changes=activity_changes,activity_fill_changes=fill_changes)
+    with pytest.raises(ValueError,match='FILL_TYPE_REMAINDER_DISAGREEMENT'):
+        subject.review(**options)
+
+
 def test_bundle_partitions_retained_historical_fill_at_earlier_update(tmp_path):
     options=subject._fixture(tmp_path,
         account_order_changes={'filled_qty':'0.5','filled_avg_price':'99',
             'status':'partially_filled'},
         activity_order_changes={'filled_quantity':'0.5','average_fill_price':'99',
             'status':'partially_filled'},
-        activity_fill_changes={'qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5',
+        activity_fill_changes={'type':'partial_fill','qty':'0.5','cum_qty':'0.5','leaves_qty':'0.5',
             'price':'99','transaction_time':'2026-10-17T17:59:59Z'})
     result=subject.review(**options)
     assert result['overlapping_order_fill_activities_partitioned']

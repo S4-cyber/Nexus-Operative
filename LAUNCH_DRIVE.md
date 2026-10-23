@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.217.0 retained fill-type/remainder binding
+
+The exact private account/activity response bundle now rejects a retained `partial_fill` whose reported remaining quantity is zero and a retained terminal `fill` whose reported remainder is positive. The new rule is evaluated after established chronology, cumulative, delta, requested-quantity and completion-status checks so their diagnostics keep precedence. Mandatory reciprocal negative controls prove both contradictions fail closed.
+
+This exposes only boolean verification results and changes no UI control, permission, risk limit, account check, emergency stop, credential, network or execution path. It is not provider/source/clock attestation, complete broker activity, funds reconciliation, broker acceptance, trading authority or release approval. Exact v0.216.0 source `b815dc51a45f5a60b5fc6a4c42523fdf6b2bd4e0` completed all exact-source security, safety/browser/evidence and Windows workflows successfully. Progress remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh exact-source v0.217.0 validation and all external acceptance gates remain mandatory.
+
+Final local v0.217.0 validation passed 3,571 tests with one expected non-Windows skip and one existing warning; the focused response/release/evidence/version/roadmap/packaging set passed 177 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `44dcc943c648b5ba3f04e6f82e11e6f7d6a51c32ca4f3ec1dd07290d60bdc1e8`; `validation/release_trials_0_217_0.json` SHA256 is `5cc1d3d447b1714b20d6da3ae646526ced2a7aa1d3f0838d207b73d7d0dc168c`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Local Gitleaks, rendered-browser and native Windows execution remain unavailable; public snapshot/history audits and fresh exact-source workflows are required before claiming those gates.
+
 ## v0.216.0 individual fill-limit binding
 
 The private exact response-bundle review now rejects any retained buy execution above the immutable limit price or sell execution below it. This applies to every historical and interval fill, so a favorable execution cannot conceal a worse-than-limit execution inside an otherwise compliant weighted average. The mandatory two-fill negative control keeps the weighted average exactly at the limit while one execution violates it; the release profile requires rejection, with direct tests for both sides.

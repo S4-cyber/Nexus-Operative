@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.216.0 (pre-release).** This minor build requires each retained execution for a shared order to respect the immutable IOC limit price even when its blended average remains compliant. It preserves request-term, status, retained-fill, cumulative, event-time, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.217.0 (pre-release).** This minor build requires each retained exact fill event type to agree with its reported remainder: partial_fill requires a positive remainder and fill requires zero. It preserves request-term, limit-price, status, cumulative, event-time, average, capture-completion and page-receipt bounds, and grants no provider-clock, source/coverage, account, funds, broker or trading authority. Actual provider source/coverage, execution and fee completeness, fee posting/linkage, holds, funds, broker-paper and sustained trials remain mandatory. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.217.0 retained fill-type/remainder binding
+
+The exact private response-bundle review now refuses a `partial_fill` with no reported remainder and a terminal `fill` with a positive remainder. Both reciprocal contradictions are mandatory reconciliation negative controls. The check runs after existing chronology, cumulative, delta, requested-quantity and completion-status rules to preserve their diagnostic precedence.
+
+Only boolean verification results are exposed. This does not attest provider semantics, clocks or source, prove received execution coverage, reconcile fees, holds or spendable funds, or authorize broker routing. No UI, credential, network, permission, risk, emergency-stop, funding or execution path changed. Exact v0.216.0 source `b815dc51a45f5a60b5fc6a4c42523fdf6b2bd4e0` passed security/history run 39905708354, safety/regression/evidence/browser run 39905708291 and Windows regression/EXE/installer run 39905708312. Fresh exact-source v0.217.0 workflows remain mandatory.
+
+Final local validation passed 3,571 tests with one expected non-Windows skip and one existing warning; the focused set passed 177 tests. All sixteen bounded profiles and saved-evidence verification matched 357 source files / `44dcc943c648b5ba3f04e6f82e11e6f7d6a51c32ca4f3ec1dd07290d60bdc1e8`; report SHA256 is `5cc1d3d447b1714b20d6da3ae646526ced2a7aa1d3f0838d207b73d7d0dc168c`. Fourteen controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. Public artifact/history and exact-source hosted workflows remain mandatory.
 
 ## v0.216.0 individual fill-limit binding
 

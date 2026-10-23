@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.227.0'
+REVISION = '0.228.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -36,8 +36,8 @@ MILESTONES = (
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence.replace(
         'validated with injected responses only, with order adapters still disconnected;',
-        'an internal explicitly confirmed single-attempt Alpaca paper POST boundary now checks fixed account/position/asset endpoints, commits uncertainty before IO, rechecks permission/stop/credentials after the marker and never retries; validated with injected responses only, with no Portal, saved-write-credential or strategy route;'),
-    ('Accept the internal paper POST boundary against an authorized account; add separately scoped saved write credentials, provider-wide POST pacing and explicit operator controls only after review; complete original-ID recovery, actual execution/fee/hold/funds reconciliation and sustained acceptance. IBKR paper then Coinbase Advanced expansion.'
+        'an internal explicitly confirmed single-attempt Alpaca paper POST boundary now checks fixed account/position/asset endpoints, requires an exact-head shared-local provider POST budget, commits both reservations before IO, rechecks permission/stop/credentials after the marker and never retries; validated with injected responses only, with no Portal, saved-write-credential or strategy route;'),
+    ('Accept the internal paper POST boundary and shared-local provider budget against an authorized account; add separately scoped saved write credentials, broker-wide/distributed POST coordination and explicit operator controls only after review; complete original-ID recovery, actual execution/fee/hold/funds reconciliation and sustained acceptance. IBKR paper then Coinbase Advanced expansion.'
      if item.id=='M8' else item.remaining)) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -75,8 +75,8 @@ DELIVERY_STAGES = (
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'].replace(
         'injected tests do not attest an account and no external order adapter is connected.',
-        'an internal single-attempt paper POST boundary now exists with injected tests only; it has no saved write credential, Portal or strategy route and does not attest an account.'),
-    remaining='Authorized-account acceptance of the single-attempt boundary, separately scoped saved write credentials, explicit operator integration, broker-wide POST pacing, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
+        'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget now exists with injected tests only; it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
+    remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -147,7 +147,7 @@ NEXT = (
     'Accept the explicit halted replacement install/recovery/rollback flow on private native Windows volumes and ordinary-user profiles, including power-loss interruption at each replacement boundary; then run multi-epoch long-run capacity and cost tests. Live capacity can now be reclaimed only after an exact source archive, candidate and separate recovery copy are verified, while source history remains preserved externally.',
     'Validate the opt-in BTC paper runner across sustained public feeds, outages and restart; integrate broader research-backed admission.',
     'Validate sustained local candidate refresh and independent walk-forward/cost evidence and reviewed optional local-weight runtime upgrades; never promote learned output automatically.',
-    'Accept the internal single-attempt paper submission boundary against an authorized account; add separately scoped saved write credentials, provider-wide POST pacing and explicit operator controls only after review, then reconcile real fills, fees, holds and funds before any strategy route or policy promotion.',
+    'Accept the internal single-attempt paper submission boundary and shared-local provider POST budget against an authorized account; add separately scoped saved write credentials, broker-wide/distributed POST coordination and explicit operator controls only after review, then reconcile real fills, fees, holds and funds before any strategy route or policy promotion.',
     'Validate the explicit Windows paper credential/read controls in a real authorized paper account and review scoped-secret lifecycle; accept the journal-bound original-ID recovery coordinator against authorized paper data, then accept the bounded activity collector against authorized paper data, validate bounded local retention and implement authenticated source coverage and verified fee associations/timing, broker-wide pacing and cash/position/hold reconciliation before provider-paper routing; finish forward, packaging and independent release acceptance.',
     'Validate Found Markets on sustained real public feeds, missing data, outages and shared-IP budgets; add licensed/authorized asset connectors, leakage-free walk-forward cost evidence, calibrated forecasts, portfolio diversification and governed policy integration before any discovery-to-order route.',
     'Expand markets incrementally through verified data, legal eligibility, cost and paper-evidence gates.',
@@ -178,7 +178,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.227.0 adds an internal explicitly confirmed Alpaca paper-only single-attempt POST boundary. It checks fixed-endpoint account status, BTC availability or observed USD capacity and asset increments, commits the durable unknown-outcome marker before IO, rechecks permission, emergency stop and credential continuity after the commit, sends at most once and requires original-client-ID recovery for every ambiguous outcome. It has no Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint or funding authority. Injected fixtures do not establish provider or account acceptance. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.228.0 makes a separate exact-head shared-local provider POST budget mandatory at the internal Alpaca paper-only single-attempt boundary. Its private hash chain and OS ownership lease coordinate cooperating callers sharing one path, retain 60-second cooldowns, convert abandoned leases into full-day unknown-outcome review blocks and never retry or recover automatically. Both the provider reservation and request uncertainty commit before the only POST. Broker-wide quota and distributed ownership remain unverified; there is no Portal route, saved write credential scope, strategy integration, ledger application, live endpoint or funding authority. Injected fixtures do not establish provider or account acceptance. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

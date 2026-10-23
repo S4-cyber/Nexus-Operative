@@ -7,6 +7,7 @@ import pytest
 
 from nexus import alpaca_paper_submission as module
 from nexus.broker_request_journal import BrokerRequestJournal
+from nexus.paper_provider_post_budget import PaperProviderPostBudget
 from test_alpaca_paper_contract import plan, response
 from test_broker_request_journal import ACCOUNT
 
@@ -55,15 +56,17 @@ class Opener:
 @pytest.fixture
 def prepared(tmp_path):
     journal=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    budget=PaperProviderPostBudget(tmp_path/'post-budget.sqlite3')
     journal.prepare(plan())
     selected=journal.lookup_request('nx_fixture')
-    return journal,selected
+    return journal,selected,budget
 
 
 def submit(prepared, opener=None, **changes):
-    journal,selected=prepared
+    journal,selected,budget=prepared
     options=dict(expected_account_id=ACCOUNT,expected_head=selected['head_sha256'],
         expected_payload_sha256=selected['plan']['payload_sha256'],
+        post_budget=budget,expected_post_budget_head=budget.inspect()['head_sha256'],
         confirm_paper_order=True,confirm_single_attempt=True,
         opener=opener or Opener(),wall_clock=lambda:1000,elapsed_clock=lambda:50,
         permission_check=lambda:True,emergency_stop_check=lambda:False,
@@ -139,6 +142,8 @@ def test_stop_after_marker_never_posts_and_never_rearms(prepared,monkeypatch):
         submit(prepared,opener,emergency_stop_check=lambda:marked)
     assert marked and all(request.get_method()!='POST' for request,_ in opener.requests)
     assert journal.recovery()['requests'][0]['lookup_by_original_client_id_required']
+    assert prepared[2].history()[0]['outcome']=='NOT_SENT'
+    assert prepared[2].history()[0]['actual_posts']==0
     with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
         submit(prepared,Opener())
 
@@ -150,6 +155,8 @@ def test_post_transport_loss_preserves_unknown_and_cannot_retry(prepared):
     assert 'private transport detail' not in str(error.value)
     retained=prepared[0].recovery()['requests'][0]
     assert retained['lookup_by_original_client_id_required'] and retained['snapshot'] is None
+    assert prepared[2].inspect()['review_required'] is True
+    assert prepared[2].history()[0]['outcome']=='OUTCOME_UNKNOWN'
     second=Opener()
     with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
         submit(prepared,second)
@@ -165,12 +172,14 @@ def test_invalid_post_response_preserves_unknown_without_secret_or_body_echo(pre
 
 
 def test_sell_requires_reported_available_btc(prepared):
-    journal,_=prepared
+    journal,_,_=prepared
     # Use a separate durable request so the fixture's buy remains untouched.
     journal.prepare(plan(client_order_id='sell_fixture',side='SELL'))
     selected=journal.lookup_request('sell_fixture')
     options=dict(expected_account_id=ACCOUNT,expected_head=selected['head_sha256'],
-        expected_payload_sha256=selected['plan']['payload_sha256'],confirm_paper_order=True,
+        expected_payload_sha256=selected['plan']['payload_sha256'],
+        post_budget=PaperProviderPostBudget(journal.path.with_name('sell-post-budget.sqlite3')),
+        expected_post_budget_head='0'*64,confirm_paper_order=True,
         confirm_single_attempt=True,opener=Opener([account(),
             [dict(symbol='BTC/USD',asset_class='crypto',side='long',qty='2',qty_available='1')],asset()]),
         wall_clock=lambda:1000,elapsed_clock=lambda:50,permission_check=lambda:True,

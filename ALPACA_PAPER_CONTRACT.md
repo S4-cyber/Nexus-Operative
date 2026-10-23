@@ -1,6 +1,12 @@
 # Alpaca paper contract foundation
 
-Most components remain read-only or disconnected diagnostics. v0.227.0 adds one internal explicit paper-only single-attempt boundary; it is not exposed through the Portal, saved write credentials, startup or strategies. No broker was connected or tested.
+Most components remain read-only or disconnected diagnostics. v0.228.0 adds mandatory shared-local provider POST coordination to the internal explicit paper-only single-attempt boundary; it is not exposed through the Portal, saved write credentials, startup or strategies. No broker was connected or tested.
+
+## v0.228.0 shared-local provider POST budget
+
+Every internal submission now requires a distinct private `PaperProviderPostBudget` and exact expected head. The bounded hash chain binds account, request head, payload and hashed client-order identity while an OS ownership lease serializes cooperating callers sharing that path. The reservation precedes the request uncertainty marker and both precede POST. Response-observed and known zero-post aborts retain a 60-second local cooldown; attempted or explicitly interrupted unknown outcomes retain a full-day review block. Nothing retries, clears review or reclaims capacity automatically.
+
+This is shared-local coordination, not broker-wide quota discovery or distributed ownership. Another process using another path, host, credential or machine is invisible. It does not establish provider/account acceptance, source coverage, a fill, fees, holds, settled/spendable funds, routing permission, live authority or release approval.
 
 ## v0.227.0 internal single-attempt paper submission
 

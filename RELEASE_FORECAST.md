@@ -4,7 +4,7 @@ Assessment date: 2026-10-23 (America/Los_Angeles).
 Source reviewed: `8a38aae7a47dddd56b4843a5264fbae6788986d4` (v0.226.0).
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.227.0 adds an internal, injected-tested, single-attempt paper POST boundary with durable uncertainty before IO. It is not yet a connected broker-paper prototype because saved write credentials, explicit operator integration, provider-wide POST pacing and actual-account acceptance remain absent. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.228.0 adds exact-head shared-local provider POST coordination to the internal, injected-tested, single-attempt paper boundary. It is not yet a connected broker-paper prototype because saved write credentials, explicit operator integration, broker-wide/distributed POST coordination and actual-account acceptance remain absent. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 

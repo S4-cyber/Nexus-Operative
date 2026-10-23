@@ -1,6 +1,12 @@
 # Nexus Operative release acceptance
 
-Current build: **0.227.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.228.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.228.0 shared-local provider POST budget
+
+Require a distinct private budget path, exact provider-budget head, fixed provider scope, bounded hash-chain replay and one OS ownership lease spanning reservation through result. Admission must bind the account, exact request head, payload digest and hashed client-order identity before the checked request marker and before POST. Response observed, known not-sent and attempted unknown outcomes must remain distinct; unknown or explicitly interrupted tails require full-day review and never retry or recover automatically. Stale heads, cooldown, pending/review state, related paths, owner changes, malformed post counts and chain tampering must fail closed.
+
+Injected controls must cover success, post-marker stop, transport loss, exact-head races, cooldown, abandoned ownership and tampering while keeping broker-wide quota, distributed ownership, account acceptance, fills, fees, holds, spendable funds, routing, live, funding and release authority false. Authorized account acceptance, saved scoped write credentials, explicit operator integration, broker-wide/distributed POST coordination, reconciliation, sustained trials and native Windows acceptance remain open.
 
 ## v0.227.0 internal single-attempt paper submission
 

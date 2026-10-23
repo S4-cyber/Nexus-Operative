@@ -1,0 +1,103 @@
+"""Durable shared-local provider POST pacing and recovery fences."""
+import sqlite3
+
+import pytest
+
+from nexus.paper_provider_post_budget import PaperProviderPostBudget, ZERO
+from test_broker_request_journal import ACCOUNT
+
+DIGEST = 'a' * 64
+
+
+def begin(budget, *, at=1000, head=ZERO, client='nx_one'):
+    owner = budget.ownership(); owner.__enter__()
+    try:
+        token = budget.begin(account_id=ACCOUNT, request_before_head_sha256=DIGEST,
+            payload_sha256='b' * 64, client_order_id=client, admission=lambda:at,
+            ownership=owner, expected_head=head)
+    except BaseException:
+        owner.__exit__(); raise
+    return owner, token
+
+
+def finish(budget, owner, token, *, at=1001, outcome='RESPONSE_OBSERVED', posts=1):
+    try:
+        return budget.finish(token, outcome=outcome,
+            request_after_head_sha256='c' * 64, actual_posts=posts,
+            admission=lambda:at, ownership=owner)
+    finally:
+        owner.__exit__()
+
+
+def test_missing_budget_is_read_only_and_first_exact_zero_head_is_accepted(tmp_path):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    assert budget.inspect()['head_sha256']==ZERO and not budget.path.exists()
+    owner,token=begin(budget);head=finish(budget,owner,token)
+    state=budget.inspect();history=budget.history()
+    assert state['head_sha256']==head and state['completed_attempts']==1
+    assert state['next_allowed_at']==1061 and not state['review_required']
+    assert history[0]['actual_posts']==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
+    assert history[0]['request_before_head_sha256']==DIGEST
+
+
+def test_exact_head_and_cooldown_block_without_appending(tmp_path):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    owner,token=begin(budget);finish(budget,owner,token)
+    before=budget.path.read_bytes();head=budget.inspect()['head_sha256']
+    with pytest.raises(ValueError,match='HEAD_CHANGED'):
+        begin(budget,at=1061,head=ZERO,client='stale')
+    with pytest.raises(ValueError,match='COOLDOWN'):
+        begin(budget,at=1060,head=head,client='early')
+    assert budget.path.read_bytes()==before
+
+
+def test_unknown_post_retains_full_day_review_block(tmp_path):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    owner,token=begin(budget);finish(budget,owner,token,
+        outcome='OUTCOME_UNKNOWN',posts=1)
+    state=budget.inspect()
+    assert state['review_required'] and state['next_allowed_at']==87401
+    assert state['automatic_retry'] is state['automatic_recovery'] is False
+    with pytest.raises(ValueError,match='BLOCKED_REVIEW'):
+        begin(budget,at=90000,head=state['head_sha256'],client='blocked')
+
+
+def test_zero_post_result_must_be_explicit_not_sent(tmp_path):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    owner,token=begin(budget)
+    with pytest.raises(ValueError,match='POST_COUNT_INVALID'):
+        budget.finish(token,outcome='OUTCOME_UNKNOWN',request_after_head_sha256=DIGEST,
+            actual_posts=0,admission=lambda:1001,ownership=owner)
+    owner.__exit__()
+    assert budget.inspect()['pending_token']==token
+
+
+def test_abandoned_lease_requires_exact_confirmed_interruption(tmp_path):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    owner,token=begin(budget);owner.__exit__()
+    cold=PaperProviderPostBudget(path);head=cold.inspect()['head_sha256']
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match='CONFIRMATION_REQUIRED'):
+        cold.interrupt(token,expected_head=head,admission=lambda:1002)
+    with pytest.raises(ValueError,match='HEAD_DISAGREEMENT'):
+        cold.interrupt(token,expected_head='f'*64,confirm_interrupted=True,
+            admission=lambda:1002)
+    assert path.read_bytes()==before
+    result=cold.interrupt(token,expected_head=head,confirm_interrupted=True,
+        admission=lambda:1002)
+    state=cold.inspect();history=cold.history()
+    assert result['uncertainty_preserved'] and state['review_required']
+    assert state['next_allowed_at']==87402
+    assert history[0]['outcome']=='INTERRUPTED_UNKNOWN'
+    assert history[0]['actual_posts'] is None
+
+
+def test_provider_scope_and_chain_tampering_fail_closed(tmp_path):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    owner,token=begin(budget);finish(budget,owner,token)
+    with sqlite3.connect(path) as db:
+        db.execute("UPDATE events SET digest=? WHERE seq=1", ('f'*64,));db.commit()
+    with pytest.raises(ValueError,match='CHAIN_DISAGREEMENT'):
+        budget.inspect()
+    with pytest.raises(ValueError):
+        PaperProviderPostBudget(path,'OTHER_PROVIDER').inspect()

@@ -19,6 +19,8 @@ from urllib.request import Request, ProxyHandler, build_opener
 from nexus import alpaca_paper_contract as contract
 from nexus import alpaca_paper_inspection as inspection
 from nexus.broker_request_journal import BrokerRequestJournal
+from nexus.paper_provider_post_budget import PaperProviderPostBudget
+from nexus.sqlite_journal_guard import check_path_set
 
 ACCOUNT_URL = inspection.ROOT + '/v2/account'
 POSITIONS_URL = inspection.ROOT + '/v2/positions'
@@ -132,6 +134,7 @@ class _Session:
         self.emergency_stop_check = emergency_stop_check
         self.start = self.previous = None
         self.requests = 0
+        self.post_attempted = False
 
     def checkpoint(self):
         try:
@@ -177,6 +180,8 @@ class _Session:
             headers['Content-Type'] = 'application/json'
         request = Request(url, data=data, headers=headers, method=method)
         timeout = self.checkpoint(); self.requests += 1
+        if method == 'POST':
+            self.post_attempted = True
         try:
             with self.reader.open(request, timeout=timeout) as response:
                 self.checkpoint()
@@ -223,6 +228,7 @@ class _Session:
 
 def submit_once(journal, client_order_id, api_key, api_secret, *,
                 expected_account_id, expected_head, expected_payload_sha256,
+                post_budget, expected_post_budget_head,
                 confirm_paper_order=False, confirm_single_attempt=False,
                 opener=None, wall_clock=time.time, elapsed_clock=time.monotonic,
                 permission_check=lambda: False, emergency_stop_check=lambda: True,
@@ -232,6 +238,14 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         _fail('EXPLICIT_SINGLE_ATTEMPT_CONFIRMATION_REQUIRED')
     if type(journal) is not BrokerRequestJournal:
         _fail('JOURNAL_REQUIRED')
+    if type(post_budget) is not PaperProviderPostBudget:
+        _fail('POST_BUDGET_REQUIRED')
+    _hash(expected_post_budget_head)
+    try:
+        check_path_set((journal.path, post_budget.path), 'PAPER_SUBMISSION_')
+        post_budget.inspect()
+    except (OSError, ValueError, TypeError):
+        _fail('POST_BUDGET_INVALID')
     _credential(api_key); _credential(api_secret)
     expected_account_id = inspection._uuid(expected_account_id)
     _hash(expected_head); _hash(expected_payload_sha256)
@@ -264,29 +278,49 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     _asset(asset, payload)
     if credential_check() is not True:
         _fail('CREDENTIALS_CHANGED')
-    marker = journal.begin_submission_checked(client_order_id, expected_head=expected_head,
-        expected_payload_sha256=expected_payload_sha256, admission=session.evaluated_at)
-    if marker.get('attempt_marker_commit_observed') is not True:
-        _fail('ATTEMPT_MARKER_UNCONFIRMED')
-    # This checkpoint is intentionally after the durable marker. A stop or lost
-    # permission now leaves recovery mandatory and cannot re-arm the request.
-    session.checkpoint()
-    if credential_check() is not True:
-        _fail('CREDENTIALS_CHANGED_AFTER_MARKER')
-    raw = session.request(ORDER_URL, payload=payload)
-    session.checkpoint()
-    observed = journal.observe(client_order_id, raw)
+    with post_budget.ownership() as owner:
+        token = post_budget.begin(account_id=expected_account_id,
+            request_before_head_sha256=expected_head,
+            payload_sha256=expected_payload_sha256, client_order_id=client_order_id,
+            admission=session.evaluated_at, ownership=owner,
+            expected_head=expected_post_budget_head)
+        try:
+            marker = journal.begin_submission_checked(client_order_id, expected_head=expected_head,
+                expected_payload_sha256=expected_payload_sha256, admission=session.evaluated_at)
+            if marker.get('attempt_marker_commit_observed') is not True:
+                _fail('ATTEMPT_MARKER_UNCONFIRMED')
+            # This checkpoint is intentionally after both durable reservations.
+            # A stop or lost permission cannot re-arm the request.
+            session.checkpoint()
+            if credential_check() is not True:
+                _fail('CREDENTIALS_CHANGED_AFTER_MARKER')
+            raw = session.request(ORDER_URL, payload=payload)
+            session.checkpoint()
+            observed = journal.observe(client_order_id, raw)
+        except BaseException:
+            outcome = 'OUTCOME_UNKNOWN' if session.post_attempted else 'NOT_SENT'
+            post_budget.finish(token, outcome=outcome,
+                request_after_head_sha256=journal.recovery()['head_sha256'],
+                actual_posts=int(session.post_attempted),
+                admission=lambda: session.previous[0],
+                ownership=owner)
+            raise
+        post_budget_head = post_budget.finish(token, outcome='RESPONSE_OBSERVED',
+            request_after_head_sha256=journal.recovery()['head_sha256'], actual_posts=1,
+            admission=session.evaluated_at, ownership=owner)
     return dict(mode='EXPLICIT_SINGLE_ATTEMPT_ALPACA_PAPER_SUBMISSION',
         source='INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_WRITE',
         paper_only=True, single_attempt_consumed=True,
         durable_unknown_outcome_marker_committed=True,
         paper_order_response_observed=True, journal=observed,
+        post_budget_head_sha256=post_budget_head,
+        local_provider_post_pacing=True, broker_wide_quota_verified=False,
         automatic_retry=False, automatic_continuation=False, sendable=False,
         ready_for_routing=False, broker_account_reconciled=False,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint account, BTC position and asset checks. The durable unknown-outcome marker precedes IO; any lost/ambiguous outcome requires original-client-ID recovery and can never be resent automatically. Sequential preflight reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint account, BTC position and asset checks. Durable request and shared-local-provider budget reservations precede IO; any lost/ambiguous outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Sequential preflight reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -335,33 +369,38 @@ def fixture_report():
             metadata_at=1000,evaluated_at=1001)
         journal.prepare(plan);selected=journal.lookup_request('nx_submit_fixture')
         return journal,selected
-    def options(selected,opener):
+    def options(selected,opener,budget):
         return dict(expected_account_id=account_id,expected_head=selected['head_sha256'],
             expected_payload_sha256=selected['plan']['payload_sha256'],
+            post_budget=budget,expected_post_budget_head=budget.inspect()['head_sha256'],
             confirm_paper_order=True,confirm_single_attempt=True,opener=opener,
             wall_clock=lambda:1000,elapsed_clock=lambda:50,permission_check=lambda:True,
             emergency_stop_check=lambda:False,credential_check=lambda:True)
 
     with tempfile.TemporaryDirectory(prefix='nexus-paper-submit-') as directory:
         root=Path(directory);journal,selected=prepared(root/'success');opener=Opener(journal)
-        result=submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,opener))
+        budget=PaperProviderPostBudget(root/'success-post-budget.sqlite3')
+        result=submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,opener,budget))
         retained=journal.recovery()['requests'][0]
         loss_journal,loss_selected=prepared(root/'loss');loss_opener=Opener(loss_journal,True)
+        loss_budget=PaperProviderPostBudget(root/'loss-post-budget.sqlite3')
         loss_preserved=False
         try:submit_once(loss_journal,'nx_submit_fixture',key,secret,
-            **options(loss_selected,loss_opener))
+            **options(loss_selected,loss_opener,loss_budget))
         except PaperSubmissionError as error:
             loss=loss_journal.recovery()['requests'][0]
             loss_preserved=(str(error)=='PAPER_SUBMISSION_TRANSPORT_OUTCOME_UNKNOWN_LOOKUP_REQUIRED'
                 and loss['lookup_by_original_client_id_required'] and loss['snapshot'] is None)
         repeat_blocked=False
-        try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal)))
+        try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
             repeat_blocked=str(error)=='PAPER_SUBMISSION_LOCAL_REVIEW_BLOCKED'
         checks=dict(marker_committed_before_post=opener.marker_before_post,
             exactly_one_post=sum(request.get_method()=='POST' for request in opener.requests)==1,
             response_retained=retained['snapshot']['status']=='new',
             transport_loss_preserved_for_original_id_lookup=loss_preserved,
+            local_provider_post_budget_retained=budget.inspect()['completed_attempts']==1 and
+                loss_budget.inspect()['review_required'] is True,
             repeat_submission_blocked=repeat_blocked,
             output_never_sendable=result['sendable'] is False and
                 result['automatic_retry'] is False and result['ready_for_routing'] is False)

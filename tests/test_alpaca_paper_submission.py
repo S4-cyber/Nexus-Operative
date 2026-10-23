@@ -1,0 +1,181 @@
+"""Injected single-attempt paper submission boundary; never provider IO."""
+import io
+import json
+from urllib.error import URLError
+
+import pytest
+
+from nexus import alpaca_paper_submission as module
+from nexus.broker_request_journal import BrokerRequestJournal
+from test_alpaca_paper_contract import plan, response
+from test_broker_request_journal import ACCOUNT
+
+KEY = 'fixture_key_only_123'
+SECRET = 'fixture_secret_only_123'
+
+
+def account(**changes):
+    value = dict(id=ACCOUNT, currency='USD', status='ACTIVE', crypto_status='ACTIVE',
+        account_blocked=False, trading_blocked=False, trade_suspended_by_user=False,
+        cash='1000', non_marginable_buying_power='900', pending_transfer_in='0',
+        pending_transfer_out='0', accrued_fees='0')
+    value.update(changes); return value
+
+
+def asset(**changes):
+    value = dict(symbol='BTC/USD', **{'class':'crypto'}, status='active', tradable=True,
+        fractionable=True, min_order_size='.5', min_trade_increment='.5', price_increment='.5')
+    value.update(changes); return value
+
+
+class Reply:
+    def __init__(self, value, *, url=None, status=200, headers=None, raw=None):
+        self.url=url; self.status=status
+        self.headers={'Content-Type':'application/json'} if headers is None else headers
+        self.stream=io.BytesIO(json.dumps(value).encode() if raw is None else raw)
+        self.closed=False
+    def __enter__(self): return self
+    def __exit__(self,*_): self.closed=True
+    def geturl(self): return self.url
+    def read(self,size): return self.stream.read(size)
+
+
+class Opener:
+    def __init__(self, values=None):
+        self.values=list(values or [account(),[dict(symbol='BTC/USD',asset_class='crypto',side='long',qty='3',qty_available='3')],asset(),response()])
+        self.requests=[];self.responses=[]
+    def open(self, request, timeout):
+        self.requests.append((request,timeout)); value=self.values[len(self.requests)-1]
+        if isinstance(value,BaseException): raise value
+        reply=value if isinstance(value,Reply) else Reply(value)
+        if reply.url is None: reply.url=request.full_url
+        self.responses.append(reply);return reply
+
+
+@pytest.fixture
+def prepared(tmp_path):
+    journal=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    journal.prepare(plan())
+    selected=journal.lookup_request('nx_fixture')
+    return journal,selected
+
+
+def submit(prepared, opener=None, **changes):
+    journal,selected=prepared
+    options=dict(expected_account_id=ACCOUNT,expected_head=selected['head_sha256'],
+        expected_payload_sha256=selected['plan']['payload_sha256'],
+        confirm_paper_order=True,confirm_single_attempt=True,
+        opener=opener or Opener(),wall_clock=lambda:1000,elapsed_clock=lambda:50,
+        permission_check=lambda:True,emergency_stop_check=lambda:False,
+        credential_check=lambda:True)
+    options.update(changes)
+    return module.submit_once(journal,'nx_fixture',KEY,SECRET,**options)
+
+
+def test_single_attempt_commits_unknown_before_post_and_retains_response(prepared):
+    opener=Opener();result=submit(prepared,opener)
+    assert result['paper_only'] and result['single_attempt_consumed']
+    assert result['durable_unknown_outcome_marker_committed']
+    assert result['paper_order_response_observed']
+    assert result['source']=='INJECTED_UNATTESTED'
+    assert result['journal']['recovery_state']=='OBSERVED_NONTERMINAL_REVIEW_REQUIRED'
+    assert all(result[key] is False for key in ('automatic_retry','automatic_continuation',
+        'sendable','ready_for_routing','broker_account_reconciled','spendable_funds_verified',
+        'ledger_applied','live_orders_enabled','money_movement_enabled','release_approved'))
+    assert [request.full_url for request,_ in opener.requests]==[
+        module.ACCOUNT_URL,module.POSITIONS_URL,module.ASSET_URL,module.ORDER_URL]
+    assert [request.get_method() for request,_ in opener.requests]==['GET','GET','GET','POST']
+    posted=json.loads(opener.requests[-1][0].data)
+    assert posted==plan()['payload']
+    assert all(request.get_header('Apca-api-key-id')==KEY and
+        request.get_header('Apca-api-secret-key')==SECRET for request,_ in opener.requests)
+    assert all(0<timeout<=module.REQUEST_TIMEOUT for _,timeout in opener.requests)
+    assert all(reply.closed for reply in opener.responses)
+    retained=prepared[0].recovery()['requests'][0]
+    assert retained['submission_attempt_marked'] and retained['snapshot']['status']=='new'
+    assert KEY not in json.dumps(result) and SECRET not in json.dumps(result)
+
+
+@pytest.mark.parametrize('field,value',[('confirm_paper_order',False),('confirm_single_attempt',False)])
+def test_strict_confirmations_are_network_and_journal_silent(prepared,field,value):
+    opener=Opener();before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match='CONFIRMATION_REQUIRED'):
+        submit(prepared,opener,**{field:value})
+    assert not opener.requests and prepared[0].path.read_bytes()==before
+
+
+@pytest.mark.parametrize('changes,code',[
+    ({'permission_check':lambda:False},'PERMISSION_REVOKED'),
+    ({'emergency_stop_check':lambda:True},'EMERGENCY_STOP_ACTIVE'),
+    ({'credential_check':lambda:False},'CREDENTIALS_CHANGED'),
+])
+def test_off_or_revoked_preflight_never_marks_or_posts(prepared,changes,code):
+    opener=Opener();before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match=code):submit(prepared,opener,**changes)
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+    assert prepared[0].path.read_bytes()==before
+
+
+@pytest.mark.parametrize('values,code',[
+    ([account(id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')],'ACCOUNT_ID_DISAGREEMENT'),
+    ([account(cash='100',non_marginable_buying_power='100'),[],asset()],'BUY_FUNDS_INSUFFICIENT'),
+    ([account(),[],asset(tradable=False)],'ASSET_NOT_ELIGIBLE'),
+])
+def test_account_asset_or_funds_failure_precedes_attempt_marker(prepared,values,code):
+    opener=Opener(values);before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match=code):submit(prepared,opener)
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+    assert prepared[0].path.read_bytes()==before
+
+
+def test_stop_after_marker_never_posts_and_never_rearms(prepared,monkeypatch):
+    journal=prepared[0];opener=Opener();marked=False
+    original=journal.begin_submission_checked
+    def begin(*args,**kwargs):
+        nonlocal marked
+        result=original(*args,**kwargs);marked=True;return result
+    monkeypatch.setattr(journal,'begin_submission_checked',begin)
+    with pytest.raises(module.PaperSubmissionError,match='EMERGENCY_STOP_ACTIVE'):
+        submit(prepared,opener,emergency_stop_check=lambda:marked)
+    assert marked and all(request.get_method()!='POST' for request,_ in opener.requests)
+    assert journal.recovery()['requests'][0]['lookup_by_original_client_id_required']
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+def test_post_transport_loss_preserves_unknown_and_cannot_retry(prepared):
+    opener=Opener([account(),[],asset(),URLError('private transport detail')])
+    with pytest.raises(module.PaperSubmissionError,match='OUTCOME_UNKNOWN_LOOKUP_REQUIRED') as error:
+        submit(prepared,opener)
+    assert 'private transport detail' not in str(error.value)
+    retained=prepared[0].recovery()['requests'][0]
+    assert retained['lookup_by_original_client_id_required'] and retained['snapshot'] is None
+    second=Opener()
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,second)
+    assert not second.requests
+
+
+def test_invalid_post_response_preserves_unknown_without_secret_or_body_echo(prepared):
+    opener=Opener([account(),[],asset(),Reply({},raw=b'{"secret":"PRIVATE_BODY"}')])
+    with pytest.raises(ValueError) as error:submit(prepared,opener)
+    assert 'PRIVATE_BODY' not in str(error.value) and KEY not in str(error.value)
+    retained=prepared[0].recovery()['requests'][0]
+    assert retained['lookup_by_original_client_id_required'] and retained['snapshot'] is None
+
+
+def test_sell_requires_reported_available_btc(prepared):
+    journal,_=prepared
+    # Use a separate durable request so the fixture's buy remains untouched.
+    journal.prepare(plan(client_order_id='sell_fixture',side='SELL'))
+    selected=journal.lookup_request('sell_fixture')
+    options=dict(expected_account_id=ACCOUNT,expected_head=selected['head_sha256'],
+        expected_payload_sha256=selected['plan']['payload_sha256'],confirm_paper_order=True,
+        confirm_single_attempt=True,opener=Opener([account(),
+            [dict(symbol='BTC/USD',asset_class='crypto',side='long',qty='2',qty_available='1')],asset()]),
+        wall_clock=lambda:1000,elapsed_clock=lambda:50,permission_check=lambda:True,
+        emergency_stop_check=lambda:False,credential_check=lambda:True)
+    before=journal.path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match='BTC_AVAILABLE_INSUFFICIENT'):
+        module.submit_once(journal,'sell_fixture',KEY,SECRET,**options)
+    assert journal.path.read_bytes()==before

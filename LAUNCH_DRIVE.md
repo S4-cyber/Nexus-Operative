@@ -4,6 +4,18 @@
 
 See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The reviewed v0.226.0 source is `8a38aae7a47dddd56b4843a5264fbae6788986d4`. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are 2–6 weeks for a connected broker-paper prototype and 12–24+ weeks for the full agreed 1.0 candidate; these are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize the paper submission lifecycle, actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
 
+## v0.227.0 internal single-attempt paper submission boundary
+
+An internal callable Alpaca paper-only transport now composes the existing prepared-request journal with fixed paper account, positions, BTC asset and order endpoints. It requires exact caller confirmations, exact retained head and payload references, caller-supplied credentials, active permission and a clear independent emergency-stop callback. It checks account identity/status/trading flags, pending transfers/accrued fees, observed buy capacity or available BTC and exact provider asset increments before committing anything.
+
+The durable unknown-outcome marker is committed before the sole POST. Permission, emergency stop, clock and credential continuity are rechecked after that commit. A veto, transport/HTTP ambiguity, malformed response, lost acknowledgment or response-storage failure leaves original-client-ID lookup mandatory; the request cannot be automatically or manually re-armed through this boundary. A valid supplied response is normalized and retained but never applied to a ledger.
+
+This is an internal boundary with injected acceptance fixtures only. It has no Portal button, saved write credential scope, startup worker, strategy integration, provider-wide POST pacing, retry, cancellation, ledger application, live endpoint or funding capability. It is not actual broker/account, execution, fee, hold, funds or sustained-trial acceptance. OFF defaults, limits, account checks, fail-closed exits, emergency independence and existing beginner UI/help are unchanged. Progress remains about 40% (30–45%, low confidence), with 0/9 accepted stages.
+
+Exact v0.226.0 source `8a38aae7a47dddd56b4843a5264fbae6788986d4` passed public security/history run 39987031822, safety/regression/evidence/browser run 39987031701 and Windows regression/EXE/installer run 39987031774. Parent results do not transfer; v0.227.0 requires full local and exact-source validation.
+
+Final local v0.227.0 validation passed 3,608 tests with one expected non-Windows skip and one existing warning; the focused set passed 391. Sixteen offline profiles and saved-evidence verification matched 359 source files / `8dc1bc565b628d14a4ea95372ffb29981c20a2939b5ef42c1c7b3cb6965f7a59`; report SHA256 is `238dbfd388544a95cdef3b54e56df73b7928b8dc5b53fa72eb1549bf9066a6d9`. Fourteen controllers and all static, roadmap, whitespace and 560-path proposed-public/reachable-history audits passed. These local/injected results grant no provider, trading, funding, deployment or release authority; fresh exact-source workflows remain mandatory.
+
 ## v0.226.0 declared activity/balance source binding
 
 The private four-observation reconciliation guard now fails closed unless every accepted activity receipt and all four portable balance observations carry the same allowlisted declared source label. A synthetically valid `INJECTED_UNATTESTED` / `PAPER_HTTPS_READS` mismatch is a mandatory negative control, and the composed private/public account-evidence layers retain only an exact boolean.

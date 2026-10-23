@@ -278,6 +278,22 @@ def test_pacing_fixture_reports_actual_retained_fences_without_provider_authorit
         with pytest.raises(ValueError, match='PACING_AUTHORITY'): trials._validate('pacing', dict(result, **{field:True}))
 
 
+def test_pacing_profile_requires_single_attempt_submission_transport_fences():
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    for field in ('marker_committed_before_post','exactly_one_post','response_retained',
+                  'transport_loss_preserved_for_original_id_lookup','repeat_submission_blocked',
+                  'output_never_sendable'):
+        changed=copy.deepcopy(result);changed['single_attempt_submission_transport'][field]=False
+        with pytest.raises(ValueError,match='SUBMISSION_TRANSPORT_FENCES'):
+            trials._validate('pacing',changed)
+    for field in ('actual_provider_access','actual_vault_access','broker_account_reconciled',
+                  'spendable_funds_verified','ready_for_routing','live_orders_enabled',
+                  'money_movement_enabled','release_approved'):
+        changed=copy.deepcopy(result);changed['single_attempt_submission_transport'][field]=True
+        with pytest.raises(ValueError,match='SUBMISSION_TRANSPORT_AUTHORITY'):
+            trials._validate('pacing',changed)
+
+
 def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim_authority():
     from nexus.paper_activity_acceptance_evidence import fixture_report
     result=fixture_report();trials._validate('activity_acceptance',result)

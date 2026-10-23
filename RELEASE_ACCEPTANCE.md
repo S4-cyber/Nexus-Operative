@@ -1,6 +1,12 @@
 # Nexus Operative release acceptance
 
-Current build: **0.191.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.227.0 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+
+## v0.227.0 internal single-attempt paper submission
+
+Require two strict confirmations; exact request-journal head and payload; fixed paper-only endpoints; bounded identity/status/pending-fee/observed-capacity/asset checks; durable uncertainty before POST; permission, stop, clock and credential rechecks after marker commit; exactly one POST; normalized retained response; repeat refusal; and original-ID recovery after every ambiguous outcome. Redirect, proxy, caller-URL, automatic retry, cancellation, ledger, live endpoint, funding, saved write credential, Portal and strategy paths must remain absent.
+
+Mandatory injected controls prove marker-before-POST ordering, one POST, retained response, transport-loss recovery and repeat refusal while all provider/account/funds/routing/live/release authority remains false. Actual provider/account behavior, broker-wide POST pacing, execution/fee/hold/funds reconciliation, sustained trials, native Windows acceptance and independent review remain open.
 
 ## v0.191.0 exact-byte account-response normalization
 

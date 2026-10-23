@@ -1,6 +1,12 @@
-# Disconnected Alpaca paper contract foundation
+# Alpaca paper contract foundation
 
-This component prepares and validates fixture data only. It contains no HTTP client, credentials, environment access, account writes or automatic strategy routing. The existing gateway continues to reject Alpaca submissions. No broker was connected or tested.
+Most components remain read-only or disconnected diagnostics. v0.227.0 adds one internal explicit paper-only single-attempt boundary; it is not exposed through the Portal, saved write credentials, startup or strategies. No broker was connected or tested.
+
+## v0.227.0 internal single-attempt paper submission
+
+`alpaca_paper_submission.submit_once` accepts only an exact prepared BTC/USD IOC-limit request and fixed Alpaca paper account, position, BTC asset and order endpoints. Two exact confirmations, exact retained journal/payload references, caller-supplied credentials, active permission, a clear independent emergency stop and credential continuity are mandatory. Account identity/status/trading flags, zero pending transfers/accrued fees, observed USD capacity or available BTC and provider asset increments are checked before the durable marker.
+
+The unknown-outcome marker commits before the only POST. Permission, stop, clock and credential continuity are rechecked after the commit. Any later veto, transport/HTTP ambiguity, malformed response, lost return or observation-storage failure leaves the request permanently uncertain and eligible only for original-client-ID lookup. There is no automatic retry, cancellation, ledger application, live endpoint, funding, saved write credential scope, Portal route or strategy path. Injected tests and the release fixture do not establish actual provider/account, execution, fee, hold, funds or market acceptance.
 
 ## v0.191.0 exact-byte account-response review
 

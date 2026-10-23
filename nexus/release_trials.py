@@ -422,6 +422,8 @@ def _pacing_trial():
         no_sidecars = before == {p.name:p.read_bytes() for p in Path(directory).iterdir() if p.is_file()}
         from nexus.broker_request_journal import submission_admission_fixture
         submission=submission_admission_fixture()
+        from nexus.alpaca_paper_submission import fixture_report as submission_transport_fixture
+        submission_transport=submission_transport_fixture()
         from nexus.paper_recovery_step import fixture_report as recovery_step_fixture
         bounded_step=recovery_step_fixture()
         from nexus.paper_recovery_drill import fixture_report as crash_fixture
@@ -429,7 +431,7 @@ def _pacing_trial():
         from nexus.sqlite_journal_guard import path_fixture_report
         from nexus.alpaca_paper_contract import timestamp_fixture_report
         from nexus.paper_read_pacing import completion_fixture_report
-        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -852,6 +854,16 @@ def _validate(profile, result):
         _require(all(submission[k] is True for k in ('admission_marker_replayed','admission_clock_floor_retained','legacy_marker_untimed')),'SUBMISSION_ADMISSION_HISTORY')
         _require(submission['source']=='TEMPORARY_LOCAL_SUBMISSION_ADMISSION_FIXTURE' and all(submission[k] is True for k in ('preflight_passive_no_authority','preflight_marked_requires_recovery','lookup_begin_clock_rollback','lookup_result_clock_rollback','retained_clock_rejected','rate_cooldown_rejected','rate_deadline_allows_marker_only','account_review_blocks_begin','marker_commit_observed','recovery_pair_reserved','duplicate_begin_rejected','revoked_admission_unchanged','pending_lookup_completion_reserved','terminal_lookup_releases_reserve','reopened_terminal_observation')),'SUBMISSION_ADMISSION_FENCES')
         _require(all(submission[k] is False for k in ('transport_invoked','routing_authorized','broker_connected','ledger_applied','broker_account_reconciled','live_orders_enabled','money_movement_enabled','release_approved')),'SUBMISSION_ADMISSION_AUTHORITY')
+        transport=result['single_attempt_submission_transport']
+        _require(transport['source']=='INJECTED_SINGLE_ATTEMPT_PAPER_SUBMISSION_FIXTURE' and
+            transport['passed'] is True and all(transport[k] is True for k in
+            ('marker_committed_before_post','exactly_one_post','response_retained',
+             'transport_loss_preserved_for_original_id_lookup','repeat_submission_blocked',
+             'output_never_sendable')),'SUBMISSION_TRANSPORT_FENCES')
+        _require(all(transport[k] is False for k in ('actual_provider_access','actual_vault_access',
+            'broker_account_reconciled','spendable_funds_verified','ready_for_routing',
+            'live_orders_enabled','money_movement_enabled','release_approved')),
+            'SUBMISSION_TRANSPORT_AUTHORITY')
         _require(result['completed_sessions'] == 3 and result['replayed_events'] == 6, 'PACING_HISTORY')
         _require(all(result[name] is True for name in ('cooldown_enforced', 'retry_after_retained',
             'authentication_block_retained', 'pending_read_not_auto_released',

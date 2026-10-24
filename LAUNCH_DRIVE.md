@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.247.0 parent is locally verified, but GitHub still had not registered its exact-source workflows when this candidate began; v0.248.0 requires fresh checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.248.0 parent is locally verified, and all three of its exact-source GitHub workflows subsequently completed successfully; v0.249.0 still requires fresh checks because parent results do not transfer. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.249.0 exact reconnect-result acknowledgement replay
+
+Durable Activity SSE reconnect results can now recover an acknowledgement loss by replaying the exact original result input. New rows retain the caller-requested outcome/detail and the final durable outcome/detail, preserving emergency-stop conversion. The replay must match the current result head, attempt token, evaluation time, requested values and checkpoint hashes; it appends no event and cannot invoke the provider or reserve another attempt.
+
+Changed inputs, a later emergency close or a newer pending attempt fail closed with unchanged bytes. Existing v0.248 rows remain readable. This closes a local result-acknowledgement uncertainty window without adding network authority, automatic retries, credentials, cursor mutation, orders, funding paths or Portal controls. It does not prove provider entitlement, source/delivery/replay coverage, native durability, distributed coordination, fees, holds, settled funds, profitability or release readiness.
+
+Final v0.249.0 validation passed 3862 tests with 1 intentional skip and the existing Starlette/httpx deprecation warning; the focused release set passed 267 tests with that warning. All 16 offline release profiles passed, and saved-evidence verification accepted `validation/release_trials_0_249_0.json` at SHA-256 `6ec75ded8c8bb19e3cf32a53ac08e5a79d54d25ca62a8565fab08d34be04cfe2` against 387 public source files with fingerprint `decb3c82c514ce9532e6c315f3e8a2a6de0bba6e5b8dbc6744952b34e40fe4cd`. All 14 Node controllers, Portal script syntax, Python compilation, dependency consistency, generated-roadmap equality and whitespace checks passed. These are offline implementation checks only and do not grant release, trading, provider, Windows or market acceptance.
 
 ## v0.248.0 emergency-stop-fenced retry-result admission
 

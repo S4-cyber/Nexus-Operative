@@ -1104,6 +1104,7 @@ def _validate(profile, result):
             'TEMPORARY_INJECTED_ACTIVITY_SSE_RECONNECT_BUDGET_FIXTURE' and
             all(reconnect_budget[k] is True for k in ('passed',
                 'first_failure_retained_without_retry',
+                'lost_retry_result_ack_replays_without_new_attempt',
                 'emergency_stop_blocks_before_reconnect_storage',
                 'due_second_attempt_explicit_and_single',
                 'checkpoint_and_budget_recover_together',

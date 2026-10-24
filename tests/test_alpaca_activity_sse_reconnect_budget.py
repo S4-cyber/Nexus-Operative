@@ -2,13 +2,14 @@
 import copy
 import io
 import json
+import sqlite3
 
 import pytest
 
 from nexus import alpaca_activity_sse_reconnect_budget as subject
 from nexus.alpaca_activity_sse_cursor_store import ZERO, ActivitySSECursorStore
 from nexus.alpaca_activity_sse_review import _event
-from nexus.alpaca_paper_contract import canonical
+from nexus.alpaca_paper_contract import canonical, sha
 
 
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
@@ -288,6 +289,130 @@ def test_retry_result_rechecks_clear_stop_inside_transaction(tmp_path):
     assert samples == [False, False]
     assert state['last_outcome'] == 'RETRY_REQUIRED'
     assert state['next_allowed_at'] == 1001
+
+
+def test_retry_result_lost_ack_exact_replay_is_byte_stable(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    options = dict(evaluated_at=1000, outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=STOP_CLEAR)
+    first = budget.finish(reserved['token'], **options)
+    saved = budget.path.read_bytes()
+    replay = budget.finish(reserved['token'], **options)
+    assert not first['duplicate_result'] and replay['duplicate_result']
+    assert replay['head_sha256'] == first['head_sha256']
+    assert budget.path.read_bytes() == saved
+    assert replay['attempts'] == 1 and replay['next_allowed_at'] == 1001
+
+
+@pytest.mark.parametrize('change', [
+    {'evaluated_at': 1001},
+    {'detail_code': 'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED'},
+    {'outcome': 'REVIEW_REQUIRED', 'detail_code': 'NONRETRYABLE_FAILURE'},
+    {'checkpoint_head_sha256': 'a' * 64},
+])
+def test_retry_result_replay_requires_exact_original_inputs(
+        tmp_path, change):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    options = dict(evaluated_at=1000, outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=STOP_CLEAR)
+    budget.finish(reserved['token'], **options)
+    saved = budget.path.read_bytes()
+    options.update(change)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESULT_REPLAY_DISAGREEMENT'):
+        budget.finish(reserved['token'], **options)
+    assert budget.path.read_bytes() == saved
+
+
+def test_converted_retry_result_exact_replay_recovers_lost_ack(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    options = dict(evaluated_at=1000, outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE')
+    samples = iter((False, True))
+    first = budget.finish(reserved['token'],
+        emergency_stop_check=lambda: next(samples), **options)
+    saved = budget.path.read_bytes()
+    replay = budget.finish(reserved['token'],
+        emergency_stop_check=lambda: True, **options)
+    assert first['last_outcome'] == 'REVIEW_REQUIRED'
+    assert first['last_requested_outcome'] == 'RETRY_REQUIRED'
+    assert replay['duplicate_result']
+    assert budget.path.read_bytes() == saved
+
+
+def test_old_result_record_remains_replayable_after_upgrade(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    state = budget.finish(reserved['token'], evaluated_at=1000,
+        outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=STOP_CLEAR)
+    with sqlite3.connect(budget.path) as db:
+        encoded, parent = db.execute(
+            'SELECT body,previous FROM events WHERE seq=2').fetchone()
+        body = json.loads(encoded)
+        body.pop('requested_outcome')
+        body.pop('requested_detail_code')
+        digest = sha(dict(seq=2, body=body, previous=parent))
+        db.execute('UPDATE events SET body=?,digest=? WHERE seq=2',
+            (canonical(body), digest))
+    legacy = subject.ActivitySSEReconnectBudget(
+        budget.path, ACCOUNT).inspect()
+    assert legacy['head_sha256'] != state['head_sha256']
+    assert legacy['last_requested_outcome'] == 'RETRY_REQUIRED'
+    assert legacy['last_requested_detail_code'] == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE'
+    saved = budget.path.read_bytes()
+    replay = budget.finish(reserved['token'], evaluated_at=1000,
+        outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=STOP_CLEAR)
+    assert replay['duplicate_result']
+    assert budget.path.read_bytes() == saved
+
+
+def test_old_result_cannot_be_replayed_after_next_attempt_begins(tmp_path):
+    _, budget = stores(tmp_path)
+    first = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    waiting = budget.finish(first['token'], evaluated_at=1000,
+        outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=STOP_CLEAR)
+    second = budget.begin(evaluated_at=1001,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=waiting['head_sha256'],
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    saved = budget.path.read_bytes()
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='TOKEN_CHANGED'):
+        budget.finish(first['token'], evaluated_at=1000,
+            outcome='RETRY_REQUIRED',
+            detail_code=
+                'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+            emergency_stop_check=STOP_CLEAR)
+    assert budget.path.read_bytes() == saved
+    assert budget.inspect()['pending_token'] == second['token']
 
 
 @pytest.mark.parametrize('check', [

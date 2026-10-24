@@ -142,10 +142,11 @@ class ActivitySSEReconnectBudget:
         state = dict(head_sha256=ZERO, attempts=0, pending_token=None,
             expected_cursor_head_sha256=None, next_allowed_at=0,
             last_evaluated_at=0, last_outcome=None, last_detail_code=None,
+            last_requested_outcome=None, last_requested_detail_code=None,
             review_required=False,
             completed=False, checkpoint_head_sha256=None,
             checkpoint_receipt_sha256=None,
-            last_attempt_head_sha256=None,
+            last_attempt_head_sha256=None, last_result_head_sha256=None,
             emergency_stop_prior_head_sha256=None)
         previous = ZERO
         for index, (seq, encoded, parent, digest) in enumerate(rows):
@@ -189,21 +190,44 @@ class ActivitySSEReconnectBudget:
                 state['pending_token'] = digest
                 state['expected_cursor_head_sha256'] = cursor_head
                 state['last_evaluated_at'] = now
-            elif type(body) is dict and body.get('kind') == 'RESULT' and set(body) == {
-                    'kind', 'policy', 'token', 'evaluated_at', 'outcome',
-                    'detail_code', 'next_allowed_at',
-                    'checkpoint_head_sha256', 'checkpoint_receipt_sha256'}:
+            elif (type(body) is dict and body.get('kind') == 'RESULT' and
+                    set(body) in ({'kind', 'policy', 'token',
+                        'evaluated_at', 'outcome', 'detail_code',
+                        'next_allowed_at', 'checkpoint_head_sha256',
+                        'checkpoint_receipt_sha256'},
+                    {'kind', 'policy', 'token', 'evaluated_at', 'outcome',
+                        'detail_code', 'requested_outcome',
+                        'requested_detail_code', 'next_allowed_at',
+                        'checkpoint_head_sha256',
+                        'checkpoint_receipt_sha256'})):
                 now = _clock(body['evaluated_at'])
+                requested_outcome = body.get('requested_outcome',
+                    body['outcome'])
+                requested_detail = body.get('requested_detail_code',
+                    body['detail_code'])
                 if (body['policy'] != POLICY or
                         state['pending_token'] is None or
                         body['token'] != state['pending_token'] or
                         body['outcome'] not in OUTCOMES or
+                        requested_outcome not in OUTCOMES or
                         now < state['last_evaluated_at'] or
                         type(body['detail_code']) is not str or
-                        re.fullmatch(r'[A-Z0-9_]{1,96}', body['detail_code']) is None):
+                        re.fullmatch(r'[A-Z0-9_]{1,96}', body['detail_code']) is None or
+                        type(requested_detail) is not str or
+                        re.fullmatch(r'[A-Z0-9_]{1,96}', requested_detail) is None):
                     _fail('RESULT_SCOPE_INVALID')
                 outcome = body['outcome']
+                converted_stop_result = (
+                    requested_outcome == 'RETRY_REQUIRED' and
+                    requested_detail in RETRYABLE_ERRORS and
+                    outcome == 'REVIEW_REQUIRED' and
+                    body['detail_code'] == 'EMERGENCY_STOP_ACTIVE')
+                if (not converted_stop_result and
+                        (requested_outcome != outcome or
+                            requested_detail != body['detail_code'])):
+                    _fail('RESULT_SCOPE_INVALID')
                 state['last_attempt_head_sha256'] = state['pending_token']
+                state['last_result_head_sha256'] = digest
                 next_at = _clock(body['next_allowed_at'])
                 checkpoint_head = body['checkpoint_head_sha256']
                 checkpoint_receipt = body['checkpoint_receipt_sha256']
@@ -235,6 +259,8 @@ class ActivitySSEReconnectBudget:
                 state['last_evaluated_at'] = now
                 state['last_outcome'] = outcome
                 state['last_detail_code'] = body['detail_code']
+                state['last_requested_outcome'] = requested_outcome
+                state['last_requested_detail_code'] = requested_detail
             elif (type(body) is dict and
                     body.get('kind') == 'EMERGENCY_STOP_CLOSE' and
                     set(body) == {'kind', 'policy', 'account_sha256',
@@ -270,11 +296,13 @@ class ActivitySSEReconnectBudget:
             state = dict(head_sha256=ZERO, attempts=0, pending_token=None,
                 expected_cursor_head_sha256=None, next_allowed_at=0,
                 last_evaluated_at=0, last_outcome=None,
-                last_detail_code=None,
+                last_detail_code=None, last_requested_outcome=None,
+                last_requested_detail_code=None,
                 review_required=False, completed=False,
                 checkpoint_head_sha256=None,
                 checkpoint_receipt_sha256=None,
                 last_attempt_head_sha256=None,
+                last_result_head_sha256=None,
                 emergency_stop_prior_head_sha256=None)
         else:
             with closing(self._connect()[0]) as db:
@@ -364,8 +392,14 @@ class ActivitySSEReconnectBudget:
             emergency_stop_check=None):
         """Record the exact outcome of the reserved attempt."""
         now = _clock(evaluated_at)
+        token = _digest(token, 'TOKEN_INVALID')
         if outcome not in OUTCOMES:
             _fail('OUTCOME_INVALID')
+        if (type(detail_code) is not str or
+                re.fullmatch(r'[A-Z0-9_]{1,96}', detail_code) is None):
+            _fail('DETAIL_CODE_INVALID')
+        if outcome == 'RETRY_REQUIRED' and detail_code not in RETRYABLE_ERRORS:
+            _fail('RETRY_DETAIL_INVALID')
         retry_clear_before_commit = None
         if outcome == 'RETRY_REQUIRED':
             if not callable(emergency_stop_check):
@@ -380,6 +414,20 @@ class ActivitySSEReconnectBudget:
             retry_clear_before_commit = stop_clear()
         current = self.inspect()
         if current['pending_token'] != token:
+            exact_result = (
+                current['pending_token'] is None and
+                current['head_sha256'] == current['last_result_head_sha256'] and
+                current['last_attempt_head_sha256'] == token)
+            if exact_result:
+                if (current['last_evaluated_at'] != now or
+                        current['last_requested_outcome'] != outcome or
+                        current['last_requested_detail_code'] != detail_code or
+                        current['checkpoint_head_sha256'] !=
+                            checkpoint_head_sha256 or
+                        current['checkpoint_receipt_sha256'] !=
+                            checkpoint_receipt_sha256):
+                    _fail('RESULT_REPLAY_DISAGREEMENT')
+                return dict(current, duplicate_result=True)
             _fail('TOKEN_CHANGED')
         db, _ = self._connect(write=True)
         with closing(db):
@@ -401,7 +449,10 @@ class ActivitySSEReconnectBudget:
                     if retained_outcome == 'RETRY_REQUIRED' else 0)
                 body = dict(kind='RESULT', policy=POLICY, token=token,
                     evaluated_at=now, outcome=retained_outcome,
-                    detail_code=retained_detail, next_allowed_at=next_at,
+                    detail_code=retained_detail,
+                    requested_outcome=outcome,
+                    requested_detail_code=detail_code,
+                    next_allowed_at=next_at,
                     checkpoint_head_sha256=checkpoint_head_sha256,
                     checkpoint_receipt_sha256=checkpoint_receipt_sha256)
                 head = self._insert(db, 2 * state['attempts'], body,
@@ -410,7 +461,7 @@ class ActivitySSEReconnectBudget:
                 if (loaded['head_sha256'] != head or
                         loaded['last_outcome'] != retained_outcome):
                     _fail('COMMIT_REPLAY_DISAGREEMENT')
-        return self.inspect()
+        return dict(self.inspect(), duplicate_result=False)
 
     def abort_pending_for_emergency_stop(self, *, evaluated_at,
             expected_head, emergency_stop_check,
@@ -855,6 +906,14 @@ def fixture_report():
         except ActivitySSETransportError:
             pass
         after_timeout = budget.inspect()
+        retry_result_bytes = budget.path.read_bytes()
+        replayed_timeout = budget.finish(
+            after_timeout['last_attempt_head_sha256'], evaluated_at=1000,
+            outcome='RETRY_REQUIRED',
+            detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+            emergency_stop_check=lambda: False)
+        retry_result_replay_unchanged = \
+            budget.path.read_bytes() == retry_result_bytes
         second = Opener(raw)
         common['wall_clock'] = lambda: 1001
         result = collect_and_checkpoint_due('fixture_key_only_123',
@@ -950,6 +1009,12 @@ def fixture_report():
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
                 after_timeout['next_allowed_at'] == 1001 and
+                len(first.requests) == 1,
+            lost_retry_result_ack_replays_without_new_attempt=
+                replayed_timeout['duplicate_result'] and
+                retry_result_replay_unchanged and
+                replayed_timeout['attempts'] == 1 and
+                replayed_timeout['last_outcome'] == 'RETRY_REQUIRED' and
                 len(first.requests) == 1,
             emergency_stop_blocks_before_reconnect_storage=
                 blocked_code is not None and

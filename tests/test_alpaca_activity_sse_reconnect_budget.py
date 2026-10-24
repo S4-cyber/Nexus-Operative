@@ -219,6 +219,108 @@ def test_budget_stop_raised_during_reservation_consumes_no_attempt(
     assert retry['attempt'] == 1
 
 
+def test_reservation_lost_ack_exact_replay_is_byte_stable(tmp_path):
+    _, budget = stores(tmp_path)
+    samples = []
+    options = dict(evaluated_at=1000, expected_cursor_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+        emergency_stop_check=lambda: samples.append(False) or False,
+        confirm_reconnect_attempt=True)
+    first = budget.begin(**options)
+    saved = budget.path.read_bytes()
+    replay = budget.begin(**options)
+    assert not first['duplicate_reservation']
+    assert first['provider_request_authorized']
+    assert replay['duplicate_reservation']
+    assert not replay['provider_request_authorized']
+    assert replay['token'] == first['token']
+    assert replay['attempt'] == first['attempt'] == 1
+    assert budget.path.read_bytes() == saved
+    assert samples == [False, False, False, False]
+
+
+@pytest.mark.parametrize('change', [
+    {'evaluated_at': 1001},
+    {'expected_cursor_head': 'a' * 64},
+    {'reconnect_reason': 'SLOW_CONSUMER'},
+])
+def test_reservation_replay_requires_exact_original_inputs(tmp_path, change):
+    _, budget = stores(tmp_path)
+    options = dict(evaluated_at=1000, expected_cursor_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    budget.begin(**options)
+    saved = budget.path.read_bytes()
+    options.update(change)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='BEGIN_REPLAY_DISAGREEMENT'):
+        budget.begin(**options)
+    assert budget.path.read_bytes() == saved
+
+
+def test_reservation_replay_stop_race_preserves_pending_attempt(tmp_path):
+    _, budget = stores(tmp_path)
+    options = dict(evaluated_at=1000, expected_cursor_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    reserved = budget.begin(**options)
+    saved = budget.path.read_bytes()
+    samples = iter((False, True))
+    options['emergency_stop_check'] = lambda: next(samples)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EMERGENCY_STOP_ACTIVE'):
+        budget.begin(**options)
+    assert budget.path.read_bytes() == saved
+    assert budget.inspect()['pending_token'] == reserved['token']
+
+
+def test_coordinator_refuses_replayed_reservation_before_provider_io(
+        tmp_path):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    saved = budget.path.read_bytes()
+    opener = Opener([raw])
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESERVATION_REPLAY_REQUIRES_REVIEW'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert not opener.requests
+    assert budget.path.read_bytes() == saved
+    assert not cursor.path.exists()
+
+
+def test_legacy_pending_reservation_remains_readable_without_replay(
+        tmp_path):
+    _, budget = stores(tmp_path)
+    budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    with sqlite3.connect(budget.path) as db:
+        encoded, parent = db.execute(
+            'SELECT body,previous FROM events WHERE seq=1').fetchone()
+        body = json.loads(encoded)
+        body.pop('expected_budget_head_sha256')
+        digest = sha(dict(seq=1, body=body, previous=parent))
+        db.execute('UPDATE events SET body=?,digest=? WHERE seq=1',
+            (canonical(body), digest))
+    legacy = budget.inspect()
+    assert legacy['pending_token'] == legacy['head_sha256']
+    assert legacy['last_begin_expected_head_sha256'] is None
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='HEAD_CHANGED'):
+        budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=STOP_CLEAR,
+            confirm_reconnect_attempt=True)
+
+
 def test_budget_stop_raised_at_due_retry_preserves_exact_backoff_state(
         tmp_path):
     _, budget = stores(tmp_path)

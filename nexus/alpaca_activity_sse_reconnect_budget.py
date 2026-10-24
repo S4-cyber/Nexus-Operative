@@ -143,6 +143,8 @@ class ActivitySSEReconnectBudget:
             expected_cursor_head_sha256=None, next_allowed_at=0,
             last_evaluated_at=0, last_outcome=None, last_detail_code=None,
             last_requested_outcome=None, last_requested_detail_code=None,
+            last_begin_expected_head_sha256=None,
+            last_reconnect_reason=None,
             review_required=False,
             completed=False, checkpoint_head_sha256=None,
             checkpoint_receipt_sha256=None,
@@ -163,14 +165,20 @@ class ActivitySSEReconnectBudget:
                 if body != dict(schema=SCHEMA,
                         account_sha256=self.account_sha256):
                     _fail('ACCOUNT_OR_SCHEMA')
-            elif type(body) is dict and body.get('kind') == 'BEGIN' and set(body) == {
-                    'kind', 'policy', 'account_sha256', 'attempt',
-                    'evaluated_at', 'expected_cursor_head_sha256',
-                    'reconnect_reason', 'confirm_reconnect_attempt'}:
+            elif (type(body) is dict and body.get('kind') == 'BEGIN' and
+                    set(body) in ({'kind', 'policy', 'account_sha256',
+                        'attempt', 'evaluated_at',
+                        'expected_cursor_head_sha256', 'reconnect_reason',
+                        'confirm_reconnect_attempt'},
+                    {'kind', 'policy', 'account_sha256', 'attempt',
+                        'evaluated_at', 'expected_cursor_head_sha256',
+                        'expected_budget_head_sha256', 'reconnect_reason',
+                        'confirm_reconnect_attempt'})):
                 if (state['pending_token'] is not None or state['completed'] or
                         state['review_required']):
                     _fail('BEGIN_STATE_INVALID')
                 now = _clock(body['evaluated_at'])
+                requested_head = body.get('expected_budget_head_sha256')
                 if (body['policy'] != POLICY or
                         body['account_sha256'] != self.account_sha256 or
                         body['attempt'] != state['attempts'] + 1 or
@@ -178,6 +186,13 @@ class ActivitySSEReconnectBudget:
                         body['reconnect_reason'] not in REASONS or
                         body['confirm_reconnect_attempt'] is not True):
                     _fail('BEGIN_SCOPE_INVALID')
+                if requested_head is not None:
+                    requested_head = _digest(requested_head,
+                        'EXPECTED_HEAD_INVALID')
+                    if (requested_head != state['head_sha256'] and not
+                            (state['attempts'] == 0 and
+                                requested_head == ZERO)):
+                        _fail('BEGIN_SCOPE_INVALID')
                 cursor_head = _digest(body['expected_cursor_head_sha256'],
                     'CURSOR_HEAD_INVALID')
                 if (state['expected_cursor_head_sha256'] is not None and
@@ -190,6 +205,8 @@ class ActivitySSEReconnectBudget:
                 state['pending_token'] = digest
                 state['expected_cursor_head_sha256'] = cursor_head
                 state['last_evaluated_at'] = now
+                state['last_begin_expected_head_sha256'] = requested_head
+                state['last_reconnect_reason'] = body['reconnect_reason']
             elif (type(body) is dict and body.get('kind') == 'RESULT' and
                     set(body) in ({'kind', 'policy', 'token',
                         'evaluated_at', 'outcome', 'detail_code',
@@ -298,6 +315,8 @@ class ActivitySSEReconnectBudget:
                 last_evaluated_at=0, last_outcome=None,
                 last_detail_code=None, last_requested_outcome=None,
                 last_requested_detail_code=None,
+                last_begin_expected_head_sha256=None,
+                last_reconnect_reason=None,
                 review_required=False, completed=False,
                 checkpoint_head_sha256=None,
                 checkpoint_receipt_sha256=None,
@@ -337,7 +356,40 @@ class ActivitySSEReconnectBudget:
             _fail('EMERGENCY_STOP_ACTIVE')
         current = self.inspect()
         if current['head_sha256'] != expected:
-            _fail('HEAD_CHANGED')
+            exact_reservation = (
+                current['pending_token'] is not None and
+                current['head_sha256'] == current['pending_token'] and
+                current['last_begin_expected_head_sha256'] == expected)
+            if not exact_reservation:
+                _fail('HEAD_CHANGED')
+            if (current['last_evaluated_at'] != now or
+                    current['expected_cursor_head_sha256'] != cursor_head or
+                    current['last_reconnect_reason'] != reconnect_reason):
+                _fail('BEGIN_REPLAY_DISAGREEMENT')
+            db, _ = self._connect(write=True)
+            with closing(db):
+                with db:
+                    state = self._load(db)
+                    if (state['pending_token'] is None or
+                            state['head_sha256'] != state['pending_token'] or
+                            state['last_begin_expected_head_sha256'] !=
+                                expected):
+                        _fail('HEAD_CHANGED')
+                    if (state['last_evaluated_at'] != now or
+                            state['expected_cursor_head_sha256'] !=
+                                cursor_head or
+                            state['last_reconnect_reason'] !=
+                                reconnect_reason):
+                        _fail('BEGIN_REPLAY_DISAGREEMENT')
+                    if not stop_clear():
+                        _fail('EMERGENCY_STOP_ACTIVE')
+                    token = state['pending_token']
+                    attempt = state['attempts']
+            return dict(token=token, attempt=attempt,
+                head_sha256=token,
+                expected_cursor_head_sha256=cursor_head,
+                duplicate_reservation=True,
+                provider_request_authorized=False)
         if current['pending_token'] is not None:
             _fail('PENDING_REVIEW')
         if current['review_required'] or current['completed']:
@@ -355,6 +407,7 @@ class ActivitySSEReconnectBudget:
             account_sha256=self.account_sha256,
             attempt=current['attempts'] + 1, evaluated_at=now,
             expected_cursor_head_sha256=cursor_head,
+            expected_budget_head_sha256=expected,
             reconnect_reason=reconnect_reason,
             confirm_reconnect_attempt=True)
         db, new = self._connect(write=True)
@@ -385,7 +438,9 @@ class ActivitySSEReconnectBudget:
                 if loaded['pending_token'] != token:
                     _fail('COMMIT_REPLAY_DISAGREEMENT')
         return dict(token=token, attempt=body['attempt'],
-            head_sha256=token, expected_cursor_head_sha256=cursor_head)
+            head_sha256=token, expected_cursor_head_sha256=cursor_head,
+            duplicate_reservation=False,
+            provider_request_authorized=True)
 
     def finish(self, token, *, evaluated_at, outcome, detail_code,
             checkpoint_head_sha256=None, checkpoint_receipt_sha256=None,
@@ -619,6 +674,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         reconnect_reason=reconnect_reason, expected_head=expected_budget_head,
         emergency_stop_check=emergency_stop_check,
         confirm_reconnect_attempt=confirm_reconnect_attempt)
+    if reservation['duplicate_reservation']:
+        _fail('RESERVATION_REPLAY_REQUIRES_REVIEW')
     options = dict(expected_account_id=expected_account_id,
         initial_events=initial_events, reconnect_reason=reconnect_reason,
         cursor_store=cursor_store, expected_cursor_head=expected_cursor_head,
@@ -884,6 +941,32 @@ def fixture_report():
             elapsed_clock=lambda: 50, permission_check=lambda: True,
             emergency_stop_check=lambda: False,
             credential_check=lambda: True)
+        replay_cursor = ActivitySSECursorStore(
+            root / 'replay-cursor.sqlite3', account)
+        replay_budget = ActivitySSEReconnectBudget(
+            root / 'replay-budget.sqlite3', account)
+        replay_reserved = replay_budget.begin(evaluated_at=998,
+            expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
+            confirm_reconnect_attempt=True)
+        replay_bytes = replay_budget.path.read_bytes()
+        replay_ack = replay_budget.begin(evaluated_at=998,
+            expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
+            confirm_reconnect_attempt=True)
+        replay_opener = Opener(raw)
+        replay_code = None
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=998, opener=replay_opener,
+                **dict(common, cursor_store=replay_cursor,
+                    reconnect_budget=replay_budget,
+                    wall_clock=lambda: 998))
+        except ActivitySSEReconnectBudgetError as error:
+            replay_code = str(error)
         blocked_cursor = ActivitySSECursorStore(
             root / 'blocked-cursor.sqlite3', account)
         blocked_budget = ActivitySSEReconnectBudget(
@@ -1010,6 +1093,16 @@ def fixture_report():
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
                 after_timeout['next_allowed_at'] == 1001 and
                 len(first.requests) == 1,
+            lost_reservation_ack_replays_without_provider_request=
+                replay_ack['duplicate_reservation'] and
+                not replay_ack['provider_request_authorized'] and
+                replay_ack['token'] == replay_reserved['token'] and
+                replay_budget.path.read_bytes() == replay_bytes and
+                replay_budget.inspect()['attempts'] == 1 and
+                replay_code is not None and replay_code.endswith(
+                    'RESERVATION_REPLAY_REQUIRES_REVIEW') and
+                not replay_opener.requests and
+                not replay_cursor.path.exists(),
             lost_retry_result_ack_replays_without_new_attempt=
                 replayed_timeout['duplicate_result'] and
                 retry_result_replay_unchanged and

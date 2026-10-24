@@ -1,10 +1,10 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-24 (America/Los_Angeles).
-Parent source reviewed: `d47c9314521375852cc80e807b51e8d0d5ffb08f` (v0.248.0), whose verified local tree is published and whose three exact-source GitHub workflows subsequently completed successfully; v0.249.0 is the current candidate and requires fresh exact-source checks because parent results do not transfer.
+Parent source reviewed: `3a8b9fab55a718943c450c9d6b5d70f37a6bbf53` (v0.249.0), whose verified local tree is published and whose three exact-source GitHub workflows completed successfully; v0.250.0 is the current candidate and requires fresh exact-source checks because parent results do not transfer.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.249.0 makes the latest durable Activity SSE reconnect result exactly replayable after acknowledgement loss. New rows bind requested and final outcome/detail values; exact replay is byte-stable and network-silent, while changed inputs, later events and newer attempts fail closed. Injected evidence does not establish actual provider/account, provider-directed backoff, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.250.0 makes the latest durable Activity SSE reconnect reservation exactly replayable after acknowledgement loss while marking the returned token as not provider-authorized. The coordinator rejects replay before provider I/O; exact replay is byte-stable, while changed inputs, stop uncertainty, results and later events fail closed. Injected evidence does not establish actual provider/account, provider-directed backoff, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 
@@ -13,7 +13,7 @@ Engineering checkpoint note: v0.249.0 makes the latest durable Activity SSE reco
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.242.0 public security/history, saved release evidence, browser-help, complete regression and Windows EXE/installer checks passed on 2026-10-24 Pacific time. The v0.243.0 through v0.248.0 trees were locally verified and published, and all three v0.248.0 exact-source workflows subsequently completed successfully; prior results do not transfer to this candidate.
+- Exact v0.242.0 public security/history, saved release evidence, browser-help, complete regression and Windows EXE/installer checks passed on 2026-10-24 Pacific time. The v0.243.0 through v0.249.0 trees were locally verified and published, and all three v0.249.0 exact-source workflows completed successfully; prior results do not transfer to this candidate.
 
 ## Roadmap coverage
 

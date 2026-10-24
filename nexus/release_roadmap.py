@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.240.0'
+REVISION = '0.241.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -50,6 +50,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; a bounded supplied-wire Activity SSE session review now binds the exact v2beta1 since_id target, text/event-stream metadata, arbitrary byte chunks, strict UTF-8/SSE/JSON framing, heartbeats and the existing linked trade/fee envelope review, while slow-consumer drops and internal-error comments require reconnect review and remain ineligible for cursor checkpoint authority' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; an explicitly confirmed single-attempt paper Activity SSE transport now opens only the exact since_id target, disables proxies and redirects, validates streaming metadata before reading, fences every bounded read with permission, emergency-stop, credential and clock checks, and passes a complete two-event segment through the strict wire review without retry, reconnect, cursor mutation or authority' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -190,7 +194,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.240.0 adds a bounded supplied-wire review in front of the Activity SSE envelope/reconnect/cursor components. It binds the exact paper v2beta1 since_id URL, HTTP 200 text/event-stream metadata, arbitrary byte chunks, strict UTF-8/SSE/JSON framing, documented heartbeats and the existing BTC/USD trade/fee link review. Slow-consumer drop and internal-error comments explicitly require reconnect review and can never authorize a cursor checkpoint. Unsupported fields/comments, duplicate JSON keys, malformed framing, wrong targets/content types/encodings and non-forward cursor windows fail closed. It still opens no socket, authenticates no account, reads no credential, writes no cursor, reconnects nothing and proves no entitlement/source/delivery/historical completeness, heartbeat timing, native durability, fee coverage, holds, settlement or spendable funds. No provider/vault IO, retry, ledger, routing, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.241.0 adds an explicitly confirmed single-attempt paper Activity SSE transport in front of the existing strict wire review. It opens only the exact v2beta1 since_id target with caller-held credentials, disables proxies and redirects, requires HTTP 200 text/event-stream identity metadata, bounds bytes/chunks/time, and rechecks permission, the independent emergency stop, credential continuity and clocks before and after every read. Only a complete finite two-event segment reaches the existing UTF-8/SSE/JSON and linked BTC/USD trade/fee review. It never retries, reconnects, backs off, writes a cursor, stores credentials, applies a ledger, places an order or moves funds. Injected tests do not prove TLS/DNS, account entitlement, provider source/delivery/replay completeness, heartbeat timing, actual-account behavior, native durability, fee coverage, holds, settlement or spendable funds. No Portal, strategy, routing, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

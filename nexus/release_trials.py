@@ -631,6 +631,7 @@ def _execute(profile):
         from nexus.alpaca_activity_sse_reconnect_review import fixture_report as activity_sse_reconnect_fixture
         from nexus.alpaca_activity_sse_cursor_store import fixture_report as activity_sse_cursor_fixture
         from nexus.alpaca_activity_sse_wire_review import fixture_report as activity_sse_wire_fixture
+        from nexus.alpaca_activity_sse_transport import fixture_report as activity_sse_transport_fixture
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_response_bundle']=response_fixture()
         result['provider_post_reconciliation']=post_reconciliation_fixture()
@@ -639,7 +640,8 @@ def _execute(profile):
         result['supplied_activity_sse_links']=activity_sse_fixture()
         result['supplied_activity_sse_reconnect']=activity_sse_reconnect_fixture()
         result['private_activity_sse_cursor_store']=activity_sse_cursor_fixture()
-        result['supplied_activity_sse_wire_session']=activity_sse_wire_fixture();return result
+        result['supplied_activity_sse_wire_session']=activity_sse_wire_fixture()
+        result['explicit_activity_sse_transport']=activity_sse_transport_fixture();return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -1063,6 +1065,20 @@ def _validate(profile, result):
             'SUPPLIED_ACTIVITY_SSE_WIRE_SESSION')
         _require(all(wire[k] is False for k in ACTIVITY_SSE_WIRE_FLAGS),
             'SUPPLIED_ACTIVITY_SSE_WIRE_SESSION_AUTHORITY')
+        transport=result['explicit_activity_sse_transport']
+        _require(transport['source']==
+            'SYNTHETIC_INJECTED_ACTIVITY_SSE_TRANSPORT_FIXTURE' and
+            all(transport[k] is True for k in ('passed','exact_single_get',
+                'fixed_activity_target','fixed_stream_headers',
+                'bounded_segment_reviewed','injected_response_closed',
+                'no_identifier_or_credential_echo','no_automatic_continuation',
+                'output_never_authoritative')) and
+            transport['injected_get_requests']==1,
+            'EXPLICIT_ACTIVITY_SSE_TRANSPORT')
+        _require(all(transport[k] is False for k in
+            ('actual_provider_access','actual_vault_access','ready_for_routing',
+             'live_orders_enabled','money_movement_enabled','release_approved')),
+            'EXPLICIT_ACTIVITY_SSE_TRANSPORT_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

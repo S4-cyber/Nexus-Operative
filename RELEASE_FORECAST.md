@@ -1,10 +1,10 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-23 (America/Los_Angeles).
-Parent source reviewed: `b06d1bb87a410f87ec1538ea6c39f89a6025e4b8` (v0.239.0); v0.240.0 is the current candidate and requires fresh exact-source checks.
+Parent source reviewed: `99cccbfece6ca338a3c5dfb4625c9cd6a32a33aa` (v0.240.0); v0.241.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.240.0 adds a bounded supplied-wire Activity SSE session review before the existing envelope/reconnect/cursor chain. It validates the exact `since_id` target, streaming metadata, chunk/framing/JSON rules, heartbeats and documented interruption comments, while deliberately performing no connection, entitlement/authentication check, actual reconnect/backoff, cursor write, delivery/replay completeness, native power-loss acceptance or provider attestation. Source/coverage acceptance, saved write credentials, explicit operator integration, broker-wide/distributed POST coordination and sustained trials remain absent. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.241.0 adds an explicitly confirmed, fixed-target, single-attempt paper Activity SSE transport before the existing strict wire/reconnect/cursor chain. It uses caller-held credentials, disables proxies and redirects, validates streaming metadata before bounded reads, and fences every read with permission, emergency-stop, credential-continuity and clock checks. It deliberately performs no retry, reconnect/backoff, cursor write, ledger/order/funding action or authority promotion. Injected evidence does not establish actual provider/account, entitlement, TLS/DNS, source/delivery/replay completeness or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 
@@ -13,7 +13,7 @@ Engineering checkpoint note: v0.240.0 adds a bounded supplied-wire Activity SSE 
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.239.0 public security/history, saved release evidence, browser-help, complete regression and Windows EXE/installer checks passed on 2026-10-23 Pacific time. Those parent results do not transfer; v0.240.0 requires all fresh exact-source checks.
+- Exact v0.240.0 public security/history, saved release evidence, browser-help, complete regression and Windows EXE/installer checks passed on 2026-10-23 Pacific time. Those parent results do not transfer; v0.241.0 requires all fresh exact-source checks.
 
 ## Roadmap coverage
 

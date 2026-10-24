@@ -2,7 +2,17 @@
 
 ## Delivery planning update — 2026-10-23
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The exact v0.239.0 parent is published and fully green; this v0.240.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The exact v0.240.0 parent is published and fully green; this v0.241.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.241.0 explicit single-attempt Activity SSE transport
+
+The internal paper Activity SSE boundary now performs one explicitly confirmed GET against the exact fixed `since_id` endpoint with caller-held credentials. It disables proxies and redirects; validates target, HTTP 200, `text/event-stream`, identity encoding and optional content length before reading; bounds elapsed time, chunks and bytes; and checks permission, the independent emergency stop, credential continuity and dual clocks around every read.
+
+Only a complete finite two-data-frame segment reaches the existing strict wire/envelope review. Any denial, stop, key change, clock fault, incomplete segment, malformed response or transport failure closes the response and returns a fixed diagnostic without retry, reconnect, cursor mutation or partial evidence. There is no Portal control or editable parameter, saved credential scope, strategy path, ledger action, order, cancellation, live endpoint or funding operation.
+
+The release fixture is injected and aggregate-only. It does not prove an authenticated account, entitlement, TLS/DNS, provider source, delivery/replay completeness, heartbeat timing, fee coverage, holds, settlement, spendable funds, profitability or release acceptance. Actual-account connection/reconnect and sustained trials remain required.
+
+Final local validation passed 3,781 tests with one expected non-Windows skip and one existing warning; the focused transport/wire/release/audit/version/roadmap set passed 228. All sixteen offline profiles and saved-evidence verification matched 383 source files / `8b8d229340c0a93be4556ac8dd9f9e009c93597821dfd973ced3382b3b0ea442`; report SHA256 is `833bccce1b57987795898d295a43e3294e5e3821de806a1335a9aaf87cbb2d9b`. Fourteen Node checks and all local syntax/compile/dependency/roadmap/whitespace checks passed. Public snapshot/history scans and fresh exact-source workflows remain mandatory.
 
 ## v0.240.0 supplied Activity SSE wire-session review
 

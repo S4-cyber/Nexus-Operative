@@ -293,6 +293,134 @@ def test_emergency_stop_abort_cannot_create_or_close_an_absent_episode(tmp_path)
     assert not budget.path.exists()
 
 
+def waiting_retry(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, confirm_reconnect_attempt=True)
+    state = budget.finish(reserved['token'], evaluated_at=1000,
+        outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE')
+    return budget, reserved, state
+
+
+def test_emergency_stop_closes_waiting_retry_without_new_attempt(tmp_path):
+    budget, _, waiting = waiting_retry(tmp_path)
+    samples = []
+    result = subject.close_waiting_reconnect_for_emergency_stop(
+        reconnect_budget=budget,
+        expected_budget_head=waiting['head_sha256'], evaluated_at=1000.5,
+        emergency_stop_check=lambda: samples.append(True) or True,
+        confirm_emergency_stop_close=True)
+    state = budget.inspect()
+    assert len(samples) == 2
+    assert result['waiting_retry_closed'] and not result['duplicate_close']
+    assert not result['reconnect_attempt_reserved']
+    assert not result['reconnect_attempt_consumed']
+    assert not result['provider_request_performed']
+    assert not result['credential_access_performed']
+    assert not result['cursor_read_performed']
+    assert not result['cursor_write_performed']
+    assert state['attempts'] == 1 and state['pending_token'] is None
+    assert state['review_required'] and not state['completed']
+    assert state['next_allowed_at'] == 0
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+    assert state['emergency_stop_prior_head_sha256'] == waiting['head_sha256']
+    assert all(result[flag] is False for flag in subject.FLAGS)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EPISODE_CLOSED'):
+        budget.begin(evaluated_at=9999, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED',
+            expected_head=state['head_sha256'],
+            confirm_reconnect_attempt=True)
+
+
+def test_emergency_stop_waiting_close_lost_ack_replay_is_idempotent(tmp_path):
+    budget, _, waiting = waiting_retry(tmp_path)
+    options = dict(reconnect_budget=budget,
+        expected_budget_head=waiting['head_sha256'], evaluated_at=1000.5,
+        emergency_stop_check=lambda: True,
+        confirm_emergency_stop_close=True)
+    first = subject.close_waiting_reconnect_for_emergency_stop(**options)
+    saved = budget.path.read_bytes()
+    options['evaluated_at'] = 1001
+    replay = subject.close_waiting_reconnect_for_emergency_stop(**options)
+    assert replay['duplicate_close']
+    assert replay['reconnect_budget_head_sha256'] == \
+        first['reconnect_budget_head_sha256']
+    assert budget.path.read_bytes() == saved
+
+
+@pytest.mark.parametrize(('change','code'), [
+    ({'confirm_emergency_stop_close': False},
+        'EMERGENCY_STOP_CLOSE_CONFIRMATION_REQUIRED'),
+    ({'emergency_stop_check': None}, 'EMERGENCY_STOP_CHECK_INVALID'),
+    ({'emergency_stop_check': lambda: False},
+        'EMERGENCY_STOP_NOT_ACTIVE'),
+    ({'emergency_stop_check': lambda: (_ for _ in ()).throw(RuntimeError())},
+        'EMERGENCY_STOP_NOT_ACTIVE'),
+    ({'expected_budget_head': 'f' * 64}, 'HEAD_CHANGED'),
+])
+def test_emergency_stop_waiting_close_denials_preserve_backoff(
+        tmp_path, change, code):
+    budget, _, waiting = waiting_retry(tmp_path)
+    saved = budget.path.read_bytes()
+    options = dict(reconnect_budget=budget,
+        expected_budget_head=waiting['head_sha256'], evaluated_at=1000.5,
+        emergency_stop_check=lambda: True,
+        confirm_emergency_stop_close=True)
+    options.update(change)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError, match=code):
+        subject.close_waiting_reconnect_for_emergency_stop(**options)
+    assert budget.path.read_bytes() == saved
+    state = budget.inspect()
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert state['next_allowed_at'] == 1001
+
+
+def test_emergency_stop_waiting_close_requires_stable_active_sample(tmp_path):
+    budget, _, waiting = waiting_retry(tmp_path)
+    saved = budget.path.read_bytes()
+    samples = iter((True, False))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EMERGENCY_STOP_NOT_ACTIVE'):
+        subject.close_waiting_reconnect_for_emergency_stop(
+            reconnect_budget=budget,
+            expected_budget_head=waiting['head_sha256'],
+            evaluated_at=1000.5,
+            emergency_stop_check=lambda: next(samples),
+            confirm_emergency_stop_close=True)
+    assert budget.path.read_bytes() == saved
+    assert budget.inspect()['last_outcome'] == 'RETRY_REQUIRED'
+
+
+def test_emergency_stop_waiting_close_rejects_pending_or_absent_episode(
+        tmp_path):
+    _, pending = stores(tmp_path)
+    reserved = pending.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, confirm_reconnect_attempt=True)
+    saved = pending.path.read_bytes()
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='WAITING_RETRY_MISSING'):
+        subject.close_waiting_reconnect_for_emergency_stop(
+            reconnect_budget=pending,
+            expected_budget_head=reserved['head_sha256'], evaluated_at=1000,
+            emergency_stop_check=lambda: True,
+            confirm_emergency_stop_close=True)
+    assert pending.path.read_bytes() == saved
+    absent = subject.ActivitySSEReconnectBudget(
+        tmp_path / 'absent.sqlite3', ACCOUNT)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='WAITING_RETRY_MISSING'):
+        subject.close_waiting_reconnect_for_emergency_stop(
+            reconnect_budget=absent, expected_budget_head=ZERO,
+            evaluated_at=1000, emergency_stop_check=lambda: True,
+            confirm_emergency_stop_close=True)
+    assert not absent.path.exists()
+
+
 def committed_pending_checkpoint(tmp_path,
         reservation_token=USE_RESERVED_TOKEN):
     initial, raw = segments()

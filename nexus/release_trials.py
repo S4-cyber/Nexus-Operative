@@ -1108,6 +1108,7 @@ def _validate(profile, result):
                 'checkpoint_and_budget_recover_together',
                 'pending_checkpoint_result_recovers_without_second_get',
                 'emergency_stop_retires_pending_without_external_access',
+                'emergency_stop_closes_retry_wait_without_new_attempt',
                 'no_sleep_loop_or_financial_authority',
                 'no_private_identifier_or_credential_echo')) and
             reconnect_budget['actual_storage_retained'] is False,

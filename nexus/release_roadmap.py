@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.245.0'
+REVISION = '0.246.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -212,7 +212,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.245.0 makes the independent emergency stop able to durably retire a crash-left pending reconnect reservation without credentials, cursor access, provider access, retry or reconnection. The private budget requires explicit abort confirmation, the exact pending reservation head and two affirmative stop samples; false, lifted, failing or indeterminate checks leave the reservation unchanged. A committed abort closes the episode for review, blocks every later reconnect attempt and supports idempotent exact replay after a lost acknowledgement. Stale or foreign heads and nonpending or already completed episodes fail closed. No connection, checkpoint, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.246.0 extends independent emergency-stop handling to a durable reconnect episode that is waiting in fixed retry backoff after a retryable failure. The private budget requires explicit close confirmation, the exact waiting head and two affirmative stop samples; it appends one hash-chained close event without reserving or consuming another attempt and without credentials, cursor access, provider access, retry or reconnection. False, lifted, failing or indeterminate checks preserve the exact due retry. A committed close marks review required, removes the next-due time, blocks every later reconnect attempt and supports idempotent exact replay after a lost acknowledgement. Stale or foreign heads and absent, pending, completed or nonwaiting episodes fail closed. No connection, checkpoint, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

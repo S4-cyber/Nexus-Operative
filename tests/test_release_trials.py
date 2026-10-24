@@ -428,6 +428,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('explicit_activity_sse_reconnect_budget','first_failure_retained_without_retry'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','pending_checkpoint_result_recovers_without_second_get'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','emergency_stop_retires_pending_without_external_access'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
+        (('explicit_activity_sse_reconnect_budget','emergency_stop_closes_retry_wait_without_new_attempt'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','ready_for_routing'),True,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_AUTHORITY'),
         (('exact_response_bundle','session_tail_required'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','bounded_adjacent_session_start_gap'),False,'EXACT_RESPONSE_BUNDLE'),

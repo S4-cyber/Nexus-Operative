@@ -145,7 +145,8 @@ class ActivitySSEReconnectBudget:
             review_required=False,
             completed=False, checkpoint_head_sha256=None,
             checkpoint_receipt_sha256=None,
-            last_attempt_head_sha256=None)
+            last_attempt_head_sha256=None,
+            emergency_stop_prior_head_sha256=None)
         previous = ZERO
         for index, (seq, encoded, parent, digest) in enumerate(rows):
             if type(encoded) is not str or len(encoded.encode()) > MAX_RECORD_BYTES:
@@ -234,6 +235,28 @@ class ActivitySSEReconnectBudget:
                 state['last_evaluated_at'] = now
                 state['last_outcome'] = outcome
                 state['last_detail_code'] = body['detail_code']
+            elif (type(body) is dict and
+                    body.get('kind') == 'EMERGENCY_STOP_CLOSE' and
+                    set(body) == {'kind', 'policy', 'account_sha256',
+                        'evaluated_at', 'confirm_emergency_stop_close'}):
+                now = _clock(body['evaluated_at'])
+                if (body['policy'] != POLICY or
+                        body['account_sha256'] != self.account_sha256 or
+                        body['confirm_emergency_stop_close'] is not True or
+                        state['pending_token'] is not None or
+                        state['completed'] or state['review_required'] or
+                        state['attempts'] <= 0 or
+                        state['last_outcome'] != 'RETRY_REQUIRED' or
+                        state['next_allowed_at'] <= 0 or
+                        now < state['last_evaluated_at']):
+                    _fail('EMERGENCY_STOP_CLOSE_SCOPE_INVALID')
+                state['emergency_stop_prior_head_sha256'] = \
+                    state['head_sha256']
+                state['review_required'] = True
+                state['next_allowed_at'] = 0
+                state['last_evaluated_at'] = now
+                state['last_outcome'] = 'REVIEW_REQUIRED'
+                state['last_detail_code'] = 'EMERGENCY_STOP_ACTIVE'
             else:
                 _fail('PAYLOAD_INVALID')
             state['head_sha256'] = digest
@@ -251,7 +274,8 @@ class ActivitySSEReconnectBudget:
                 review_required=False, completed=False,
                 checkpoint_head_sha256=None,
                 checkpoint_receipt_sha256=None,
-                last_attempt_head_sha256=None)
+                last_attempt_head_sha256=None,
+                emergency_stop_prior_head_sha256=None)
         else:
             with closing(self._connect()[0]) as db:
                 state = self._load(db)
@@ -393,6 +417,72 @@ class ActivitySSEReconnectBudget:
             _fail('EMERGENCY_STOP_ABORT_UNCERTAIN')
         return retained, False
 
+    def close_waiting_retry_for_emergency_stop(self, *, evaluated_at,
+            expected_head, emergency_stop_check,
+            confirm_emergency_stop_close=False):
+        """Close a retry-waiting episode without reserving another attempt."""
+        now = _clock(evaluated_at)
+        expected = _digest(expected_head, 'EXPECTED_HEAD_INVALID')
+        if confirm_emergency_stop_close is not True:
+            _fail('EMERGENCY_STOP_CLOSE_CONFIRMATION_REQUIRED')
+        if not callable(emergency_stop_check):
+            _fail('EMERGENCY_STOP_CHECK_INVALID')
+
+        def stop_active():
+            try:
+                return emergency_stop_check() is True
+            except Exception:
+                return False
+
+        if not stop_active():
+            _fail('EMERGENCY_STOP_NOT_ACTIVE')
+        current = self.inspect()
+        duplicate = current['head_sha256'] != expected
+        if duplicate:
+            if (current['pending_token'] is not None or
+                    not current['review_required'] or current['completed'] or
+                    current['emergency_stop_prior_head_sha256'] != expected or
+                    current['last_outcome'] != 'REVIEW_REQUIRED' or
+                    current['last_detail_code'] != 'EMERGENCY_STOP_ACTIVE'):
+                _fail('HEAD_CHANGED')
+            return current, True
+        if (current['pending_token'] is not None or
+                current['review_required'] or current['completed'] or
+                current['attempts'] <= 0 or
+                current['last_outcome'] != 'RETRY_REQUIRED' or
+                current['next_allowed_at'] <= 0):
+            _fail('WAITING_RETRY_MISSING')
+        if now < current['last_evaluated_at']:
+            _fail('CLOCK_REGRESSION')
+        body = dict(kind='EMERGENCY_STOP_CLOSE', policy=POLICY,
+            account_sha256=self.account_sha256, evaluated_at=now,
+            confirm_emergency_stop_close=True)
+        db, _ = self._connect(write=True)
+        with closing(db):
+            with db:
+                state = self._load(db)
+                if state['head_sha256'] != expected:
+                    _fail('HEAD_CHANGED')
+                if (state['pending_token'] is not None or
+                        state['review_required'] or state['completed'] or
+                        state['attempts'] <= 0 or
+                        state['last_outcome'] != 'RETRY_REQUIRED' or
+                        state['next_allowed_at'] <= 0):
+                    _fail('WAITING_RETRY_CHANGED')
+                if not stop_active():
+                    _fail('EMERGENCY_STOP_NOT_ACTIVE')
+                head = self._insert(db, 2 * state['attempts'] + 1,
+                    body, state['head_sha256'])
+                loaded = self._load(db)
+                if (loaded['head_sha256'] != head or
+                        not loaded['review_required'] or
+                        loaded['emergency_stop_prior_head_sha256'] !=
+                            expected or
+                        loaded['last_detail_code'] !=
+                            'EMERGENCY_STOP_ACTIVE'):
+                    _fail('EMERGENCY_STOP_CLOSE_UNCERTAIN')
+        return self.inspect(), False
+
 
 def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         initial_events, reconnect_reason, cursor_store, expected_cursor_head,
@@ -494,6 +584,31 @@ def abort_pending_reconnect_for_emergency_stop(*, reconnect_budget,
         emergency_stop_observed_active=True,
         provider_request_performed=False, credential_access_performed=False,
         cursor_read_performed=False, cursor_write_performed=False,
+        automatic_retry=False, automatic_reconnect_performed=False,
+        reconnect_budget_head_sha256=retained['head_sha256'],
+        **{flag: False for flag in FLAGS})
+
+
+def close_waiting_reconnect_for_emergency_stop(*, reconnect_budget,
+        expected_budget_head, evaluated_at, emergency_stop_check,
+        confirm_emergency_stop_close=False):
+    """Close a durable retry wait without credentials, cursor I/O, or network."""
+    if type(reconnect_budget) is not ActivitySSEReconnectBudget:
+        _fail('BUDGET_INVALID')
+    retained, duplicate = \
+        reconnect_budget.close_waiting_retry_for_emergency_stop(
+            evaluated_at=evaluated_at, expected_head=expected_budget_head,
+            emergency_stop_check=emergency_stop_check,
+            confirm_emergency_stop_close=confirm_emergency_stop_close)
+    return dict(mode=
+            'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_EMERGENCY_STOP_CLOSE',
+        status='REVIEW_REQUIRED', policy=POLICY,
+        waiting_retry_closed=True, duplicate_close=duplicate,
+        explicit_emergency_stop_close_confirmation=True,
+        emergency_stop_observed_active=True,
+        provider_request_performed=False, credential_access_performed=False,
+        cursor_read_performed=False, cursor_write_performed=False,
+        reconnect_attempt_reserved=False, reconnect_attempt_consumed=False,
         automatic_retry=False, automatic_reconnect_performed=False,
         reconnect_budget_head_sha256=retained['head_sha256'],
         **{flag: False for flag in FLAGS})
@@ -714,8 +829,26 @@ def fixture_report():
             evaluated_at=3001,
             emergency_stop_check=lambda: stop_samples.append(True) or True,
             confirm_emergency_stop_abort=True)
+        waiting_budget = ActivitySSEReconnectBudget(
+            root / 'waiting-budget.sqlite3', account)
+        waiting_reserved = waiting_budget.begin(evaluated_at=4000,
+            expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            confirm_reconnect_attempt=True)
+        waiting_budget.finish(waiting_reserved['token'], evaluated_at=4000,
+            outcome='RETRY_REQUIRED',
+            detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE')
+        waiting_head = waiting_budget.inspect()['head_sha256']
+        waiting_samples = []
+        waiting_closed = close_waiting_reconnect_for_emergency_stop(
+            reconnect_budget=waiting_budget,
+            expected_budget_head=waiting_head, evaluated_at=4000.5,
+            emergency_stop_check=
+                lambda: waiting_samples.append(True) or True,
+            confirm_emergency_stop_close=True)
         encoded = json.dumps(
-            [result, cold_budget, recovered, stopped], sort_keys=True)
+            [result, cold_budget, recovered, stopped, waiting_closed],
+            sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
                 after_timeout['next_allowed_at'] == 1001 and
@@ -738,6 +871,13 @@ def fixture_report():
                 not stopped['provider_request_performed'] and
                 not stopped['credential_access_performed'] and
                 stop_budget.inspect()['review_required'],
+            emergency_stop_closes_retry_wait_without_new_attempt=
+                waiting_closed['waiting_retry_closed'] and
+                len(waiting_samples) == 2 and
+                waiting_budget.inspect()['attempts'] == 1 and
+                not waiting_closed['reconnect_attempt_reserved'] and
+                not waiting_closed['provider_request_performed'] and
+                waiting_budget.inspect()['review_required'],
             no_sleep_loop_or_financial_authority=
                 not result['automatic_retry'] and
                 not result['automatic_reconnect_performed'] and

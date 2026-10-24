@@ -1,10 +1,10 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-24 (America/Los_Angeles).
-Parent source reviewed: `d086cfd8aefc8e2f7a443e8b4c662c1c49cfb4d7` (v0.243.0), whose verified local tree is published but whose exact-source workflows had not registered when this review began; v0.244.0 is the current candidate and requires fresh exact-source checks.
+Parent source reviewed: `b2547209a06dcbc84617139b586ab28638842891` (v0.244.0), whose verified local tree is published but whose exact-source workflows still had not registered when this review began; v0.245.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.244.0 binds reconnect-driven cursor commits to the exact durable reservation and adds explicit no-network reconciliation for the cursor-committed/budget-result-missing crash window. Exact heads, account, receipt, reservation and store bindings must agree; legacy/foreign/stale evidence fails closed and exact lost-ack replay is idempotent. It performs no retry, reconnect or provider access. Injected evidence does not establish actual provider/account, provider-directed backoff, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.245.0 lets the independent emergency stop durably retire a crash-left pending reconnect reservation using only explicit confirmation, the exact reservation head and two affirmative stop samples. It receives no credentials, cursor store, events or network seam; failed, lifted or indeterminate checks preserve state, while a committed abort closes the episode for review and exact lost-ack replay is idempotent. Injected evidence does not establish actual provider/account, provider-directed backoff, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 
@@ -13,7 +13,7 @@ Engineering checkpoint note: v0.244.0 binds reconnect-driven cursor commits to t
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.242.0 public security/history, saved release evidence, browser-help, complete regression and Windows EXE/installer checks passed on 2026-10-24 Pacific time. The v0.243.0 tree was locally verified and published, but no exact-source runs had registered at the start of v0.244.0; neither result transfers to this candidate.
+- Exact v0.242.0 public security/history, saved release evidence, browser-help, complete regression and Windows EXE/installer checks passed on 2026-10-24 Pacific time. The v0.243.0 and v0.244.0 trees were locally verified and published, but no exact-source runs had registered for either newer head at the start of v0.245.0; prior results do not transfer to this candidate.
 
 ## Roadmap coverage
 

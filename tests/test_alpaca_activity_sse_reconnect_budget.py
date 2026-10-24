@@ -187,6 +187,112 @@ def test_crash_after_begin_is_never_expired_or_retried(tmp_path):
             confirm_reconnect_attempt=True)
 
 
+def test_emergency_stop_aborts_pending_reservation_without_external_access(
+        tmp_path):
+    cursor, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, confirm_reconnect_attempt=True)
+    cursor_before = cursor.inspect()
+    samples = []
+    result = subject.abort_pending_reconnect_for_emergency_stop(
+        reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+        emergency_stop_check=lambda: samples.append(True) or True,
+        confirm_emergency_stop_abort=True)
+    state = budget.inspect()
+    assert len(samples) == 2
+    assert result['pending_reconnect_aborted']
+    assert not result['duplicate_abort']
+    assert not result['provider_request_performed']
+    assert not result['credential_access_performed']
+    assert not result['cursor_read_performed']
+    assert not result['cursor_write_performed']
+    assert state['pending_token'] is None and state['review_required']
+    assert not state['completed']
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+    assert state['last_attempt_head_sha256'] == reserved['head_sha256']
+    assert cursor.inspect() == cursor_before and not cursor.path.exists()
+    assert all(result[flag] is False for flag in subject.FLAGS)
+
+
+def test_emergency_stop_abort_lost_ack_replay_is_idempotent(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, confirm_reconnect_attempt=True)
+    options = dict(reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+        emergency_stop_check=lambda: True,
+        confirm_emergency_stop_abort=True)
+    first = subject.abort_pending_reconnect_for_emergency_stop(**options)
+    saved = budget.path.read_bytes()
+    options['evaluated_at'] = 1002
+    replay = subject.abort_pending_reconnect_for_emergency_stop(**options)
+    assert replay['duplicate_abort']
+    assert replay['reconnect_budget_head_sha256'] == \
+        first['reconnect_budget_head_sha256']
+    assert budget.path.read_bytes() == saved
+
+
+@pytest.mark.parametrize(('change','code'), [
+    ({'confirm_emergency_stop_abort': False},
+        'EMERGENCY_STOP_ABORT_CONFIRMATION_REQUIRED'),
+    ({'emergency_stop_check': None}, 'EMERGENCY_STOP_CHECK_INVALID'),
+    ({'emergency_stop_check': lambda: False},
+        'EMERGENCY_STOP_NOT_ACTIVE'),
+    ({'emergency_stop_check': lambda: (_ for _ in ()).throw(RuntimeError())},
+        'EMERGENCY_STOP_NOT_ACTIVE'),
+    ({'expected_budget_head': 'f' * 64}, 'HEAD_CHANGED'),
+])
+def test_emergency_stop_abort_denials_preserve_pending_state(
+        tmp_path, change, code):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, confirm_reconnect_attempt=True)
+    saved = budget.path.read_bytes()
+    options = dict(reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+        emergency_stop_check=lambda: True,
+        confirm_emergency_stop_abort=True)
+    options.update(change)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError, match=code):
+        subject.abort_pending_reconnect_for_emergency_stop(**options)
+    assert budget.path.read_bytes() == saved
+    assert budget.inspect()['pending_token'] == reserved['token']
+
+
+def test_emergency_stop_must_remain_active_through_abort_admission(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, confirm_reconnect_attempt=True)
+    saved = budget.path.read_bytes()
+    samples = iter((True, False))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EMERGENCY_STOP_NOT_ACTIVE'):
+        subject.abort_pending_reconnect_for_emergency_stop(
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+            emergency_stop_check=lambda: next(samples),
+            confirm_emergency_stop_abort=True)
+    assert budget.path.read_bytes() == saved
+    assert budget.inspect()['pending_token'] == reserved['token']
+
+
+def test_emergency_stop_abort_cannot_create_or_close_an_absent_episode(tmp_path):
+    _, budget = stores(tmp_path)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='PENDING_RECONNECT_MISSING'):
+        subject.abort_pending_reconnect_for_emergency_stop(
+            reconnect_budget=budget, expected_budget_head=ZERO,
+            evaluated_at=1000, emergency_stop_check=lambda: True,
+            confirm_emergency_stop_abort=True)
+    assert not budget.path.exists()
+
+
 def committed_pending_checkpoint(tmp_path,
         reservation_token=USE_RESERVED_TOKEN):
     initial, raw = segments()

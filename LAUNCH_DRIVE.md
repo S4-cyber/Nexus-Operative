@@ -1,8 +1,18 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
-## Delivery planning update — 2026-10-23
+## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.243.0 parent is locally verified, but GitHub had not registered its exact-source workflows when this candidate began; v0.244.0 requires fresh checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.244.0 parent is locally verified, but GitHub still had not registered its exact-source workflows when this candidate began; v0.245.0 requires fresh checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.245.0 independent emergency-stop reconnect abort
+
+The private reconnect budget now exposes an explicitly confirmed, exact-head abort for a reconnect reservation left pending by process interruption. It receives no credentials, cursor store, events or network seam. The independent emergency stop must return exactly active twice; a false, lifted, failing or indeterminate check, stale head, missing reservation, clock regression or already closed episode leaves the budget unchanged.
+
+A successful abort appends a fixed review-required result, clears the pending token, leaves no retry due and makes every later reconnect attempt fail closed. An exact repeated call after a lost acknowledgement returns the committed abort idempotently. The release fixture uses disposable private storage and aggregate-only output.
+
+This closes one local stop-independence gap, not native power-loss durability, provider source/delivery/replay completeness, actual-account acceptance, provider-directed backoff, broker-wide coordination, fees, holds, settlement, spendable funds, routing, live trading or release approval. No UI or modifiable parameter changed; preserve seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and the independent emergency stop.
+
+Final local v0.245.0 validation passed 3,830 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 203. Sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `e278f3fdf419a12cca1a23a47d709f582fa9b330a4969ddbbecfe08e6477b20e`; `validation/release_trials_0_245_0.json` SHA256 is `97e36c59849a8e13fbda7fd15feddbd5effc11ce2f7b4b9693efc42a47dd1454`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace passed. Public snapshot/history scans and fresh exact-source hosted workflows remain mandatory.
 
 ## v0.244.0 reservation-bound reconnect result recovery
 

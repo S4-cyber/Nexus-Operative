@@ -81,11 +81,12 @@ def _account_id(value):
     return normalized
 
 
-def collect_once(api_key, api_secret, *, expected_account_id, since_id,
+def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
         confirm_read_only_paper=False, opener=None, wall_clock=time.time,
         elapsed_clock=time.monotonic, permission_check=None,
-        emergency_stop_check=None, credential_check=None):
-    """Read one bounded finite segment and return aggregate review evidence.
+        emergency_stop_check=None, credential_check=None,
+        private_events=False):
+    """Read one bounded finite segment for aggregate or private composition.
 
     ``opener`` is an injected test seam.  Without it, proxies are disabled and
     redirects are denied.  The independent checks are sampled before and after
@@ -185,10 +186,14 @@ def collect_once(api_key, api_secret, *, expected_account_id, since_id,
             if content_length is not None and total != content_length:
                 _fail('CONTENT_LENGTH_CHANGED')
             checkpoint()
-            reviewed = wire.review(chunks,
-                expected_account_id=account_id, since_id=since_id,
-                response_url=response.geturl(), response_status=response.status,
+            review_call = wire._review_private if private_events else wire.review
+            reviewed = review_call(chunks, expected_account_id=account_id,
+                since_id=since_id, response_url=response.geturl(),
+                response_status=response.status,
                 response_headers=response_headers)
+            events = None
+            if private_events:
+                reviewed, events = reviewed
             checkpoint()
     except ActivitySSETransportError:
         raise
@@ -201,7 +206,7 @@ def collect_once(api_key, api_secret, *, expected_account_id, since_id,
         _fail('TRANSPORT_UNAVAILABLE')
     except Exception:
         _fail('TRANSPORT_FAILED')
-    return dict(reviewed, mode='EXPLICIT_ALPACA_ACTIVITY_SSE_TRANSPORT',
+    result = dict(reviewed, mode='EXPLICIT_ALPACA_ACTIVITY_SSE_TRANSPORT',
         transport_policy=POLICY,
         source='INJECTED_UNATTESTED' if injected else 'PAPER_HTTPS_READS',
         explicit_authorization=True, single_get_attempt=True,
@@ -217,6 +222,26 @@ def collect_once(api_key, api_secret, *, expected_account_id, since_id,
             ' The transport performed one explicitly authorized bounded GET; '
             'it did not retry, reconnect, back off, write a cursor or grant '
             'trading, funding, routing or release authority.')
+    return (result, events) if private_events else result
+
+
+def collect_once(api_key, api_secret, *, expected_account_id, since_id,
+        confirm_read_only_paper=False, opener=None, wall_clock=time.time,
+        elapsed_clock=time.monotonic, permission_check=None,
+        emergency_stop_check=None, credential_check=None):
+    """Read one bounded finite segment and return aggregate review evidence."""
+    return _collect_once(api_key, api_secret,
+        expected_account_id=expected_account_id, since_id=since_id,
+        confirm_read_only_paper=confirm_read_only_paper, opener=opener,
+        wall_clock=wall_clock, elapsed_clock=elapsed_clock,
+        permission_check=permission_check,
+        emergency_stop_check=emergency_stop_check,
+        credential_check=credential_check)
+
+
+def _collect_once_private(api_key, api_secret, **options):
+    """Internal transport seam returning raw events for private composition."""
+    return _collect_once(api_key, api_secret, private_events=True, **options)
 
 
 def fixture_report():

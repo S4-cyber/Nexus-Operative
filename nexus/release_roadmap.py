@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.241.0'
+REVISION = '0.242.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -56,6 +56,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; an explicitly confirmed single-attempt paper Activity SSE transport now opens only the exact since_id target, disables proxies and redirects, validates streaming metadata before reading, fences every bounded read with permission, emergency-stop, credential and clock checks, and passes a complete two-event segment through the strict wire review without retry, reconnect, cursor mutation or authority' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; an explicitly confirmed one-attempt Activity SSE checkpoint coordinator now binds a caller-supplied private prior segment and the exact cursor-journal head to one fixed-target resumption GET, re-proves immutable duplicate redelivery plus forward advancement, rejects interruption comments and commits at most one crash-recoverable cursor transition while retaining no automatic retry/backoff, ledger, routing or funds authority' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 # Product milestones complement the nine technical evidence tracks above.
 # These are implementation/acceptance states, never permissions to move money.
 DELIVERY_STAGES = (
@@ -93,6 +97,11 @@ DELIVERY_STAGES = tuple((dict(stage,
         'injected tests do not attest an account and no external order adapter is connected.',
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' An explicit one-attempt Activity SSE coordinator now composes the fixed-target transport, private prior segment, strict reconnect review and exact-head cursor journal into one fail-closed local checkpoint; injected tests only.',
+    remaining='Accept this exact-head reconnect/checkpoint path on an authorized paper account and native private volume; verify account entitlement, provider source/delivery and replay coverage, slow-consumer recovery and broker-wide/distributed coordination before any automatic reconnect loop. ' + stage['remaining'])
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -142,6 +151,7 @@ PRODUCTION_USER_FLOW = (
     'Press Engage to run automatic readiness checks and start separately authorized autonomous execution. Live execution is not implemented.',
 )
 NEXT = (
+    'Accept the explicit one-attempt Activity SSE reconnect/checkpoint coordinator on an authorized paper account and native private Windows volume. Keep the prior segment, cursor journal and resulting report private; exercise exact-head races, revoked permission, the independent emergency stop, credential changes, disconnects, slow-consumer/internal-error frames, lost acknowledgments and process restart. Do not add an automatic reconnect loop until provider source/delivery/replay coverage, bounded backoff, broker-wide coordination and native durability are independently accepted.',
     'Use the private exact-response bundle review on an authorized adjacent ACCOUNT_INVENTORY and current-tail ACTIVITY_COLLECTION pair: preserve every exact response body plus the portable account observation outside Git, pin the shared current pacing/activity heads and both session heads, and independently review the composed normalization result. Local byte/hash agreement is not provider identity, source or received-activity coverage, account ownership, fee/hold/funds acceptance or routing permission.',
     'Use the private account-response review on an authorized retained ACCOUNT_INVENTORY session: preserve the exact four response bodies and portable observation outside Git, pin the current pacing head and session head, and independently review the normalization result. Exact local byte/hash agreement is not provider identity, source coverage, account ownership, fee/hold/funds acceptance or routing permission.',
     'Use the private activity-response review on an authorized retained ACTIVITY_COLLECTION session: preserve the exact account and one/two page response bodies outside Git, pin the current pacing/activity heads and session head, and independently replay the retained normalized receipt. Exact local byte/hash agreement does not prove source or creation/execution/fee coverage, posting times, fee links, holds, funds or routing permission.',
@@ -194,7 +204,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.241.0 adds an explicitly confirmed single-attempt paper Activity SSE transport in front of the existing strict wire review. It opens only the exact v2beta1 since_id target with caller-held credentials, disables proxies and redirects, requires HTTP 200 text/event-stream identity metadata, bounds bytes/chunks/time, and rechecks permission, the independent emergency stop, credential continuity and clocks before and after every read. Only a complete finite two-event segment reaches the existing UTF-8/SSE/JSON and linked BTC/USD trade/fee review. It never retries, reconnects, backs off, writes a cursor, stores credentials, applies a ledger, places an order or moves funds. Injected tests do not prove TLS/DNS, account entitlement, provider source/delivery/replay completeness, heartbeat timing, actual-account behavior, native durability, fee coverage, holds, settlement or spendable funds. No Portal, strategy, routing, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.242.0 composes the fixed-target single-attempt paper Activity SSE transport with a caller-supplied private prior segment, the strict reconnect review and the exact-head crash-recoverable cursor journal. Separate read and checkpoint confirmations are mandatory. One bounded resumption GET must prove immutable duplicate redelivery plus forward advancement; slow-consumer/internal-error frames, stale heads, cursor/account disagreement and revoked permission, emergency-stop or credential checks fail closed. At most one cursor transition is committed, with no automatic retry/reconnect loop, backoff, ledger, order, routing or funds action. Injected tests do not prove account entitlement, TLS/DNS, provider source/delivery/replay completeness, actual-account behavior, native power-loss durability, fee coverage, holds, settlement or spendable funds. No Portal, strategy, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

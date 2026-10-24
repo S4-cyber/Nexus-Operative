@@ -165,9 +165,9 @@ def _frames(lines):
     return events, heartbeats, comments, dropped, internal_errors
 
 
-def review(chunks, *, expected_account_id, since_id, response_url,
+def _review(chunks, *, expected_account_id, since_id, response_url,
         response_status, response_headers):
-    """Review one supplied finite wire segment without opening a connection."""
+    """Return aggregate review plus private parsed events for local composition."""
     cursor = _cursor(since_id)
     if response_url != activity_url(cursor):
         _fail('RESPONSE_URL_INVALID')
@@ -189,7 +189,7 @@ def review(chunks, *, expected_account_id, since_id, response_url,
         response_url_sha256=sha(response_url), response_status=response_status,
         content_type=headers['content-type'].lower(), since_id=cursor,
         wire_sha256=sha(raw), account_sha256=envelope['account_sha256'])
-    return dict(mode='SUPPLIED_ALPACA_ACTIVITY_SSE_WIRE_SESSION_REVIEW',
+    result = dict(mode='SUPPLIED_ALPACA_ACTIVITY_SSE_WIRE_SESSION_REVIEW',
         status='RECONNECT_REVIEW_REQUIRED' if interrupted else 'REVIEW_REQUIRED',
         read_only=True, input_sha256=sha(canonical_input),
         account_sha256=envelope['account_sha256'], sources=SOURCES,
@@ -210,6 +210,25 @@ def review(chunks, *, expected_account_id, since_id, response_url,
             envelope['all_admitted_fees_parent_linked'],
         **{flag: False for flag in FLAGS},
         limitations='Supplied finite response bytes and metadata only. No socket, TLS, DNS, authentication, credential, provider, heartbeat clock, stream entitlement, reconnect, backoff, cursor write, source attestation, complete delivery, fee coverage, holds, settlement, spendable funds, ledger, routing, live trading or release approval. A slow-consumer or internal-error comment requires separate reconnect review and can never authorize a cursor checkpoint.')
+    return result, events
+
+
+def review(chunks, *, expected_account_id, since_id, response_url,
+        response_status, response_headers):
+    """Review one supplied finite wire segment without opening a connection."""
+    return _review(chunks, expected_account_id=expected_account_id,
+        since_id=since_id, response_url=response_url,
+        response_status=response_status,
+        response_headers=response_headers)[0]
+
+
+def _review_private(chunks, *, expected_account_id, since_id, response_url,
+        response_status, response_headers):
+    """Internal private composition seam; raw events must never be published."""
+    return _review(chunks, expected_account_id=expected_account_id,
+        since_id=since_id, response_url=response_url,
+        response_status=response_status,
+        response_headers=response_headers)
 
 
 def fixture_report():

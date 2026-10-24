@@ -1,10 +1,10 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-Assessment date: 2026-10-23 (America/Los_Angeles).
-Parent source reviewed: `99cccbfece6ca338a3c5dfb4625c9cd6a32a33aa` (v0.240.0); v0.241.0 is the current candidate and requires fresh exact-source checks.
+Assessment date: 2026-10-24 (America/Los_Angeles).
+Parent source reviewed: `73421edfa242576333fdd4f5facf547b9e9b2ed8` (v0.241.0), whose exact-source security, safety/browser/evidence and Windows workflows passed; v0.242.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.241.0 adds an explicitly confirmed, fixed-target, single-attempt paper Activity SSE transport before the existing strict wire/reconnect/cursor chain. It uses caller-held credentials, disables proxies and redirects, validates streaming metadata before bounded reads, and fences every read with permission, emergency-stop, credential-continuity and clock checks. It deliberately performs no retry, reconnect/backoff, cursor write, ledger/order/funding action or authority promotion. Injected evidence does not establish actual provider/account, entitlement, TLS/DNS, source/delivery/replay completeness or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.242.0 composes the fixed-target single-attempt paper Activity SSE transport, caller-supplied private prior events, strict reconnect review and exact-head cursor journal. Separate read/checkpoint confirmations are required; only a clean segment with immutable redelivery and forward progress may commit one local cursor transition. Interrupted streams, stale heads and revoked safety inputs fail closed. It deliberately adds no automatic retry/reconnect loop, backoff, ledger/order/funding action or authority promotion. Injected evidence does not establish actual provider/account, entitlement, TLS/DNS, source/delivery/replay completeness, native durability or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 
@@ -13,7 +13,7 @@ Engineering checkpoint note: v0.241.0 adds an explicitly confirmed, fixed-target
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.240.0 public security/history, saved release evidence, browser-help, complete regression and Windows EXE/installer checks passed on 2026-10-23 Pacific time. Those parent results do not transfer; v0.241.0 requires all fresh exact-source checks.
+- Exact v0.241.0 public security/history, saved release evidence, browser-help, complete regression and Windows EXE/installer checks passed on 2026-10-24 Pacific time. Those parent results do not transfer; v0.242.0 requires all fresh exact-source checks.
 
 ## Roadmap coverage
 

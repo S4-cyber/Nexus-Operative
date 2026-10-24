@@ -633,6 +633,7 @@ def _execute(profile):
         from nexus.alpaca_activity_sse_wire_review import fixture_report as activity_sse_wire_fixture
         from nexus.alpaca_activity_sse_transport import fixture_report as activity_sse_transport_fixture
         from nexus.alpaca_activity_sse_checkpoint import fixture_report as activity_sse_checkpoint_fixture
+        from nexus.alpaca_activity_sse_reconnect_budget import fixture_report as activity_sse_reconnect_budget_fixture
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_response_bundle']=response_fixture()
         result['provider_post_reconciliation']=post_reconciliation_fixture()
@@ -643,7 +644,8 @@ def _execute(profile):
         result['private_activity_sse_cursor_store']=activity_sse_cursor_fixture()
         result['supplied_activity_sse_wire_session']=activity_sse_wire_fixture()
         result['explicit_activity_sse_transport']=activity_sse_transport_fixture()
-        result['explicit_activity_sse_checkpoint']=activity_sse_checkpoint_fixture();return result
+        result['explicit_activity_sse_checkpoint']=activity_sse_checkpoint_fixture()
+        result['explicit_activity_sse_reconnect_budget']=activity_sse_reconnect_budget_fixture();return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -963,6 +965,7 @@ def _validate(profile, result):
         from nexus.alpaca_activity_sse_cursor_store import FLAGS as ACTIVITY_SSE_CURSOR_FLAGS
         from nexus.alpaca_activity_sse_wire_review import FLAGS as ACTIVITY_SSE_WIRE_FLAGS
         from nexus.alpaca_activity_sse_checkpoint import FLAGS as ACTIVITY_SSE_CHECKPOINT_FLAGS
+        from nexus.alpaca_activity_sse_reconnect_budget import FLAGS as ACTIVITY_SSE_RECONNECT_BUDGET_FLAGS
         from nexus.paper_response_bundle_review import FLAGS as RESPONSE_FLAGS
         bundle=result['account_evidence_bundle']
         _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','guarded_declared_source_summary_checked','guarded_collection_timing_summary_checked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
@@ -1096,6 +1099,21 @@ def _validate(profile, result):
             (*ACTIVITY_SSE_CHECKPOINT_FLAGS,'actual_provider_access',
              'actual_stream_connection','actual_vault_access')),
             'EXPLICIT_ACTIVITY_SSE_CHECKPOINT_AUTHORITY')
+        reconnect_budget=result['explicit_activity_sse_reconnect_budget']
+        _require(reconnect_budget['source']==
+            'TEMPORARY_INJECTED_ACTIVITY_SSE_RECONNECT_BUDGET_FIXTURE' and
+            all(reconnect_budget[k] is True for k in ('passed',
+                'first_failure_retained_without_retry',
+                'due_second_attempt_explicit_and_single',
+                'checkpoint_and_budget_recover_together',
+                'no_sleep_loop_or_financial_authority',
+                'no_private_identifier_or_credential_echo')) and
+            reconnect_budget['actual_storage_retained'] is False,
+            'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET')
+        _require(all(reconnect_budget[k] is False for k in
+            (*ACTIVITY_SSE_RECONNECT_BUDGET_FLAGS,'actual_provider_access',
+             'actual_stream_connection','actual_vault_access')),
+            'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

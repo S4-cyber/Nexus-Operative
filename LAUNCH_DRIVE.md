@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-23
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The exact v0.233.1 parent is published; this v0.234.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The exact v0.234.0 parent is published and fully green; this v0.235.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.235.0 retained fee references after provider POST reconciliation
+
+Added a private, read-only exact-head composition requiring the complete v0.234 POST/request/activity/guarded-balance review before examining retained fees. The accepted receipt set must exactly match retained receipts. At least one fee is required, and each retained fee must carry an explicit order/execution pair resolving to the same accepted original fill. Missing fees, unreferenced fees, unknown executions and mismatched order/fill references fail closed. Timestamped references cannot precede their fill; date-only fee timing remains explicitly unverified.
+
+This binds only local retained reference consistency. It does not authenticate the provider or REST reference semantics, prove complete or corrected activity/fee coverage, assign fees to the guarded balance interval, establish holds/settlement/spendable funds, reconcile an account, infer profitability or grant routing/release authority. No UI control, credential scope, provider IO, retry, continuation, ledger write, live endpoint or funding path was added. Public evidence remains aggregate-only and the new report mode is rejected from public artifacts.
+
+Final local regression passed 3,666 tests with one expected non-Windows skip and one existing warning. All sixteen profiles passed and saved-evidence verification matched 371 source files / `7145e5e91af0173eaff9d4aa92598fed4f129fa506668e60d170f5b001a6b8ab`; `validation/release_trials_0_235_0.json` SHA256 is `256f0a1603e6d10e47712abc579db289f9311cd9863f980afe4e3cdf5bfefb58`. The focused sets passed 41 and 42 tests, and all 14 Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace checks also passed. Public snapshot/history scans and exact-source packaging/browser/security lanes remain mandatory until separately recorded.
 
 ## v0.234.0 provider POST to guarded account reconciliation
 

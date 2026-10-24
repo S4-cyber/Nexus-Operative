@@ -170,11 +170,11 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         limitations='One private exact-head local composition binds the selected provider POST history to complete accepted request/activity replay and four supplied guarded balance observations. A zero gross-only residual omits fee obligations and proves neither complete activity, fee links, holds, settled/spendable funds, provider source, broker-account acceptance nor profitability. Separate journals are not an atomic or distributed snapshot. This performs no provider/vault IO, retry, continuation, ledger write, routing, funding, live trading or release approval.')
 
 
-def _fixture(root, *, resolve_unknown=True):
+def _fixture(root, *, resolve_unknown=True, fee_mode=None):
     from nexus.paper_observation_review import _fixture_observation
 
     budget, head, binding = post_activity._case(root,
-        resolve_unknown=resolve_unknown)
+        resolve_unknown=resolve_unknown, fee_mode=fee_mode)
     epoch = 1792195200 + 18 * 3600
     observations = dict(
         pre_opening_observation=_fixture_observation(

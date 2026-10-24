@@ -1,0 +1,108 @@
+"""Exact provider POST reconciliation to retained fee-reference composition."""
+import json
+
+import pytest
+
+from nexus import paper_provider_post_fee_reference_review as subject
+from nexus.alpaca_paper_contract import preview
+from nexus.broker_request_journal import BrokerRequestJournal
+
+
+def snapshot(root):
+    return {path.relative_to(root): path.read_bytes()
+        for path in root.rglob('*') if path.is_file()}
+
+
+def test_binds_every_retained_fee_reference_without_writes(tmp_path):
+    args = subject._fixture(tmp_path)
+    before = snapshot(tmp_path)
+    result = subject.review(**args)
+    assert result['post_reconciliation_bound']
+    assert result['complete_accepted_history_replayed']
+    assert result['accepted_receipt_partition_complete']
+    assert result['retained_fee_records'] == 1
+    assert result['explicitly_referenced_fee_records'] == 1
+    assert result['date_only_fee_references'] == 1
+    assert result['timestamped_fee_references'] == 0
+    assert result['all_references_resolve_to_accepted_original_fills']
+    assert result['reference_semantics_unverified']
+    assert all(result[flag] is False for flag in subject.FLAGS)
+    assert subject.review(**args) == result
+    assert snapshot(tmp_path) == before
+
+
+def test_timestamped_fee_reference_at_or_after_fill_is_counted(tmp_path):
+    args = subject._fixture(tmp_path, fee_mode='linked_timestamp')
+    result = subject.review(**args)
+    assert result['timestamped_fee_references'] == 1
+    assert result['date_only_fee_references'] == 0
+
+
+def test_timestamped_fee_reference_before_fill_fails_at_guard(tmp_path):
+    args = subject._fixture(tmp_path, fee_mode='early_timestamp')
+    with pytest.raises(ValueError,
+            match='PAPER_RECONCILIATION_ACCEPTANCE_GUARD_RETAINED_FEE_TIMING_AMBIGUOUS'):
+        subject.review(**args)
+
+
+@pytest.mark.parametrize(('mode','code'), [
+    (None, 'FEES_REQUIRED'),
+    ('unreferenced', 'REFERENCE_REQUIRED'),
+    ('unknown', 'REFERENCE_EXECUTION_UNKNOWN')])
+def test_missing_or_unresolved_fee_references_fail_closed(tmp_path, mode, code):
+    args = subject._fixture(tmp_path, fee_mode=mode)
+    before = snapshot(tmp_path)
+    with pytest.raises(ValueError, match='PAPER_PROVIDER_POST_FEE_REFERENCE_' + code):
+        subject.review(**args)
+    assert snapshot(tmp_path) == before
+
+
+@pytest.mark.parametrize('field', [
+    'fee_coverage_complete', 'fee_execution_links_verified',
+    'spendable_funds_verified', 'ready_for_routing'])
+def test_component_authority_promotion_is_rejected(tmp_path, monkeypatch, field):
+    args = subject._fixture(tmp_path)
+    original = subject.reconciliation.review
+    def promoted(**kwargs):
+        result = original(**kwargs)
+        result[field] = True
+        return result
+    monkeypatch.setattr(subject.reconciliation, 'review', promoted)
+    with pytest.raises(ValueError, match='RECONCILIATION_INVALID'):
+        subject.review(**args)
+
+
+def test_request_append_during_final_recheck_is_retained_and_refused(
+        tmp_path, monkeypatch):
+    args = subject._fixture(tmp_path)
+    original = subject.reconciliation.review
+    calls = []
+    def changed(**kwargs):
+        result = original(**kwargs)
+        calls.append(1)
+        if len(calls) == 1:
+            asset = dict(symbol='BTC/USD', **{'class':'crypto'},
+                status='active', tradable=True, fractionable=True,
+                min_order_size='.5', min_trade_increment='.5',
+                price_increment='.5')
+            args['journal'].prepare(preview('later_fee_review_request',
+                'BTC-USD', 'BUY', '1', '100', asset,
+                metadata_at=3000, evaluated_at=3001))
+        return result
+    monkeypatch.setattr(subject.reconciliation, 'review', changed)
+    with pytest.raises(ValueError):
+        subject.review(**args)
+    recovery = BrokerRequestJournal(args['journal'].path,
+        args['account_id']).recovery()
+    assert any(row['client_order_id'] == 'later_fee_review_request'
+        for row in recovery['requests'])
+
+
+def test_fixture_is_public_aggregate_only():
+    result = subject.fixture_report()
+    assert result['passed']
+    assert all(result[flag] is False for flag in subject.FLAGS)
+    encoded = json.dumps(result)
+    assert all(token not in encoded for token in (
+        'nx_accept_fixture', '01234567', 'retained_fee_reference_sha256',
+        'fee_amount', '2026-10-18'))

@@ -125,7 +125,7 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
         limitations='Complete local accepted-history replay binds this exact request head to one exact retained activity head and rechecks all cooperating journals. This is sampled local consistency only: it does not attest provider source or complete activity/fee coverage, make the request journal atomic with collection, verify holds or spendable funds, authorize transport, write a ledger or approve release. Keep all private journals and reports outside Git.')
 
 
-def _fixture(root,*,submission_admission=None):
+def _fixture(root,*,submission_admission=None,fee_mode=None):
     """Build one accepted synthetic fill collection; never provider or vault IO."""
     account='01234567-89ab-cdef-0123-456789abcdef'
     after='2026-10-17T00:00:00Z';until='2026-10-18T00:00:00Z'
@@ -159,15 +159,33 @@ def _fixture(root,*,submission_admission=None):
         type='partial_fill' if i==1 else 'fill',qty='1',price=price,cum_qty=str(i),
         leaves_qty=str(2-i),transaction_time=f'2026-10-17T18:00:0{i}Z')
         for i,price in ((1,'98'),(2,'100'))]
-    normalized=adapter.normalize(fills,[order],expected_account_id=account)
+    if fee_mode not in (None,'linked','linked_timestamp','early_timestamp',
+            'unreferenced','unknown'):
+        raise ValueError('PAPER_REQUEST_ACTIVITY_ACCEPTANCE_FIXTURE_FEE_MODE')
+    activities=list(fills)
+    if fee_mode is not None:
+        fee=dict(id='20261018120000000::01234567-89ab-cdef-0123-999999999999',
+            activity_type='FEE',symbol='BTCUSD',net_amount='-1',status='executed',
+            date='2026-10-18')
+        if fee_mode in ('linked','linked_timestamp','early_timestamp'):
+            fee.update(order_id=broker_id,execution_id=fills[-1]['id'])
+            if fee_mode=='linked_timestamp':
+                fee['date']='2026-10-18T00:00:00Z'
+            elif fee_mode=='early_timestamp':
+                fee['date']='2026-10-17T18:00:01Z'
+        elif fee_mode=='unknown':
+            fee.update(order_id=broker_id,
+                execution_id='20261017180000000::01234567-89ab-cdef-0123-888888888888')
+        activities.append(fee)
+    normalized=adapter.normalize(activities,[order],expected_account_id=account)
     observed_at=1792281600
     observation=validate(dict(schema=SCHEMA,declared_transport='INJECTED_UNATTESTED',
         read_started_at=observed_at,read_completed_at=observed_at,
         account_fields_sha256=sha(dict(fixture='accepted-request-fill')),
-        pages=[page_observation(fills,normalized['normalized_activities'],after=after,until=until,
+        pages=[page_observation(activities,normalized['normalized_activities'],after=after,until=until,
             request_cursor=None,requested_at=observed_at,received_at=observed_at)]),
         dict(activities=normalized['normalized_activities']),after=after,until=until)
-    receipt=activity.retain(fills,[order],after=after,until=until,
+    receipt=activity.retain(activities,[order],after=after,until=until,
         collection_observation=observation)
     with pacing.ownership() as owner:
         token=pacing.begin(admission=lambda:1000,ownership=owner,operation='ACTIVITY_COLLECTION')

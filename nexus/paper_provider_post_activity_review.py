@@ -260,13 +260,14 @@ def review(post_budget, *, expected_post_head, account_bindings):
         limitations='Exact-head local composition over explicitly selected cooperating journals only. Observed/recovered POST attempts must agree with complete accepted local activity history; NOT_SENT attempts must retain no observation or fills. This does not attest provider source or activity/fee completeness, make journals atomic, verify fee links, holds, balances or spendable funds, coordinate another credential/process/host, authorize transport, apply a ledger or approve release.')
 
 
-def _case(root, *, resolve_unknown):
+def _case(root, *, resolve_unknown, fee_mode=None):
     """Disposable accepted activity plus reconstructed exact POST prefixes."""
     import sqlite3
     from nexus.alpaca_paper_contract import preview
     from nexus.paper_provider_post_recovery import recover
 
-    options, _ = activity._fixture(root, submission_admission=1000)
+    options, _ = activity._fixture(root, submission_admission=1000,
+        fee_mode=fee_mode)
     journal = BrokerRequestJournal(options['request_journal_path'],
         options['expected_account_id'])
     db = sqlite3.connect(journal.path)

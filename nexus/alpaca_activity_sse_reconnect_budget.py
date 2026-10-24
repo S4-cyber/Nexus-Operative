@@ -87,6 +87,30 @@ def _outcome_time(clock, not_before):
     return value
 
 
+def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
+    """Retain terminal review state from the last trusted admission time.
+
+    This helper is used only after a failed attempt whose cursor did not move.
+    It cannot schedule a retry.  Inspecting after an exception recovers a
+    committed result whose acknowledgement was lost.
+    """
+    try:
+        retained = reconnect_budget.finish(token,
+            evaluated_at=evaluated_at, outcome='REVIEW_REQUIRED',
+            detail_code='OUTCOME_CLOCK_UNCERTAIN')
+    except Exception:
+        retained = reconnect_budget.inspect()
+    if (not retained['review_required'] or retained['completed'] or
+            retained['pending_token'] is not None or
+            retained['last_attempt_head_sha256'] != token or
+            retained['last_evaluated_at'] != evaluated_at or
+            retained['last_outcome'] != 'REVIEW_REQUIRED' or
+            retained['last_detail_code'] != 'OUTCOME_CLOCK_UNCERTAIN' or
+            retained['next_allowed_at'] != 0):
+        _fail('RESULT_RECORD_UNCERTAIN')
+    return retained
+
+
 class ActivitySSEReconnectBudget:
     """Account-bound hash-chain for one bounded reconnect episode."""
 
@@ -821,7 +845,19 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         result = checkpoint.collect_and_checkpoint_once(api_key, api_secret,
             **options)
     except Exception as error:
-        completed_at = _outcome_time(result_clock, evaluated_at)
+        try:
+            completed_at = _outcome_time(result_clock, evaluated_at)
+        except ActivitySSEReconnectBudgetError:
+            # A failed request with no committed cursor transition needs no
+            # completion-time backoff. Close it from the trusted reservation
+            # timestamp so it cannot linger pending or acquire retry authority.
+            # If the cursor moved, preserve the reservation for the existing
+            # exact no-network checkpoint reconciliation path instead.
+            after = cursor_store.inspect()
+            if after['head_sha256'] == expected_cursor_head:
+                _close_failed_clock_uncertainty(reconnect_budget,
+                    reservation['token'], evaluated_at)
+            raise
         after = cursor_store.inspect()
         code = str(error)
         provider_retry_after = (error.provider_retry_after_seconds
@@ -1294,6 +1330,24 @@ def fixture_report():
         except ActivitySSETransportError:
             pass
         service_state = service_budget.inspect()
+        automatic_uncertain_cursor = ActivitySSECursorStore(
+            root / 'automatic-uncertain-cursor.sqlite3', account)
+        automatic_uncertain_budget = ActivitySSEReconnectBudget(
+            root / 'automatic-uncertain-budget.sqlite3', account)
+        automatic_uncertain_opener = Opener(
+            TimeoutError('fixture timeout'))
+        automatic_uncertain_code = None
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=7500, opener=automatic_uncertain_opener,
+                **dict(common, cursor_store=automatic_uncertain_cursor,
+                    reconnect_budget=automatic_uncertain_budget,
+                    wall_clock=lambda: 7500,
+                    outcome_clock=lambda: 7499))
+        except ActivitySSEReconnectBudgetError as error:
+            automatic_uncertain_code = str(error)
+        automatic_uncertain_state = automatic_uncertain_budget.inspect()
         uncertain_budget = ActivitySSEReconnectBudget(
             root / 'uncertain-budget.sqlite3', account)
         uncertain_reserved = uncertain_budget.begin(evaluated_at=8000,
@@ -1318,7 +1372,8 @@ def fixture_report():
         encoded = json.dumps(
             [result, cold_budget, recovered, stopped, waiting_closed,
                 retry_stop_state, rate_state, service_state,
-                uncertain_closed, uncertain_replay, uncertain_state],
+                automatic_uncertain_state, uncertain_closed,
+                uncertain_replay, uncertain_state],
             sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
@@ -1407,6 +1462,22 @@ def fixture_report():
                 rate_state['next_allowed_at'] == 6127 and
                 service_state['last_evaluated_at'] == 7009 and
                 service_state['next_allowed_at'] == 7129,
+            failed_clock_uncertainty_closes_from_trusted_admission=
+                automatic_uncertain_code is not None and
+                automatic_uncertain_code.endswith(
+                    'OUTCOME_CLOCK_REGRESSION') and
+                len(automatic_uncertain_opener.requests) == 1 and
+                not automatic_uncertain_cursor.path.exists() and
+                automatic_uncertain_state['attempts'] == 1 and
+                automatic_uncertain_state['pending_token'] is None and
+                automatic_uncertain_state['review_required'] and
+                not automatic_uncertain_state['completed'] and
+                automatic_uncertain_state['last_evaluated_at'] == 7500 and
+                automatic_uncertain_state['last_outcome'] ==
+                    'REVIEW_REQUIRED' and
+                automatic_uncertain_state['last_detail_code'] ==
+                    'OUTCOME_CLOCK_UNCERTAIN' and
+                automatic_uncertain_state['next_allowed_at'] == 0,
             uncertain_outcome_closes_without_retry_or_external_access=
                 uncertain_closed['pending_outcome_closed'] and
                 not uncertain_closed['duplicate_close'] and

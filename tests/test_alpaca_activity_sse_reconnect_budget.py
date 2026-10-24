@@ -217,7 +217,7 @@ def test_slow_failure_starts_fixed_backoff_when_outcome_is_observed(tmp_path):
     (lambda: 999, 'OUTCOME_CLOCK_REGRESSION'),
     (lambda: 'private', 'OUTCOME_CLOCK_INVALID'),
 ])
-def test_uncertain_outcome_clock_leaves_reserved_attempt_fail_closed(
+def test_failed_attempt_with_uncertain_outcome_clock_closes_for_review(
         tmp_path, clock, code):
     cursor, budget = stores(tmp_path)
     opener = Opener([TimeoutError('private')])
@@ -225,10 +225,14 @@ def test_uncertain_outcome_clock_leaves_reserved_attempt_fail_closed(
         call(tmp_path, opener, stores=(cursor, budget), outcome_clock=clock)
     state = budget.inspect()
     assert len(opener.requests) == 1
-    assert state['attempts'] == 1 and state['pending_token']
-    assert state['last_outcome'] is None and state['next_allowed_at'] == 0
+    assert state['attempts'] == 1 and state['pending_token'] is None
+    assert state['review_required'] and not state['completed']
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+    assert state['last_evaluated_at'] == 1000
+    assert state['next_allowed_at'] == 0 and not cursor.path.exists()
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
-            match='PENDING_REVIEW'):
+            match='EPISODE_CLOSED'):
         budget.begin(evaluated_at=2000, expected_cursor_head=ZERO,
             reconnect_reason='CONNECTION_DROPPED',
             expected_head=state['head_sha256'],
@@ -238,19 +242,16 @@ def test_uncertain_outcome_clock_leaves_reserved_attempt_fail_closed(
 
 def test_uncertain_outcome_can_be_explicitly_closed_without_retry_or_io(
         tmp_path):
-    cursor, budget = stores(tmp_path)
-    opener = Opener([TimeoutError('private')])
-    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
-            match='OUTCOME_CLOCK_REGRESSION'):
-        call(tmp_path, opener, stores=(cursor, budget),
-            outcome_clock=lambda: 999)
-    pending = budget.inspect()
+    _, budget = stores(tmp_path)
+    pending = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
     result = subject.close_pending_reconnect_for_outcome_uncertainty(
         reconnect_budget=budget,
         expected_budget_head=pending['head_sha256'], evaluated_at=1001,
         confirm_outcome_uncertain=True, confirm_no_retry=True)
     state = budget.inspect()
-    assert len(opener.requests) == 1 and not cursor.path.exists()
     assert result['pending_outcome_closed'] and not result['duplicate_close']
     assert result['outcome_uncertainty_preserved']
     assert not result['provider_request_performed']
@@ -273,6 +274,30 @@ def test_uncertain_outcome_can_be_explicitly_closed_without_retry_or_io(
             expected_head=state['head_sha256'],
             emergency_stop_check=STOP_CLEAR,
             confirm_reconnect_attempt=True)
+
+
+def test_failed_clock_uncertainty_recovers_lost_result_acknowledgement(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original = budget.finish
+
+    def lost_ack(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError('private lost acknowledgement')
+
+    monkeypatch.setattr(budget, 'finish', lost_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='OUTCOME_CLOCK_UNAVAILABLE'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: (_ for _ in ()).throw(
+                RuntimeError('private clock failure')))
+    state = budget.inspect()
+    assert len(opener.requests) == 1 and not cursor.path.exists()
+    assert state['review_required'] and state['pending_token'] is None
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+    assert state['last_evaluated_at'] == 1000
 
 
 def test_uncertain_outcome_close_lost_ack_replay_is_byte_stable(tmp_path):

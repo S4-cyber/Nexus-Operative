@@ -1,12 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-24 (America/Los_Angeles).
-Parent source reviewed: `0b70d62ecf1c38726bfe4b63cc1a6331c0e79185` (v0.253.0), whose verified local tree is published and whose three exact-source GitHub workflows completed successfully; v0.254.0 is the current candidate and requires fresh exact-source checks because parent results do not transfer.
+Parent source reviewed: `c419b6e1aaa2c702e9652575bdabfebf7420b34c` (v0.254.0), whose verified local tree is published but has no connector-visible exact-source workflow result; v0.255.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.254.0 lets a separately confirmed operator/recovery path close the exact reconnect reservation left pending by outcome-clock uncertainty. The close is terminal review state with no retry, no new attempt and no provider/cursor access; exact lost-acknowledgement replay is byte-stable. Injected evidence does not establish actual provider/account timing, rate-limit or outage semantics, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.255.0 automatically terminalizes only a failed reconnect attempt whose outcome clock is uncertain and whose exact cursor head did not advance. It uses the trusted admission time, schedules no retry and recovers a lost result acknowledgement by inspection. Successful or cursor-advanced attempts retain exact checkpoint reconciliation. Injected evidence does not establish actual provider/account timing, rate-limit or outage semantics, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
-Local candidate evidence: 3,905 tests passed with one expected non-Windows skip and one existing warning; 16/16 bounded offline profiles and saved-evidence verification matched 387 source files / `83fe7334a21f75d7c8cb1361b858dbdbe8df7d45e6359e6f7009a7c838efdb1b`. This is implementation evidence only. Fresh exact-source hosted workflows, actual provider/account acceptance and every independent gate remain open.
+Local candidate evidence: 3,906 tests passed with one expected non-Windows skip and one existing warning; 16/16 bounded offline profiles and saved-evidence verification matched 387 source files / `30c479686aca12c4297f4c3c017f90e8756d74a45f57a518dfea46e35f49326e`. Static checks and the 616-path proposed snapshot plus reachable 648-commit / 4,613-blob history audit passed. This is implementation evidence only. Fresh exact-source hosted workflows, actual provider/account acceptance and every independent gate remain open.
 
 ## Current assessment
 
@@ -15,7 +15,7 @@ Local candidate evidence: 3,905 tests passed with one expected non-Windows skip 
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.253.0 public security/history, research-safety and Windows simulated-research workflows passed on 2026-10-24 Pacific time. The v0.243.0 through v0.253.0 trees were locally verified and published; prior results do not transfer to this candidate.
+- Exact v0.253.0 public security/history, research-safety and Windows simulated-research workflows passed on 2026-10-24 Pacific time. v0.254.0 is locally verified and published, but no connector-visible exact-source run or status is available; no prior result transfers to this candidate.
 
 ## Roadmap coverage
 

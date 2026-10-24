@@ -152,22 +152,27 @@ def test_transport_failure_records_backoff_without_sleep_or_second_get(tmp_path)
     assert second['attempt'] == 2
 
 
-def test_provider_retry_after_is_durable_and_never_shortened(tmp_path):
+@pytest.mark.parametrize(('status','detail'), [
+    (429, 'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'),
+    (503, 'ALPACA_ACTIVITY_SSE_TRANSPORT_SERVICE_UNAVAILABLE'),
+])
+def test_provider_retry_after_is_durable_and_never_shortened(
+        tmp_path, status, detail):
     cursor, budget = stores(tmp_path)
     headers = Message()
     headers['Retry-After'] = '120'
     body = io.BytesIO(SECRET.encode())
     error = HTTPError(
         wire.activity_url('01K00000000000000000000003'),
-        429, SECRET, headers, body)
+        status, SECRET, headers, body)
     opener = Opener([error])
-    with pytest.raises(ValueError, match='RATE_LIMITED'):
+    with pytest.raises(ValueError,
+            match='RATE_LIMITED|SERVICE_UNAVAILABLE'):
         call(tmp_path, opener, stores=(cursor, budget))
     state = budget.inspect()
     assert body.closed and len(opener.requests) == 1
     assert state['last_outcome'] == 'RETRY_REQUIRED'
-    assert state['last_detail_code'] == \
-        'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'
+    assert state['last_detail_code'] == detail
     assert state['last_requested_retry_after_seconds'] == 120
     assert state['last_applied_backoff_seconds'] == 120
     assert state['provider_directed_backoff_observed']
@@ -189,12 +194,14 @@ def test_provider_retry_after_is_durable_and_never_shortened(tmp_path):
     assert second['attempt'] == 2
 
 
-def test_rate_limit_without_exact_retry_after_closes_for_review(tmp_path):
+@pytest.mark.parametrize('status', [429, 503])
+def test_provider_backoff_without_exact_retry_after_closes_for_review(
+        tmp_path, status):
     cursor, budget = stores(tmp_path)
     body = io.BytesIO(SECRET.encode())
     error = HTTPError(
         wire.activity_url('01K00000000000000000000003'),
-        429, SECRET, {}, body)
+        status, SECRET, {}, body)
     with pytest.raises(ValueError, match='HTTP_STATUS_REVIEW'):
         call(tmp_path, Opener([error]), stores=(cursor, budget))
     state = budget.inspect()
@@ -465,14 +472,19 @@ def test_retry_result_lost_ack_exact_replay_is_byte_stable(tmp_path):
     assert replay['attempts'] == 1 and replay['next_allowed_at'] == 1001
 
 
-def test_provider_backoff_result_replay_requires_exact_delay(tmp_path):
+@pytest.mark.parametrize('detail', [
+    'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED',
+    'ALPACA_ACTIVITY_SSE_TRANSPORT_SERVICE_UNAVAILABLE',
+])
+def test_provider_backoff_result_replay_requires_exact_delay(
+        tmp_path, detail):
     _, budget = stores(tmp_path)
     reserved = budget.begin(evaluated_at=1000,
         expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
         expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
         confirm_reconnect_attempt=True)
     options = dict(evaluated_at=1000, outcome='RETRY_REQUIRED',
-        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED',
+        detail_code=detail,
         provider_retry_after_seconds=120,
         emergency_stop_check=STOP_CLEAR)
     first = budget.finish(reserved['token'], **options)

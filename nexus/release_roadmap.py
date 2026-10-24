@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.251.0'
+REVISION = '0.252.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -212,7 +212,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.251.0 retains one exact provider Retry-After instruction from an Activity SSE HTTP 429 in the private reconnect journal. Only a single bounded ASCII delta-seconds or HTTP-date value is accepted; missing, duplicate, malformed or excessive values close the episode for review. A valid provider delay can only lengthen the fixed local 1/2/4/8-second schedule, is exact-replay bound, and never sleeps or starts another attempt. Emergency-stop admission still samples before result review and under the exact-token transaction; an active or indeterminate stop records review-required closure with no due reconnect. Earlier reconnect result rows remain readable. No automatic retry, provider access, credential persistence, checkpoint, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, quota semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.252.0 extends exact provider-directed Activity SSE reconnect delay handling from HTTP 429 to HTTP 503. Only one bounded ASCII Retry-After delta-seconds or timezone-aware HTTP-date is accepted; missing, duplicate, malformed or excessive values close the episode for review. A valid 429 or 503 delay can only lengthen the fixed local 1/2/4/8-second schedule, is exact-result-replay bound, and never sleeps or starts another attempt. Emergency-stop admission still samples before result review and under the exact-token transaction; an active or indeterminate stop records review-required closure with no due reconnect. Earlier reconnect result rows remain readable. No automatic retry, provider access, credential persistence, checkpoint, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, rate-limit or outage semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

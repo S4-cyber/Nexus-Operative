@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.250.0 parent is locally verified, and all three of its exact-source GitHub workflows completed successfully; v0.251.0 still requires fresh checks because parent results do not transfer. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.251.0 parent is locally verified, and all three of its exact-source GitHub workflows completed successfully; v0.252.0 still requires fresh checks because parent results do not transfer. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.252.0 service-unavailable reconnect delay retention
+
+An exact Activity SSE HTTP 503 may now retain one sanitized, bounded provider `Retry-After` delay in the private reconnect result under the same fences as HTTP 429. The applied delay is the larger of that instruction and the existing fixed attempt delay. Missing, duplicate, malformed or excessive values close for review. Exact result replay binds the same delay, and emergency-stop uncertainty records closure without scheduling another attempt.
+
+No method sleeps, retries, reconnects, reads an error body, stores credentials, writes a cursor for the failed attempt, applies a ledger, routes an order or moves funds. The disposable fixture uses an injected response only. This is not authenticated provider/account rate-limit or outage acceptance, broker-wide coordination, source/coverage proof, native durability, reconciliation, trading permission or release approval. No UI or modifiable parameter changed. Fresh complete local validation, saved evidence, public scans and exact-source workflows remain mandatory.
+
+Final local validation passed 3,892 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the final transport/reconnect/release/evidence focus passed 282. All sixteen offline profiles and saved-evidence verification matched 387 source files / `b382ee489a9fb2da4040f62cde1f2b831da52e7996fcc8af6fa659daccf679f3`; the saved report SHA256 is `cf807b214f0a1be7baf175c913ebb35c3ec79d982ab1ec001fe8cb4b395a0e13`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace passed. Public audits and exact-source hosted workflows remain required before this source is treated as a verified checkpoint.
 
 ## v0.251.0 provider-directed reconnect backoff retention
 

@@ -1114,6 +1114,7 @@ def _validate(profile, result):
                 'emergency_stop_closes_retry_wait_without_new_attempt',
                 'emergency_stop_blocks_retry_schedule_during_result',
                 'provider_retry_after_extends_durable_backoff',
+                'provider_service_retry_after_extends_durable_backoff',
                 'no_sleep_loop_or_financial_authority',
                 'no_private_identifier_or_credential_echo')) and
             reconnect_budget['actual_storage_retained'] is False,

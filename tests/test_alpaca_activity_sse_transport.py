@@ -201,22 +201,26 @@ def test_http_error_is_closed_unread_and_not_retried():
     assert len(opener.requests) == 1
 
 
+@pytest.mark.parametrize(('status','code'), [
+    (429, 'RATE_LIMITED'),
+    (503, 'SERVICE_UNAVAILABLE'),
+])
 @pytest.mark.parametrize('as_http_error', [False, True])
 @pytest.mark.parametrize('retry_after', [
     '120', 'Thu, 01 Jan 1970 00:18:40 GMT'])
-def test_exact_single_retry_after_is_private_bounded_rate_limit(
-        as_http_error, retry_after):
+def test_exact_single_retry_after_is_private_bounded_provider_backoff(
+        as_http_error, retry_after, status, code):
     headers = Message()
     headers['Retry-After'] = retry_after
     if as_http_error:
         body = io.BytesIO(SECRET.encode())
-        value = HTTPError(wire_review.activity_url(CURSOR), 429, SECRET,
+        value = HTTPError(wire_review.activity_url(CURSOR), status, SECRET,
             headers, body)
     else:
-        value = Response(status=429, headers=headers)
+        value = Response(status=status, headers=headers)
     opener = Opener(value)
     with pytest.raises(subject.ActivitySSETransportError,
-            match='RATE_LIMITED') as caught:
+            match=code) as caught:
         collect(opener)
     assert caught.value.provider_retry_after_seconds == 120
     assert SECRET not in str(caught.value)
@@ -227,13 +231,15 @@ def test_exact_single_retry_after_is_private_bounded_rate_limit(
         assert value.closed and value.reads == 0
 
 
+@pytest.mark.parametrize('status', [429, 503])
 @pytest.mark.parametrize('headers', [
     {},
     {'Retry-After': '999999'},
     {'Retry-After': 'private\r\nvalue'},
 ])
-def test_missing_invalid_or_excessive_retry_after_requires_review(headers):
-    response = Response(status=429, headers=headers)
+def test_missing_invalid_or_excessive_retry_after_requires_review(
+        headers, status):
+    response = Response(status=status, headers=headers)
     with pytest.raises(subject.ActivitySSETransportError,
             match='HTTP_STATUS_REVIEW') as caught:
         collect(Opener(response))
@@ -241,11 +247,12 @@ def test_missing_invalid_or_excessive_retry_after_requires_review(headers):
     assert response.closed and response.reads == 0
 
 
-def test_duplicate_retry_after_requires_review_without_echo():
+@pytest.mark.parametrize('status', [429, 503])
+def test_duplicate_retry_after_requires_review_without_echo(status):
     headers = Message()
     headers['Retry-After'] = '30'
     headers['Retry-After'] = SECRET
-    response = Response(status=429, headers=headers)
+    response = Response(status=status, headers=headers)
     with pytest.raises(subject.ActivitySSETransportError,
             match='HTTP_STATUS_REVIEW') as caught:
         collect(Opener(response))

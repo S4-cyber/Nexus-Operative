@@ -37,7 +37,11 @@ RETRYABLE_ERRORS = frozenset((
     'ALPACA_ACTIVITY_SSE_TRANSPORT_TIME_BUDGET',
     'ALPACA_ACTIVITY_SSE_TRANSPORT_SEGMENT_INCOMPLETE',
     'ALPACA_ACTIVITY_SSE_CHECKPOINT_INTERRUPTED_SEGMENT_INELIGIBLE',
-    'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'))
+    'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED',
+    'ALPACA_ACTIVITY_SSE_TRANSPORT_SERVICE_UNAVAILABLE'))
+PROVIDER_DELAY_ERRORS = frozenset((
+    'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED',
+    'ALPACA_ACTIVITY_SSE_TRANSPORT_SERVICE_UNAVAILABLE'))
 FLAGS = ('provider_source_attested', 'stream_delivery_verified',
     'historical_replay_complete', 'native_power_loss_durability_verified',
     'fee_coverage_complete', 'broker_account_reconciled',
@@ -282,11 +286,9 @@ class ActivitySSEReconnectBudget:
                         _fail('RESULT_SCOPE_INVALID')
                     if outcome == 'RETRY_REQUIRED':
                         provider_delay = (requested_delay if
-                            body['detail_code'] ==
-                                'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'
+                            body['detail_code'] in PROVIDER_DELAY_ERRORS
                             else 0)
-                        if ((body['detail_code'] ==
-                                'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED') !=
+                        if ((body['detail_code'] in PROVIDER_DELAY_ERRORS) !=
                                 (requested_delay > 0)):
                             _fail('RESULT_SCOPE_INVALID')
                         expected_backoff = max(
@@ -317,8 +319,7 @@ class ActivitySSEReconnectBudget:
                 state['last_requested_retry_after_seconds'] = requested_delay
                 state['last_applied_backoff_seconds'] = applied_backoff
                 state['provider_directed_backoff_observed'] = (
-                    requested_detail ==
-                        'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED' and
+                    requested_detail in PROVIDER_DELAY_ERRORS and
                     requested_delay > 0)
             elif (type(body) is dict and
                     body.get('kind') == 'EMERGENCY_STOP_CLOSE' and
@@ -503,8 +504,7 @@ class ActivitySSEReconnectBudget:
         if (type(provider_retry_after_seconds) is not int or
                 not 0 <= provider_retry_after_seconds <=
                     MAX_PROVIDER_RETRY_AFTER or
-                ((detail_code ==
-                    'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED') !=
+                ((detail_code in PROVIDER_DELAY_ERRORS) !=
                     (provider_retry_after_seconds > 0)) or
                 (provider_retry_after_seconds > 0 and
                     outcome != 'RETRY_REQUIRED')):
@@ -1000,15 +1000,17 @@ def fixture_report():
                 raise self.value
             return Response(request.full_url)
 
-    class RateLimitOpener:
-        def __init__(self):
+    class ProviderBackoffOpener:
+        def __init__(self, status):
+            self.status = status
             self.requests = []
             self.body = io.BytesIO(b'private fixture body')
         def open(self, request, timeout):
             self.requests.append((request, timeout))
             headers = Message()
             headers['Retry-After'] = '120'
-            raise HTTPError(request.full_url, 429, 'private fixture reason',
+            raise HTTPError(request.full_url, self.status,
+                'private fixture reason',
                 headers, self.body)
 
     with tempfile.TemporaryDirectory(prefix='nexus-sse-reconnect-budget-') as folder:
@@ -1172,7 +1174,7 @@ def fixture_report():
             root / 'rate-cursor.sqlite3', account)
         rate_budget = ActivitySSEReconnectBudget(
             root / 'rate-budget.sqlite3', account)
-        rate_opener = RateLimitOpener()
+        rate_opener = ProviderBackoffOpener(429)
         try:
             collect_and_checkpoint_due('fixture_key_only_123',
                 'fixture_secret_only_123', expected_budget_head=ZERO,
@@ -1183,9 +1185,24 @@ def fixture_report():
         except ActivitySSETransportError:
             pass
         rate_state = rate_budget.inspect()
+        service_cursor = ActivitySSECursorStore(
+            root / 'service-cursor.sqlite3', account)
+        service_budget = ActivitySSEReconnectBudget(
+            root / 'service-budget.sqlite3', account)
+        service_opener = ProviderBackoffOpener(503)
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=7000, opener=service_opener,
+                **dict(common, cursor_store=service_cursor,
+                    reconnect_budget=service_budget,
+                    wall_clock=lambda: 7000))
+        except ActivitySSETransportError:
+            pass
+        service_state = service_budget.inspect()
         encoded = json.dumps(
             [result, cold_budget, recovered, stopped, waiting_closed,
-                retry_stop_state, rate_state],
+                retry_stop_state, rate_state, service_state],
             sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
@@ -1256,6 +1273,17 @@ def fixture_report():
                 rate_state['next_allowed_at'] == 6120 and
                 rate_state['provider_directed_backoff_observed'] and
                 not rate_cursor.path.exists(),
+            provider_service_retry_after_extends_durable_backoff=
+                len(service_opener.requests) == 1 and
+                service_opener.body.closed and
+                service_state['last_outcome'] == 'RETRY_REQUIRED' and
+                service_state['last_detail_code'] ==
+                    'ALPACA_ACTIVITY_SSE_TRANSPORT_SERVICE_UNAVAILABLE' and
+                service_state['last_requested_retry_after_seconds'] == 120 and
+                service_state['last_applied_backoff_seconds'] == 120 and
+                service_state['next_allowed_at'] == 7120 and
+                service_state['provider_directed_backoff_observed'] and
+                not service_cursor.path.exists(),
             no_sleep_loop_or_financial_authority=
                 not result['automatic_retry'] and
                 not result['automatic_reconnect_performed'] and

@@ -1,10 +1,10 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-24 (America/Los_Angeles).
-Parent source reviewed: `9e6ce53d9fa9202a95e2c3d67f4f21cd720e11ae` (v0.250.0), whose verified local tree is published and whose three exact-source GitHub workflows completed successfully; v0.251.0 is the current candidate and requires fresh exact-source checks because parent results do not transfer.
+Parent source reviewed: `24eb400ab37f2b8344fb49b7d6c471b4b57be64b` (v0.251.0), whose verified local tree is published and whose three exact-source GitHub workflows completed successfully; v0.252.0 is the current candidate and requires fresh exact-source checks because parent results do not transfer.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.251.0 retains one exact bounded provider `Retry-After` instruction from an Activity SSE HTTP 429. It can only lengthen the fixed local schedule, is exact-result-replay bound, and never sleeps or starts another request. Missing, duplicate, malformed or excessive instructions close for review. Injected evidence does not establish actual provider/account or quota semantics, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.252.0 extends one exact bounded provider `Retry-After` instruction from Activity SSE HTTP 429 to exact HTTP 503. It can only lengthen the fixed local schedule, is exact-result-replay bound, and never sleeps or starts another request. Missing, duplicate, malformed or excessive instructions close for review. Injected evidence does not establish actual provider/account rate-limit or outage semantics, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 
@@ -13,7 +13,7 @@ Engineering checkpoint note: v0.251.0 retains one exact bounded provider `Retry-
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.242.0 public security/history, saved release evidence, browser-help, complete regression and Windows EXE/installer checks passed on 2026-10-24 Pacific time. The v0.243.0 through v0.249.0 trees were locally verified and published, and all three v0.249.0 exact-source workflows completed successfully; prior results do not transfer to this candidate.
+- Exact v0.251.0 public security/history, research-safety and Windows simulated-research workflows passed on 2026-10-24 Pacific time. The v0.243.0 through v0.251.0 trees were locally verified and published; prior results do not transfer to this candidate.
 
 ## Roadmap coverage
 

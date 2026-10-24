@@ -13,7 +13,7 @@ from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_ope
 from uuid import UUID
 
 from nexus import alpaca_activity_sse_wire_review as wire
-from nexus.broker_lookup_policy import classify as classify_http_outcome
+from nexus.broker_lookup_policy import retry_after_seconds
 
 
 POLICY = 'nexus.explicit-alpaca-paper-activity-sse-transport.v1'
@@ -55,19 +55,20 @@ def _retry_after(headers):
 
 
 def _http_failure(status, headers, response_url, target, evaluated_at):
-    """Classify only an exact provider-directed 429 delay as retryable."""
+    """Classify exact provider-directed 429/503 delays as retryable."""
     if response_url != target or type(status) is not int:
         _fail('HTTP_STATUS_REVIEW')
-    if status != 429:
+    if status not in (429, 503):
         _fail('HTTP_STATUS_REVIEW')
-    outcome = classify_http_outcome(status_code=status,
-        retry_after=_retry_after(headers), evaluated_at=evaluated_at)
-    if (outcome['outcome'] != 'RATE_LIMITED' or
-            type(outcome['retry_after_seconds']) is not int or
-            outcome['retry_after_seconds'] <= 0):
+    try:
+        delay = retry_after_seconds(_retry_after(headers),
+            evaluated_at=evaluated_at)
+    except (ValueError, TypeError, OverflowError, OSError):
         _fail('HTTP_STATUS_REVIEW')
-    _fail('RATE_LIMITED',
-        provider_retry_after_seconds=outcome['retry_after_seconds'])
+    if type(delay) is not int or delay <= 0:
+        _fail('HTTP_STATUS_REVIEW')
+    _fail('RATE_LIMITED' if status == 429 else 'SERVICE_UNAVAILABLE',
+        provider_retry_after_seconds=delay)
 
 
 class _NoRedirect(HTTPRedirectHandler):

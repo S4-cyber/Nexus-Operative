@@ -16,6 +16,26 @@ def clock(value):
     return value
 
 
+def retry_after_seconds(value, *, evaluated_at):
+    """Normalize one required, bounded Retry-After value.
+
+    This pure helper performs no request, sleep, or retry.  Callers decide
+    which exact HTTP statuses may carry a provider-directed delay.
+    """
+    now=clock(evaluated_at)
+    if (not isinstance(value,str) or len(value)>128 or not value.isascii() or
+            '\r' in value or '\n' in value):
+        raise ValueError('INVALID_RETRY_AFTER')
+    if re.fullmatch(r'[0-9]{1,6}',value):delay=int(value)
+    else:
+        stamp=parsedate_to_datetime(value)
+        if stamp.tzinfo is None:raise ValueError('INVALID_RETRY_AFTER')
+        delay=math.ceil(stamp.timestamp()-now)
+    delay=max(1,delay)
+    if delay>MAX_RETRY_AFTER:raise ValueError('RETRY_AFTER_REQUIRES_REVIEW')
+    return delay
+
+
 def classify(*, status_code=None, transport_error=None, retry_after=None, evaluated_at):
     now=clock(evaluated_at)
     if transport_error is not None:
@@ -32,15 +52,7 @@ def classify(*, status_code=None, transport_error=None, retry_after=None, evalua
         if retry_after is None:delay=60  # Local conservative fallback, not a provider quota.
         else:
             try:
-                if not isinstance(retry_after,str) or len(retry_after)>128 or not retry_after.isascii() or '\r' in retry_after or '\n' in retry_after:
-                    raise ValueError('INVALID_RETRY_AFTER')
-                if re.fullmatch(r'[0-9]{1,6}',retry_after):delay=int(retry_after)
-                else:
-                    stamp=parsedate_to_datetime(retry_after)
-                    if stamp.tzinfo is None:raise ValueError('INVALID_RETRY_AFTER')
-                    delay=math.ceil(stamp.timestamp()-now)
-                delay=max(1,delay)
-                if delay>MAX_RETRY_AFTER:raise ValueError('RETRY_AFTER_REQUIRES_REVIEW')
+                delay=retry_after_seconds(retry_after,evaluated_at=now)
             except (ValueError,TypeError,OverflowError,OSError):
                 return dict(outcome='REVIEW_REQUIRED',retry_after_seconds=0)
         return dict(outcome='RATE_LIMITED',retry_after_seconds=delay)

@@ -628,12 +628,14 @@ def _execute(profile):
         from nexus.paper_provider_post_fee_reference_review import fixture_report as post_fee_fixture
         from nexus.paper_provider_post_known_fee_reserve_review import fixture_report as post_fee_reserve_fixture
         from nexus.alpaca_activity_sse_review import fixture_report as activity_sse_fixture
+        from nexus.alpaca_activity_sse_reconnect_review import fixture_report as activity_sse_reconnect_fixture
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_response_bundle']=response_fixture()
         result['provider_post_reconciliation']=post_reconciliation_fixture()
         result['provider_post_fee_references']=post_fee_fixture()
         result['provider_post_known_fee_reserve']=post_fee_reserve_fixture()
-        result['supplied_activity_sse_links']=activity_sse_fixture();return result
+        result['supplied_activity_sse_links']=activity_sse_fixture()
+        result['supplied_activity_sse_reconnect']=activity_sse_reconnect_fixture();return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -949,6 +951,7 @@ def _validate(profile, result):
         from nexus.paper_provider_post_fee_reference_review import FLAGS as POST_FEE_FLAGS
         from nexus.paper_provider_post_known_fee_reserve_review import FLAGS as POST_FEE_RESERVE_FLAGS
         from nexus.alpaca_activity_sse_review import FLAGS as ACTIVITY_SSE_FLAGS
+        from nexus.alpaca_activity_sse_reconnect_review import FLAGS as ACTIVITY_SSE_RECONNECT_FLAGS
         from nexus.paper_response_bundle_review import FLAGS as RESPONSE_FLAGS
         bundle=result['account_evidence_bundle']
         _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','guarded_declared_source_summary_checked','guarded_collection_timing_summary_checked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
@@ -1016,6 +1019,18 @@ def _validate(profile, result):
             (*ACTIVITY_SSE_FLAGS,'actual_provider_access',
              'actual_vault_access')),
             'SUPPLIED_ACTIVITY_SSE_LINKS_AUTHORITY')
+        reconnect=result['supplied_activity_sse_reconnect']
+        _require(reconnect['source']==
+            'SYNTHETIC_SUPPLIED_ACTIVITY_SSE_RECONNECT_FIXTURE' and
+            all(reconnect[k] is True for k in ('passed',
+                'exact_since_id_reused','duplicate_redelivery_idempotent',
+                'forward_cursor_advanced','fee_links_rechecked',
+                'output_never_authoritative')),
+            'SUPPLIED_ACTIVITY_SSE_RECONNECT')
+        _require(all(reconnect[k] is False for k in
+            (*ACTIVITY_SSE_RECONNECT_FLAGS,'actual_provider_access',
+             'actual_vault_access','actual_storage_access')),
+            'SUPPLIED_ACTIVITY_SSE_RECONNECT_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

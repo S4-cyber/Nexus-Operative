@@ -1,10 +1,10 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-23 (America/Los_Angeles).
-Parent source reviewed: `bdb32a648c01c16db2b9a90f71a86870af9ba2cc` (v0.236.0); v0.237.0 is the current candidate and requires fresh exact-source checks.
+Parent source reviewed: `e658e9f396be820bf6f5a3e64a5d1baeb73231a5` (v0.237.0); v0.238.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.237.0 adds a supplied-only strict foundation for Alpaca's documented unified Activity SSE envelope, stable `ref_id`, and one-to-one fee `parent_id` relationships. It deliberately performs no connection, entitlement/authentication check, cursor persistence, reconnect/replay coverage or provider attestation. Source/coverage acceptance, saved write credentials, explicit operator integration, broker-wide/distributed POST coordination and sustained trials remain absent. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.238.0 adds a supplied-only disconnect/replay composition around the strict Activity SSE envelope review. It requires exact persisted-cursor/`since_id` reuse, immutable event/ref redelivery, forward-only new events and a complete fee-parent recheck. It deliberately performs no durable cursor write/recovery, connection, entitlement/authentication check, actual reconnect/backoff, replay completeness or provider attestation. Source/coverage acceptance, saved write credentials, explicit operator integration, broker-wide/distributed POST coordination and sustained trials remain absent. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 
@@ -13,7 +13,7 @@ Engineering checkpoint note: v0.237.0 adds a supplied-only strict foundation for
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.236.0 security, release-evidence, complete regression and browser jobs passed on 2026-10-23 Pacific time. Its Windows regression, EXE, installer and reinstall/uninstall checks also passed; checksum/artifact retention was still running at the v0.237.0 cut. Those parent results do not transfer; v0.237.0 requires all fresh exact-source checks.
+- Exact v0.237.0 public security/history, saved release evidence, browser-help and complete regression checks passed on 2026-10-23 Pacific time; its Windows workflow was still running at the v0.238.0 cut. Those partial parent results do not transfer; v0.238.0 requires all fresh exact-source checks.
 
 ## Roadmap coverage
 

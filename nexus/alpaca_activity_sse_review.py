@@ -199,8 +199,8 @@ def _fee(event, common):
         amount=text(_signed(event['net_amount']).copy_negate()))
 
 
-def review(events, *, expected_account_id):
-    """Review a supplied finite event sequence and one-to-one fee links."""
+def _normalize(events, *, expected_account_id):
+    """Return private canonical rows after bounded envelope validation."""
     _budget(events)
     try:
         account = _uuid_value(expected_account_id, 'ACCOUNT_INVALID')
@@ -225,6 +225,11 @@ def review(events, *, expected_account_id):
             normalized.append(_fee(event, common))
         else:
             _fail('ACTIVITY_TYPE_SCOPE')
+    return account, normalized
+
+
+def _linked(normalized):
+    """Require every admitted fee parent to resolve in the supplied rows."""
     trades = {row['ref_id']: row for row in normalized
         if row['activity_type'] == 'TRD'}
     fees = [row for row in normalized if row['activity_type'] == 'FEE']
@@ -239,6 +244,14 @@ def review(events, *, expected_account_id):
                 timestamp_order_ns(trade['executed_at']):
             _fail('FEE_EXECUTION_PRECEDES_PARENT')
         linked_orders.add(trade['order_id'])
+    return trades, fees, linked_orders
+
+
+def review(events, *, expected_account_id):
+    """Review a supplied finite event sequence and one-to-one fee links."""
+    account, normalized = _normalize(events,
+        expected_account_id=expected_account_id)
+    trades, fees, linked_orders = _linked(normalized)
     canonical = dict(policy=POLICY,
         account_sha256=sha(account), sources=SOURCES, events=normalized)
     return dict(mode='SUPPLIED_ALPACA_ACTIVITY_SSE_LINK_REVIEW',

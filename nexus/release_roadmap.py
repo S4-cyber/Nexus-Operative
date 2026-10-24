@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.237.0'
+REVISION = '0.238.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -42,6 +42,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; a no-network supplied Activity SSE schema review now fail-closes to BTC/USD TRD fills and one-to-one USD fees, requires strict ULID cursor order and unique stable ref IDs, binds each admitted fee parent_id to a supplied fill, and rejects corrections, busts, bulk fees, FX and unsupported financial activities without claiming stream entitlement, delivery, replay coverage or provider source' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; a supplied two-segment reconnect review now requires the exact last processed ULID as since_id, idempotently deduplicates immutable ref_id redelivery, advances only on later event IDs and rechecks fee-parent links, while durable cursor storage, automatic backoff, real reconnect and complete replay remain explicitly unverified' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -182,7 +186,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.237.0 adds a strict no-network supplied Activity SSE envelope/link review after Alpaca documented the unified Activity SSE and stable ref_id/parent_id relationship. The narrow foundation admits only BTC/USD TRD fills and one-to-one USD fees, requires strictly increasing canonical ULID cursors and unique event/ref identities, binds every admitted fee parent to a supplied fill, and refuses corrections, busts, bulk fees, FX and unsupported activity types. It does not connect or authenticate a stream, persist a cursor, verify entitlement, replay/reconnect coverage, compare legacy delivery, attest provider source or establish fee completeness/posting, holds, settlement or spendable funds. No provider/vault IO, write, retry, continuation, ledger, routing, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.238.0 composes the strict no-network Activity SSE envelope/link review with a supplied two-segment disconnect/replay boundary. It requires the caller-supplied persisted cursor to equal the last processed ULID, requires reconnect since_id to match exactly, idempotently deduplicates only immutable event/ref redelivery, admits new events only after the cursor and rechecks all fee-parent links before reporting an advanced cursor hash. It does not write or recover a durable cursor, connect or authenticate a stream, verify entitlement, perform a reconnect or backoff, observe a slow-consumer signal, prove replay completeness, compare legacy delivery, attest provider source or establish fees, holds, settlement or spendable funds. No provider/vault/storage IO, retry, continuation, ledger, routing, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

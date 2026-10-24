@@ -626,10 +626,12 @@ def _execute(profile):
         from nexus.paper_response_bundle_review import fixture_report as response_fixture
         from nexus.paper_provider_post_reconciliation_review import fixture_report as post_reconciliation_fixture
         from nexus.paper_provider_post_fee_reference_review import fixture_report as post_fee_fixture
+        from nexus.paper_provider_post_known_fee_reserve_review import fixture_report as post_fee_reserve_fixture
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_response_bundle']=response_fixture()
         result['provider_post_reconciliation']=post_reconciliation_fixture()
-        result['provider_post_fee_references']=post_fee_fixture();return result
+        result['provider_post_fee_references']=post_fee_fixture()
+        result['provider_post_known_fee_reserve']=post_fee_reserve_fixture();return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -943,6 +945,7 @@ def _validate(profile, result):
         from nexus.paper_account_evidence_review import FLAGS as BUNDLE_FLAGS
         from nexus.paper_provider_post_reconciliation_review import FLAGS as POST_RECONCILIATION_FLAGS
         from nexus.paper_provider_post_fee_reference_review import FLAGS as POST_FEE_FLAGS
+        from nexus.paper_provider_post_known_fee_reserve_review import FLAGS as POST_FEE_RESERVE_FLAGS
         from nexus.paper_response_bundle_review import FLAGS as RESPONSE_FLAGS
         bundle=result['account_evidence_bundle']
         _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','guarded_declared_source_summary_checked','guarded_collection_timing_summary_checked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
@@ -979,6 +982,24 @@ def _validate(profile, result):
         _require(all(post_fees[k] is False for k in
             (*POST_FEE_FLAGS,'actual_provider_access','actual_vault_access')),
             'PROVIDER_POST_FEE_REFERENCES_AUTHORITY')
+        post_fee_reserve=result['provider_post_known_fee_reserve']
+        _require(post_fee_reserve['source']==
+            'SYNTHETIC_LOCAL_PROVIDER_POST_KNOWN_FEE_RESERVE_FIXTURE' and
+            all(post_fee_reserve[k] is True for k in ('passed',
+                'fee_reference_component_bound',
+                'retained_known_fee_reservations_applied',
+                'retained_known_fee_debits_covered',
+                'known_fee_adjusted_closing_balances_match',
+                'balance_disagreement_rejected',
+                'insufficient_known_fee_funding_rejected',
+                'missing_fee_history_rejected',
+                'repeat_review_matches','journals_unchanged',
+                'output_never_authoritative')),
+            'PROVIDER_POST_KNOWN_FEE_RESERVE')
+        _require(all(post_fee_reserve[k] is False for k in
+            (*POST_FEE_RESERVE_FLAGS,'actual_provider_access',
+             'actual_vault_access')),
+            'PROVIDER_POST_KNOWN_FEE_RESERVE_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

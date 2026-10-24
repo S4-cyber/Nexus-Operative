@@ -1,10 +1,10 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-23 (America/Los_Angeles).
-Parent source reviewed: `a0af73c91bb15757ae0f87416b420d5f0322968e` (v0.234.0); v0.235.0 is the current candidate and requires fresh exact-source checks.
+Parent source reviewed: `b6a3b5eb164ce11b433786fbd2714ec4732c249b` (v0.235.0); v0.236.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.235.0 requires every retained fee in one exact POST/reconciliation history to carry explicit order/execution references resolving to accepted original fills and requires the accepted receipt partition to be complete. REST reference semantics, fee coverage/posting allocation, holds and spendable funds remain unverified. This is local private consistency, not actual provider/account acceptance. Source/coverage acceptance, saved write credentials, explicit operator integration, broker-wide/distributed POST coordination and sustained trials remain absent. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.236.0 reserves only the known retained, explicitly referenced fee obligations at their accepted fill groups and requires the resulting local path to remain funded and match the supplied closing totals. This is a retrospective local consistency check, not fee completeness, provider posting, spendable-funds or actual-account acceptance. Source/coverage acceptance, saved write credentials, explicit operator integration, broker-wide/distributed POST coordination and sustained trials remain absent. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 
@@ -13,7 +13,7 @@ Engineering checkpoint note: v0.235.0 requires every retained fee in one exact P
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.234.0 passed public security/history, safety/evidence/browser and Windows regression/EXE/installer workflows on 2026-10-23 Pacific time. Those parent results do not transfer; v0.235.0 requires all fresh exact-source checks.
+- Exact v0.235.0 passed public security/history, safety/evidence/browser and Windows regression/EXE/installer workflows on 2026-10-23 Pacific time. Those parent results do not transfer; v0.236.0 requires all fresh exact-source checks.
 
 ## Roadmap coverage
 

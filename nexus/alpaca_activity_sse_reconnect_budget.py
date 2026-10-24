@@ -87,6 +87,14 @@ def _outcome_time(clock, not_before):
     return value
 
 
+def _inspect_after_result_error(reconnect_budget, code):
+    """Inspect a possibly committed result without leaking recovery faults."""
+    try:
+        return reconnect_budget.inspect()
+    except Exception:
+        _fail(code)
+
+
 def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     """Retain terminal review state from the last trusted admission time.
 
@@ -99,14 +107,10 @@ def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
             evaluated_at=evaluated_at, outcome='REVIEW_REQUIRED',
             detail_code='OUTCOME_CLOCK_UNCERTAIN')
     except Exception:
-        retained = reconnect_budget.inspect()
-    if (not retained['review_required'] or retained['completed'] or
-            retained['pending_token'] is not None or
-            retained['last_attempt_head_sha256'] != token or
-            retained['last_evaluated_at'] != evaluated_at or
-            retained['last_outcome'] != 'REVIEW_REQUIRED' or
-            retained['last_detail_code'] != 'OUTCOME_CLOCK_UNCERTAIN' or
-            retained['next_allowed_at'] != 0):
+        retained = _inspect_after_result_error(reconnect_budget,
+            'RESULT_RECORD_UNCERTAIN')
+    if not _exact_failure_result(retained, token, evaluated_at,
+            'REVIEW_REQUIRED', 'OUTCOME_CLOCK_UNCERTAIN', 0):
         _fail('RESULT_RECORD_UNCERTAIN')
     return retained
 
@@ -140,40 +144,44 @@ def _exact_checkpoint_result(retained, token, checkpoint_head,
 def _exact_failure_result(retained, token, evaluated_at,
         requested_outcome, requested_detail, requested_delay):
     """Recognize one exact non-success result after acknowledgement loss."""
-    common = (not retained['completed'] and
-        retained['pending_token'] is None and
-        retained['head_sha256'] == retained['last_result_head_sha256'] and
-        retained['last_attempt_head_sha256'] == token and
-        retained['last_evaluated_at'] == evaluated_at and
-        retained['last_requested_outcome'] == requested_outcome and
-        retained['last_requested_detail_code'] == requested_detail and
-        retained['last_requested_retry_after_seconds'] == requested_delay and
-        retained['checkpoint_head_sha256'] is None and
-        retained['checkpoint_receipt_sha256'] is None and
-        retained['provider_directed_backoff_observed'] is
-            (requested_detail in PROVIDER_DELAY_ERRORS and
-                requested_delay > 0))
-    if not common:
-        return False
-    if requested_outcome == 'RETRY_REQUIRED':
-        converted = (retained['review_required'] and
-            retained['last_outcome'] == 'REVIEW_REQUIRED' and
-            retained['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE' and
-            retained['last_applied_backoff_seconds'] == 0 and
-            retained['next_allowed_at'] == 0)
-        applied = max(BACKOFF_SECONDS[retained['attempts'] - 1],
-            requested_delay)
-        scheduled = (not retained['review_required'] and
+    try:
+        common = (not retained['completed'] and
+            retained['pending_token'] is None and
+            retained['head_sha256'] == retained['last_result_head_sha256'] and
+            retained['last_attempt_head_sha256'] == token and
+            retained['last_evaluated_at'] == evaluated_at and
+            retained['last_requested_outcome'] == requested_outcome and
+            retained['last_requested_detail_code'] == requested_detail and
+            retained['last_requested_retry_after_seconds'] ==
+                requested_delay and
+            retained['checkpoint_head_sha256'] is None and
+            retained['checkpoint_receipt_sha256'] is None and
+            retained['provider_directed_backoff_observed'] is
+                (requested_detail in PROVIDER_DELAY_ERRORS and
+                    requested_delay > 0))
+        if not common:
+            return False
+        if requested_outcome == 'RETRY_REQUIRED':
+            converted = (retained['review_required'] and
+                retained['last_outcome'] == 'REVIEW_REQUIRED' and
+                retained['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE' and
+                retained['last_applied_backoff_seconds'] == 0 and
+                retained['next_allowed_at'] == 0)
+            applied = max(BACKOFF_SECONDS[retained['attempts'] - 1],
+                requested_delay)
+            scheduled = (not retained['review_required'] and
+                retained['last_outcome'] == requested_outcome and
+                retained['last_detail_code'] == requested_detail and
+                retained['last_applied_backoff_seconds'] == applied and
+                retained['next_allowed_at'] == evaluated_at + applied)
+            return converted or scheduled
+        return (retained['review_required'] and
             retained['last_outcome'] == requested_outcome and
             retained['last_detail_code'] == requested_detail and
-            retained['last_applied_backoff_seconds'] == applied and
-            retained['next_allowed_at'] == evaluated_at + applied)
-        return converted or scheduled
-    return (retained['review_required'] and
-        retained['last_outcome'] == requested_outcome and
-        retained['last_detail_code'] == requested_detail and
-        retained['last_applied_backoff_seconds'] == 0 and
-        retained['next_allowed_at'] == 0)
+            retained['last_applied_backoff_seconds'] == 0 and
+            retained['next_allowed_at'] == 0)
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return False
 
 
 class ActivitySSEReconnectBudget:
@@ -942,7 +950,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                 emergency_stop_check=emergency_stop_check,
                 provider_retry_after_seconds=provider_retry_after)
         except Exception:
-            retained = reconnect_budget.inspect()
+            retained = _inspect_after_result_error(reconnect_budget,
+                'RESULT_RECORD_UNCERTAIN')
         if not _exact_failure_result(retained, reservation['token'],
                 completed_at, outcome, detail, provider_retry_after):
             _fail('RESULT_RECORD_UNCERTAIN')
@@ -956,7 +965,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             checkpoint_head_sha256=result['checkpoint_head_sha256'],
             checkpoint_receipt_sha256=result['checkpoint_receipt_sha256'])
     except Exception:
-        retained = reconnect_budget.inspect()
+        retained = _inspect_after_result_error(reconnect_budget,
+            'RESULT_RECORD_UNCERTAIN')
         result_acknowledgement_recovered = True
     if not _exact_checkpoint_result(retained, reservation['token'],
             result['checkpoint_head_sha256'],

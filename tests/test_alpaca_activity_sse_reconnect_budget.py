@@ -411,6 +411,75 @@ def test_failed_clock_uncertainty_recovers_lost_result_acknowledgement(
     assert state['last_evaluated_at'] == 1000
 
 
+@pytest.mark.parametrize('change', [
+    {'head_sha256': 'f' * 64},
+    {'last_result_head_sha256': 'f' * 64},
+    {'last_requested_detail_code': 'NONRETRYABLE_FAILURE'},
+    {'checkpoint_head_sha256': 'f' * 64},
+])
+def test_failed_clock_lost_ack_requires_exact_current_result(
+        tmp_path, monkeypatch, change):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original_finish = budget.finish
+    original_inspect = budget.inspect
+    committed = []
+
+    def lost_ack(*args, **kwargs):
+        original_finish(*args, **kwargs)
+        committed.append(True)
+        raise RuntimeError('private lost acknowledgement')
+
+    def mismatched_inspect():
+        retained = original_inspect()
+        if committed:
+            retained.update(change)
+        return retained
+
+    monkeypatch.setattr(budget, 'finish', lost_ack)
+    monkeypatch.setattr(budget, 'inspect', mismatched_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESULT_RECORD_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: (_ for _ in ()).throw(
+                RuntimeError('private clock failure')))
+    assert len(opener.requests) == 1 and not cursor.path.exists()
+    state = original_inspect()
+    assert state['review_required'] and state['pending_token'] is None
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+
+
+def test_failed_clock_result_inspection_failure_is_sanitized(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original_inspect = budget.inspect
+    original_finish = budget.finish
+    committed = []
+
+    def lost_ack(*args, **kwargs):
+        original_finish(*args, **kwargs)
+        committed.append(True)
+        raise RuntimeError('private lost acknowledgement')
+
+    def failed_inspect():
+        if committed:
+            raise RuntimeError('private path')
+        return original_inspect()
+
+    monkeypatch.setattr(budget, 'finish', lost_ack)
+    monkeypatch.setattr(budget, 'inspect', failed_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESULT_RECORD_UNCERTAIN') as error:
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: (_ for _ in ()).throw(
+                RuntimeError('private clock failure')))
+    assert 'private' not in str(error.value)
+    assert len(opener.requests) == 1 and not cursor.path.exists()
+    assert original_inspect()['last_detail_code'] == \
+        'OUTCOME_CLOCK_UNCERTAIN'
+
+
 def test_uncertain_outcome_close_lost_ack_replay_is_byte_stable(tmp_path):
     _, budget = stores(tmp_path)
     reserved = budget.begin(evaluated_at=1000,

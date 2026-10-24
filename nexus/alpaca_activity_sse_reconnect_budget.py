@@ -599,6 +599,49 @@ class ActivitySSEReconnectBudget:
                     _fail('COMMIT_REPLAY_DISAGREEMENT')
         return dict(self.inspect(), duplicate_result=False)
 
+    def close_pending_for_outcome_uncertainty(self, *, evaluated_at,
+            expected_head, confirm_outcome_uncertain=False,
+            confirm_no_retry=False):
+        """Permanently close one pending attempt after clock uncertainty.
+
+        This operator-reviewed path receives no credentials, cursor store,
+        provider opener, or authority callback. It records only a terminal
+        review-required result and cannot schedule or reserve another attempt.
+        Exact replay supports a lost acknowledgement without another write.
+        """
+        now = _clock(evaluated_at)
+        expected = _digest(expected_head, 'EXPECTED_HEAD_INVALID')
+        if confirm_outcome_uncertain is not True:
+            _fail('OUTCOME_UNCERTAIN_CONFIRMATION_REQUIRED')
+        if confirm_no_retry is not True:
+            _fail('OUTCOME_UNCERTAIN_NO_RETRY_CONFIRMATION_REQUIRED')
+        current = self.inspect()
+        pending = (current['pending_token'] == expected and
+            current['head_sha256'] == expected and
+            not current['review_required'] and not current['completed'])
+        duplicate = (current['pending_token'] is None and
+            current['head_sha256'] == current['last_result_head_sha256'] and
+            current['last_attempt_head_sha256'] == expected and
+            current['review_required'] and not current['completed'] and
+            current['last_outcome'] == 'REVIEW_REQUIRED' and
+            current['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN')
+        if not pending and not duplicate:
+            _fail('HEAD_CHANGED')
+        if now < current['last_evaluated_at']:
+            _fail('CLOCK_REGRESSION')
+        retained = self.finish(expected, evaluated_at=now,
+            outcome='REVIEW_REQUIRED',
+            detail_code='OUTCOME_CLOCK_UNCERTAIN')
+        if (not retained['review_required'] or retained['completed'] or
+                retained['pending_token'] is not None or
+                retained['last_attempt_head_sha256'] != expected or
+                retained['last_outcome'] != 'REVIEW_REQUIRED' or
+                retained['last_detail_code'] !=
+                    'OUTCOME_CLOCK_UNCERTAIN' or
+                retained['next_allowed_at'] != 0):
+            _fail('OUTCOME_UNCERTAIN_CLOSE_UNCERTAIN')
+        return retained, retained['duplicate_result']
+
     def abort_pending_for_emergency_stop(self, *, evaluated_at,
             expected_head, emergency_stop_check,
             confirm_emergency_stop_abort=False):
@@ -845,6 +888,33 @@ def abort_pending_reconnect_for_emergency_stop(*, reconnect_budget,
         provider_request_performed=False, credential_access_performed=False,
         cursor_read_performed=False, cursor_write_performed=False,
         automatic_retry=False, automatic_reconnect_performed=False,
+        reconnect_budget_head_sha256=retained['head_sha256'],
+        **{flag: False for flag in FLAGS})
+
+
+def close_pending_reconnect_for_outcome_uncertainty(*, reconnect_budget,
+        expected_budget_head, evaluated_at,
+        confirm_outcome_uncertain=False, confirm_no_retry=False):
+    """Close a clock-uncertain attempt without external or cursor access."""
+    if type(reconnect_budget) is not ActivitySSEReconnectBudget:
+        _fail('BUDGET_INVALID')
+    retained, duplicate = \
+        reconnect_budget.close_pending_for_outcome_uncertainty(
+            evaluated_at=evaluated_at, expected_head=expected_budget_head,
+            confirm_outcome_uncertain=confirm_outcome_uncertain,
+            confirm_no_retry=confirm_no_retry)
+    return dict(mode=
+            'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_OUTCOME_UNCERTAIN_CLOSE',
+        status='REVIEW_REQUIRED', policy=POLICY,
+        pending_outcome_closed=True, duplicate_close=duplicate,
+        explicit_outcome_uncertainty_confirmation=True,
+        explicit_no_retry_confirmation=True,
+        outcome_uncertainty_preserved=True,
+        provider_request_performed=False, credential_access_performed=False,
+        cursor_read_performed=False, cursor_write_performed=False,
+        reconnect_attempt_reserved=False, reconnect_attempt_consumed=False,
+        retry_scheduled=False, automatic_retry=False,
+        automatic_reconnect_performed=False,
         reconnect_budget_head_sha256=retained['head_sha256'],
         **{flag: False for flag in FLAGS})
 
@@ -1224,9 +1294,31 @@ def fixture_report():
         except ActivitySSETransportError:
             pass
         service_state = service_budget.inspect()
+        uncertain_budget = ActivitySSEReconnectBudget(
+            root / 'uncertain-budget.sqlite3', account)
+        uncertain_reserved = uncertain_budget.begin(evaluated_at=8000,
+            expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
+            confirm_reconnect_attempt=True)
+        uncertain_closed = \
+            close_pending_reconnect_for_outcome_uncertainty(
+                reconnect_budget=uncertain_budget,
+                expected_budget_head=uncertain_reserved['head_sha256'],
+                evaluated_at=8001, confirm_outcome_uncertain=True,
+                confirm_no_retry=True)
+        uncertain_bytes = uncertain_budget.path.read_bytes()
+        uncertain_replay = \
+            close_pending_reconnect_for_outcome_uncertainty(
+                reconnect_budget=uncertain_budget,
+                expected_budget_head=uncertain_reserved['head_sha256'],
+                evaluated_at=8001, confirm_outcome_uncertain=True,
+                confirm_no_retry=True)
+        uncertain_state = uncertain_budget.inspect()
         encoded = json.dumps(
             [result, cold_budget, recovered, stopped, waiting_closed,
-                retry_stop_state, rate_state, service_state],
+                retry_stop_state, rate_state, service_state,
+                uncertain_closed, uncertain_replay, uncertain_state],
             sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
@@ -1315,6 +1407,23 @@ def fixture_report():
                 rate_state['next_allowed_at'] == 6127 and
                 service_state['last_evaluated_at'] == 7009 and
                 service_state['next_allowed_at'] == 7129,
+            uncertain_outcome_closes_without_retry_or_external_access=
+                uncertain_closed['pending_outcome_closed'] and
+                not uncertain_closed['duplicate_close'] and
+                uncertain_closed['outcome_uncertainty_preserved'] and
+                not uncertain_closed['provider_request_performed'] and
+                not uncertain_closed['credential_access_performed'] and
+                not uncertain_closed['cursor_read_performed'] and
+                not uncertain_closed['cursor_write_performed'] and
+                not uncertain_closed['retry_scheduled'] and
+                uncertain_state['review_required'] and
+                uncertain_state['last_detail_code'] ==
+                    'OUTCOME_CLOCK_UNCERTAIN' and
+                uncertain_state['next_allowed_at'] == 0,
+            uncertain_outcome_close_replay_is_byte_stable=
+                uncertain_replay['duplicate_close'] and
+                uncertain_budget.path.read_bytes() == uncertain_bytes and
+                uncertain_state['attempts'] == 1,
             no_sleep_loop_or_financial_authority=
                 not result['automatic_retry'] and
                 not result['automatic_reconnect_performed'] and

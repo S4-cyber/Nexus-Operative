@@ -236,6 +236,98 @@ def test_uncertain_outcome_clock_leaves_reserved_attempt_fail_closed(
             confirm_reconnect_attempt=True)
 
 
+def test_uncertain_outcome_can_be_explicitly_closed_without_retry_or_io(
+        tmp_path):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='OUTCOME_CLOCK_REGRESSION'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: 999)
+    pending = budget.inspect()
+    result = subject.close_pending_reconnect_for_outcome_uncertainty(
+        reconnect_budget=budget,
+        expected_budget_head=pending['head_sha256'], evaluated_at=1001,
+        confirm_outcome_uncertain=True, confirm_no_retry=True)
+    state = budget.inspect()
+    assert len(opener.requests) == 1 and not cursor.path.exists()
+    assert result['pending_outcome_closed'] and not result['duplicate_close']
+    assert result['outcome_uncertainty_preserved']
+    assert not result['provider_request_performed']
+    assert not result['credential_access_performed']
+    assert not result['cursor_read_performed']
+    assert not result['cursor_write_performed']
+    assert not result['reconnect_attempt_reserved']
+    assert not result['reconnect_attempt_consumed']
+    assert not result['retry_scheduled'] and not result['automatic_retry']
+    assert state['attempts'] == 1 and state['pending_token'] is None
+    assert state['review_required'] and not state['completed']
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+    assert state['next_allowed_at'] == 0
+    assert all(result[flag] is False for flag in subject.FLAGS)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EPISODE_CLOSED'):
+        budget.begin(evaluated_at=9999, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED',
+            expected_head=state['head_sha256'],
+            emergency_stop_check=STOP_CLEAR,
+            confirm_reconnect_attempt=True)
+
+
+def test_uncertain_outcome_close_lost_ack_replay_is_byte_stable(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    options = dict(reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+        confirm_outcome_uncertain=True, confirm_no_retry=True)
+    first = subject.close_pending_reconnect_for_outcome_uncertainty(
+        **options)
+    saved = budget.path.read_bytes()
+    replay = subject.close_pending_reconnect_for_outcome_uncertainty(
+        **options)
+    assert not first['duplicate_close'] and replay['duplicate_close']
+    assert replay['reconnect_budget_head_sha256'] == \
+        first['reconnect_budget_head_sha256']
+    assert budget.path.read_bytes() == saved
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESULT_REPLAY_DISAGREEMENT'):
+        subject.close_pending_reconnect_for_outcome_uncertainty(
+            **dict(options, evaluated_at=1002))
+    assert budget.path.read_bytes() == saved
+
+
+@pytest.mark.parametrize(('change','code'), [
+    ({'confirm_outcome_uncertain': False},
+        'OUTCOME_UNCERTAIN_CONFIRMATION_REQUIRED'),
+    ({'confirm_no_retry': False},
+        'OUTCOME_UNCERTAIN_NO_RETRY_CONFIRMATION_REQUIRED'),
+    ({'expected_budget_head': 'f' * 64}, 'HEAD_CHANGED'),
+    ({'evaluated_at': 999}, 'CLOCK_REGRESSION'),
+])
+def test_uncertain_outcome_close_denials_preserve_pending_attempt(
+        tmp_path, change, code):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    saved = budget.path.read_bytes()
+    options = dict(reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+        confirm_outcome_uncertain=True, confirm_no_retry=True)
+    options.update(change)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError, match=code):
+        subject.close_pending_reconnect_for_outcome_uncertainty(**options)
+    assert budget.path.read_bytes() == saved
+    state = budget.inspect()
+    assert state['pending_token'] == reserved['token']
+    assert state['last_outcome'] is None and not state['review_required']
+
+
 @pytest.mark.parametrize(('status','detail'), [
     (429, 'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'),
     (503, 'ALPACA_ACTIVITY_SSE_TRANSPORT_SERVICE_UNAVAILABLE'),

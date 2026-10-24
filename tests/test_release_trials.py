@@ -413,6 +413,8 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('provider_post_known_fee_reserve','retained_known_fee_debits_covered'),False,'PROVIDER_POST_KNOWN_FEE_RESERVE'),
         (('provider_post_known_fee_reserve','known_fee_adjusted_closing_balances_match'),False,'PROVIDER_POST_KNOWN_FEE_RESERVE'),
         (('provider_post_known_fee_reserve','spendable_funds_verified'),True,'PROVIDER_POST_KNOWN_FEE_RESERVE_AUTHORITY'),
+        (('supplied_activity_sse_links','exact_parent_link_bound'),False,'SUPPLIED_ACTIVITY_SSE_LINKS'),
+        (('supplied_activity_sse_links','provider_source_attested'),True,'SUPPLIED_ACTIVITY_SSE_LINKS_AUTHORITY'),
         (('exact_response_bundle','session_tail_required'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','bounded_adjacent_session_start_gap'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','delayed_adjacent_session_rejected'),False,'EXACT_RESPONSE_BUNDLE'),

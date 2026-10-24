@@ -417,6 +417,8 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('supplied_activity_sse_links','provider_source_attested'),True,'SUPPLIED_ACTIVITY_SSE_LINKS_AUTHORITY'),
         (('supplied_activity_sse_reconnect','duplicate_redelivery_idempotent'),False,'SUPPLIED_ACTIVITY_SSE_RECONNECT'),
         (('supplied_activity_sse_reconnect','cursor_persisted_durably'),True,'SUPPLIED_ACTIVITY_SSE_RECONNECT_AUTHORITY'),
+        (('private_activity_sse_cursor_store','cold_restart_recovers_cursor'),False,'PRIVATE_ACTIVITY_SSE_CURSOR_STORE'),
+        (('private_activity_sse_cursor_store','ready_for_routing'),True,'PRIVATE_ACTIVITY_SSE_CURSOR_STORE_AUTHORITY'),
         (('exact_response_bundle','session_tail_required'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','bounded_adjacent_session_start_gap'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','delayed_adjacent_session_rejected'),False,'EXACT_RESPONSE_BUNDLE'),

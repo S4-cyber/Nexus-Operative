@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.238.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.239.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.238.0 composes the strict no-network Activity SSE envelope/link review with a supplied two-segment disconnect/replay boundary. It requires the caller-supplied persisted cursor to equal the last processed ULID, requires reconnect since_id to match exactly, idempotently deduplicates only immutable event/ref redelivery, admits new events only after the cursor and rechecks all fee-parent links before reporting an advanced cursor hash. It does not write or recover a durable cursor, connect or authenticate a stream, verify entitlement, perform a reconnect or backoff, observe a slow-consumer signal, prove replay completeness, compare legacy delivery, attest provider source or establish fees, holds, settlement or spendable funds. No provider/vault/storage IO, retry, continuation, ledger, routing, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.239.0 adds a private account-bound Activity SSE cursor journal after the strict supplied reconnect review. It persists the actual next ULID plus content hashes and aggregate counts in a bounded synchronous SQLite hash chain, requires exact-head and cursor continuity, recovers after process restart and idempotently recognizes only the exact last transition after a lost commit acknowledgment. Tamper, account mismatch, cursor regression, stale-head mutation, capacity exhaustion, symlink, WAL/rollback sidecars and revoked input fail closed. Private history/checkpoint modes are rejected from public artifacts. It still does not connect or authenticate a stream, verify entitlement/source/delivery, perform reconnect/backoff, prove historical replay completeness or native power-loss durability, compare legacy delivery or establish fee coverage, holds, settlement or spendable funds. No provider/vault IO, retry, continuation, ledger, routing, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

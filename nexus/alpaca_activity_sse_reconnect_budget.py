@@ -111,6 +111,32 @@ def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     return retained
 
 
+def _exact_checkpoint_result(retained, token, checkpoint_head,
+        checkpoint_receipt, evaluated_at=None):
+    """Recognize only the exact terminal checkpoint result.
+
+    This is intentionally stricter than checking the two checkpoint hashes:
+    acknowledgement recovery must also remain bound to the reservation token,
+    requested/final outcome, current result head and (when newly written) the
+    supplied result time.
+    """
+    return (retained['completed'] and not retained['review_required'] and
+        retained['pending_token'] is None and
+        retained['head_sha256'] == retained['last_result_head_sha256'] and
+        retained['last_attempt_head_sha256'] == token and
+        (evaluated_at is None or
+            retained['last_evaluated_at'] == evaluated_at) and
+        retained['last_outcome'] == 'CHECKPOINT_COMMITTED' and
+        retained['last_detail_code'] == 'SUCCESS' and
+        retained['last_requested_outcome'] == 'CHECKPOINT_COMMITTED' and
+        retained['last_requested_detail_code'] == 'SUCCESS' and
+        retained['last_requested_retry_after_seconds'] == 0 and
+        retained['last_applied_backoff_seconds'] == 0 and
+        retained['next_allowed_at'] == 0 and
+        retained['checkpoint_head_sha256'] == checkpoint_head and
+        retained['checkpoint_receipt_sha256'] == checkpoint_receipt)
+
+
 class ActivitySSEReconnectBudget:
     """Account-bound hash-chain for one bounded reconnect episode."""
 
@@ -880,6 +906,7 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             _fail('RESULT_RECORD_UNCERTAIN')
         raise
     completed_at = _outcome_time(result_clock, evaluated_at)
+    result_acknowledgement_recovered = False
     try:
         retained = reconnect_budget.finish(reservation['token'],
             evaluated_at=completed_at, outcome='CHECKPOINT_COMMITTED',
@@ -888,10 +915,11 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             checkpoint_receipt_sha256=result['checkpoint_receipt_sha256'])
     except Exception:
         retained = reconnect_budget.inspect()
-        if (not retained['completed'] or
-                retained['checkpoint_head_sha256'] != result['checkpoint_head_sha256'] or
-                retained['checkpoint_receipt_sha256'] != result['checkpoint_receipt_sha256']):
-            _fail('RESULT_RECORD_UNCERTAIN')
+        result_acknowledgement_recovered = True
+    if not _exact_checkpoint_result(retained, reservation['token'],
+            result['checkpoint_head_sha256'],
+            result['checkpoint_receipt_sha256'], completed_at):
+        _fail('RESULT_RECORD_UNCERTAIN')
     return dict(result, mode='EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT',
         reconnect_budget_policy=POLICY,
         reconnect_attempt_number=reservation['attempt'],
@@ -899,6 +927,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         bounded_backoff_enforced=True, caller_driven_attempt=True,
         emergency_stop_admission_fenced=True,
         emergency_stop_sampled_before_reservation=True,
+        result_acknowledgement_recovered=
+            result_acknowledgement_recovered,
         automatic_retry=False, automatic_reconnect_performed=False,
         automatic_backoff_verified=False,
         reconnect_budget_head_sha256=retained['head_sha256'],
@@ -1034,41 +1064,50 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             retained['reconnect_reservation_sha256'] !=
                 sha(reservation_token)):
         _fail('CHECKPOINT_BINDING_DISAGREEMENT')
+    result_acknowledgement_recovered = False
     if duplicate:
         if (state['checkpoint_receipt_sha256'] !=
                 retained['checkpoint_receipt_sha256']):
             _fail('CHECKPOINT_BINDING_DISAGREEMENT')
         recovered = state
     else:
-        recovered = reconnect_budget.finish(state['pending_token'],
-            evaluated_at=now, outcome='CHECKPOINT_COMMITTED',
-            detail_code='SUCCESS',
-            checkpoint_head_sha256=retained['head_sha256'],
-            checkpoint_receipt_sha256=
-                retained['checkpoint_receipt_sha256'])
+        try:
+            recovered = reconnect_budget.finish(state['pending_token'],
+                evaluated_at=now, outcome='CHECKPOINT_COMMITTED',
+                detail_code='SUCCESS',
+                checkpoint_head_sha256=retained['head_sha256'],
+                checkpoint_receipt_sha256=
+                    retained['checkpoint_receipt_sha256'])
+        except Exception:
+            recovered = reconnect_budget.inspect()
+            result_acknowledgement_recovered = True
     try:
         unchanged = cursor_store.latest_checkpoint_binding()
     except Exception:
         _fail('RECOVERY_RESULT_UNCERTAIN')
+    stable = reconnect_budget.inspect()
+    result_time = None if duplicate else now
     if (unchanged != retained or
             (reconnect_budget.path, reconnect_budget.account_sha256) !=
                 budget_binding or
             (cursor_store.path, cursor_store.account_sha256) !=
                 cursor_binding or
-            recovered['checkpoint_head_sha256'] !=
-                retained['head_sha256'] or
-            recovered['checkpoint_receipt_sha256'] !=
-                retained['checkpoint_receipt_sha256']):
+            stable['head_sha256'] != recovered['head_sha256'] or
+            not _exact_checkpoint_result(stable, reservation_token,
+                retained['head_sha256'],
+                retained['checkpoint_receipt_sha256'], result_time)):
         _fail('RECOVERY_RESULT_UNCERTAIN')
     return dict(mode=
             'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_RESULT_RECOVERY',
         status='REVIEW_REQUIRED', policy=POLICY,
         pending_checkpoint_reconciled=True,
         duplicate_recovery=duplicate,
+        result_acknowledgement_recovered=
+            result_acknowledgement_recovered,
         explicit_reconciliation_confirmation=True,
         provider_request_performed=False, automatic_retry=False,
         automatic_reconnect_performed=False,
-        reconnect_budget_head_sha256=recovered['head_sha256'],
+        reconnect_budget_head_sha256=stable['head_sha256'],
         checkpoint_head_sha256=retained['head_sha256'],
         checkpoint_receipt_sha256=
             retained['checkpoint_receipt_sha256'],

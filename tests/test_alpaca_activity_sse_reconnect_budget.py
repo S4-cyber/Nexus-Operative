@@ -145,6 +145,48 @@ def test_success_result_and_exact_replay_bind_observed_completion_time(
     assert budget.path.read_bytes() == saved
 
 
+def test_success_recovers_only_exact_lost_result_acknowledgement(
+        tmp_path, monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = budget.finish
+
+    def lost_ack(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError('private lost acknowledgement')
+
+    monkeypatch.setattr(budget, 'finish', lost_ack)
+    result, _, _ = call(tmp_path, opener, stores=(cursor, budget),
+        outcome_clock=lambda: 1007)
+    state = budget.inspect()
+    assert len(opener.requests) == 1
+    assert result['result_acknowledgement_recovered']
+    assert state['completed'] and state['pending_token'] is None
+    assert state['last_evaluated_at'] == 1007
+    assert state['last_attempt_head_sha256'] != state['head_sha256']
+    assert state['last_outcome'] == state['last_requested_outcome'] == \
+        'CHECKPOINT_COMMITTED'
+    assert state['last_detail_code'] == \
+        state['last_requested_detail_code'] == 'SUCCESS'
+
+
+def test_success_rejects_uncommitted_result_acknowledgement_failure(
+        tmp_path, monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    monkeypatch.setattr(budget, 'finish',
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            RuntimeError('private uncommitted failure')))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESULT_RECORD_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1 and cursor.inspect()['initialized']
+    state = budget.inspect()
+    assert state['pending_token'] and not state['completed']
+
+
 def test_success_with_uncertain_outcome_clock_uses_no_network_recovery(
         tmp_path):
     _, raw = segments()
@@ -1216,6 +1258,49 @@ def test_exact_bound_checkpoint_recovers_pending_result_without_network(tmp_path
     assert replay['duplicate_recovery']
     assert replay['reconnect_budget_head_sha256'] == state['head_sha256']
     assert len(opener.requests) == 1
+
+
+def test_reconciliation_recovers_exact_lost_result_acknowledgement(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original = budget.finish
+
+    def lost_ack(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError('private lost acknowledgement')
+
+    monkeypatch.setattr(budget, 'finish', lost_ack)
+    result = subject.reconcile_pending_checkpoint(cursor_store=cursor,
+        reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'],
+        expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+        evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert result['pending_checkpoint_reconciled']
+    assert result['result_acknowledgement_recovered']
+    assert not result['duplicate_recovery']
+    assert budget.inspect()['completed']
+
+
+def test_reconciliation_rejects_uncommitted_result_acknowledgement_failure(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    monkeypatch.setattr(budget, 'finish',
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            RuntimeError('private uncommitted failure')))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RECOVERY_RESULT_UNCERTAIN'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+    assert budget.inspect()['pending_token'] == reserved['token']
 
 
 @pytest.mark.parametrize(('token','code'), [

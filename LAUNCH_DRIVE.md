@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.254.0 parent is locally verified but has no connector-visible exact-source workflow result; v0.255.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.255.0 parent has no connector-visible exact-source workflow result; v0.256.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.256.0 exact successful-result acknowledgement recovery
+
+Successful reconnect completion and the explicit no-network checkpoint reconciliation now recover a lost durable-result acknowledgement in the same call only when replayed state exactly binds the current result head, reconnect reservation, requested and final success values, zero retry fields and checkpoint head/receipt. A newly attempted result also must retain the supplied evaluation time.
+
+An uncommitted or mismatched result remains uncertain with its checkpoint and pending evidence available for review. The recovery path performs no provider request, automatic retry, credential access, ledger application, order, funding operation or authority promotion. No UI or modifiable parameter changed, and the seven beginner tabs plus black/bright-purple bottom-right help contract remain unchanged. Disposable injected evidence is not actual provider/account, source/delivery/replay, native durability, reconciliation, sustained-market, trading or release acceptance.
+
+Final local validation passed 3,910 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 299. All sixteen offline profiles and saved-evidence verification matched 387 source files / `709e5a239f10a5183e12cff2811f5557e1aa0bf7a722dd56c3a633cfac23b192`; the saved report SHA256 is `e2801bd0f45c01db21e484cc0c073cececdfd28abdd65cf63f3a0c73338916ef`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace passed. The 617-path proposed snapshot and reachable 649-commit / 4,625-blob history audit found no public artifacts. Exact-source hosted results remain required before this source is treated as a verified checkpoint.
 
 ## v0.255.0 failed-attempt outcome-clock terminalization
 

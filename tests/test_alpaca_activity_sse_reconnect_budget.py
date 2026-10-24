@@ -235,6 +235,75 @@ def test_transport_failure_records_backoff_without_sleep_or_second_get(tmp_path)
     assert second['attempt'] == 2
 
 
+def test_failure_recovers_exact_lost_result_acknowledgement(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original = budget.finish
+
+    def lost_ack(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError('private lost acknowledgement')
+
+    monkeypatch.setattr(budget, 'finish', lost_ack)
+    with pytest.raises(ValueError, match='TRANSPORT_UNAVAILABLE'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: 1007)
+    state = budget.inspect()
+    assert len(opener.requests) == 1
+    assert state['pending_token'] is None and not state['review_required']
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert state['last_evaluated_at'] == 1007
+    assert state['last_applied_backoff_seconds'] == 1
+    assert state['next_allowed_at'] == 1008
+
+
+def test_failure_rejects_uncommitted_result_acknowledgement_failure(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    monkeypatch.setattr(budget, 'finish',
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            RuntimeError('private uncommitted failure')))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESULT_RECORD_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1 and not cursor.path.exists()
+    state = budget.inspect()
+    assert state['pending_token'] and state['last_outcome'] is None
+
+
+def test_failure_lost_ack_accepts_exact_emergency_stop_conversion(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original = budget.finish
+    samples = []
+
+    def check():
+        value = len(samples) >= 6
+        samples.append(value)
+        return value
+
+    def lost_ack(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError('private lost acknowledgement')
+
+    monkeypatch.setattr(budget, 'finish', lost_ack)
+    with pytest.raises(ValueError, match='TRANSPORT_UNAVAILABLE'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            emergency_stop_check=check)
+    state = budget.inspect()
+    assert len(opener.requests) == 1
+    assert samples == [False] * 6 + [True]
+    assert state['pending_token'] is None and state['review_required']
+    assert state['last_requested_outcome'] == 'RETRY_REQUIRED'
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+    assert state['last_applied_backoff_seconds'] == 0
+    assert state['next_allowed_at'] == 0
+
+
 def test_slow_failure_starts_fixed_backoff_when_outcome_is_observed(tmp_path):
     cursor, budget = stores(tmp_path)
     opener = Opener([TimeoutError('private')])

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.256.0'
+REVISION = '0.257.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -78,6 +78,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; successful reconnect completion and explicit no-network checkpoint reconciliation now recover a lost result acknowledgement in the same call only when the current terminal result exactly binds the reservation token, requested and final success values, zero retry fields and checkpoint receipt; a new write also binds the supplied result time, while an uncommitted or mismatched result remains uncertain without another provider request' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; failed reconnect results now apply the same exact same-call acknowledgement recovery to retry, review, checkpoint-uncertain, provider-delay and emergency-stop-converted outcomes, requiring the current result head, reservation token, result time, requested/final values, zero checkpoint fields and exact delay state; uncommitted or mismatched results remain pending and the original provider failure is suppressed only by a fixed uncertainty diagnostic' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -224,7 +228,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.256.0 tightens successful Activity SSE checkpoint-result acknowledgement recovery. Both the ordinary one-attempt completion path and the explicit no-network checkpoint reconciliation accept a lost acknowledgement in the same call only when retained state exactly binds the current result head, reconnect reservation token, requested and final CHECKPOINT_COMMITTED/SUCCESS values, zero retry fields and exact checkpoint head/receipt; newly written recovery also binds the supplied result time. An uncommitted or mismatched result fails with a fixed uncertainty diagnostic and leaves the exact checkpoint/pending state available for review, without another provider request. Existing rows remain compatible. No automatic retry, provider access, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.257.0 extends exact result-acknowledgement recovery to failed Activity SSE reconnect attempts. Retry-required, review-required and checkpoint-uncertain results—including provider-directed delay and emergency-stop conversion—are accepted after a write exception only when retained state exactly binds the current result head, reconnect reservation token, result time, requested and final outcomes/details, absent checkpoint fields and precise delay/no-delay state. A proven committed result preserves and re-raises the original provider/checkpoint failure without another request. An uncommitted or mismatched result remains pending and returns only a fixed uncertainty diagnostic. Existing rows remain compatible. No automatic retry, provider access, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

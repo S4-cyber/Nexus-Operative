@@ -14,6 +14,7 @@ from nexus.alpaca_paper_contract import canonical
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
 KEY = 'fixture_key_only_123'
 SECRET = 'fixture_secret_only_123'
+USE_RESERVED_TOKEN = object()
 
 
 def segments():
@@ -184,6 +185,100 @@ def test_crash_after_begin_is_never_expired_or_retried(tmp_path):
             reconnect_reason='CONNECTION_DROPPED',
             expected_head=reserved['head_sha256'],
             confirm_reconnect_attempt=True)
+
+
+def committed_pending_checkpoint(tmp_path,
+        reservation_token=USE_RESERVED_TOKEN):
+    initial, raw = segments()
+    cursor, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, confirm_reconnect_attempt=True)
+    token = (reserved['token'] if reservation_token is USE_RESERVED_TOKEN
+        else reservation_token)
+    opener = Opener([raw])
+    checkpoint = subject.checkpoint.collect_and_checkpoint_once(
+        KEY, SECRET, expected_account_id=ACCOUNT, initial_events=initial,
+        reconnect_reason='CONNECTION_DROPPED', cursor_store=cursor,
+        expected_cursor_head=ZERO, confirm_read_only_paper=True,
+        confirm_cursor_checkpoint=True, opener=opener,
+        wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+        permission_check=lambda: True,
+        emergency_stop_check=lambda: False,
+        credential_check=lambda: True,
+        reconnect_reservation_token=token)
+    return cursor, budget, reserved, checkpoint, opener
+
+
+def test_exact_bound_checkpoint_recovers_pending_result_without_network(tmp_path):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    assert budget.inspect()['pending_token'] == reserved['token']
+    result = subject.reconcile_pending_checkpoint(cursor_store=
+        ActivitySSECursorStore(cursor.path, ACCOUNT),
+        reconnect_budget=subject.ActivitySSEReconnectBudget(
+            budget.path, ACCOUNT), expected_budget_head=reserved['head_sha256'],
+        expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+        evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    state = budget.inspect()
+    assert len(opener.requests) == 1
+    assert result['pending_checkpoint_reconciled']
+    assert not result['provider_request_performed']
+    assert not result['automatic_retry']
+    assert state['completed'] and state['pending_token'] is None
+    assert state['checkpoint_head_sha256'] == checkpoint['checkpoint_head_sha256']
+    assert all(result[flag] is False for flag in subject.FLAGS)
+    replay = subject.reconcile_pending_checkpoint(cursor_store=
+        ActivitySSECursorStore(cursor.path, ACCOUNT),
+        reconnect_budget=subject.ActivitySSEReconnectBudget(
+            budget.path, ACCOUNT), expected_budget_head=reserved['head_sha256'],
+        expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+        evaluated_at=1002, confirm_checkpoint_reconciliation=True)
+    assert replay['duplicate_recovery']
+    assert replay['reconnect_budget_head_sha256'] == state['head_sha256']
+    assert len(opener.requests) == 1
+
+
+@pytest.mark.parametrize(('token','code'), [
+    ('b' * 64, 'CHECKPOINT_BINDING_DISAGREEMENT'),
+    (None, 'CHECKPOINT_BINDING_DISAGREEMENT'),
+])
+def test_unbound_or_foreign_checkpoint_cannot_close_pending_budget(
+        tmp_path, token, code):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path,
+            reservation_token=token)
+    saved = budget.path.read_bytes()
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError, match=code):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+    assert budget.inspect()['pending_token'] == reserved['token']
+
+
+def test_reconciliation_confirmation_and_heads_fail_before_budget_mutation(tmp_path):
+    cursor, budget, reserved, checkpoint, _ = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    for changes, code in (
+            ({'confirm_checkpoint_reconciliation': False},
+                'RECONCILIATION_CONFIRMATION_REQUIRED'),
+            ({'expected_budget_head': 'f' * 64}, 'HEAD_CHANGED'),
+            ({'expected_checkpoint_head': 'f' * 64},
+                'CHECKPOINT_BINDING_DISAGREEMENT')):
+        options = dict(cursor_store=cursor, reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+        options.update(changes)
+        with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+                match=code):
+            subject.reconcile_pending_checkpoint(**options)
+        assert budget.path.read_bytes() == saved
 
 
 def test_fourth_retryable_failure_closes_for_review_at_fixed_cap(tmp_path):

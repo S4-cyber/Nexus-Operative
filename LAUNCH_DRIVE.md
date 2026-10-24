@@ -2,7 +2,17 @@
 
 ## Delivery planning update — 2026-10-23
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. Exact v0.242.0 security, safety/evidence/browser and Windows EXE/installer workflows are green; this v0.243.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.243.0 parent is locally verified, but GitHub had not registered its exact-source workflows when this candidate began; v0.244.0 requires fresh checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.244.0 reservation-bound reconnect result recovery
+
+Reconnect-driven cursor commits now bind a hash of the exact durable reconnect reservation. If the process dies after the cursor commit but before recording the budget result, a separately confirmed recovery can close that pending budget only from the latest exact account-bound cursor receipt, matching reservation hash and matching prior/current heads. A repeated exact recovery after a lost acknowledgment is idempotent.
+
+This path performs no provider request and never retries or reconnects. Legacy unbound checkpoints, foreign reservations, stale heads, changed stores, missing confirmation and uncertain final rechecks remain blocked. Ordinary checkpoints remain compatible and unbound unless invoked through the reconnect coordinator. The private receipt/budget details remain outside public artifacts.
+
+This closes one local process-crash ambiguity, not native power-loss durability, provider source/delivery/replay completeness, actual-account acceptance, provider-directed backoff, broker-wide coordination, fees, holds, settlement, spendable funds, routing, live trading or release approval. No UI or modifiable parameter changed; preserve seven beginner tabs, black/bright-purple bottom-right help, OFF permissions, bounded limits, account checks, fail-closed exits and the independent emergency stop.
+
+Final local regression passed 3,820 tests with one expected non-Windows skip and one existing Starlette/httpx warning. Sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `6d7f75bdbb04a0fa13be626e87e79417fe833698e1694fe4f534a249218bd781`; report SHA256 is `a1bcb0944b15d636bfb773d4e1d75d642ed03354f3b3267079b756294767856f`. The focused cursor/checkpoint/reconnect/release/evidence/version/roadmap/audit set passed 258. Fourteen Node controllers, Portal inline syntax, compilation, dependencies, generated-roadmap equality and whitespace passed. Public scans and fresh exact-source workflows remain mandatory.
 
 ## v0.243.0 durable caller-driven Activity SSE reconnect budget
 

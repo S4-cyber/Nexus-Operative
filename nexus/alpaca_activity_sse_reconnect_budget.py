@@ -143,7 +143,8 @@ class ActivitySSEReconnectBudget:
             expected_cursor_head_sha256=None, next_allowed_at=0,
             last_evaluated_at=0, last_outcome=None, review_required=False,
             completed=False, checkpoint_head_sha256=None,
-            checkpoint_receipt_sha256=None)
+            checkpoint_receipt_sha256=None,
+            last_attempt_head_sha256=None)
         previous = ZERO
         for index, (seq, encoded, parent, digest) in enumerate(rows):
             if type(encoded) is not str or len(encoded.encode()) > MAX_RECORD_BYTES:
@@ -200,6 +201,7 @@ class ActivitySSEReconnectBudget:
                         re.fullmatch(r'[A-Z0-9_]{1,96}', body['detail_code']) is None):
                     _fail('RESULT_SCOPE_INVALID')
                 outcome = body['outcome']
+                state['last_attempt_head_sha256'] = state['pending_token']
                 next_at = _clock(body['next_allowed_at'])
                 checkpoint_head = body['checkpoint_head_sha256']
                 checkpoint_receipt = body['checkpoint_receipt_sha256']
@@ -245,7 +247,8 @@ class ActivitySSEReconnectBudget:
                 last_evaluated_at=0, last_outcome=None,
                 review_required=False, completed=False,
                 checkpoint_head_sha256=None,
-                checkpoint_receipt_sha256=None)
+                checkpoint_receipt_sha256=None,
+                last_attempt_head_sha256=None)
         else:
             with closing(self._connect()[0]) as db:
                 state = self._load(db)
@@ -371,6 +374,7 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         permission_check=permission_check,
         emergency_stop_check=emergency_stop_check,
         credential_check=credential_check)
+    options['reconnect_reservation_token'] = reservation['token']
     if wall_clock is not None:
         options['wall_clock'] = wall_clock
     if elapsed_clock is not None:
@@ -415,6 +419,101 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         automatic_backoff_verified=False,
         reconnect_budget_head_sha256=retained['head_sha256'],
         reconnect_budget_completed=True)
+
+
+def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
+        expected_budget_head, expected_checkpoint_head, evaluated_at,
+        confirm_checkpoint_reconciliation=False):
+    """Close one pending attempt only from its exact bound cursor receipt.
+
+    This recovery path performs no provider or credential access and never
+    retries the network request.  It exists solely for a process death after
+    the cursor checkpoint committed but before the reconnect budget recorded
+    that exact result.
+    """
+    if confirm_checkpoint_reconciliation is not True:
+        _fail('RECONCILIATION_CONFIRMATION_REQUIRED')
+    if type(cursor_store) is not ActivitySSECursorStore:
+        _fail('CURSOR_STORE_INVALID')
+    if type(reconnect_budget) is not ActivitySSEReconnectBudget:
+        _fail('BUDGET_INVALID')
+    budget_head = _digest(expected_budget_head, 'EXPECTED_HEAD_INVALID')
+    checkpoint_head = _digest(expected_checkpoint_head,
+        'CHECKPOINT_HEAD_INVALID')
+    now = _clock(evaluated_at)
+    if reconnect_budget.account_sha256 != cursor_store.account_sha256:
+        _fail('ACCOUNT_DISAGREEMENT')
+    budget_binding = (reconnect_budget.path,
+        reconnect_budget.account_sha256)
+    cursor_binding = (cursor_store.path, cursor_store.account_sha256)
+    state = reconnect_budget.inspect()
+    duplicate = state['head_sha256'] != budget_head
+    if duplicate:
+        if (not state['completed'] or state['review_required'] or
+                state['last_attempt_head_sha256'] != budget_head or
+                state['checkpoint_head_sha256'] != checkpoint_head):
+            _fail('HEAD_CHANGED')
+        reservation_token = budget_head
+    else:
+        if (state['pending_token'] is None or state['completed'] or
+                state['review_required']):
+            _fail('PENDING_CHECKPOINT_MISSING')
+        reservation_token = state['pending_token']
+    try:
+        retained = cursor_store.latest_checkpoint_binding()
+    except Exception:
+        _fail('CURSOR_BINDING_REVIEW_FAILED')
+    if ((reconnect_budget.path, reconnect_budget.account_sha256) !=
+            budget_binding or
+            (cursor_store.path, cursor_store.account_sha256) !=
+            cursor_binding):
+        _fail('STORE_BINDING_CHANGED')
+    if (retained['head_sha256'] != checkpoint_head or
+            retained['expected_head_sha256'] !=
+                state['expected_cursor_head_sha256'] or
+            retained['reconnect_reservation_bound'] is not True or
+            retained['reconnect_reservation_sha256'] !=
+                sha(reservation_token)):
+        _fail('CHECKPOINT_BINDING_DISAGREEMENT')
+    if duplicate:
+        if (state['checkpoint_receipt_sha256'] !=
+                retained['checkpoint_receipt_sha256']):
+            _fail('CHECKPOINT_BINDING_DISAGREEMENT')
+        recovered = state
+    else:
+        recovered = reconnect_budget.finish(state['pending_token'],
+            evaluated_at=now, outcome='CHECKPOINT_COMMITTED',
+            detail_code='SUCCESS',
+            checkpoint_head_sha256=retained['head_sha256'],
+            checkpoint_receipt_sha256=
+                retained['checkpoint_receipt_sha256'])
+    try:
+        unchanged = cursor_store.latest_checkpoint_binding()
+    except Exception:
+        _fail('RECOVERY_RESULT_UNCERTAIN')
+    if (unchanged != retained or
+            (reconnect_budget.path, reconnect_budget.account_sha256) !=
+                budget_binding or
+            (cursor_store.path, cursor_store.account_sha256) !=
+                cursor_binding or
+            recovered['checkpoint_head_sha256'] !=
+                retained['head_sha256'] or
+            recovered['checkpoint_receipt_sha256'] !=
+                retained['checkpoint_receipt_sha256']):
+        _fail('RECOVERY_RESULT_UNCERTAIN')
+    return dict(mode=
+            'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_RESULT_RECOVERY',
+        status='REVIEW_REQUIRED', policy=POLICY,
+        pending_checkpoint_reconciled=True,
+        duplicate_recovery=duplicate,
+        explicit_reconciliation_confirmation=True,
+        provider_request_performed=False, automatic_retry=False,
+        automatic_reconnect_performed=False,
+        reconnect_budget_head_sha256=recovered['head_sha256'],
+        checkpoint_head_sha256=retained['head_sha256'],
+        checkpoint_receipt_sha256=
+            retained['checkpoint_receipt_sha256'],
+        **{flag: False for flag in FLAGS})
 
 
 def fixture_report():
@@ -497,7 +596,34 @@ def fixture_report():
         cold_budget = ActivitySSEReconnectBudget(
             budget.path, account).inspect()
         cold_cursor = ActivitySSECursorStore(cursor.path, account).inspect()
-        encoded = json.dumps([result, cold_budget], sort_keys=True)
+        recovery_cursor = ActivitySSECursorStore(
+            root / 'recovery-cursor.sqlite3', account)
+        recovery_budget = ActivitySSEReconnectBudget(
+            root / 'recovery-budget.sqlite3', account)
+        reserved = recovery_budget.begin(evaluated_at=2000,
+            expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            confirm_reconnect_attempt=True)
+        recovery_opener = Opener(raw)
+        committed = checkpoint.collect_and_checkpoint_once(
+            'fixture_key_only_123', 'fixture_secret_only_123',
+            expected_account_id=account, initial_events=initial,
+            reconnect_reason='CONNECTION_DROPPED',
+            cursor_store=recovery_cursor, expected_cursor_head=ZERO,
+            confirm_read_only_paper=True, confirm_cursor_checkpoint=True,
+            opener=recovery_opener, wall_clock=lambda: 2000,
+            elapsed_clock=lambda: 50, permission_check=lambda: True,
+            emergency_stop_check=lambda: False,
+            credential_check=lambda: True,
+            reconnect_reservation_token=reserved['token'])
+        recovered = reconcile_pending_checkpoint(cursor_store=
+            ActivitySSECursorStore(recovery_cursor.path, account),
+            reconnect_budget=ActivitySSEReconnectBudget(
+                recovery_budget.path, account),
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=committed['checkpoint_head_sha256'],
+            evaluated_at=2001, confirm_checkpoint_reconciliation=True)
+        encoded = json.dumps([result, cold_budget, recovered], sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
                 after_timeout['next_allowed_at'] == 1001 and
@@ -509,6 +635,11 @@ def fixture_report():
                 cold_budget['completed'] and cold_cursor['initialized'] and
                 cold_budget['checkpoint_head_sha256'] ==
                     cold_cursor['head_sha256'],
+            pending_checkpoint_result_recovers_without_second_get=
+                recovered['pending_checkpoint_reconciled'] and
+                not recovered['provider_request_performed'] and
+                len(recovery_opener.requests) == 1 and
+                recovery_budget.inspect()['completed'],
             no_sleep_loop_or_financial_authority=
                 not result['automatic_retry'] and
                 not result['automatic_reconnect_performed'] and

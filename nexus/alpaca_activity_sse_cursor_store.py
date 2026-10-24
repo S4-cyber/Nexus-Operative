@@ -23,6 +23,7 @@ from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.private-alpaca-activity-sse-cursor-store.v1'
 PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v1'
+BOUND_PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v2'
 ZERO = '0' * 64
 MAX_CHECKPOINTS = 256
 MAX_RECORD_BYTES = 8192
@@ -126,7 +127,8 @@ class ActivitySSECursorStore:
             (seq, encoded, previous, digest))
         return digest
 
-    def _review_scope(self, value, previous_cursor, next_cursor, expected_head):
+    def _review_scope(self, value, previous_cursor, next_cursor, expected_head,
+            reconnect_reservation_token=None):
         if type(value) is not dict:
             _fail('REVIEW_INVALID')
         required = {'mode', 'status', 'read_only', 'input_sha256',
@@ -165,7 +167,13 @@ class ActivitySSECursorStore:
         unique = _positive(value['unique_events_reviewed'], 'COUNT_INVALID')
         if duplicates > replay or new > replay or unique < new:
             _fail('COUNT_INVALID')
-        scope = dict(profile=PROFILE, review_policy=REVIEW_POLICY,
+        profile = PROFILE
+        reservation_sha256 = None
+        if reconnect_reservation_token is not None:
+            reservation_sha256 = sha(_digest(reconnect_reservation_token,
+                'RECONNECT_RESERVATION_INVALID'))
+            profile = BOUND_PROFILE
+        scope = dict(profile=profile, review_policy=REVIEW_POLICY,
             account_sha256=self.account_sha256,
             expected_head_sha256=expected_head,
             previous_cursor=before, next_cursor=after,
@@ -175,6 +183,8 @@ class ActivitySSECursorStore:
             replay_events_reviewed=replay,
             redelivered_events_deduplicated=duplicates,
             new_events_processed=new, unique_events_reviewed=unique)
+        if reservation_sha256 is not None:
+            scope['reconnect_reservation_sha256'] = reservation_sha256
         return dict(kind='CHECKPOINT', scope=scope,
             receipt_sha256=sha(scope))
 
@@ -209,20 +219,29 @@ class ActivitySSECursorStore:
                         body['kind'] != 'CHECKPOINT'):
                     _fail('PAYLOAD_INVALID')
                 scope = body['scope']
-                if type(scope) is not dict or set(scope) != {
+                base_scope = {
                         'profile', 'review_policy', 'account_sha256',
                         'expected_head_sha256',
                         'previous_cursor', 'next_cursor',
                         'review_input_sha256', 'reconnect_reason',
                         'initial_events_reviewed', 'replay_events_reviewed',
                         'redelivered_events_deduplicated',
-                        'new_events_processed', 'unique_events_reviewed'}:
+                        'new_events_processed', 'unique_events_reviewed'}
+                if (type(scope) is not dict or
+                        (scope.get('profile') == PROFILE and
+                            set(scope) != base_scope) or
+                        (scope.get('profile') == BOUND_PROFILE and
+                            set(scope) != base_scope | {
+                                'reconnect_reservation_sha256'}) or
+                        scope.get('profile') not in (PROFILE, BOUND_PROFILE)):
                     _fail('PAYLOAD_INVALID')
-                if (scope['profile'] != PROFILE or
-                        scope['review_policy'] != REVIEW_POLICY or
+                if (scope['review_policy'] != REVIEW_POLICY or
                         scope['account_sha256'] != self.account_sha256 or
                         body['receipt_sha256'] != sha(scope)):
                     _fail('SCOPE_INVALID')
+                if scope['profile'] == BOUND_PROFILE:
+                    _digest(scope['reconnect_reservation_sha256'],
+                        'RECONNECT_RESERVATION_INVALID')
                 _digest(scope['expected_head_sha256'])
                 logical_parent = ZERO if not records else parent
                 if scope['expected_head_sha256'] != logical_parent:
@@ -262,12 +281,35 @@ class ActivitySSECursorStore:
             process_restart_recoverable=bool(records),
             **{flag: False for flag in FLAGS})
 
+    def latest_checkpoint_binding(self):
+        """Return hashes for the latest checkpoint, never its private cursor."""
+        self._check()
+        if not self.path.exists():
+            _fail('CHECKPOINT_MISSING')
+        with closing(self._connect()[0]) as db:
+            head, _, records = self._load(db)
+        if not records:
+            _fail('CHECKPOINT_MISSING')
+        latest = records[-1]
+        scope = latest['body']['scope']
+        return dict(mode='PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING',
+            status='REVIEW_REQUIRED', account_sha256=self.account_sha256,
+            head_sha256=head,
+            expected_head_sha256=scope['expected_head_sha256'],
+            checkpoint_receipt_sha256=latest['body']['receipt_sha256'],
+            cursor_sha256=sha(scope['next_cursor']),
+            reconnect_reservation_sha256=
+                scope.get('reconnect_reservation_sha256'),
+            reconnect_reservation_bound=
+                scope.get('profile') == BOUND_PROFILE,
+            read_only=True, **{flag: False for flag in FLAGS})
+
     def checkpoint(self, review, *, previous_cursor, next_cursor,
-            expected_head, admission=None):
+            expected_head, admission=None, reconnect_reservation_token=None):
         """Commit one reviewed advance; exact lost-ack replay is idempotent."""
         expected = _digest(expected_head, 'HEAD_INVALID')
         body = self._review_scope(review, previous_cursor, next_cursor,
-            expected)
+            expected, reconnect_reservation_token)
         expected_input = body['scope']['review_input_sha256']
         if admission is None:
             admission = lambda: expected_input
@@ -322,6 +364,8 @@ class ActivitySSECursorStore:
             status='REVIEW_REQUIRED', account_sha256=self.account_sha256,
             head_sha256=head, cursor_sha256=sha(body['scope']['next_cursor']),
             receipt_sha256=body['receipt_sha256'], duplicate=duplicate,
+            reconnect_reservation_bound=
+                body['scope']['profile'] == BOUND_PROFILE,
             local_cursor_checkpoint_committed=True,
             process_restart_recoverable=True,
             **{flag: False for flag in FLAGS})

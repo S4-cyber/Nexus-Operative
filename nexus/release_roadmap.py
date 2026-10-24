@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.243.0'
+REVISION = '0.244.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -62,6 +62,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; a private account-bound reconnect budget now reserves every explicitly confirmed SSE attempt before IO, enforces a fixed 1/2/4/8-second process-recoverable backoff with a four-attempt cap, blocks pending/lost-result episodes and composes one due attempt with the exact cursor checkpoint while never sleeping, looping or retrying automatically' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; a reservation-bound cursor-checkpoint receipt and separately confirmed no-network result reconciliation now close only the exact pending reconnect attempt after a checkpoint/result crash window, reject legacy/foreign/stale evidence and make lost recovery acknowledgment replay idempotent without another provider request' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -208,7 +212,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.243.0 adds a private account-bound durable budget around the explicit one-attempt Activity SSE checkpoint. Every caller-confirmed attempt is reserved before IO, exact budget and cursor heads are required, and a fixed 1/2/4/8-second schedule with a four-attempt cap survives process restart. The component never sleeps, loops or retries automatically; a caller must explicitly invoke each due attempt. Pending, changed, capped, nonretryable and cursor-advanced-without-result cases fail closed for review. A clean attempt still must pass the complete v0.242 transport/reconnect/checkpoint path. Injected tests do not prove account entitlement, provider source/delivery/replay completeness, actual backoff timing under provider failures, native power-loss durability, broker-wide/distributed coordination, fees, holds, settlement or spendable funds. No Portal, strategy, live, funding or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.244.0 closes one narrow reconnect crash window without retrying: a new cursor checkpoint can bind the exact durable reconnect reservation, and a separately confirmed no-network reconciliation can close a still-pending budget only when the latest cursor receipt proves that same reservation and exact prior/current heads. Legacy or foreign checkpoints, stale heads, changed stores, missing confirmation and uncertain rechecks fail closed. Exact replay makes a lost recovery acknowledgment idempotent. The ordinary checkpoint path remains compatible and unbound by default. No retry, connection, credential, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

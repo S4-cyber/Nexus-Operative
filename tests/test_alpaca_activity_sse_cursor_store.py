@@ -80,6 +80,31 @@ def test_exact_stale_head_replay_is_idempotent_and_byte_stable(tmp_path):
     assert path.read_bytes() == saved
 
 
+def test_checkpoint_can_bind_reconnect_reservation_for_exact_recovery(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    token = 'a' * 64
+    saved = checkpoint(store, reconnect_reservation_token=token)
+    binding = subject.ActivitySSECursorStore(
+        path, ACCOUNT).latest_checkpoint_binding()
+    assert saved['reconnect_reservation_bound']
+    assert binding['head_sha256'] == saved['head_sha256']
+    assert binding['expected_head_sha256'] == subject.ZERO
+    assert binding['checkpoint_receipt_sha256'] == saved['receipt_sha256']
+    assert binding['reconnect_reservation_sha256'] == subject.sha(token)
+    assert binding['reconnect_reservation_bound']
+    assert 'current_event_id' not in binding
+    assert all(binding[flag] is False for flag in subject.FLAGS)
+
+
+def test_invalid_reconnect_reservation_never_creates_storage(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    with pytest.raises(ValueError, match='RECONNECT_RESERVATION_INVALID'):
+        checkpoint(subject.ActivitySSECursorStore(path, ACCOUNT),
+            reconnect_reservation_token='bad')
+    assert not path.exists()
+
+
 def test_second_checkpoint_requires_exact_cursor_and_head(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     store = subject.ActivitySSECursorStore(path, ACCOUNT)

@@ -66,12 +66,21 @@ def _binding(store):
     return store.path, store.account_sha256
 
 
+def _reservation(value):
+    if value is None:
+        return None
+    if (type(value) is not str or len(value) != 64 or
+            any(character not in '0123456789abcdef' for character in value)):
+        _fail('RECONNECT_RESERVATION_INVALID')
+    return value
+
+
 def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         initial_events, reconnect_reason, cursor_store, expected_cursor_head,
         confirm_read_only_paper=False, confirm_cursor_checkpoint=False,
         opener=None, wall_clock=None, elapsed_clock=None,
         permission_check=None, emergency_stop_check=None,
-        credential_check=None):
+        credential_check=None, reconnect_reservation_token=None):
     """Perform one explicit resumption GET and exact-head cursor checkpoint.
 
     ``initial_events`` remains private caller evidence and must end at the
@@ -85,6 +94,7 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         _fail('CHECKPOINT_AUTHORIZATION_REQUIRED')
     if type(cursor_store) is not ActivitySSECursorStore:
         _fail('CURSOR_STORE_INVALID')
+    reservation = _reservation(reconnect_reservation_token)
     if not all(callable(item) for item in (
             permission_check, emergency_stop_check, credential_check)):
         _fail('CHECK_INVALID')
@@ -168,7 +178,8 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         saved = cursor_store.checkpoint(checked,
             previous_cursor=persisted,
             next_cursor=replay[-1]['event_id'],
-            expected_head=expected_cursor_head, admission=admission)
+            expected_head=expected_cursor_head, admission=admission,
+            reconnect_reservation_token=reservation)
     except ValueError:
         # Cursor-store diagnostics are already fixed and contain no private data.
         raise
@@ -192,6 +203,7 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         cursor_checkpoint_eligible=True, cursor_written=True,
         local_cursor_checkpoint_committed=True,
         process_restart_recoverable=True,
+        reconnect_reservation_bound=saved['reconnect_reservation_bound'],
         duplicate_checkpoint=saved['duplicate'],
         actual_provider_access=transport_review['actual_provider_access'],
         actual_stream_connection=transport_review['actual_stream_connection'],

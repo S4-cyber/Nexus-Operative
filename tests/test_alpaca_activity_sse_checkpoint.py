@@ -103,6 +103,7 @@ def test_single_get_review_and_exact_head_checkpoint_are_aggregate_only(tmp_path
     assert not result['automatic_retry']
     assert not result['automatic_reconnect_performed']
     assert not result['ledger_applied']
+    assert not result['reconnect_reservation_bound']
     assert all(result[flag] is False for flag in subject.FLAGS)
 
 
@@ -112,6 +113,8 @@ def test_single_get_review_and_exact_head_checkpoint_are_aggregate_only(tmp_path
         'CHECKPOINT_AUTHORIZATION_REQUIRED'),
     ('cursor_store', object(), 'CURSOR_STORE_INVALID'),
     ('expected_cursor_head', 'bad', 'EXPECTED_HEAD_INVALID'),
+    ('reconnect_reservation_token', 'bad',
+        'RECONNECT_RESERVATION_INVALID'),
     ('permission_check', None, 'CHECK_INVALID'),
 ])
 def test_invalid_admission_is_network_and_storage_silent(

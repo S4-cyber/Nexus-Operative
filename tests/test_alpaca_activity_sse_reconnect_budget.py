@@ -87,7 +87,8 @@ def call(tmp_path, opener, at=1000, **changes):
         evaluated_at=at, confirm_reconnect_attempt=True,
         confirm_read_only_paper=True, confirm_cursor_checkpoint=True,
         opener=opener, wall_clock=lambda: at,
-        elapsed_clock=lambda: 50, permission_check=lambda: True,
+        elapsed_clock=lambda: 50, outcome_clock=lambda: at,
+        permission_check=lambda: True,
         emergency_stop_check=lambda: False,
         credential_check=lambda: True)
     options.update(changes)
@@ -127,6 +128,46 @@ def test_success_reserves_before_one_get_and_closes_episode(tmp_path):
             confirm_reconnect_attempt=True)
 
 
+def test_success_result_and_exact_replay_bind_observed_completion_time(
+        tmp_path):
+    _, raw = segments()
+    result, _, budget = call(tmp_path, Opener([raw]),
+        outcome_clock=lambda: 1007)
+    state = budget.inspect()
+    assert state['completed'] and state['last_evaluated_at'] == 1007
+    saved = budget.path.read_bytes()
+    replay = budget.finish(state['last_attempt_head_sha256'],
+        evaluated_at=1007, outcome='CHECKPOINT_COMMITTED',
+        detail_code='SUCCESS',
+        checkpoint_head_sha256=result['checkpoint_head_sha256'],
+        checkpoint_receipt_sha256=result['checkpoint_receipt_sha256'])
+    assert replay['duplicate_result']
+    assert budget.path.read_bytes() == saved
+
+
+def test_success_with_uncertain_outcome_clock_uses_no_network_recovery(
+        tmp_path):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='OUTCOME_CLOCK_REGRESSION'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: 999)
+    cursor_state = cursor.inspect()
+    budget_state = budget.inspect()
+    assert len(opener.requests) == 1 and cursor_state['initialized']
+    assert budget_state['pending_token'] and budget_state['last_outcome'] is None
+    recovered = subject.reconcile_pending_checkpoint(cursor_store=cursor,
+        reconnect_budget=budget,
+        expected_budget_head=budget_state['head_sha256'],
+        expected_checkpoint_head=cursor_state['head_sha256'],
+        evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert recovered['pending_checkpoint_reconciled']
+    assert not recovered['provider_request_performed']
+    assert len(opener.requests) == 1 and budget.inspect()['completed']
+
+
 def test_transport_failure_records_backoff_without_sleep_or_second_get(tmp_path):
     cursor, budget = stores(tmp_path)
     opener = Opener([TimeoutError('private')])
@@ -152,6 +193,49 @@ def test_transport_failure_records_backoff_without_sleep_or_second_get(tmp_path)
     assert second['attempt'] == 2
 
 
+def test_slow_failure_starts_fixed_backoff_when_outcome_is_observed(tmp_path):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    with pytest.raises(ValueError, match='TRANSPORT_UNAVAILABLE'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: 1007)
+    state = budget.inspect()
+    assert len(opener.requests) == 1
+    assert state['last_evaluated_at'] == 1007
+    assert state['last_applied_backoff_seconds'] == 1
+    assert state['next_allowed_at'] == 1008
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='BACKOFF_ACTIVE'):
+        budget.begin(evaluated_at=1007.999, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED',
+            expected_head=state['head_sha256'],
+            emergency_stop_check=STOP_CLEAR,
+            confirm_reconnect_attempt=True)
+
+
+@pytest.mark.parametrize(('clock','code'), [
+    (lambda: 999, 'OUTCOME_CLOCK_REGRESSION'),
+    (lambda: 'private', 'OUTCOME_CLOCK_INVALID'),
+])
+def test_uncertain_outcome_clock_leaves_reserved_attempt_fail_closed(
+        tmp_path, clock, code):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError, match=code):
+        call(tmp_path, opener, stores=(cursor, budget), outcome_clock=clock)
+    state = budget.inspect()
+    assert len(opener.requests) == 1
+    assert state['attempts'] == 1 and state['pending_token']
+    assert state['last_outcome'] is None and state['next_allowed_at'] == 0
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='PENDING_REVIEW'):
+        budget.begin(evaluated_at=2000, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED',
+            expected_head=state['head_sha256'],
+            emergency_stop_check=STOP_CLEAR,
+            confirm_reconnect_attempt=True)
+
+
 @pytest.mark.parametrize(('status','detail'), [
     (429, 'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'),
     (503, 'ALPACA_ACTIVITY_SSE_TRANSPORT_SERVICE_UNAVAILABLE'),
@@ -168,7 +252,8 @@ def test_provider_retry_after_is_durable_and_never_shortened(
     opener = Opener([error])
     with pytest.raises(ValueError,
             match='RATE_LIMITED|SERVICE_UNAVAILABLE'):
-        call(tmp_path, opener, stores=(cursor, budget))
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: 1007)
     state = budget.inspect()
     assert body.closed and len(opener.requests) == 1
     assert state['last_outcome'] == 'RETRY_REQUIRED'
@@ -176,17 +261,18 @@ def test_provider_retry_after_is_durable_and_never_shortened(
     assert state['last_requested_retry_after_seconds'] == 120
     assert state['last_applied_backoff_seconds'] == 120
     assert state['provider_directed_backoff_observed']
-    assert state['next_allowed_at'] == 1120
+    assert state['last_evaluated_at'] == 1007
+    assert state['next_allowed_at'] == 1127
     saved = budget.path.read_bytes()
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
             match='BACKOFF_ACTIVE'):
-        budget.begin(evaluated_at=1119.999, expected_cursor_head=ZERO,
+        budget.begin(evaluated_at=1126.999, expected_cursor_head=ZERO,
             reconnect_reason='CONNECTION_DROPPED',
             expected_head=state['head_sha256'],
             emergency_stop_check=STOP_CLEAR,
             confirm_reconnect_attempt=True)
     assert budget.path.read_bytes() == saved
-    second = budget.begin(evaluated_at=1120,
+    second = budget.begin(evaluated_at=1127,
         expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
         expected_head=state['head_sha256'],
         emergency_stop_check=STOP_CLEAR,
@@ -214,6 +300,7 @@ def test_provider_backoff_without_exact_retry_after_closes_for_review(
     ({'confirm_reconnect_attempt': False}, 'CONFIRMATION_REQUIRED'),
     ({'confirm_read_only_paper': False}, 'READ_AUTHORIZATION_REQUIRED'),
     ({'confirm_cursor_checkpoint': False}, 'CHECKPOINT_AUTHORIZATION_REQUIRED'),
+    ({'outcome_clock': 0}, 'OUTCOME_CLOCK_INVALID'),
     ({'expected_budget_head': 'f' * 64}, 'HEAD_CHANGED'),
     ({'expected_cursor_head': 'f' * 64}, 'CURSOR_HEAD_CHANGED'),
 ])

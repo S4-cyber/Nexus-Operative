@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import time
 
 from nexus import alpaca_activity_sse_checkpoint as checkpoint
 from nexus.alpaca_activity_sse_cursor_store import ActivitySSECursorStore
@@ -68,6 +69,21 @@ def _clock(value):
     if (type(value) not in (int, float) or not math.isfinite(value) or
             not 0 <= value <= 1e12):
         _fail('CLOCK_INVALID')
+    return value
+
+
+def _outcome_time(clock, not_before):
+    """Sample a sanitized result time after the provider attempt returns."""
+    try:
+        value = clock()
+    except Exception:
+        _fail('OUTCOME_CLOCK_UNAVAILABLE')
+    try:
+        value = _clock(value)
+    except ActivitySSEReconnectBudgetError:
+        _fail('OUTCOME_CLOCK_INVALID')
+    if value < not_before:
+        _fail('OUTCOME_CLOCK_REGRESSION')
     return value
 
 
@@ -707,8 +723,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         reconnect_budget, expected_budget_head, evaluated_at,
         confirm_reconnect_attempt=False, confirm_read_only_paper=False,
         confirm_cursor_checkpoint=False, opener=None, wall_clock=None,
-        elapsed_clock=None, permission_check=None, emergency_stop_check=None,
-        credential_check=None):
+        elapsed_clock=None, outcome_clock=None, permission_check=None,
+        emergency_stop_check=None, credential_check=None):
     """Run one explicitly requested due attempt; never loop or sleep."""
     if type(cursor_store) is not ActivitySSECursorStore:
         _fail('CURSOR_STORE_INVALID')
@@ -722,6 +738,10 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         _fail('CHECKPOINT_AUTHORIZATION_REQUIRED')
     if reconnect_budget.account_sha256 != cursor_store.account_sha256:
         _fail('ACCOUNT_DISAGREEMENT')
+    result_clock = (outcome_clock if outcome_clock is not None else
+        (wall_clock if wall_clock is not None else time.time))
+    if not callable(result_clock):
+        _fail('OUTCOME_CLOCK_INVALID')
     if not callable(emergency_stop_check):
         _fail('EMERGENCY_STOP_CHECK_INVALID')
     try:
@@ -758,6 +778,7 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         result = checkpoint.collect_and_checkpoint_once(api_key, api_secret,
             **options)
     except Exception as error:
+        completed_at = _outcome_time(result_clock, evaluated_at)
         after = cursor_store.inspect()
         code = str(error)
         provider_retry_after = (error.provider_retry_after_seconds
@@ -772,16 +793,17 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             provider_retry_after = 0
         try:
             reconnect_budget.finish(reservation['token'],
-                evaluated_at=evaluated_at, outcome=outcome,
+                evaluated_at=completed_at, outcome=outcome,
                 detail_code=detail,
                 emergency_stop_check=emergency_stop_check,
                 provider_retry_after_seconds=provider_retry_after)
         except Exception:
             _fail('RESULT_RECORD_UNCERTAIN')
         raise
+    completed_at = _outcome_time(result_clock, evaluated_at)
     try:
         retained = reconnect_budget.finish(reservation['token'],
-            evaluated_at=evaluated_at, outcome='CHECKPOINT_COMMITTED',
+            evaluated_at=completed_at, outcome='CHECKPOINT_COMMITTED',
             detail_code='SUCCESS',
             checkpoint_head_sha256=result['checkpoint_head_sha256'],
             checkpoint_receipt_sha256=result['checkpoint_receipt_sha256'])
@@ -1181,7 +1203,8 @@ def fixture_report():
                 evaluated_at=6000, opener=rate_opener,
                 **dict(common, cursor_store=rate_cursor,
                     reconnect_budget=rate_budget,
-                    wall_clock=lambda: 6000))
+                    wall_clock=lambda: 6000,
+                    outcome_clock=lambda: 6007))
         except ActivitySSETransportError:
             pass
         rate_state = rate_budget.inspect()
@@ -1196,7 +1219,8 @@ def fixture_report():
                 evaluated_at=7000, opener=service_opener,
                 **dict(common, cursor_store=service_cursor,
                     reconnect_budget=service_budget,
-                    wall_clock=lambda: 7000))
+                    wall_clock=lambda: 7000,
+                    outcome_clock=lambda: 7009))
         except ActivitySSETransportError:
             pass
         service_state = service_budget.inspect()
@@ -1270,7 +1294,8 @@ def fixture_report():
                     'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED' and
                 rate_state['last_requested_retry_after_seconds'] == 120 and
                 rate_state['last_applied_backoff_seconds'] == 120 and
-                rate_state['next_allowed_at'] == 6120 and
+                rate_state['last_evaluated_at'] == 6007 and
+                rate_state['next_allowed_at'] == 6127 and
                 rate_state['provider_directed_backoff_observed'] and
                 not rate_cursor.path.exists(),
             provider_service_retry_after_extends_durable_backoff=
@@ -1281,9 +1306,15 @@ def fixture_report():
                     'ALPACA_ACTIVITY_SSE_TRANSPORT_SERVICE_UNAVAILABLE' and
                 service_state['last_requested_retry_after_seconds'] == 120 and
                 service_state['last_applied_backoff_seconds'] == 120 and
-                service_state['next_allowed_at'] == 7120 and
+                service_state['last_evaluated_at'] == 7009 and
+                service_state['next_allowed_at'] == 7129 and
                 service_state['provider_directed_backoff_observed'] and
                 not service_cursor.path.exists(),
+            attempt_completion_anchors_reconnect_cooldown=
+                rate_state['last_evaluated_at'] == 6007 and
+                rate_state['next_allowed_at'] == 6127 and
+                service_state['last_evaluated_at'] == 7009 and
+                service_state['next_allowed_at'] == 7129,
             no_sleep_loop_or_financial_authority=
                 not result['automatic_retry'] and
                 not result['automatic_reconnect_performed'] and

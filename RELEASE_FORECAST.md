@@ -1,10 +1,10 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-24 (America/Los_Angeles).
-Parent source reviewed: `3a8b9fab55a718943c450c9d6b5d70f37a6bbf53` (v0.249.0), whose verified local tree is published and whose three exact-source GitHub workflows completed successfully; v0.250.0 is the current candidate and requires fresh exact-source checks because parent results do not transfer.
+Parent source reviewed: `9e6ce53d9fa9202a95e2c3d67f4f21cd720e11ae` (v0.250.0), whose verified local tree is published and whose three exact-source GitHub workflows completed successfully; v0.251.0 is the current candidate and requires fresh exact-source checks because parent results do not transfer.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.250.0 makes the latest durable Activity SSE reconnect reservation exactly replayable after acknowledgement loss while marking the returned token as not provider-authorized. The coordinator rejects replay before provider I/O; exact replay is byte-stable, while changed inputs, stop uncertainty, results and later events fail closed. Injected evidence does not establish actual provider/account, provider-directed backoff, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.251.0 retains one exact bounded provider `Retry-After` instruction from an Activity SSE HTTP 429. It can only lengthen the fixed local schedule, is exact-result-replay bound, and never sleeps or starts another request. Missing, duplicate, malformed or excessive instructions close for review. Injected evidence does not establish actual provider/account or quota semantics, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
 ## Current assessment
 

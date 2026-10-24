@@ -3,10 +3,13 @@ import copy
 import io
 import json
 import sqlite3
+from email.message import Message
+from urllib.error import HTTPError
 
 import pytest
 
 from nexus import alpaca_activity_sse_reconnect_budget as subject
+from nexus import alpaca_activity_sse_wire_review as wire
 from nexus.alpaca_activity_sse_cursor_store import ZERO, ActivitySSECursorStore
 from nexus.alpaca_activity_sse_review import _event
 from nexus.alpaca_paper_contract import canonical, sha
@@ -147,6 +150,57 @@ def test_transport_failure_records_backoff_without_sleep_or_second_get(tmp_path)
         expected_head=state['head_sha256'], emergency_stop_check=STOP_CLEAR,
         confirm_reconnect_attempt=True)
     assert second['attempt'] == 2
+
+
+def test_provider_retry_after_is_durable_and_never_shortened(tmp_path):
+    cursor, budget = stores(tmp_path)
+    headers = Message()
+    headers['Retry-After'] = '120'
+    body = io.BytesIO(SECRET.encode())
+    error = HTTPError(
+        wire.activity_url('01K00000000000000000000003'),
+        429, SECRET, headers, body)
+    opener = Opener([error])
+    with pytest.raises(ValueError, match='RATE_LIMITED'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    state = budget.inspect()
+    assert body.closed and len(opener.requests) == 1
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert state['last_detail_code'] == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'
+    assert state['last_requested_retry_after_seconds'] == 120
+    assert state['last_applied_backoff_seconds'] == 120
+    assert state['provider_directed_backoff_observed']
+    assert state['next_allowed_at'] == 1120
+    saved = budget.path.read_bytes()
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='BACKOFF_ACTIVE'):
+        budget.begin(evaluated_at=1119.999, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED',
+            expected_head=state['head_sha256'],
+            emergency_stop_check=STOP_CLEAR,
+            confirm_reconnect_attempt=True)
+    assert budget.path.read_bytes() == saved
+    second = budget.begin(evaluated_at=1120,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=state['head_sha256'],
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    assert second['attempt'] == 2
+
+
+def test_rate_limit_without_exact_retry_after_closes_for_review(tmp_path):
+    cursor, budget = stores(tmp_path)
+    body = io.BytesIO(SECRET.encode())
+    error = HTTPError(
+        wire.activity_url('01K00000000000000000000003'),
+        429, SECRET, {}, body)
+    with pytest.raises(ValueError, match='HTTP_STATUS_REVIEW'):
+        call(tmp_path, Opener([error]), stores=(cursor, budget))
+    state = budget.inspect()
+    assert body.closed
+    assert state['review_required'] and state['next_allowed_at'] == 0
+    assert not state['provider_directed_backoff_observed']
 
 
 @pytest.mark.parametrize(('change','code'), [
@@ -411,6 +465,29 @@ def test_retry_result_lost_ack_exact_replay_is_byte_stable(tmp_path):
     assert replay['attempts'] == 1 and replay['next_allowed_at'] == 1001
 
 
+def test_provider_backoff_result_replay_requires_exact_delay(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    options = dict(evaluated_at=1000, outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED',
+        provider_retry_after_seconds=120,
+        emergency_stop_check=STOP_CLEAR)
+    first = budget.finish(reserved['token'], **options)
+    saved = budget.path.read_bytes()
+    replay = budget.finish(reserved['token'], **options)
+    assert replay['duplicate_result']
+    assert replay['head_sha256'] == first['head_sha256']
+    assert budget.path.read_bytes() == saved
+    options['provider_retry_after_seconds'] = 121
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESULT_REPLAY_DISAGREEMENT'):
+        budget.finish(reserved['token'], **options)
+    assert budget.path.read_bytes() == saved
+
+
 @pytest.mark.parametrize('change', [
     {'evaluated_at': 1001},
     {'detail_code': 'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED'},
@@ -456,6 +533,32 @@ def test_converted_retry_result_exact_replay_recovers_lost_ack(tmp_path):
     assert budget.path.read_bytes() == saved
 
 
+def test_stop_conversion_retains_provider_instruction_but_schedules_nothing(
+        tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    options = dict(evaluated_at=1000, outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED',
+        provider_retry_after_seconds=120)
+    samples = iter((False, True))
+    first = budget.finish(reserved['token'],
+        emergency_stop_check=lambda: next(samples), **options)
+    saved = budget.path.read_bytes()
+    assert first['last_outcome'] == 'REVIEW_REQUIRED'
+    assert first['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+    assert first['last_requested_retry_after_seconds'] == 120
+    assert first['last_applied_backoff_seconds'] == 0
+    assert first['provider_directed_backoff_observed']
+    assert first['next_allowed_at'] == 0 and first['review_required']
+    replay = budget.finish(reserved['token'],
+        emergency_stop_check=lambda: True, **options)
+    assert replay['duplicate_result']
+    assert budget.path.read_bytes() == saved
+
+
 def test_old_result_record_remains_replayable_after_upgrade(tmp_path):
     _, budget = stores(tmp_path)
     reserved = budget.begin(evaluated_at=1000,
@@ -472,6 +575,8 @@ def test_old_result_record_remains_replayable_after_upgrade(tmp_path):
         body = json.loads(encoded)
         body.pop('requested_outcome')
         body.pop('requested_detail_code')
+        body.pop('requested_retry_after_seconds')
+        body.pop('applied_backoff_seconds')
         digest = sha(dict(seq=2, body=body, previous=parent))
         db.execute('UPDATE events SET body=?,digest=? WHERE seq=2',
             (canonical(body), digest))

@@ -13,6 +13,7 @@ from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_ope
 from uuid import UUID
 
 from nexus import alpaca_activity_sse_wire_review as wire
+from nexus.broker_lookup_policy import classify as classify_http_outcome
 
 
 POLICY = 'nexus.explicit-alpaca-paper-activity-sse-transport.v1'
@@ -26,10 +27,47 @@ _CREDENTIAL = re.compile(r'[A-Za-z0-9_-]{16,256}')
 class ActivitySSETransportError(ValueError):
     """Fixed diagnostics only; never echo credentials or response bytes."""
 
+    def __init__(self, code, *, provider_retry_after_seconds=0):
+        super().__init__('ALPACA_ACTIVITY_SSE_TRANSPORT_' + code)
+        self.code = code
+        self.provider_retry_after_seconds = provider_retry_after_seconds
 
-def _fail(code):
-    raise ActivitySSETransportError(
-        'ALPACA_ACTIVITY_SSE_TRANSPORT_' + code) from None
+
+def _fail(code, *, provider_retry_after_seconds=0):
+    raise ActivitySSETransportError(code,
+        provider_retry_after_seconds=provider_retry_after_seconds) from None
+
+
+def _retry_after(headers):
+    """Return one bounded header value without retaining or echoing it."""
+    try:
+        values = (headers.get_all('Retry-After')
+            if hasattr(headers, 'get_all') else [headers.get('Retry-After')])
+    except (AttributeError, TypeError):
+        _fail('HTTP_STATUS_REVIEW')
+    if len(values) != 1 or values[0] is None:
+        _fail('HTTP_STATUS_REVIEW')
+    value = values[0]
+    if (type(value) is not str or len(value) > 128 or not value.isascii() or
+            '\r' in value or '\n' in value):
+        _fail('HTTP_STATUS_REVIEW')
+    return value
+
+
+def _http_failure(status, headers, response_url, target, evaluated_at):
+    """Classify only an exact provider-directed 429 delay as retryable."""
+    if response_url != target or type(status) is not int:
+        _fail('HTTP_STATUS_REVIEW')
+    if status != 429:
+        _fail('HTTP_STATUS_REVIEW')
+    outcome = classify_http_outcome(status_code=status,
+        retry_after=_retry_after(headers), evaluated_at=evaluated_at)
+    if (outcome['outcome'] != 'RATE_LIMITED' or
+            type(outcome['retry_after_seconds']) is not int or
+            outcome['retry_after_seconds'] <= 0):
+        _fail('HTTP_STATUS_REVIEW')
+    _fail('RATE_LIMITED',
+        provider_retry_after_seconds=outcome['retry_after_seconds'])
 
 
 class _NoRedirect(HTTPRedirectHandler):
@@ -154,7 +192,8 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
             if response.geturl() != target:
                 _fail('RESPONSE_URL_CHANGED')
             if type(response.status) is not int or response.status != 200:
-                _fail('HTTP_STATUS_REVIEW')
+                _http_failure(response.status, response.headers,
+                    response.geturl(), target, previous[0])
             response_headers, content_length = _headers(response)
             # Reuse the strict metadata grammar before reading any body bytes.
             try:
@@ -200,8 +239,12 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
     except wire.ActivitySSEWireReviewError:
         _fail('WIRE_REVIEW_FAILED')
     except HTTPError as error:
-        error.close()
-        _fail('HTTP_STATUS_REVIEW')
+        try:
+            checkpoint()
+            _http_failure(error.code, error.headers, error.geturl(), target,
+                previous[0])
+        finally:
+            error.close()
     except (TimeoutError, URLError, OSError):
         _fail('TRANSPORT_UNAVAILABLE')
     except Exception:

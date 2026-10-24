@@ -24,6 +24,7 @@ POLICY = 'nexus.explicit-alpaca-activity-sse-reconnect-budget.v1'
 ZERO = '0' * 64
 MAX_ATTEMPTS = 4
 BACKOFF_SECONDS = (1, 2, 4, 8)
+MAX_PROVIDER_RETRY_AFTER = 86400
 MAX_RECORD_BYTES = 4096
 MAX_DATABASE_BYTES = 1024 * 1024
 REASONS = frozenset(('CONNECTION_DROPPED', 'SLOW_CONSUMER',
@@ -35,7 +36,8 @@ RETRYABLE_ERRORS = frozenset((
     'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED',
     'ALPACA_ACTIVITY_SSE_TRANSPORT_TIME_BUDGET',
     'ALPACA_ACTIVITY_SSE_TRANSPORT_SEGMENT_INCOMPLETE',
-    'ALPACA_ACTIVITY_SSE_CHECKPOINT_INTERRUPTED_SEGMENT_INELIGIBLE'))
+    'ALPACA_ACTIVITY_SSE_CHECKPOINT_INTERRUPTED_SEGMENT_INELIGIBLE',
+    'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'))
 FLAGS = ('provider_source_attested', 'stream_delivery_verified',
     'historical_replay_complete', 'native_power_loss_durability_verified',
     'fee_coverage_complete', 'broker_account_reconciled',
@@ -143,6 +145,9 @@ class ActivitySSEReconnectBudget:
             expected_cursor_head_sha256=None, next_allowed_at=0,
             last_evaluated_at=0, last_outcome=None, last_detail_code=None,
             last_requested_outcome=None, last_requested_detail_code=None,
+            last_requested_retry_after_seconds=0,
+            last_applied_backoff_seconds=0,
+            provider_directed_backoff_observed=False,
             last_begin_expected_head_sha256=None,
             last_reconnect_reason=None,
             review_required=False,
@@ -216,12 +221,21 @@ class ActivitySSEReconnectBudget:
                         'detail_code', 'requested_outcome',
                         'requested_detail_code', 'next_allowed_at',
                         'checkpoint_head_sha256',
+                        'checkpoint_receipt_sha256'},
+                    {'kind', 'policy', 'token', 'evaluated_at', 'outcome',
+                        'detail_code', 'requested_outcome',
+                        'requested_detail_code',
+                        'requested_retry_after_seconds',
+                        'applied_backoff_seconds', 'next_allowed_at',
+                        'checkpoint_head_sha256',
                         'checkpoint_receipt_sha256'})):
                 now = _clock(body['evaluated_at'])
                 requested_outcome = body.get('requested_outcome',
                     body['outcome'])
                 requested_detail = body.get('requested_detail_code',
                     body['detail_code'])
+                requested_delay = body.get('requested_retry_after_seconds', 0)
+                applied_backoff = body.get('applied_backoff_seconds', 0)
                 if (body['policy'] != POLICY or
                         state['pending_token'] is None or
                         body['token'] != state['pending_token'] or
@@ -231,7 +245,11 @@ class ActivitySSEReconnectBudget:
                         type(body['detail_code']) is not str or
                         re.fullmatch(r'[A-Z0-9_]{1,96}', body['detail_code']) is None or
                         type(requested_detail) is not str or
-                        re.fullmatch(r'[A-Z0-9_]{1,96}', requested_detail) is None):
+                        re.fullmatch(r'[A-Z0-9_]{1,96}', requested_detail) is None or
+                        type(requested_delay) is not int or
+                        not 0 <= requested_delay <= MAX_PROVIDER_RETRY_AFTER or
+                        type(applied_backoff) is not int or
+                        not 0 <= applied_backoff <= MAX_PROVIDER_RETRY_AFTER):
                     _fail('RESULT_SCOPE_INVALID')
                 outcome = body['outcome']
                 converted_stop_result = (
@@ -252,7 +270,8 @@ class ActivitySSEReconnectBudget:
                     _digest(checkpoint_head, 'CHECKPOINT_HEAD_INVALID')
                     _digest(checkpoint_receipt, 'CHECKPOINT_RECEIPT_INVALID')
                     if (checkpoint_head == state['expected_cursor_head_sha256'] or
-                            next_at != 0 or body['detail_code'] != 'SUCCESS'):
+                            next_at != 0 or body['detail_code'] != 'SUCCESS' or
+                            requested_delay != 0 or applied_backoff != 0):
                         _fail('RESULT_SCOPE_INVALID')
                     state['completed'] = True
                     state['next_allowed_at'] = 0
@@ -262,13 +281,30 @@ class ActivitySSEReconnectBudget:
                     if checkpoint_head is not None or checkpoint_receipt is not None:
                         _fail('RESULT_SCOPE_INVALID')
                     if outcome == 'RETRY_REQUIRED':
+                        provider_delay = (requested_delay if
+                            body['detail_code'] ==
+                                'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'
+                            else 0)
+                        if ((body['detail_code'] ==
+                                'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED') !=
+                                (requested_delay > 0)):
+                            _fail('RESULT_SCOPE_INVALID')
+                        expected_backoff = max(
+                            BACKOFF_SECONDS[state['attempts'] - 1],
+                            provider_delay)
+                        # Earlier RESULT shapes had only the fixed schedule.
+                        if 'applied_backoff_seconds' not in body:
+                            applied_backoff = expected_backoff
                         if (body['detail_code'] not in RETRYABLE_ERRORS or
                                 state['attempts'] >= MAX_ATTEMPTS or
-                                next_at != now + BACKOFF_SECONDS[state['attempts'] - 1]):
+                                applied_backoff != expected_backoff or
+                                next_at != now + expected_backoff):
                             _fail('RESULT_SCOPE_INVALID')
                         state['next_allowed_at'] = next_at
                     else:
-                        if next_at != 0:
+                        if (next_at != 0 or applied_backoff != 0 or
+                                (requested_delay > 0 and not
+                                    converted_stop_result)):
                             _fail('RESULT_SCOPE_INVALID')
                         state['review_required'] = True
                         state['next_allowed_at'] = 0
@@ -278,6 +314,12 @@ class ActivitySSEReconnectBudget:
                 state['last_detail_code'] = body['detail_code']
                 state['last_requested_outcome'] = requested_outcome
                 state['last_requested_detail_code'] = requested_detail
+                state['last_requested_retry_after_seconds'] = requested_delay
+                state['last_applied_backoff_seconds'] = applied_backoff
+                state['provider_directed_backoff_observed'] = (
+                    requested_detail ==
+                        'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED' and
+                    requested_delay > 0)
             elif (type(body) is dict and
                     body.get('kind') == 'EMERGENCY_STOP_CLOSE' and
                     set(body) == {'kind', 'policy', 'account_sha256',
@@ -315,6 +357,9 @@ class ActivitySSEReconnectBudget:
                 last_evaluated_at=0, last_outcome=None,
                 last_detail_code=None, last_requested_outcome=None,
                 last_requested_detail_code=None,
+                last_requested_retry_after_seconds=0,
+                last_applied_backoff_seconds=0,
+                provider_directed_backoff_observed=False,
                 last_begin_expected_head_sha256=None,
                 last_reconnect_reason=None,
                 review_required=False, completed=False,
@@ -444,7 +489,7 @@ class ActivitySSEReconnectBudget:
 
     def finish(self, token, *, evaluated_at, outcome, detail_code,
             checkpoint_head_sha256=None, checkpoint_receipt_sha256=None,
-            emergency_stop_check=None):
+            emergency_stop_check=None, provider_retry_after_seconds=0):
         """Record the exact outcome of the reserved attempt."""
         now = _clock(evaluated_at)
         token = _digest(token, 'TOKEN_INVALID')
@@ -455,6 +500,15 @@ class ActivitySSEReconnectBudget:
             _fail('DETAIL_CODE_INVALID')
         if outcome == 'RETRY_REQUIRED' and detail_code not in RETRYABLE_ERRORS:
             _fail('RETRY_DETAIL_INVALID')
+        if (type(provider_retry_after_seconds) is not int or
+                not 0 <= provider_retry_after_seconds <=
+                    MAX_PROVIDER_RETRY_AFTER or
+                ((detail_code ==
+                    'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED') !=
+                    (provider_retry_after_seconds > 0)) or
+                (provider_retry_after_seconds > 0 and
+                    outcome != 'RETRY_REQUIRED')):
+            _fail('PROVIDER_RETRY_AFTER_INVALID')
         retry_clear_before_commit = None
         if outcome == 'RETRY_REQUIRED':
             if not callable(emergency_stop_check):
@@ -477,6 +531,8 @@ class ActivitySSEReconnectBudget:
                 if (current['last_evaluated_at'] != now or
                         current['last_requested_outcome'] != outcome or
                         current['last_requested_detail_code'] != detail_code or
+                        current['last_requested_retry_after_seconds'] !=
+                            provider_retry_after_seconds or
                         current['checkpoint_head_sha256'] !=
                             checkpoint_head_sha256 or
                         current['checkpoint_receipt_sha256'] !=
@@ -502,11 +558,20 @@ class ActivitySSEReconnectBudget:
                     retained_detail = 'EMERGENCY_STOP_ACTIVE'
                 next_at = (now + BACKOFF_SECONDS[state['attempts'] - 1]
                     if retained_outcome == 'RETRY_REQUIRED' else 0)
+                applied_backoff = 0
+                if retained_outcome == 'RETRY_REQUIRED':
+                    applied_backoff = max(
+                        BACKOFF_SECONDS[state['attempts'] - 1],
+                        provider_retry_after_seconds)
+                    next_at = now + applied_backoff
                 body = dict(kind='RESULT', policy=POLICY, token=token,
                     evaluated_at=now, outcome=retained_outcome,
                     detail_code=retained_detail,
                     requested_outcome=outcome,
                     requested_detail_code=detail_code,
+                    requested_retry_after_seconds=
+                        provider_retry_after_seconds,
+                    applied_backoff_seconds=applied_backoff,
                     next_allowed_at=next_at,
                     checkpoint_head_sha256=checkpoint_head_sha256,
                     checkpoint_receipt_sha256=checkpoint_receipt_sha256)
@@ -695,17 +760,22 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
     except Exception as error:
         after = cursor_store.inspect()
         code = str(error)
+        provider_retry_after = (error.provider_retry_after_seconds
+            if isinstance(error, ActivitySSETransportError) else 0)
         if after['head_sha256'] != expected_cursor_head:
             outcome, detail = 'CHECKPOINT_UNCERTAIN', 'CURSOR_ADVANCED_WITHOUT_BUDGET_ACK'
         elif code in RETRYABLE_ERRORS and reservation['attempt'] < MAX_ATTEMPTS:
             outcome, detail = 'RETRY_REQUIRED', code
         else:
             outcome, detail = 'REVIEW_REQUIRED', 'NONRETRYABLE_FAILURE'
+        if outcome != 'RETRY_REQUIRED':
+            provider_retry_after = 0
         try:
             reconnect_budget.finish(reservation['token'],
                 evaluated_at=evaluated_at, outcome=outcome,
                 detail_code=detail,
-                emergency_stop_check=emergency_stop_check)
+                emergency_stop_check=emergency_stop_check,
+                provider_retry_after_seconds=provider_retry_after)
         except Exception:
             _fail('RESULT_RECORD_UNCERTAIN')
         raise
@@ -880,8 +950,10 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
 def fixture_report():
     """Disposable timeout/backoff/success fixture; injected network only."""
     import copy
+    from email.message import Message
     import io
     import tempfile
+    from urllib.error import HTTPError
     from nexus.alpaca_activity_sse_cursor_store import ZERO
     from nexus.alpaca_activity_sse_review import _event
 
@@ -927,6 +999,17 @@ def fixture_report():
             if isinstance(self.value, BaseException):
                 raise self.value
             return Response(request.full_url)
+
+    class RateLimitOpener:
+        def __init__(self):
+            self.requests = []
+            self.body = io.BytesIO(b'private fixture body')
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            headers = Message()
+            headers['Retry-After'] = '120'
+            raise HTTPError(request.full_url, 429, 'private fixture reason',
+                headers, self.body)
 
     with tempfile.TemporaryDirectory(prefix='nexus-sse-reconnect-budget-') as folder:
         root = Path(folder)
@@ -1085,9 +1168,24 @@ def fixture_report():
             outcome='RETRY_REQUIRED',
             detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
             emergency_stop_check=retry_stop_check)
+        rate_cursor = ActivitySSECursorStore(
+            root / 'rate-cursor.sqlite3', account)
+        rate_budget = ActivitySSEReconnectBudget(
+            root / 'rate-budget.sqlite3', account)
+        rate_opener = RateLimitOpener()
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=6000, opener=rate_opener,
+                **dict(common, cursor_store=rate_cursor,
+                    reconnect_budget=rate_budget,
+                    wall_clock=lambda: 6000))
+        except ActivitySSETransportError:
+            pass
+        rate_state = rate_budget.inspect()
         encoded = json.dumps(
             [result, cold_budget, recovered, stopped, waiting_closed,
-                retry_stop_state],
+                retry_stop_state, rate_state],
             sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
@@ -1147,6 +1245,17 @@ def fixture_report():
                     'EMERGENCY_STOP_ACTIVE' and
                 retry_stop_state['next_allowed_at'] == 0 and
                 retry_stop_state['review_required'],
+            provider_retry_after_extends_durable_backoff=
+                len(rate_opener.requests) == 1 and
+                rate_opener.body.closed and
+                rate_state['last_outcome'] == 'RETRY_REQUIRED' and
+                rate_state['last_detail_code'] ==
+                    'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED' and
+                rate_state['last_requested_retry_after_seconds'] == 120 and
+                rate_state['last_applied_backoff_seconds'] == 120 and
+                rate_state['next_allowed_at'] == 6120 and
+                rate_state['provider_directed_backoff_observed'] and
+                not rate_cursor.path.exists(),
             no_sleep_loop_or_financial_authority=
                 not result['automatic_retry'] and
                 not result['automatic_reconnect_performed'] and

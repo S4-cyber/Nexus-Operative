@@ -360,31 +360,55 @@ class ActivitySSEReconnectBudget:
             head_sha256=token, expected_cursor_head_sha256=cursor_head)
 
     def finish(self, token, *, evaluated_at, outcome, detail_code,
-            checkpoint_head_sha256=None, checkpoint_receipt_sha256=None):
+            checkpoint_head_sha256=None, checkpoint_receipt_sha256=None,
+            emergency_stop_check=None):
         """Record the exact outcome of the reserved attempt."""
         now = _clock(evaluated_at)
+        if outcome not in OUTCOMES:
+            _fail('OUTCOME_INVALID')
+        retry_clear_before_commit = None
+        if outcome == 'RETRY_REQUIRED':
+            if not callable(emergency_stop_check):
+                _fail('EMERGENCY_STOP_CHECK_INVALID')
+
+            def stop_clear():
+                try:
+                    return emergency_stop_check() is False
+                except Exception:
+                    return False
+
+            retry_clear_before_commit = stop_clear()
         current = self.inspect()
         if current['pending_token'] != token:
             _fail('TOKEN_CHANGED')
-        if outcome not in OUTCOMES:
-            _fail('OUTCOME_INVALID')
-        next_at = (now + BACKOFF_SECONDS[current['attempts'] - 1]
-            if outcome == 'RETRY_REQUIRED' else 0)
-        body = dict(kind='RESULT', policy=POLICY, token=token,
-            evaluated_at=now, outcome=outcome, detail_code=detail_code,
-            next_allowed_at=next_at,
-            checkpoint_head_sha256=checkpoint_head_sha256,
-            checkpoint_receipt_sha256=checkpoint_receipt_sha256)
         db, _ = self._connect(write=True)
         with closing(db):
             with db:
                 state = self._load(db)
                 if state['pending_token'] != token:
                     _fail('TOKEN_CHANGED')
+                retained_outcome = outcome
+                retained_detail = detail_code
+                # A retry can be scheduled only while the independent stop is
+                # exactly clear both before review and under the exact-token
+                # write transaction.  Active, failing, or indeterminate checks
+                # close the episode for review without a due reconnect.
+                if (outcome == 'RETRY_REQUIRED' and
+                        (not retry_clear_before_commit or not stop_clear())):
+                    retained_outcome = 'REVIEW_REQUIRED'
+                    retained_detail = 'EMERGENCY_STOP_ACTIVE'
+                next_at = (now + BACKOFF_SECONDS[state['attempts'] - 1]
+                    if retained_outcome == 'RETRY_REQUIRED' else 0)
+                body = dict(kind='RESULT', policy=POLICY, token=token,
+                    evaluated_at=now, outcome=retained_outcome,
+                    detail_code=retained_detail, next_allowed_at=next_at,
+                    checkpoint_head_sha256=checkpoint_head_sha256,
+                    checkpoint_receipt_sha256=checkpoint_receipt_sha256)
                 head = self._insert(db, 2 * state['attempts'], body,
                     state['head_sha256'])
                 loaded = self._load(db)
-                if loaded['head_sha256'] != head or loaded['last_outcome'] != outcome:
+                if (loaded['head_sha256'] != head or
+                        loaded['last_outcome'] != retained_outcome):
                     _fail('COMMIT_REPLAY_DISAGREEMENT')
         return self.inspect()
 
@@ -572,7 +596,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         try:
             reconnect_budget.finish(reservation['token'],
                 evaluated_at=evaluated_at, outcome=outcome,
-                detail_code=detail)
+                detail_code=detail,
+                emergency_stop_check=emergency_stop_check)
         except Exception:
             _fail('RESULT_RECORD_UNCERTAIN')
         raise
@@ -890,7 +915,8 @@ def fixture_report():
             confirm_reconnect_attempt=True)
         waiting_budget.finish(waiting_reserved['token'], evaluated_at=4000,
             outcome='RETRY_REQUIRED',
-            detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE')
+            detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+            emergency_stop_check=lambda: False)
         waiting_head = waiting_budget.inspect()['head_sha256']
         waiting_samples = []
         waiting_closed = close_waiting_reconnect_for_emergency_stop(
@@ -899,8 +925,27 @@ def fixture_report():
             emergency_stop_check=
                 lambda: waiting_samples.append(True) or True,
             confirm_emergency_stop_close=True)
+        retry_stop_budget = ActivitySSEReconnectBudget(
+            root / 'retry-stop-budget.sqlite3', account)
+        retry_stop_reserved = retry_stop_budget.begin(evaluated_at=5000,
+            expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
+            confirm_reconnect_attempt=True)
+        retry_stop_values = iter((False, True))
+        retry_stop_samples = []
+        def retry_stop_check():
+            value = next(retry_stop_values)
+            retry_stop_samples.append(value)
+            return value
+        retry_stop_state = retry_stop_budget.finish(
+            retry_stop_reserved['token'], evaluated_at=5000,
+            outcome='RETRY_REQUIRED',
+            detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+            emergency_stop_check=retry_stop_check)
         encoded = json.dumps(
-            [result, cold_budget, recovered, stopped, waiting_closed],
+            [result, cold_budget, recovered, stopped, waiting_closed,
+                retry_stop_state],
             sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
@@ -937,6 +982,13 @@ def fixture_report():
                 not waiting_closed['reconnect_attempt_reserved'] and
                 not waiting_closed['provider_request_performed'] and
                 waiting_budget.inspect()['review_required'],
+            emergency_stop_blocks_retry_schedule_during_result=
+                retry_stop_samples == [False, True] and
+                retry_stop_state['last_outcome'] == 'REVIEW_REQUIRED' and
+                retry_stop_state['last_detail_code'] ==
+                    'EMERGENCY_STOP_ACTIVE' and
+                retry_stop_state['next_allowed_at'] == 0 and
+                retry_stop_state['review_required'],
             no_sleep_loop_or_financial_authority=
                 not result['automatic_retry'] and
                 not result['automatic_reconnect_performed'] and

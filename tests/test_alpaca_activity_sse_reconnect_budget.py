@@ -227,7 +227,8 @@ def test_budget_stop_raised_at_due_retry_preserves_exact_backoff_state(
         confirm_reconnect_attempt=True)
     waiting = budget.finish(first['token'], evaluated_at=1000,
         outcome='RETRY_REQUIRED',
-        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE')
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=STOP_CLEAR)
     saved = budget.path.read_bytes()
     samples = iter((False, True))
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
@@ -254,6 +255,106 @@ def test_nonretryable_failure_closes_for_review(tmp_path):
     assert state['review_required']
     assert state['last_outcome'] == 'REVIEW_REQUIRED'
     assert not cursor.path.exists()
+
+
+def test_retry_result_requires_emergency_stop_check(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    saved = budget.path.read_bytes()
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EMERGENCY_STOP_CHECK_INVALID'):
+        budget.finish(reserved['token'], evaluated_at=1000,
+            outcome='RETRY_REQUIRED',
+            detail_code=
+                'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE')
+    assert budget.path.read_bytes() == saved
+    assert budget.inspect()['pending_token'] == reserved['token']
+
+
+def test_retry_result_rechecks_clear_stop_inside_transaction(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    samples = []
+    state = budget.finish(reserved['token'], evaluated_at=1000,
+        outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=lambda: samples.append(False) or False)
+    assert samples == [False, False]
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert state['next_allowed_at'] == 1001
+
+
+@pytest.mark.parametrize('check', [
+    lambda: True,
+    lambda: None,
+    lambda: (_ for _ in ()).throw(RuntimeError()),
+])
+def test_active_or_indeterminate_stop_closes_retry_result_for_review(
+        tmp_path, check):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    state = budget.finish(reserved['token'], evaluated_at=1000,
+        outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=check)
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+    assert state['next_allowed_at'] == 0 and state['review_required']
+    assert state['pending_token'] is None
+
+
+def test_stop_raised_inside_retry_result_transaction_schedules_no_retry(
+        tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    samples = iter((False, True))
+    state = budget.finish(reserved['token'], evaluated_at=1000,
+        outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=lambda: next(samples))
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+    assert state['next_allowed_at'] == 0 and state['review_required']
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EPISODE_CLOSED'):
+        budget.begin(evaluated_at=9999, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED',
+            expected_head=state['head_sha256'],
+            emergency_stop_check=STOP_CLEAR,
+            confirm_reconnect_attempt=True)
+
+
+def test_coordinator_stop_raised_during_failure_result_schedules_no_retry(
+        tmp_path):
+    cursor, budget = stores(tmp_path)
+    samples = []
+    def check():
+        # The first six samples cover preflight, reservation, and transport;
+        # the seventh is the in-transaction retry-result fence.
+        value = len(samples) >= 6
+        samples.append(value)
+        return value
+    with pytest.raises(ValueError, match='TRANSPORT_UNAVAILABLE'):
+        call(tmp_path, Opener([TimeoutError('private')]),
+            stores=(cursor, budget), emergency_stop_check=check)
+    state = budget.inspect()
+    assert samples == [False] * 6 + [True]
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+    assert state['next_allowed_at'] == 0 and state['review_required']
+    assert state['pending_token'] is None
 
 
 def test_crash_after_begin_is_never_expired_or_retried(tmp_path):
@@ -392,7 +493,8 @@ def waiting_retry(tmp_path):
         confirm_reconnect_attempt=True)
     state = budget.finish(reserved['token'], evaluated_at=1000,
         outcome='RETRY_REQUIRED',
-        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE')
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=STOP_CLEAR)
     return budget, reserved, state
 
 

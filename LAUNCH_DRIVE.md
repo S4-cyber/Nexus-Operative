@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.246.0 parent is locally verified, but GitHub still had not registered its exact-source workflows when this candidate began; v0.247.0 requires fresh checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.247.0 parent is locally verified, but GitHub still had not registered its exact-source workflows when this candidate began; v0.248.0 requires fresh checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.248.0 emergency-stop-fenced retry-result admission
+
+Retryable Activity SSE failures may now retain fixed reconnect backoff only while the independent emergency stop returns exactly clear before result review and again inside the exact pending-token transaction. If the stop becomes active, fails or is indeterminate, the durable result closes for review, clears the pending token and stores no next-due reconnect. A missing callback cannot mutate the pending reservation.
+
+Successful checkpoint and nonretryable review results remain recordable because they cannot contact the provider or schedule future work. This closes the result-write race without adding network authority, automatic retries, credentials, cursor mutation, orders, funding paths or Portal controls. It does not prove provider entitlement, source/delivery/replay coverage, native durability, distributed coordination, fees, holds, settled funds, profitability or release readiness.
+
+Final local v0.248.0 validation passed 3,854 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 259. Sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `bed3d020c26a2c96b322c5e574cfa0a7b4d9f3db66cc32debffc05268c4341bc`; `validation/release_trials_0_248_0.json` SHA256 is `032ae625296dc29d92389ef15aaa915f7c5f66f301f66d55bbe9aef74f7d5397`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace passed. Public snapshot/history scans and fresh exact-source hosted workflows remain mandatory.
 
 ## v0.247.0 emergency-stop-fenced reconnect admission
 

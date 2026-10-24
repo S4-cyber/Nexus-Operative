@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.247.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.248.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.247.0 fences every explicit Activity SSE reconnect reservation with the independent emergency stop. The coordinator requires an exact clear sample before cursor-journal review; the private budget samples again before review and inside the exact-head write transaction. An active, failing or indeterminate stop before admission creates no cursor journal, budget journal or provider request. A stop raised during reservation appends no attempt or pending token; existing retry state remains byte-for-byte unchanged, while first-use interruption retains only a valid account-bound empty journal so replay remains possible. No automatic retry, provider access, credential persistence, checkpoint, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.248.0 fences every durable Activity SSE retry result with the independent emergency stop. A retryable transport failure may schedule fixed backoff only after an exact clear sample before result review and another under the exact-token write transaction. If the stop is active, failing or indeterminate at either fence, the pending attempt is closed as review required with no next-due retry. Successful checkpoint recording and nonretryable review closure remain available because they cannot reconnect or contact the provider. No automatic retry, provider access, credential persistence, checkpoint, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

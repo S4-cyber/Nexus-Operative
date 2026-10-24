@@ -2,7 +2,17 @@
 
 ## Delivery planning update — 2026-10-23
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The exact v0.238.0 parent is published and fully green; this v0.239.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The exact v0.239.0 parent is published and fully green; this v0.240.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.240.0 supplied Activity SSE wire-session review
+
+Added a bounded no-network review of the raw Activity SSE response boundary. It requires the exact paper `/v2beta1/events/activities?since_id=...` target, HTTP 200 `text/event-stream` metadata, strict UTF-8 and SSE framing, bounded arbitrary byte chunks, single JSON `data:` frames and the existing linked BTC/USD fill/fee envelope. Duplicate JSON keys, unsupported fields/comments, malformed terminators, wrong targets/content types/encodings and non-forward cursor windows fail closed.
+
+Heartbeat comments are retained as counts only. Slow-consumer drop and internal-server-error comments always require a separate reconnect review and can never authorize a cursor checkpoint. The module opens no socket, reads no credentials, writes no cursor, retries nothing and grants no provider, ledger, order, funding, live or release authority. No UI/control changed; seven tabs, bottom-right black/bright-purple help, OFF defaults, limits, account checks and the independent emergency stop remain unchanged.
+
+Fresh complete regression, all sixteen profiles, saved-evidence verification, fourteen controllers, static checks, public snapshot/history scans and exact-source packaging/browser/security lanes remain mandatory.
+
+Final local regression passed 3,746 tests with one expected non-Windows skip and one existing warning. All sixteen profiles passed and saved-evidence verification matched 381 source files / `1358e2dbb80281280c016b226a4704a93a40007037e8988216f3fd8f25c0ddfb`; `validation/release_trials_0_240_0.json` SHA256 is `e8ce715c0be52403e44a23f425357c27b6bc3002b428dd9dae3e61cf8cb22bce`. The final focused set passed 234 tests, and all 14 Node controllers, Portal syntax, compileall, dependency consistency, generated-roadmap equality and whitespace passed. Public snapshot/history scans and exact-source packaging/browser/security lanes remain mandatory until separately recorded.
 
 ## v0.239.0 private Activity SSE cursor recovery
 

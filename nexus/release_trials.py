@@ -630,6 +630,7 @@ def _execute(profile):
         from nexus.alpaca_activity_sse_review import fixture_report as activity_sse_fixture
         from nexus.alpaca_activity_sse_reconnect_review import fixture_report as activity_sse_reconnect_fixture
         from nexus.alpaca_activity_sse_cursor_store import fixture_report as activity_sse_cursor_fixture
+        from nexus.alpaca_activity_sse_wire_review import fixture_report as activity_sse_wire_fixture
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_response_bundle']=response_fixture()
         result['provider_post_reconciliation']=post_reconciliation_fixture()
@@ -637,7 +638,8 @@ def _execute(profile):
         result['provider_post_known_fee_reserve']=post_fee_reserve_fixture()
         result['supplied_activity_sse_links']=activity_sse_fixture()
         result['supplied_activity_sse_reconnect']=activity_sse_reconnect_fixture()
-        result['private_activity_sse_cursor_store']=activity_sse_cursor_fixture();return result
+        result['private_activity_sse_cursor_store']=activity_sse_cursor_fixture()
+        result['supplied_activity_sse_wire_session']=activity_sse_wire_fixture();return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -955,6 +957,7 @@ def _validate(profile, result):
         from nexus.alpaca_activity_sse_review import FLAGS as ACTIVITY_SSE_FLAGS
         from nexus.alpaca_activity_sse_reconnect_review import FLAGS as ACTIVITY_SSE_RECONNECT_FLAGS
         from nexus.alpaca_activity_sse_cursor_store import FLAGS as ACTIVITY_SSE_CURSOR_FLAGS
+        from nexus.alpaca_activity_sse_wire_review import FLAGS as ACTIVITY_SSE_WIRE_FLAGS
         from nexus.paper_response_bundle_review import FLAGS as RESPONSE_FLAGS
         bundle=result['account_evidence_bundle']
         _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','guarded_declared_source_summary_checked','guarded_collection_timing_summary_checked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
@@ -1046,6 +1049,20 @@ def _validate(profile, result):
             'PRIVATE_ACTIVITY_SSE_CURSOR_STORE')
         _require(all(cursor[k] is False for k in ACTIVITY_SSE_CURSOR_FLAGS),
             'PRIVATE_ACTIVITY_SSE_CURSOR_STORE_AUTHORITY')
+        wire=result['supplied_activity_sse_wire_session']
+        _require(wire['source']==
+            'SYNTHETIC_SUPPLIED_ACTIVITY_SSE_WIRE_FIXTURE' and
+            all(wire[k] is True for k in ('passed',
+                'exact_since_id_target_bound',
+                'arbitrary_chunk_boundaries_reassembled',
+                'heartbeat_and_linked_events_reviewed',
+                'slow_consumer_requires_reconnect',
+                'internal_error_requires_reconnect',
+                'output_never_authoritative')) and
+            wire['actual_storage_access'] is False,
+            'SUPPLIED_ACTIVITY_SSE_WIRE_SESSION')
+        _require(all(wire[k] is False for k in ACTIVITY_SSE_WIRE_FLAGS),
+            'SUPPLIED_ACTIVITY_SSE_WIRE_SESSION_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

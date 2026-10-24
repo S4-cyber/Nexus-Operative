@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.245.0 parent is locally verified, but GitHub still had not registered its exact-source workflows when this candidate began; v0.246.0 requires fresh checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.246.0 parent is locally verified, but GitHub still had not registered its exact-source workflows when this candidate began; v0.247.0 requires fresh checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.247.0 emergency-stop-fenced reconnect admission
+
+Every explicit Activity SSE reconnect reservation now requires the independent emergency stop to return exactly clear before cursor-journal review, before budget review and again inside the exact-head budget transaction. An already active, failed or indeterminate check creates no private journals and invokes no provider seam. If the stop rises at the final transactional fence, no attempt or pending token is appended; existing retry state is byte-identical and a first-use journal retains only its valid account binding.
+
+This closes a reservation-before-stop-check gap without adding automatic retry, network authority, saved credentials, cursor mutation, order/funding paths or Portal controls. It does not prove actual provider entitlement, backoff semantics, source/delivery/replay coverage, native durability, distributed coordination, fees, holds, settled funds, profitability or release readiness.
+
+Final local v0.247.0 validation passed 3,847 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 252. Sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `9719942c50c2d2f8d89e97b3c76ef10133fd824aa26fc61cc19b2bea7769048d`; `validation/release_trials_0_247_0.json` SHA256 is `c3b7f2187cf3f6ca78e52a43495d77d004a8a9ef1e6faff524c5c001e5f2cbbc`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace passed. Public snapshot/history scans and fresh exact-source hosted workflows remain mandatory.
 
 ## v0.246.0 independent emergency-stop retry-wait close
 

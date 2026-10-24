@@ -286,7 +286,8 @@ class ActivitySSEReconnectBudget:
             **state, **{flag: False for flag in FLAGS})
 
     def begin(self, *, evaluated_at, expected_cursor_head,
-            reconnect_reason, expected_head, confirm_reconnect_attempt=False):
+            reconnect_reason, expected_head, emergency_stop_check=None,
+            confirm_reconnect_attempt=False):
         """Reserve one explicit attempt. The caller, never this store, runs I/O."""
         now = _clock(evaluated_at)
         cursor_head = _digest(expected_cursor_head, 'CURSOR_HEAD_INVALID')
@@ -295,6 +296,17 @@ class ActivitySSEReconnectBudget:
             _fail('CONFIRMATION_REQUIRED')
         if reconnect_reason not in REASONS:
             _fail('RECONNECT_REASON_INVALID')
+        if not callable(emergency_stop_check):
+            _fail('EMERGENCY_STOP_CHECK_INVALID')
+
+        def stop_clear():
+            try:
+                return emergency_stop_check() is False
+            except Exception:
+                return False
+
+        if not stop_clear():
+            _fail('EMERGENCY_STOP_ACTIVE')
         current = self.inspect()
         if current['head_sha256'] != expected:
             _fail('HEAD_CHANGED')
@@ -328,6 +340,17 @@ class ActivitySSEReconnectBudget:
                         state['completed'] or state['attempts'] >= MAX_ATTEMPTS or
                         now < state['next_allowed_at']):
                     _fail('ADMISSION_CHANGED')
+                # Re-sample under the exact-head write transaction.  A stop
+                # raised between review and reservation cannot consume an
+                # attempt or create a pending episode.
+                if not stop_clear():
+                    # On the first use, retain only the account-bound schema
+                    # so the newly created file remains replayable.  No BEGIN
+                    # attempt is appended and every existing journal remains
+                    # byte-for-byte unchanged.
+                    if new:
+                        db.commit()
+                    _fail('EMERGENCY_STOP_ACTIVE')
                 token = self._insert(db, state['attempts'] + 1 + state['attempts'],
                     body, state['head_sha256'])
                 loaded = self._load(db)
@@ -504,12 +527,22 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         _fail('CHECKPOINT_AUTHORIZATION_REQUIRED')
     if reconnect_budget.account_sha256 != cursor_store.account_sha256:
         _fail('ACCOUNT_DISAGREEMENT')
+    if not callable(emergency_stop_check):
+        _fail('EMERGENCY_STOP_CHECK_INVALID')
+    try:
+        if emergency_stop_check() is not False:
+            _fail('EMERGENCY_STOP_ACTIVE')
+    except ActivitySSEReconnectBudgetError:
+        raise
+    except Exception:
+        _fail('EMERGENCY_STOP_ACTIVE')
     before = cursor_store.inspect()
     if before['head_sha256'] != expected_cursor_head:
         _fail('CURSOR_HEAD_CHANGED')
     reservation = reconnect_budget.begin(evaluated_at=evaluated_at,
         expected_cursor_head=expected_cursor_head,
         reconnect_reason=reconnect_reason, expected_head=expected_budget_head,
+        emergency_stop_check=emergency_stop_check,
         confirm_reconnect_attempt=confirm_reconnect_attempt)
     options = dict(expected_account_id=expected_account_id,
         initial_events=initial_events, reconnect_reason=reconnect_reason,
@@ -560,6 +593,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         reconnect_attempt_number=reservation['attempt'],
         reconnect_attempt_cap=MAX_ATTEMPTS,
         bounded_backoff_enforced=True, caller_driven_attempt=True,
+        emergency_stop_admission_fenced=True,
+        emergency_stop_sampled_before_reservation=True,
         automatic_retry=False, automatic_reconnect_performed=False,
         automatic_backoff_verified=False,
         reconnect_budget_head_sha256=retained['head_sha256'],
@@ -773,6 +808,21 @@ def fixture_report():
             elapsed_clock=lambda: 50, permission_check=lambda: True,
             emergency_stop_check=lambda: False,
             credential_check=lambda: True)
+        blocked_cursor = ActivitySSECursorStore(
+            root / 'blocked-cursor.sqlite3', account)
+        blocked_budget = ActivitySSEReconnectBudget(
+            root / 'blocked-budget.sqlite3', account)
+        blocked_opener = Opener(raw)
+        blocked_code = None
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=999, opener=blocked_opener,
+                **dict(common, cursor_store=blocked_cursor,
+                    reconnect_budget=blocked_budget,
+                    emergency_stop_check=lambda: True))
+        except ActivitySSEReconnectBudgetError as error:
+            blocked_code = str(error)
         try:
             collect_and_checkpoint_due('fixture_key_only_123',
                 'fixture_secret_only_123', expected_budget_head=ZERO,
@@ -796,6 +846,7 @@ def fixture_report():
         reserved = recovery_budget.begin(evaluated_at=2000,
             expected_cursor_head=ZERO,
             reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
             confirm_reconnect_attempt=True)
         recovery_opener = Opener(raw)
         committed = checkpoint.collect_and_checkpoint_once(
@@ -821,6 +872,7 @@ def fixture_report():
         stop_reserved = stop_budget.begin(evaluated_at=3000,
             expected_cursor_head=ZERO,
             reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
             confirm_reconnect_attempt=True)
         stop_samples = []
         stopped = abort_pending_reconnect_for_emergency_stop(
@@ -834,6 +886,7 @@ def fixture_report():
         waiting_reserved = waiting_budget.begin(evaluated_at=4000,
             expected_cursor_head=ZERO,
             reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
             confirm_reconnect_attempt=True)
         waiting_budget.finish(waiting_reserved['token'], evaluated_at=4000,
             outcome='RETRY_REQUIRED',
@@ -853,6 +906,12 @@ def fixture_report():
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
                 after_timeout['next_allowed_at'] == 1001 and
                 len(first.requests) == 1,
+            emergency_stop_blocks_before_reconnect_storage=
+                blocked_code is not None and
+                blocked_code.endswith('EMERGENCY_STOP_ACTIVE') and
+                not blocked_cursor.path.exists() and
+                not blocked_budget.path.exists() and
+                not blocked_opener.requests,
             due_second_attempt_explicit_and_single=
                 result['reconnect_attempt_number'] == 2 and
                 len(second.requests) == 1,

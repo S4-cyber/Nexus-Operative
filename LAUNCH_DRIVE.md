@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-23
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The reviewed parent source is exact v0.233.0 commit `e90fb107549aa79a0b202fc3546dfedac0f6de98`; this v0.233.1 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are 2–6 weeks for a connected broker-paper prototype and 12–24+ weeks for the full agreed 1.0 candidate; these are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize the paper submission lifecycle, actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The exact v0.233.1 parent is published; this v0.234.0 candidate requires its own exact-source checks. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.234.0 provider POST to guarded account reconciliation
+
+The new private composition binds one exact POST/activity history to the same complete accepted request/fill replay and four ordered stability-guarded balance observations. It requires exact shared heads and unchanged final replays, rejects unresolved outcomes and component authority promotion, and emits only hashes, aggregate counts and a gross-only residual result without raw account/order identifiers.
+
+This narrows the local durable-reconciliation seam but does not attest provider source or activity coverage, make separate SQLite journals atomic/distributed, link fees, verify holds or spendable funds, accept an actual account, retry an order, apply a ledger or grant routing/live/funding/release authority. No Portal control or modifiable parameter changed. Existing beginner tabs and black/bright-purple bottom-right help are unchanged, permissions remain OFF and the emergency stop remains independent. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Final local v0.234.0 validation passed 3,653 tests with one expected non-Windows skip and one existing warning; the focused composition/release/audit set passed 163. Sixteen profiles and saved-evidence verification matched 369 source files / `da20f7d191dbe86bdabcaa09bca2555511d5011470a3dc3f722c4f48ab095d32`; report SHA256 is `d1d93acf5dc6fd0529c5e025a71f10294bbff4abc9760a58f69cd0caf7fd99d7`. Fourteen controllers and local compilation/dependency/roadmap/whitespace checks passed. Public snapshot/history scans and fresh exact-source workflows remain mandatory.
 
 ## v0.233.1 Windows fixture closure and full-shape path fencing
 

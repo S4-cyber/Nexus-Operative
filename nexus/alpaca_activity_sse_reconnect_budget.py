@@ -1109,21 +1109,45 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
     budget_binding = (reconnect_budget.path,
         reconnect_budget.account_sha256)
     cursor_binding = (cursor_store.path, cursor_store.account_sha256)
-    state = reconnect_budget.inspect()
-    duplicate = state['head_sha256'] != budget_head
-    if duplicate:
-        if (not state['completed'] or state['review_required'] or
-                state['last_attempt_head_sha256'] != budget_head or
-                state['checkpoint_head_sha256'] != checkpoint_head):
-            _fail('HEAD_CHANGED')
-        reservation_token = budget_head
-    else:
-        if (state['pending_token'] is None or state['completed'] or
-                state['review_required']):
-            _fail('PENDING_CHECKPOINT_MISSING')
-        reservation_token = state['pending_token']
+    try:
+        state = reconnect_budget.inspect()
+    except Exception:
+        _fail('RECOVERY_STATE_UNCERTAIN')
+    try:
+        duplicate = state['head_sha256'] != budget_head
+        if duplicate:
+            if (not state['completed'] or state['review_required'] or
+                    state['last_attempt_head_sha256'] != budget_head or
+                    state['checkpoint_head_sha256'] != checkpoint_head):
+                _fail('HEAD_CHANGED')
+            reservation_token = budget_head
+        else:
+            if (state['pending_token'] is None or state['completed'] or
+                    state['review_required']):
+                _fail('PENDING_CHECKPOINT_MISSING')
+            reservation_token = state['pending_token']
+    except ActivitySSEReconnectBudgetError:
+        raise
+    except (AttributeError, IndexError, KeyError, TypeError):
+        _fail('RECOVERY_STATE_UNCERTAIN')
     try:
         retained = cursor_store.latest_checkpoint_binding()
+        retained_head = _digest(retained['head_sha256'],
+            'CURSOR_BINDING_REVIEW_FAILED')
+        retained_expected = _digest(retained['expected_head_sha256'],
+            'CURSOR_BINDING_REVIEW_FAILED')
+        reservation_bound = retained['reconnect_reservation_bound']
+        if type(reservation_bound) is not bool:
+            _fail('CURSOR_BINDING_REVIEW_FAILED')
+        retained_reservation = (None if not reservation_bound else _digest(
+            retained['reconnect_reservation_sha256'],
+            'CURSOR_BINDING_REVIEW_FAILED'))
+        binding_matches = (
+            retained_head == checkpoint_head and
+            retained_expected ==
+                state['expected_cursor_head_sha256'] and
+            reservation_bound is True and
+            retained_reservation == sha(reservation_token))
     except Exception:
         _fail('CURSOR_BINDING_REVIEW_FAILED')
     if ((reconnect_budget.path, reconnect_budget.account_sha256) !=
@@ -1131,12 +1155,7 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             (cursor_store.path, cursor_store.account_sha256) !=
             cursor_binding):
         _fail('STORE_BINDING_CHANGED')
-    if (retained['head_sha256'] != checkpoint_head or
-            retained['expected_head_sha256'] !=
-                state['expected_cursor_head_sha256'] or
-            retained['reconnect_reservation_bound'] is not True or
-            retained['reconnect_reservation_sha256'] !=
-                sha(reservation_token)):
+    if not binding_matches:
         _fail('CHECKPOINT_BINDING_DISAGREEMENT')
     result_acknowledgement_recovered = False
     if duplicate:

@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.259.0 parent has no connector-visible exact-source workflow result; v0.260.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.260.0 parent has no connector-visible exact-source workflow result; v0.261.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.261.0 fail-closed checkpoint-reconciliation preflight
+
+Explicit checkpoint reconciliation now sanitizes its initial reconnect-budget inspection and validates the digest-bearing cursor-checkpoint binding before any recovery result write. Unreadable or malformed budget state produces fixed recovery-state uncertainty. Unreadable or malformed cursor binding produces fixed binding-review failure. Valid evidence that simply does not bind still receives the existing exact disagreement result.
+
+These preflight denials preserve the pending budget bytes, expose no private storage detail and never repeat provider IO. No UI or modifiable parameter changed, and the seven beginner tabs plus black/bright-purple bottom-right help contract remain unchanged. Disposable injected evidence is not actual provider/account, source/delivery/replay, native durability, reconciliation, sustained-market, trading or release acceptance.
+
+Final local validation passed 3,937 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 326. All sixteen offline profiles and saved-evidence verification matched 387 source files / `ed7e39a1fab19bb10ef3e53ccd91a725233886360a55e1dbb5456239c8263856`; the saved report SHA256 is `5378b1aa6662ce84d17d31feba77633d25f9d00cb3476f5d21161c07c5b24ca8`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace passed. The 623-path proposed snapshot and reachable 655-commit / 4,697-blob history audit found no public artifacts, but it is not a secret detector. Exact-source hosted results remain required before this source is treated as a verified checkpoint.
 
 ## v0.260.0 fail-closed checkpoint-result recovery inspection
 

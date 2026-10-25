@@ -1589,6 +1589,89 @@ def test_reconciliation_rejects_uncommitted_result_acknowledgement_failure(
     assert budget.inspect()['pending_token'] == reserved['token']
 
 
+def test_reconciliation_initial_budget_inspection_failure_is_sanitized(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    original_inspect = budget.inspect
+    monkeypatch.setattr(budget, 'inspect',
+        lambda: (_ for _ in ()).throw(
+            RuntimeError('private initial inspection detail')))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RECOVERY_STATE_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+    assert original_inspect()['pending_token'] == reserved['token']
+
+
+@pytest.mark.parametrize('malformed', (None, {}, [], {'head_sha256': None}))
+def test_reconciliation_malformed_initial_budget_view_fails_closed(
+        tmp_path, monkeypatch, malformed):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    original_inspect = budget.inspect
+    monkeypatch.setattr(budget, 'inspect', lambda: malformed)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RECOVERY_STATE_UNCERTAIN'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+    assert original_inspect()['pending_token'] == reserved['token']
+
+
+def test_reconciliation_cursor_binding_failure_is_sanitized(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        lambda: (_ for _ in ()).throw(
+            RuntimeError('private cursor binding detail')))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_CURSOR_BINDING_REVIEW_FAILED'
+    assert 'private' not in str(raised.value)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+
+
+@pytest.mark.parametrize('malformed', (None, {}, [], {'head_sha256': None}))
+def test_reconciliation_malformed_cursor_binding_fails_closed(
+        tmp_path, monkeypatch, malformed):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        lambda: malformed)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CURSOR_BINDING_REVIEW_FAILED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+
+
 @pytest.mark.parametrize(('token','code'), [
     ('b' * 64, 'CHECKPOINT_BINDING_DISAGREEMENT'),
     (None, 'CHECKPOINT_BINDING_DISAGREEMENT'),

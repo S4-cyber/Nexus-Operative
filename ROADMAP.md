@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.267.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.268.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.267.0 re-proves the exact durable reconnect reservation at every downstream permission fence, including the transport checkpoint immediately before provider open. The pending token/current head, bounded attempt, admitted cursor, prior budget head, evaluation time, reason and eligible prior state must remain exact. A concurrent result, changed reservation or unreadable journal returns fixed RESERVATION_STATE_UNCERTAIN, preserves the current durable owner state and performs no provider request. Existing policy diagnostics and rows remain compatible. No automatic retry, provider access, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.268.0 independently replays the durable cursor checkpoint before a successful Activity SSE reconnect attempt may close its budget. The acknowledged head, receipt and cursor digests, prior cursor head, account and hashed reconnect reservation must match the latest retained binding, which must remain stable across result persistence. A forged, malformed, lost or unreadable checkpoint acknowledgement leaves the reconnect reservation pending for the explicit no-network reconciliation path; a post-result stability failure returns fixed result uncertainty without inventing retry authority. No automatic retry, provider access, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

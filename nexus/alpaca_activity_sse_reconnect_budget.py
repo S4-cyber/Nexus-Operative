@@ -157,6 +157,54 @@ def _exact_pending_reservation(state, *, token, attempt, cursor_head,
         not state['completed'])
 
 
+def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
+        expected_cursor_head):
+    """Prove a checkpoint acknowledgement against its durable journal.
+
+    The checkpoint function is an internal boundary, but its return value is
+    still not durable evidence.  Only the latest replayed cursor binding may
+    authorize closing the reconnect budget.
+    """
+    try:
+        if type(result) is not dict:
+            raise TypeError
+        acknowledged_head = _digest(result['checkpoint_head_sha256'])
+        acknowledged_receipt = _digest(
+            result['checkpoint_receipt_sha256'])
+        acknowledged_cursor = _digest(result['checkpoint_cursor_sha256'])
+        if (result['mode'] != 'EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT' or
+                result['status'] != 'REVIEW_REQUIRED' or
+                result['account_sha256'] != cursor_store.account_sha256 or
+                result['local_cursor_checkpoint_committed'] is not True or
+                result['process_restart_recoverable'] is not True or
+                result['reconnect_reservation_bound'] is not True):
+            raise ValueError
+        retained = cursor_store.latest_checkpoint_binding()
+        if type(retained) is not dict:
+            raise TypeError
+        retained_head = _digest(retained['head_sha256'])
+        retained_expected = _digest(retained['expected_head_sha256'])
+        retained_receipt = _digest(retained['checkpoint_receipt_sha256'])
+        retained_cursor = _digest(retained['cursor_sha256'])
+        retained_reservation = _digest(
+            retained['reconnect_reservation_sha256'])
+        if (retained['mode'] !=
+                'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING' or
+                retained['status'] != 'REVIEW_REQUIRED' or
+                retained['account_sha256'] != cursor_store.account_sha256 or
+                retained['reconnect_reservation_bound'] is not True or
+                retained['read_only'] is not True or
+                retained_head != acknowledged_head or
+                retained_expected != expected_cursor_head or
+                retained_receipt != acknowledged_receipt or
+                retained_cursor != acknowledged_cursor or
+                retained_reservation != sha(token)):
+            raise ValueError
+    except Exception:
+        _fail('CHECKPOINT_STATE_UNCERTAIN')
+    return retained
+
+
 def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     """Retain terminal review state from the last trusted admission time.
 
@@ -1103,21 +1151,33 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                 completed_at, outcome, detail, provider_retry_after):
             _fail('RESULT_RECORD_UNCERTAIN')
         raise
+    checkpoint_binding = _checkpoint_binding_for_attempt(cursor_store,
+        result, token=token, expected_cursor_head=expected_cursor_head)
     completed_at = _outcome_time(result_clock, evaluated_at)
     result_acknowledgement_recovered = False
     try:
         retained = reconnect_budget.finish(reservation['token'],
             evaluated_at=completed_at, outcome='CHECKPOINT_COMMITTED',
             detail_code='SUCCESS',
-            checkpoint_head_sha256=result['checkpoint_head_sha256'],
-            checkpoint_receipt_sha256=result['checkpoint_receipt_sha256'])
+            checkpoint_head_sha256=checkpoint_binding['head_sha256'],
+            checkpoint_receipt_sha256=
+                checkpoint_binding['checkpoint_receipt_sha256'])
     except Exception:
         retained = _inspect_after_result_error(reconnect_budget,
             'RESULT_RECORD_UNCERTAIN')
         result_acknowledgement_recovered = True
-    if not _exact_checkpoint_result(retained, reservation['token'],
-            result['checkpoint_head_sha256'],
-            result['checkpoint_receipt_sha256'], completed_at):
+    try:
+        stable_checkpoint_binding = cursor_store.latest_checkpoint_binding()
+    except Exception:
+        _fail('RESULT_RECORD_UNCERTAIN')
+    stable_result = _inspect_after_result_error(reconnect_budget,
+        'RESULT_RECORD_UNCERTAIN')
+    if (stable_checkpoint_binding != checkpoint_binding or
+            not _same_result_head(stable_result, retained) or
+            not _exact_checkpoint_result(stable_result,
+                reservation['token'], checkpoint_binding['head_sha256'],
+                checkpoint_binding['checkpoint_receipt_sha256'],
+                completed_at)):
         _fail('RESULT_RECORD_UNCERTAIN')
     return dict(result, mode='EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT',
         reconnect_budget_policy=POLICY,
@@ -1130,7 +1190,7 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             result_acknowledgement_recovered,
         automatic_retry=False, automatic_reconnect_performed=False,
         automatic_backoff_verified=False,
-        reconnect_budget_head_sha256=retained['head_sha256'],
+        reconnect_budget_head_sha256=stable_result['head_sha256'],
         reconnect_budget_completed=True)
 
 

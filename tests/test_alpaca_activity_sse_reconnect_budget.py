@@ -407,6 +407,90 @@ def test_unreadable_reservation_at_preopen_fence_blocks_provider_io(
     assert state['next_allowed_at'] == 0 and not state['review_required']
 
 
+def test_checkpoint_ack_requires_exact_durable_cursor_binding(tmp_path,
+        monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def corrupt_ack(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return {**result, 'checkpoint_receipt_sha256': 'f' * 64}
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        corrupt_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_CHECKPOINT_STATE_UNCERTAIN'
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+    binding = cursor.latest_checkpoint_binding()
+    assert binding['reconnect_reservation_bound']
+    recovered = subject.reconcile_pending_checkpoint(cursor_store=cursor,
+        reconnect_budget=budget, expected_budget_head=state['head_sha256'],
+        expected_checkpoint_head=binding['head_sha256'], evaluated_at=1001,
+        confirm_checkpoint_reconciliation=True)
+    assert recovered['pending_checkpoint_reconciled']
+    assert budget.inspect()['completed']
+
+
+def test_forged_checkpoint_ack_cannot_complete_reconnect_budget(tmp_path,
+        monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        lambda *args, **kwargs: dict(
+            mode='EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT',
+            status='REVIEW_REQUIRED', account_sha256=cursor.account_sha256,
+            checkpoint_head_sha256='a' * 64,
+            checkpoint_receipt_sha256='b' * 64,
+            checkpoint_cursor_sha256='c' * 64,
+            local_cursor_checkpoint_committed=True,
+            process_restart_recoverable=True,
+            reconnect_reservation_bound=True))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_CHECKPOINT_STATE_UNCERTAIN'
+    assert not opener.requests and not cursor.path.exists()
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
+def test_checkpoint_binding_must_remain_stable_across_result_commit(tmp_path,
+        monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = cursor.latest_checkpoint_binding
+    samples = []
+
+    def changed_binding():
+        samples.append(True)
+        retained = original()
+        if len(samples) == 2:
+            return {**retained, 'head_sha256': 'f' * 64}
+        return retained
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding', changed_binding)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESULT_RECORD_UNCERTAIN'
+    assert samples == [True, True] and len(opener.requests) == 1
+    state = budget.inspect()
+    binding = original()
+    assert state['completed'] and state['pending_token'] is None
+    assert state['checkpoint_head_sha256'] == binding['head_sha256']
+    assert state['checkpoint_receipt_sha256'] == \
+        binding['checkpoint_receipt_sha256']
+
+
 def test_success_result_and_exact_replay_bind_observed_completion_time(
         tmp_path):
     _, raw = segments()

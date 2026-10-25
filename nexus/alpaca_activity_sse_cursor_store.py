@@ -24,8 +24,10 @@ from nexus.sqlite_journal_guard import check_existing
 
 
 SCHEMA = 'nexus.private-alpaca-activity-sse-cursor-store.v1'
-PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v1'
-BOUND_PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v2'
+LEGACY_PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v1'
+LEGACY_BOUND_PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v2'
+PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v3'
+BOUND_PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v4'
 ZERO = '0' * 64
 MAX_CHECKPOINTS = 256
 MAX_RECORD_BYTES = 8192
@@ -208,7 +210,9 @@ class ActivitySSECursorStore:
             initial_events_reviewed=initial,
             replay_events_reviewed=replay,
             redelivered_events_deduplicated=duplicates,
-            new_events_processed=new, unique_events_reviewed=unique)
+            new_events_processed=new, unique_events_reviewed=unique,
+            unique_trades_reviewed=trades,
+            unique_fees_reviewed=fees, linked_orders=linked)
         if reservation_sha256 is not None:
             scope['reconnect_reservation_sha256'] = reservation_sha256
         return dict(kind='CHECKPOINT', scope=scope,
@@ -253,19 +257,29 @@ class ActivitySSECursorStore:
                         'initial_events_reviewed', 'replay_events_reviewed',
                         'redelivered_events_deduplicated',
                         'new_events_processed', 'unique_events_reviewed'}
+                complete_count_scope = {
+                        'unique_trades_reviewed',
+                        'unique_fees_reviewed', 'linked_orders'}
+                profile = scope.get('profile') if type(scope) is dict else None
+                expected_scope = None
+                if profile == LEGACY_PROFILE:
+                    expected_scope = base_scope
+                elif profile == LEGACY_BOUND_PROFILE:
+                    expected_scope = base_scope | {
+                        'reconnect_reservation_sha256'}
+                elif profile == PROFILE:
+                    expected_scope = base_scope | complete_count_scope
+                elif profile == BOUND_PROFILE:
+                    expected_scope = base_scope | complete_count_scope | {
+                        'reconnect_reservation_sha256'}
                 if (type(scope) is not dict or
-                        (scope.get('profile') == PROFILE and
-                            set(scope) != base_scope) or
-                        (scope.get('profile') == BOUND_PROFILE and
-                            set(scope) != base_scope | {
-                                'reconnect_reservation_sha256'}) or
-                        scope.get('profile') not in (PROFILE, BOUND_PROFILE)):
+                        expected_scope is None or set(scope) != expected_scope):
                     _fail('PAYLOAD_INVALID')
                 if (scope['review_policy'] != REVIEW_POLICY or
                         scope['account_sha256'] != self.account_sha256 or
                         body['receipt_sha256'] != sha(scope)):
                     _fail('SCOPE_INVALID')
-                if scope['profile'] == BOUND_PROFILE:
+                if scope['profile'] in (LEGACY_BOUND_PROFILE, BOUND_PROFILE):
                     _digest(scope['reconnect_reservation_sha256'],
                         'RECONNECT_RESERVATION_INVALID')
                 _digest(scope['expected_head_sha256'])
@@ -291,6 +305,15 @@ class ActivitySSECursorStore:
                     'COUNT_INVALID')
                 if (duplicates + new != replay or initial + new != unique):
                     _fail('COUNT_INVALID')
+                if scope['profile'] in (PROFILE, BOUND_PROFILE):
+                    trades = _positive(scope['unique_trades_reviewed'],
+                        'COUNT_INVALID')
+                    fees = _positive(scope['unique_fees_reviewed'],
+                        'COUNT_INVALID')
+                    linked = _positive(scope['linked_orders'],
+                        'COUNT_INVALID')
+                    if trades + fees != unique or linked > trades:
+                        _fail('COUNT_INVALID')
                 if after <= before or (current_cursor is not None and
                         before != current_cursor):
                     _fail('CURSOR_CHAIN_DISAGREEMENT')
@@ -358,7 +381,7 @@ class ActivitySSECursorStore:
             reconnect_reservation_sha256=
                 scope.get('reconnect_reservation_sha256'),
             reconnect_reservation_bound=
-                scope.get('profile') == BOUND_PROFILE,
+                scope.get('profile') in (LEGACY_BOUND_PROFILE, BOUND_PROFILE),
             read_only=True, **{flag: False for flag in FLAGS})
 
     def checkpoint(self, review, *, previous_cursor, next_cursor,

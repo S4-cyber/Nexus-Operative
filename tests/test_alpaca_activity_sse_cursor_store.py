@@ -53,6 +53,20 @@ def checkpoint(store, report=None, before=None, after=None, **changes):
     return store.checkpoint(report, **args)
 
 
+def rewrite_checkpoint(path, mutation):
+    """Rehash one checkpoint after a test-only payload mutation."""
+    with sqlite3.connect(path) as db:
+        encoded, previous = db.execute(
+            'SELECT body,previous FROM checkpoints WHERE seq=1').fetchone()
+        body = json.loads(encoded)
+        mutation(body)
+        body['receipt_sha256'] = subject.sha(body['scope'])
+        encoded = subject.canonical(body)
+        digest = subject.sha(dict(seq=1, body=body, previous=previous))
+        db.execute('UPDATE checkpoints SET body=?,digest=? WHERE seq=1',
+            (encoded, digest))
+
+
 def test_checkpoint_reopens_exact_private_cursor_without_authority(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     report, before, after = checked()
@@ -309,6 +323,9 @@ def test_tamper_and_foreign_binding_fail_closed(tmp_path):
     ('reconnect_reason', lambda value: 'UNKNOWN', 'SCOPE_INVALID'),
     ('replay_events_reviewed', lambda value: value + 1, 'COUNT_INVALID'),
     ('initial_events_reviewed', lambda value: value + 1, 'COUNT_INVALID'),
+    ('unique_trades_reviewed', lambda value: value + 1, 'COUNT_INVALID'),
+    ('unique_fees_reviewed', lambda value: value + 1, 'COUNT_INVALID'),
+    ('linked_orders', lambda value: value + 1, 'COUNT_INVALID'),
 ))
 @pytest.mark.parametrize('method', ('inspect', 'latest_checkpoint_binding'))
 def test_cold_replay_revalidates_checkpoint_semantics_without_mutation(
@@ -316,20 +333,34 @@ def test_cold_replay_revalidates_checkpoint_semantics_without_mutation(
     path = tmp_path / 'cursor.sqlite3'
     store = subject.ActivitySSECursorStore(path, ACCOUNT)
     checkpoint(store)
-    with sqlite3.connect(path) as db:
-        encoded, previous = db.execute(
-            'SELECT body,previous FROM checkpoints WHERE seq=1').fetchone()
-        body = json.loads(encoded)
+    def mutate(body):
         body['scope'][field] = mutation(body['scope'][field])
-        body['receipt_sha256'] = subject.sha(body['scope'])
-        encoded = subject.canonical(body)
-        digest = subject.sha(dict(seq=1, body=body, previous=previous))
-        db.execute('UPDATE checkpoints SET body=?,digest=? WHERE seq=1',
-            (encoded, digest))
+    rewrite_checkpoint(path, mutate)
     tampered = path.read_bytes()
     with pytest.raises(ValueError, match=code):
         getattr(subject.ActivitySSECursorStore(path, ACCOUNT), method)()
     assert path.read_bytes() == tampered
+
+
+@pytest.mark.parametrize('bound', (False, True))
+def test_cold_replay_keeps_legacy_checkpoint_profiles_readable(
+        tmp_path, bound):
+    path = tmp_path / 'cursor.sqlite3'
+    changes = dict(reconnect_reservation_token='a' * 64) if bound else {}
+    checkpoint(subject.ActivitySSECursorStore(path, ACCOUNT), **changes)
+
+    def downgrade(body):
+        body['scope']['profile'] = (subject.LEGACY_BOUND_PROFILE if bound
+            else subject.LEGACY_PROFILE)
+        for field in ('unique_trades_reviewed', 'unique_fees_reviewed',
+                'linked_orders'):
+            body['scope'].pop(field)
+
+    rewrite_checkpoint(path, downgrade)
+    cold = subject.ActivitySSECursorStore(path, ACCOUNT)
+    assert cold.inspect()['retained_checkpoints'] == 1
+    binding = cold.latest_checkpoint_binding()
+    assert binding['reconnect_reservation_bound'] is bound
 
 
 def test_symlink_and_rollback_sidecar_are_refused(tmp_path):

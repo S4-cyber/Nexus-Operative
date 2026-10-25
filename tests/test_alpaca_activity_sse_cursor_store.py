@@ -165,12 +165,65 @@ def test_postcommit_lost_ack_reopens_and_exact_replay_is_safe(tmp_path):
         'REVIEW_CURSOR_DISAGREEMENT'),
     (lambda value: value.__setitem__('new_events_processed', 0),
         'COUNT_INVALID'),
+    (lambda value: value.__setitem__('private_extension', False),
+        'REVIEW_INVALID'),
+    (lambda value: value.__setitem__('sources', list(value['sources'])),
+        'REVIEW_INVALID'),
+    (lambda value: value.__setitem__('limitations', 'changed claim'),
+        'REVIEW_INVALID'),
+    (lambda value: value.__setitem__('reconnect_reason', 'UNKNOWN'),
+        'REVIEW_INVALID'),
+    (lambda value: value.__setitem__('unique_trades_reviewed',
+        value['unique_trades_reviewed'] + 1), 'COUNT_INVALID'),
+    (lambda value: value.__setitem__('redelivered_events_deduplicated',
+        value['redelivered_events_deduplicated'] - 1), 'COUNT_INVALID'),
 ])
 def test_invalid_review_never_creates_storage(tmp_path, mutation, code):
     path = tmp_path / 'cursor.sqlite3'
     report, before, after = checked()
     mutation(report)
     with pytest.raises(ValueError, match=code):
+        checkpoint(subject.ActivitySSECursorStore(path, ACCOUNT),
+            report, before, after)
+    assert not path.exists()
+
+
+def test_checkpoint_review_contract_is_total_and_exact(tmp_path):
+    report, before, after = checked()
+    assert set(report) == subject.REVIEW_RESULT_KEYS
+    assert type(report['sources']) is tuple
+    assert report['limitations'] == subject.REVIEW_LIMITATIONS
+    saved = checkpoint(subject.ActivitySSECursorStore(
+        tmp_path / 'cursor.sqlite3', ACCOUNT), report, before, after)
+    assert saved['local_cursor_checkpoint_committed']
+
+
+@pytest.mark.parametrize('field', (
+    'mode', 'status', 'account_sha256', 'reconnect_reason', 'limitations'))
+def test_checkpoint_review_rejects_foreign_text_equality(tmp_path, field):
+    class EqualText(str):
+        def __eq__(self, other): return True
+        def __ne__(self, other): return False
+        __hash__ = str.__hash__
+
+    path = tmp_path / 'cursor.sqlite3'
+    report, before, after = checked()
+    report[field] = EqualText('foreign')
+    with pytest.raises(ValueError, match='REVIEW_INVALID'):
+        checkpoint(subject.ActivitySSECursorStore(path, ACCOUNT),
+            report, before, after)
+    assert not path.exists()
+
+
+def test_checkpoint_review_rejects_foreign_tuple_equality(tmp_path):
+    class EqualTuple(tuple):
+        def __eq__(self, other): return True
+        def __ne__(self, other): return False
+
+    path = tmp_path / 'cursor.sqlite3'
+    report, before, after = checked()
+    report['sources'] = EqualTuple(report['sources'])
+    with pytest.raises(ValueError, match='REVIEW_INVALID'):
         checkpoint(subject.ActivitySSECursorStore(path, ACCOUNT),
             report, before, after)
     assert not path.exists()

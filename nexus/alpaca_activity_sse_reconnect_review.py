@@ -17,6 +17,17 @@ REASONS = frozenset(('CONNECTION_DROPPED', 'SLOW_CONSUMER',
 FLAGS = (*ENVELOPE_FLAGS, 'cursor_persisted_durably',
     'actual_reconnect_performed', 'automatic_backoff_verified',
     'slow_consumer_recovery_verified', 'historical_replay_complete')
+LIMITATIONS = 'Two supplied finite segments only. No cursor was written or recovered from durable storage; no SSE connection, authentication, entitlement check, disconnect, reconnect, backoff, slow-consumer event, historical replay or provider delivery occurred. Duplicate and cursor checks prove only local transcript consistency, not source, completeness, fee posting, holds, settlement, spendable funds, broker reconciliation, routing, live trading or release approval.'
+RESULT_KEYS = frozenset(('mode', 'status', 'read_only', 'input_sha256',
+    'account_sha256', 'reconnect_reason', 'initial_events_reviewed',
+    'replay_events_reviewed', 'redelivered_events_deduplicated',
+    'new_events_processed', 'unique_events_reviewed',
+    'unique_trades_reviewed', 'unique_fees_reviewed', 'linked_orders',
+    'persisted_cursor_sha256', 'reconnect_since_id_sha256',
+    'next_cursor_sha256', 'exact_since_id_reused',
+    'duplicate_ref_ids_idempotent', 'duplicate_payloads_immutable',
+    'cursor_advanced', 'all_unique_fees_parent_linked', 'sources',
+    'limitations', *FLAGS))
 
 
 def _fail(code):
@@ -100,7 +111,7 @@ def review(initial_events, replay_events, *, expected_account_id,
         all_unique_fees_parent_linked=True,
         sources=SOURCES,
         **{flag: False for flag in FLAGS},
-        limitations='Two supplied finite segments only. No cursor was written or recovered from durable storage; no SSE connection, authentication, entitlement check, disconnect, reconnect, backoff, slow-consumer event, historical replay or provider delivery occurred. Duplicate and cursor checks prove only local transcript consistency, not source, completeness, fee posting, holds, settlement, spendable funds, broker reconciliation, routing, live trading or release approval.')
+        limitations=LIMITATIONS)
 
 
 def fixture_report():

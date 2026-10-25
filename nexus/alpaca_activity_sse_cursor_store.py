@@ -15,7 +15,9 @@ import sqlite3
 
 from nexus.alpaca_activity_normalizer import _uuid
 from nexus.alpaca_activity_sse_reconnect_review import (
-    FLAGS as REVIEW_FLAGS, POLICY as REVIEW_POLICY)
+    FLAGS as REVIEW_FLAGS, LIMITATIONS as REVIEW_LIMITATIONS,
+    POLICY as REVIEW_POLICY, REASONS as REVIEW_REASONS,
+    RESULT_KEYS as REVIEW_RESULT_KEYS)
 from nexus.alpaca_activity_sse_review import SOURCES, ULID
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.sqlite_journal_guard import check_existing
@@ -142,19 +144,20 @@ class ActivitySSECursorStore:
             reconnect_reservation_token=None):
         if type(value) is not dict:
             _fail('REVIEW_INVALID')
-        required = {'mode', 'status', 'read_only', 'input_sha256',
-            'account_sha256', 'reconnect_reason', 'initial_events_reviewed',
-            'replay_events_reviewed', 'redelivered_events_deduplicated',
-            'new_events_processed', 'unique_events_reviewed',
-            'persisted_cursor_sha256', 'reconnect_since_id_sha256',
-            'next_cursor_sha256', 'exact_since_id_reused',
-            'duplicate_ref_ids_idempotent', 'duplicate_payloads_immutable',
-            'cursor_advanced', 'all_unique_fees_parent_linked', 'sources'}
-        if (not required <= set(value) or
+        if (set(value) != REVIEW_RESULT_KEYS or
+                type(value['mode']) is not str or
                 value['mode'] != 'SUPPLIED_ALPACA_ACTIVITY_SSE_RECONNECT_REVIEW' or
-                value['status'] != 'REVIEW_REQUIRED' or value['read_only'] is not True or
+                type(value['status']) is not str or
+                value['status'] != 'REVIEW_REQUIRED' or
+                value['read_only'] is not True or
+                type(value['account_sha256']) is not str or
                 value['account_sha256'] != self.account_sha256 or
-                tuple(value['sources']) != SOURCES or
+                type(value['reconnect_reason']) is not str or
+                value['reconnect_reason'] not in REVIEW_REASONS or
+                type(value['sources']) is not tuple or
+                value['sources'] != SOURCES or
+                type(value['limitations']) is not str or
+                value['limitations'] != REVIEW_LIMITATIONS or
                 any(value.get(flag) is not False for flag in REVIEW_FLAGS) or
                 any(value[key] is not True for key in (
                     'exact_since_id_reused', 'duplicate_ref_ids_idempotent',
@@ -176,7 +179,11 @@ class ActivitySSECursorStore:
             'COUNT_INVALID')
         new = _positive(value['new_events_processed'], 'COUNT_INVALID')
         unique = _positive(value['unique_events_reviewed'], 'COUNT_INVALID')
-        if duplicates > replay or new > replay or unique < new:
+        trades = _positive(value['unique_trades_reviewed'], 'COUNT_INVALID')
+        fees = _positive(value['unique_fees_reviewed'], 'COUNT_INVALID')
+        linked = _positive(value['linked_orders'], 'COUNT_INVALID')
+        if (duplicates + new != replay or initial + new != unique or
+                trades + fees != unique or linked > trades):
             _fail('COUNT_INVALID')
         profile = PROFILE
         reservation_sha256 = None

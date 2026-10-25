@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.278.0'
+REVISION = '0.279.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.278.0 pins the direct cursor checkpoint write boundary to the exact path/account identity captured before review validation. The cursor store rechecks that binding after review scope construction, every admission callback, initial inspection, stale-head replay, database connection, each transactional hash-chain replay, append, commit and receipt construction. A scoped savepoint rolls back a retargeted append while retaining only a readable account-bound schema on a fresh original path; mutation observed after commit leaves one exact checkpoint recoverable only through idempotent replay. Admission proofs require an exact plain string and cannot forge equality. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.279.0 makes the reconnect-review input to cursor persistence a total exact contract. The cursor store now requires the producer\'s complete allowlisted key set, plain mode/status/account/reason/limitations strings, the exact immutable source tuple, every safety flag exactly false and every positive count internally consistent. Unknown fields, mutable or equality-forged containers, changed limitation claims, unsupported reasons and inconsistent replay/unique/trade/fee/link summaries fail before storage. The producer exports the same result-key and limitation constants used by persistence, preventing silent schema drift. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

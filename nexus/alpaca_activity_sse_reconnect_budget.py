@@ -95,8 +95,8 @@ def _inspect_after_result_error(reconnect_budget, code):
         _fail(code)
 
 
-def _cursor_head_after_attempt(cursor_store):
-    """Read one post-attempt cursor head with a fixed uncertainty failure."""
+def _cursor_head_for_attempt(cursor_store):
+    """Read one attempt-bound cursor head with a fixed uncertainty failure."""
     try:
         retained = cursor_store.inspect()
         head = retained['head_sha256']
@@ -913,8 +913,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         raise
     except Exception:
         _fail('EMERGENCY_STOP_ACTIVE')
-    before = cursor_store.inspect()
-    if before['head_sha256'] != expected_cursor_head:
+    before_head = _cursor_head_for_attempt(cursor_store)
+    if before_head != expected_cursor_head:
         _fail('CURSOR_HEAD_CHANGED')
     reservation = reconnect_budget.begin(evaluated_at=evaluated_at,
         expected_cursor_head=expected_cursor_head,
@@ -948,12 +948,12 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             # timestamp so it cannot linger pending or acquire retry authority.
             # If the cursor moved, preserve the reservation for the existing
             # exact no-network checkpoint reconciliation path instead.
-            after_head = _cursor_head_after_attempt(cursor_store)
+            after_head = _cursor_head_for_attempt(cursor_store)
             if after_head == expected_cursor_head:
                 _close_failed_clock_uncertainty(reconnect_budget,
                     reservation['token'], evaluated_at)
             raise
-        after_head = _cursor_head_after_attempt(cursor_store)
+        after_head = _cursor_head_for_attempt(cursor_store)
         code = str(error)
         provider_retry_after = (error.provider_retry_after_seconds
             if isinstance(error, ActivitySSETransportError) else 0)

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.261.0'
+REVISION = '0.262.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -98,6 +98,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; explicit checkpoint reconciliation now also sanitizes its initial reconnect-budget and cursor-binding preflight views before any recovery write: unreadable or malformed budget state returns fixed recovery-state uncertainty, unreadable or malformed cursor binding returns fixed binding-review failure, and neither path mutates the pending reservation or repeats provider IO' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; reconnect admission now treats its initial cursor inspection as the same fail-closed boundary used after an attempt: unreadable, malformed or invalid state returns fixed cursor-state uncertainty before reservation or provider IO, leaving both stores untouched and granting no retry authority' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -244,7 +248,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.261.0 makes explicit checkpoint reconciliation fail closed before its recovery write as well as after it. An unreadable or malformed initial reconnect-budget view returns fixed RECOVERY_STATE_UNCERTAIN; an unreadable or malformed cursor-checkpoint binding returns fixed CURSOR_BINDING_REVIEW_FAILED. Private faults are suppressed, the pending reservation is unchanged and provider IO is never repeated. Exact binding disagreement remains distinct from malformed evidence. Existing rows remain compatible. No automatic retry, provider access, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.262.0 makes the reconnect admission cursor preflight fail closed before it can reserve an attempt or contact the provider. Unreadable, malformed or invalid cursor state returns fixed CURSOR_STATE_UNCERTAIN without exposing private faults; the cursor and reconnect-budget stores remain untouched and no retry authority is created. The same validated digest helper now guards both pre-attempt and post-attempt cursor decisions. Existing rows remain compatible. No automatic retry, provider access, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

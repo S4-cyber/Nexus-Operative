@@ -128,6 +128,36 @@ def test_success_reserves_before_one_get_and_closes_episode(tmp_path):
             confirm_reconnect_attempt=True)
 
 
+def test_initial_cursor_inspection_failure_is_sanitized_before_reservation(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    monkeypatch.setattr(cursor, 'inspect',
+        lambda: (_ for _ in ()).throw(
+            RuntimeError('private cursor storage detail')))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_CURSOR_STATE_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
+@pytest.mark.parametrize('malformed', (None, {}, [],
+    {'head_sha256': None}))
+def test_malformed_initial_cursor_view_fails_closed_before_reservation(
+        tmp_path, monkeypatch, malformed):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    monkeypatch.setattr(cursor, 'inspect', lambda: malformed)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CURSOR_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
 def test_success_result_and_exact_replay_bind_observed_completion_time(
         tmp_path):
     _, raw = segments()

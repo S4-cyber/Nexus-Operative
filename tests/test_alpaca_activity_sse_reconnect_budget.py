@@ -1226,6 +1226,68 @@ def test_uncertain_outcome_close_lost_ack_replay_is_byte_stable(tmp_path):
     assert budget.path.read_bytes() == saved
 
 
+def test_uncertain_outcome_close_read_cannot_retarget_budget_store(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original_path = budget.path
+    original_inspect = budget.inspect
+    retargeted = tmp_path / 'outcome-close-retargeted-read.sqlite3'
+
+    def retarget_after_inspect():
+        retained = original_inspect()
+        budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, 'inspect', retarget_after_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.close_pending_reconnect_for_outcome_uncertainty(
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            evaluated_at=1001, confirm_outcome_uncertain=True,
+            confirm_no_retry=True)
+    assert not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['pending_token'] == reserved['token']
+    assert state['last_outcome'] is None
+
+
+def test_uncertain_outcome_close_result_cannot_retarget_budget_store(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original_path = budget.path
+    original_finish = budget.finish
+    retargeted = tmp_path / 'outcome-close-retargeted-result.sqlite3'
+
+    def retarget_after_finish(*args, **kwargs):
+        retained = original_finish(*args, **kwargs)
+        budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, 'finish', retarget_after_finish)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.close_pending_reconnect_for_outcome_uncertainty(
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            evaluated_at=1001, confirm_outcome_uncertain=True,
+            confirm_no_retry=True)
+    assert not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['pending_token'] is None and state['review_required']
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+
+
 @pytest.mark.parametrize(('change','code'), [
     ({'confirm_outcome_uncertain': False},
         'OUTCOME_UNCERTAIN_CONFIRMATION_REQUIRED'),
@@ -1923,6 +1985,69 @@ def test_emergency_stop_must_remain_active_through_abort_admission(tmp_path):
     assert budget.inspect()['pending_token'] == reserved['token']
 
 
+@pytest.mark.parametrize('retarget_sample', (1, 2))
+def test_emergency_stop_abort_samples_cannot_retarget_budget_store(
+        tmp_path, retarget_sample):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original_path = budget.path
+    retargeted = tmp_path / f'abort-retargeted-{retarget_sample}.sqlite3'
+    samples = []
+
+    def retargeting_stop():
+        samples.append(True)
+        if len(samples) == retarget_sample:
+            budget.path = retargeted
+        return True
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.abort_pending_reconnect_for_emergency_stop(
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            evaluated_at=1001, emergency_stop_check=retargeting_stop,
+            confirm_emergency_stop_abort=True)
+    assert len(samples) == retarget_sample and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['pending_token'] == reserved['token']
+    assert state['last_outcome'] is None
+
+
+def test_emergency_stop_abort_result_cannot_retarget_budget_store(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original_path = budget.path
+    original_finish = budget.finish
+    retargeted = tmp_path / 'abort-retargeted-result.sqlite3'
+
+    def retarget_after_finish(*args, **kwargs):
+        retained = original_finish(*args, **kwargs)
+        budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, 'finish', retarget_after_finish)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.abort_pending_reconnect_for_emergency_stop(
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            evaluated_at=1001, emergency_stop_check=lambda: True,
+            confirm_emergency_stop_abort=True)
+    assert not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['pending_token'] is None and state['review_required']
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+
+
 def test_emergency_stop_abort_cannot_create_or_close_an_absent_episode(tmp_path):
     _, budget = stores(tmp_path)
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
@@ -2037,6 +2162,63 @@ def test_emergency_stop_waiting_close_requires_stable_active_sample(tmp_path):
             confirm_emergency_stop_close=True)
     assert budget.path.read_bytes() == saved
     assert budget.inspect()['last_outcome'] == 'RETRY_REQUIRED'
+
+
+@pytest.mark.parametrize('retarget_sample', (1, 2))
+def test_emergency_stop_waiting_close_samples_cannot_retarget_budget_store(
+        tmp_path, retarget_sample):
+    budget, _, waiting = waiting_retry(tmp_path)
+    original_path = budget.path
+    retargeted = tmp_path / \
+        f'waiting-close-retargeted-{retarget_sample}.sqlite3'
+    samples = []
+
+    def retargeting_stop():
+        samples.append(True)
+        if len(samples) == retarget_sample:
+            budget.path = retargeted
+        return True
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.close_waiting_reconnect_for_emergency_stop(
+            reconnect_budget=budget,
+            expected_budget_head=waiting['head_sha256'],
+            evaluated_at=1000.5, emergency_stop_check=retargeting_stop,
+            confirm_emergency_stop_close=True)
+    assert len(samples) == retarget_sample and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['head_sha256'] == waiting['head_sha256']
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert not state['review_required']
+
+
+def test_emergency_stop_waiting_close_commit_cannot_retarget_budget_store(
+        tmp_path, monkeypatch):
+    budget, _, waiting = waiting_retry(tmp_path)
+    original_path = budget.path
+    original_insert = budget._insert
+    retargeted = tmp_path / 'waiting-close-retargeted-commit.sqlite3'
+
+    def retarget_after_insert(*args, **kwargs):
+        retained = original_insert(*args, **kwargs)
+        budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, '_insert', retarget_after_insert)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.close_waiting_reconnect_for_emergency_stop(
+            reconnect_budget=budget,
+            expected_budget_head=waiting['head_sha256'],
+            evaluated_at=1000.5, emergency_stop_check=lambda: True,
+            confirm_emergency_stop_close=True)
+    assert not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['review_required'] and state['pending_token'] is None
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
 
 
 def test_emergency_stop_waiting_close_rejects_pending_or_absent_episode(

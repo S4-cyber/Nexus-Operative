@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.272.0'
+REVISION = '0.273.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -268,7 +268,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.272.0 pins the normal Activity SSE reconnect coordinator to the exact cursor and reconnect-budget path/account bindings captured before callbacks, provider access or journal mutation. The coordinator rechecks both bindings after emergency-stop, permission, reservation, provider/checkpoint, completion-clock and durable-result boundaries. A callback or provider path that retargets either mutable store object returns fixed store-binding uncertainty before any later inspection or write can follow the changed target. The original durable reservation remains pending when completion was not recorded; an already committed original result is never rolled back or copied. No automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.273.0 pins explicit no-network Activity SSE checkpoint reconciliation to the exact cursor and reconnect-budget path/account bindings captured before recovery inspection. Both identities are rechecked after the initial budget replay, retained cursor binding, result persistence or lost-acknowledgement recovery, and each final stability replay. A retargeted store returns fixed store-binding uncertainty before the changed target can be inspected or written. The original pending reservation remains pending when no result committed; an original committed result remains durable and is never rolled back or copied. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

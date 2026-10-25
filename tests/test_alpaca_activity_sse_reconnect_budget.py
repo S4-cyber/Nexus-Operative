@@ -2119,6 +2119,187 @@ def test_exact_bound_checkpoint_recovers_pending_result_without_network(tmp_path
     assert len(opener.requests) == 1
 
 
+def test_reconciliation_initial_budget_read_cannot_retarget_cursor_store(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_cursor_path = cursor.path
+    original_inspect = budget.inspect
+    retargeted = tmp_path / 'recovery-retargeted-cursor.sqlite3'
+
+    def retarget_after_budget_read():
+        retained = original_inspect()
+        cursor.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, 'inspect', retarget_after_budget_read)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1 and not retargeted.exists()
+    assert ActivitySSECursorStore(
+        original_cursor_path, ACCOUNT).inspect()['initialized']
+    state = original_inspect()
+    assert state['pending_token'] == reserved['token']
+    assert state['last_outcome'] is None
+
+
+def test_reconciliation_cursor_read_cannot_retarget_budget_store(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_budget_path = budget.path
+    original_binding = cursor.latest_checkpoint_binding
+    retargeted = tmp_path / 'recovery-retargeted-budget.sqlite3'
+
+    def retarget_after_cursor_read():
+        retained = original_binding()
+        budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        retarget_after_cursor_read)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1 and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_budget_path, ACCOUNT).inspect()
+    assert state['pending_token'] == reserved['token']
+    assert state['last_outcome'] is None
+
+
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_reconciliation_result_cannot_retarget_store_before_stability(
+        tmp_path, monkeypatch, store_name):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_cursor_path = cursor.path
+    original_budget_path = budget.path
+    original_finish = budget.finish
+    retargeted = tmp_path / f'recovery-result-{store_name}.sqlite3'
+
+    def retarget_after_finish(*args, **kwargs):
+        retained = original_finish(*args, **kwargs)
+        setattr(cursor if store_name == 'cursor' else budget,
+            'path', retargeted)
+        return retained
+
+    monkeypatch.setattr(budget, 'finish', retarget_after_finish)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1 and not retargeted.exists()
+    assert ActivitySSECursorStore(
+        original_cursor_path, ACCOUNT).inspect()['initialized']
+    state = subject.ActivitySSEReconnectBudget(
+        original_budget_path, ACCOUNT).inspect()
+    assert state['completed'] and state['pending_token'] is None
+    assert state['last_outcome'] == 'CHECKPOINT_COMMITTED'
+
+
+def test_reconciliation_lost_ack_cannot_retarget_before_recovery_read(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_budget_path = budget.path
+    original_finish = budget.finish
+    retargeted = tmp_path / 'recovery-lost-ack-retargeted.sqlite3'
+
+    def lost_ack_after_retarget(*args, **kwargs):
+        original_finish(*args, **kwargs)
+        budget.path = retargeted
+        raise RuntimeError('private lost acknowledgement')
+
+    monkeypatch.setattr(budget, 'finish', lost_ack_after_retarget)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1 and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_budget_path, ACCOUNT).inspect()
+    assert state['completed'] and state['pending_token'] is None
+
+
+def test_reconciliation_final_cursor_read_cannot_retarget_budget_store(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_budget_path = budget.path
+    original_binding = cursor.latest_checkpoint_binding
+    retargeted = tmp_path / 'recovery-final-budget.sqlite3'
+    samples = []
+
+    def retarget_on_final_cursor_read():
+        retained = original_binding()
+        samples.append(True)
+        if len(samples) == 2:
+            budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        retarget_on_final_cursor_read)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert samples == [True, True]
+    assert len(opener.requests) == 1 and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_budget_path, ACCOUNT).inspect()
+    assert state['completed'] and state['pending_token'] is None
+
+
+def test_reconciliation_final_budget_read_cannot_retarget_cursor_store(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_cursor_path = cursor.path
+    original_inspect = budget.inspect
+    retargeted = tmp_path / 'recovery-final-cursor.sqlite3'
+    samples = []
+
+    def retarget_on_final_budget_read():
+        retained = original_inspect()
+        samples.append(True)
+        if len(samples) == 3:
+            cursor.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, 'inspect', retarget_on_final_budget_read)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert samples == [True, True, True]
+    assert len(opener.requests) == 1 and not retargeted.exists()
+    assert ActivitySSECursorStore(
+        original_cursor_path, ACCOUNT).inspect()['initialized']
+    assert original_inspect()['completed']
+
+
 def test_reconciliation_recovers_exact_lost_result_acknowledgement(
         tmp_path, monkeypatch):
     cursor, budget, reserved, checkpoint, opener = \

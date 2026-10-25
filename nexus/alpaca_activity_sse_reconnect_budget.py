@@ -1474,11 +1474,20 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
     budget_binding = (reconnect_budget.path,
         reconnect_budget.account_sha256)
     cursor_binding = (cursor_store.path, cursor_store.account_sha256)
+
+    def require_store_bindings():
+        if not _store_bindings_match(cursor_store, reconnect_budget,
+                cursor_binding=cursor_binding,
+                budget_binding=budget_binding):
+            _fail('STORE_BINDING_CHANGED')
+
     try:
         state = _validated_budget_view(reconnect_budget,
             reconnect_budget.inspect(), 'RECOVERY_STATE_UNCERTAIN')
     except Exception:
+        require_store_bindings()
         _fail('RECOVERY_STATE_UNCERTAIN')
+    require_store_bindings()
     try:
         duplicate = state['head_sha256'] != budget_head
         if duplicate:
@@ -1517,12 +1526,9 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             reservation_bound is True and
             retained_reservation == sha(reservation_token))
     except Exception:
+        require_store_bindings()
         _fail('CURSOR_BINDING_REVIEW_FAILED')
-    if ((reconnect_budget.path, reconnect_budget.account_sha256) !=
-            budget_binding or
-            (cursor_store.path, cursor_store.account_sha256) !=
-            cursor_binding):
-        _fail('STORE_BINDING_CHANGED')
+    require_store_bindings()
     if not binding_matches:
         _fail('CHECKPOINT_BINDING_DISAGREEMENT')
     result_acknowledgement_recovered = False
@@ -1540,27 +1546,39 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
                 checkpoint_receipt_sha256=
                     retained['checkpoint_receipt_sha256'])
         except Exception:
-            recovered = _inspect_after_result_error(reconnect_budget,
-                'RECOVERY_RESULT_UNCERTAIN')
+            require_store_bindings()
+            try:
+                recovered = _inspect_after_result_error(reconnect_budget,
+                    'RECOVERY_RESULT_UNCERTAIN')
+            except Exception:
+                require_store_bindings()
+                raise
+            require_store_bindings()
             result_acknowledgement_recovered = True
         else:
+            require_store_bindings()
             recovered = _validated_budget_view(reconnect_budget, recovered,
                 'RECOVERY_RESULT_UNCERTAIN',
                 result_acknowledgement=True)
+            require_store_bindings()
+    require_store_bindings()
     try:
         unchanged = _validated_checkpoint_binding(cursor_store,
             cursor_store.latest_checkpoint_binding(),
             'RECOVERY_RESULT_UNCERTAIN')
     except Exception:
+        require_store_bindings()
         _fail('RECOVERY_RESULT_UNCERTAIN')
-    stable = _inspect_after_result_error(reconnect_budget,
-        'RECOVERY_RESULT_UNCERTAIN')
+    require_store_bindings()
+    try:
+        stable = _inspect_after_result_error(reconnect_budget,
+            'RECOVERY_RESULT_UNCERTAIN')
+    except Exception:
+        require_store_bindings()
+        raise
+    require_store_bindings()
     result_time = None if duplicate else now
     if (unchanged != retained or
-            (reconnect_budget.path, reconnect_budget.account_sha256) !=
-                budget_binding or
-            (cursor_store.path, cursor_store.account_sha256) !=
-                cursor_binding or
             not _same_result_head(stable, recovered) or
             not _exact_checkpoint_result(stable, reservation_token,
                 retained['head_sha256'],

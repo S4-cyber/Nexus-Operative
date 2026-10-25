@@ -65,6 +65,17 @@ def _positive(value, code):
     return value
 
 
+def _store_binding_matches(store, binding):
+    """Compare one mutable store scope without trusting foreign equality."""
+    try:
+        return (type(store.path) is type(binding[0]) and
+            store.path == binding[0] and
+            type(store.account_sha256) is str and
+            store.account_sha256 == binding[1])
+    except Exception:
+        return False
+
+
 class ActivitySSECursorStore:
     """One account-bound, exact-head Activity SSE cursor journal."""
 
@@ -265,15 +276,25 @@ class ActivitySSECursorStore:
 
     def inspect(self):
         """Replay the complete chain and return the private current cursor."""
+        cursor_binding = (self.path, self.account_sha256)
+
+        def require_cursor_binding():
+            if not _store_binding_matches(self, cursor_binding):
+                _fail('STORE_BINDING_CHANGED')
+
         self._check()
-        if not self.path.exists():
+        require_cursor_binding()
+        if not cursor_binding[0].exists():
             head, cursor, records = ZERO, None, []
         else:
             with closing(self._connect()[0]) as db:
+                require_cursor_binding()
                 head, cursor, records = self._load(db)
+                require_cursor_binding()
+        require_cursor_binding()
         return dict(mode='PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_HISTORY',
             status='REVIEW_REQUIRED', initialized=bool(records),
-            account_sha256=self.account_sha256, head_sha256=head,
+            account_sha256=cursor_binding[1], head_sha256=head,
             current_event_id=cursor,
             current_cursor_sha256=None if cursor is None else sha(cursor),
             retained_checkpoints=len(records), read_only=True,
@@ -283,17 +304,27 @@ class ActivitySSECursorStore:
 
     def latest_checkpoint_binding(self):
         """Return hashes for the latest checkpoint, never its private cursor."""
+        cursor_binding = (self.path, self.account_sha256)
+
+        def require_cursor_binding():
+            if not _store_binding_matches(self, cursor_binding):
+                _fail('STORE_BINDING_CHANGED')
+
         self._check()
-        if not self.path.exists():
+        require_cursor_binding()
+        if not cursor_binding[0].exists():
             _fail('CHECKPOINT_MISSING')
         with closing(self._connect()[0]) as db:
+            require_cursor_binding()
             head, _, records = self._load(db)
+            require_cursor_binding()
         if not records:
             _fail('CHECKPOINT_MISSING')
         latest = records[-1]
         scope = latest['body']['scope']
+        require_cursor_binding()
         return dict(mode='PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING',
-            status='REVIEW_REQUIRED', account_sha256=self.account_sha256,
+            status='REVIEW_REQUIRED', account_sha256=cursor_binding[1],
             head_sha256=head,
             expected_head_sha256=scope['expected_head_sha256'],
             checkpoint_receipt_sha256=latest['body']['receipt_sha256'],

@@ -959,6 +959,29 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         raise
     except Exception:
         _fail('RESERVATION_STATE_UNCERTAIN')
+    try:
+        if type(reservation) is not dict:
+            raise TypeError('reservation acknowledgement shape')
+        token = _digest(reservation['token'], 'TOKEN_INVALID')
+        head = _digest(reservation['head_sha256'], 'HEAD_INVALID')
+        cursor_head = _digest(
+            reservation['expected_cursor_head_sha256'],
+            'CURSOR_HEAD_INVALID')
+        attempt = reservation['attempt']
+        duplicate = reservation['duplicate_reservation']
+        request_authorized = reservation['provider_request_authorized']
+        if (token != head or cursor_head != expected_cursor_head or
+                type(attempt) is not int or
+                not 1 <= attempt <= MAX_ATTEMPTS or
+                type(duplicate) is not bool or
+                type(request_authorized) is not bool or
+                duplicate == request_authorized):
+            raise ValueError('reservation acknowledgement disagreement')
+    except Exception:
+        # A malformed return may follow a committed BEGIN whose caller-side
+        # acknowledgement was corrupted.  Do not infer that no reservation
+        # exists and never construct a provider request from uncertain state.
+        _fail('RESERVATION_STATE_UNCERTAIN')
     if reservation['duplicate_reservation']:
         _fail('RESERVATION_REPLAY_REQUIRES_REVIEW')
     options = dict(expected_account_id=expected_account_id,
@@ -969,7 +992,7 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         permission_check=permission_check,
         emergency_stop_check=emergency_stop_check,
         credential_check=credential_check)
-    options['reconnect_reservation_token'] = reservation['token']
+    options['reconnect_reservation_token'] = token
     if wall_clock is not None:
         options['wall_clock'] = wall_clock
     if elapsed_clock is not None:

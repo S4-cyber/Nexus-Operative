@@ -236,6 +236,47 @@ def test_reservation_lost_ack_preserves_pending_without_provider_io(
     assert state['next_allowed_at'] == 0 and not state['review_required']
 
 
+@pytest.mark.parametrize('malformed', (None, {}, [],
+    {'token': ZERO}, {'duplicate_reservation': False}))
+def test_malformed_reservation_ack_fails_closed_before_provider_io(
+        tmp_path, monkeypatch, malformed):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    monkeypatch.setattr(budget, 'begin', lambda **kwargs: malformed)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
+def test_committed_reservation_corrupt_ack_preserves_pending_without_io(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    original_begin = budget.begin
+    original_inspect = budget.inspect
+
+    def corrupt_ack(**kwargs):
+        reservation = original_begin(**kwargs)
+        return {**reservation, 'provider_request_authorized': 'private'}
+
+    monkeypatch.setattr(budget, 'begin', corrupt_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert not opener.requests and not cursor.path.exists()
+    state = original_inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['attempts'] == 1 and state['last_outcome'] is None
+    assert state['next_allowed_at'] == 0 and not state['review_required']
+
+
 def test_success_result_and_exact_replay_bind_observed_completion_time(
         tmp_path):
     _, raw = segments()

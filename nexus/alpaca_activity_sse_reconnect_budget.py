@@ -982,6 +982,36 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         # acknowledgement was corrupted.  Do not infer that no reservation
         # exists and never construct a provider request from uncertain state.
         _fail('RESERVATION_STATE_UNCERTAIN')
+    try:
+        retained_reservation = _budget_state_for_attempt(reconnect_budget)
+        admission_time = _clock(evaluated_at)
+        prior_result_is_due = (
+            (attempt == 1 and
+                retained_reservation['last_outcome'] is None and
+                retained_reservation['next_allowed_at'] == 0) or
+            (attempt > 1 and
+                retained_reservation['last_outcome'] == 'RETRY_REQUIRED' and
+                0 < retained_reservation['next_allowed_at'] <=
+                    admission_time))
+        if (retained_reservation['pending_token'] != token or
+                retained_reservation['head_sha256'] != token or
+                retained_reservation['attempts'] != attempt or
+                retained_reservation['expected_cursor_head_sha256'] !=
+                    cursor_head or
+                retained_reservation['last_begin_expected_head_sha256'] !=
+                    expected_budget_head or
+                retained_reservation['last_evaluated_at'] !=
+                    admission_time or
+                retained_reservation['last_reconnect_reason'] !=
+                    reconnect_reason or
+                not prior_result_is_due or
+                retained_reservation['review_required'] or
+                retained_reservation['completed']):
+            raise ValueError('reservation acknowledgement not durable')
+    except Exception:
+        # A structurally valid acknowledgement is not request authority until
+        # the private journal independently proves the exact pending BEGIN.
+        _fail('RESERVATION_STATE_UNCERTAIN')
     if reservation['duplicate_reservation']:
         _fail('RESERVATION_REPLAY_REQUIRES_REVIEW')
     options = dict(expected_account_id=expected_account_id,

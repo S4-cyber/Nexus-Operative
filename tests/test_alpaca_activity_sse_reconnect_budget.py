@@ -277,6 +277,77 @@ def test_committed_reservation_corrupt_ack_preserves_pending_without_io(
     assert state['next_allowed_at'] == 0 and not state['review_required']
 
 
+def test_well_formed_uncommitted_reservation_ack_has_no_request_authority(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    token = 'a' * 64
+    monkeypatch.setattr(budget, 'begin', lambda **kwargs: dict(
+        token=token, head_sha256=token, attempt=1,
+        expected_cursor_head_sha256=ZERO,
+        duplicate_reservation=False, provider_request_authorized=True))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
+@pytest.mark.parametrize('changed', (
+    {'token': 'a' * 64, 'head_sha256': 'a' * 64},
+    {'attempt': 2}))
+def test_structurally_valid_corrupt_ack_must_match_durable_reservation(
+        tmp_path, monkeypatch, changed):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    original_begin = budget.begin
+
+    def corrupt_ack(**kwargs):
+        return {**original_begin(**kwargs), **changed}
+
+    monkeypatch.setattr(budget, 'begin', corrupt_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert not opener.requests and not cursor.path.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        budget.path, ACCOUNT).inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['attempts'] == 1 and state['last_outcome'] is None
+    assert state['next_allowed_at'] == 0 and not state['review_required']
+
+
+def test_post_reservation_inspection_failure_blocks_provider_io(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    original_begin = budget.begin
+
+    def unreadable_after_commit(**kwargs):
+        reservation = original_begin(**kwargs)
+        monkeypatch.setattr(budget, 'inspect', lambda: (_ for _ in ()).throw(
+            RuntimeError('private post-reservation inspection detail')))
+        return reservation
+
+    monkeypatch.setattr(budget, 'begin', unreadable_after_commit)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert not opener.requests and not cursor.path.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        budget.path, ACCOUNT).inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['attempts'] == 1 and state['last_outcome'] is None
+    assert state['next_allowed_at'] == 0 and not state['review_required']
+
+
 def test_success_result_and_exact_replay_bind_observed_completion_time(
         tmp_path):
     _, raw = segments()

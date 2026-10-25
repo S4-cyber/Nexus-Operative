@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.265.0'
+REVISION = '0.266.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -114,6 +114,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; reconnect reservation acknowledgements are now admitted only when their token/head, cursor binding, bounded attempt and exact boolean replay/authorization fields form one internally consistent result; missing, malformed or conflicting fields return fixed reservation-state uncertainty before provider IO and leave any committed reservation pending for explicit review' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; a structurally valid reconnect reservation acknowledgement now receives an independent exact durable-journal proof before provider IO: the pending token/current head, attempt, admitted cursor, prior budget head, evaluation time, reason and eligible prior retry state must agree; forged uncommitted returns, corrupted fields and unreadable post-commit state fail with fixed reservation uncertainty and leave any real reservation pending without request authority' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -260,7 +264,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.265.0 validates the complete reconnect-reservation acknowledgement before it may authorize provider IO. The token and head must be equal valid digests, the cursor binding must equal the admitted cursor, the attempt must be bounded and the replay/authorization flags must be exact opposite booleans. Missing, malformed or conflicting fields return fixed RESERVATION_STATE_UNCERTAIN without exposing private values. A reservation that committed before its acknowledgement was corrupted remains pending with its consumed attempt, no result and no retry due for explicit review. Existing policy diagnostics remain distinct and existing rows remain compatible. No automatic retry, provider access, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.266.0 requires every structurally valid reconnect-reservation acknowledgement to match an independently replayed durable journal before provider IO. The pending token/current head, bounded attempt, admitted cursor, prior budget head, evaluation time, reason and eligible first-attempt or due-retry state must agree exactly. Forged uncommitted returns, corrupted acknowledgements and unreadable post-commit state return fixed RESERVATION_STATE_UNCERTAIN without exposing private values or creating request authority. A real committed reservation remains pending with its consumed attempt and no new retry authorization for explicit review. Existing policy diagnostics and rows remain compatible. No automatic retry, provider access, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

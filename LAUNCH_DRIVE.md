@@ -1,8 +1,16 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
-## Delivery planning update — 2026-10-24
+## Delivery planning update — 2026-10-25
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.264.0 parent has no connector-visible exact-source workflow result; v0.265.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.265.0 parent has no connector-visible exact-source workflow result; v0.266.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.266.0 durable reconnect-reservation acknowledgement proof
+
+Every structurally valid reconnect reservation acknowledgement must now match an independent durable-journal replay before provider setup. The exact pending token/head, attempt, cursor, prior head, time, reason and eligible prior outcome are required. Forged uncommitted returns, corrupted acknowledgements and unreadable post-commit state fail closed with fixed reservation uncertainty.
+
+An absent reservation leaves both stores absent; a committed reservation remains pending without another request authority. The provider opener is never called. No UI or modifiable parameter changed, and the seven beginner tabs plus black/bright-purple bottom-right help contract remain unchanged. Disposable injected evidence is not actual provider/account, source/delivery/replay, native durability, reconciliation, sustained-market, trading or release acceptance.
+
+Final local v0.266.0 validation passed 3,959 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 348. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `2242ca64f465b75c48e5ae19561988eded2649acecea4b6eb3c6f4cb0e8ad313`; `validation/release_trials_0_266_0.json` SHA256 is `4448228a4aaabcc4f252710708f3764957cc6c956e14739ca19b34f6fe0b11ed`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace passed. The exact 628-path proposed snapshot and reachable 660-commit / 4,757-blob history audit passed with zero findings. The audit is not a secret detector; fresh exact-source hosted security and platform workflows remain mandatory.
 
 ## v0.265.0 validated reconnect-reservation acknowledgement
 

@@ -1,12 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-Assessment date: 2026-10-24 (America/Los_Angeles).
-Parent source reviewed: `7cfab817a8e261070ed51e1d2b328e931db6ed38` (v0.264.0), whose verified local tree is published but has no connector-visible exact-source workflow result; v0.265.0 is the current candidate and requires fresh exact-source checks.
+Assessment date: 2026-10-25 (America/Los_Angeles).
+Parent source reviewed: `3749ebb20f6fe28c8c955ef23cde9b4f73d6a179` (v0.265.0), whose verified local tree is published but has no connector-visible exact-source workflow result; v0.266.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.265.0 validates the complete reconnect-reservation acknowledgement before provider IO. Token/head, cursor, bounded attempt and replay/authorization fields must form one consistent result; malformed or conflicting returns produce fixed reservation uncertainty. A committed reservation remains pending with no result or retry due. Injected evidence does not establish actual provider/account timing, rate-limit or outage semantics, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.266.0 independently proves every structurally valid reconnect-reservation acknowledgement against the durable journal before provider IO. Pending token/head, attempt, cursor, prior budget head, time, reason and eligible prior outcome must agree; forged, corrupted or unreadable state produces fixed reservation uncertainty. A committed reservation remains pending without new request authority. Injected evidence does not establish actual provider/account timing, rate-limit or outage semantics, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
-Local candidate evidence: 3,955 tests passed with one expected non-Windows skip and one existing warning; 16/16 bounded offline profiles and saved-evidence verification matched 387 source files / `622e7de8058546a3f6cd3e8ecec4694160d2e5c24afe43c8d694e46b3af91a68`. Static checks and the 627-path proposed snapshot plus reachable 659-commit / 4,745-blob history audit passed. The audit is not a secret detector. This is implementation evidence only. Fresh exact-source hosted workflows, actual provider/account acceptance and every independent gate remain open.
+Local candidate evidence: 3,959 tests passed with one expected non-Windows skip and one existing warning; 16/16 bounded offline profiles and saved-evidence verification matched 387 source files / `2242ca64f465b75c48e5ae19561988eded2649acecea4b6eb3c6f4cb0e8ad313`. Static checks and the 628-path proposed snapshot plus reachable 660-commit / 4,757-blob history audit passed. The audit is not a secret detector. This is implementation evidence only. Fresh exact-source hosted workflows, actual provider/account acceptance and every independent gate remain open.
 
 ## Current assessment
 

@@ -470,6 +470,227 @@ def test_emergency_stop_callback_cannot_retarget_cursor_store(tmp_path):
     assert not retargeted.exists() and not budget.path.exists()
 
 
+@pytest.mark.parametrize('retarget_sample', (1, 2))
+def test_budget_begin_stop_samples_cannot_retarget_store(
+        tmp_path, retarget_sample):
+    _, budget = stores(tmp_path)
+    original_path = budget.path
+    retargeted = tmp_path / f'begin-stop-retargeted-{retarget_sample}.sqlite3'
+    samples = []
+
+    def retargeting_stop():
+        samples.append(True)
+        if len(samples) == retarget_sample:
+            budget.path = retargeted
+        return False
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=retargeting_stop,
+            confirm_reconnect_attempt=True)
+    assert len(samples) == retarget_sample and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['attempts'] == 0 and state['pending_token'] is None
+
+
+def test_budget_begin_inspection_cannot_retarget_store(tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    original_path = budget.path
+    original_inspect = budget.inspect
+    retargeted = tmp_path / 'begin-inspect-retargeted.sqlite3'
+
+    def retarget_after_inspect():
+        retained = original_inspect()
+        budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, 'inspect', retarget_after_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=STOP_CLEAR,
+            confirm_reconnect_attempt=True)
+    assert not original_path.exists() and not retargeted.exists()
+
+
+def test_budget_begin_commit_cannot_retarget_store(tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    original_path = budget.path
+    original_insert = budget._insert
+    retargeted = tmp_path / 'begin-commit-retargeted.sqlite3'
+    inserts = []
+
+    def retarget_after_insert(*args, **kwargs):
+        retained = original_insert(*args, **kwargs)
+        inserts.append(True)
+        if len(inserts) == 2:
+            budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, '_insert', retarget_after_insert)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=STOP_CLEAR,
+            confirm_reconnect_attempt=True)
+    assert inserts == [True, True] and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['attempts'] == 0 and state['pending_token'] is None
+
+
+def test_duplicate_budget_begin_stop_sample_cannot_retarget_store(tmp_path):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original_path = budget.path
+    retargeted = tmp_path / 'duplicate-begin-stop-retargeted.sqlite3'
+    samples = []
+
+    def retargeting_stop():
+        samples.append(True)
+        if len(samples) == 2:
+            budget.path = retargeted
+        return False
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=retargeting_stop,
+            confirm_reconnect_attempt=True)
+    assert samples == [True, True] and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['pending_token'] == reserved['token']
+    assert state['last_outcome'] is None
+
+
+@pytest.mark.parametrize('retarget_sample', (1, 2))
+def test_budget_finish_retry_stop_samples_cannot_retarget_store(
+        tmp_path, retarget_sample):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original_path = budget.path
+    retargeted = tmp_path / f'finish-stop-retargeted-{retarget_sample}.sqlite3'
+    samples = []
+
+    def retargeting_stop():
+        samples.append(True)
+        if len(samples) == retarget_sample:
+            budget.path = retargeted
+        return False
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        budget.finish(reserved['token'], evaluated_at=1001,
+            outcome='RETRY_REQUIRED',
+            detail_code=
+                'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+            emergency_stop_check=retargeting_stop)
+    assert len(samples) == retarget_sample and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['pending_token'] == reserved['token']
+    assert state['last_outcome'] is None
+
+
+def test_budget_finish_inspection_cannot_retarget_store(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original_path = budget.path
+    original_inspect = budget.inspect
+    retargeted = tmp_path / 'finish-inspect-retargeted.sqlite3'
+
+    def retarget_after_inspect():
+        retained = original_inspect()
+        budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, 'inspect', retarget_after_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        budget.finish(reserved['token'], evaluated_at=1001,
+            outcome='REVIEW_REQUIRED', detail_code='INJECTED_REVIEW')
+    assert not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['pending_token'] == reserved['token']
+    assert state['last_outcome'] is None
+
+
+def test_budget_finish_commit_cannot_retarget_store(tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original_path = budget.path
+    original_insert = budget._insert
+    retargeted = tmp_path / 'finish-commit-retargeted.sqlite3'
+
+    def retarget_after_insert(*args, **kwargs):
+        retained = original_insert(*args, **kwargs)
+        budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, '_insert', retarget_after_insert)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        budget.finish(reserved['token'], evaluated_at=1001,
+            outcome='REVIEW_REQUIRED', detail_code='INJECTED_REVIEW')
+    assert not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['pending_token'] == reserved['token']
+    assert state['last_outcome'] is None
+
+
+def test_budget_finish_final_inspection_cannot_retarget_store(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original_path = budget.path
+    original_inspect = budget.inspect
+    retargeted = tmp_path / 'finish-final-inspect-retargeted.sqlite3'
+    samples = []
+
+    def retarget_on_final_inspect():
+        retained = original_inspect()
+        samples.append(True)
+        if len(samples) == 2:
+            budget.path = retargeted
+        return retained
+
+    monkeypatch.setattr(budget, 'inspect', retarget_on_final_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        budget.finish(reserved['token'], evaluated_at=1001,
+            outcome='REVIEW_REQUIRED', detail_code='INJECTED_REVIEW')
+    assert samples == [True, True] and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_path, ACCOUNT).inspect()
+    assert state['pending_token'] is None and state['review_required']
+    assert state['last_detail_code'] == 'INJECTED_REVIEW'
+
+
 def test_permission_callback_cannot_retarget_budget_store(tmp_path):
     cursor, budget = stores(tmp_path)
     original_budget_path = budget.path

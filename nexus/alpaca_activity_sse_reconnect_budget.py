@@ -757,6 +757,12 @@ class ActivitySSEReconnectBudget:
         now = _clock(evaluated_at)
         cursor_head = _digest(expected_cursor_head, 'CURSOR_HEAD_INVALID')
         expected = _digest(expected_head, 'EXPECTED_HEAD_INVALID')
+        budget_binding = (self.path, self.account_sha256)
+
+        def require_budget_binding():
+            if not _budget_binding_matches(self, budget_binding):
+                _fail('STORE_BINDING_CHANGED')
+
         if confirm_reconnect_attempt is not True:
             _fail('CONFIRMATION_REQUIRED')
         if reconnect_reason not in REASONS:
@@ -770,9 +776,12 @@ class ActivitySSEReconnectBudget:
             except Exception:
                 return False
 
-        if not stop_clear():
+        clear = stop_clear()
+        require_budget_binding()
+        if not clear:
             _fail('EMERGENCY_STOP_ACTIVE')
         current = _budget_state_for_attempt(self)
+        require_budget_binding()
         if current['head_sha256'] != expected:
             exact_reservation = (
                 current['pending_token'] is not None and
@@ -799,10 +808,13 @@ class ActivitySSEReconnectBudget:
                             state['last_reconnect_reason'] !=
                                 reconnect_reason):
                         _fail('BEGIN_REPLAY_DISAGREEMENT')
-                    if not stop_clear():
+                    clear = stop_clear()
+                    require_budget_binding()
+                    if not clear:
                         _fail('EMERGENCY_STOP_ACTIVE')
                     token = state['pending_token']
                     attempt = state['attempts']
+            require_budget_binding()
             return dict(token=token, attempt=attempt,
                 head_sha256=token,
                 expected_cursor_head_sha256=cursor_head,
@@ -839,10 +851,26 @@ class ActivitySSEReconnectBudget:
                         state['completed'] or state['attempts'] >= MAX_ATTEMPTS or
                         now < state['next_allowed_at']):
                     _fail('ADMISSION_CHANGED')
+                db.execute('SAVEPOINT reconnect_begin_scope')
+
+                def require_transaction_binding():
+                    if _budget_binding_matches(self, budget_binding):
+                        return
+                    db.execute('ROLLBACK TO reconnect_begin_scope')
+                    db.execute('RELEASE reconnect_begin_scope')
+                    if new:
+                        # Preserve only the account-bound schema for a fresh
+                        # path.  Never leave an empty SQLite file that cannot
+                        # be replayed after rejecting a retargeted callback.
+                        db.commit()
+                    _fail('STORE_BINDING_CHANGED')
+
                 # Re-sample under the exact-head write transaction.  A stop
                 # raised between review and reservation cannot consume an
                 # attempt or create a pending episode.
-                if not stop_clear():
+                clear = stop_clear()
+                require_transaction_binding()
+                if not clear:
                     # On the first use, retain only the account-bound schema
                     # so the newly created file remains replayable.  No BEGIN
                     # attempt is appended and every existing journal remains
@@ -852,9 +880,12 @@ class ActivitySSEReconnectBudget:
                     _fail('EMERGENCY_STOP_ACTIVE')
                 token = self._insert(db, state['attempts'] + 1 + state['attempts'],
                     body, state['head_sha256'])
+                require_transaction_binding()
                 loaded = self._load(db)
                 if loaded['pending_token'] != token:
                     _fail('COMMIT_REPLAY_DISAGREEMENT')
+                db.execute('RELEASE reconnect_begin_scope')
+        require_budget_binding()
         return dict(token=token, attempt=body['attempt'],
             head_sha256=token, expected_cursor_head_sha256=cursor_head,
             duplicate_reservation=False,
@@ -866,6 +897,12 @@ class ActivitySSEReconnectBudget:
         """Record the exact outcome of the reserved attempt."""
         now = _clock(evaluated_at)
         token = _digest(token, 'TOKEN_INVALID')
+        budget_binding = (self.path, self.account_sha256)
+
+        def require_budget_binding():
+            if not _budget_binding_matches(self, budget_binding):
+                _fail('STORE_BINDING_CHANGED')
+
         if outcome not in OUTCOMES:
             _fail('OUTCOME_INVALID')
         if (type(detail_code) is not str or
@@ -893,7 +930,9 @@ class ActivitySSEReconnectBudget:
                     return False
 
             retry_clear_before_commit = stop_clear()
+            require_budget_binding()
         current = self.inspect()
+        require_budget_binding()
         if current['pending_token'] != token:
             exact_result = (
                 current['pending_token'] is None and
@@ -924,8 +963,14 @@ class ActivitySSEReconnectBudget:
                 # exactly clear both before review and under the exact-token
                 # write transaction.  Active, failing, or indeterminate checks
                 # close the episode for review without a due reconnect.
+                retry_clear_during_commit = retry_clear_before_commit
                 if (outcome == 'RETRY_REQUIRED' and
-                        (not retry_clear_before_commit or not stop_clear())):
+                        retry_clear_before_commit):
+                    retry_clear_during_commit = stop_clear()
+                    require_budget_binding()
+                if (outcome == 'RETRY_REQUIRED' and
+                        (not retry_clear_before_commit or
+                            not retry_clear_during_commit)):
                     retained_outcome = 'REVIEW_REQUIRED'
                     retained_detail = 'EMERGENCY_STOP_ACTIVE'
                 next_at = (now + BACKOFF_SECONDS[state['attempts'] - 1]
@@ -949,11 +994,15 @@ class ActivitySSEReconnectBudget:
                     checkpoint_receipt_sha256=checkpoint_receipt_sha256)
                 head = self._insert(db, 2 * state['attempts'], body,
                     state['head_sha256'])
+                require_budget_binding()
                 loaded = self._load(db)
                 if (loaded['head_sha256'] != head or
                         loaded['last_outcome'] != retained_outcome):
                     _fail('COMMIT_REPLAY_DISAGREEMENT')
-        return dict(self.inspect(), duplicate_result=False)
+        require_budget_binding()
+        retained = self.inspect()
+        require_budget_binding()
+        return dict(retained, duplicate_result=False)
 
     def close_pending_for_outcome_uncertainty(self, *, evaluated_at,
             expected_head, confirm_outcome_uncertain=False,

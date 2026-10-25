@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.274.0'
+REVISION = '0.275.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -126,6 +126,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the explicit local emergency-stop abort, retry-wait close and outcome-uncertainty close now pin the exact reconnect-budget path/account binding across every callback, replay, transaction and result acknowledgement, returning fixed store-binding uncertainty before a retargeted store can be inspected or written' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; reconnect-budget admission and terminal-result persistence now pin their own exact path/account binding across initial replay, both emergency-stop samples, exact-head transactions and final acknowledgement inspection, rolling back a retargeted write and preserving a replayable schema-only fresh journal' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -272,7 +276,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.274.0 pins each explicit local reconnect-budget closure to the exact path/account binding captured before recovery begins. Outcome-uncertainty closure, pending-attempt emergency-stop abort and retry-wait emergency-stop close recheck that binding after journal replay, after every independent stop sample, inside the exact-head transaction and after result acknowledgement. A retargeted budget returns fixed store-binding uncertainty before a later read or write can follow the changed target. The original pending or waiting state remains unchanged if the mutation precedes commit; an original committed terminal review state remains durable and is never rolled back or copied. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.275.0 pins reconnect-budget admission and terminal-result persistence to the exact path/account binding captured before either operation begins. The budget now rechecks its own identity after initial replay, after both independent emergency-stop samples, inside each exact-head transaction, after insert replay and after final result inspection. A retargeted callback or method returns fixed store-binding uncertainty before a later read or write follows the changed target. Transactional mutations roll back; a fresh rejected reservation retains only a valid account-bound schema rather than an unreadable empty SQLite file; an already committed terminal result remains durable on the original path. No provider request, automatic retry, credential persistence, cursor access, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

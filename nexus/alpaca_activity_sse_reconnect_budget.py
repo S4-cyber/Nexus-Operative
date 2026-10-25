@@ -948,11 +948,17 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
     before_head = _cursor_head_for_attempt(cursor_store)
     if before_head != expected_cursor_head:
         _fail('CURSOR_HEAD_CHANGED')
-    reservation = reconnect_budget.begin(evaluated_at=evaluated_at,
-        expected_cursor_head=expected_cursor_head,
-        reconnect_reason=reconnect_reason, expected_head=expected_budget_head,
-        emergency_stop_check=emergency_stop_check,
-        confirm_reconnect_attempt=confirm_reconnect_attempt)
+    try:
+        reservation = reconnect_budget.begin(evaluated_at=evaluated_at,
+            expected_cursor_head=expected_cursor_head,
+            reconnect_reason=reconnect_reason,
+            expected_head=expected_budget_head,
+            emergency_stop_check=emergency_stop_check,
+            confirm_reconnect_attempt=confirm_reconnect_attempt)
+    except ActivitySSEReconnectBudgetError:
+        raise
+    except Exception:
+        _fail('RESERVATION_STATE_UNCERTAIN')
     if reservation['duplicate_reservation']:
         _fail('RESERVATION_REPLAY_REQUIRES_REVIEW')
     options = dict(expected_account_id=expected_account_id,

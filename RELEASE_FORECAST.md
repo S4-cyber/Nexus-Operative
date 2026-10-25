@@ -1,12 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-24 (America/Los_Angeles).
-Parent source reviewed: `8bbc3f907cee6d836b71acca5df45ade27b3aab1` (v0.262.0), whose verified local tree is published but has no connector-visible exact-source workflow result; v0.263.0 is the current candidate and requires fresh exact-source checks.
+Parent source reviewed: `75068b449e6f6c747b2fa30b83e68589d41bbb3c` (v0.263.0), whose verified local tree is published but has no connector-visible exact-source workflow result; v0.264.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.263.0 makes the reconnect coordinator's initial budget inspection fail closed alongside the cursor preflight. The complete retained view must have valid digest, clock, counter, flag and reason fields; unreadable or malformed state returns fixed admission uncertainty before reservation or provider IO. Injected evidence does not establish actual provider/account timing, rate-limit or outage semantics, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.264.0 contains unexpected reconnect-reservation failures before provider IO. A pre-commit failure leaves both stores absent; a lost acknowledgement after durable commit preserves one pending attempt with no result or retry due. Both return fixed reservation uncertainty while policy denials remain distinct. Injected evidence does not establish actual provider/account timing, rate-limit or outage semantics, entitlement, TLS/DNS, source/delivery/replay completeness, native durability, broker-wide coordination or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
-Local candidate evidence: 3,947 tests passed with one expected non-Windows skip and one existing warning; 16/16 bounded offline profiles and saved-evidence verification matched 387 source files / `5e01b139ec892368058932ccf0f76c80bcb58046cfe52aa5bd226940f3e2602e`. Static checks and the 625-path proposed snapshot plus reachable 657-commit / 4,721-blob history audit passed. The audit is not a secret detector. This is implementation evidence only. Fresh exact-source hosted workflows, actual provider/account acceptance and every independent gate remain open.
+Local candidate evidence: 3,949 tests passed with one expected non-Windows skip and one existing warning; 16/16 bounded offline profiles and saved-evidence verification matched 387 source files / `2d9b0906f990b34c10b7636a7f8b9f383c4d07f9b6dde5f384be0f37f555c8f0`. Static checks and the 626-path proposed snapshot plus reachable 658-commit / 4,733-blob history audit passed. The audit is not a secret detector. This is implementation evidence only. Fresh exact-source hosted workflows, actual provider/account acceptance and every independent gate remain open.
 
 ## Current assessment
 

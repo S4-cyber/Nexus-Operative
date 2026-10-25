@@ -194,6 +194,48 @@ def test_malformed_initial_budget_view_fails_closed_before_reservation(
     assert not cursor.path.exists() and not budget.path.exists()
 
 
+def test_reservation_failure_before_commit_is_sanitized(tmp_path,
+        monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    monkeypatch.setattr(budget, 'begin',
+        lambda **kwargs: (_ for _ in ()).throw(
+            RuntimeError('private reservation storage detail')))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
+def test_reservation_lost_ack_preserves_pending_without_provider_io(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    original_begin = budget.begin
+    original_inspect = budget.inspect
+
+    def lost_ack(**kwargs):
+        original_begin(**kwargs)
+        raise RuntimeError('private reservation acknowledgement detail')
+
+    monkeypatch.setattr(budget, 'begin', lost_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert not opener.requests and not cursor.path.exists()
+    state = original_inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['attempts'] == 1 and state['last_outcome'] is None
+    assert state['next_allowed_at'] == 0 and not state['review_required']
+
+
 def test_success_result_and_exact_replay_bind_observed_completion_time(
         tmp_path):
     _, raw = segments()

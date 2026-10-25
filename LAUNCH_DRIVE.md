@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.262.0 parent has no connector-visible exact-source workflow result; v0.263.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.263.0 parent has no connector-visible exact-source workflow result; v0.264.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.264.0 fail-closed reconnect-reservation acknowledgement
+
+Reconnect reservation now sanitizes unexpected failures on both sides of its durable commit. A failure before commit leaves both stores absent. A lost acknowledgement after commit preserves the pending attempt with no result or retry due. Both return fixed reservation-state uncertainty and never invoke the provider opener.
+
+Existing policy denials remain exact and distinct. No UI or modifiable parameter changed, and the seven beginner tabs plus black/bright-purple bottom-right help contract remain unchanged. Disposable injected evidence is not actual provider/account, source/delivery/replay, native durability, reconciliation, sustained-market, trading or release acceptance.
+
+Final local validation passed 3,949 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 338. All sixteen offline profiles and saved-evidence verification matched 387 source files / `2d9b0906f990b34c10b7636a7f8b9f383c4d07f9b6dde5f384be0f37f555c8f0`; the saved report SHA256 is `a00beaf80bb86eaf87a54471dac5eb97c1133af1616ab1a7b246d23bbc16226c`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace passed. The 626-path proposed snapshot and reachable 658-commit / 4,733-blob history audit found no public artifacts, but it is not a secret detector. Exact-source hosted results remain required before this source is treated as a verified checkpoint.
 
 ## v0.263.0 fail-closed reconnect-budget admission inspection
 

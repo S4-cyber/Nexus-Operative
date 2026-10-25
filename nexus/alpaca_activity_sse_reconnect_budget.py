@@ -134,21 +134,33 @@ def _exact_checkpoint_result(retained, token, checkpoint_head,
     requested/final outcome, current result head and (when newly written) the
     supplied result time.
     """
-    return (retained['completed'] and not retained['review_required'] and
-        retained['pending_token'] is None and
-        retained['head_sha256'] == retained['last_result_head_sha256'] and
-        retained['last_attempt_head_sha256'] == token and
-        (evaluated_at is None or
-            retained['last_evaluated_at'] == evaluated_at) and
-        retained['last_outcome'] == 'CHECKPOINT_COMMITTED' and
-        retained['last_detail_code'] == 'SUCCESS' and
-        retained['last_requested_outcome'] == 'CHECKPOINT_COMMITTED' and
-        retained['last_requested_detail_code'] == 'SUCCESS' and
-        retained['last_requested_retry_after_seconds'] == 0 and
-        retained['last_applied_backoff_seconds'] == 0 and
-        retained['next_allowed_at'] == 0 and
-        retained['checkpoint_head_sha256'] == checkpoint_head and
-        retained['checkpoint_receipt_sha256'] == checkpoint_receipt)
+    try:
+        return (retained['completed'] and
+            not retained['review_required'] and
+            retained['pending_token'] is None and
+            retained['head_sha256'] == retained['last_result_head_sha256'] and
+            retained['last_attempt_head_sha256'] == token and
+            (evaluated_at is None or
+                retained['last_evaluated_at'] == evaluated_at) and
+            retained['last_outcome'] == 'CHECKPOINT_COMMITTED' and
+            retained['last_detail_code'] == 'SUCCESS' and
+            retained['last_requested_outcome'] == 'CHECKPOINT_COMMITTED' and
+            retained['last_requested_detail_code'] == 'SUCCESS' and
+            retained['last_requested_retry_after_seconds'] == 0 and
+            retained['last_applied_backoff_seconds'] == 0 and
+            retained['next_allowed_at'] == 0 and
+            retained['checkpoint_head_sha256'] == checkpoint_head and
+            retained['checkpoint_receipt_sha256'] == checkpoint_receipt)
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return False
+
+
+def _same_result_head(left, right):
+    """Compare recovery views without exposing malformed private state."""
+    try:
+        return left['head_sha256'] == right['head_sha256']
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return False
 
 
 def _exact_failure_result(retained, token, evaluated_at,
@@ -1141,20 +1153,22 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
                 checkpoint_receipt_sha256=
                     retained['checkpoint_receipt_sha256'])
         except Exception:
-            recovered = reconnect_budget.inspect()
+            recovered = _inspect_after_result_error(reconnect_budget,
+                'RECOVERY_RESULT_UNCERTAIN')
             result_acknowledgement_recovered = True
     try:
         unchanged = cursor_store.latest_checkpoint_binding()
     except Exception:
         _fail('RECOVERY_RESULT_UNCERTAIN')
-    stable = reconnect_budget.inspect()
+    stable = _inspect_after_result_error(reconnect_budget,
+        'RECOVERY_RESULT_UNCERTAIN')
     result_time = None if duplicate else now
     if (unchanged != retained or
             (reconnect_budget.path, reconnect_budget.account_sha256) !=
                 budget_binding or
             (cursor_store.path, cursor_store.account_sha256) !=
                 cursor_binding or
-            stable['head_sha256'] != recovered['head_sha256'] or
+            not _same_result_head(stable, recovered) or
             not _exact_checkpoint_result(stable, reservation_token,
                 retained['head_sha256'],
                 retained['checkpoint_receipt_sha256'], result_time)):

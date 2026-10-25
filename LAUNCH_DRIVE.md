@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.258.0 parent has no connector-visible exact-source workflow result; v0.259.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.259.0 parent has no connector-visible exact-source workflow result; v0.260.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.260.0 fail-closed checkpoint-result recovery inspection
+
+Explicit checkpoint reconciliation now sanitizes both result-recovery inspection windows. If checkpoint-result persistence commits but loses its acknowledgement, an unreadable or malformed recovery view produces only fixed recovery uncertainty. If the final post-write stability inspection fails, it does the same. Exact matching no longer leaks raw mapping errors; it requires the stable terminal result to bind the result head, reservation, supplied result time, checkpoint head and receipt.
+
+The committed terminal result is not rolled back or overwritten, no provider request is repeated and no retry authority is created. No UI or modifiable parameter changed, and the seven beginner tabs plus black/bright-purple bottom-right help contract remain unchanged. Disposable injected evidence is not actual provider/account, source/delivery/replay, native durability, reconciliation, sustained-market, trading or release acceptance.
+
+Final local validation passed 3,927 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 316. All sixteen offline profiles and saved-evidence verification matched 387 source files / `811f13208048a8d5fb5ee279d693937b6a46f1b224887eddd642eb3afcc51deb`; the saved report SHA256 is `357d29055e44ed8f445ff6710c5611cf8de618f9f1696e67b14f4958ded99480`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace passed. The 622-path proposed snapshot and reachable 654-commit / 4,685-blob history audit found no public artifacts, but it is not a secret detector. Exact-source hosted results remain required before this source is treated as a verified checkpoint.
 
 ## v0.259.0 fail-closed post-attempt cursor inspection
 

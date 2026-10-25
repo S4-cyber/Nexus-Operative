@@ -1470,6 +1470,105 @@ def test_reconciliation_recovers_exact_lost_result_acknowledgement(
     assert budget.inspect()['completed']
 
 
+def test_reconciliation_lost_ack_inspection_failure_is_sanitized(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_finish = budget.finish
+    original_inspect = budget.inspect
+    committed = False
+
+    def lost_ack(*args, **kwargs):
+        nonlocal committed
+        original_finish(*args, **kwargs)
+        committed = True
+        raise RuntimeError('private lost acknowledgement')
+
+    def failed_recovery_inspect():
+        if committed:
+            raise RuntimeError('private recovery inspection detail')
+        return original_inspect()
+
+    monkeypatch.setattr(budget, 'finish', lost_ack)
+    monkeypatch.setattr(budget, 'inspect', failed_recovery_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RECOVERY_RESULT_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert len(opener.requests) == 1
+    assert original_inspect()['completed']
+
+
+def test_reconciliation_final_result_inspection_failure_is_sanitized(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_finish = budget.finish
+    original_inspect = budget.inspect
+    committed = False
+
+    def finish(*args, **kwargs):
+        nonlocal committed
+        result = original_finish(*args, **kwargs)
+        committed = True
+        return result
+
+    def failed_stable_inspect():
+        if committed:
+            raise RuntimeError('private stable inspection detail')
+        return original_inspect()
+
+    monkeypatch.setattr(budget, 'finish', finish)
+    monkeypatch.setattr(budget, 'inspect', failed_stable_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RECOVERY_RESULT_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert len(opener.requests) == 1
+    assert original_inspect()['completed']
+
+
+@pytest.mark.parametrize('malformed', (None, {}, [], {'head_sha256': None}))
+def test_reconciliation_lost_ack_malformed_result_view_fails_closed(
+        tmp_path, monkeypatch, malformed):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_finish = budget.finish
+    original_inspect = budget.inspect
+    committed = False
+
+    def lost_ack(*args, **kwargs):
+        nonlocal committed
+        original_finish(*args, **kwargs)
+        committed = True
+        raise RuntimeError('private lost acknowledgement')
+
+    def malformed_recovery_inspect():
+        return malformed if committed else original_inspect()
+
+    monkeypatch.setattr(budget, 'finish', lost_ack)
+    monkeypatch.setattr(budget, 'inspect', malformed_recovery_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RECOVERY_RESULT_UNCERTAIN'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert original_inspect()['completed']
+
+
 def test_reconciliation_rejects_uncommitted_result_acknowledgement_failure(
         tmp_path, monkeypatch):
     cursor, budget, reserved, checkpoint, opener = \

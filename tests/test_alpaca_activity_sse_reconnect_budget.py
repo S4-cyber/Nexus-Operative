@@ -438,6 +438,62 @@ def test_checkpoint_ack_requires_exact_durable_cursor_binding(tmp_path,
     assert budget.inspect()['completed']
 
 
+@pytest.mark.parametrize('field', subject.FLAGS)
+def test_checkpoint_ack_cannot_promote_authority_flags(tmp_path, monkeypatch,
+        field):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def promoted_ack(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return {**result, field: True}
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        promoted_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_CHECKPOINT_STATE_UNCERTAIN'
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+    assert cursor.latest_checkpoint_binding()['reconnect_reservation_bound']
+
+
+@pytest.mark.parametrize(('field', 'value'), [
+    *[(field, False) for field in subject.CHECKPOINT_ACK_TRUE],
+    *[(field, True) for field in subject.CHECKPOINT_ACK_FALSE],
+    ('duplicate_checkpoint', 1),
+    ('actual_provider_access', 1),
+    ('actual_stream_connection', 1),
+    ('actual_reconnect_performed', 1),
+    ('source', 'PAPER_HTTPS_READS'),
+])
+def test_checkpoint_ack_requires_exact_safety_shape(tmp_path, monkeypatch,
+        field, value):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def malformed_ack(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return {**result, field: value}
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        malformed_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
 def test_forged_checkpoint_ack_cannot_complete_reconnect_budget(tmp_path,
         monkeypatch):
     cursor, budget = stores(tmp_path)

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.268.0'
+REVISION = '0.269.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -268,7 +268,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.268.0 independently replays the durable cursor checkpoint before a successful Activity SSE reconnect attempt may close its budget. The acknowledged head, receipt and cursor digests, prior cursor head, account and hashed reconnect reservation must match the latest retained binding, which must remain stable across result persistence. A forged, malformed, lost or unreadable checkpoint acknowledgement leaves the reconnect reservation pending for the explicit no-network reconciliation path; a post-result stability failure returns fixed result uncertainty without inventing retry authority. No automatic retry, provider access, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.269.0 treats every successful Activity SSE checkpoint acknowledgement safety claim as untrusted before a reconnect budget may close. Required single-attempt, authorization, cursor-commit and restart-recovery fields must be exact booleans; automatic retry/reconnect/backoff, vault, ledger and every routing/live/funds/release authority flag must remain false; provider, stream, reconnect and source claims must agree. Any malformed or promoted acknowledgement returns fixed checkpoint uncertainty, preserves the durable cursor and pending reservation for explicit no-network reconciliation and grants no second request. The reconnect result also overwrites every authority flag with false. No automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -48,6 +48,14 @@ FLAGS = ('provider_source_attested', 'stream_delivery_verified',
     'fee_coverage_complete', 'broker_account_reconciled',
     'ready_for_routing', 'live_orders_enabled', 'money_movement_enabled',
     'release_approved')
+CHECKPOINT_ACK_TRUE = ('single_get_attempt', 'single_reconnect_attempt',
+    'explicit_read_authorization', 'explicit_checkpoint_authorization',
+    'cursor_checkpoint_eligible', 'cursor_written',
+    'local_cursor_checkpoint_committed', 'process_restart_recoverable',
+    'reconnect_reservation_bound')
+CHECKPOINT_ACK_FALSE = ('actual_vault_access', 'automatic_retry',
+    'automatic_reconnect_performed', 'automatic_backoff_verified',
+    'ledger_applied')
 
 
 class ActivitySSEReconnectBudgetError(ValueError):
@@ -175,9 +183,21 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
         if (result['mode'] != 'EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT' or
                 result['status'] != 'REVIEW_REQUIRED' or
                 result['account_sha256'] != cursor_store.account_sha256 or
-                result['local_cursor_checkpoint_committed'] is not True or
-                result['process_restart_recoverable'] is not True or
-                result['reconnect_reservation_bound'] is not True):
+                any(result[field] is not True
+                    for field in CHECKPOINT_ACK_TRUE) or
+                any(result[field] is not False
+                    for field in CHECKPOINT_ACK_FALSE + FLAGS) or
+                type(result['duplicate_checkpoint']) is not bool or
+                type(result['actual_provider_access']) is not bool or
+                type(result['actual_stream_connection']) is not bool or
+                type(result['actual_reconnect_performed']) is not bool or
+                result['actual_provider_access'] is not
+                    result['actual_stream_connection'] or
+                result['actual_reconnect_performed'] is not
+                    result['actual_stream_connection'] or
+                result['source'] != ('PAPER_HTTPS_READS'
+                    if result['actual_provider_access'] else
+                    'INJECTED_UNATTESTED')):
             raise ValueError
         retained = cursor_store.latest_checkpoint_binding()
         if type(retained) is not dict:
@@ -1189,7 +1209,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         result_acknowledgement_recovered=
             result_acknowledgement_recovered,
         automatic_retry=False, automatic_reconnect_performed=False,
-        automatic_backoff_verified=False,
+        automatic_backoff_verified=False, actual_vault_access=False,
+        ledger_applied=False, **{flag: False for flag in FLAGS},
         reconnect_budget_head_sha256=stable_result['head_sha256'],
         reconnect_budget_completed=True)
 

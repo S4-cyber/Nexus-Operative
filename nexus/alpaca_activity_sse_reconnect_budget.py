@@ -723,8 +723,15 @@ class ActivitySSEReconnectBudget:
 
     def inspect(self):
         """Replay the full private budget; a missing path remains absent."""
+        budget_binding = (self.path, self.account_sha256)
+
+        def require_budget_binding():
+            if not _budget_binding_matches(self, budget_binding):
+                _fail('STORE_BINDING_CHANGED')
+
         self._check()
-        if not self.path.exists():
+        require_budget_binding()
+        if not budget_binding[0].exists():
             state = dict(head_sha256=ZERO, attempts=0, pending_token=None,
                 expected_cursor_head_sha256=None, next_allowed_at=0,
                 last_evaluated_at=0, last_outcome=None,
@@ -743,9 +750,12 @@ class ActivitySSEReconnectBudget:
                 emergency_stop_prior_head_sha256=None)
         else:
             with closing(self._connect()[0]) as db:
+                require_budget_binding()
                 state = self._load(db)
+                require_budget_binding()
+        require_budget_binding()
         return dict(mode='PRIVATE_ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET',
-            status='REVIEW_REQUIRED', account_sha256=self.account_sha256,
+            status='REVIEW_REQUIRED', account_sha256=budget_binding[1],
             max_attempts=MAX_ATTEMPTS, backoff_seconds=BACKOFF_SECONDS,
             automatic_retry=False, automatic_sleep=False,
             **state, **{flag: False for flag in FLAGS})

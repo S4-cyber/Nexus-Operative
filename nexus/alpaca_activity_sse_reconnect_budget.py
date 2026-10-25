@@ -137,6 +137,26 @@ def _budget_state_for_attempt(reconnect_budget):
     return state
 
 
+def _exact_pending_reservation(state, *, token, attempt, cursor_head,
+        expected_budget_head, evaluated_at, reconnect_reason):
+    """Prove one request still owns the exact durable pending BEGIN."""
+    admission_time = _clock(evaluated_at)
+    prior_result_is_due = (
+        (attempt == 1 and state['last_outcome'] is None and
+            state['next_allowed_at'] == 0) or
+        (attempt > 1 and state['last_outcome'] == 'RETRY_REQUIRED' and
+            0 < state['next_allowed_at'] <= admission_time))
+    return (state['pending_token'] == token and
+        state['head_sha256'] == token and
+        state['attempts'] == attempt and
+        state['expected_cursor_head_sha256'] == cursor_head and
+        state['last_begin_expected_head_sha256'] == expected_budget_head and
+        state['last_evaluated_at'] == admission_time and
+        state['last_reconnect_reason'] == reconnect_reason and
+        prior_result_is_due and not state['review_required'] and
+        not state['completed'])
+
+
 def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     """Retain terminal review state from the last trusted admission time.
 
@@ -984,29 +1004,11 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         _fail('RESERVATION_STATE_UNCERTAIN')
     try:
         retained_reservation = _budget_state_for_attempt(reconnect_budget)
-        admission_time = _clock(evaluated_at)
-        prior_result_is_due = (
-            (attempt == 1 and
-                retained_reservation['last_outcome'] is None and
-                retained_reservation['next_allowed_at'] == 0) or
-            (attempt > 1 and
-                retained_reservation['last_outcome'] == 'RETRY_REQUIRED' and
-                0 < retained_reservation['next_allowed_at'] <=
-                    admission_time))
-        if (retained_reservation['pending_token'] != token or
-                retained_reservation['head_sha256'] != token or
-                retained_reservation['attempts'] != attempt or
-                retained_reservation['expected_cursor_head_sha256'] !=
-                    cursor_head or
-                retained_reservation['last_begin_expected_head_sha256'] !=
-                    expected_budget_head or
-                retained_reservation['last_evaluated_at'] !=
-                    admission_time or
-                retained_reservation['last_reconnect_reason'] !=
-                    reconnect_reason or
-                not prior_result_is_due or
-                retained_reservation['review_required'] or
-                retained_reservation['completed']):
+        if not _exact_pending_reservation(retained_reservation,
+                token=token, attempt=attempt, cursor_head=cursor_head,
+                expected_budget_head=expected_budget_head,
+                evaluated_at=evaluated_at,
+                reconnect_reason=reconnect_reason):
             raise ValueError('reservation acknowledgement not durable')
     except Exception:
         # A structurally valid acknowledgement is not request authority until
@@ -1014,12 +1016,40 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         _fail('RESERVATION_STATE_UNCERTAIN')
     if reservation['duplicate_reservation']:
         _fail('RESERVATION_REPLAY_REQUIRES_REVIEW')
+
+    # Re-prove the exact pending reservation at every downstream permission
+    # fence, including the transport's last checkpoint immediately before
+    # ``opener.open``.  The journal can be changed by another cooperating
+    # process after BEGIN acknowledgement; a stale token must never retain
+    # provider-request authority in that interval.
+    reservation_state_uncertain = False
+    request_permission_check = permission_check
+    if callable(permission_check):
+        def request_permission_check():
+            nonlocal reservation_state_uncertain
+            allowed = permission_check()
+            if allowed is not True:
+                return allowed
+            try:
+                current = _budget_state_for_attempt(reconnect_budget)
+                exact = _exact_pending_reservation(current,
+                    token=token, attempt=attempt, cursor_head=cursor_head,
+                    expected_budget_head=expected_budget_head,
+                    evaluated_at=evaluated_at,
+                    reconnect_reason=reconnect_reason)
+            except Exception:
+                exact = False
+            if not exact:
+                reservation_state_uncertain = True
+                return False
+            return True
+
     options = dict(expected_account_id=expected_account_id,
         initial_events=initial_events, reconnect_reason=reconnect_reason,
         cursor_store=cursor_store, expected_cursor_head=expected_cursor_head,
         confirm_read_only_paper=confirm_read_only_paper,
         confirm_cursor_checkpoint=confirm_cursor_checkpoint, opener=opener,
-        permission_check=permission_check,
+        permission_check=request_permission_check,
         emergency_stop_check=emergency_stop_check,
         credential_check=credential_check)
     options['reconnect_reservation_token'] = token
@@ -1031,6 +1061,10 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         result = checkpoint.collect_and_checkpoint_once(api_key, api_secret,
             **options)
     except Exception as error:
+        if reservation_state_uncertain:
+            # The durable BEGIN no longer grants this caller authority.  Do
+            # not overwrite a concurrent result or infer a retryable outcome.
+            _fail('RESERVATION_STATE_UNCERTAIN')
         try:
             completed_at = _outcome_time(result_clock, evaluated_at)
         except ActivitySSEReconnectBudgetError:

@@ -348,6 +348,65 @@ def test_post_reservation_inspection_failure_blocks_provider_io(
     assert state['next_allowed_at'] == 0 and not state['review_required']
 
 
+def test_concurrent_reservation_result_at_preopen_fence_blocks_provider_io(
+        tmp_path):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    samples = []
+
+    def permission():
+        samples.append(True)
+        # The first permission fence is checkpoint admission.  Change the
+        # durable reservation at the transport's final pre-open fence.
+        if len(samples) == 2:
+            state = budget.inspect()
+            budget.finish(state['pending_token'], evaluated_at=1000,
+                outcome='REVIEW_REQUIRED',
+                detail_code='CONCURRENT_OWNER_REVIEW')
+        return True
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            permission_check=permission)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert samples == [True, True]
+    assert not opener.requests and not cursor.path.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        budget.path, ACCOUNT).inspect()
+    assert state['pending_token'] is None and state['review_required']
+    assert state['last_detail_code'] == 'CONCURRENT_OWNER_REVIEW'
+
+
+def test_unreadable_reservation_at_preopen_fence_blocks_provider_io(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    original_inspect = budget.inspect
+    samples = []
+
+    def permission():
+        samples.append(True)
+        if len(samples) == 2:
+            monkeypatch.setattr(budget, 'inspect',
+                lambda: (_ for _ in ()).throw(
+                    RuntimeError('private preopen storage detail')))
+        return True
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            permission_check=permission)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert samples == [True, True]
+    assert not opener.requests and not cursor.path.exists()
+    state = original_inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['attempts'] == 1 and state['last_outcome'] is None
+    assert state['next_allowed_at'] == 0 and not state['review_required']
+
+
 def test_success_result_and_exact_replay_bind_observed_completion_time(
         tmp_path):
     _, raw = segments()

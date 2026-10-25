@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.257.0 parent has no connector-visible exact-source workflow result; v0.258.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.258.0 parent has no connector-visible exact-source workflow result; v0.259.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.259.0 fail-closed post-attempt cursor inspection
+
+Post-attempt cursor inspection now accepts only one valid digest head before classifying a failed reconnect. Unreadable, malformed or invalid state returns fixed cursor uncertainty, preserves the pending reservation and produces no result, cooldown or retry. The same rule prevents outcome-clock failure from terminalizing unknown checkpoint state. Private storage errors are not exposed and provider IO is never repeated.
+
+No UI or modifiable parameter changed, and the seven beginner tabs plus black/bright-purple bottom-right help contract remain unchanged. Disposable injected evidence is not actual provider/account, source/delivery/replay, native durability, reconciliation, sustained-market, trading or release acceptance.
+
+Final local validation passed 3,921 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 310. All sixteen offline profiles and saved-evidence verification matched 387 source files / `8319d2accfd5ea6feaf00e4f7fb89ae02d09f6ed1708019ab8020d28d7cb4a45`; the saved report SHA256 is `1653176974a6a2f7c0e8dfbddec9bac1ac3e2d30c493077087be260804629081`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace passed. The 621-path proposed snapshot and reachable 652-commit / 4,661-blob history audit found no public artifacts, but it is not a secret detector. Exact-source hosted results remain required before this source is treated as a verified checkpoint.
 
 ## v0.258.0 exact outcome-clock-close acknowledgement recovery
 

@@ -95,6 +95,16 @@ def _inspect_after_result_error(reconnect_budget, code):
         _fail(code)
 
 
+def _cursor_head_after_attempt(cursor_store):
+    """Read one post-attempt cursor head with a fixed uncertainty failure."""
+    try:
+        retained = cursor_store.inspect()
+        head = retained['head_sha256']
+    except Exception:
+        _fail('CURSOR_STATE_UNCERTAIN')
+    return _digest(head, 'CURSOR_STATE_UNCERTAIN')
+
+
 def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     """Retain terminal review state from the last trusted admission time.
 
@@ -926,16 +936,16 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             # timestamp so it cannot linger pending or acquire retry authority.
             # If the cursor moved, preserve the reservation for the existing
             # exact no-network checkpoint reconciliation path instead.
-            after = cursor_store.inspect()
-            if after['head_sha256'] == expected_cursor_head:
+            after_head = _cursor_head_after_attempt(cursor_store)
+            if after_head == expected_cursor_head:
                 _close_failed_clock_uncertainty(reconnect_budget,
                     reservation['token'], evaluated_at)
             raise
-        after = cursor_store.inspect()
+        after_head = _cursor_head_after_attempt(cursor_store)
         code = str(error)
         provider_retry_after = (error.provider_retry_after_seconds
             if isinstance(error, ActivitySSETransportError) else 0)
-        if after['head_sha256'] != expected_cursor_head:
+        if after_head != expected_cursor_head:
             outcome, detail = 'CHECKPOINT_UNCERTAIN', 'CURSOR_ADVANCED_WITHOUT_BUDGET_ACK'
         elif code in RETRYABLE_ERRORS and reservation['attempt'] < MAX_ATTEMPTS:
             outcome, detail = 'RETRY_REQUIRED', code

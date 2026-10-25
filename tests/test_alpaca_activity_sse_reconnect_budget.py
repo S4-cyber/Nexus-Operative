@@ -480,6 +480,55 @@ def test_failed_clock_result_inspection_failure_is_sanitized(
         'OUTCOME_CLOCK_UNCERTAIN'
 
 
+@pytest.mark.parametrize('post_attempt', ['failure', 'malformed'])
+def test_provider_failure_cursor_recovery_inspection_is_fail_closed(
+        tmp_path, monkeypatch, post_attempt):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private provider')])
+    original_inspect = cursor.inspect
+
+    def inspect():
+        if not opener.requests:
+            return original_inspect()
+        if post_attempt == 'failure':
+            raise RuntimeError('private cursor path')
+        return {'head_sha256': 'private cursor value'}
+
+    monkeypatch.setattr(cursor, 'inspect', inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CURSOR_STATE_UNCERTAIN') as error:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert 'private' not in str(error.value)
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] and state['last_outcome'] is None
+    assert state['next_allowed_at'] == 0
+
+
+def test_failed_clock_cursor_recovery_inspection_cannot_terminalize(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private provider')])
+    original_inspect = cursor.inspect
+
+    def inspect():
+        if opener.requests:
+            raise RuntimeError('private cursor path')
+        return original_inspect()
+
+    monkeypatch.setattr(cursor, 'inspect', inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CURSOR_STATE_UNCERTAIN') as error:
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: (_ for _ in ()).throw(
+                RuntimeError('private clock failure')))
+    assert 'private' not in str(error.value)
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] and state['last_outcome'] is None
+    assert not state['review_required'] and state['next_allowed_at'] == 0
+
+
 def test_uncertain_outcome_close_lost_ack_replay_is_byte_stable(tmp_path):
     _, budget = stores(tmp_path)
     reserved = budget.begin(evaluated_at=1000,

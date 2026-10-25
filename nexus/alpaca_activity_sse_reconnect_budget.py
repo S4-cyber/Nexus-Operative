@@ -48,6 +48,18 @@ FLAGS = ('provider_source_attested', 'stream_delivery_verified',
     'fee_coverage_complete', 'broker_account_reconciled',
     'ready_for_routing', 'live_orders_enabled', 'money_movement_enabled',
     'release_approved')
+BUDGET_VIEW_KEYS = frozenset((
+    'mode', 'status', 'account_sha256', 'max_attempts', 'backoff_seconds',
+    'automatic_retry', 'automatic_sleep', 'head_sha256', 'attempts',
+    'pending_token', 'expected_cursor_head_sha256', 'next_allowed_at',
+    'last_evaluated_at', 'last_outcome', 'last_detail_code',
+    'last_requested_outcome', 'last_requested_detail_code',
+    'last_requested_retry_after_seconds', 'last_applied_backoff_seconds',
+    'provider_directed_backoff_observed',
+    'last_begin_expected_head_sha256', 'last_reconnect_reason',
+    'review_required', 'completed', 'checkpoint_head_sha256',
+    'checkpoint_receipt_sha256', 'last_attempt_head_sha256',
+    'last_result_head_sha256', 'emergency_stop_prior_head_sha256', *FLAGS))
 CHECKPOINT_BINDING_FALSE = ('actual_provider_access',
     'actual_vault_access', 'actual_stream_connection', *FLAGS)
 CHECKPOINT_ACK_TRUE = ('single_get_attempt', 'single_reconnect_attempt',
@@ -105,9 +117,10 @@ def _outcome_time(clock, not_before):
 def _inspect_after_result_error(reconnect_budget, code):
     """Inspect a possibly committed result without leaking recovery faults."""
     try:
-        return reconnect_budget.inspect()
+        retained = reconnect_budget.inspect()
     except Exception:
         _fail(code)
+    return _validated_budget_view(reconnect_budget, retained, code)
 
 
 def _cursor_head_for_attempt(cursor_store):
@@ -120,36 +133,74 @@ def _cursor_head_for_attempt(cursor_store):
     return _digest(head, 'CURSOR_STATE_UNCERTAIN')
 
 
-def _budget_state_for_attempt(reconnect_budget):
-    """Read and validate admission state without exposing storage faults."""
+def _validated_budget_view(reconnect_budget, value, code, *,
+        result_acknowledgement=False):
+    """Validate one complete public replay of the private budget journal."""
     try:
-        state = reconnect_budget.inspect()
-        if type(state) is not dict:
+        keys = BUDGET_VIEW_KEYS | ({'duplicate_result'}
+            if result_acknowledgement else set())
+        if type(value) is not dict or set(value) != keys:
             raise TypeError
-        _digest(state['head_sha256'])
-        pending = state['pending_token']
-        if pending is not None:
-            _digest(pending)
-        last_begin = state['last_begin_expected_head_sha256']
-        if last_begin is not None:
-            _digest(last_begin)
-        expected_cursor = state['expected_cursor_head_sha256']
-        if expected_cursor is not None:
-            _digest(expected_cursor)
-        _clock(state['last_evaluated_at'])
-        _clock(state['next_allowed_at'])
-        attempts = state['attempts']
+        if (value['mode'] !=
+                'PRIVATE_ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET' or
+                value['status'] != 'REVIEW_REQUIRED' or
+                value['account_sha256'] != reconnect_budget.account_sha256 or
+                value['max_attempts'] != MAX_ATTEMPTS or
+                type(value['backoff_seconds']) is not tuple or
+                value['backoff_seconds'] != BACKOFF_SECONDS or
+                value['automatic_retry'] is not False or
+                value['automatic_sleep'] is not False or
+                any(value[flag] is not False for flag in FLAGS)):
+            raise ValueError
+        _digest(value['head_sha256'])
+        for field in ('pending_token', 'expected_cursor_head_sha256',
+                'last_begin_expected_head_sha256',
+                'checkpoint_head_sha256', 'checkpoint_receipt_sha256',
+                'last_attempt_head_sha256', 'last_result_head_sha256',
+                'emergency_stop_prior_head_sha256'):
+            if value[field] is not None:
+                _digest(value[field])
+        _clock(value['last_evaluated_at'])
+        _clock(value['next_allowed_at'])
+        attempts = value['attempts']
         if type(attempts) is not int or not 0 <= attempts <= MAX_ATTEMPTS:
             raise TypeError
-        if (type(state['review_required']) is not bool or
-                type(state['completed']) is not bool):
-            raise TypeError
-        reason = state['last_reconnect_reason']
+        for field in ('review_required', 'completed',
+                'provider_directed_backoff_observed'):
+            if type(value[field]) is not bool:
+                raise TypeError
+        for field in ('last_outcome', 'last_requested_outcome'):
+            if value[field] is not None and value[field] not in OUTCOMES:
+                raise ValueError
+        for field in ('last_detail_code', 'last_requested_detail_code'):
+            if value[field] is not None and type(value[field]) is not str:
+                raise TypeError
+        for field in ('last_requested_retry_after_seconds',
+                'last_applied_backoff_seconds'):
+            delay = value[field]
+            if (type(delay) is not int or
+                    not 0 <= delay <= MAX_PROVIDER_RETRY_AFTER):
+                raise TypeError
+        reason = value['last_reconnect_reason']
         if reason is not None and reason not in REASONS:
+            raise ValueError
+        if (result_acknowledgement and
+                type(value['duplicate_result']) is not bool):
             raise TypeError
     except Exception:
+        _fail(code)
+    return value
+
+
+def _budget_state_for_attempt(reconnect_budget):
+    """Read and totally validate admission state without exposing faults."""
+    try:
+        return _validated_budget_view(reconnect_budget,
+            reconnect_budget.inspect(), 'ADMISSION_STATE_UNCERTAIN')
+    except ActivitySSEReconnectBudgetError:
+        raise
+    except Exception:
         _fail('ADMISSION_STATE_UNCERTAIN')
-    return state
 
 
 def _validated_checkpoint_binding(cursor_store, value, code):
@@ -281,6 +332,9 @@ def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     except Exception:
         retained = _inspect_after_result_error(reconnect_budget,
             'RESULT_RECORD_UNCERTAIN')
+    else:
+        retained = _validated_budget_view(reconnect_budget, retained,
+            'RESULT_RECORD_UNCERTAIN', result_acknowledgement=True)
     if not _exact_failure_result(retained, token, evaluated_at,
             'REVIEW_REQUIRED', 'OUTCOME_CLOCK_UNCERTAIN', 0):
         _fail('RESULT_RECORD_UNCERTAIN')
@@ -1209,6 +1263,9 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         except Exception:
             retained = _inspect_after_result_error(reconnect_budget,
                 'RESULT_RECORD_UNCERTAIN')
+        else:
+            retained = _validated_budget_view(reconnect_budget, retained,
+                'RESULT_RECORD_UNCERTAIN', result_acknowledgement=True)
         if not _exact_failure_result(retained, reservation['token'],
                 completed_at, outcome, detail, provider_retry_after):
             _fail('RESULT_RECORD_UNCERTAIN')
@@ -1228,6 +1285,9 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         retained = _inspect_after_result_error(reconnect_budget,
             'RESULT_RECORD_UNCERTAIN')
         result_acknowledgement_recovered = True
+    else:
+        retained = _validated_budget_view(reconnect_budget, retained,
+            'RESULT_RECORD_UNCERTAIN', result_acknowledgement=True)
     try:
         stable_checkpoint_binding = _validated_checkpoint_binding(
             cursor_store, cursor_store.latest_checkpoint_binding(),
@@ -1360,7 +1420,8 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
         reconnect_budget.account_sha256)
     cursor_binding = (cursor_store.path, cursor_store.account_sha256)
     try:
-        state = reconnect_budget.inspect()
+        state = _validated_budget_view(reconnect_budget,
+            reconnect_budget.inspect(), 'RECOVERY_STATE_UNCERTAIN')
     except Exception:
         _fail('RECOVERY_STATE_UNCERTAIN')
     try:
@@ -1427,6 +1488,10 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             recovered = _inspect_after_result_error(reconnect_budget,
                 'RECOVERY_RESULT_UNCERTAIN')
             result_acknowledgement_recovered = True
+        else:
+            recovered = _validated_budget_view(reconnect_budget, recovered,
+                'RECOVERY_RESULT_UNCERTAIN',
+                result_acknowledgement=True)
     try:
         unchanged = _validated_checkpoint_binding(cursor_store,
             cursor_store.latest_checkpoint_binding(),

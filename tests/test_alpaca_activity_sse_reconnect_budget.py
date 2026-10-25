@@ -194,6 +194,50 @@ def test_malformed_initial_budget_view_fails_closed_before_reservation(
     assert not cursor.path.exists() and not budget.path.exists()
 
 
+@pytest.mark.parametrize('field', subject.FLAGS)
+def test_initial_budget_view_cannot_promote_authority_before_reservation(
+        tmp_path, monkeypatch, field):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    original = budget.inspect
+    monkeypatch.setattr(budget, 'inspect',
+        lambda: {**original(), field: True})
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ADMISSION_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
+@pytest.mark.parametrize('kind', ('extra_field', 'mapping_subclass',
+    'mutable_backoff'))
+def test_initial_budget_view_requires_exact_total_shape(tmp_path,
+        monkeypatch, kind):
+    class BudgetMapping(dict):
+        pass
+
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    original = budget.inspect
+
+    def altered():
+        value = original()
+        if kind == 'extra_field':
+            return {**value, 'private_extension': False}
+        if kind == 'mapping_subclass':
+            return BudgetMapping(value)
+        return {**value, 'backoff_seconds': list(value['backoff_seconds'])}
+
+    monkeypatch.setattr(budget, 'inspect', altered)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ADMISSION_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
 def test_reservation_failure_before_commit_is_sanitized(tmp_path,
         monkeypatch):
     cursor, budget = stores(tmp_path)
@@ -653,6 +697,36 @@ def test_success_rejects_uncommitted_result_acknowledgement_failure(
     assert len(opener.requests) == 1 and cursor.inspect()['initialized']
     state = budget.inspect()
     assert state['pending_token'] and not state['completed']
+
+
+@pytest.mark.parametrize('kind', ('mapping_subclass', 'extra_field',
+    'promoted_authority'))
+def test_success_rejects_noncanonical_budget_result_acknowledgement(
+        tmp_path, monkeypatch, kind):
+    class BudgetMapping(dict):
+        pass
+
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original_finish = budget.finish
+    original_inspect = budget.inspect
+
+    def altered_finish(*args, **kwargs):
+        value = original_finish(*args, **kwargs)
+        if kind == 'mapping_subclass':
+            return BudgetMapping(value)
+        if kind == 'extra_field':
+            return {**value, 'private_extension': False}
+        return {**value, 'release_approved': True}
+
+    monkeypatch.setattr(budget, 'finish', altered_finish)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESULT_RECORD_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    state = original_inspect()
+    assert state['completed'] and state['pending_token'] is None
 
 
 def test_success_with_uncertain_outcome_clock_uses_no_network_recovery(
@@ -2098,6 +2172,60 @@ def test_reconciliation_malformed_initial_budget_view_fails_closed(
     assert len(opener.requests) == 1
     assert budget.path.read_bytes() == saved
     assert original_inspect()['pending_token'] == reserved['token']
+
+
+@pytest.mark.parametrize('field', subject.FLAGS)
+def test_reconciliation_budget_view_cannot_promote_authority(tmp_path,
+        monkeypatch, field):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    original = budget.inspect
+    monkeypatch.setattr(budget, 'inspect',
+        lambda: {**original(), field: True})
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RECOVERY_STATE_UNCERTAIN'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+    assert original()['pending_token'] == reserved['token']
+
+
+@pytest.mark.parametrize('kind', ('mapping_subclass', 'extra_field',
+    'promoted_authority'))
+def test_reconciliation_rejects_noncanonical_budget_result_acknowledgement(
+        tmp_path, monkeypatch, kind):
+    class BudgetMapping(dict):
+        pass
+
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_finish = budget.finish
+    original_inspect = budget.inspect
+
+    def altered_finish(*args, **kwargs):
+        value = original_finish(*args, **kwargs)
+        if kind == 'mapping_subclass':
+            return BudgetMapping(value)
+        if kind == 'extra_field':
+            return {**value, 'private_extension': False}
+        return {**value, 'release_approved': True}
+
+    monkeypatch.setattr(budget, 'finish', altered_finish)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RECOVERY_RESULT_UNCERTAIN'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    state = original_inspect()
+    assert state['completed'] and state['pending_token'] is None
 
 
 def test_reconciliation_cursor_binding_failure_is_sanitized(

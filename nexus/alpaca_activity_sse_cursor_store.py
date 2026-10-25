@@ -275,11 +275,22 @@ class ActivitySSECursorStore:
                 before = _cursor(scope['previous_cursor'])
                 after = _cursor(scope['next_cursor'])
                 _digest(scope['review_input_sha256'])
-                for key in ('initial_events_reviewed',
-                        'replay_events_reviewed',
-                        'redelivered_events_deduplicated',
-                        'new_events_processed', 'unique_events_reviewed'):
-                    _positive(scope[key], 'COUNT_INVALID')
+                if (type(scope['reconnect_reason']) is not str or
+                        scope['reconnect_reason'] not in REVIEW_REASONS):
+                    _fail('SCOPE_INVALID')
+                initial = _positive(scope['initial_events_reviewed'],
+                    'COUNT_INVALID')
+                replay = _positive(scope['replay_events_reviewed'],
+                    'COUNT_INVALID')
+                duplicates = _positive(
+                    scope['redelivered_events_deduplicated'],
+                    'COUNT_INVALID')
+                new = _positive(scope['new_events_processed'],
+                    'COUNT_INVALID')
+                unique = _positive(scope['unique_events_reviewed'],
+                    'COUNT_INVALID')
+                if (duplicates + new != replay or initial + new != unique):
+                    _fail('COUNT_INVALID')
                 if after <= before or (current_cursor is not None and
                         before != current_cursor):
                     _fail('CURSOR_CHAIN_DISAGREEMENT')

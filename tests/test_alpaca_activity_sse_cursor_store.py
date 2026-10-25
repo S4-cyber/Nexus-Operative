@@ -305,6 +305,33 @@ def test_tamper_and_foreign_binding_fail_closed(tmp_path):
             'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa').inspect()
 
 
+@pytest.mark.parametrize(('field','mutation','code'), (
+    ('reconnect_reason', lambda value: 'UNKNOWN', 'SCOPE_INVALID'),
+    ('replay_events_reviewed', lambda value: value + 1, 'COUNT_INVALID'),
+    ('initial_events_reviewed', lambda value: value + 1, 'COUNT_INVALID'),
+))
+@pytest.mark.parametrize('method', ('inspect', 'latest_checkpoint_binding'))
+def test_cold_replay_revalidates_checkpoint_semantics_without_mutation(
+        tmp_path, field, mutation, code, method):
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    checkpoint(store)
+    with sqlite3.connect(path) as db:
+        encoded, previous = db.execute(
+            'SELECT body,previous FROM checkpoints WHERE seq=1').fetchone()
+        body = json.loads(encoded)
+        body['scope'][field] = mutation(body['scope'][field])
+        body['receipt_sha256'] = subject.sha(body['scope'])
+        encoded = subject.canonical(body)
+        digest = subject.sha(dict(seq=1, body=body, previous=previous))
+        db.execute('UPDATE checkpoints SET body=?,digest=? WHERE seq=1',
+            (encoded, digest))
+    tampered = path.read_bytes()
+    with pytest.raises(ValueError, match=code):
+        getattr(subject.ActivitySSECursorStore(path, ACCOUNT), method)()
+    assert path.read_bytes() == tampered
+
+
 def test_symlink_and_rollback_sidecar_are_refused(tmp_path):
     target = tmp_path / 'target.sqlite3'
     target.write_bytes(b'')

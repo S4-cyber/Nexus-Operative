@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.280.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.281.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.280.0 removes the remaining foreign-equality seams from reconnect-review checkpoint admission. Every schema key and source-tuple item must now be an exact plain string, and all three persisted/reconnect/next cursor digest claims must pass the same exact built-in digest validator before comparison. String subclasses can no longer impersonate canonical keys, sources or cursor bindings through custom equality. The prior complete key set, constant, authority, proof and count-consistency checks remain mandatory. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.281.0 re-proves the semantic checkpoint admission contract on every cold journal replay. Each retained reconnect reason must remain an exact supported value, replay events must still equal duplicates plus new events and unique events must still equal initial plus new events. These checks run after canonical payload and hash-chain verification, so a locally rewritten and self-consistently rehashed record cannot regain a readable cursor merely by preserving individual positive bounds. Both public read views fail closed without mutating the journal. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

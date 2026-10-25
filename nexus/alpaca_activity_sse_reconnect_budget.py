@@ -133,6 +133,18 @@ def _cursor_head_for_attempt(cursor_store):
     return _digest(head, 'CURSOR_STATE_UNCERTAIN')
 
 
+def _store_bindings_match(cursor_store, reconnect_budget, *,
+        cursor_binding, budget_binding):
+    """Return whether both mutable store objects still name one exact scope."""
+    try:
+        return ((cursor_store.path, cursor_store.account_sha256) ==
+                cursor_binding and
+            (reconnect_budget.path, reconnect_budget.account_sha256) ==
+                budget_binding)
+    except Exception:
+        return False
+
+
 def _validated_budget_view(reconnect_budget, value, code, *,
         result_acknowledgement=False):
     """Validate one complete public replay of the private budget journal."""
@@ -1116,6 +1128,16 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         _fail('CHECKPOINT_AUTHORIZATION_REQUIRED')
     if reconnect_budget.account_sha256 != cursor_store.account_sha256:
         _fail('ACCOUNT_DISAGREEMENT')
+    cursor_binding = (cursor_store.path, cursor_store.account_sha256)
+    budget_binding = (reconnect_budget.path,
+        reconnect_budget.account_sha256)
+
+    def require_store_bindings():
+        if not _store_bindings_match(cursor_store, reconnect_budget,
+                cursor_binding=cursor_binding,
+                budget_binding=budget_binding):
+            _fail('STORE_BINDING_CHANGED')
+
     result_clock = (outcome_clock if outcome_clock is not None else
         (wall_clock if wall_clock is not None else time.time))
     if not callable(result_clock):
@@ -1126,10 +1148,14 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         if emergency_stop_check() is not False:
             _fail('EMERGENCY_STOP_ACTIVE')
     except ActivitySSEReconnectBudgetError:
+        require_store_bindings()
         raise
     except Exception:
+        require_store_bindings()
         _fail('EMERGENCY_STOP_ACTIVE')
+    require_store_bindings()
     before_head = _cursor_head_for_attempt(cursor_store)
+    require_store_bindings()
     if before_head != expected_cursor_head:
         _fail('CURSOR_HEAD_CHANGED')
     try:
@@ -1140,9 +1166,12 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             emergency_stop_check=emergency_stop_check,
             confirm_reconnect_attempt=confirm_reconnect_attempt)
     except ActivitySSEReconnectBudgetError:
+        require_store_bindings()
         raise
     except Exception:
+        require_store_bindings()
         _fail('RESERVATION_STATE_UNCERTAIN')
+    require_store_bindings()
     try:
         if type(reservation) is not dict:
             raise TypeError('reservation acknowledgement shape')
@@ -1168,6 +1197,7 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         _fail('RESERVATION_STATE_UNCERTAIN')
     try:
         retained_reservation = _budget_state_for_attempt(reconnect_budget)
+        require_store_bindings()
         if not _exact_pending_reservation(retained_reservation,
                 token=token, attempt=attempt, cursor_head=cursor_head,
                 expected_budget_head=expected_budget_head,
@@ -1187,11 +1217,17 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
     # process after BEGIN acknowledgement; a stale token must never retain
     # provider-request authority in that interval.
     reservation_state_uncertain = False
+    store_binding_changed = False
     request_permission_check = permission_check
     if callable(permission_check):
         def request_permission_check():
-            nonlocal reservation_state_uncertain
+            nonlocal reservation_state_uncertain, store_binding_changed
             allowed = permission_check()
+            if not _store_bindings_match(cursor_store, reconnect_budget,
+                    cursor_binding=cursor_binding,
+                    budget_binding=budget_binding):
+                store_binding_changed = True
+                return False
             if allowed is not True:
                 return allowed
             try:
@@ -1225,6 +1261,11 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         result = checkpoint.collect_and_checkpoint_once(api_key, api_secret,
             **options)
     except Exception as error:
+        if (store_binding_changed or
+                not _store_bindings_match(cursor_store, reconnect_budget,
+                    cursor_binding=cursor_binding,
+                    budget_binding=budget_binding)):
+            _fail('STORE_BINDING_CHANGED')
         if reservation_state_uncertain:
             # The durable BEGIN no longer grants this caller authority.  Do
             # not overwrite a concurrent result or infer a retryable outcome.
@@ -1232,6 +1273,7 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         try:
             completed_at = _outcome_time(result_clock, evaluated_at)
         except ActivitySSEReconnectBudgetError:
+            require_store_bindings()
             # A failed request with no committed cursor transition needs no
             # completion-time backoff. Close it from the trusted reservation
             # timestamp so it cannot linger pending or acquire retry authority.
@@ -1242,7 +1284,9 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                 _close_failed_clock_uncertainty(reconnect_budget,
                     reservation['token'], evaluated_at)
             raise
+        require_store_bindings()
         after_head = _cursor_head_for_attempt(cursor_store)
+        require_store_bindings()
         code = str(error)
         provider_retry_after = (error.provider_retry_after_seconds
             if isinstance(error, ActivitySSETransportError) else 0)
@@ -1261,18 +1305,24 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                 emergency_stop_check=emergency_stop_check,
                 provider_retry_after_seconds=provider_retry_after)
         except Exception:
+            require_store_bindings()
             retained = _inspect_after_result_error(reconnect_budget,
                 'RESULT_RECORD_UNCERTAIN')
         else:
+            require_store_bindings()
             retained = _validated_budget_view(reconnect_budget, retained,
                 'RESULT_RECORD_UNCERTAIN', result_acknowledgement=True)
+        require_store_bindings()
         if not _exact_failure_result(retained, reservation['token'],
                 completed_at, outcome, detail, provider_retry_after):
             _fail('RESULT_RECORD_UNCERTAIN')
         raise
+    require_store_bindings()
     checkpoint_binding = _checkpoint_binding_for_attempt(cursor_store,
         result, token=token, expected_cursor_head=expected_cursor_head)
+    require_store_bindings()
     completed_at = _outcome_time(result_clock, evaluated_at)
+    require_store_bindings()
     result_acknowledgement_recovered = False
     try:
         retained = reconnect_budget.finish(reservation['token'],
@@ -1282,20 +1332,25 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             checkpoint_receipt_sha256=
                 checkpoint_binding['checkpoint_receipt_sha256'])
     except Exception:
+        require_store_bindings()
         retained = _inspect_after_result_error(reconnect_budget,
             'RESULT_RECORD_UNCERTAIN')
         result_acknowledgement_recovered = True
     else:
+        require_store_bindings()
         retained = _validated_budget_view(reconnect_budget, retained,
             'RESULT_RECORD_UNCERTAIN', result_acknowledgement=True)
+    require_store_bindings()
     try:
         stable_checkpoint_binding = _validated_checkpoint_binding(
             cursor_store, cursor_store.latest_checkpoint_binding(),
             'RESULT_RECORD_UNCERTAIN')
     except Exception:
         _fail('RESULT_RECORD_UNCERTAIN')
+    require_store_bindings()
     stable_result = _inspect_after_result_error(reconnect_budget,
         'RESULT_RECORD_UNCERTAIN')
+    require_store_bindings()
     if (stable_checkpoint_binding != checkpoint_binding or
             not _same_result_head(stable_result, retained) or
             not _exact_checkpoint_result(stable_result,

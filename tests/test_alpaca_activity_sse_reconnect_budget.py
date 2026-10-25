@@ -451,6 +451,136 @@ def test_unreadable_reservation_at_preopen_fence_blocks_provider_io(
     assert state['next_allowed_at'] == 0 and not state['review_required']
 
 
+def test_emergency_stop_callback_cannot_retarget_cursor_store(tmp_path):
+    cursor, budget = stores(tmp_path)
+    original_cursor_path = cursor.path
+    retargeted = tmp_path / 'retargeted-cursor.sqlite3'
+    opener = Opener([b'private provider response'])
+
+    def stop_clear():
+        cursor.path = retargeted
+        return False
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            emergency_stop_check=stop_clear)
+    assert not opener.requests
+    assert not original_cursor_path.exists()
+    assert not retargeted.exists() and not budget.path.exists()
+
+
+def test_permission_callback_cannot_retarget_budget_store(tmp_path):
+    cursor, budget = stores(tmp_path)
+    original_budget_path = budget.path
+    retargeted = tmp_path / 'retargeted-budget.sqlite3'
+    opener = Opener([b'private provider response'])
+    samples = []
+
+    def permission():
+        samples.append(True)
+        if len(samples) == 2:
+            budget.path = retargeted
+        return True
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            permission_check=permission)
+    assert samples == [True, True]
+    assert not opener.requests and not cursor.path.exists()
+    assert not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_budget_path, ACCOUNT).inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None
+
+
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_completed_checkpoint_call_cannot_retarget_store_before_result(
+        tmp_path, monkeypatch, store_name):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    original_cursor_path = cursor.path
+    original_budget_path = budget.path
+    retargeted = tmp_path / f'retargeted-{store_name}.sqlite3'
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def retarget_after_checkpoint(*args, **kwargs):
+        result = original(*args, **kwargs)
+        setattr(cursor if store_name == 'cursor' else budget,
+            'path', retargeted)
+        return result
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        retarget_after_checkpoint)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1 and not retargeted.exists()
+    binding = ActivitySSECursorStore(
+        original_cursor_path, ACCOUNT).latest_checkpoint_binding()
+    assert binding['reconnect_reservation_bound']
+    state = subject.ActivitySSEReconnectBudget(
+        original_budget_path, ACCOUNT).inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_result_commit_cannot_retarget_store_before_stability_check(
+        tmp_path, monkeypatch, store_name):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    original_cursor_path = cursor.path
+    original_budget_path = budget.path
+    retargeted = tmp_path / f'retargeted-result-{store_name}.sqlite3'
+    opener = Opener([raw])
+    original_finish = budget.finish
+
+    def retarget_after_finish(*args, **kwargs):
+        retained = original_finish(*args, **kwargs)
+        setattr(cursor if store_name == 'cursor' else budget,
+            'path', retargeted)
+        return retained
+
+    monkeypatch.setattr(budget, 'finish', retarget_after_finish)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1 and not retargeted.exists()
+    assert ActivitySSECursorStore(
+        original_cursor_path, ACCOUNT).inspect()['initialized']
+    state = subject.ActivitySSEReconnectBudget(
+        original_budget_path, ACCOUNT).inspect()
+    assert state['completed'] and state['pending_token'] is None
+    assert state['last_outcome'] == 'CHECKPOINT_COMMITTED'
+
+
+def test_provider_failure_cannot_retarget_budget_before_failure_record(
+        tmp_path):
+    cursor, budget = stores(tmp_path)
+    original_budget_path = budget.path
+    retargeted = tmp_path / 'retargeted-failure-budget.sqlite3'
+    opener = Opener([TimeoutError('private')])
+    original_open = opener.open
+
+    def retarget_then_fail(request, timeout):
+        budget.path = retargeted
+        return original_open(request, timeout)
+
+    opener.open = retarget_then_fail
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1 and not retargeted.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        original_budget_path, ACCOUNT).inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and state['next_allowed_at'] == 0
+
+
 def test_checkpoint_ack_requires_exact_durable_cursor_binding(tmp_path,
         monkeypatch):
     _, raw = segments()

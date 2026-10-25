@@ -302,6 +302,155 @@ def test_public_read_binding_rejects_foreign_path_equality(tmp_path, method):
     assert path.exists()
 
 
+@pytest.mark.parametrize('retarget_field', ('path', 'account_sha256'))
+def test_checkpoint_review_scope_cannot_retarget_store(tmp_path, monkeypatch,
+        retarget_field):
+    path = tmp_path / 'cursor.sqlite3'
+    retargeted = tmp_path / f'review-scope-{retarget_field}.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    original_scope = store._review_scope
+
+    def retarget_after_scope(*args, **kwargs):
+        retained = original_scope(*args, **kwargs)
+        if retarget_field == 'path':
+            store.path = retargeted
+        else:
+            store.account_sha256 = 'f' * 64
+        return retained
+
+    monkeypatch.setattr(store, '_review_scope', retarget_after_scope)
+    with pytest.raises(ValueError, match='STORE_BINDING_CHANGED'):
+        checkpoint(store)
+    assert not path.exists() and not retargeted.exists()
+
+
+def test_checkpoint_inspection_cannot_retarget_store(tmp_path, monkeypatch):
+    path = tmp_path / 'cursor.sqlite3'
+    retargeted = tmp_path / 'checkpoint-inspect-retargeted.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    original_inspect = store.inspect
+
+    def retarget_after_inspect():
+        retained = original_inspect()
+        store.path = retargeted
+        return retained
+
+    monkeypatch.setattr(store, 'inspect', retarget_after_inspect)
+    with pytest.raises(ValueError, match='STORE_BINDING_CHANGED'):
+        checkpoint(store)
+    assert not path.exists() and not retargeted.exists()
+
+
+def test_checkpoint_connection_retarget_retains_only_readable_schema(
+        tmp_path, monkeypatch):
+    path = tmp_path / 'cursor.sqlite3'
+    retargeted = tmp_path / 'checkpoint-connect-retargeted.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    original_connect = store._connect
+
+    def retarget_after_connect(*args, **kwargs):
+        retained = original_connect(*args, **kwargs)
+        if kwargs.get('write'):
+            store.path = retargeted
+        return retained
+
+    monkeypatch.setattr(store, '_connect', retarget_after_connect)
+    with pytest.raises(ValueError, match='STORE_BINDING_CHANGED'):
+        checkpoint(store)
+    assert path.exists() and not retargeted.exists()
+    cold = subject.ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert not cold['initialized'] and cold['current_event_id'] is None
+    assert cold['head_sha256'] != subject.ZERO
+
+
+@pytest.mark.parametrize('retarget_sample', (1, 2, 3, 4))
+def test_checkpoint_admission_retarget_preserves_exact_commit_boundary(
+        tmp_path, retarget_sample):
+    path = tmp_path / 'cursor.sqlite3'
+    retargeted = tmp_path / f'admission-retargeted-{retarget_sample}.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    report, before, after = checked()
+    calls = []
+
+    def admission():
+        calls.append(True)
+        if len(calls) == retarget_sample:
+            store.path = retargeted
+        return report['input_sha256']
+
+    with pytest.raises(ValueError, match='STORE_BINDING_CHANGED'):
+        checkpoint(store, report, before, after, admission=admission)
+    assert len(calls) == retarget_sample and not retargeted.exists()
+    if retarget_sample == 1:
+        assert not path.exists()
+        return
+    cold = subject.ActivitySSECursorStore(path, ACCOUNT)
+    retained = cold.inspect()
+    assert retained['retained_checkpoints'] == (1 if retarget_sample == 4 else 0)
+    if retarget_sample == 4:
+        replay = checkpoint(cold, report, before, after)
+        assert replay['duplicate'] and replay['cursor_sha256'] == subject.sha(after)
+
+
+@pytest.mark.parametrize('retarget_sample', (1, 2))
+def test_checkpoint_transaction_replay_retarget_rolls_back_append(
+        tmp_path, monkeypatch, retarget_sample):
+    path = tmp_path / 'cursor.sqlite3'
+    retargeted = tmp_path / f'transaction-load-{retarget_sample}.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    original_load = store._load
+    calls = []
+
+    def retarget_after_load(*args, **kwargs):
+        retained = original_load(*args, **kwargs)
+        calls.append(True)
+        if len(calls) == retarget_sample:
+            store.path = retargeted
+        return retained
+
+    monkeypatch.setattr(store, '_load', retarget_after_load)
+    with pytest.raises(ValueError, match='STORE_BINDING_CHANGED'):
+        checkpoint(store)
+    assert len(calls) == retarget_sample and not retargeted.exists()
+    cold = subject.ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert not cold['initialized'] and cold['current_event_id'] is None
+    assert cold['head_sha256'] != subject.ZERO
+
+
+def test_checkpoint_receipt_retarget_keeps_exact_replay_recoverable(
+        tmp_path, monkeypatch):
+    path = tmp_path / 'cursor.sqlite3'
+    retargeted = tmp_path / 'receipt-retargeted.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    original_receipt = store._receipt
+
+    def retarget_after_receipt(*args, **kwargs):
+        retained = original_receipt(*args, **kwargs)
+        store.path = retargeted
+        return retained
+
+    monkeypatch.setattr(store, '_receipt', retarget_after_receipt)
+    with pytest.raises(ValueError, match='STORE_BINDING_CHANGED'):
+        checkpoint(store)
+    assert not retargeted.exists()
+    cold = subject.ActivitySSECursorStore(path, ACCOUNT)
+    assert cold.inspect()['retained_checkpoints'] == 1
+    replay = checkpoint(cold)
+    assert replay['duplicate'] and cold.inspect()['retained_checkpoints'] == 1
+
+
+def test_checkpoint_admission_rejects_foreign_string_equality(tmp_path):
+    class EqualInput(str):
+        def __eq__(self, other): return True
+        def __ne__(self, other): return False
+
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    with pytest.raises(ValueError, match='INPUT_REVOKED'):
+        checkpoint(store, admission=lambda: EqualInput('private'))
+    assert not path.exists()
+
+
 def test_capacity_is_bounded_without_partial_append(tmp_path, monkeypatch):
     path = tmp_path / 'cursor.sqlite3'
     store = subject.ActivitySSECursorStore(path, ACCOUNT)

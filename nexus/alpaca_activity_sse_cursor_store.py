@@ -338,30 +338,48 @@ class ActivitySSECursorStore:
     def checkpoint(self, review, *, previous_cursor, next_cursor,
             expected_head, admission=None, reconnect_reservation_token=None):
         """Commit one reviewed advance; exact lost-ack replay is idempotent."""
+        cursor_binding = (self.path, self.account_sha256)
+
+        def require_cursor_binding():
+            if not _store_binding_matches(self, cursor_binding):
+                _fail('STORE_BINDING_CHANGED')
+
         expected = _digest(expected_head, 'HEAD_INVALID')
         body = self._review_scope(review, previous_cursor, next_cursor,
             expected, reconnect_reservation_token)
+        require_cursor_binding()
         expected_input = body['scope']['review_input_sha256']
         if admission is None:
             admission = lambda: expected_input
 
-        def admitted(code):
-            if admission() != expected_input:
+        def admitted(code, require_binding=require_cursor_binding):
+            try:
+                retained_input = admission()
+            finally:
+                require_binding()
+            if (type(retained_input) is not str or
+                    retained_input != expected_input):
                 _fail(code)
 
         admitted('INPUT_REVOKED')
         current = self.inspect()
+        require_cursor_binding()
         if current['head_sha256'] != expected:
-            if not self.path.exists():
+            if not cursor_binding[0].exists():
                 _fail('HEAD_CHANGED')
             with closing(self._connect()[0]) as db:
+                require_cursor_binding()
                 head, _, records = self._load(db)
+                require_cursor_binding()
             last = records[-1] if records else None
             if (head == current['head_sha256'] and last is not None and
                     last['body']['scope']['expected_head_sha256'] == expected and
                     last['body'] == body):
                 admitted('INPUT_REVOKED')
-                return self._receipt(last['after_head_sha256'], body, True)
+                receipt = self._receipt(
+                    last['after_head_sha256'], body, True)
+                require_cursor_binding()
+                return receipt
             _fail('HEAD_CHANGED')
         if (current['current_event_id'] is not None and
                 current['current_event_id'] != previous_cursor):
@@ -370,25 +388,46 @@ class ActivitySSECursorStore:
         db, new = self._connect(write=True)
         with closing(db):
             with db:
+                db.execute('SAVEPOINT cursor_checkpoint_scope')
+
+                def require_transaction_binding():
+                    if _store_binding_matches(self, cursor_binding):
+                        return
+                    db.execute('ROLLBACK TO cursor_checkpoint_scope')
+                    db.execute('RELEASE cursor_checkpoint_scope')
+                    if new:
+                        # Retain only the account-bound schema for a fresh
+                        # original path.  Never strand an empty SQLite file
+                        # after rejecting a retargeted callback or seam.
+                        db.commit()
+                    _fail('STORE_BINDING_CHANGED')
+
+                require_transaction_binding()
                 head, cursor, records = self._load(db)
+                require_transaction_binding()
                 comparable = ZERO if new and not records else head
                 if comparable != expected:
                     _fail('HEAD_CHANGED')
                 if cursor is not None and cursor != previous_cursor:
                     _fail('CURSOR_CHANGED')
-                admitted('INPUT_REVOKED')
+                admitted('INPUT_REVOKED', require_transaction_binding)
                 if len(records) >= MAX_CHECKPOINTS:
                     _fail('CHECKPOINT_CAP')
                 head = self._insert(db, len(records) + 1, body, head)
+                require_transaction_binding()
                 loaded_head, loaded_cursor, _ = self._load(db)
+                require_transaction_binding()
                 if loaded_head != head or loaded_cursor != next_cursor:
                     _fail('COMMIT_REPLAY_DISAGREEMENT')
-                admitted('INPUT_REVOKED')
+                admitted('INPUT_REVOKED', require_transaction_binding)
+                db.execute('RELEASE cursor_checkpoint_scope')
             # If this raises, the committed record is deliberately retained.
             # A caller must reopen and submit the exact same expected-head
             # transition; it cannot skip or invent a cursor.
             admitted('INPUT_REVOKED_AFTER_COMMIT')
-        return self._receipt(head, body, False)
+        receipt = self._receipt(head, body, False)
+        require_cursor_binding()
+        return receipt
 
     def _receipt(self, head, body, duplicate):
         return dict(mode='PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_CHECKPOINT',

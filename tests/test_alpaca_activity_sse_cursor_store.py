@@ -229,6 +229,56 @@ def test_checkpoint_review_rejects_foreign_tuple_equality(tmp_path):
     assert not path.exists()
 
 
+def test_checkpoint_review_rejects_foreign_schema_key_equality(tmp_path):
+    class EqualText(str):
+        __hash__ = str.__hash__
+
+    path = tmp_path / 'cursor.sqlite3'
+    report, before, after = checked()
+    report = {
+        EqualText(key) if key == 'mode' else key: value
+        for key, value in report.items()
+    }
+    with pytest.raises(ValueError, match='REVIEW_INVALID'):
+        checkpoint(subject.ActivitySSECursorStore(path, ACCOUNT),
+            report, before, after)
+    assert not path.exists()
+
+
+def test_checkpoint_review_rejects_foreign_source_item_equality(tmp_path):
+    class EqualText(str):
+        def __eq__(self, other): return True
+        def __ne__(self, other): return False
+        __hash__ = str.__hash__
+
+    path = tmp_path / 'cursor.sqlite3'
+    report, before, after = checked()
+    report['sources'] = (EqualText('foreign'), *report['sources'][1:])
+    with pytest.raises(ValueError, match='REVIEW_INVALID'):
+        checkpoint(subject.ActivitySSECursorStore(path, ACCOUNT),
+            report, before, after)
+    assert not path.exists()
+
+
+@pytest.mark.parametrize('field', (
+    'persisted_cursor_sha256', 'reconnect_since_id_sha256',
+    'next_cursor_sha256'))
+def test_checkpoint_review_rejects_foreign_cursor_digest_equality(
+        tmp_path, field):
+    class EqualText(str):
+        def __eq__(self, other): return True
+        def __ne__(self, other): return False
+        __hash__ = str.__hash__
+
+    path = tmp_path / 'cursor.sqlite3'
+    report, before, after = checked()
+    report[field] = EqualText('f' * 64)
+    with pytest.raises(ValueError, match='REVIEW_CURSOR_DIGEST_INVALID'):
+        checkpoint(subject.ActivitySSECursorStore(path, ACCOUNT),
+            report, before, after)
+    assert not path.exists()
+
+
 def test_account_mismatch_and_cursor_regression_fail_before_storage(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     report, before, after = checked()

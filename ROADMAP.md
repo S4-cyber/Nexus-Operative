@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.279.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.280.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.279.0 makes the reconnect-review input to cursor persistence a total exact contract. The cursor store now requires the producer's complete allowlisted key set, plain mode/status/account/reason/limitations strings, the exact immutable source tuple, every safety flag exactly false and every positive count internally consistent. Unknown fields, mutable or equality-forged containers, changed limitation claims, unsupported reasons and inconsistent replay/unique/trade/fee/link summaries fail before storage. The producer exports the same result-key and limitation constants used by persistence, preventing silent schema drift. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.280.0 removes the remaining foreign-equality seams from reconnect-review checkpoint admission. Every schema key and source-tuple item must now be an exact plain string, and all three persisted/reconnect/next cursor digest claims must pass the same exact built-in digest validator before comparison. String subclasses can no longer impersonate canonical keys, sources or cursor bindings through custom equality. The prior complete key set, constant, authority, proof and count-consistency checks remain mandatory. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

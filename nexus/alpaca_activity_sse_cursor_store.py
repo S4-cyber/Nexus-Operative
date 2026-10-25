@@ -144,7 +144,8 @@ class ActivitySSECursorStore:
             reconnect_reservation_token=None):
         if type(value) is not dict:
             _fail('REVIEW_INVALID')
-        if (set(value) != REVIEW_RESULT_KEYS or
+        if (any(type(key) is not str for key in value) or
+                set(value) != REVIEW_RESULT_KEYS or
                 type(value['mode']) is not str or
                 value['mode'] != 'SUPPLIED_ALPACA_ACTIVITY_SSE_RECONNECT_REVIEW' or
                 type(value['status']) is not str or
@@ -155,6 +156,7 @@ class ActivitySSECursorStore:
                 type(value['reconnect_reason']) is not str or
                 value['reconnect_reason'] not in REVIEW_REASONS or
                 type(value['sources']) is not tuple or
+                any(type(source) is not str for source in value['sources']) or
                 value['sources'] != SOURCES or
                 type(value['limitations']) is not str or
                 value['limitations'] != REVIEW_LIMITATIONS or
@@ -168,9 +170,15 @@ class ActivitySSECursorStore:
         after = _cursor(next_cursor, 'NEXT_CURSOR_INVALID')
         if after <= before:
             _fail('CURSOR_REGRESSION')
-        if (value['persisted_cursor_sha256'] != sha(before) or
-                value['reconnect_since_id_sha256'] != sha(before) or
-                value['next_cursor_sha256'] != sha(after)):
+        persisted_digest = _digest(value['persisted_cursor_sha256'],
+            'REVIEW_CURSOR_DIGEST_INVALID')
+        reconnect_digest = _digest(value['reconnect_since_id_sha256'],
+            'REVIEW_CURSOR_DIGEST_INVALID')
+        next_digest = _digest(value['next_cursor_sha256'],
+            'REVIEW_CURSOR_DIGEST_INVALID')
+        if (persisted_digest != sha(before) or
+                reconnect_digest != sha(before) or
+                next_digest != sha(after)):
             _fail('REVIEW_CURSOR_DISAGREEMENT')
         input_digest = _digest(value['input_sha256'], 'REVIEW_DIGEST_INVALID')
         initial = _positive(value['initial_events_reviewed'], 'COUNT_INVALID')

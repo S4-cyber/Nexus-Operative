@@ -48,6 +48,8 @@ FLAGS = ('provider_source_attested', 'stream_delivery_verified',
     'fee_coverage_complete', 'broker_account_reconciled',
     'ready_for_routing', 'live_orders_enabled', 'money_movement_enabled',
     'release_approved')
+CHECKPOINT_BINDING_FALSE = ('actual_provider_access',
+    'actual_vault_access', 'actual_stream_connection', *FLAGS)
 CHECKPOINT_ACK_TRUE = ('single_get_attempt', 'single_reconnect_attempt',
     'explicit_read_authorization', 'explicit_checkpoint_authorization',
     'cursor_checkpoint_eligible', 'cursor_written',
@@ -56,6 +58,11 @@ CHECKPOINT_ACK_TRUE = ('single_get_attempt', 'single_reconnect_attempt',
 CHECKPOINT_ACK_FALSE = ('actual_vault_access', 'automatic_retry',
     'automatic_reconnect_performed', 'automatic_backoff_verified',
     'ledger_applied')
+CHECKPOINT_BINDING_KEYS = frozenset((
+    'mode', 'status', 'account_sha256', 'head_sha256',
+    'expected_head_sha256', 'checkpoint_receipt_sha256', 'cursor_sha256',
+    'reconnect_reservation_sha256', 'reconnect_reservation_bound',
+    'read_only', *CHECKPOINT_BINDING_FALSE))
 
 
 class ActivitySSEReconnectBudgetError(ValueError):
@@ -145,6 +152,41 @@ def _budget_state_for_attempt(reconnect_budget):
     return state
 
 
+def _validated_checkpoint_binding(cursor_store, value, code):
+    """Validate the total public shape of one private cursor binding.
+
+    Callers use the returned exact built-in dictionary for stability
+    comparison.  Subclasses, extra private fields, promoted authority and
+    custom equality therefore cannot stand in for a replayed journal view.
+    """
+    try:
+        if type(value) is not dict or set(value) != CHECKPOINT_BINDING_KEYS:
+            raise TypeError
+        _digest(value['head_sha256'])
+        _digest(value['expected_head_sha256'])
+        _digest(value['checkpoint_receipt_sha256'])
+        _digest(value['cursor_sha256'])
+        bound = value['reconnect_reservation_bound']
+        if type(bound) is not bool:
+            raise TypeError
+        reservation = value['reconnect_reservation_sha256']
+        if bound:
+            _digest(reservation)
+        elif reservation is not None:
+            raise ValueError
+        if (value['mode'] !=
+                    'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING' or
+                value['status'] != 'REVIEW_REQUIRED' or
+                value['account_sha256'] != cursor_store.account_sha256 or
+                value['read_only'] is not True or
+                any(value[flag] is not False
+                    for flag in CHECKPOINT_BINDING_FALSE)):
+            raise ValueError
+    except Exception:
+        _fail(code)
+    return value
+
+
 def _exact_pending_reservation(state, *, token, attempt, cursor_head,
         expected_budget_head, evaluated_at, reconnect_reason):
     """Prove one request still owns the exact durable pending BEGIN."""
@@ -199,9 +241,9 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
                     if result['actual_provider_access'] else
                     'INJECTED_UNATTESTED')):
             raise ValueError
-        retained = cursor_store.latest_checkpoint_binding()
-        if type(retained) is not dict:
-            raise TypeError
+        retained = _validated_checkpoint_binding(cursor_store,
+            cursor_store.latest_checkpoint_binding(),
+            'CHECKPOINT_STATE_UNCERTAIN')
         retained_head = _digest(retained['head_sha256'])
         retained_expected = _digest(retained['expected_head_sha256'])
         retained_receipt = _digest(retained['checkpoint_receipt_sha256'])
@@ -1187,7 +1229,9 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             'RESULT_RECORD_UNCERTAIN')
         result_acknowledgement_recovered = True
     try:
-        stable_checkpoint_binding = cursor_store.latest_checkpoint_binding()
+        stable_checkpoint_binding = _validated_checkpoint_binding(
+            cursor_store, cursor_store.latest_checkpoint_binding(),
+            'RESULT_RECORD_UNCERTAIN')
     except Exception:
         _fail('RESULT_RECORD_UNCERTAIN')
     stable_result = _inspect_after_result_error(reconnect_budget,
@@ -1337,7 +1381,9 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
     except (AttributeError, IndexError, KeyError, TypeError):
         _fail('RECOVERY_STATE_UNCERTAIN')
     try:
-        retained = cursor_store.latest_checkpoint_binding()
+        retained = _validated_checkpoint_binding(cursor_store,
+            cursor_store.latest_checkpoint_binding(),
+            'CURSOR_BINDING_REVIEW_FAILED')
         retained_head = _digest(retained['head_sha256'],
             'CURSOR_BINDING_REVIEW_FAILED')
         retained_expected = _digest(retained['expected_head_sha256'],
@@ -1382,7 +1428,9 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
                 'RECOVERY_RESULT_UNCERTAIN')
             result_acknowledgement_recovered = True
     try:
-        unchanged = cursor_store.latest_checkpoint_binding()
+        unchanged = _validated_checkpoint_binding(cursor_store,
+            cursor_store.latest_checkpoint_binding(),
+            'RECOVERY_RESULT_UNCERTAIN')
     except Exception:
         _fail('RECOVERY_RESULT_UNCERTAIN')
     stable = _inspect_after_result_error(reconnect_budget,

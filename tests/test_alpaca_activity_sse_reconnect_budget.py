@@ -547,6 +547,55 @@ def test_checkpoint_binding_must_remain_stable_across_result_commit(tmp_path,
         binding['checkpoint_receipt_sha256']
 
 
+@pytest.mark.parametrize('field', subject.FLAGS)
+def test_durable_checkpoint_binding_cannot_promote_authority(tmp_path,
+        monkeypatch, field):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = cursor.latest_checkpoint_binding
+
+    def promoted_binding():
+        return {**original(), field: True}
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        promoted_binding)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    state = budget.inspect()
+    assert len(opener.requests) == 1
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
+def test_post_result_binding_rejects_custom_equality_mapping(tmp_path,
+        monkeypatch):
+    class EqualMapping(dict):
+        def __eq__(self, other): return True
+        def __ne__(self, other): return False
+
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = cursor.latest_checkpoint_binding
+    samples = []
+
+    def forged_stability_view():
+        samples.append(True)
+        retained = original()
+        return retained if len(samples) == 1 else EqualMapping(retained)
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        forged_stability_view)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESULT_RECORD_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert samples == [True, True] and len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['completed'] and state['pending_token'] is None
+
+
 def test_success_result_and_exact_replay_bind_observed_completion_time(
         tmp_path):
     _, raw = segments()
@@ -2089,6 +2138,56 @@ def test_reconciliation_malformed_cursor_binding_fails_closed(
             evaluated_at=1001, confirm_checkpoint_reconciliation=True)
     assert len(opener.requests) == 1
     assert budget.path.read_bytes() == saved
+
+
+@pytest.mark.parametrize('field', subject.FLAGS)
+def test_reconciliation_binding_cannot_promote_authority(tmp_path,
+        monkeypatch, field):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    original = cursor.latest_checkpoint_binding
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        lambda: {**original(), field: True})
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CURSOR_BINDING_REVIEW_FAILED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+
+
+def test_reconciliation_post_result_binding_rejects_custom_equality(
+        tmp_path, monkeypatch):
+    class EqualMapping(dict):
+        def __eq__(self, other): return True
+        def __ne__(self, other): return False
+
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original = cursor.latest_checkpoint_binding
+    samples = []
+
+    def forged_stability_view():
+        samples.append(True)
+        retained = original()
+        return retained if len(samples) == 1 else EqualMapping(retained)
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        forged_stability_view)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RECOVERY_RESULT_UNCERTAIN'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert samples == [True, True] and len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['completed'] and state['pending_token'] is None
 
 
 @pytest.mark.parametrize(('token','code'), [

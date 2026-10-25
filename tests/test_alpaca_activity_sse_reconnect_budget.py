@@ -80,10 +80,14 @@ def stores(tmp_path):
 def call(tmp_path, opener, at=1000, **changes):
     initial, _ = segments()
     cursor, budget = changes.pop('stores', stores(tmp_path))
+    if 'expected_budget_head' in changes:
+        expected_budget_head = changes.pop('expected_budget_head')
+    else:
+        expected_budget_head = budget.inspect()['head_sha256']
     options = dict(expected_account_id=ACCOUNT, initial_events=initial,
         reconnect_reason='CONNECTION_DROPPED', cursor_store=cursor,
         expected_cursor_head=ZERO, reconnect_budget=budget,
-        expected_budget_head=budget.inspect()['head_sha256'],
+        expected_budget_head=expected_budget_head,
         evaluated_at=at, confirm_reconnect_attempt=True,
         confirm_read_only_paper=True, confirm_cursor_checkpoint=True,
         opener=opener, wall_clock=lambda: at,
@@ -154,6 +158,38 @@ def test_malformed_initial_cursor_view_fails_closed_before_reservation(
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
             match='CURSOR_STATE_UNCERTAIN'):
         call(tmp_path, opener, stores=(cursor, budget))
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
+def test_initial_budget_inspection_failure_is_sanitized_before_reservation(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    monkeypatch.setattr(budget, 'inspect',
+        lambda: (_ for _ in ()).throw(
+            RuntimeError('private budget storage detail')))
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_ADMISSION_STATE_UNCERTAIN'
+    assert 'private' not in str(raised.value)
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
+@pytest.mark.parametrize('malformed', (None, {}, [],
+    {'head_sha256': ZERO}))
+def test_malformed_initial_budget_view_fails_closed_before_reservation(
+        tmp_path, monkeypatch, malformed):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    monkeypatch.setattr(budget, 'inspect', lambda: malformed)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ADMISSION_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
     assert not opener.requests
     assert not cursor.path.exists() and not budget.path.exists()
 

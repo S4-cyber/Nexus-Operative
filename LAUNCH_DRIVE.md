@@ -2,7 +2,15 @@
 
 ## Delivery planning update — 2026-10-24
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.261.0 parent has no connector-visible exact-source workflow result; v0.262.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. The published v0.262.0 parent has no connector-visible exact-source workflow result; v0.263.0 therefore requires fresh checks and no parent CI result is transferred. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.263.0 fail-closed reconnect-budget admission inspection
+
+Reconnect admission now validates the first reconnect-budget view before opening its write connection. Unreadable or malformed digest, clock, counter, flag or reason state returns fixed admission-state uncertainty; neither store is created or changed and the provider opener is never invoked.
+
+This complements the cursor preflight and closes the remaining initial durable-state inspection gap. No UI or modifiable parameter changed, and the seven beginner tabs plus black/bright-purple bottom-right help contract remain unchanged. Disposable injected evidence is not actual provider/account, source/delivery/replay, native durability, reconciliation, sustained-market, trading or release acceptance.
+
+Final local validation passed 3,947 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget/release/evidence/version/roadmap/audit focus passed 336. All sixteen offline profiles and saved-evidence verification matched 387 source files / `5e01b139ec892368058932ccf0f76c80bcb58046cfe52aa5bd226940f3e2602e`; the saved report SHA256 is `fdaf067fe626d5484af1a8c45b0b44b76cc57642480c40be143f90ee150711e4`. Fourteen Node controllers, Portal syntax, compilation, dependency consistency, generated-roadmap equality and whitespace passed. The 625-path proposed snapshot and reachable 657-commit / 4,721-blob history audit found no public artifacts, but it is not a secret detector. Exact-source hosted results remain required before this source is treated as a verified checkpoint.
 
 ## v0.262.0 fail-closed pre-attempt cursor inspection
 

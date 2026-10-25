@@ -105,6 +105,38 @@ def _cursor_head_for_attempt(cursor_store):
     return _digest(head, 'CURSOR_STATE_UNCERTAIN')
 
 
+def _budget_state_for_attempt(reconnect_budget):
+    """Read and validate admission state without exposing storage faults."""
+    try:
+        state = reconnect_budget.inspect()
+        if type(state) is not dict:
+            raise TypeError
+        _digest(state['head_sha256'])
+        pending = state['pending_token']
+        if pending is not None:
+            _digest(pending)
+        last_begin = state['last_begin_expected_head_sha256']
+        if last_begin is not None:
+            _digest(last_begin)
+        expected_cursor = state['expected_cursor_head_sha256']
+        if expected_cursor is not None:
+            _digest(expected_cursor)
+        _clock(state['last_evaluated_at'])
+        _clock(state['next_allowed_at'])
+        attempts = state['attempts']
+        if type(attempts) is not int or not 0 <= attempts <= MAX_ATTEMPTS:
+            raise TypeError
+        if (type(state['review_required']) is not bool or
+                type(state['completed']) is not bool):
+            raise TypeError
+        reason = state['last_reconnect_reason']
+        if reason is not None and reason not in REASONS:
+            raise TypeError
+    except Exception:
+        _fail('ADMISSION_STATE_UNCERTAIN')
+    return state
+
+
 def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     """Retain terminal review state from the last trusted admission time.
 
@@ -535,7 +567,7 @@ class ActivitySSEReconnectBudget:
 
         if not stop_clear():
             _fail('EMERGENCY_STOP_ACTIVE')
-        current = self.inspect()
+        current = _budget_state_for_attempt(self)
         if current['head_sha256'] != expected:
             exact_reservation = (
                 current['pending_token'] is not None and

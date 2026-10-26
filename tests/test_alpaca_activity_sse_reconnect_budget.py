@@ -2,6 +2,7 @@
 import copy
 import io
 import json
+import shutil
 import sqlite3
 from email.message import Message
 from urllib.error import HTTPError
@@ -587,6 +588,33 @@ def test_budget_inspect_connection_cannot_retarget_store(
             match='STORE_BINDING_CHANGED'):
         budget.inspect()
     assert original_path.exists() and not retargeted.exists()
+
+
+def test_budget_inspect_rejects_same_path_byte_identical_replacement(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    path = budget.path
+    replacement = tmp_path / 'inspect-replacement.sqlite3'
+    shutil.copyfile(path, replacement)
+    original_load = budget._load
+
+    def replace_after_load(*args, **kwargs):
+        retained = original_load(*args, **kwargs)
+        replacement.replace(path)
+        return retained
+
+    monkeypatch.setattr(budget, '_load', replace_after_load)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='FILE_IDENTITY_CHANGED'):
+        budget.inspect()
+    assert not replacement.exists()
+    retained = subject.ActivitySSEReconnectBudget(path, ACCOUNT).inspect()
+    assert retained['pending_token'] == reserved['token']
+    assert retained['head_sha256'] == reserved['head_sha256']
 
 
 @pytest.mark.parametrize('retarget_field', ('path', 'account_sha256'))

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.295.0'
+REVISION = '0.296.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.295.0 extends sampled device/file identity binding into the direct multi-account provider-POST/history review. The composition captures the provider budget and every selected request journal after relationship preflight, then refuses same-path replacement at every replay boundary even when bytes and journal heads are identical. Existing object binding, bounded account selection and exact-head checks remain independent. This is a sequential local replacement detector, not an atomic snapshot, descriptor-held lock, ACL or source attestation, same-inode write exclusion, provider acceptance or native power-loss proof. No provider request, credential access, retry, continuation, journal write, ledger, order, funding, Portal or release authority is added. Actual-account fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.296.0 extends sampled device/file identity binding into direct Activity SSE cursor-history and reconnect-budget inspection. Existing journals capture their resolved path plus sampled device/inode identity before replay and refuse same-path replacement at each explicit read boundary even when replacement bytes match. Missing stores remain absent and existing object, account, exact-head, emergency-stop and bounded-attempt checks remain independent. This is a sequential local replacement detector, not an atomic snapshot, descriptor-held lock, ACL or source attestation, same-inode write exclusion, provider acceptance or native power-loss proof. No provider request, credential access, automatic retry, cursor mutation, ledger, order, funding, Portal or release authority is added. Actual-account reconnect, activity/fee coverage, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

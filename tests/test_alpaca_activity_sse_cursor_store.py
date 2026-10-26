@@ -2,6 +2,7 @@
 import copy
 import json
 from pathlib import Path
+import shutil
 import sqlite3
 
 import pytest
@@ -419,6 +420,29 @@ def test_public_read_connection_cannot_retarget_store(tmp_path, monkeypatch,
     with pytest.raises(ValueError, match='STORE_BINDING_CHANGED'):
         getattr(store, method)()
     assert path.exists() and not retargeted.exists()
+
+
+@pytest.mark.parametrize('method', ('inspect', 'latest_checkpoint_binding'))
+def test_public_read_rejects_same_path_byte_identical_replacement(
+        tmp_path, monkeypatch, method):
+    path = tmp_path / 'cursor.sqlite3'
+    replacement = tmp_path / f'{method}-replacement.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    saved = checkpoint(store)
+    shutil.copyfile(path, replacement)
+    original_load = store._load
+
+    def replace_after_load(*args, **kwargs):
+        retained = original_load(*args, **kwargs)
+        replacement.replace(path)
+        return retained
+
+    monkeypatch.setattr(store, '_load', replace_after_load)
+    with pytest.raises(ValueError, match='FILE_IDENTITY_CHANGED'):
+        getattr(store, method)()
+    assert not replacement.exists()
+    assert subject.ActivitySSECursorStore(
+        path, ACCOUNT).inspect()['head_sha256'] == saved['head_sha256']
 
 
 @pytest.mark.parametrize('method', ('inspect', 'latest_checkpoint_binding'))

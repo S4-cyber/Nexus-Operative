@@ -19,7 +19,8 @@ from nexus.alpaca_activity_sse_cursor_store import (
 from nexus.alpaca_activity_sse_review import ULID
 from nexus.alpaca_activity_sse_transport import ActivitySSETransportError
 from nexus.alpaca_paper_contract import canonical, sha
-from nexus.sqlite_journal_guard import check_existing
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, check_existing, require_file_identities)
 
 
 SCHEMA = 'nexus.private-alpaca-activity-sse-reconnect-budget.v1'
@@ -895,14 +896,31 @@ class ActivitySSEReconnectBudget:
     def inspect(self):
         """Replay the full private budget; a missing path remains absent."""
         budget_binding = (self.path, self.account_sha256)
+        file_binding = None
 
         def require_budget_binding():
             if not _budget_binding_matches(self, budget_binding):
                 _fail('STORE_BINDING_CHANGED')
+            if file_binding is not None:
+                try:
+                    require_file_identities((budget_binding[0],),
+                        file_binding,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                except ValueError as error:
+                    raise ActivitySSEReconnectBudgetError(
+                        str(error)) from None
 
         self._check()
         require_budget_binding()
-        if not budget_binding[0].exists():
+        present = budget_binding[0].exists()
+        if present:
+            try:
+                file_binding = capture_file_identities(
+                    (budget_binding[0],),
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            except ValueError as error:
+                raise ActivitySSEReconnectBudgetError(str(error)) from None
+        if not present:
             state = dict(head_sha256=ZERO, attempts=0, pending_token=None,
                 expected_cursor_head_sha256=None, next_allowed_at=0,
                 last_evaluated_at=0, last_outcome=None,

@@ -6,6 +6,8 @@ order/execution pair resolving to an accepted original fill. Those REST fields
 remain unverified reference hints: this grants no fee-coverage, posting-time,
 funds, order, ledger, routing or release authority.
 """
+from pathlib import Path
+
 from nexus.alpaca_paper_contract import sha, timestamp_order_ns
 from nexus.broker_activity_store import BrokerActivityStore
 from nexus.broker_request_journal import BrokerRequestJournal
@@ -51,6 +53,13 @@ def _require_store_binding(post_budget, journal, expected):
         _fail('STORE_BINDING_CHANGED')
 
 
+def _frozen_path(value, code):
+    try:
+        return Path(value)
+    except (TypeError, ValueError, OSError, AttributeError):
+        _fail(code)
+
+
 def review(post_budget, *, expected_post_head, account_id, journal,
            expected_request_head, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
@@ -61,6 +70,11 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         _fail('POST_BUDGET_REQUIRED')
     if type(journal) is not BrokerRequestJournal:
         _fail('REQUEST_JOURNAL_REQUIRED')
+    pacing_path = _frozen_path(pacing_path, 'PACING_PATH_INVALID')
+    activity_store_path = _frozen_path(
+        activity_store_path, 'ACTIVITY_STORE_PATH_INVALID')
+    acceptance_store_path = _frozen_path(
+        acceptance_store_path, 'ACCEPTANCE_STORE_PATH_INVALID')
     store_binding = _store_binding(post_budget, journal)
     journal_path = journal.path
     journal_account = journal.account_digest

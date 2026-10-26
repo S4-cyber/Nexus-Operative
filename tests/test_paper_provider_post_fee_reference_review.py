@@ -1,6 +1,7 @@
 """Exact provider POST reconciliation to retained fee-reference composition."""
 import json
 import shutil
+from pathlib import Path
 
 import pytest
 
@@ -12,6 +13,14 @@ from nexus.broker_request_journal import BrokerRequestJournal
 def snapshot(root):
     return {path.relative_to(root): path.read_bytes()
         for path in root.rglob('*') if path.is_file()}
+
+
+class MutablePath:
+    def __init__(self, path):
+        self.path = path
+
+    def __fspath__(self):
+        return str(self.path)
 
 
 def test_binds_every_retained_fee_reference_without_writes(tmp_path):
@@ -116,6 +125,34 @@ def test_store_objects_cannot_retarget_during_accepted_activity_review(
     with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
         subject.review(**args)
     assert original_path.exists() and clone.exists()
+
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_ancillary_paths_are_frozen_before_nested_reviews(
+        tmp_path, monkeypatch, field):
+    args=subject._fixture(tmp_path);original_path=Path(args[field])
+    clone=tmp_path/f'{field}-clone.sqlite3'
+    shutil.copyfile(original_path,clone)
+    supplied=MutablePath(original_path);args[field]=supplied
+    original_reconciliation=subject.reconciliation.review
+    original_accepted=subject.accepted.review
+    calls=[];seen=[]
+
+    def retarget(**kwargs):
+        result=original_reconciliation(**kwargs);calls.append(1)
+        if len(calls)==1:supplied.path=clone
+        return result
+
+    def inspect_path(**kwargs):
+        seen.append(Path(kwargs[field]))
+        return original_accepted(**kwargs)
+
+    monkeypatch.setattr(subject.reconciliation,'review',retarget)
+    monkeypatch.setattr(subject.accepted,'review',inspect_path)
+    result=subject.review(**args)
+    assert result['journals_rechecked_unchanged']
+    assert seen and all(path==original_path for path in seen)
 
 
 def test_fixture_is_public_aggregate_only():

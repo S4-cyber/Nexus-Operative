@@ -6,6 +6,7 @@ turn a reported fee date into a posting instant, or establish spendable funds.
 """
 from collections import defaultdict
 from decimal import Decimal, InvalidOperation, localcontext
+from pathlib import Path
 
 from nexus.alpaca_paper_contract import number, sha, text
 from nexus.broker_activity_store import BrokerActivityStore
@@ -50,6 +51,13 @@ def _require_store_binding(post_budget, journal, expected):
             type(journal) is not BrokerRequestJournal or
             _store_binding(post_budget, journal) != expected):
         _fail('STORE_BINDING_CHANGED')
+
+
+def _frozen_path(value, code):
+    try:
+        return Path(value)
+    except (TypeError, ValueError, OSError, AttributeError):
+        _fail(code)
 
 
 def _totals(observation):
@@ -144,6 +152,11 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         _fail('POST_BUDGET_REQUIRED')
     if type(journal) is not BrokerRequestJournal:
         _fail('REQUEST_JOURNAL_REQUIRED')
+    pacing_path = _frozen_path(pacing_path, 'PACING_PATH_INVALID')
+    activity_store_path = _frozen_path(
+        activity_store_path, 'ACTIVITY_STORE_PATH_INVALID')
+    acceptance_store_path = _frozen_path(
+        acceptance_store_path, 'ACCEPTANCE_STORE_PATH_INVALID')
     store_binding = _store_binding(post_budget, journal)
     journal_account = journal.account_digest
     options = dict(post_budget=post_budget,

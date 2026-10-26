@@ -2,6 +2,7 @@
 import json
 import shutil
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
@@ -11,6 +12,14 @@ from nexus import paper_provider_post_known_fee_reserve_review as subject
 def snapshot(root):
     return {path.relative_to(root): path.read_bytes()
         for path in root.rglob('*') if path.is_file()}
+
+
+class MutablePath:
+    def __init__(self, path):
+        self.path = path
+
+    def __fspath__(self):
+        return str(self.path)
 
 
 def test_known_fee_reserve_path_matches_supplied_closing_without_writes(tmp_path):
@@ -115,6 +124,29 @@ def test_store_objects_cannot_retarget_during_fee_reserve_path(
     with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
         subject.review(**args)
     assert original_path.exists() and clone.exists()
+
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_ancillary_paths_are_frozen_before_reference_review(
+        tmp_path, monkeypatch, field):
+    args=subject._fixture(tmp_path);original_path=Path(args[field])
+    clone=tmp_path/f'{field}-clone.sqlite3'
+    shutil.copyfile(original_path,clone)
+    supplied=MutablePath(original_path);args[field]=supplied
+    original=subject.references.review
+    calls=[];seen=[]
+
+    def retarget(**kwargs):
+        seen.append(Path(kwargs[field]))
+        result=original(**kwargs);calls.append(1)
+        if len(calls)==1:supplied.path=clone
+        return result
+
+    monkeypatch.setattr(subject.references,'review',retarget)
+    result=subject.review(**args)
+    assert result['journals_rechecked_unchanged']
+    assert len(seen)>=2 and all(path==original_path for path in seen)
 
 
 def test_fixture_is_public_aggregate_only():

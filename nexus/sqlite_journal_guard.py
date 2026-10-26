@@ -23,6 +23,56 @@ def check_path_set(paths, prefix):
     return resolved
 
 
+def capture_file_identities(paths, prefix):
+    """Sample existing regular-file identities without retaining descriptors.
+
+    This detects pathname replacement between explicit composition boundaries.
+    It is not an atomic snapshot, lock, ownership check or protection against a
+    writer that changes bytes through the same file identity.
+    """
+    def fail(code): raise ValueError(prefix + code) from None
+    if type(paths) not in (list, tuple) or not 1 <= len(paths) <= 32:
+        fail('FILE_IDENTITY_SCOPE_INVALID')
+    identities = []
+    for value in paths:
+        try:
+            path = Path(value)
+            observed = path.lstat()
+            if (stat.S_ISLNK(observed.st_mode) or
+                    not stat.S_ISREG(observed.st_mode) or
+                    observed.st_nlink != 1):
+                fail('FILE_IDENTITY_UNAVAILABLE')
+            resolved = path.resolve()
+            flags = (os.O_RDONLY | getattr(os, 'O_BINARY', 0) |
+                getattr(os, 'O_NOFOLLOW', 0) |
+                getattr(os, 'O_NONBLOCK', 0))
+            with os.fdopen(os.open(resolved, flags), 'rb', buffering=0) as stream:
+                opened = os.fstat(stream.fileno())
+            if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or
+                    (opened.st_dev, opened.st_ino) !=
+                    (observed.st_dev, observed.st_ino)):
+                fail('FILE_IDENTITY_CHANGED')
+            identities.append((str(resolved), opened.st_dev, opened.st_ino))
+        except ValueError:
+            raise
+        except (OSError, RuntimeError, TypeError):
+            fail('FILE_IDENTITY_UNAVAILABLE')
+    return tuple(identities)
+
+
+def require_file_identities(paths, expected, prefix):
+    """Fail closed when a sampled pathname now names a different file."""
+    def fail(): raise ValueError(prefix + 'FILE_IDENTITY_CHANGED') from None
+    if type(expected) is not tuple:
+        fail()
+    try:
+        current = capture_file_identities(paths, prefix)
+    except ValueError:
+        fail()
+    if current != expected:
+        fail()
+
+
 PATH_CHECKS=('recovery_companions_rejected','ancestors_rejected','normalized_aliases_rejected','unrelated_paths_unchanged')
 PATH_FLAGS=('actual_provider_access','actual_vault_access','paths_reserved','atomic_path_binding',
             'ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')

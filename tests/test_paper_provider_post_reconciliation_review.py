@@ -186,6 +186,29 @@ def test_ancillary_paths_are_frozen_before_component_composition(
     assert all(path==original_path for path in status_seen+component_seen)
 
 
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_ancillary_file_replacement_at_same_path_fails_closed(
+        tmp_path, monkeypatch, field):
+    options=subject._fixture(tmp_path);path=Path(options[field])
+    clone=tmp_path/f'{field}-clone.sqlite3'
+    backup=tmp_path/f'{field}-original.sqlite3'
+    shutil.copyfile(path,clone)
+    original=subject.acceptance_status;calls=[]
+
+    def replace(**kwargs):
+        result=original(**kwargs);calls.append(1)
+        if len(calls)==1:
+            path.replace(backup);shutil.copyfile(clone,path)
+        return result
+
+    monkeypatch.setattr(subject,'acceptance_status',replace)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_RECONCILIATION_FILE_IDENTITY_CHANGED'):
+        subject.review(**options)
+    assert path.read_bytes()==backup.read_bytes()==clone.read_bytes()
+
+
 def test_fixture_is_private_and_never_authoritative():
     result = subject.fixture_report()
     assert result['passed']

@@ -1,5 +1,6 @@
 """Refuse conflicting private storage before vault, SQLite or provider work."""
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -39,6 +40,17 @@ def test_distinct_missing_paths_are_read_only_and_suffixes_alone_are_allowed(tmp
 @pytest.mark.parametrize('paths',[[],['one'],['one']*9,None,iter(['one','two'])],ids=['empty','one','over-cap','null','iterator'])
 def test_path_collection_must_be_bounded_before_resolution(paths):
     with pytest.raises(ValueError,match='TEST_RELATED_PATHS_REQUIRED_DISTINCT'):guard.check_path_set(paths,'TEST_')
+
+
+def test_sampled_file_identity_rejects_byte_identical_path_replacement(
+        tmp_path):
+    path=tmp_path/'journal.sqlite3';path.write_bytes(b'private fixture')
+    expected=guard.capture_file_identities((path,),'TEST_')
+    backup=tmp_path/'original.sqlite3';path.replace(backup)
+    shutil.copyfile(backup,path)
+    assert path.read_bytes()==backup.read_bytes()
+    with pytest.raises(ValueError,match='TEST_FILE_IDENTITY_CHANGED'):
+        guard.require_file_identities((path,),expected,'TEST_')
 
 
 @pytest.mark.parametrize('operation',['recovery','collection'])

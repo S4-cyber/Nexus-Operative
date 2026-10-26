@@ -12,7 +12,8 @@ from nexus import paper_provider_post_review as posts
 from nexus import paper_request_activity_acceptance as activity
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
-from nexus.sqlite_journal_guard import check_path_set
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, check_path_set, require_file_identities)
 
 
 MAX_ACCOUNT_BINDINGS = posts.MAX_REQUEST_JOURNALS
@@ -71,6 +72,13 @@ def _require_store_binding(post_budget, bindings, expected):
         _fail('STORE_BINDING_CHANGED')
 
 
+def _require_bindings(post_budget, bindings, store_binding, paths,
+                      file_binding):
+    _require_store_binding(post_budget, bindings, store_binding)
+    require_file_identities(paths, file_binding,
+        'PAPER_PROVIDER_POST_ACTIVITY_')
+
+
 def review(post_budget, *, expected_post_head, account_bindings):
     """Join exact POST outcomes to fully replayed accepted activity histories.
 
@@ -121,16 +129,22 @@ def review(post_budget, *, expected_post_head, account_bindings):
             current['activity_store_path'], current['acceptance_store_path']))
     store_binding = _store_binding(post_budget, bindings)
     _check_related_paths(paths)
-    _require_store_binding(post_budget, bindings, store_binding)
+    file_binding = capture_file_identities(paths,
+        'PAPER_PROVIDER_POST_ACTIVITY_')
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
 
     first_post = post_budget.inspect()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     if first_post['events'] == 0 or first_post['head_sha256'] != expected_post_head:
         _fail('POST_HEAD_CHANGED')
     attempts = post_budget.history()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     recoveries = post_budget.recovery_history()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     if (len(attempts) != first_post['completed_attempts'] or
             len(recoveries) != first_post['recoveries']):
         _fail('POST_HISTORY_CHANGED')
@@ -138,7 +152,8 @@ def review(post_budget, *, expected_post_head, account_bindings):
     post_result = posts.review(post_budget, expected_post_head=expected_post_head,
         request_bindings=[dict(journal=item['journal'],
             expected_head=item['expected_request_head']) for item in bindings])
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     reasons = []
     if not post_result['complete_local_history_consistent']:
         reasons.append('POST_HISTORY_INCOMPLETE')
@@ -156,7 +171,8 @@ def review(post_budget, *, expected_post_head, account_bindings):
             acceptance_store_path=item['acceptance_store_path'],
             expected_request_head=item['expected_request_head'],
             expected_activity_head=item['expected_activity_head'])
-        _require_store_binding(post_budget, bindings, store_binding)
+        _require_bindings(post_budget, bindings, store_binding, paths,
+            file_binding)
         nested = component.get('request_activity_review')
         valid = (component.get('read_only') is True and
             component.get('status') == 'REVIEW_REQUIRED' and
@@ -261,13 +277,15 @@ def review(post_budget, *, expected_post_head, account_bindings):
 
     for item in bindings:
         current_request = item['journal'].recovery()
-        _require_store_binding(post_budget, bindings, store_binding)
+        _require_bindings(post_budget, bindings, store_binding, paths,
+            file_binding)
         current_activity = activity.acceptance_status(
             expected_account_id=item['account_id'],
             pacing_path=item['pacing_path'],
             activity_store_path=item['activity_store_path'],
             acceptance_store_path=item['acceptance_store_path'])
-        _require_store_binding(post_budget, bindings, store_binding)
+        _require_bindings(post_budget, bindings, store_binding, paths,
+            file_binding)
         expected_heads = accepted_heads.get(item['_account_digest'])
         if (current_request['head_sha256'] != item['expected_request_head'] or
                 not activity._complete(current_activity) or
@@ -279,11 +297,14 @@ def review(post_budget, *, expected_post_head, account_bindings):
             _fail('JOURNALS_CHANGED_DURING_REVIEW')
 
     final_post = post_budget.inspect()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     final_attempts = post_budget.history()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     final_recoveries = post_budget.recovery_history()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     if (final_post != first_post or final_attempts != attempts or
             final_recoveries != recoveries):
         _fail('POST_HISTORY_CHANGED')

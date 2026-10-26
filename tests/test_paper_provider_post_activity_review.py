@@ -175,6 +175,29 @@ def test_account_binding_paths_are_frozen_before_post_review(
     assert seen and all(path==original_path for path in seen)
 
 
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_ancillary_file_replacement_at_same_path_fails_closed(
+        tmp_path, monkeypatch, field):
+    budget,head,binding=prepared(tmp_path)
+    path=Path(binding[field]);clone=tmp_path/f'{field}-clone.sqlite3'
+    backup=tmp_path/f'{field}-original.sqlite3'
+    shutil.copyfile(path,clone)
+    original=subject.posts.review
+
+    def replace(*args,**kwargs):
+        result=original(*args,**kwargs)
+        path.replace(backup);shutil.copyfile(clone,path)
+        return result
+
+    monkeypatch.setattr(subject.posts,'review',replace)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_ACTIVITY_FILE_IDENTITY_CHANGED'):
+        subject.review(budget,expected_post_head=head,
+            account_bindings=[binding])
+    assert path.read_bytes()==backup.read_bytes()==clone.read_bytes()
+
+
 def test_account_scope_and_binding_shape_fail_closed(tmp_path):
     budget, head, binding = prepared(tmp_path)
     wrong = dict(binding, journal=BrokerRequestJournal(

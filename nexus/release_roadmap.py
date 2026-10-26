@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.292.0'
+REVISION = '0.293.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.292.0 freezes the pacing, activity-retention and acceptance-history paths exactly once at entry to the lower multi-account provider-POST/activity composition and the guarded provider-POST reconciliation composition. Mutable path-like inputs cannot redirect later accepted-activity, acceptance-status, account-evidence or final replay reads to byte-identical clones. The provider-POST budget and request journals remain independently pinned. No provider request, credential access, retry, continuation, journal write, ledger, order, funding, Portal or release authority is added. Injected cloned-path tests do not prove provider source, activity or fee coverage, reference semantics, posting time, actual holds, settlement, spendable funds, native power-loss durability or profitability. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.293.0 captures the sampled device/file identity of every selected local journal before lower multi-account provider-POST/activity and guarded provider-POST reconciliation composition. Each component boundary refuses a pathname that now names a different file, even when the replacement bytes and replayed heads are identical. Existing path-scope capture and provider-budget/request-journal object binding remain independent. This is a sequential local replacement detector, not an atomic snapshot, descriptor-held lock, ACL or source attestation, same-inode write exclusion, provider acceptance or native power-loss proof. No provider request, credential access, retry, continuation, journal write, ledger, order, funding, Portal or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

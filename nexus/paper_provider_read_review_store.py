@@ -1,5 +1,5 @@
 """Content-free durable receipts for local provider/account read review."""
-from contextlib import closing
+from contextlib import closing,contextmanager
 import json
 import os
 from pathlib import Path
@@ -15,9 +15,26 @@ RESULT_PROFILE='nexus.paper-provider-result-review-receipt.v1'
 MAX_RECORDS=256
 MAX_RECORD_BYTES=4096
 MAX_DATABASE_BYTES=4*1024*1024
+DB_BUSY_TIMEOUT_MS=10_000
 
 
 def _fail(code):raise ValueError('PAPER_PROVIDER_READ_REVIEW_STORE_'+code) from None
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded SQLite statement/commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_fail('DATABASE_BUSY')
+        raise
 
 
 def _digest(value):
@@ -48,14 +65,20 @@ class PaperProviderReadReviewStore:
                 fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(fd);new=True
             except FileExistsError:pass
             self._check()
-        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),uri=True,timeout=5)
+        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),
+            uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
         try:
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')
                 size=db.execute('PRAGMA page_size').fetchone()[0]
                 db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES//size}');db.execute('BEGIN IMMEDIATE')
                 if new:db.execute('CREATE TABLE records (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
             return db
+        except sqlite3.OperationalError as error:
+            db.close()
+            if _database_busy(error):_fail('DATABASE_BUSY')
+            raise
         except BaseException:db.close();raise
 
     @staticmethod
@@ -116,7 +139,8 @@ class PaperProviderReadReviewStore:
         if not self.path.exists():return dict(mode='LOCAL_PROVIDER_READ_REVIEW_HISTORY',initialized=False,
             provider_sha256=self.provider,head_sha256=ZERO,retained_receipts=0,receipts=[],read_only=True,
             ready_for_routing=False,release_approved=False)
-        with closing(self._connect()) as db:head,receipts=self._load(db)
+        with closing(self._connect()) as db:
+            with _transaction(db):head,receipts=self._load(db)
         return dict(mode='LOCAL_PROVIDER_READ_REVIEW_HISTORY',initialized=True,provider_sha256=self.provider,
             head_sha256=head,retained_receipts=len(receipts),receipts=receipts,read_only=True,
             ready_for_routing=False,release_approved=False)
@@ -128,7 +152,7 @@ class PaperProviderReadReviewStore:
         if admission()!=receipt:_fail('ADMISSION_CHANGED')
         if precommit_check() is not True:_fail('INPUT_REVOKED')
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 count=db.execute('SELECT count(*) FROM records').fetchone()[0]
                 if count==0:
                     head=self._insert(db,0,dict(schema=SCHEMA,provider_sha256=self.provider),ZERO);receipts=[]

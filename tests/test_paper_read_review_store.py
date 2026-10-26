@@ -4,7 +4,8 @@ import sqlite3
 
 import pytest
 
-from nexus import paper_read_review as review
+from nexus import paper_read_review as review,paper_read_review_store as store_subject
+from nexus.alpaca_paper_contract import sha
 from nexus.paper_read_review_store import PaperReadReviewStore,ZERO
 
 
@@ -83,3 +84,42 @@ def test_pacing_change_suppresses_retention(tmp_path):
     with pytest.raises(ValueError,match='PAPER_READ_REVIEW_HEAD_CHANGED'):
         review.retain_review(path,gate,bindings,expected_head=head)
     assert not path.exists()
+
+
+def contended_append(tmp_path,seed):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    first=review.retain_review(path,gate,bindings,expected_head=head)
+    store=PaperReadReviewStore(path,gate);scope=dict(store.inspect()['receipts'][0]['scope'],review_sha256=sha(dict(seed=seed)))
+    receipt=sha(scope)
+    return store,scope,receipt,first['head_sha256']
+
+
+def test_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    store,scope,receipt,head=contended_append(tmp_path,'writer');before=store.path.read_bytes()
+    monkeypatch.setattr(store_subject,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match=r'^PAPER_READ_REVIEW_STORE_DATABASE_BUSY$'):
+            store.append(scope,expected_head=head,admission=lambda:receipt)
+    assert store.path.read_bytes()==before
+    assert not store.append(scope,expected_head=head,admission=lambda:receipt)['duplicate']
+
+
+def test_reader_blocked_commit_rolls_back_and_recovers(tmp_path,monkeypatch):
+    store,scope,receipt,head=contended_append(tmp_path,'commit');before=store.path.read_bytes()
+    monkeypatch.setattr(store_subject,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN');blocker.execute('SELECT count(*) FROM records').fetchone()
+        with pytest.raises(ValueError,match=r'^PAPER_READ_REVIEW_STORE_DATABASE_BUSY$'):
+            store.append(scope,expected_head=head,admission=lambda:receipt)
+    assert store.path.read_bytes()==before
+    assert not store.append(scope,expected_head=head,admission=lambda:receipt)['duplicate']
+
+
+def test_read_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    store,_,_,_=contended_append(tmp_path,'read');expected=store.inspect()
+    monkeypatch.setattr(store_subject,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match=r'^PAPER_READ_REVIEW_STORE_DATABASE_BUSY$'):store.inspect()
+    assert store.inspect()==expected

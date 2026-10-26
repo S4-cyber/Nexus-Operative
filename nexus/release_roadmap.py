@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.303.0'
+REVISION = '0.304.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.303.0 gives retained broker activity and cross-journal activity acceptance one bounded SQLite contention contract across writer admission, final commit and their public replay transactions. Exhausted busy/locked outcomes now fail closed with stable journal-specific DATABASE_BUSY diagnostics instead of leaking platform SQLite text; no retry is introduced. Six real-lock tests require unchanged journal bytes, rollback of an unacknowledged commit and exact recovery after release. This is local retained-evidence and reconciliation safety hardening, not provider acceptance, activity or fee coverage, broker-wide coordination, native power-loss proof or new authority. No credential, account, request, order, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.304.0 gives the account-scoped mixed-read review and provider-level read-review journals one bounded SQLite contention contract across writer admission, final commit and their public replay transactions. Exhausted busy/locked outcomes now fail closed with stable journal-specific DATABASE_BUSY diagnostics instead of leaking platform SQLite text; no retry is introduced. Six real-lock tests require unchanged journal bytes, rollback of an unacknowledged commit and exact recovery after release. This is local read-review evidence hardening, not provider acceptance, account or activity coverage, broker-wide coordination, native power-loss proof or new authority. No credential, account, request, order, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

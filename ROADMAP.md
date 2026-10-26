@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.303.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.304.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.303.0 gives retained broker activity and cross-journal activity acceptance one bounded SQLite contention contract across writer admission, final commit and their public replay transactions. Exhausted busy/locked outcomes now fail closed with stable journal-specific DATABASE_BUSY diagnostics instead of leaking platform SQLite text; no retry is introduced. Six real-lock tests require unchanged journal bytes, rollback of an unacknowledged commit and exact recovery after release. This is local retained-evidence and reconciliation safety hardening, not provider acceptance, activity or fee coverage, broker-wide coordination, native power-loss proof or new authority. No credential, account, request, order, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.304.0 gives the account-scoped mixed-read review and provider-level read-review journals one bounded SQLite contention contract across writer admission, final commit and their public replay transactions. Exhausted busy/locked outcomes now fail closed with stable journal-specific DATABASE_BUSY diagnostics instead of leaking platform SQLite text; no retry is introduced. Six real-lock tests require unchanged journal bytes, rollback of an unacknowledged commit and exact recovery after release. This is local read-review evidence hardening, not provider acceptance, account or activity coverage, broker-wide coordination, native power-loss proof or new authority. No credential, account, request, order, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

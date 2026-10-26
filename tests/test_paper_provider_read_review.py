@@ -166,3 +166,43 @@ def test_tampered_receipt_chain_is_rejected(tmp_path):
     with sqlite3.connect(path) as db:db.execute("UPDATE records SET previous=? WHERE seq=1",('f'*64,))
     with pytest.raises(ValueError,match='CHAIN_DISAGREEMENT'):
         PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+
+
+def contended_append(tmp_path,seed):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';options=heads(gate,budget)
+    first=subject.retain_review(path,budget,[gate],**options)
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    scope=dict(store.inspect()['receipts'][0]['scope'],review_sha256=sha(dict(seed=seed)))
+    receipt=sha(scope)
+    return store,scope,receipt,first['head_sha256']
+
+
+def test_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    store,scope,receipt,head=contended_append(tmp_path,'writer');before=store.path.read_bytes()
+    monkeypatch.setattr(store_subject,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match=r'^PAPER_PROVIDER_READ_REVIEW_STORE_DATABASE_BUSY$'):
+            store.append(scope,expected_head=head,admission=lambda:receipt)
+    assert store.path.read_bytes()==before
+    assert not store.append(scope,expected_head=head,admission=lambda:receipt)['duplicate']
+
+
+def test_reader_blocked_commit_rolls_back_and_recovers(tmp_path,monkeypatch):
+    store,scope,receipt,head=contended_append(tmp_path,'commit');before=store.path.read_bytes()
+    monkeypatch.setattr(store_subject,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN');blocker.execute('SELECT count(*) FROM records').fetchone()
+        with pytest.raises(ValueError,match=r'^PAPER_PROVIDER_READ_REVIEW_STORE_DATABASE_BUSY$'):
+            store.append(scope,expected_head=head,admission=lambda:receipt)
+    assert store.path.read_bytes()==before
+    assert not store.append(scope,expected_head=head,admission=lambda:receipt)['duplicate']
+
+
+def test_read_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    store,_,_,_=contended_append(tmp_path,'read');expected=store.inspect()
+    monkeypatch.setattr(store_subject,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match=r'^PAPER_PROVIDER_READ_REVIEW_STORE_DATABASE_BUSY$'):store.inspect()
+    assert store.inspect()==expected

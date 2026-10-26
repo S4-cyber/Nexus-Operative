@@ -132,6 +132,45 @@ def test_insert_failure_rolls_back_without_acknowledgment(store,monkeypatch):
     assert journal.BrokerRequestJournal(store.path,ACCOUNT).recovery()==before
 
 
+def test_write_lock_contention_fails_closed_then_recovers(store,monkeypatch):
+    store.prepare(plan());before=store.recovery();original=store.path.read_bytes()
+    monkeypatch.setattr(journal,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(store.path);blocker.execute('BEGIN IMMEDIATE')
+    try:
+        with pytest.raises(ValueError,match='BROKER_JOURNAL_DATABASE_BUSY'):
+            store.mark_submission_uncertain('nx_fixture')
+    finally:
+        blocker.rollback();blocker.close()
+    assert store.path.read_bytes()==original and store.recovery()==before
+    assert not store.mark_submission_uncertain('nx_fixture')['duplicate']
+
+
+def test_commit_lock_contention_rolls_back_then_recovers(store,monkeypatch):
+    store.prepare(plan());before=store.recovery();original=store.path.read_bytes()
+    monkeypatch.setattr(journal,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(store.path);blocker.execute('BEGIN')
+    blocker.execute('SELECT seq FROM events LIMIT 1').fetchone()
+    try:
+        with pytest.raises(ValueError,match='BROKER_JOURNAL_DATABASE_BUSY'):
+            store.mark_submission_uncertain('nx_fixture')
+    finally:
+        blocker.rollback();blocker.close()
+    assert store.path.read_bytes()==original and store.recovery()==before
+    assert not store.mark_submission_uncertain('nx_fixture')['duplicate']
+
+
+def test_public_read_lock_contention_fails_closed_then_recovers(store,monkeypatch):
+    armed(store);expected=store.recovery();original=store.path.read_bytes()
+    monkeypatch.setattr(journal,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(store.path);blocker.execute('BEGIN EXCLUSIVE')
+    try:
+        with pytest.raises(ValueError,match='BROKER_JOURNAL_DATABASE_BUSY'):
+            store.recovery()
+    finally:
+        blocker.rollback();blocker.close()
+    assert store.path.read_bytes()==original and store.recovery()==expected
+
+
 def test_existing_empty_or_foreign_database_is_not_initialized_silently(tmp_path):
     path=tmp_path/'existing.sqlite3';path.touch();store=journal.BrokerRequestJournal(path,ACCOUNT)
     for action in (store.recovery,lambda:store.prepare(plan())):

@@ -4,7 +4,7 @@ Callers coordinate only when they deliberately share this private journal path.
 The budget does not discover other clients, reserve a broker quota, or grant
 account, routing, funding, live-trading, or release authority.
 """
-from contextlib import closing
+from contextlib import closing, contextmanager
 import hashlib
 import json
 import os
@@ -23,6 +23,7 @@ RECOVERY_POLICY = 'nexus.paper-provider-post-budget-resolved-unknown.v1'
 MAX_ATTEMPTS = 256
 MAX_RECOVERIES = MAX_ATTEMPTS
 MAX_DATABASE_BYTES = 2 * 1024 * 1024
+DB_BUSY_TIMEOUT_MS = 10_000
 MAX_EVENT_BYTES = 1024
 MIN_COOLDOWN = 60
 UNKNOWN_COOLDOWN = 86400
@@ -32,6 +33,24 @@ OUTCOMES = frozenset(('RESPONSE_OBSERVED', 'NOT_SENT', 'OUTCOME_UNKNOWN'))
 
 def _fail(code):
     raise ValueError('PAPER_PROVIDER_POST_BUDGET_' + code) from None
+
+
+def _database_busy(error):
+    code = getattr(error, 'sqlite_errorcode', None)
+    return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded SQLite operation/commit contention without retry."""
+    try:
+        with db:
+            yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        raise
 
 
 def _digest(value, code):
@@ -66,8 +85,9 @@ class PaperProviderPostBudget:
                 pass
             self._path_check()
         db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
-                             uri=True, timeout=5)
+                             uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE'); db.execute('PRAGMA synchronous=FULL')
                 page_size = db.execute('PRAGMA page_size').fetchone()[0]
@@ -77,8 +97,14 @@ class PaperProviderPostBudget:
                     db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._append(db, 0, dict(schema=SCHEMA, provider_sha256=self.provider_digest), ZERO)
             return db
+        except sqlite3.OperationalError as error:
+            db.close()
+            if _database_busy(error):
+                _fail('DATABASE_BUSY')
+            raise
         except BaseException:
-            db.close(); raise
+            db.close()
+            raise
 
     @staticmethod
     def _append(db, seq, body, previous):
@@ -215,7 +241,9 @@ class PaperProviderPostBudget:
         self._path_check()
         if not self.path.exists(): state = self._empty()
         else:
-            with closing(self._connect()) as db: state = self._load(db)
+            with closing(self._connect()) as db:
+                with _transaction(db):
+                    db.execute('BEGIN'); state = self._load(db)
         completed = state.pop('completed'); state.pop('recovery_history')
         pending = state.pop('pending')
         return dict(state, provider_sha256=self.provider_digest,
@@ -230,14 +258,18 @@ class PaperProviderPostBudget:
     def history(self):
         self._path_check()
         if not self.path.exists(): return ()
-        with closing(self._connect()) as db: state = self._load(db)
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                db.execute('BEGIN'); state = self._load(db)
         return tuple(dict(row) for row in state['completed'])
 
     def recovery_history(self):
         """Return content-free recovery bindings after full chain replay."""
         self._path_check()
         if not self.path.exists(): return ()
-        with closing(self._connect()) as db: state = self._load(db)
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                db.execute('BEGIN'); state = self._load(db)
         return tuple(dict(row) for row in state['recovery_history'])
 
     def ownership(self):
@@ -257,7 +289,7 @@ class PaperProviderPostBudget:
             _fail('CLIENT_ORDER_ID_INVALID')
         self._owned(ownership)
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 state = self._load(db); self._owned(ownership); now = clock(admission())
                 self._admit(state, now)
                 # A missing journal is represented by ZERO during read-only
@@ -283,7 +315,7 @@ class PaperProviderPostBudget:
         if type(actual_posts) is not int or actual_posts not in (0, 1): _fail('POST_COUNT_INVALID')
         if (outcome == 'NOT_SENT') != (actual_posts == 0): _fail('POST_COUNT_INVALID')
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 state = self._load(db); pending = state['pending']
                 if pending is None or token != pending['token']: _fail('TOKEN_DISAGREEMENT')
                 active = self._active_completion
@@ -306,7 +338,7 @@ class PaperProviderPostBudget:
         if confirm_interrupted is not True: _fail('CONFIRMATION_REQUIRED')
         with self.ownership() as owner:
             with closing(self._connect(write=True)) as db:
-                with db:
+                with _transaction(db):
                     state = self._load(db); self._owned(owner); now = clock(admission())
                     pending = state['pending']
                     if state['head_sha256'] != expected: _fail('HEAD_DISAGREEMENT')
@@ -351,7 +383,7 @@ class PaperProviderPostBudget:
             lookup_by_original_client_id_required=False)
         self._owned(ownership)
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 state = self._load(db); self._owned(ownership); now = clock(admission())
                 if state['head_sha256'] != head: _fail('HEAD_DISAGREEMENT')
                 if state['pending'] is not None: _fail('PENDING_REVIEW')

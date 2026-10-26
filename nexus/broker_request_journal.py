@@ -3,7 +3,7 @@
 Explicit local paths and caller-supplied account identity only. The journal has no transport,
 credentials, automatic retries, synthetic ledger writes or trading authority.
 """
-from contextlib import closing
+from contextlib import closing, contextmanager
 from decimal import localcontext
 import hashlib
 import json
@@ -21,10 +21,48 @@ MAX_REQUESTS = 128
 MAX_EVENTS = 4096
 MAX_EVENT_BYTES = 4096
 MAX_DATABASE_BYTES = 64 * 1024 * 1024
+DB_BUSY_TIMEOUT_MS = 10_000
 ZERO = '0' * 64
 SCHEMA = 'nexus.alpaca-paper-request-journal.v1'
 ADMISSION_PROFILE = 'nexus.paper-submission-admission.v1'
 ADMISSION_SCOPE = 'CALLER_WALL_SECONDS_NOT_SEND_OR_ARRIVAL'
+
+
+def _fail(code):
+    raise ValueError('BROKER_JOURNAL_' + code) from None
+
+
+def _database_busy(error):
+    code = getattr(error, 'sqlite_errorcode', None)
+    return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded SQLite operation/commit contention without retry."""
+    try:
+        with db:
+            yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        raise
+
+
+@contextmanager
+def _explicit_transaction(db):
+    """Preserve explicit commit acknowledgments while redacting contention."""
+    try:
+        yield
+    except BaseException as error:
+        try:
+            db.rollback()
+        except sqlite3.Error:
+            pass
+        if isinstance(error, sqlite3.OperationalError) and _database_busy(error):
+            _fail('DATABASE_BUSY')
+        raise
 
 
 def _plan(value):
@@ -73,8 +111,10 @@ class BrokerRequestJournal:
                 os.close(fd); new = True
             except FileExistsError:pass
             self._check_path()
-        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=5)
+        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
+            uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE')
                 db.execute('PRAGMA synchronous=FULL')
@@ -85,7 +125,14 @@ class BrokerRequestJournal:
                     db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._insert(db, 1, 'BIND', dict(schema=SCHEMA, account_sha256=self.account_digest), ZERO)
             return db
-        except BaseException:db.close();raise
+        except sqlite3.OperationalError as error:
+            db.close()
+            if _database_busy(error):
+                _fail('DATABASE_BUSY')
+            raise
+        except BaseException:
+            db.close()
+            raise
 
     def _insert(self, db, seq, kind, body, previous):
         encoded = contract.canonical(body)
@@ -248,7 +295,7 @@ class BrokerRequestJournal:
         if kind!='PREPARE' and not self.path.exists():
             raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         with closing(self._connect(write=True)) as db:
-            try:
+            with _explicit_transaction(db):
                 requests,broker_ids,count,previous=self._load(db)
                 identity=body['payload']['client_order_id'] if kind=='PREPARE' else body['client_order_id']
                 existing=requests.get(identity)
@@ -285,7 +332,6 @@ class BrokerRequestJournal:
                 if admission is not None and self._submission_time(requests,admission())<admitted:raise ValueError('BROKER_SUBMISSION_CLOCK_REGRESSION')
                 db.commit()  # Never acknowledge a request/observation before its commit returns.
                 return dict(**self._summary(identity,requests[identity]),duplicate=duplicate)
-            except BaseException:db.rollback();raise
 
     def prepare(self, plan):return self._write('PREPARE',_plan(plan))
 
@@ -302,7 +348,9 @@ class BrokerRequestJournal:
         self._identity(client_order_id);now=lookup.clock(evaluated_at);self._check_path()
         present=self.path.exists();requests={};count=0;head=ZERO
         if present:
-            with closing(self._connect()) as db:requests,_,count,head=self._load(db)
+            with closing(self._connect()) as db:
+                with _transaction(db):
+                    db.execute('BEGIN'); requests,_,count,head=self._load(db)
         request=requests.get(client_order_id);reasons=[]
         floor=self._clock_floor(requests)
         deadline=max((r['lookup']['next_at'] for r in requests.values()
@@ -356,7 +404,7 @@ class BrokerRequestJournal:
         self._identity(identity);lookup.clock(now)
         if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         with closing(self._connect(write=True)) as db:
-            try:
+            with _explicit_transaction(db):
                 requests,broker_ids,count,previous=self._load(db)
                 if expected_head is not None and previous!=expected_head:raise ValueError('BROKER_LOOKUP_HEAD_CHANGED')
                 if identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
@@ -386,7 +434,6 @@ class BrokerRequestJournal:
                 db.commit()
                 return dict(**self._summary(identity,request),duplicate=False,lookup_token=body['token'],
                             hypothetical_lookup=dict(method='GET',url=lookup.LOOKUP_URL,query=dict(client_order_id=identity),sendable=False))
-            except BaseException:db.rollback();raise
 
     def begin_lookup(self, client_order_id, *, evaluated_at):
         return self._lookup_write(client_order_id,evaluated_at)
@@ -400,7 +447,8 @@ class BrokerRequestJournal:
         self._identity(client_order_id);self._check_path()
         if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         with closing(self._connect()) as db:
-            requests,_,_,head=self._load(db)
+            with _transaction(db):
+                db.execute('BEGIN'); requests,_,_,head=self._load(db)
         if client_order_id not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         return dict(plan=json.loads(contract.canonical(requests[client_order_id]['plan'])),
                     account_sha256=self.account_digest,head_sha256=head)
@@ -425,14 +473,15 @@ class BrokerRequestJournal:
         wanted=set(heads);self._check_path();found={};current=ZERO;present=self.path.exists()
         if present:
             with closing(self._connect()) as db:
-                db.execute('BEGIN')
-                _,_,_,current=self._load(db)
-                rows=db.execute('SELECT seq,kind,body,digest FROM events ORDER BY seq LIMIT ?',(MAX_EVENTS+1,)).fetchall()
-                requests={};broker_ids={}
-                for seq,kind,encoded,digest in rows:
-                    if seq>1:self._apply(requests,broker_ids,kind,json.loads(encoded))
-                    if digest in wanted:
-                        found[digest]=[self._summary(identity,r) for identity,r in sorted(requests.items())]
+                with _transaction(db):
+                    db.execute('BEGIN')
+                    _,_,_,current=self._load(db)
+                    rows=db.execute('SELECT seq,kind,body,digest FROM events ORDER BY seq LIMIT ?',(MAX_EVENTS+1,)).fetchall()
+                    requests={};broker_ids={}
+                    for seq,kind,encoded,digest in rows:
+                        if seq>1:self._apply(requests,broker_ids,kind,json.loads(encoded))
+                        if digest in wanted:
+                            found[digest]=[self._summary(identity,r) for identity,r in sorted(requests.items())]
         return dict(mode='READ_ONLY_REQUEST_OBSERVATION_PREFIXES',read_only=True,
             account_sha256=self.account_digest,current_head_sha256=current,
             observations_by_head=found,missing_heads=sorted(wanted-set(found)),
@@ -446,7 +495,9 @@ class BrokerRequestJournal:
         now=lookup.clock(evaluated_at);self._check_path();requests={};count=0;head=ZERO
         present=self.path.exists()
         if present:
-            with closing(self._connect()) as db:requests,_,count,head=self._load(db)
+            with closing(self._connect()) as db:
+                with _transaction(db):
+                    db.execute('BEGIN'); requests,_,count,head=self._load(db)
         reasons=[];eligible=[];terminal=exhausted=prepared=0
         floor=self._clock_floor(requests)
         deadline=max((r['lookup']['next_at'] for r in requests.values()),default=0)
@@ -482,7 +533,9 @@ class BrokerRequestJournal:
         self._check_path()
         requests={};head=ZERO
         if self.path.exists():
-            with closing(self._connect()) as db:requests,_,_,head=self._load(db)
+            with closing(self._connect()) as db:
+                with _transaction(db):
+                    db.execute('BEGIN'); requests,_,_,head=self._load(db)
         pending=[(identity,r) for identity,r in requests.items() if r['lookup']['pending']]
         if len(pending)>1:raise ValueError('BROKER_LOOKUP_PENDING_STATE_DISAGREEMENT')
         result=dict(mode='READ_ONLY_PENDING_BROKER_LOOKUP',read_only=True,head_sha256=head,
@@ -507,7 +560,7 @@ class BrokerRequestJournal:
         body=dict(client_order_id=client_order_id,token=token,expected_head=expected_head,
                   evaluated_at=evaluated_at,confirm_interrupted=True)
         with closing(self._connect(write=True)) as db:
-            try:
+            with _explicit_transaction(db):
                 requests,broker_ids,count,previous=self._load(db)
                 if client_order_id not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
                 request=requests[client_order_id]
@@ -519,14 +572,15 @@ class BrokerRequestJournal:
                 self._apply(requests,broker_ids,'LOOKUP_INTERRUPTED',body)
                 self._insert(db,count+1,'LOOKUP_INTERRUPTED',body,previous);db.commit()
                 return dict(**self._summary(client_order_id,request),duplicate=False,interruption_recorded=True)
-            except BaseException:db.rollback();raise
 
     def recovery(self):
         self._check_path()
         if not self.path.exists():
             requests={};count=0;head=ZERO
         else:
-            with closing(self._connect()) as db:requests,_,count,head=self._load(db)
+            with closing(self._connect()) as db:
+                with _transaction(db):
+                    db.execute('BEGIN'); requests,_,count,head=self._load(db)
         return dict(mode='DISCONNECTED_DURABLE_BROKER_REQUEST_DIAGNOSTIC',requests=[self._summary(k,v) for k,v in requests.items()],
                     retained_events=count,head_sha256=head,capacity=self._capacity(requests,count),automatic_resume=False,automatic_submission=False,
                     broker_connected=False,live_orders_enabled=False,ledger_applied=False,

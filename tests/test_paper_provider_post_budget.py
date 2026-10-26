@@ -3,6 +3,7 @@ import sqlite3
 
 import pytest
 
+from nexus import paper_provider_post_budget as subject
 from nexus.paper_provider_post_budget import PaperProviderPostBudget, ZERO
 from test_broker_request_journal import ACCOUNT
 
@@ -101,3 +102,52 @@ def test_provider_scope_and_chain_tampering_fail_closed(tmp_path):
         budget.inspect()
     with pytest.raises(ValueError):
         PaperProviderPostBudget(path,'OTHER_PROVIDER').inspect()
+
+
+def test_write_lock_contention_fails_closed_then_recovers(tmp_path, monkeypatch):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    owner,token=begin(budget);finish(budget,owner,token)
+    head=budget.inspect()['head_sha256'];original=path.read_bytes()
+    monkeypatch.setattr(subject,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(path);blocker.execute('BEGIN IMMEDIATE')
+    try:
+        with pytest.raises(ValueError,match='PAPER_PROVIDER_POST_BUDGET_DATABASE_BUSY'):
+            begin(budget,at=1061,head=head,client='nx_locked')
+    finally:
+        blocker.rollback();blocker.close()
+    assert path.read_bytes()==original
+    owner,token=begin(budget,at=1061,head=head,client='nx_recovered')
+    finish(budget,owner,token,at=1062)
+
+
+def test_commit_lock_contention_rolls_back_then_recovers(tmp_path, monkeypatch):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    owner,token=begin(budget);finish(budget,owner,token)
+    head=budget.inspect()['head_sha256'];original=path.read_bytes()
+    monkeypatch.setattr(subject,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(path);blocker.execute('BEGIN')
+    blocker.execute('SELECT seq FROM events LIMIT 1').fetchone()
+    try:
+        with pytest.raises(ValueError,match='PAPER_PROVIDER_POST_BUDGET_DATABASE_BUSY'):
+            begin(budget,at=1061,head=head,client='nx_commit_locked')
+    finally:
+        blocker.rollback();blocker.close()
+    assert path.read_bytes()==original
+    assert budget.inspect()['head_sha256']==head
+    owner,token=begin(budget,at=1061,head=head,client='nx_recovered')
+    finish(budget,owner,token,at=1062)
+
+
+def test_public_read_lock_contention_fails_closed_then_recovers(tmp_path, monkeypatch):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    owner,token=begin(budget);finish(budget,owner,token)
+    expected=budget.inspect();original=path.read_bytes()
+    monkeypatch.setattr(subject,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(path);blocker.execute('BEGIN EXCLUSIVE')
+    try:
+        with pytest.raises(ValueError,match='PAPER_PROVIDER_POST_BUDGET_DATABASE_BUSY'):
+            budget.inspect()
+    finally:
+        blocker.rollback();blocker.close()
+    assert path.read_bytes()==original
+    assert budget.inspect()==expected

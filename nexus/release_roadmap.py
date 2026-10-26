@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.298.0'
+REVISION = '0.299.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.298.0 applies one explicit ten-second SQLite busy budget to the private Activity SSE cursor and reconnect-reservation journals. Exhausted busy/locked admission now fails closed as a stable journal-specific DATABASE_BUSY code instead of leaking platform-dependent sqlite text, and the exact operation remains recoverable after a competing writer releases its lock. Tests exercise both journals under real held-writer contention and subsequent recovery. This is bounded local coordinator hardening, not an automatic reconnect loop, provider acceptance, delivery/replay coverage, broker-wide coordination, native power-loss proof or new authority. No credential, account, order, funding, Portal, live, cloud or release permission is added. Actual-account reconnect, activity/fee coverage, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.299.0 extends the private Activity SSE cursor and reconnect-reservation DATABASE_BUSY contract across the complete write transaction, including final DELETE-journal commit. A concurrent reader may allow BEGIN IMMEDIATE and the write but block commit; exhausted contention now fails closed with the same stable redacted code, rolls back the candidate transition and preserves exact-operation recovery after the reader releases its lock. Tests exercise both journals under real reader-versus-commit contention. This is bounded local coordinator hardening, not an automatic reconnect loop, provider acceptance, delivery/replay coverage, broker-wide coordination, native power-loss proof or new authority. No credential, account, order, funding, Portal, live, cloud or release permission is added. Actual-account reconnect, activity/fee coverage, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

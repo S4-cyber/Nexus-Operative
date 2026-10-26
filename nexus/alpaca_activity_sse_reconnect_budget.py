@@ -4,7 +4,7 @@ The budget records one explicit attempt before network I/O and enforces a
 small fixed backoff schedule across process restarts.  It never sleeps, loops,
 retries automatically, stores credentials, or grants order/funds authority.
 """
-from contextlib import closing
+from contextlib import closing, contextmanager
 import json
 import math
 import os
@@ -95,6 +95,24 @@ class ActivitySSEReconnectBudgetError(ValueError):
 def _fail(code):
     raise ActivitySSEReconnectBudgetError(
         'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_' + code) from None
+
+
+def _database_busy(error):
+    code = getattr(error, 'sqlite_errorcode', None)
+    return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded write/commit contention without retrying it."""
+    try:
+        with db:
+            yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        raise
 
 
 def _digest(value, code='DIGEST_INVALID'):
@@ -673,10 +691,7 @@ class ActivitySSEReconnectBudget:
             return db, new
         except sqlite3.OperationalError as error:
             db.close()
-            code = getattr(error, 'sqlite_errorcode', None)
-            if (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
-                    any(word in str(error).lower()
-                        for word in ('busy', 'locked'))):
+            if _database_busy(error):
                 _fail('DATABASE_BUSY')
             raise
         except BaseException:
@@ -1005,7 +1020,7 @@ class ActivitySSEReconnectBudget:
                 _fail('BEGIN_REPLAY_DISAGREEMENT')
             db, _ = self._connect(write=True)
             with closing(db):
-                with db:
+                with _transaction(db):
                     state = self._load(db)
                     if (state['pending_token'] is None or
                             state['head_sha256'] != state['pending_token'] or
@@ -1052,7 +1067,7 @@ class ActivitySSEReconnectBudget:
             confirm_reconnect_attempt=True)
         db, new = self._connect(write=True)
         with closing(db):
-            with db:
+            with _transaction(db):
                 state = self._load(db)
                 comparable = ZERO if new and state['attempts'] == 0 else state['head_sha256']
                 if comparable != expected:
@@ -1163,7 +1178,7 @@ class ActivitySSEReconnectBudget:
             _fail('TOKEN_CHANGED')
         db, _ = self._connect(write=True)
         with closing(db):
-            with db:
+            with _transaction(db):
                 state = self._load(db)
                 if state['pending_token'] != token:
                     _fail('TOKEN_CHANGED')
@@ -1380,7 +1395,7 @@ class ActivitySSEReconnectBudget:
             confirm_emergency_stop_close=True)
         db, _ = self._connect(write=True)
         with closing(db):
-            with db:
+            with _transaction(db):
                 state = self._load(db)
                 if state['head_sha256'] != expected:
                     _fail('HEAD_CHANGED')

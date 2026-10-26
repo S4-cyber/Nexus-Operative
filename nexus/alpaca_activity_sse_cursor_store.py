@@ -6,7 +6,7 @@ aggregate counts; it never stores the supplied events, credentials, orders,
 fees, or account identifier.  SQLite durability is local process-crash
 recovery, not native power-loss acceptance or provider delivery evidence.
 """
-from contextlib import closing
+from contextlib import closing, contextmanager
 import json
 import os
 from pathlib import Path
@@ -44,6 +44,24 @@ FLAGS = ('actual_provider_access', 'actual_vault_access',
 
 def _fail(code):
     raise ValueError('ALPACA_ACTIVITY_SSE_CURSOR_STORE_' + code) from None
+
+
+def _database_busy(error):
+    code = getattr(error, 'sqlite_errorcode', None)
+    return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded write/commit contention without retrying it."""
+    try:
+        with db:
+            yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        raise
 
 
 def _digest(value, code='DIGEST_INVALID'):
@@ -134,10 +152,7 @@ class ActivitySSECursorStore:
             return db, new
         except sqlite3.OperationalError as error:
             db.close()
-            code = getattr(error, 'sqlite_errorcode', None)
-            if (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
-                    any(word in str(error).lower()
-                        for word in ('busy', 'locked'))):
+            if _database_busy(error):
                 _fail('DATABASE_BUSY')
             raise
         except BaseException:
@@ -467,7 +482,7 @@ class ActivitySSECursorStore:
 
         db, new = self._connect(write=True)
         with closing(db):
-            with db:
+            with _transaction(db):
                 db.execute('SAVEPOINT cursor_checkpoint_scope')
 
                 def require_transaction_binding():

@@ -191,6 +191,39 @@ def test_actual_sqlite_contention_rechecks_admission_after_lock(tmp_path):
     assert target.inspect() == before
 
 
+def test_writer_contention_is_bounded_redacted_and_recovers(tmp_path, monkeypatch):
+    target = store(tmp_path); retain(target); before = target.path.read_bytes()
+    monkeypatch.setattr(storage, 'DB_BUSY_TIMEOUT_MS', 50)
+    with sqlite3.connect(target.path) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError, match=r'^BROKER_ACTIVITY_STORE_DATABASE_BUSY$'):
+            retain(target, [fee(90)], [])
+    assert target.path.read_bytes() == before
+    assert not retain(target, [fee(90)], [])['duplicate']
+
+
+def test_reader_blocked_commit_rolls_back_and_recovers(tmp_path, monkeypatch):
+    target = store(tmp_path); retain(target); before = target.path.read_bytes()
+    monkeypatch.setattr(storage, 'DB_BUSY_TIMEOUT_MS', 50)
+    with sqlite3.connect(target.path) as blocker:
+        blocker.execute('BEGIN')
+        blocker.execute('SELECT count(*) FROM receipts').fetchone()
+        with pytest.raises(ValueError, match=r'^BROKER_ACTIVITY_STORE_DATABASE_BUSY$'):
+            retain(target, [fee(90)], [])
+    assert target.path.read_bytes() == before
+    assert not retain(target, [fee(90)], [])['duplicate']
+
+
+def test_read_contention_is_bounded_redacted_and_recovers(tmp_path, monkeypatch):
+    target = store(tmp_path); retain(target); expected = target.inspect()
+    monkeypatch.setattr(storage, 'DB_BUSY_TIMEOUT_MS', 50)
+    with sqlite3.connect(target.path) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError, match=r'^BROKER_ACTIVITY_STORE_DATABASE_BUSY$'):
+            target.inspect()
+    assert target.inspect() == expected
+
+
 def test_concurrent_duplicates_commit_one_receipt(tmp_path):
     from concurrent.futures import ThreadPoolExecutor
     target = store(tmp_path); retain(target)

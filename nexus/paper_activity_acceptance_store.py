@@ -4,7 +4,7 @@ This private local journal records only content digests and before/after heads.
 It never reads credentials, contacts a provider, retries a read or grants order,
 funding, reconciliation, coverage, source or release authority.
 """
-from contextlib import closing
+from contextlib import closing, contextmanager
 import hashlib
 import json
 import os
@@ -21,6 +21,7 @@ PROFILE = 'nexus.paper-activity-acceptance-record.v2'
 REQUEST_PROFILE = 'nexus.paper-activity-acceptance-record.v3'
 MAX_RECORDS = 128
 MAX_DATABASE_BYTES = 4 * 1024 * 1024
+DB_BUSY_TIMEOUT_MS = 10_000
 MAX_RECORD_BYTES = 4096
 ZERO = '0' * 64
 HEAD_KEYS = ('pacing_before_head_sha256','pacing_after_head_sha256',
@@ -31,7 +32,25 @@ SCOPE_KEYS = {'profile','account_sha256','collection_scope_sha256','account_fiel
 
 
 def _fail(code):
-    raise ValueError('PAPER_ACTIVITY_ACCEPTANCE_STORE_' + code)
+    raise ValueError('PAPER_ACTIVITY_ACCEPTANCE_STORE_' + code) from None
+
+
+def _database_busy(error):
+    code = getattr(error, 'sqlite_errorcode', None)
+    return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded SQLite statement/commit contention without retry."""
+    try:
+        with db:
+            yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        raise
 
 
 def _head(value):
@@ -54,14 +73,20 @@ class PaperActivityAcceptanceStore:
                 fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(fd);new=True
             except FileExistsError:pass
             self._check()
-        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),uri=True,timeout=5)
+        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),
+            uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
         try:
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')
                 size=db.execute('PRAGMA page_size').fetchone()[0]
                 db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES//size}');db.execute('BEGIN IMMEDIATE')
                 if new:db.execute('CREATE TABLE records (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
             return db,new
+        except sqlite3.OperationalError as error:
+            db.close()
+            if _database_busy(error):_fail('DATABASE_BUSY')
+            raise
         except BaseException:db.close();raise
 
     @staticmethod
@@ -126,7 +151,8 @@ class PaperActivityAcceptanceStore:
                 baseline_pacing_sessions=0,baseline_retained_batches=0,preexisting_history_unverified=False,last_record_sha256=None,
                 last_record_scope=None,
                 automatic_retry=False,ready_for_routing=False)
-        with closing(self._connect()[0]) as db:state=self._load(db)
+        with closing(self._connect()[0]) as db:
+            with _transaction(db):state=self._load(db)
         public=dict(state);public.pop('record_scopes')
         return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=True,account_sha256=self.account_digest,**public,
             automatic_retry=False,ready_for_routing=False)
@@ -135,14 +161,15 @@ class PaperActivityAcceptanceStore:
         """Return validated aggregate scopes in retained order for local replay."""
         self._check()
         if not self.path.exists(): return ()
-        with closing(self._connect()[0]) as db:state=self._load(db)
+        with closing(self._connect()[0]) as db:
+            with _transaction(db):state=self._load(db)
         return tuple(dict(scope) for scope in state['record_scopes'])
 
     def bind(self,*,pacing_head,retention_head,pacing_sessions,retained_batches):
         pacing_head=_head(pacing_head);retention_head=_head(retention_head)
         if any(type(v) is not int or v<0 for v in (pacing_sessions,retained_batches)):_fail('BASELINE_INVALID')
         with closing(self._connect(write=True)[0]) as db:
-            with db:
+            with _transaction(db):
                 count=db.execute('SELECT count(*) FROM records').fetchone()[0]
                 if count==0:
                     body=dict(schema=SCHEMA,account_sha256=self.account_digest,
@@ -156,7 +183,7 @@ class PaperActivityAcceptanceStore:
     def append(self,scope,*,admission,precommit_check=lambda:True):
         scope=self._scope(scope);record_sha=sha(scope)
         with closing(self._connect(write=True)[0]) as db:
-            with db:
+            with _transaction(db):
                 state=self._load(db);current=admission()
                 if current!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
                 if state['last_record_sha256']==record_sha:

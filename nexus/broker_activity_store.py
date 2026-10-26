@@ -3,7 +3,7 @@
 No default path, credential access, network, ledger writes or resume permission.
 Hashes detect inconsistent retained history, not source authenticity or tail deletion.
 """
-from contextlib import closing
+from contextlib import closing, contextmanager
 from decimal import Decimal
 import hashlib
 import json
@@ -22,11 +22,30 @@ MAX_ACTIVITIES = 2000
 MAX_RECEIPT_BYTES = 256 * 1024
 MAX_RETAINED_BYTES = 8 * 1024 * 1024
 MAX_DATABASE_BYTES = 16 * 1024 * 1024
+DB_BUSY_TIMEOUT_MS = 10_000
 ZERO = '0' * 64
 
 
 def _fail(code):
-    raise ValueError('BROKER_ACTIVITY_STORE_' + code)
+    raise ValueError('BROKER_ACTIVITY_STORE_' + code) from None
+
+
+def _database_busy(error):
+    code = getattr(error, 'sqlite_errorcode', None)
+    return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded SQLite statement/commit contention without retry."""
+    try:
+        with db:
+            yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        raise
 
 
 def _raw(record):
@@ -68,8 +87,10 @@ class BrokerActivityStore:
                 os.close(descriptor); new = True
             except FileExistsError: pass
             self._check_path()
-        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=5)
+        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
+            uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE'); db.execute('PRAGMA synchronous=FULL')
                 size = db.execute('PRAGMA page_size').fetchone()[0]
@@ -79,6 +100,11 @@ class BrokerActivityStore:
                     db.execute('CREATE TABLE receipts (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._insert(db, 0, dict(schema=SCHEMA, account_sha256=self.account_digest), ZERO)
             return db
+        except sqlite3.OperationalError as error:
+            db.close()
+            if _database_busy(error):
+                _fail('DATABASE_BUSY')
+            raise
         except BaseException:
             db.close(); raise
 
@@ -146,7 +172,8 @@ class BrokerActivityStore:
         self._check_path()
         if not self.path.exists(): return self._report({}, {}, ZERO)
         with closing(self._connect()) as db:
-            activities, receipts, head, _ = self._load(db)
+            with _transaction(db):
+                activities, receipts, head, _ = self._load(db)
             return self._report(activities, receipts, head)
 
     def review(self):
@@ -183,7 +210,7 @@ class BrokerActivityStore:
             observation = dict(collection_observation=validate(collection_observation, data, after=after, until=until))
         identity = sha(dict(account_sha256=self.account_digest, after=after, until=until, **data, **observation))
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 retained, receipts, head, total = self._load(db)
                 if admission() is not True: _fail('ADMISSION_REVOKED')
                 if identity in receipts:

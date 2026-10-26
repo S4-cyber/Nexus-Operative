@@ -6,6 +6,7 @@ import hashlib
 import pytest
 
 from nexus.alpaca_paper_contract import sha
+from nexus import paper_activity_acceptance_store as storage
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore, PROFILE, ZERO
 from test_alpaca_paper_inspection import ACCOUNT, OTHER
 
@@ -103,3 +104,40 @@ def test_optional_input_guard_rolls_back_new_record_before_commit(tmp_path,verdi
     with pytest.raises(ValueError,match='INPUT_REVOKED'):
         store.append(value,admission=lambda:admitted,precommit_check=lambda:verdict)
     assert store.inspect()['records']==0 and store.path.read_bytes()==before
+
+
+def test_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    value=scope();store=bound(tmp_path,value);before=store.path.read_bytes()
+    admitted=(value['pacing_after_head_sha256'],value['retention_after_head_sha256'])
+    monkeypatch.setattr(storage,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match=r'^PAPER_ACTIVITY_ACCEPTANCE_STORE_DATABASE_BUSY$'):
+            store.append(value,admission=lambda:admitted)
+    assert store.path.read_bytes()==before
+    assert not store.append(value,admission=lambda:admitted)['duplicate']
+
+
+def test_reader_blocked_commit_rolls_back_and_recovers(tmp_path,monkeypatch):
+    value=scope();store=bound(tmp_path,value);before=store.path.read_bytes()
+    admitted=(value['pacing_after_head_sha256'],value['retention_after_head_sha256'])
+    monkeypatch.setattr(storage,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN')
+        blocker.execute('SELECT count(*) FROM records').fetchone()
+        with pytest.raises(ValueError,match=r'^PAPER_ACTIVITY_ACCEPTANCE_STORE_DATABASE_BUSY$'):
+            store.append(value,admission=lambda:admitted)
+    assert store.path.read_bytes()==before
+    assert not store.append(value,admission=lambda:admitted)['duplicate']
+
+
+def test_read_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    value=scope();store=bound(tmp_path,value);expected=store.inspect()
+    monkeypatch.setattr(storage,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match=r'^PAPER_ACTIVITY_ACCEPTANCE_STORE_DATABASE_BUSY$'):
+            store.inspect()
+        with pytest.raises(ValueError,match=r'^PAPER_ACTIVITY_ACCEPTANCE_STORE_DATABASE_BUSY$'):
+            store.replay_scopes()
+    assert store.inspect()==expected and store.replay_scopes()==()

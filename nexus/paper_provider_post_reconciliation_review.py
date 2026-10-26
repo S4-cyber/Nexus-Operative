@@ -34,6 +34,19 @@ def _binding(*, account_id, journal, expected_request_head, pacing_path,
         expected_activity_head=expected_activity_head)
 
 
+def _store_binding(post_budget, journal):
+    """Capture the two mutable store objects used by this composition."""
+    return (post_budget.path, post_budget.provider_scope,
+        post_budget.provider_digest, journal.path, journal.account_digest)
+
+
+def _require_store_binding(post_budget, journal, expected):
+    if (type(post_budget) is not PaperProviderPostBudget or
+            type(journal) is not BrokerRequestJournal or
+            _store_binding(post_budget, journal) != expected):
+        _fail('STORE_BINDING_CHANGED')
+
+
 def review(post_budget, *, expected_post_head, account_id, journal,
            expected_request_head, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
@@ -49,6 +62,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         _fail('POST_BUDGET_REQUIRED')
     if type(journal) is not BrokerRequestJournal:
         _fail('REQUEST_JOURNAL_REQUIRED')
+    store_binding = _store_binding(post_budget, journal)
+    journal_account = journal.account_digest
     binding = _binding(account_id=account_id, journal=journal,
         expected_request_head=expected_request_head, pacing_path=pacing_path,
         activity_store_path=activity_store_path,
@@ -56,14 +71,20 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         expected_activity_head=expected_activity_head)
     post_activity._check_related_paths((post_budget.path, journal.path,
         pacing_path, activity_store_path, acceptance_store_path))
+    _require_store_binding(post_budget, journal, store_binding)
 
     first_post = post_budget.inspect()
+    _require_store_binding(post_budget, journal, store_binding)
     attempts = post_budget.history()
+    _require_store_binding(post_budget, journal, store_binding)
     recoveries = post_budget.recovery_history()
+    _require_store_binding(post_budget, journal, store_binding)
     first_request = journal.recovery()
+    _require_store_binding(post_budget, journal, store_binding)
     first_activity = acceptance_status(expected_account_id=account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path)
+    _require_store_binding(post_budget, journal, store_binding)
     if first_post['head_sha256'] != expected_post_head:
         _fail('POST_HEAD_CHANGED')
     if first_request['head_sha256'] != expected_request_head:
@@ -73,6 +94,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
 
     posts = post_activity.review(post_budget,
         expected_post_head=expected_post_head, account_bindings=[binding])
+    _require_store_binding(post_budget, journal, store_binding)
     if (posts.get('status') != 'COMPLETE_LOCAL_POST_ACTIVITY_CONSISTENT' or
             posts.get('read_only') is not True or
             posts.get('complete_local_post_activity_consistent') is not True or
@@ -90,6 +112,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         opening_observation=opening_observation,
         closing_observation=closing_observation,
         post_closing_observation=post_closing_observation)
+    _require_store_binding(post_budget, journal, store_binding)
     required = ('complete_accepted_history_replayed', 'component_heads_agree',
         'stability_guard_bound', 'guard_manifests_distinct',
         'guard_windows_ordered', 'adjacent_guard_balances_stable',
@@ -104,7 +127,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             'PAPER_ACCOUNT_EVIDENCE_STABILITY_GUARD_REVIEW' or
             account.get('status') != 'REVIEW_REQUIRED' or
             account.get('read_only') is not True or
-            account.get('account_sha256') != journal.account_digest or
+            account.get('account_sha256') != journal_account or
             account.get('request_head_sha256') != expected_request_head or
             account.get('activity_head_sha256') != expected_activity_head or
             any(account.get(key) is not True for key in required) or
@@ -114,12 +137,14 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     current_activity = acceptance_status(expected_account_id=account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path)
+    _require_store_binding(post_budget, journal, store_binding)
     if (post_budget.inspect() != first_post or
             post_budget.history() != attempts or
             post_budget.recovery_history() != recoveries):
         _fail('POST_HISTORY_CHANGED')
     if journal.recovery() != first_request or current_activity != first_activity:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
+    _require_store_binding(post_budget, journal, store_binding)
 
     gross = account.get('gross_only_minus_observed')
     try:
@@ -139,7 +164,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
                 Decimal(value)
         except (InvalidOperation, ValueError, TypeError):
             _fail('ACCOUNT_EVIDENCE_INVALID')
-    scope = dict(policy=POLICY, account_sha256=journal.account_digest,
+    scope = dict(policy=POLICY, account_sha256=journal_account,
         post_head_sha256=expected_post_head,
         request_head_sha256=expected_request_head,
         activity_head_sha256=expected_activity_head,

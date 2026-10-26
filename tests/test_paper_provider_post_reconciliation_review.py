@@ -1,5 +1,6 @@
 """Exact POST/activity/account-evidence composition tests."""
 import copy
+import shutil
 
 import pytest
 
@@ -112,6 +113,31 @@ def test_final_request_race_refuses(tmp_path, monkeypatch):
     monkeypatch.setattr(subject.evidence, 'review_with_stability_guards', raced)
     with pytest.raises(ValueError, match='JOURNALS_CHANGED_DURING_REVIEW'):
         subject.review(**options)
+
+
+@pytest.mark.parametrize('target', ('post_budget', 'journal'))
+def test_store_objects_cannot_retarget_to_identical_clones(
+        tmp_path, monkeypatch, target):
+    options = subject._fixture(tmp_path)
+    store = options[target]
+    original_path = store.path
+    clone = tmp_path / f'{target}-clone.sqlite3'
+    component = (subject.post_activity if target == 'post_budget'
+        else subject.evidence)
+    method = ('review' if target == 'post_budget'
+        else 'review_with_stability_guards')
+    original = getattr(component, method)
+
+    def retarget(*args, **kwargs):
+        result = original(*args, **kwargs)
+        shutil.copyfile(original_path, clone)
+        store.path = clone
+        return result
+
+    monkeypatch.setattr(component, method, retarget)
+    with pytest.raises(ValueError, match='STORE_BINDING_CHANGED'):
+        subject.review(**options)
+    assert original_path.exists() and clone.exists()
 
 
 def test_fixture_is_private_and_never_authoritative():

@@ -1,5 +1,6 @@
 """Provider POST/reference composition to retained known-fee reserve path."""
 import json
+import shutil
 from decimal import Decimal
 
 import pytest
@@ -95,6 +96,25 @@ def test_concurrent_activity_change_is_retained_and_refused(tmp_path, monkeypatc
     monkeypatch.setattr(subject, '_reserve_path', changed)
     with pytest.raises(ValueError):
         subject.review(**args)
+
+
+@pytest.mark.parametrize('target', ('post_budget', 'journal'))
+def test_store_objects_cannot_retarget_during_fee_reserve_path(
+        tmp_path, monkeypatch, target):
+    args=subject._fixture(tmp_path);store=args[target]
+    original_path=store.path;clone=tmp_path/f'{target}-clone.sqlite3'
+    original=subject._reserve_path
+
+    def retarget(records,opening):
+        result=original(records,opening)
+        shutil.copyfile(original_path,clone)
+        store.path=clone
+        return result
+
+    monkeypatch.setattr(subject,'_reserve_path',retarget)
+    with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
+        subject.review(**args)
+    assert original_path.exists() and clone.exists()
 
 
 def test_fixture_is_public_aggregate_only():

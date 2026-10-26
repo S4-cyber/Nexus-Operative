@@ -9,7 +9,9 @@ from decimal import Decimal, InvalidOperation, localcontext
 
 from nexus.alpaca_paper_contract import number, sha, text
 from nexus.broker_activity_store import BrokerActivityStore
+from nexus.broker_request_journal import BrokerRequestJournal
 from nexus import paper_provider_post_fee_reference_review as references
+from nexus.paper_provider_post_budget import PaperProviderPostBudget
 from nexus import portable_paper_observation as portable
 
 
@@ -36,6 +38,18 @@ def _component_valid(result):
         and result.get('journals_rechecked_unchanged') is True
         and any(result.get(flag) is not False for flag in references.FLAGS)
             is False)
+
+
+def _store_binding(post_budget, journal):
+    return (post_budget.path, post_budget.provider_scope,
+        post_budget.provider_digest, journal.path, journal.account_digest)
+
+
+def _require_store_binding(post_budget, journal, expected):
+    if (type(post_budget) is not PaperProviderPostBudget or
+            type(journal) is not BrokerRequestJournal or
+            _store_binding(post_budget, journal) != expected):
+        _fail('STORE_BINDING_CHANGED')
 
 
 def _totals(observation):
@@ -126,6 +140,12 @@ def review(post_budget, *, expected_post_head, account_id, journal,
            pre_opening_observation, opening_observation, closing_observation,
            post_closing_observation):
     """Compose reference binding with a conservative retained-fee cash path."""
+    if type(post_budget) is not PaperProviderPostBudget:
+        _fail('POST_BUDGET_REQUIRED')
+    if type(journal) is not BrokerRequestJournal:
+        _fail('REQUEST_JOURNAL_REQUIRED')
+    store_binding = _store_binding(post_budget, journal)
+    journal_account = journal.account_digest
     options = dict(post_budget=post_budget,
         expected_post_head=expected_post_head, account_id=account_id,
         journal=journal, expected_request_head=expected_request_head,
@@ -137,6 +157,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         closing_observation=closing_observation,
         post_closing_observation=post_closing_observation)
     base = references.review(**options)
+    _require_store_binding(post_budget, journal, store_binding)
     if not _component_valid(base):
         _fail('REFERENCE_COMPONENT_INVALID')
     opening_manifest, opening = _totals(opening_observation)
@@ -147,14 +168,19 @@ def review(post_budget, *, expected_post_head, account_id, journal,
 
     store = BrokerActivityStore(activity_store_path, account_id)
     retained = store.inspect()
+    _require_store_binding(post_budget, journal, store_binding)
     path = _reserve_path(retained['normalized_activities'], opening)
+    _require_store_binding(post_budget, journal, store_binding)
     if path['ending'] != closing:
         _fail('KNOWN_FEE_ADJUSTED_BALANCE_DISAGREEMENT')
 
     repeated = references.review(**options)
-    if repeated != base or store.inspect() != retained:
+    _require_store_binding(post_budget, journal, store_binding)
+    final_retained = store.inspect()
+    _require_store_binding(post_budget, journal, store_binding)
+    if repeated != base or final_retained != retained:
         _fail('HISTORY_CHANGED_DURING_REVIEW')
-    scope = dict(policy=POLICY, account_sha256=journal.account_digest,
+    scope = dict(policy=POLICY, account_sha256=journal_account,
         post_head_sha256=expected_post_head,
         request_head_sha256=expected_request_head,
         activity_head_sha256=expected_activity_head,

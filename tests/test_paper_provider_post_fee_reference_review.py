@@ -1,5 +1,6 @@
 """Exact provider POST reconciliation to retained fee-reference composition."""
 import json
+import shutil
 
 import pytest
 
@@ -96,6 +97,25 @@ def test_request_append_during_final_recheck_is_retained_and_refused(
         args['account_id']).recovery()
     assert any(row['client_order_id'] == 'later_fee_review_request'
         for row in recovery['requests'])
+
+
+@pytest.mark.parametrize('target', ('post_budget', 'journal'))
+def test_store_objects_cannot_retarget_during_accepted_activity_review(
+        tmp_path, monkeypatch, target):
+    args=subject._fixture(tmp_path);store=args[target]
+    original_path=store.path;clone=tmp_path/f'{target}-clone.sqlite3'
+    original=subject.accepted.review
+
+    def retarget(**kwargs):
+        result=original(**kwargs)
+        shutil.copyfile(original_path,clone)
+        store.path=clone
+        return result
+
+    monkeypatch.setattr(subject.accepted,'review',retarget)
+    with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
+        subject.review(**args)
+    assert original_path.exists() and clone.exists()
 
 
 def test_fixture_is_public_aggregate_only():

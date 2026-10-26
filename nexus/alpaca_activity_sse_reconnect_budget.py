@@ -564,15 +564,8 @@ def _perform_control_closure(reconnect_budget, operation, *,
     if not _budget_binding_matches(reconnect_budget, budget_binding):
         _fail('STORE_BINDING_CHANGED')
     expected_duplicate = initial['head_sha256'] != expected
-    try:
-        retained, duplicate = operation()
-    except ActivitySSEReconnectBudgetError:
-        if not _budget_binding_matches(reconnect_budget, budget_binding):
-            _fail('STORE_BINDING_CHANGED')
-        raise
-    except Exception:
-        if not _budget_binding_matches(reconnect_budget, budget_binding):
-            _fail('STORE_BINDING_CHANGED')
+
+    def recover_exact_terminal():
         stable = _inspect_after_result_error(reconnect_budget, code)
         if not _budget_binding_matches(reconnect_budget, budget_binding):
             _fail('STORE_BINDING_CHANGED')
@@ -580,9 +573,35 @@ def _perform_control_closure(reconnect_budget, operation, *,
                     evaluated_at, expected_duplicate) if waiting else
             _exact_control_failure_result(stable, expected,
                 evaluated_at, detail, expected_duplicate))
-        if not exact:
+        return ((stable, expected_duplicate) if exact else None)
+
+    try:
+        retained, duplicate = operation()
+    except ActivitySSEReconnectBudgetError as error:
+        if not _budget_binding_matches(reconnect_budget, budget_binding):
+            _fail('STORE_BINDING_CHANGED')
+        # Only the closure's own fixed acknowledgement-uncertainty result is
+        # eligible for durable recovery.  Head, clock, confirmation, stop and
+        # state denials remain authoritative even if an older terminal record
+        # happens to match the requested attempt.
+        if str(error) != code:
+            raise
+        try:
+            recovered = recover_exact_terminal()
+        except ActivitySSEReconnectBudgetError:
+            if not _budget_binding_matches(reconnect_budget, budget_binding):
+                _fail('STORE_BINDING_CHANGED')
+            raise error
+        if recovered is not None:
+            return recovered
+        raise error
+    except Exception:
+        if not _budget_binding_matches(reconnect_budget, budget_binding):
+            _fail('STORE_BINDING_CHANGED')
+        recovered = recover_exact_terminal()
+        if recovered is None:
             _fail(code)
-        return stable, expected_duplicate
+        return recovered
     if not _budget_binding_matches(reconnect_budget, budget_binding):
         _fail('STORE_BINDING_CHANGED')
     if duplicate is not expected_duplicate:

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.286.0'
+REVISION = '0.287.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.286.0 gives every explicit local reconnect safety closure exact lost-acknowledgement recovery. Before the operation it records a totally validated durable view and whether the request is new or an idempotent replay. An unexpected internal exception can return success only when a fresh replay proves the exact request-bound terminal record, timestamp, detail and duplicate status; otherwise it becomes a fixed sanitized uncertainty failure. Ordinary confirmation, active-stop, head, clock and state denials retain their specific fail-closed diagnostics. No provider request, automatic retry, credential persistence, cursor mutation, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.287.0 extends exact local reconnect safety-closure lost-acknowledgement recovery to the closure method\'s own fixed acknowledgement-uncertainty exception, not only unexpected foreign exceptions. Recovery still requires a fresh total replay proving the exact request-bound terminal record, timestamp, detail and predicted duplicate status. Uncommitted acknowledgement uncertainty remains fixed and fail closed, while head, clock, confirmation, active-stop and state denials are never reinterpreted as success. No provider request, automatic retry, credential persistence, cursor mutation, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

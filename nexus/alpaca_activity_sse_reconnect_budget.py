@@ -503,6 +503,59 @@ def _exact_failure_result(retained, token, evaluated_at,
         return False
 
 
+def _exact_control_failure_result(retained, token, evaluated_at, detail,
+        duplicate):
+    """Recognize one exact terminal control result, including replay."""
+    try:
+        result_time = (retained['last_evaluated_at']
+            if duplicate else evaluated_at)
+        return (retained['last_evaluated_at'] <= evaluated_at and
+            _exact_failure_result(retained, token, result_time,
+                'REVIEW_REQUIRED', detail, 0))
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return False
+
+
+def _exact_waiting_stop_result(retained, prior_head, evaluated_at,
+        duplicate):
+    """Recognize one exact emergency closure of a retry-waiting episode."""
+    try:
+        return (retained['review_required'] and not retained['completed'] and
+            retained['pending_token'] is None and
+            retained['head_sha256'] != prior_head and
+            retained['emergency_stop_prior_head_sha256'] == prior_head and
+            retained['last_evaluated_at'] <= evaluated_at and
+            (duplicate or retained['last_evaluated_at'] == evaluated_at) and
+            retained['last_outcome'] == 'REVIEW_REQUIRED' and
+            retained['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE' and
+            retained['next_allowed_at'] == 0 and
+            retained['checkpoint_head_sha256'] is None and
+            retained['checkpoint_receipt_sha256'] is None)
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return False
+
+
+def _validated_control_closure(reconnect_budget, retained, duplicate, *,
+        expected_head, evaluated_at, detail, waiting, code):
+    """Bind a safety-control acknowledgement to an exact durable replay."""
+    if type(retained) is not dict or type(duplicate) is not bool:
+        _fail(code)
+    acknowledgement = dict(retained)
+    if 'duplicate_result' in acknowledgement:
+        if acknowledgement.pop('duplicate_result') is not duplicate:
+            _fail(code)
+    acknowledged = _validated_budget_view(reconnect_budget,
+        acknowledgement, code)
+    stable = _inspect_after_result_error(reconnect_budget, code)
+    exact = (_exact_waiting_stop_result(stable, expected_head,
+                evaluated_at, duplicate) if waiting else
+        _exact_control_failure_result(stable, expected_head,
+            evaluated_at, detail, duplicate))
+    if acknowledged != stable or not exact:
+        _fail(code)
+    return stable
+
+
 class ActivitySSEReconnectBudget:
     """Account-bound hash-chain for one bounded reconnect episode."""
 
@@ -1550,6 +1603,12 @@ def abort_pending_reconnect_for_emergency_stop(*, reconnect_budget,
         confirm_emergency_stop_abort=confirm_emergency_stop_abort)
     if not _budget_binding_matches(reconnect_budget, budget_binding):
         _fail('STORE_BINDING_CHANGED')
+    retained = _validated_control_closure(reconnect_budget, retained,
+        duplicate, expected_head=expected_budget_head,
+        evaluated_at=evaluated_at, detail='EMERGENCY_STOP_ACTIVE',
+        waiting=False, code='EMERGENCY_STOP_ABORT_UNCERTAIN')
+    if not _budget_binding_matches(reconnect_budget, budget_binding):
+        _fail('STORE_BINDING_CHANGED')
     return dict(mode=
             'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_EMERGENCY_STOP_ABORT',
         status='REVIEW_REQUIRED', policy=POLICY,
@@ -1576,6 +1635,12 @@ def close_pending_reconnect_for_outcome_uncertainty(*, reconnect_budget,
             evaluated_at=evaluated_at, expected_head=expected_budget_head,
             confirm_outcome_uncertain=confirm_outcome_uncertain,
             confirm_no_retry=confirm_no_retry)
+    if not _budget_binding_matches(reconnect_budget, budget_binding):
+        _fail('STORE_BINDING_CHANGED')
+    retained = _validated_control_closure(reconnect_budget, retained,
+        duplicate, expected_head=expected_budget_head,
+        evaluated_at=evaluated_at, detail='OUTCOME_CLOCK_UNCERTAIN',
+        waiting=False, code='OUTCOME_UNCERTAIN_CLOSE_UNCERTAIN')
     if not _budget_binding_matches(reconnect_budget, budget_binding):
         _fail('STORE_BINDING_CHANGED')
     return dict(mode=
@@ -1607,6 +1672,12 @@ def close_waiting_reconnect_for_emergency_stop(*, reconnect_budget,
             evaluated_at=evaluated_at, expected_head=expected_budget_head,
             emergency_stop_check=emergency_stop_check,
             confirm_emergency_stop_close=confirm_emergency_stop_close)
+    if not _budget_binding_matches(reconnect_budget, budget_binding):
+        _fail('STORE_BINDING_CHANGED')
+    retained = _validated_control_closure(reconnect_budget, retained,
+        duplicate, expected_head=expected_budget_head,
+        evaluated_at=evaluated_at, detail='EMERGENCY_STOP_ACTIVE',
+        waiting=True, code='EMERGENCY_STOP_CLOSE_UNCERTAIN')
     if not _budget_binding_matches(reconnect_budget, budget_binding):
         _fail('STORE_BINDING_CHANGED')
     return dict(mode=

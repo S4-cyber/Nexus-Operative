@@ -1618,6 +1618,33 @@ def test_uncertain_outcome_close_lost_ack_replay_is_byte_stable(tmp_path):
     assert budget.path.read_bytes() == saved
 
 
+def test_uncertain_outcome_close_rejects_unbound_result_acknowledgement(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original = budget.close_pending_for_outcome_uncertainty
+
+    def altered_acknowledgement(**kwargs):
+        retained, duplicate = original(**kwargs)
+        return dict(retained, head_sha256='f' * 64), duplicate
+
+    monkeypatch.setattr(budget, 'close_pending_for_outcome_uncertainty',
+        altered_acknowledgement)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='OUTCOME_UNCERTAIN_CLOSE_UNCERTAIN'):
+        subject.close_pending_reconnect_for_outcome_uncertainty(
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            evaluated_at=1001, confirm_outcome_uncertain=True,
+            confirm_no_retry=True)
+    state = budget.inspect()
+    assert state['review_required'] and state['pending_token'] is None
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+
+
 def test_uncertain_outcome_close_read_cannot_retarget_budget_store(
         tmp_path, monkeypatch):
     _, budget = stores(tmp_path)
@@ -2329,6 +2356,33 @@ def test_emergency_stop_abort_lost_ack_replay_is_idempotent(tmp_path):
     assert budget.path.read_bytes() == saved
 
 
+def test_emergency_stop_abort_rejects_unbound_result_acknowledgement(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original = budget.abort_pending_for_emergency_stop
+
+    def altered_acknowledgement(**kwargs):
+        retained, duplicate = original(**kwargs)
+        return dict(retained, head_sha256='f' * 64), duplicate
+
+    monkeypatch.setattr(budget, 'abort_pending_for_emergency_stop',
+        altered_acknowledgement)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EMERGENCY_STOP_ABORT_UNCERTAIN'):
+        subject.abort_pending_reconnect_for_emergency_stop(
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+            emergency_stop_check=lambda: True,
+            confirm_emergency_stop_abort=True)
+    state = budget.inspect()
+    assert state['review_required'] and state['pending_token'] is None
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+
+
 @pytest.mark.parametrize(('change','code'), [
     ({'confirm_emergency_stop_abort': False},
         'EMERGENCY_STOP_ABORT_CONFIRMATION_REQUIRED'),
@@ -2511,6 +2565,29 @@ def test_emergency_stop_waiting_close_lost_ack_replay_is_idempotent(tmp_path):
     assert replay['reconnect_budget_head_sha256'] == \
         first['reconnect_budget_head_sha256']
     assert budget.path.read_bytes() == saved
+
+
+def test_emergency_stop_waiting_close_rejects_unbound_acknowledgement(
+        tmp_path, monkeypatch):
+    budget, _, waiting = waiting_retry(tmp_path)
+    original = budget.close_waiting_retry_for_emergency_stop
+
+    def altered_acknowledgement(**kwargs):
+        retained, duplicate = original(**kwargs)
+        return dict(retained, head_sha256='f' * 64), duplicate
+
+    monkeypatch.setattr(budget, 'close_waiting_retry_for_emergency_stop',
+        altered_acknowledgement)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EMERGENCY_STOP_CLOSE_UNCERTAIN'):
+        subject.close_waiting_reconnect_for_emergency_stop(
+            reconnect_budget=budget,
+            expected_budget_head=waiting['head_sha256'],
+            evaluated_at=1000.5, emergency_stop_check=lambda: True,
+            confirm_emergency_stop_close=True)
+    state = budget.inspect()
+    assert state['review_required'] and state['pending_token'] is None
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
 
 
 @pytest.mark.parametrize(('change','code'), [

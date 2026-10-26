@@ -1,4 +1,5 @@
 """Exact-head composition of provider POST and request-journal histories."""
+import shutil
 import sqlite3
 
 import pytest
@@ -201,6 +202,34 @@ def test_request_change_during_composition_fails_closed(tmp_path,monkeypatch):
     with pytest.raises(ValueError):
         subject.review(budget,expected_post_head=head,request_bindings=[binding(journal)])
     assert budget.path.read_bytes()==before
+
+
+@pytest.mark.parametrize('target', ('post_budget', 'first_journal',
+    'second_journal'))
+def test_every_store_object_is_pinned_across_multi_account_review(
+        tmp_path, monkeypatch, target):
+    first,budget,head=retained(tmp_path,at=1000)
+    second,budget,head=retained(tmp_path,account=OTHER,identity='nx_other',
+        outcome='RESPONSE_OBSERVED',post_head=head,at=1061,budget=budget,
+        observed=True)
+    stores=dict(post_budget=budget, first_journal=first,
+        second_journal=second)
+    store=stores[target];original_path=store.path
+    clone=tmp_path/f'{target}-clone.sqlite3'
+    method='history' if target=='post_budget' else 'observations_at_heads'
+    original=getattr(store,method)
+
+    def retarget(*args,**kwargs):
+        result=original(*args,**kwargs)
+        shutil.copyfile(original_path,clone)
+        store.path=clone
+        return result
+
+    monkeypatch.setattr(store,method,retarget)
+    with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
+        subject.review(budget,expected_post_head=head,
+            request_bindings=[binding(first),binding(second)])
+    assert original_path.exists() and clone.exists()
 
 
 def test_fixture_has_no_authority():

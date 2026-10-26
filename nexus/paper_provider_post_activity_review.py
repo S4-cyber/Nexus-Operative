@@ -48,6 +48,21 @@ def _check_related_paths(paths):
             check_path_set((path, other), 'PAPER_PROVIDER_POST_ACTIVITY_')
 
 
+def _store_binding(post_budget, bindings):
+    return (post_budget.path, post_budget.provider_scope,
+        post_budget.provider_digest,
+        tuple((item['journal'].path, item['journal'].account_digest)
+            for item in bindings))
+
+
+def _require_store_binding(post_budget, bindings, expected):
+    if (type(post_budget) is not PaperProviderPostBudget or
+            any(type(item['journal']) is not BrokerRequestJournal
+                for item in bindings) or
+            _store_binding(post_budget, bindings) != expected):
+        _fail('STORE_BINDING_CHANGED')
+
+
 def review(post_budget, *, expected_post_head, account_bindings):
     """Join exact POST outcomes to fully replayed accepted activity histories.
 
@@ -86,16 +101,22 @@ def review(post_budget, *, expected_post_head, account_bindings):
             current['expected_request_head'], 'REQUEST_HEAD_INVALID')
         current['expected_activity_head'] = _digest(
             current['expected_activity_head'], 'ACTIVITY_HEAD_INVALID')
+        current['_account_digest'] = journal.account_digest
         bindings.append(current)
         paths.extend((journal.path, current['pacing_path'],
             current['activity_store_path'], current['acceptance_store_path']))
+    store_binding = _store_binding(post_budget, bindings)
     _check_related_paths(paths)
+    _require_store_binding(post_budget, bindings, store_binding)
 
     first_post = post_budget.inspect()
+    _require_store_binding(post_budget, bindings, store_binding)
     if first_post['events'] == 0 or first_post['head_sha256'] != expected_post_head:
         _fail('POST_HEAD_CHANGED')
     attempts = post_budget.history()
+    _require_store_binding(post_budget, bindings, store_binding)
     recoveries = post_budget.recovery_history()
+    _require_store_binding(post_budget, bindings, store_binding)
     if (len(attempts) != first_post['completed_attempts'] or
             len(recoveries) != first_post['recoveries']):
         _fail('POST_HISTORY_CHANGED')
@@ -103,6 +124,7 @@ def review(post_budget, *, expected_post_head, account_bindings):
     post_result = posts.review(post_budget, expected_post_head=expected_post_head,
         request_bindings=[dict(journal=item['journal'],
             expected_head=item['expected_request_head']) for item in bindings])
+    _require_store_binding(post_budget, bindings, store_binding)
     reasons = []
     if not post_result['complete_local_history_consistent']:
         reasons.append('POST_HISTORY_INCOMPLETE')
@@ -120,12 +142,13 @@ def review(post_budget, *, expected_post_head, account_bindings):
             acceptance_store_path=item['acceptance_store_path'],
             expected_request_head=item['expected_request_head'],
             expected_activity_head=item['expected_activity_head'])
+        _require_store_binding(post_budget, bindings, store_binding)
         nested = component.get('request_activity_review')
         valid = (component.get('read_only') is True and
             component.get('status') == 'REVIEW_REQUIRED' and
             component.get('complete_accepted_history_replayed') is True and
             component.get('journals_rechecked_unchanged') is True and
-            component.get('account_sha256') == item['journal'].account_digest and
+            component.get('account_sha256') == item['_account_digest'] and
             component.get('request_head_sha256') == item['expected_request_head'] and
             component.get('activity_head_sha256') == item['expected_activity_head'] and
             type(nested) is dict and nested.get('read_only') is True and
@@ -146,8 +169,8 @@ def review(post_budget, *, expected_post_head, account_bindings):
             if digest in mapped:
                 activity_components_valid = False
             mapped[digest] = row
-        rows_by_account[item['journal'].account_digest] = mapped
-        accepted_heads[item['journal'].account_digest] = (
+        rows_by_account[item['_account_digest']] = mapped
+        accepted_heads[item['_account_digest']] = (
             component.get('pacing_head_sha256'),
             component.get('acceptance_head_sha256'))
         untracked = nested.get('untracked_activity_order_ids')
@@ -224,12 +247,14 @@ def review(post_budget, *, expected_post_head, account_bindings):
 
     for item in bindings:
         current_request = item['journal'].recovery()
+        _require_store_binding(post_budget, bindings, store_binding)
         current_activity = activity.acceptance_status(
             expected_account_id=item['account_id'],
             pacing_path=item['pacing_path'],
             activity_store_path=item['activity_store_path'],
             acceptance_store_path=item['acceptance_store_path'])
-        expected_heads = accepted_heads.get(item['journal'].account_digest)
+        _require_store_binding(post_budget, bindings, store_binding)
+        expected_heads = accepted_heads.get(item['_account_digest'])
         if (current_request['head_sha256'] != item['expected_request_head'] or
                 not activity._complete(current_activity) or
                 current_activity['retention_head_sha256'] !=
@@ -239,8 +264,14 @@ def review(post_budget, *, expected_post_head, account_bindings):
                  current_activity['acceptance_head_sha256']) != expected_heads):
             _fail('JOURNALS_CHANGED_DURING_REVIEW')
 
-    if (post_budget.inspect() != first_post or post_budget.history() != attempts or
-            post_budget.recovery_history() != recoveries):
+    final_post = post_budget.inspect()
+    _require_store_binding(post_budget, bindings, store_binding)
+    final_attempts = post_budget.history()
+    _require_store_binding(post_budget, bindings, store_binding)
+    final_recoveries = post_budget.recovery_history()
+    _require_store_binding(post_budget, bindings, store_binding)
+    if (final_post != first_post or final_attempts != attempts or
+            final_recoveries != recoveries):
         _fail('POST_HISTORY_CHANGED')
     complete = (not reasons and
         exact_activity_bindings + exact_not_sent_bindings == len(attempts))

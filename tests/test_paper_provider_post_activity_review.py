@@ -1,5 +1,6 @@
 """Exact-head provider POST to accepted-activity composition tests."""
 import json
+import shutil
 
 import pytest
 
@@ -113,6 +114,27 @@ def test_request_change_after_activity_component_fails_final_recheck(
     with pytest.raises(ValueError, match='JOURNALS_CHANGED_DURING_REVIEW'):
         subject.review(budget, expected_post_head=head,
             account_bindings=[binding])
+
+
+@pytest.mark.parametrize('target', ('post_budget', 'journal'))
+def test_store_objects_cannot_retarget_during_activity_component(
+        tmp_path, monkeypatch, target):
+    budget,head,binding=prepared(tmp_path)
+    store=budget if target=='post_budget' else binding['journal']
+    original_path=store.path;clone=tmp_path/f'{target}-clone.sqlite3'
+    original=subject.activity.review
+
+    def retarget(**kwargs):
+        result=original(**kwargs)
+        shutil.copyfile(original_path,clone)
+        store.path=clone
+        return result
+
+    monkeypatch.setattr(subject.activity,'review',retarget)
+    with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
+        subject.review(budget,expected_post_head=head,
+            account_bindings=[binding])
+    assert original_path.exists() and clone.exists()
 
 
 def test_account_scope_and_binding_shape_fail_closed(tmp_path):

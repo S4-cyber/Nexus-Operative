@@ -42,6 +42,22 @@ def _request_by_digest(rows, client_digest):
     return matches[0] if len(matches) == 1 else None
 
 
+def _store_binding(post_budget, bindings):
+    """Capture every mutable store identity used by this composition."""
+    return (post_budget.path, post_budget.provider_scope,
+        post_budget.provider_digest,
+        tuple((journal.path, journal.account_digest)
+            for journal, _ in bindings))
+
+
+def _require_store_binding(post_budget, bindings, expected):
+    if (type(post_budget) is not PaperProviderPostBudget or
+            any(type(journal) is not BrokerRequestJournal
+                for journal, _ in bindings) or
+            _store_binding(post_budget, bindings) != expected):
+        _fail('STORE_BINDING_CHANGED')
+
+
 def review(post_budget, *, expected_post_head, request_bindings):
     """Replay and compare every retained checked POST attempt.
 
@@ -63,24 +79,29 @@ def review(post_budget, *, expected_post_head, request_bindings):
         if type(journal) is not BrokerRequestJournal:
             _fail('REQUEST_JOURNAL_REQUIRED')
         bindings.append((journal, _digest(item['expected_head'], 'REQUEST_HEAD_INVALID')))
+    store_binding = _store_binding(post_budget, bindings)
     accounts = [journal.account_digest for journal, _ in bindings]
     if len(set(accounts)) != len(accounts):
         _fail('DUPLICATE_ACCOUNT_BINDING')
     check_path_set((post_budget.path, *(journal.path for journal, _ in bindings)),
         'PAPER_PROVIDER_POST_REVIEW_')
+    _require_store_binding(post_budget, bindings, store_binding)
 
     first_post = post_budget.inspect()
+    _require_store_binding(post_budget, bindings, store_binding)
     if (first_post['events'] == 0 or first_post['head_sha256'] != expected_post_head):
         _fail('POST_HEAD_CHANGED')
     attempts = post_budget.history()
+    _require_store_binding(post_budget, bindings, store_binding)
     if len(attempts) != first_post['completed_attempts']:
         _fail('POST_HISTORY_CHANGED')
     recoveries = post_budget.recovery_history()
+    _require_store_binding(post_budget, bindings, store_binding)
     if len(recoveries) != first_post['recoveries']:
         _fail('POST_HISTORY_CHANGED')
 
-    by_account = {journal.account_digest: (journal, expected)
-        for journal, expected in bindings}
+    by_account = {account: binding
+        for account, binding in zip(accounts, bindings)}
     needed = {account: set() for account in by_account}
     missing_accounts = 0
     for attempt in attempts:
@@ -100,14 +121,17 @@ def review(post_budget, *, expected_post_head, request_bindings):
     current_requests = {}
     for account, (journal, expected) in by_account.items():
         initial = journal.recovery()
+        _require_store_binding(post_budget, bindings, store_binding)
         if initial['head_sha256'] != expected or expected == ZERO:
             _fail('REQUEST_HEAD_CHANGED')
         sample = journal.observations_at_heads(tuple(sorted(needed[account])))
+        _require_store_binding(post_budget, bindings, store_binding)
         if sample['current_head_sha256'] != expected:
             _fail('REQUEST_HEAD_CHANGED')
         prefixes[account] = sample['observations_by_head']
         current_requests[account] = initial['requests']
         final = journal.recovery()
+        _require_store_binding(post_budget, bindings, store_binding)
         if final['head_sha256'] != expected or final['requests'] != initial['requests']:
             _fail('REQUEST_HISTORY_CHANGED')
 
@@ -206,6 +230,7 @@ def review(post_budget, *, expected_post_head, request_bindings):
     duplicate_markers = len(retained_markers) - len(set(retained_markers))
 
     final_post = post_budget.inspect()
+    _require_store_binding(post_budget, bindings, store_binding)
     if final_post['head_sha256'] != expected_post_head or final_post != first_post:
         _fail('POST_HISTORY_CHANGED')
     reasons = []

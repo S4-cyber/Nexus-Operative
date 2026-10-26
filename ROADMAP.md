@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.288.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.289.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.288.0 pins the shared provider-POST budget and account request-journal identities throughout the private read-only POST-to-account reconciliation composition. Their path, provider scope/digest and account digest must remain unchanged after path review, each initial replay, both nested component reviews and final total-history comparison. Retargeting either mutable object to a byte-identical clone now fails with fixed store-binding uncertainty instead of permitting a mixed-path result. No provider request, credential access, retry, continuation, journal write, ledger, order, funding, Portal or release authority is added. Injected cloned-journal tests do not prove provider source, activity or fee coverage, account ownership, actual holds, settlement, spendable funds, native power-loss durability or profitability. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.289.0 pins the shared provider-POST budget and every explicitly selected request-journal identity throughout the lower-level multi-account POST-history and POST-to-accepted-activity reviews. Path, provider scope/digest and each account digest must remain unchanged after path review, each POST replay, every request-prefix sample, the nested POST and activity components, current acceptance replay and final total-history comparison. Retargeting the budget or any selected journal to a byte-identical clone now fails with fixed store-binding uncertainty instead of permitting a mixed-path result. No provider request, credential access, retry, continuation, journal write, ledger, order, funding, Portal or release authority is added. Injected cloned-journal tests do not prove provider source, activity or fee coverage, account ownership, actual holds, settlement, spendable funds, native power-loss durability or profitability. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

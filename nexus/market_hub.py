@@ -25,6 +25,7 @@ MAX_RAW_BYTES=4*1024*1024
 MAX_PACK_BYTES=2*1024*1024
 MAX_ARTIFACT_BYTES=32*1024*1024
 MAX_ARTIFACTS=64
+DB_BUSY_TIMEOUT_MS=10000
 SCHEMA='nexus.market-hub.snapshot.v1'
 
 
@@ -63,18 +64,29 @@ def unpack(data):
     return raw
 
 
+def _begin_immediate(db):
+    try:db.execute('BEGIN IMMEDIATE')
+    except sqlite3.OperationalError as error:
+        if getattr(error,'sqlite_errorcode',None) in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or any(word in str(error).lower() for word in ('busy','locked')):
+            raise ValueError('HUB_DATABASE_BUSY') from error
+        raise
+
+
 def _db():
     root().mkdir(parents=True,exist_ok=True)
     if shutil.disk_usage(root()).free<256*1024*1024:raise ValueError('HUB_DISK_RESERVE_LOW')
     path=root()/'hub.sqlite3'
     if path.exists() and path.stat().st_size>MAX_DB_BYTES:raise ValueError('HUB_DATABASE_BYTE_CAP')
-    db=sqlite3.connect(path,timeout=2)
+    db=sqlite3.connect(path,timeout=DB_BUSY_TIMEOUT_MS/1000)
     try:
+        db.execute('PRAGMA busy_timeout='+str(DB_BUSY_TIMEOUT_MS))
         db.execute('PRAGMA synchronous=FULL');size=db.execute('PRAGMA page_size').fetchone()[0]
         db.execute('PRAGMA max_page_count='+str(max(1,MAX_DB_BYTES//size)))
+        _begin_immediate(db)
         db.execute('CREATE TABLE IF NOT EXISTS bars(product TEXT,g INTEGER,at INTEGER,payload BLOB NOT NULL,digest TEXT NOT NULL,first_seen REAL NOT NULL,PRIMARY KEY(product,g,at))')
         db.execute('CREATE TABLE IF NOT EXISTS conflicts(product TEXT,g INTEGER,at INTEGER,digest TEXT,payload BLOB NOT NULL,first_seen REAL NOT NULL,PRIMARY KEY(product,g,at,digest))')
         db.execute('CREATE TABLE IF NOT EXISTS generations(product TEXT,g INTEGER,version INTEGER NOT NULL,PRIMARY KEY(product,g))')
+        db.commit()
         return db
     except BaseException:db.close();raise
 
@@ -86,7 +98,7 @@ def ingest(product,granularity,rows,now=None):
     normalized=[normalize(product,granularity,row,now) for row in rows]
     inserted=duplicates=quarantined=0
     with closing(_db()) as db,db:
-        db.execute('BEGIN IMMEDIATE')
+        _begin_immediate(db)
         count=db.execute('SELECT COUNT(*) FROM bars').fetchone()[0]
         conflicts=db.execute('SELECT COUNT(*) FROM conflicts').fetchone()[0]
         for row in normalized:

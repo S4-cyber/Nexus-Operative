@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.296.1'
+REVISION = '0.297.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.296.1 makes the direct Activity SSE byte-identical replacement regressions portable across Windows and POSIX. Each adversarial clone now replaces the pathname after file-identity capture but before SQLite opens it, exercising the same explicit pre-open fence without relying on POSIX permission to rename an open database. The v0.296.0 production guard is unchanged: existing cursor-history and reconnect-budget journals remain identity-bound through replay, missing stores remain absent, and object, account, exact-head, emergency-stop and bounded-attempt checks remain independent. This is test and release-gate remediation, not provider acceptance, native durability or new authority. No provider request, credential access, automatic retry, cursor mutation, ledger, order, funding, Portal or release permission is added. Actual-account reconnect, activity/fee coverage, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.297.0 serializes local Market Hub SQLite schema initialization inside one bounded immediate transaction and applies the same ten-second busy budget to initialization and ingest. Temporary writer contention waits; exhausted contention fails closed as HUB_DATABASE_BUSY instead of leaking a platform-dependent sqlite error. Tests cover schema transaction ordering, bounded busy failure and recovery, a waiting concurrent initializer and four-writer canonical deduplication. This repairs the exact v0.296.1 Windows installer-lane regression without weakening capacity, integrity or transaction limits. It is local public-research storage hardening, not a deployed shared hub, provider acceptance, source attestation, native power-loss proof or new authority. No credential, account, order, funding, Portal, live, cloud or release permission is added. Actual-account reconnect, activity/fee coverage, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

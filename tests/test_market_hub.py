@@ -1,8 +1,10 @@
 import copy
+from contextlib import closing
 from concurrent.futures import ThreadPoolExecutor
 import json
 import math
 import sqlite3
+import threading
 import zlib
 import pytest
 from nexus import market_hub as h
@@ -49,6 +51,49 @@ def test_concurrent_instances_store_one_copy(hub):
     assert sum(r['inserted'] for r in results)==20
     assert sum(r['duplicates'] for r in results)==60
     assert h.status()['bars']==20
+
+
+def test_schema_setup_is_one_serialized_transaction(hub,monkeypatch):
+    statements=[]
+    original_connect=sqlite3.connect
+
+    def traced_connect(*args,**kwargs):
+        db=original_connect(*args,**kwargs)
+        db.set_trace_callback(statements.append)
+        return db
+
+    monkeypatch.setattr(h.sqlite3,'connect',traced_connect)
+    with closing(h._db()):pass
+    begin=statements.index('BEGIN IMMEDIATE')
+    commit=statements.index('COMMIT')
+    creates=[index for index,statement in enumerate(statements) if statement.startswith('CREATE TABLE')]
+    assert creates and begin<min(creates)<=max(creates)<commit
+    assert f'PRAGMA busy_timeout={h.DB_BUSY_TIMEOUT_MS}' in statements
+
+
+def test_busy_database_waits_then_fails_closed_with_stable_error(hub,monkeypatch):
+    path=h.root()/'hub.sqlite3';path.parent.mkdir(parents=True)
+    blocker=sqlite3.connect(path);blocker.execute('BEGIN IMMEDIATE')
+    monkeypatch.setattr(h,'DB_BUSY_TIMEOUT_MS',20)
+    try:
+        with pytest.raises(ValueError,match='HUB_DATABASE_BUSY'):
+            h.ingest('BTC-USD',3600,bars(1))
+    finally:
+        blocker.rollback();blocker.close()
+    assert h.ingest('BTC-USD',3600,bars(1))['inserted']==1
+
+
+def test_concurrent_initializer_waits_for_short_writer(hub):
+    path=h.root()/'hub.sqlite3';path.parent.mkdir(parents=True)
+    blocker=sqlite3.connect(path);blocker.execute('BEGIN IMMEDIATE')
+    entered=threading.Event()
+    def ingest_after_signal():
+        entered.set();return h.ingest('BTC-USD',3600,bars(1))
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future=pool.submit(ingest_after_signal)
+        assert entered.wait(timeout=2) and not future.done()
+        blocker.rollback();blocker.close()
+        assert future.result(timeout=5)['inserted']==1
 
 
 def test_batch_cap_failure_rolls_back_prior_insertions(hub,monkeypatch):

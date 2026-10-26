@@ -76,6 +76,8 @@ def test_checkpoint_reopens_exact_private_cursor_without_authority(tmp_path):
     assert cold['initialized'] and cold['current_event_id'] == after
     assert cold['head_sha256'] == saved['head_sha256']
     assert cold['local_cursor_checkpoint_committed']
+    assert cold['complete_review_counts_bound']
+    assert saved['complete_review_counts_bound']
     assert all(cold[flag] is False for flag in subject.FLAGS)
     content = path.read_bytes()
     assert ACCOUNT.encode() not in content
@@ -107,6 +109,7 @@ def test_checkpoint_can_bind_reconnect_reservation_for_exact_recovery(tmp_path):
     assert binding['checkpoint_receipt_sha256'] == saved['receipt_sha256']
     assert binding['reconnect_reservation_sha256'] == subject.sha(token)
     assert binding['reconnect_reservation_bound']
+    assert binding['complete_review_counts_bound']
     assert 'current_event_id' not in binding
     assert all(binding[flag] is False for flag in subject.FLAGS)
 
@@ -358,9 +361,12 @@ def test_cold_replay_keeps_legacy_checkpoint_profiles_readable(
 
     rewrite_checkpoint(path, downgrade)
     cold = subject.ActivitySSECursorStore(path, ACCOUNT)
-    assert cold.inspect()['retained_checkpoints'] == 1
+    inspected = cold.inspect()
+    assert inspected['retained_checkpoints'] == 1
+    assert not inspected['complete_review_counts_bound']
     binding = cold.latest_checkpoint_binding()
     assert binding['reconnect_reservation_bound'] is bound
+    assert not binding['complete_review_counts_bound']
 
 
 def test_symlink_and_rollback_sidecar_are_refused(tmp_path):

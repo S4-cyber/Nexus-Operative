@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.282.0'
+REVISION = '0.283.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.282.0 durably retains the complete admitted reconnect-review count projection in each new cursor checkpoint. Cold replay revalidates trade plus fee equals unique events and linked orders do not exceed trades, in addition to the prior replay identities. New v3/v4 checkpoint profiles add those totals while legacy v1/v2 records remain readable and preserve reservation-binding interpretation. Canonical and self-consistently rehashed but contradictory current records fail both public read views without mutation. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.283.0 propagates the complete reconnect-review count proof into reconnect-budget admission and result recovery. Cursor inspection, durable checkpoint bindings and checkpoint acknowledgements now state whether the retained checkpoint uses a current complete-count profile. A fresh journal may still make its first explicitly authorized bounded attempt; an initialized legacy v1/v2 journal remains inspectable but cannot reserve or issue a provider request as though missing totals had been retained. Current committed results and pending-checkpoint reconciliation require the complete proof before closing the budget. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

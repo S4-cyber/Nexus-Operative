@@ -92,6 +92,7 @@ def test_single_get_review_and_exact_head_checkpoint_are_aggregate_only(tmp_path
     assert result['mode'] == 'EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT'
     assert result['single_get_attempt'] and result['single_reconnect_attempt']
     assert result['cursor_checkpoint_eligible'] and result['cursor_written']
+    assert result['complete_review_counts_bound']
     assert result['redelivered_events_deduplicated'] == 1
     assert result['new_events_processed'] == 1
     assert len(opener.requests) == 1 and opener.response.closed

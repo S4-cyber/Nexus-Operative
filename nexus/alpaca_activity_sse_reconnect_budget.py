@@ -66,7 +66,7 @@ CHECKPOINT_ACK_TRUE = ('single_get_attempt', 'single_reconnect_attempt',
     'explicit_read_authorization', 'explicit_checkpoint_authorization',
     'cursor_checkpoint_eligible', 'cursor_written',
     'local_cursor_checkpoint_committed', 'process_restart_recoverable',
-    'reconnect_reservation_bound')
+    'reconnect_reservation_bound', 'complete_review_counts_bound')
 CHECKPOINT_ACK_FALSE = ('actual_vault_access', 'automatic_retry',
     'automatic_reconnect_performed', 'automatic_backoff_verified',
     'ledger_applied')
@@ -74,6 +74,7 @@ CHECKPOINT_BINDING_KEYS = frozenset((
     'mode', 'status', 'account_sha256', 'head_sha256',
     'expected_head_sha256', 'checkpoint_receipt_sha256', 'cursor_sha256',
     'reconnect_reservation_sha256', 'reconnect_reservation_bound',
+    'complete_review_counts_bound',
     'read_only', *CHECKPOINT_BINDING_FALSE))
 
 
@@ -128,6 +129,11 @@ def _cursor_head_for_attempt(cursor_store):
     try:
         retained = cursor_store.inspect()
         head = retained['head_sha256']
+        initialized = retained['initialized']
+        complete = retained['complete_review_counts_bound']
+        if (type(initialized) is not bool or type(complete) is not bool or
+                (initialized and not complete)):
+            raise ValueError
     except Exception:
         _fail('CURSOR_STATE_UNCERTAIN')
     return _digest(head, 'CURSOR_STATE_UNCERTAIN')
@@ -239,7 +245,8 @@ def _validated_checkpoint_binding(cursor_store, value, code):
         _digest(value['checkpoint_receipt_sha256'])
         _digest(value['cursor_sha256'])
         bound = value['reconnect_reservation_bound']
-        if type(bound) is not bool:
+        complete = value['complete_review_counts_bound']
+        if type(bound) is not bool or type(complete) is not bool:
             raise TypeError
         reservation = value['reconnect_reservation_sha256']
         if bound:
@@ -327,6 +334,7 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
                 retained['status'] != 'REVIEW_REQUIRED' or
                 retained['account_sha256'] != cursor_store.account_sha256 or
                 retained['reconnect_reservation_bound'] is not True or
+                retained['complete_review_counts_bound'] is not True or
                 retained['read_only'] is not True or
                 retained_head != acknowledged_head or
                 retained_expected != expected_cursor_head or
@@ -1628,7 +1636,9 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
         retained_expected = _digest(retained['expected_head_sha256'],
             'CURSOR_BINDING_REVIEW_FAILED')
         reservation_bound = retained['reconnect_reservation_bound']
-        if type(reservation_bound) is not bool:
+        complete_counts_bound = retained['complete_review_counts_bound']
+        if (type(reservation_bound) is not bool or
+                type(complete_counts_bound) is not bool):
             _fail('CURSOR_BINDING_REVIEW_FAILED')
         retained_reservation = (None if not reservation_bound else _digest(
             retained['reconnect_reservation_sha256'],
@@ -1638,6 +1648,7 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             retained_expected ==
                 state['expected_cursor_head_sha256'] and
             reservation_bound is True and
+            complete_counts_bound is True and
             retained_reservation == sha(reservation_token))
     except Exception:
         require_store_bindings()

@@ -341,6 +341,8 @@ class ActivitySSECursorStore:
                 head, cursor, records = self._load(db)
                 require_cursor_binding()
         require_cursor_binding()
+        complete_review_counts_bound = bool(records) and \
+            records[-1]['body']['scope']['profile'] in (PROFILE, BOUND_PROFILE)
         return dict(mode='PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_HISTORY',
             status='REVIEW_REQUIRED', initialized=bool(records),
             account_sha256=cursor_binding[1], head_sha256=head,
@@ -349,6 +351,7 @@ class ActivitySSECursorStore:
             retained_checkpoints=len(records), read_only=True,
             local_cursor_checkpoint_committed=bool(records),
             process_restart_recoverable=bool(records),
+            complete_review_counts_bound=complete_review_counts_bound,
             **{flag: False for flag in FLAGS})
 
     def latest_checkpoint_binding(self):
@@ -382,6 +385,8 @@ class ActivitySSECursorStore:
                 scope.get('reconnect_reservation_sha256'),
             reconnect_reservation_bound=
                 scope.get('profile') in (LEGACY_BOUND_PROFILE, BOUND_PROFILE),
+            complete_review_counts_bound=
+                scope.get('profile') in (PROFILE, BOUND_PROFILE),
             read_only=True, **{flag: False for flag in FLAGS})
 
     def checkpoint(self, review, *, previous_cursor, next_cursor,
@@ -485,6 +490,8 @@ class ActivitySSECursorStore:
             receipt_sha256=body['receipt_sha256'], duplicate=duplicate,
             reconnect_reservation_bound=
                 body['scope']['profile'] == BOUND_PROFILE,
+            complete_review_counts_bound=
+                body['scope']['profile'] in (PROFILE, BOUND_PROFILE),
             local_cursor_checkpoint_committed=True,
             process_restart_recoverable=True,
             **{flag: False for flag in FLAGS})

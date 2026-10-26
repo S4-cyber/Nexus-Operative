@@ -148,6 +148,24 @@ def test_initial_cursor_inspection_failure_is_sanitized_before_reservation(
     assert not cursor.path.exists() and not budget.path.exists()
 
 
+def test_legacy_cursor_checkpoint_cannot_authorize_new_reconnect_attempt(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    original = cursor.inspect
+
+    def legacy_view():
+        return {**original(), 'initialized': True,
+            'complete_review_counts_bound': False}
+
+    monkeypatch.setattr(cursor, 'inspect', legacy_view)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CURSOR_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
 @pytest.mark.parametrize('malformed', (None, {}, [],
     {'head_sha256': None}))
 def test_malformed_initial_cursor_view_fails_closed_before_reservation(
@@ -1026,6 +1044,27 @@ def test_durable_checkpoint_binding_cannot_promote_authority(tmp_path,
 
     monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
         promoted_binding)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    state = budget.inspect()
+    assert len(opener.requests) == 1
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
+def test_incomplete_checkpoint_binding_cannot_complete_reconnect_budget(
+        tmp_path, monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = cursor.latest_checkpoint_binding
+
+    def incomplete_binding():
+        return {**original(), 'complete_review_counts_bound': False}
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        incomplete_binding)
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
             match='CHECKPOINT_STATE_UNCERTAIN'):
         call(tmp_path, opener, stores=(cursor, budget))

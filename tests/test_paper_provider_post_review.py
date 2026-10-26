@@ -232,6 +232,36 @@ def test_every_store_object_is_pinned_across_multi_account_review(
     assert original_path.exists() and clone.exists()
 
 
+@pytest.mark.parametrize('target', ('post_budget', 'first_journal',
+    'second_journal'))
+def test_every_selected_file_replacement_at_same_path_fails_closed(
+        tmp_path, monkeypatch, target):
+    first,budget,head=retained(tmp_path,at=1000)
+    second,budget,head=retained(tmp_path,account=OTHER,identity='nx_other',
+        outcome='RESPONSE_OBSERVED',post_head=head,at=1061,budget=budget,
+        observed=True)
+    stores=dict(post_budget=budget, first_journal=first,
+        second_journal=second)
+    store=stores[target];path=store.path
+    clone=tmp_path/f'{target}-replacement.sqlite3'
+    backup=tmp_path/f'{target}-original.sqlite3'
+    shutil.copyfile(path,clone)
+    method='history' if target=='post_budget' else 'observations_at_heads'
+    original=getattr(store,method)
+
+    def replace(*args,**kwargs):
+        result=original(*args,**kwargs)
+        path.replace(backup);shutil.copyfile(clone,path)
+        return result
+
+    monkeypatch.setattr(store,method,replace)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_REVIEW_FILE_IDENTITY_CHANGED'):
+        subject.review(budget,expected_post_head=head,
+            request_bindings=[binding(first),binding(second)])
+    assert path.read_bytes()==backup.read_bytes()==clone.read_bytes()
+
+
 def test_fixture_has_no_authority():
     result=subject.fixture_report()
     assert result['passed'] and all(result[field] is False for field in subject.FLAGS)

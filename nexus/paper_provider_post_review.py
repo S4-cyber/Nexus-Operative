@@ -14,7 +14,8 @@ from nexus.broker_request_journal import (
     ZERO,
 )
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
-from nexus.sqlite_journal_guard import check_path_set
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, check_path_set, require_file_identities)
 
 MAX_REQUEST_JOURNALS = 7
 FLAGS = (
@@ -58,6 +59,13 @@ def _require_store_binding(post_budget, bindings, expected):
         _fail('STORE_BINDING_CHANGED')
 
 
+def _require_bindings(post_budget, bindings, store_binding, paths,
+                      file_binding):
+    _require_store_binding(post_budget, bindings, store_binding)
+    require_file_identities(paths, file_binding,
+        'PAPER_PROVIDER_POST_REVIEW_')
+
+
 def review(post_budget, *, expected_post_head, request_bindings):
     """Replay and compare every retained checked POST attempt.
 
@@ -83,20 +91,27 @@ def review(post_budget, *, expected_post_head, request_bindings):
     accounts = [journal.account_digest for journal, _ in bindings]
     if len(set(accounts)) != len(accounts):
         _fail('DUPLICATE_ACCOUNT_BINDING')
-    check_path_set((post_budget.path, *(journal.path for journal, _ in bindings)),
+    paths = check_path_set(
+        (post_budget.path, *(journal.path for journal, _ in bindings)),
         'PAPER_PROVIDER_POST_REVIEW_')
-    _require_store_binding(post_budget, bindings, store_binding)
+    file_binding = capture_file_identities(paths,
+        'PAPER_PROVIDER_POST_REVIEW_')
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
 
     first_post = post_budget.inspect()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     if (first_post['events'] == 0 or first_post['head_sha256'] != expected_post_head):
         _fail('POST_HEAD_CHANGED')
     attempts = post_budget.history()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     if len(attempts) != first_post['completed_attempts']:
         _fail('POST_HISTORY_CHANGED')
     recoveries = post_budget.recovery_history()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     if len(recoveries) != first_post['recoveries']:
         _fail('POST_HISTORY_CHANGED')
 
@@ -121,17 +136,20 @@ def review(post_budget, *, expected_post_head, request_bindings):
     current_requests = {}
     for account, (journal, expected) in by_account.items():
         initial = journal.recovery()
-        _require_store_binding(post_budget, bindings, store_binding)
+        _require_bindings(post_budget, bindings, store_binding, paths,
+            file_binding)
         if initial['head_sha256'] != expected or expected == ZERO:
             _fail('REQUEST_HEAD_CHANGED')
         sample = journal.observations_at_heads(tuple(sorted(needed[account])))
-        _require_store_binding(post_budget, bindings, store_binding)
+        _require_bindings(post_budget, bindings, store_binding, paths,
+            file_binding)
         if sample['current_head_sha256'] != expected:
             _fail('REQUEST_HEAD_CHANGED')
         prefixes[account] = sample['observations_by_head']
         current_requests[account] = initial['requests']
         final = journal.recovery()
-        _require_store_binding(post_budget, bindings, store_binding)
+        _require_bindings(post_budget, bindings, store_binding, paths,
+            file_binding)
         if final['head_sha256'] != expected or final['requests'] != initial['requests']:
             _fail('REQUEST_HISTORY_CHANGED')
 
@@ -230,7 +248,8 @@ def review(post_budget, *, expected_post_head, request_bindings):
     duplicate_markers = len(retained_markers) - len(set(retained_markers))
 
     final_post = post_budget.inspect()
-    _require_store_binding(post_budget, bindings, store_binding)
+    _require_bindings(post_budget, bindings, store_binding, paths,
+        file_binding)
     if final_post['head_sha256'] != expected_post_head or final_post != first_post:
         _fail('POST_HISTORY_CHANGED')
     reasons = []

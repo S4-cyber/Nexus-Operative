@@ -2,7 +2,6 @@
 import copy
 import json
 from pathlib import Path
-import shutil
 import sqlite3
 
 import pytest
@@ -429,15 +428,14 @@ def test_public_read_rejects_same_path_byte_identical_replacement(
     replacement = tmp_path / f'{method}-replacement.sqlite3'
     store = subject.ActivitySSECursorStore(path, ACCOUNT)
     saved = checkpoint(store)
-    shutil.copyfile(path, replacement)
-    original_load = store._load
+    replacement.write_bytes(path.read_bytes())
+    original_connect = store._connect
 
-    def replace_after_load(*args, **kwargs):
-        retained = original_load(*args, **kwargs)
+    def replace_before_connect(*args, **kwargs):
         replacement.replace(path)
-        return retained
+        return original_connect(*args, **kwargs)
 
-    monkeypatch.setattr(store, '_load', replace_after_load)
+    monkeypatch.setattr(store, '_connect', replace_before_connect)
     with pytest.raises(ValueError, match='FILE_IDENTITY_CHANGED'):
         getattr(store, method)()
     assert not replacement.exists()

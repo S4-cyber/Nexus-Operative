@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-26
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. Exact-source v0.295.0 passed security/history/Gitleaks, full regression/browser/evidence and Windows packaging/installer workflows. v0.296.0 requires its own fresh workflows and no parent result transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. Exact-source v0.296.0 passed security/Gitleaks, browser-help and offline release evidence, but Linux and Windows full regression failed three POSIX-specific open-file replacement tests. v0.296.1 repairs that test boundary and requires fresh workflows; no parent result transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account connection/reconnect acceptance, reconciliation and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+
+## v0.296.1 Windows replacement-regression portability
+
+The three direct Activity SSE identity regressions now swap their byte-identical clone after identity capture and before SQLite opens the original journal. This preserves the intended fence while avoiding the invalid assumption that Windows permits renaming an open SQLite database.
+
+Final local validation passed 4,204 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused cursor/reconnect set passed 353. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `e53683b865a0618db499e93b8cdbb21714c5ae93954e3801886d84c0d8436355`; `validation/release_trials_0_296_1.json` SHA256 is `eab5826c2cde6c1f8bff9a38a6be8cff859d530e61978ad218e1f3563000c805`. Fourteen Node controllers, Portal inline syntax, compileall, dependency consistency, generated-roadmap equality and whitespace passed. The exact 659-path proposed snapshot passed the public-artifact audit with zero findings. Exact v0.296.0 security/Gitleaks, browser-help and release-evidence checks passed; both full-regression jobs failed only the repaired three test-harness operations. Production behavior, UI and all authority defaults remain unchanged. Fresh v0.296.1 workflows remain mandatory.
 
 ## v0.296.0 direct Activity SSE journal file-identity binding
 

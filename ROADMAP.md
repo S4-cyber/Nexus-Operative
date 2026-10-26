@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.296.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.296.1. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.296.0 extends sampled device/file identity binding into direct Activity SSE cursor-history and reconnect-budget inspection. Existing journals capture their resolved path plus sampled device/inode identity before replay and refuse same-path replacement at each explicit read boundary even when replacement bytes match. Missing stores remain absent and existing object, account, exact-head, emergency-stop and bounded-attempt checks remain independent. This is a sequential local replacement detector, not an atomic snapshot, descriptor-held lock, ACL or source attestation, same-inode write exclusion, provider acceptance or native power-loss proof. No provider request, credential access, automatic retry, cursor mutation, ledger, order, funding, Portal or release authority is added. Actual-account reconnect, activity/fee coverage, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.296.1 makes the direct Activity SSE byte-identical replacement regressions portable across Windows and POSIX. Each adversarial clone now replaces the pathname after file-identity capture but before SQLite opens it, exercising the same explicit pre-open fence without relying on POSIX permission to rename an open database. The v0.296.0 production guard is unchanged: existing cursor-history and reconnect-budget journals remain identity-bound through replay, missing stores remain absent, and object, account, exact-head, emergency-stop and bounded-attempt checks remain independent. This is test and release-gate remediation, not provider acceptance, native durability or new authority. No provider request, credential access, automatic retry, cursor mutation, ledger, order, funding, Portal or release permission is added. Actual-account reconnect, activity/fee coverage, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

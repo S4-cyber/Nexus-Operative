@@ -2,7 +2,6 @@
 import copy
 import io
 import json
-import shutil
 import sqlite3
 from email.message import Message
 from urllib.error import HTTPError
@@ -599,15 +598,14 @@ def test_budget_inspect_rejects_same_path_byte_identical_replacement(
         confirm_reconnect_attempt=True)
     path = budget.path
     replacement = tmp_path / 'inspect-replacement.sqlite3'
-    shutil.copyfile(path, replacement)
-    original_load = budget._load
+    replacement.write_bytes(path.read_bytes())
+    original_connect = budget._connect
 
-    def replace_after_load(*args, **kwargs):
-        retained = original_load(*args, **kwargs)
+    def replace_before_connect(*args, **kwargs):
         replacement.replace(path)
-        return retained
+        return original_connect(*args, **kwargs)
 
-    monkeypatch.setattr(budget, '_load', replace_after_load)
+    monkeypatch.setattr(budget, '_connect', replace_before_connect)
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
             match='FILE_IDENTITY_CHANGED'):
         budget.inspect()

@@ -54,7 +54,7 @@ def _database_busy(error):
 
 @contextmanager
 def _transaction(db):
-    """Normalize bounded write/commit contention without retrying it."""
+    """Normalize bounded SQLite operation/commit contention without retry."""
     try:
         with db:
             yield
@@ -372,9 +372,10 @@ class ActivitySSECursorStore:
             head, cursor, records = ZERO, None, []
         else:
             with closing(self._connect()[0]) as db:
-                require_cursor_binding()
-                head, cursor, records = self._load(db)
-                require_cursor_binding()
+                with _transaction(db):
+                    require_cursor_binding()
+                    head, cursor, records = self._load(db)
+                    require_cursor_binding()
         require_cursor_binding()
         complete_review_counts_bound = bool(records) and \
             records[-1]['body']['scope']['profile'] in (PROFILE, BOUND_PROFILE)
@@ -408,9 +409,10 @@ class ActivitySSECursorStore:
         file_binding = capture_file_identities((cursor_binding[0],),
             'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
         with closing(self._connect()[0]) as db:
-            require_cursor_binding()
-            head, _, records = self._load(db)
-            require_cursor_binding()
+            with _transaction(db):
+                require_cursor_binding()
+                head, _, records = self._load(db)
+                require_cursor_binding()
         if not records:
             _fail('CHECKPOINT_MISSING')
         latest = records[-1]
@@ -463,9 +465,10 @@ class ActivitySSECursorStore:
             if not cursor_binding[0].exists():
                 _fail('HEAD_CHANGED')
             with closing(self._connect()[0]) as db:
-                require_cursor_binding()
-                head, _, records = self._load(db)
-                require_cursor_binding()
+                with _transaction(db):
+                    require_cursor_binding()
+                    head, _, records = self._load(db)
+                    require_cursor_binding()
             last = records[-1] if records else None
             if (head == current['head_sha256'] and last is not None and
                     last['body']['scope']['expected_head_sha256'] == expected and

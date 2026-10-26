@@ -105,7 +105,7 @@ def _database_busy(error):
 
 @contextmanager
 def _transaction(db):
-    """Normalize bounded write/commit contention without retrying it."""
+    """Normalize bounded SQLite operation/commit contention without retry."""
     try:
         with db:
             yield
@@ -965,9 +965,10 @@ class ActivitySSEReconnectBudget:
                 emergency_stop_prior_head_sha256=None)
         else:
             with closing(self._connect()[0]) as db:
-                require_budget_binding()
-                state = self._load(db)
-                require_budget_binding()
+                with _transaction(db):
+                    require_budget_binding()
+                    state = self._load(db)
+                    require_budget_binding()
         require_budget_binding()
         return dict(mode='PRIVATE_ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET',
             status='REVIEW_REQUIRED', account_sha256=budget_binding[1],

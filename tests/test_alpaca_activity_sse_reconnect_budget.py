@@ -149,6 +149,33 @@ def test_begin_commit_contention_fails_closed_then_recovers(
     assert recovered['attempt'] == 2
 
 
+def test_public_read_lock_contention_fails_closed_then_recovers(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, expected_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED',
+        confirm_reconnect_attempt=True, emergency_stop_check=STOP_CLEAR)
+    budget.finish(reserved['token'], evaluated_at=1000,
+        outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=STOP_CLEAR)
+    expected = budget.inspect()
+    original = budget.path.read_bytes()
+    monkeypatch.setattr(subject, 'DB_BUSY_TIMEOUT_MS', 50)
+    blocker = sqlite3.connect(budget.path)
+    blocker.execute('BEGIN EXCLUSIVE')
+    try:
+        with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+                match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_DATABASE_BUSY'):
+            budget.inspect()
+    finally:
+        blocker.rollback()
+        blocker.close()
+    assert budget.path.read_bytes() == original
+    assert budget.inspect() == expected
+
+
 def call(tmp_path, opener, at=1000, **changes):
     initial, _ = segments()
     cursor, budget = changes.pop('stores', stores(tmp_path))

@@ -128,6 +128,30 @@ def test_checkpoint_commit_contention_fails_closed_then_recovers(
     assert recovered['head_sha256'] != first['head_sha256']
 
 
+@pytest.mark.parametrize('method', ('inspect', 'latest_checkpoint_binding'))
+def test_public_read_lock_contention_fails_closed_then_recovers(
+        tmp_path, monkeypatch, method):
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    saved = checkpoint(store)
+    expected = getattr(store, method)()
+    original = path.read_bytes()
+    monkeypatch.setattr(subject, 'DB_BUSY_TIMEOUT_MS', 50)
+    blocker = sqlite3.connect(path)
+    blocker.execute('BEGIN EXCLUSIVE')
+    try:
+        with pytest.raises(ValueError,
+                match='ALPACA_ACTIVITY_SSE_CURSOR_STORE_DATABASE_BUSY'):
+            getattr(store, method)()
+    finally:
+        blocker.rollback()
+        blocker.close()
+    assert path.read_bytes() == original
+    recovered = getattr(store, method)()
+    assert recovered == expected
+    assert recovered['head_sha256'] == saved['head_sha256']
+
+
 def test_checkpoint_reopens_exact_private_cursor_without_authority(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     report, before, after = checked()

@@ -1,6 +1,7 @@
 """Exact POST/activity/account-evidence composition tests."""
 import copy
 import shutil
+from pathlib import Path
 
 import pytest
 
@@ -11,6 +12,14 @@ from nexus.alpaca_paper_contract import preview
 def files(root):
     return {path.relative_to(root): path.read_bytes()
         for path in root.rglob('*') if path.is_file()}
+
+
+class MutablePath:
+    def __init__(self, path):
+        self.path = path
+
+    def __fspath__(self):
+        return str(self.path)
 
 
 def test_exact_post_activity_and_guarded_balance_evidence_bind_without_writes(tmp_path):
@@ -138,6 +147,43 @@ def test_store_objects_cannot_retarget_to_identical_clones(
     with pytest.raises(ValueError, match='STORE_BINDING_CHANGED'):
         subject.review(**options)
     assert original_path.exists() and clone.exists()
+
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_ancillary_paths_are_frozen_before_component_composition(
+        tmp_path, monkeypatch, field):
+    options=subject._fixture(tmp_path);original_path=Path(options[field])
+    clone=tmp_path/f'{field}-clone.sqlite3'
+    shutil.copyfile(original_path,clone)
+    supplied=MutablePath(original_path);options[field]=supplied
+    original_status=subject.acceptance_status
+    original_posts=subject.post_activity.review
+    original_evidence=subject.evidence.review_with_stability_guards
+    status_seen=[];component_seen=[];calls=[]
+
+    def retarget_status(**kwargs):
+        status_seen.append(Path(kwargs[field]))
+        result=original_status(**kwargs);calls.append(1)
+        if len(calls)==1:supplied.path=clone
+        return result
+
+    def inspect_posts(*args,**kwargs):
+        component_seen.append(Path(kwargs['account_bindings'][0][field]))
+        return original_posts(*args,**kwargs)
+
+    def inspect_evidence(**kwargs):
+        component_seen.append(Path(kwargs[field]))
+        return original_evidence(**kwargs)
+
+    monkeypatch.setattr(subject,'acceptance_status',retarget_status)
+    monkeypatch.setattr(subject.post_activity,'review',inspect_posts)
+    monkeypatch.setattr(subject.evidence,'review_with_stability_guards',
+        inspect_evidence)
+    result=subject.review(**options)
+    assert result['journals_rechecked_unchanged']
+    assert status_seen and component_seen
+    assert all(path==original_path for path in status_seen+component_seen)
 
 
 def test_fixture_is_private_and_never_authoritative():

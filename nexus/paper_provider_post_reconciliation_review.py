@@ -5,6 +5,7 @@ observations only.  It performs no provider or vault IO, writes nothing and
 grants no order, ledger, funding or release authority.
 """
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 from nexus.alpaca_paper_contract import sha
 from nexus import paper_account_evidence_review as evidence
@@ -47,6 +48,13 @@ def _require_store_binding(post_budget, journal, expected):
         _fail('STORE_BINDING_CHANGED')
 
 
+def _frozen_path(value, code):
+    try:
+        return Path(value)
+    except (TypeError, ValueError, OSError, AttributeError):
+        _fail(code)
+
+
 def review(post_budget, *, expected_post_head, account_id, journal,
            expected_request_head, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
@@ -62,6 +70,11 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         _fail('POST_BUDGET_REQUIRED')
     if type(journal) is not BrokerRequestJournal:
         _fail('REQUEST_JOURNAL_REQUIRED')
+    pacing_path = _frozen_path(pacing_path, 'PACING_PATH_INVALID')
+    activity_store_path = _frozen_path(
+        activity_store_path, 'ACTIVITY_STORE_PATH_INVALID')
+    acceptance_store_path = _frozen_path(
+        acceptance_store_path, 'ACCEPTANCE_STORE_PATH_INVALID')
     store_binding = _store_binding(post_budget, journal)
     journal_account = journal.account_digest
     binding = _binding(account_id=account_id, journal=journal,

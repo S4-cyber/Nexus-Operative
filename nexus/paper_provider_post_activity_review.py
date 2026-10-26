@@ -5,6 +5,7 @@ account-scoped request/activity histories.  This module writes nothing, reads
 no credentials, performs no provider IO and grants no routing authority.
 """
 import hashlib
+from pathlib import Path
 import re
 
 from nexus import paper_provider_post_review as posts
@@ -37,6 +38,13 @@ def _digest(value, code):
 
 def _client_digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
+
+
+def _frozen_path(value, code):
+    try:
+        return Path(value)
+    except (TypeError, ValueError, OSError, AttributeError):
+        _fail(code)
 
 
 def _check_related_paths(paths):
@@ -101,6 +109,12 @@ def review(post_budget, *, expected_post_head, account_bindings):
             current['expected_request_head'], 'REQUEST_HEAD_INVALID')
         current['expected_activity_head'] = _digest(
             current['expected_activity_head'], 'ACTIVITY_HEAD_INVALID')
+        current['pacing_path'] = _frozen_path(
+            current['pacing_path'], 'PACING_PATH_INVALID')
+        current['activity_store_path'] = _frozen_path(
+            current['activity_store_path'], 'ACTIVITY_STORE_PATH_INVALID')
+        current['acceptance_store_path'] = _frozen_path(
+            current['acceptance_store_path'], 'ACCEPTANCE_STORE_PATH_INVALID')
         current['_account_digest'] = journal.account_digest
         bindings.append(current)
         paths.extend((journal.path, current['pacing_path'],

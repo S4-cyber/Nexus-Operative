@@ -1,6 +1,7 @@
 """Exact-head provider POST to accepted-activity composition tests."""
 import json
 import shutil
+from pathlib import Path
 
 import pytest
 
@@ -17,6 +18,14 @@ def prepared(tmp_path, *, resolve_unknown=True):
 def files(root):
     return {path.relative_to(root): path.read_bytes()
         for path in root.rglob('*') if path.is_file()}
+
+
+class MutablePath:
+    def __init__(self, path):
+        self.path = path
+
+    def __fspath__(self):
+        return str(self.path)
 
 
 def test_recovered_unknown_and_not_sent_bind_exact_accepted_history(tmp_path):
@@ -135,6 +144,35 @@ def test_store_objects_cannot_retarget_during_activity_component(
         subject.review(budget,expected_post_head=head,
             account_bindings=[binding])
     assert original_path.exists() and clone.exists()
+
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_account_binding_paths_are_frozen_before_post_review(
+        tmp_path, monkeypatch, field):
+    budget,head,binding=prepared(tmp_path)
+    original_path=Path(binding[field])
+    clone=tmp_path/f'{field}-clone.sqlite3'
+    shutil.copyfile(original_path,clone)
+    supplied=MutablePath(original_path);binding[field]=supplied
+    original_posts=subject.posts.review
+    original_activity=subject.activity.review
+    seen=[]
+
+    def retarget(*args,**kwargs):
+        result=original_posts(*args,**kwargs);supplied.path=clone
+        return result
+
+    def inspect_path(**kwargs):
+        seen.append(Path(kwargs[field]))
+        return original_activity(**kwargs)
+
+    monkeypatch.setattr(subject.posts,'review',retarget)
+    monkeypatch.setattr(subject.activity,'review',inspect_path)
+    result=subject.review(budget,expected_post_head=head,
+        account_bindings=[binding])
+    assert result['complete_local_post_activity_consistent']
+    assert seen and all(path==original_path for path in seen)
 
 
 def test_account_scope_and_binding_shape_fail_closed(tmp_path):

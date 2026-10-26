@@ -556,6 +556,45 @@ def _validated_control_closure(reconnect_budget, retained, duplicate, *,
     return stable
 
 
+def _perform_control_closure(reconnect_budget, operation, *,
+        budget_binding, expected_head, evaluated_at, detail, waiting, code):
+    """Run one local safety closure with exact lost-ack recovery."""
+    expected = _digest(expected_head, 'EXPECTED_HEAD_INVALID')
+    initial = _inspect_after_result_error(reconnect_budget, code)
+    if not _budget_binding_matches(reconnect_budget, budget_binding):
+        _fail('STORE_BINDING_CHANGED')
+    expected_duplicate = initial['head_sha256'] != expected
+    try:
+        retained, duplicate = operation()
+    except ActivitySSEReconnectBudgetError:
+        if not _budget_binding_matches(reconnect_budget, budget_binding):
+            _fail('STORE_BINDING_CHANGED')
+        raise
+    except Exception:
+        if not _budget_binding_matches(reconnect_budget, budget_binding):
+            _fail('STORE_BINDING_CHANGED')
+        stable = _inspect_after_result_error(reconnect_budget, code)
+        if not _budget_binding_matches(reconnect_budget, budget_binding):
+            _fail('STORE_BINDING_CHANGED')
+        exact = (_exact_waiting_stop_result(stable, expected,
+                    evaluated_at, expected_duplicate) if waiting else
+            _exact_control_failure_result(stable, expected,
+                evaluated_at, detail, expected_duplicate))
+        if not exact:
+            _fail(code)
+        return stable, expected_duplicate
+    if not _budget_binding_matches(reconnect_budget, budget_binding):
+        _fail('STORE_BINDING_CHANGED')
+    if duplicate is not expected_duplicate:
+        _fail(code)
+    stable = _validated_control_closure(reconnect_budget, retained,
+        duplicate, expected_head=expected, evaluated_at=evaluated_at,
+        detail=detail, waiting=waiting, code=code)
+    if not _budget_binding_matches(reconnect_budget, budget_binding):
+        _fail('STORE_BINDING_CHANGED')
+    return stable, duplicate
+
+
 class ActivitySSEReconnectBudget:
     """Account-bound hash-chain for one bounded reconnect episode."""
 
@@ -1597,18 +1636,14 @@ def abort_pending_reconnect_for_emergency_stop(*, reconnect_budget,
         _fail('BUDGET_INVALID')
     budget_binding = (reconnect_budget.path,
         reconnect_budget.account_sha256)
-    retained, duplicate = reconnect_budget.abort_pending_for_emergency_stop(
-        evaluated_at=evaluated_at, expected_head=expected_budget_head,
-        emergency_stop_check=emergency_stop_check,
-        confirm_emergency_stop_abort=confirm_emergency_stop_abort)
-    if not _budget_binding_matches(reconnect_budget, budget_binding):
-        _fail('STORE_BINDING_CHANGED')
-    retained = _validated_control_closure(reconnect_budget, retained,
-        duplicate, expected_head=expected_budget_head,
+    retained, duplicate = _perform_control_closure(reconnect_budget,
+        lambda: reconnect_budget.abort_pending_for_emergency_stop(
+            evaluated_at=evaluated_at, expected_head=expected_budget_head,
+            emergency_stop_check=emergency_stop_check,
+            confirm_emergency_stop_abort=confirm_emergency_stop_abort),
+        budget_binding=budget_binding, expected_head=expected_budget_head,
         evaluated_at=evaluated_at, detail='EMERGENCY_STOP_ACTIVE',
         waiting=False, code='EMERGENCY_STOP_ABORT_UNCERTAIN')
-    if not _budget_binding_matches(reconnect_budget, budget_binding):
-        _fail('STORE_BINDING_CHANGED')
     return dict(mode=
             'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_EMERGENCY_STOP_ABORT',
         status='REVIEW_REQUIRED', policy=POLICY,
@@ -1630,19 +1665,14 @@ def close_pending_reconnect_for_outcome_uncertainty(*, reconnect_budget,
         _fail('BUDGET_INVALID')
     budget_binding = (reconnect_budget.path,
         reconnect_budget.account_sha256)
-    retained, duplicate = \
-        reconnect_budget.close_pending_for_outcome_uncertainty(
+    retained, duplicate = _perform_control_closure(reconnect_budget,
+        lambda: reconnect_budget.close_pending_for_outcome_uncertainty(
             evaluated_at=evaluated_at, expected_head=expected_budget_head,
             confirm_outcome_uncertain=confirm_outcome_uncertain,
-            confirm_no_retry=confirm_no_retry)
-    if not _budget_binding_matches(reconnect_budget, budget_binding):
-        _fail('STORE_BINDING_CHANGED')
-    retained = _validated_control_closure(reconnect_budget, retained,
-        duplicate, expected_head=expected_budget_head,
+            confirm_no_retry=confirm_no_retry),
+        budget_binding=budget_binding, expected_head=expected_budget_head,
         evaluated_at=evaluated_at, detail='OUTCOME_CLOCK_UNCERTAIN',
         waiting=False, code='OUTCOME_UNCERTAIN_CLOSE_UNCERTAIN')
-    if not _budget_binding_matches(reconnect_budget, budget_binding):
-        _fail('STORE_BINDING_CHANGED')
     return dict(mode=
             'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_OUTCOME_UNCERTAIN_CLOSE',
         status='REVIEW_REQUIRED', policy=POLICY,
@@ -1667,19 +1697,14 @@ def close_waiting_reconnect_for_emergency_stop(*, reconnect_budget,
         _fail('BUDGET_INVALID')
     budget_binding = (reconnect_budget.path,
         reconnect_budget.account_sha256)
-    retained, duplicate = \
-        reconnect_budget.close_waiting_retry_for_emergency_stop(
+    retained, duplicate = _perform_control_closure(reconnect_budget,
+        lambda: reconnect_budget.close_waiting_retry_for_emergency_stop(
             evaluated_at=evaluated_at, expected_head=expected_budget_head,
             emergency_stop_check=emergency_stop_check,
-            confirm_emergency_stop_close=confirm_emergency_stop_close)
-    if not _budget_binding_matches(reconnect_budget, budget_binding):
-        _fail('STORE_BINDING_CHANGED')
-    retained = _validated_control_closure(reconnect_budget, retained,
-        duplicate, expected_head=expected_budget_head,
+            confirm_emergency_stop_close=confirm_emergency_stop_close),
+        budget_binding=budget_binding, expected_head=expected_budget_head,
         evaluated_at=evaluated_at, detail='EMERGENCY_STOP_ACTIVE',
         waiting=True, code='EMERGENCY_STOP_CLOSE_UNCERTAIN')
-    if not _budget_binding_matches(reconnect_budget, budget_binding):
-        _fail('STORE_BINDING_CHANGED')
     return dict(mode=
             'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_EMERGENCY_STOP_CLOSE',
         status='REVIEW_REQUIRED', policy=POLICY,

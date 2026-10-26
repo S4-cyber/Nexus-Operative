@@ -1645,6 +1645,31 @@ def test_uncertain_outcome_close_rejects_unbound_result_acknowledgement(
     assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
 
 
+def test_uncertain_outcome_close_recovers_lost_acknowledgement(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original = budget.close_pending_for_outcome_uncertainty
+
+    def lost_acknowledgement(**kwargs):
+        original(**kwargs)
+        raise RuntimeError('private acknowledgement channel')
+
+    monkeypatch.setattr(budget, 'close_pending_for_outcome_uncertainty',
+        lost_acknowledgement)
+    result = subject.close_pending_reconnect_for_outcome_uncertainty(
+        reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+        confirm_outcome_uncertain=True, confirm_no_retry=True)
+    state = budget.inspect()
+    assert result['pending_outcome_closed'] and not result['duplicate_close']
+    assert result['reconnect_budget_head_sha256'] == state['head_sha256']
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+
+
 def test_uncertain_outcome_close_read_cannot_retarget_budget_store(
         tmp_path, monkeypatch):
     _, budget = stores(tmp_path)
@@ -2383,6 +2408,56 @@ def test_emergency_stop_abort_rejects_unbound_result_acknowledgement(
     assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
 
 
+def test_emergency_stop_abort_recovers_lost_acknowledgement(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    original = budget.abort_pending_for_emergency_stop
+
+    def lost_acknowledgement(**kwargs):
+        original(**kwargs)
+        raise RuntimeError('private acknowledgement channel')
+
+    monkeypatch.setattr(budget, 'abort_pending_for_emergency_stop',
+        lost_acknowledgement)
+    result = subject.abort_pending_reconnect_for_emergency_stop(
+        reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+        emergency_stop_check=lambda: True,
+        confirm_emergency_stop_abort=True)
+    state = budget.inspect()
+    assert result['pending_reconnect_aborted'] and not result['duplicate_abort']
+    assert result['reconnect_budget_head_sha256'] == state['head_sha256']
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+
+
+def test_emergency_stop_abort_uncommitted_internal_failure_is_sanitized(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+
+    def failed_abort(**kwargs):
+        raise RuntimeError('private acknowledgement channel')
+
+    monkeypatch.setattr(budget, 'abort_pending_for_emergency_stop',
+        failed_abort)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='EMERGENCY_STOP_ABORT_UNCERTAIN') as error:
+        subject.abort_pending_reconnect_for_emergency_stop(
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+            emergency_stop_check=lambda: True,
+            confirm_emergency_stop_abort=True)
+    assert 'private' not in str(error.value)
+    assert budget.inspect()['pending_token'] == reserved['token']
+
+
 @pytest.mark.parametrize(('change','code'), [
     ({'confirm_emergency_stop_abort': False},
         'EMERGENCY_STOP_ABORT_CONFIRMATION_REQUIRED'),
@@ -2587,6 +2662,28 @@ def test_emergency_stop_waiting_close_rejects_unbound_acknowledgement(
             confirm_emergency_stop_close=True)
     state = budget.inspect()
     assert state['review_required'] and state['pending_token'] is None
+    assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
+
+
+def test_emergency_stop_waiting_close_recovers_lost_acknowledgement(
+        tmp_path, monkeypatch):
+    budget, _, waiting = waiting_retry(tmp_path)
+    original = budget.close_waiting_retry_for_emergency_stop
+
+    def lost_acknowledgement(**kwargs):
+        original(**kwargs)
+        raise RuntimeError('private acknowledgement channel')
+
+    monkeypatch.setattr(budget, 'close_waiting_retry_for_emergency_stop',
+        lost_acknowledgement)
+    result = subject.close_waiting_reconnect_for_emergency_stop(
+        reconnect_budget=budget,
+        expected_budget_head=waiting['head_sha256'], evaluated_at=1000.5,
+        emergency_stop_check=lambda: True,
+        confirm_emergency_stop_close=True)
+    state = budget.inspect()
+    assert result['waiting_retry_closed'] and not result['duplicate_close']
+    assert result['reconnect_budget_head_sha256'] == state['head_sha256']
     assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
 
 

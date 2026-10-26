@@ -77,6 +77,42 @@ def stores(tmp_path):
         subject.ActivitySSEReconnectBudget(tmp_path / 'budget.sqlite3', ACCOUNT))
 
 
+def test_begin_lock_contention_fails_closed_then_recovers(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    # Establish a complete schema before holding a separate writer open.
+    assert budget.inspect()['head_sha256'] == ZERO
+    initialized = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, expected_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED',
+        confirm_reconnect_attempt=True, emergency_stop_check=STOP_CLEAR)
+    budget.finish(initialized['token'], evaluated_at=1000,
+        outcome='RETRY_REQUIRED',
+        detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_UNAVAILABLE',
+        emergency_stop_check=STOP_CLEAR)
+    state = budget.inspect()
+    monkeypatch.setattr(subject, 'DB_BUSY_TIMEOUT_MS', 50)
+    blocker = sqlite3.connect(budget.path)
+    blocker.execute('BEGIN IMMEDIATE')
+    try:
+        with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+                match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_DATABASE_BUSY'):
+            budget.begin(evaluated_at=state['next_allowed_at'],
+                expected_cursor_head=ZERO,
+                expected_head=state['head_sha256'],
+                reconnect_reason='CONNECTION_DROPPED',
+                confirm_reconnect_attempt=True,
+                emergency_stop_check=STOP_CLEAR)
+    finally:
+        blocker.rollback()
+        blocker.close()
+    recovered = budget.begin(evaluated_at=state['next_allowed_at'],
+        expected_cursor_head=ZERO, expected_head=state['head_sha256'],
+        reconnect_reason='CONNECTION_DROPPED',
+        confirm_reconnect_attempt=True, emergency_stop_check=STOP_CLEAR)
+    assert recovered['attempt'] == 2
+
+
 def call(tmp_path, opener, at=1000, **changes):
     initial, _ = segments()
     cursor, budget = changes.pop('stores', stores(tmp_path))

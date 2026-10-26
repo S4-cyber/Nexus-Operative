@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.297.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.298.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.297.0 serializes local Market Hub SQLite schema initialization inside one bounded immediate transaction and applies the same ten-second busy budget to initialization and ingest. Temporary writer contention waits; exhausted contention fails closed as HUB_DATABASE_BUSY instead of leaking a platform-dependent sqlite error. Tests cover schema transaction ordering, bounded busy failure and recovery, a waiting concurrent initializer and four-writer canonical deduplication. This repairs the exact v0.296.1 Windows installer-lane regression without weakening capacity, integrity or transaction limits. It is local public-research storage hardening, not a deployed shared hub, provider acceptance, source attestation, native power-loss proof or new authority. No credential, account, order, funding, Portal, live, cloud or release permission is added. Actual-account reconnect, activity/fee coverage, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.298.0 applies one explicit ten-second SQLite busy budget to the private Activity SSE cursor and reconnect-reservation journals. Exhausted busy/locked admission now fails closed as a stable journal-specific DATABASE_BUSY code instead of leaking platform-dependent sqlite text, and the exact operation remains recoverable after a competing writer releases its lock. Tests exercise both journals under real held-writer contention and subsequent recovery. This is bounded local coordinator hardening, not an automatic reconnect loop, provider acceptance, delivery/replay coverage, broker-wide coordination, native power-loss proof or new authority. No credential, account, order, funding, Portal, live, cloud or release permission is added. Actual-account reconnect, activity/fee coverage, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

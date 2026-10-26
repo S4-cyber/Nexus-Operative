@@ -67,6 +67,36 @@ def rewrite_checkpoint(path, mutation):
             (encoded, digest))
 
 
+def test_checkpoint_lock_contention_fails_closed_then_recovers(
+        tmp_path, monkeypatch):
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    report, before, after = checked()
+    # Establish a complete schema before holding a separate writer open.
+    first = checkpoint(store, report, before, after)
+    initial = pair(2, 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        'fixture_client_2')
+    later = pair(4, 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+        'fixture_client_3')
+    second_report, second_before, second_after = checked(initial, later)
+    monkeypatch.setattr(subject, 'DB_BUSY_TIMEOUT_MS', 50)
+    blocker = sqlite3.connect(path)
+    blocker.execute('BEGIN IMMEDIATE')
+    try:
+        with pytest.raises(ValueError,
+                match='ALPACA_ACTIVITY_SSE_CURSOR_STORE_DATABASE_BUSY'):
+            store.checkpoint(second_report, previous_cursor=second_before,
+                next_cursor=second_after,
+                expected_head=first['head_sha256'])
+    finally:
+        blocker.rollback()
+        blocker.close()
+    recovered = store.checkpoint(second_report,
+        previous_cursor=second_before, next_cursor=second_after,
+        expected_head=first['head_sha256'])
+    assert recovered['head_sha256'] != first['head_sha256']
+
+
 def test_checkpoint_reopens_exact_private_cursor_without_authority(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     report, before, after = checked()

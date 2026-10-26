@@ -33,6 +33,7 @@ ZERO = '0' * 64
 MAX_CHECKPOINTS = 256
 MAX_RECORD_BYTES = 8192
 MAX_DATABASE_BYTES = 4 * 1024 * 1024
+DB_BUSY_TIMEOUT_MS = 10_000
 FLAGS = ('actual_provider_access', 'actual_vault_access',
     'actual_stream_connection', 'provider_source_attested',
     'stream_delivery_verified', 'historical_replay_complete',
@@ -114,8 +115,10 @@ class ActivitySSECursorStore:
                 pass
             self._check()
         db = sqlite3.connect(self.path.resolve().as_uri() +
-            ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=5)
+            ('?mode=rw' if write else '?mode=ro'), uri=True,
+            timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE')
                 db.execute('PRAGMA synchronous=FULL')
@@ -129,6 +132,14 @@ class ActivitySSECursorStore:
             else:
                 db.execute('BEGIN')
             return db, new
+        except sqlite3.OperationalError as error:
+            db.close()
+            code = getattr(error, 'sqlite_errorcode', None)
+            if (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
+                    any(word in str(error).lower()
+                        for word in ('busy', 'locked'))):
+                _fail('DATABASE_BUSY')
+            raise
         except BaseException:
             db.close()
             raise

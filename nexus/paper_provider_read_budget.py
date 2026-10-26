@@ -4,7 +4,7 @@ The journal coordinates callers that deliberately share one path on one host.
 It does not discover other clients, reserve an Alpaca quota, coordinate another
 machine, or grant account, routing, funding, live-trading, or release authority.
 """
-from contextlib import closing
+from contextlib import closing, contextmanager
 import hashlib
 import json
 import os
@@ -24,6 +24,7 @@ RECOVERY_POLICY = 'nexus.paper-provider-read-budget-recovery.v1'
 MAX_SESSIONS = 256
 MAX_RECOVERIES = MAX_SESSIONS
 MAX_DATABASE_BYTES = 4 * 1024 * 1024
+DB_BUSY_TIMEOUT_MS = 10_000
 MIN_COOLDOWN = 60
 INTERRUPTED_COOLDOWN = 86400
 MAX_EVENT_BYTES = 1024
@@ -32,6 +33,24 @@ ZERO = '0' * 64
 
 def _fail(code):
     raise ValueError('PAPER_PROVIDER_READ_BUDGET_' + code) from None
+
+
+def _database_busy(error):
+    code = getattr(error, 'sqlite_errorcode', None)
+    return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded SQLite operation/commit contention without retry."""
+    try:
+        with db:
+            yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        raise
 
 
 def _digest(value, code):
@@ -65,8 +84,9 @@ class PaperProviderReadBudget:
                 pass
             self._path_check()
         db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
-                             uri=True, timeout=5)
+                             uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE'); db.execute('PRAGMA synchronous=FULL')
                 page_size = db.execute('PRAGMA page_size').fetchone()[0]
@@ -76,6 +96,11 @@ class PaperProviderReadBudget:
                     db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._append(db, 0, dict(schema=SCHEMA, provider_sha256=self.provider_digest), ZERO)
             return db
+        except sqlite3.OperationalError as error:
+            db.close()
+            if _database_busy(error):
+                _fail('DATABASE_BUSY')
+            raise
         except BaseException:
             db.close()
             raise
@@ -210,7 +235,8 @@ class PaperProviderReadBudget:
         self._path_check()
         if not self.path.exists(): state = self._empty()
         else:
-            with closing(self._connect()) as db: state = self._load(db)
+            with closing(self._connect()) as db:
+                with _transaction(db): state = self._load(db)
         completed = state.pop('completed'); pending = state.pop('pending')
         operation_counts = {name: sum(row['operation'] == name for row in completed) for name in OPERATIONS}
         account_count = len({row['account_sha256'] for row in completed})
@@ -228,7 +254,8 @@ class PaperProviderReadBudget:
     def history(self):
         self._path_check()
         if not self.path.exists(): return ()
-        with closing(self._connect()) as db: state = self._load(db)
+        with closing(self._connect()) as db:
+            with _transaction(db): state = self._load(db)
         return tuple(dict(row) for row in state['completed'])
 
     def preflight(self, *, admission, expected_head=None):
@@ -236,7 +263,8 @@ class PaperProviderReadBudget:
         self._path_check()
         if not self.path.exists(): state = self._empty()
         else:
-            with closing(self._connect()) as db: state = self._load(db)
+            with closing(self._connect()) as db:
+                with _transaction(db): state = self._load(db)
         now = clock(admission()); self._admit(state, now)
         if expected_head is not None and state['head_sha256'] != expected_head: _fail('HEAD_CHANGED')
         return state['head_sha256']
@@ -254,7 +282,7 @@ class PaperProviderReadBudget:
         if expected_head is not None: _digest(expected_head, 'HEAD_INVALID')
         self._owned(ownership)
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 state = self._load(db); self._owned(ownership); now = clock(admission()); self._admit(state, now)
                 if expected_head is not None and state['head_sha256'] != expected_head: _fail('HEAD_CHANGED')
                 body = dict(kind='BEGIN', evaluated_at=now, account_sha256=hashlib.sha256(account.encode()).hexdigest(),
@@ -270,7 +298,7 @@ class PaperProviderReadBudget:
                ownership, status_code=None, transport_error=None, retry_after=None):
         after = _digest(account_after_head_sha256, 'ACCOUNT_HEAD_INVALID'); self._owned(ownership)
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 state = self._load(db); pending = state['pending']
                 if pending is None or token != pending['token']: _fail('TOKEN_DISAGREEMENT')
                 active = self._active_completion
@@ -295,7 +323,7 @@ class PaperProviderReadBudget:
         if confirm_interrupted is not True: _fail('CONFIRMATION_REQUIRED')
         with self.ownership() as owner:
             with closing(self._connect(write=True)) as db:
-                with db:
+                with _transaction(db):
                     state = self._load(db); self._owned(owner); now = clock(admission())
                     pending = state['pending']
                     if state['head_sha256'] != expected_head: _fail('HEAD_DISAGREEMENT')
@@ -319,7 +347,7 @@ class PaperProviderReadBudget:
             _fail('CONFIRMATION_REQUIRED')
         self._owned(ownership)
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 state = self._load(db); self._owned(ownership); now = clock(admission())
                 if state['head_sha256'] != head: _fail('HEAD_DISAGREEMENT')
                 if state['pending'] is not None: _fail('PENDING_REVIEW')

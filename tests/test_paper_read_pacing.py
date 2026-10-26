@@ -296,6 +296,45 @@ def test_admission_samples_clock_after_real_sqlite_contention(gate, monkeypatch)
     assert gate.inspect()['last_evaluated_at'] == 1060
 
 
+def test_write_lock_contention_fails_closed_then_recovers(gate, monkeypatch):
+    finish(gate,begin(gate));expected=gate.inspect();original=gate.path.read_bytes()
+    monkeypatch.setattr(policy,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(gate.path);blocker.execute('BEGIN IMMEDIATE')
+    try:
+        with pytest.raises(ValueError,match='PAPER_READ_PACING_DATABASE_BUSY'):
+            begin(gate,1060)
+    finally:
+        blocker.rollback();blocker.close()
+    assert gate.path.read_bytes()==original and gate.inspect()==expected
+    assert begin(gate,1060)==gate.inspect()['pending_token']
+
+
+def test_commit_lock_contention_rolls_back_then_recovers(gate, monkeypatch):
+    finish(gate,begin(gate));expected=gate.inspect();original=gate.path.read_bytes()
+    monkeypatch.setattr(policy,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(gate.path);blocker.execute('BEGIN')
+    blocker.execute('SELECT seq FROM events LIMIT 1').fetchone()
+    try:
+        with pytest.raises(ValueError,match='PAPER_READ_PACING_DATABASE_BUSY'):
+            begin(gate,1060)
+    finally:
+        blocker.rollback();blocker.close()
+    assert gate.path.read_bytes()==original and gate.inspect()==expected
+    assert begin(gate,1060)==gate.inspect()['pending_token']
+
+
+def test_public_read_lock_contention_fails_closed_then_recovers(gate, monkeypatch):
+    finish(gate,begin(gate));expected=gate.inspect();original=gate.path.read_bytes()
+    monkeypatch.setattr(policy,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(gate.path);blocker.execute('BEGIN EXCLUSIVE')
+    try:
+        with pytest.raises(ValueError,match='PAPER_READ_PACING_DATABASE_BUSY'):
+            gate.inspect()
+    finally:
+        blocker.rollback();blocker.close()
+    assert gate.path.read_bytes()==original and gate.inspect()==expected
+
+
 def test_lost_begin_ack_retains_reservation_without_network(gate, monkeypatch):
     original = gate.begin
     def lose(**kwargs):

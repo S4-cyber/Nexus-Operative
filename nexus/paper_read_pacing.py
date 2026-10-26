@@ -6,7 +6,7 @@ may clear only the admission latch while retaining the blocked outcome/history.
 Explicit owned interruption retains an unknown outcome and full-day cooldown.
 Hashes detect inconsistent history, not valid-tail deletion or broker identity.
 """
-from contextlib import closing
+from contextlib import closing, contextmanager
 import hashlib
 import json
 import os
@@ -25,6 +25,7 @@ RECOVERY_POLICY = 'nexus.paper-read-pacing-recovery.v1'
 MAX_SESSIONS = 256
 MAX_RECOVERIES = MAX_SESSIONS
 MAX_DATABASE_BYTES = 4 * 1024 * 1024
+DB_BUSY_TIMEOUT_MS = 10_000
 MIN_COOLDOWN = 60
 INTERRUPTED_COOLDOWN = 86400
 ZERO = '0' * 64
@@ -68,6 +69,24 @@ def _fail(code):
     raise ValueError('PAPER_READ_PACING_' + code)
 
 
+def _database_busy(error):
+    code = getattr(error, 'sqlite_errorcode', None)
+    return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded SQLite operation/commit contention without retry."""
+    try:
+        with db:
+            yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        raise
+
+
 class PaperReadPacing:
     def __init__(self, path, paper_account_id):
         self.path = Path(path)
@@ -87,8 +106,10 @@ class PaperReadPacing:
                 os.close(fd); new = True
             except FileExistsError: pass
             self._path_check()
-        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=5)
+        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
+            uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE'); db.execute('PRAGMA synchronous=FULL')
                 size = db.execute('PRAGMA page_size').fetchone()[0]
@@ -98,6 +119,11 @@ class PaperReadPacing:
                     db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._append(db, 0, dict(schema=SCHEMA, account_sha256=self.account_digest), ZERO)
             return db
+        except sqlite3.OperationalError as error:
+            db.close()
+            if _database_busy(error):
+                _fail('DATABASE_BUSY')
+            raise
         except BaseException:
             db.close(); raise
 
@@ -275,7 +301,8 @@ class PaperReadPacing:
                      completed_sessions=[], operation_sessions=[], interruptions=0, last_interruption=None,
                      last_interruption_head=None, recoveries=0, last_recovery=None)
         else:
-            with closing(self._connect()) as db: state = self._load(db)
+            with closing(self._connect()) as db:
+                with _transaction(db): state = self._load(db)
         public=dict(state);public.pop('pending_before_head_sha256');public.pop('completed_sessions');operations=public.pop('operation_sessions')
         counts={kind:sum(r['operation']==kind for r in operations) for kind in (*OPERATIONS,LEGACY_OPERATION)}
         typed=[row for row in operations if row['operation']!=LEGACY_OPERATION]
@@ -303,14 +330,15 @@ class PaperReadPacing:
         self._path_check()
         if not self.path.exists(): return ()
         with closing(self._connect()) as db:
-            state=self._load(db)
+            with _transaction(db): state=self._load(db)
         return tuple(dict(item) for item in state['completed_sessions'])
 
     def operation_history(self):
         """Read-only declared operation/outcome replay; legacy purpose stays unknown."""
         self._path_check()
         if not self.path.exists():return ()
-        with closing(self._connect()) as db:state=self._load(db)
+        with closing(self._connect()) as db:
+            with _transaction(db): state=self._load(db)
         return tuple(dict(item) for item in state['operation_sessions'])
 
     def ownership(self):
@@ -324,7 +352,7 @@ class PaperReadPacing:
             if ownership is None:_fail('OPERATION_OWNER_REQUIRED')
             self._owned(ownership)
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 state = self._load(db)
                 if ownership is not None: self._owned(ownership)
                 now = clock(admission())
@@ -355,7 +383,7 @@ class PaperReadPacing:
         if not self.path.exists(): _fail('BINDING_MISSING')
         if ownership is not None:self._owned(ownership)
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 state = self._load(db)
                 if state['pending_token'] is None or token != state['pending_token']: _fail('TOKEN_DISAGREEMENT')
                 self._completion_owner(token,ownership,state)
@@ -426,7 +454,7 @@ class PaperReadPacing:
         if not self.path.exists(): _fail('BINDING_MISSING')
         with self.ownership() as owner:
             with closing(self._connect(write=True)) as db:
-                with db:
+                with _transaction(db):
                     state = self._load(db)
                     self._owned(owner)
                     now = clock(admission())
@@ -464,7 +492,7 @@ class PaperReadPacing:
             _fail('CONFIRMATION_REQUIRED')
         self._owned(ownership)
         with closing(self._connect(write=True)) as db:
-            with db:
+            with _transaction(db):
                 state=self._load(db);self._owned(ownership);now=clock(admission())
                 if state['head_sha256'] != expected_head:_fail('HEAD_DISAGREEMENT')
                 if state['pending_token'] is not None:_fail('PENDING_REVIEW')

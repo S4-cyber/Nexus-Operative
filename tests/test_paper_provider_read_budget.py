@@ -4,6 +4,7 @@ import sqlite3
 import pytest
 
 from nexus import alpaca_paper_inspection as reader
+from nexus import paper_provider_read_budget as subject
 from nexus.paper_provider_read_budget import PaperProviderReadBudget,ZERO
 from nexus.paper_read_pacing import PaperReadPacing
 from test_alpaca_paper_inspection import ACCOUNT,OTHER,KEY,SECRET,Opener,account
@@ -151,6 +152,54 @@ def test_tampered_chain_and_foreign_provider_are_rejected(tmp_path):
     with sqlite3.connect(path) as db:db.execute("UPDATE events SET previous=? WHERE seq=1",('f'*64,))
     with pytest.raises(ValueError,match='CHAIN_DISAGREEMENT'):
         budget.inspect()
+
+
+def test_write_lock_contention_fails_closed_then_recovers(tmp_path, monkeypatch):
+    path=tmp_path/'provider.sqlite3';budget=PaperProviderReadBudget(path);complete(budget)
+    expected=budget.inspect();original=path.read_bytes()
+    monkeypatch.setattr(subject,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(path);blocker.execute('BEGIN IMMEDIATE')
+    try:
+        with budget.ownership() as owner:
+            with pytest.raises(ValueError,match='PAPER_PROVIDER_READ_BUDGET_DATABASE_BUSY'):
+                budget.begin(account_id=ACCOUNT,account_before_head_sha256='a'*64,
+                    operation='BTC_ASSET_RULES',admission=lambda:1061,
+                    ownership=owner,expected_head=expected['head_sha256'])
+    finally:
+        blocker.rollback();blocker.close()
+    assert path.read_bytes()==original and budget.inspect()==expected
+    complete(budget,at=1061,before='a'*64)
+
+
+def test_commit_lock_contention_rolls_back_then_recovers(tmp_path, monkeypatch):
+    path=tmp_path/'provider.sqlite3';budget=PaperProviderReadBudget(path);complete(budget)
+    expected=budget.inspect();original=path.read_bytes()
+    monkeypatch.setattr(subject,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(path);blocker.execute('BEGIN')
+    blocker.execute('SELECT seq FROM events LIMIT 1').fetchone()
+    try:
+        with budget.ownership() as owner:
+            with pytest.raises(ValueError,match='PAPER_PROVIDER_READ_BUDGET_DATABASE_BUSY'):
+                budget.begin(account_id=ACCOUNT,account_before_head_sha256='a'*64,
+                    operation='BTC_ASSET_RULES',admission=lambda:1061,
+                    ownership=owner,expected_head=expected['head_sha256'])
+    finally:
+        blocker.rollback();blocker.close()
+    assert path.read_bytes()==original and budget.inspect()==expected
+    complete(budget,at=1061,before='a'*64)
+
+
+def test_public_read_lock_contention_fails_closed_then_recovers(tmp_path, monkeypatch):
+    path=tmp_path/'provider.sqlite3';budget=PaperProviderReadBudget(path);complete(budget)
+    expected=budget.inspect();original=path.read_bytes()
+    monkeypatch.setattr(subject,'DB_BUSY_TIMEOUT_MS',50)
+    blocker=sqlite3.connect(path);blocker.execute('BEGIN EXCLUSIVE')
+    try:
+        with pytest.raises(ValueError,match='PAPER_PROVIDER_READ_BUDGET_DATABASE_BUSY'):
+            budget.inspect()
+    finally:
+        blocker.rollback();blocker.close()
+    assert path.read_bytes()==original and budget.inspect()==expected
 
 
 def test_related_account_and_provider_paths_fail_before_creation(tmp_path):

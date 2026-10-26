@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.293.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.294.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.293.0 captures the sampled device/file identity of every selected local journal before lower multi-account provider-POST/activity and guarded provider-POST reconciliation composition. Each component boundary refuses a pathname that now names a different file, even when the replacement bytes and replayed heads are identical. Existing path-scope capture and provider-budget/request-journal object binding remain independent. This is a sequential local replacement detector, not an atomic snapshot, descriptor-held lock, ACL or source attestation, same-inode write exclusion, provider acceptance or native power-loss proof. No provider request, credential access, retry, continuation, journal write, ledger, order, funding, Portal or release authority is added. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.294.0 extends sampled device/file identity binding through the retained-fee-reference and known-fee-reserve compositions. Both higher layers capture the provider budget, request journal, pacing journal, retained activity and acceptance history after relationship preflight, then refuse replacement at every component boundary even when bytes and replayed heads are identical. Existing frozen paths, lower-layer checks and provider-budget/request-journal object binding remain independent. This is a sequential local replacement detector, not an atomic snapshot, descriptor-held lock, ACL or source attestation, same-inode write exclusion, provider acceptance or native power-loss proof. No provider request, credential access, retry, continuation, journal write, ledger, order, funding, Portal or release authority is added. Actual-account fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

@@ -155,6 +155,31 @@ def test_ancillary_paths_are_frozen_before_nested_reviews(
     assert seen and all(path==original_path for path in seen)
 
 
+@pytest.mark.parametrize('target', (
+    'post_budget', 'journal', 'pacing_path', 'activity_store_path',
+    'acceptance_store_path'))
+def test_selected_file_replacement_at_same_path_fails_closed(
+        tmp_path, monkeypatch, target):
+    args=subject._fixture(tmp_path)
+    path=Path(args[target].path if target in ('post_budget','journal')
+        else args[target])
+    clone=tmp_path/f'{target}-replacement.sqlite3'
+    backup=tmp_path/f'{target}-original.sqlite3'
+    shutil.copyfile(path,clone)
+    original=subject.reconciliation.review
+
+    def replace(**kwargs):
+        result=original(**kwargs)
+        path.replace(backup);shutil.copyfile(clone,path)
+        return result
+
+    monkeypatch.setattr(subject.reconciliation,'review',replace)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_FEE_REFERENCE_FILE_IDENTITY_CHANGED'):
+        subject.review(**args)
+    assert path.read_bytes()==backup.read_bytes()==clone.read_bytes()
+
+
 def test_fixture_is_public_aggregate_only():
     result = subject.fixture_report()
     assert result['passed']

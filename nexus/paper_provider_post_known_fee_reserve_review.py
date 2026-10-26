@@ -14,6 +14,8 @@ from nexus.broker_request_journal import BrokerRequestJournal
 from nexus import paper_provider_post_fee_reference_review as references
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
 from nexus import portable_paper_observation as portable
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, check_path_set, require_file_identities)
 
 
 POLICY = 'nexus.paper-provider-post-known-fee-reserve-review.v1'
@@ -51,6 +53,13 @@ def _require_store_binding(post_budget, journal, expected):
             type(journal) is not BrokerRequestJournal or
             _store_binding(post_budget, journal) != expected):
         _fail('STORE_BINDING_CHANGED')
+
+
+def _require_bindings(post_budget, journal, store_binding, paths,
+                      file_binding):
+    _require_store_binding(post_budget, journal, store_binding)
+    require_file_identities(paths, file_binding,
+        'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_')
 
 
 def _frozen_path(value, code):
@@ -159,6 +168,13 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         acceptance_store_path, 'ACCEPTANCE_STORE_PATH_INVALID')
     store_binding = _store_binding(post_budget, journal)
     journal_account = journal.account_digest
+    paths = (post_budget.path, journal.path, pacing_path,
+        activity_store_path, acceptance_store_path)
+    check_path_set(paths, 'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_')
+    file_binding = capture_file_identities(paths,
+        'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_')
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     options = dict(post_budget=post_budget,
         expected_post_head=expected_post_head, account_id=account_id,
         journal=journal, expected_request_head=expected_request_head,
@@ -170,7 +186,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         closing_observation=closing_observation,
         post_closing_observation=post_closing_observation)
     base = references.review(**options)
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     if not _component_valid(base):
         _fail('REFERENCE_COMPONENT_INVALID')
     opening_manifest, opening = _totals(opening_observation)
@@ -181,16 +198,20 @@ def review(post_budget, *, expected_post_head, account_id, journal,
 
     store = BrokerActivityStore(activity_store_path, account_id)
     retained = store.inspect()
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     path = _reserve_path(retained['normalized_activities'], opening)
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     if path['ending'] != closing:
         _fail('KNOWN_FEE_ADJUSTED_BALANCE_DISAGREEMENT')
 
     repeated = references.review(**options)
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     final_retained = store.inspect()
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     if repeated != base or final_retained != retained:
         _fail('HISTORY_CHANGED_DURING_REVIEW')
     scope = dict(policy=POLICY, account_sha256=journal_account,

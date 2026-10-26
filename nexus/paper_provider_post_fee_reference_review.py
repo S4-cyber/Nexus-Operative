@@ -15,6 +15,8 @@ from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
 from nexus import paper_provider_post_reconciliation_review as reconciliation
 from nexus import paper_request_activity_acceptance as accepted
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, check_path_set, require_file_identities)
 
 
 POLICY = 'nexus.paper-provider-post-fee-reference-review.v1'
@@ -53,6 +55,13 @@ def _require_store_binding(post_budget, journal, expected):
         _fail('STORE_BINDING_CHANGED')
 
 
+def _require_bindings(post_budget, journal, store_binding, paths,
+                      file_binding):
+    _require_store_binding(post_budget, journal, store_binding)
+    require_file_identities(paths, file_binding,
+        'PAPER_PROVIDER_POST_FEE_REFERENCE_')
+
+
 def _frozen_path(value, code):
     try:
         return Path(value)
@@ -78,6 +87,13 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     store_binding = _store_binding(post_budget, journal)
     journal_path = journal.path
     journal_account = journal.account_digest
+    paths = (post_budget.path, journal_path, pacing_path,
+        activity_store_path, acceptance_store_path)
+    check_path_set(paths, 'PAPER_PROVIDER_POST_FEE_REFERENCE_')
+    file_binding = capture_file_identities(paths,
+        'PAPER_PROVIDER_POST_FEE_REFERENCE_')
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     options = dict(post_budget=post_budget,
         expected_post_head=expected_post_head, account_id=account_id,
         journal=journal, expected_request_head=expected_request_head,
@@ -89,7 +105,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         closing_observation=closing_observation,
         post_closing_observation=post_closing_observation)
     base = reconciliation.review(**options)
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     if not _component_valid(base):
         _fail('RECONCILIATION_INVALID')
 
@@ -100,7 +117,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         expected_request_head=expected_request_head,
         expected_activity_head=expected_activity_head)
     activity = accepted.review(**common)
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     if (activity.get('read_only') is not True or
             activity.get('complete_accepted_history_replayed') is not True or
             any(activity.get(flag) is not False for flag in accepted.FLAGS)):
@@ -108,10 +126,12 @@ def review(post_budget, *, expected_post_head, account_id, journal,
 
     store = BrokerActivityStore(activity_store_path, account_id)
     retained = store.inspect()
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     acceptance = PaperActivityAcceptanceStore(acceptance_store_path, account_id)
     scopes = acceptance.replay_scopes()
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     accepted_receipts = {scope['retained_receipt_sha256'] for scope in scopes}
     if accepted_receipts != set(retained['receipts']):
         _fail('ACCEPTED_RECEIPT_PARTITION')
@@ -164,11 +184,14 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             client_order_id=fill['client_order_id']))
 
     repeated = reconciliation.review(**options)
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     final_retained = store.inspect()
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     final_scopes = acceptance.replay_scopes()
-    _require_store_binding(post_budget, journal, store_binding)
+    _require_bindings(post_budget, journal, store_binding, paths,
+        file_binding)
     if repeated != base or final_retained != retained or final_scopes != scopes:
         _fail('HISTORY_CHANGED_DURING_REVIEW')
     scope = dict(policy=POLICY, account_sha256=journal_account,

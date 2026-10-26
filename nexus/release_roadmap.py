@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.283.0'
+REVISION = '0.284.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.283.0 propagates the complete reconnect-review count proof into reconnect-budget admission and result recovery. Cursor inspection, durable checkpoint bindings and checkpoint acknowledgements now state whether the retained checkpoint uses a current complete-count profile. A fresh journal may still make its first explicitly authorized bounded attempt; an initialized legacy v1/v2 journal remains inspectable but cannot reserve or issue a provider request as though missing totals had been retained. Current committed results and pending-checkpoint reconciliation require the complete proof before closing the budget. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.284.0 makes reconnect admission validate the complete cursor-history projection before reserving an attempt. The view must be an exact built-in dictionary with exact keys and primitive types, the bound account, read-only status and every authority flag false. Initialization, retained-checkpoint count, restart/commit booleans, current ULID and its digest must agree; an uninitialized journal must carry no cursor or complete-count claim. Initialized legacy state remains separately rejected unless its durable complete-count proof is current. No provider request, automatic retry, credential persistence, ledger, order, funding, Portal or release authority is added. Injected tests do not prove provider identity, timing semantics, source/delivery/replay, actual-account behavior, native power-loss durability, distributed coordination, fees, holds, settlement or spendable funds. Actual-account acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

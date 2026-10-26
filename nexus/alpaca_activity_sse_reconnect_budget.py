@@ -14,7 +14,9 @@ import sqlite3
 import time
 
 from nexus import alpaca_activity_sse_checkpoint as checkpoint
-from nexus.alpaca_activity_sse_cursor_store import ActivitySSECursorStore
+from nexus.alpaca_activity_sse_cursor_store import (
+    FLAGS as CURSOR_FLAGS, MAX_CHECKPOINTS, ActivitySSECursorStore)
+from nexus.alpaca_activity_sse_review import ULID
 from nexus.alpaca_activity_sse_transport import ActivitySSETransportError
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.sqlite_journal_guard import check_existing
@@ -76,6 +78,12 @@ CHECKPOINT_BINDING_KEYS = frozenset((
     'reconnect_reservation_sha256', 'reconnect_reservation_bound',
     'complete_review_counts_bound',
     'read_only', *CHECKPOINT_BINDING_FALSE))
+CURSOR_VIEW_KEYS = frozenset((
+    'mode', 'status', 'initialized', 'account_sha256', 'head_sha256',
+    'current_event_id', 'current_cursor_sha256', 'retained_checkpoints',
+    'read_only', 'local_cursor_checkpoint_committed',
+    'process_restart_recoverable', 'complete_review_counts_bound',
+    *CURSOR_FLAGS))
 
 
 class ActivitySSEReconnectBudgetError(ValueError):
@@ -124,19 +132,63 @@ def _inspect_after_result_error(reconnect_budget, code):
     return _validated_budget_view(reconnect_budget, retained, code)
 
 
+def _validated_cursor_view(cursor_store, value, code):
+    """Validate one complete public replay of the private cursor journal."""
+    try:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != CURSOR_VIEW_KEYS):
+            raise TypeError
+        if (type(value['mode']) is not str or
+                value['mode'] != 'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_HISTORY' or
+                type(value['status']) is not str or
+                value['status'] != 'REVIEW_REQUIRED' or
+                type(value['account_sha256']) is not str or
+                value['account_sha256'] != cursor_store.account_sha256 or
+                value['read_only'] is not True or
+                any(value[flag] is not False for flag in CURSOR_FLAGS)):
+            raise ValueError
+        _digest(value['head_sha256'])
+        initialized = value['initialized']
+        committed = value['local_cursor_checkpoint_committed']
+        recoverable = value['process_restart_recoverable']
+        complete = value['complete_review_counts_bound']
+        if any(type(field) is not bool for field in
+                (initialized, committed, recoverable, complete)):
+            raise TypeError
+        retained = value['retained_checkpoints']
+        if type(retained) is not int or not 0 <= retained <= MAX_CHECKPOINTS:
+            raise TypeError
+        event_id = value['current_event_id']
+        cursor_digest = value['current_cursor_sha256']
+        if initialized:
+            if (retained == 0 or committed is not True or
+                    recoverable is not True or type(event_id) is not str or
+                    ULID.fullmatch(event_id) is None or
+                    _digest(cursor_digest) != sha(event_id)):
+                raise ValueError
+        elif (retained != 0 or event_id is not None or
+                cursor_digest is not None or committed is not False or
+                recoverable is not False or complete is not False):
+            raise ValueError
+    except Exception:
+        _fail(code)
+    return value
+
+
 def _cursor_head_for_attempt(cursor_store):
     """Read one attempt-bound cursor head with a fixed uncertainty failure."""
     try:
-        retained = cursor_store.inspect()
-        head = retained['head_sha256']
-        initialized = retained['initialized']
-        complete = retained['complete_review_counts_bound']
-        if (type(initialized) is not bool or type(complete) is not bool or
-                (initialized and not complete)):
+        retained = _validated_cursor_view(cursor_store,
+            cursor_store.inspect(), 'CURSOR_STATE_UNCERTAIN')
+        if (retained['initialized'] and
+                not retained['complete_review_counts_bound']):
             raise ValueError
+    except ActivitySSEReconnectBudgetError:
+        raise
     except Exception:
         _fail('CURSOR_STATE_UNCERTAIN')
-    return _digest(head, 'CURSOR_STATE_UNCERTAIN')
+    return retained['head_sha256']
 
 
 def _store_bindings_match(cursor_store, reconnect_budget, *,

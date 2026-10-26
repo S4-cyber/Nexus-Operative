@@ -180,6 +180,67 @@ def test_malformed_initial_cursor_view_fails_closed_before_reservation(
     assert not cursor.path.exists() and not budget.path.exists()
 
 
+@pytest.mark.parametrize('kind', ('extra_field', 'mapping_subclass',
+    'foreign_key', 'wrong_account', 'promoted_authority',
+    'uninitialized_count', 'uninitialized_cursor',
+    'uninitialized_proof', 'initialized_without_cursor',
+    'cursor_digest_mismatch'))
+def test_initial_cursor_view_requires_exact_total_shape_and_invariants(
+        tmp_path, monkeypatch, kind):
+    class CursorMapping(dict):
+        pass
+
+    class CursorKey(str):
+        pass
+
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    original = cursor.inspect
+
+    def altered():
+        value = original()
+        if kind == 'extra_field':
+            return {**value, 'private_extension': False}
+        if kind == 'mapping_subclass':
+            return CursorMapping(value)
+        if kind == 'foreign_key':
+            value[CursorKey('mode')] = value.pop('mode')
+            return value
+        if kind == 'wrong_account':
+            return {**value, 'account_sha256': 'f' * 64}
+        if kind == 'promoted_authority':
+            return {**value, 'ready_for_routing': True}
+        if kind == 'uninitialized_count':
+            return {**value, 'retained_checkpoints': 1}
+        if kind == 'uninitialized_cursor':
+            return {**value,
+                'current_event_id': '01K00000000000000000000001',
+                'current_cursor_sha256': sha(
+                    '01K00000000000000000000001')}
+        if kind == 'uninitialized_proof':
+            return {**value, 'complete_review_counts_bound': True}
+        if kind == 'initialized_without_cursor':
+            return {**value, 'initialized': True,
+                'retained_checkpoints': 1,
+                'local_cursor_checkpoint_committed': True,
+                'process_restart_recoverable': True,
+                'complete_review_counts_bound': True}
+        return {**value, 'initialized': True,
+            'retained_checkpoints': 1,
+            'local_cursor_checkpoint_committed': True,
+            'process_restart_recoverable': True,
+            'complete_review_counts_bound': True,
+            'current_event_id': '01K00000000000000000000001',
+            'current_cursor_sha256': 'f' * 64}
+
+    monkeypatch.setattr(cursor, 'inspect', altered)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CURSOR_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
+
+
 def test_initial_budget_inspection_failure_is_sanitized_before_reservation(
         tmp_path, monkeypatch):
     cursor, budget = stores(tmp_path)

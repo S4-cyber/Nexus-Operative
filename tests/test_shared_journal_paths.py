@@ -64,6 +64,13 @@ def test_bounded_file_fingerprint_rejects_same_identity_byte_change_and_sidecar(
         guard.capture_file_fingerprints((path,),(1024,),'TEST_')
 
 
+def test_bounded_file_fingerprint_scope_rejects_more_than_thirty_two_files(
+        tmp_path):
+    path=tmp_path/'journal.sqlite3';path.write_bytes(b'private fixture')
+    with pytest.raises(ValueError,match='TEST_FILE_FINGERPRINT_SCOPE_INVALID'):
+        guard.capture_file_fingerprints((path,)*33,(1024,)*33,'TEST_')
+
+
 @pytest.mark.parametrize('operation',['recovery','collection'])
 @pytest.mark.parametrize('suffix',SUFFIXES)
 def test_saved_read_wrappers_refuse_collisions_before_accessing_credentials(tmp_path,monkeypatch,operation,suffix):

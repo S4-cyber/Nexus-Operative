@@ -11,11 +11,16 @@ from nexus.broker_request_journal import (
     ADMISSION_PROFILE,
     ADMISSION_SCOPE,
     BrokerRequestJournal,
+    MAX_DATABASE_BYTES as REQUEST_DATABASE_BYTES,
     ZERO,
 )
-from nexus.paper_provider_post_budget import PaperProviderPostBudget
+from nexus.paper_provider_post_budget import (
+    MAX_DATABASE_BYTES as POST_DATABASE_BYTES,
+    PaperProviderPostBudget,
+)
 from nexus.sqlite_journal_guard import (
-    capture_file_identities, check_path_set, require_file_identities)
+    capture_file_fingerprints, capture_file_identities, check_path_set,
+    require_file_fingerprints, require_file_identities)
 
 MAX_REQUEST_JOURNALS = 7
 FLAGS = (
@@ -60,9 +65,11 @@ def _require_store_binding(post_budget, bindings, expected):
 
 
 def _require_bindings(post_budget, bindings, store_binding, paths,
-                      file_binding):
+                      file_binding, file_limits, file_fingerprints):
     _require_store_binding(post_budget, bindings, store_binding)
     require_file_identities(paths, file_binding,
+        'PAPER_PROVIDER_POST_REVIEW_')
+    require_file_fingerprints(paths, file_limits, file_fingerprints,
         'PAPER_PROVIDER_POST_REVIEW_')
 
 
@@ -96,22 +103,26 @@ def review(post_budget, *, expected_post_head, request_bindings):
         'PAPER_PROVIDER_POST_REVIEW_')
     file_binding = capture_file_identities(paths,
         'PAPER_PROVIDER_POST_REVIEW_')
+    file_limits = (POST_DATABASE_BYTES,
+        *((REQUEST_DATABASE_BYTES,) * len(bindings)))
+    file_fingerprints = capture_file_fingerprints(paths, file_limits,
+        'PAPER_PROVIDER_POST_REVIEW_')
     _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
+        file_binding, file_limits, file_fingerprints)
 
     first_post = post_budget.inspect()
     _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
+        file_binding, file_limits, file_fingerprints)
     if (first_post['events'] == 0 or first_post['head_sha256'] != expected_post_head):
         _fail('POST_HEAD_CHANGED')
     attempts = post_budget.history()
     _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
+        file_binding, file_limits, file_fingerprints)
     if len(attempts) != first_post['completed_attempts']:
         _fail('POST_HISTORY_CHANGED')
     recoveries = post_budget.recovery_history()
     _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
+        file_binding, file_limits, file_fingerprints)
     if len(recoveries) != first_post['recoveries']:
         _fail('POST_HISTORY_CHANGED')
 
@@ -137,19 +148,19 @@ def review(post_budget, *, expected_post_head, request_bindings):
     for account, (journal, expected) in by_account.items():
         initial = journal.recovery()
         _require_bindings(post_budget, bindings, store_binding, paths,
-            file_binding)
+            file_binding, file_limits, file_fingerprints)
         if initial['head_sha256'] != expected or expected == ZERO:
             _fail('REQUEST_HEAD_CHANGED')
         sample = journal.observations_at_heads(tuple(sorted(needed[account])))
         _require_bindings(post_budget, bindings, store_binding, paths,
-            file_binding)
+            file_binding, file_limits, file_fingerprints)
         if sample['current_head_sha256'] != expected:
             _fail('REQUEST_HEAD_CHANGED')
         prefixes[account] = sample['observations_by_head']
         current_requests[account] = initial['requests']
         final = journal.recovery()
         _require_bindings(post_budget, bindings, store_binding, paths,
-            file_binding)
+            file_binding, file_limits, file_fingerprints)
         if final['head_sha256'] != expected or final['requests'] != initial['requests']:
             _fail('REQUEST_HISTORY_CHANGED')
 
@@ -249,7 +260,7 @@ def review(post_budget, *, expected_post_head, request_bindings):
 
     final_post = post_budget.inspect()
     _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
+        file_binding, file_limits, file_fingerprints)
     if final_post['head_sha256'] != expected_post_head or final_post != first_post:
         _fail('POST_HISTORY_CHANGED')
     reasons = []

@@ -85,7 +85,7 @@ def capture_file_fingerprints(paths, maximum_bytes, prefix):
     """
     def fail(code): raise ValueError(prefix + code) from None
     if (type(paths) not in (list, tuple) or type(maximum_bytes) not in (list, tuple) or
-            not 1 <= len(paths) <= 8 or len(paths) != len(maximum_bytes) or
+            not 1 <= len(paths) <= 32 or len(paths) != len(maximum_bytes) or
             any(type(limit) is not int or limit <= 0 for limit in maximum_bytes)):
         fail('FILE_FINGERPRINT_SCOPE_INVALID')
     fingerprints = []

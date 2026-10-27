@@ -262,6 +262,56 @@ def test_every_selected_file_replacement_at_same_path_fails_closed(
     assert path.read_bytes()==backup.read_bytes()==clone.read_bytes()
 
 
+@pytest.mark.parametrize('target', ('post_budget', 'first_journal',
+    'second_journal'))
+def test_every_selected_same_head_rewrite_fails_closed(
+        tmp_path, monkeypatch, target):
+    first,budget,head=retained(tmp_path,at=1000)
+    second,budget,head=retained(tmp_path,account=OTHER,identity='nx_other',
+        outcome='RESPONSE_OBSERVED',post_head=head,at=1061,budget=budget,
+        observed=True)
+    stores=dict(post_budget=budget, first_journal=first,
+        second_journal=second)
+    store=stores[target];path=store.path
+    method='history' if target=='post_budget' else 'observations_at_heads'
+    original=getattr(store,method)
+
+    def rewrite(*args,**kwargs):
+        result=original(*args,**kwargs)
+        with sqlite3.connect(path) as database:
+            database.execute('PRAGMA user_version=1')
+        return result
+
+    monkeypatch.setattr(store,method,rewrite)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_REVIEW_FILE_SET_CHANGED'):
+        subject.review(budget,expected_post_head=head,
+            request_bindings=[binding(first),binding(second)])
+
+
+def test_rollback_sidecar_fails_before_request_replay(tmp_path, monkeypatch):
+    journal,budget,head=retained(tmp_path)
+    selected=binding(journal)
+    sidecar=budget.path.with_name(budget.path.name+'-journal')
+    original=budget.history
+    request_called=False
+
+    def add_sidecar():
+        result=original();sidecar.write_bytes(b'uncommitted');return result
+
+    def request_replay():
+        nonlocal request_called
+        request_called=True
+
+    monkeypatch.setattr(budget,'history',add_sidecar)
+    monkeypatch.setattr(journal,'recovery',request_replay)
+    with pytest.raises(ValueError,match=
+            'PAPER_PROVIDER_POST_REVIEW_SQLITE_SIDECAR_REVIEW_REQUIRED'):
+        subject.review(budget,expected_post_head=head,
+            request_bindings=[selected])
+    assert not request_called
+
+
 def test_fixture_has_no_authority():
     result=subject.fixture_report()
     assert result['passed'] and all(result[field] is False for field in subject.FLAGS)

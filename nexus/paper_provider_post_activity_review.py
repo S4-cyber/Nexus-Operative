@@ -10,10 +10,22 @@ import re
 
 from nexus import paper_provider_post_review as posts
 from nexus import paper_request_activity_acceptance as activity
-from nexus.broker_request_journal import BrokerRequestJournal
-from nexus.paper_provider_post_budget import PaperProviderPostBudget
+from nexus.broker_activity_store import MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES
+from nexus.broker_request_journal import (
+    BrokerRequestJournal,
+    MAX_DATABASE_BYTES as REQUEST_DATABASE_BYTES,
+)
+from nexus.paper_activity_acceptance_store import (
+    MAX_DATABASE_BYTES as ACCEPTANCE_DATABASE_BYTES,
+)
+from nexus.paper_provider_post_budget import (
+    MAX_DATABASE_BYTES as POST_DATABASE_BYTES,
+    PaperProviderPostBudget,
+)
+from nexus.paper_read_pacing import MAX_DATABASE_BYTES as PACING_DATABASE_BYTES
 from nexus.sqlite_journal_guard import (
-    capture_file_identities, check_path_set, require_file_identities)
+    capture_file_fingerprints, capture_file_identities, check_path_set,
+    require_file_fingerprints, require_file_identities)
 
 
 MAX_ACCOUNT_BINDINGS = posts.MAX_REQUEST_JOURNALS
@@ -95,6 +107,7 @@ def review(post_budget, *, expected_post_head, account_bindings):
 
     bindings = []
     paths = [post_budget.path]
+    file_limits = [POST_DATABASE_BYTES]
     accounts = set()
     for item in account_bindings:
         if type(item) is not dict or set(item) != BINDING_KEYS:
@@ -127,9 +140,14 @@ def review(post_budget, *, expected_post_head, account_bindings):
         bindings.append(current)
         paths.extend((journal.path, current['pacing_path'],
             current['activity_store_path'], current['acceptance_store_path']))
+        file_limits.extend((REQUEST_DATABASE_BYTES, PACING_DATABASE_BYTES,
+            ACTIVITY_DATABASE_BYTES, ACCEPTANCE_DATABASE_BYTES))
     store_binding = _store_binding(post_budget, bindings)
     _check_related_paths(paths)
     file_binding = capture_file_identities(paths,
+        'PAPER_PROVIDER_POST_ACTIVITY_')
+    file_limits = tuple(file_limits)
+    file_fingerprints = capture_file_fingerprints(paths, file_limits,
         'PAPER_PROVIDER_POST_ACTIVITY_')
     _require_bindings(post_budget, bindings, store_binding, paths,
         file_binding)
@@ -305,6 +323,8 @@ def review(post_budget, *, expected_post_head, account_bindings):
     final_recoveries = post_budget.recovery_history()
     _require_bindings(post_budget, bindings, store_binding, paths,
         file_binding)
+    require_file_fingerprints(paths, file_limits, file_fingerprints,
+        'PAPER_PROVIDER_POST_ACTIVITY_')
     if (final_post != first_post or final_attempts != attempts or
             final_recoveries != recoveries):
         _fail('POST_HISTORY_CHANGED')

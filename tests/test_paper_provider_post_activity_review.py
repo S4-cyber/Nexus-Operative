@@ -1,6 +1,7 @@
 """Exact-head provider POST to accepted-activity composition tests."""
 import json
 import shutil
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -196,6 +197,49 @@ def test_ancillary_file_replacement_at_same_path_fails_closed(
         subject.review(budget,expected_post_head=head,
             account_bindings=[binding])
     assert path.read_bytes()==backup.read_bytes()==clone.read_bytes()
+
+
+@pytest.mark.parametrize(('target','code'), (
+    ('post_budget','PAPER_PROVIDER_POST_REVIEW_FILE_SET_CHANGED'),
+    ('journal','PAPER_PROVIDER_POST_REVIEW_FILE_SET_CHANGED'),
+    ('pacing_path','PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED'),
+    ('activity_store_path','PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED'),
+    ('acceptance_store_path','PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED')))
+def test_selected_same_head_rewrite_fails_closed(
+        tmp_path, monkeypatch, target, code):
+    budget,head,binding=prepared(tmp_path)
+    path=Path(budget.path if target=='post_budget' else
+        binding['journal'].path if target=='journal' else binding[target])
+    original=budget.recovery_history
+
+    def rewrite():
+        result=original()
+        with sqlite3.connect(path) as database:
+            database.execute('PRAGMA user_version=1')
+        return result
+
+    monkeypatch.setattr(budget,'recovery_history',rewrite)
+    with pytest.raises(ValueError,match=code):
+        subject.review(budget,expected_post_head=head,
+            account_bindings=[binding])
+
+
+def test_rollback_sidecar_fails_before_result(tmp_path, monkeypatch):
+    budget,head,binding=prepared(tmp_path)
+    sidecar=budget.path.with_name(budget.path.name+'-journal')
+    original=budget.recovery_history
+    calls=[]
+
+    def add_sidecar():
+        result=original();calls.append(1)
+        if len(calls)==3:sidecar.write_bytes(b'uncommitted')
+        return result
+
+    monkeypatch.setattr(budget,'recovery_history',add_sidecar)
+    with pytest.raises(ValueError,match=
+            'PAPER_PROVIDER_POST_ACTIVITY_SQLITE_SIDECAR_REVIEW_REQUIRED'):
+        subject.review(budget,expected_post_head=head,
+            account_bindings=[binding])
 
 
 def test_account_scope_and_binding_shape_fail_closed(tmp_path):

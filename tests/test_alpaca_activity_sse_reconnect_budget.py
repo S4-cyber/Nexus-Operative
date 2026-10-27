@@ -149,6 +149,35 @@ def test_begin_commit_contention_fails_closed_then_recovers(
     assert recovered['attempt'] == 2
 
 
+def test_begin_postcommit_same_inode_rewrite_withholds_request_authority(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    original_inspect = budget.inspect
+    calls = 0
+
+    def rewrite_before_postcommit_replay():
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            with budget.path.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        return original_inspect()
+
+    monkeypatch.setattr(budget, 'inspect', rewrite_before_postcommit_replay)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError, match=
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+            expected_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+            confirm_reconnect_attempt=True,
+            emergency_stop_check=STOP_CLEAR)
+    retained = subject.ActivitySSEReconnectBudget(
+        budget.path, ACCOUNT).inspect()
+    assert retained['pending_token'] == retained['head_sha256']
+    assert retained['attempts'] == 1 and retained['last_outcome'] is None
+    assert retained['next_allowed_at'] == 0 and not retained['review_required']
+
+
 def test_public_read_lock_contention_fails_closed_then_recovers(
         tmp_path, monkeypatch):
     _, budget = stores(tmp_path)

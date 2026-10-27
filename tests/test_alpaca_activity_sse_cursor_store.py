@@ -258,6 +258,31 @@ def test_postcommit_lost_ack_reopens_and_exact_replay_is_safe(tmp_path):
     assert replay['duplicate'] and cold.inspect()['retained_checkpoints'] == 1
 
 
+def test_postcommit_same_inode_rewrite_withholds_checkpoint_acknowledgement(
+        tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    report, before, after = checked()
+    calls = 0
+
+    def admission():
+        nonlocal calls
+        calls += 1
+        if calls == 4:
+            with path.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        return report['input_sha256']
+
+    with pytest.raises(ValueError, match=
+            'ALPACA_ACTIVITY_SSE_CURSOR_STORE_FILE_SET_CHANGED'):
+        checkpoint(store, report, before, after, admission=admission)
+    cold = subject.ActivitySSECursorStore(path, ACCOUNT)
+    assert cold.inspect()['current_event_id'] == after
+    replay = checkpoint(cold, report, before, after)
+    assert replay['duplicate'] and cold.inspect()['retained_checkpoints'] == 1
+
+
 @pytest.mark.parametrize(('mutation','code'), [
     (lambda value: value.__setitem__('account_sha256', 'f' * 64),
         'REVIEW_INVALID'),

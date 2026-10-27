@@ -400,6 +400,10 @@ class ActivitySSECursorStore:
 
     def latest_checkpoint_binding(self):
         """Return hashes for the latest checkpoint, never its private cursor."""
+        return self._latest_checkpoint_binding()
+
+    def _latest_checkpoint_binding(self):
+        """Internal cold replay used by public reads and commit proof."""
         cursor_binding = (self.path, self.account_sha256)
         file_binding = None
         file_fingerprint = None
@@ -537,7 +541,40 @@ class ActivitySSECursorStore:
             # If this raises, the committed record is deliberately retained.
             # A caller must reopen and submit the exact same expected-head
             # transition; it cannot skip or invent a cursor.
+            committed_identity = capture_file_identities(
+                (cursor_binding[0],),
+                'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+            committed_fingerprint = capture_file_fingerprints(
+                (cursor_binding[0],), (MAX_DATABASE_BYTES,),
+                'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
             admitted('INPUT_REVOKED_AFTER_COMMIT')
+            require_file_identities((cursor_binding[0],),
+                committed_identity, 'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+            require_file_fingerprints((cursor_binding[0],),
+                (MAX_DATABASE_BYTES,), committed_fingerprint,
+                'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+            binding = self._latest_checkpoint_binding()
+            require_cursor_binding()
+            require_file_identities((cursor_binding[0],),
+                committed_identity, 'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+            require_file_fingerprints((cursor_binding[0],),
+                (MAX_DATABASE_BYTES,), committed_fingerprint,
+                'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+            if (binding['account_sha256'] != cursor_binding[1] or
+                    binding['head_sha256'] != head or
+                    binding['expected_head_sha256'] != expected or
+                    binding['checkpoint_receipt_sha256'] !=
+                        body['receipt_sha256'] or
+                    binding['cursor_sha256'] !=
+                        sha(body['scope']['next_cursor']) or
+                    binding['reconnect_reservation_sha256'] !=
+                        body['scope'].get(
+                            'reconnect_reservation_sha256') or
+                    binding['reconnect_reservation_bound'] !=
+                        ('reconnect_reservation_sha256' in body['scope']) or
+                    not binding['complete_review_counts_bound'] or
+                    any(binding[flag] is not False for flag in FLAGS)):
+                _fail('COMMIT_ACKNOWLEDGEMENT_UNCERTAIN')
         receipt = self._receipt(head, body, False)
         require_cursor_binding()
         return receipt

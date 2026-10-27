@@ -1119,6 +1119,38 @@ class ActivitySSEReconnectBudget:
                 if loaded['pending_token'] != token:
                     _fail('COMMIT_REPLAY_DISAGREEMENT')
                 db.execute('RELEASE reconnect_begin_scope')
+        try:
+            committed_identity = capture_file_identities(
+                (budget_binding[0],),
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            committed_fingerprint = capture_file_fingerprints(
+                (budget_binding[0],), (MAX_DATABASE_BYTES,),
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            retained = self.inspect()
+            require_file_identities((budget_binding[0],),
+                committed_identity,
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            require_file_fingerprints((budget_binding[0],),
+                (MAX_DATABASE_BYTES,), committed_fingerprint,
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+        except ValueError as error:
+            raise ActivitySSEReconnectBudgetError(str(error)) from None
+        require_budget_binding()
+        if (retained['account_sha256'] != budget_binding[1] or
+                retained['head_sha256'] != token or
+                retained['pending_token'] != token or
+                retained['attempts'] != body['attempt'] or
+                retained['expected_cursor_head_sha256'] != cursor_head or
+                retained['last_evaluated_at'] != now or
+                retained['last_begin_expected_head_sha256'] != expected or
+                retained['last_reconnect_reason'] != reconnect_reason or
+                retained['review_required'] or retained['completed'] or
+                retained['last_outcome'] != current['last_outcome'] or
+                retained['last_detail_code'] !=
+                    current['last_detail_code'] or
+                retained['next_allowed_at'] != current['next_allowed_at'] or
+                any(retained[flag] is not False for flag in FLAGS)):
+            _fail('RESERVATION_ACKNOWLEDGEMENT_UNCERTAIN')
         require_budget_binding()
         return dict(token=token, attempt=body['attempt'],
             head_sha256=token, expected_cursor_head_sha256=cursor_head,

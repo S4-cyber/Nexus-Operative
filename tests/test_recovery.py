@@ -34,6 +34,7 @@ def test_backup_is_consistent_and_original_unchanged(tmp_path,monkeypatch):
     receipt=backup_snapshot()
     assert len(receipt["sha256"])==64
     assert receipt["integrity_check"]=="SQLITE_QUICK_CHECK_OK"
+    assert receipt["portfolio_integrity_check"]=="LOCAL_HASH_CHAIN_AND_ACCOUNTING_OK"
     assert receipt["content_flushed"] is True
     assert receipt["directory_entry_synced"] is (os.name!="nt")
     assert receipt["source_modified"] is False
@@ -118,6 +119,19 @@ def test_backup_integrity_failure_is_redacted_and_removes_candidate(tmp_path,mon
     response=TestClient(app).post("/api/paper/portfolio/snapshot")
     assert response.status_code==503
     assert response.json()["detail"]=="PAPER_SNAPSHOT_INTEGRITY_REVIEW_REQUIRED"
+    assert not list((tmp_path/"recovery_snapshots").iterdir())
+
+def test_backup_refuses_logically_inconsistent_portfolio_snapshot(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    initialize(10000)
+    source=tmp_path/"paper_portfolio.sqlite3"
+    with sqlite3.connect(source) as db:
+        db.execute("UPDATE ledger SET cash_delta='9999' WHERE action='INIT'")
+    before=source.read_bytes()
+    response=TestClient(app).post("/api/paper/portfolio/snapshot")
+    assert response.status_code==503
+    assert response.json()["detail"]=="PAPER_SNAPSHOT_PORTFOLIO_INTEGRITY_REVIEW_REQUIRED"
+    assert source.read_bytes()==before
     assert not list((tmp_path/"recovery_snapshots").iterdir())
 
 def test_snapshot_flush_syncs_file_and_supported_directory(tmp_path,monkeypatch):

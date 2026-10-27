@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.315.0'
+REVISION = '0.316.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -34,7 +34,7 @@ MILESTONES = (
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence.replace(
         'enforce fixed source/count/aggregate/directory/free-space admission and remove failed candidate files',
-        'enforce fixed source/count/aggregate/directory/free-space admission, flush completed content, sync the directory entry where supported and require a stable read-only SQLite quick-check before issuing a receipt, then remove failed candidate files')
+        'enforce fixed source/count/aggregate/directory/free-space admission, flush completed content, sync the directory entry where supported and require a stable read-only SQLite quick-check plus complete local hash-chain/accounting reconstruction before issuing a receipt, then remove failed candidate files')
     if item.id=='M1' else item.evidence,item.remaining) for item in MILESTONES)
 
 # Keep the long-lived M8 history readable while advancing its current boundary.
@@ -287,7 +287,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.315.0 verifies every completed local paper-portfolio snapshot before issuing a receipt. The exact regular single-link destination is explicitly file-flushed, its directory entry is fsynced on POSIX, and a bounded immutable read-only SQLite quick-check must return exactly OK without creating a sidecar. Destination identity and size/timestamp metadata must remain stable through verification; corruption, timeout, sidecar appearance or flush failure returns a stable PAPER_SNAPSHOT review diagnostic and removes the failed candidate. Windows receives the explicit file flush but Python has no portable directory-fsync interface there, so native Windows interruption and physical power-loss acceptance remain open. The prior link-safe, private exclusive creation, ten-second contention, source-identity, fixed storage admission and no-pruning contracts remain in force. No retry, automatic repair or emergency-cut change is introduced. This is local recovery durability hardening, not provider/account acceptance, historical realism, profitability or new authority. No credential, account, request, funding, live, cloud or release permission is added. Actual-account submission/reconciliation, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.316.0 requires every completed local paper-portfolio snapshot to pass the full local portfolio governor before a receipt. After the bounded immutable SQLite quick-check, the same read-only image must reproduce a valid journal seal chain, cash journal, execution detail linkage, position-event history, position reconstruction and exposure limits. A logically corrupt but page-consistent image returns stable PAPER_SNAPSHOT_PORTFOLIO_INTEGRITY_REVIEW_REQUIRED and the failed candidate is removed without modifying the source or retained snapshots. The prior explicit file flush, POSIX directory sync, stable destination metadata, sidecar refusal, link-safe private creation, ten-second budget, fixed storage admission and no-pruning contracts remain in force. This is local logical consistency evidence: seals are not externally anchored and coordinated rewrites, provider truth, native Windows interruption and physical power loss remain unverified. No retry, automatic repair or emergency-cut change is introduced. No credential, account, request, funding, live, cloud or release permission is added. Actual-account submission/reconciliation, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

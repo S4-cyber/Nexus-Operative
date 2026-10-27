@@ -169,7 +169,7 @@ def _flush_snapshot(path,expected):
 
 
 def _verify_snapshot(path,expected):
-    """Read-only quick-check one stable completed image without sidecars."""
+    """Read-only SQLite and portfolio checks on one stable completed image."""
     try:before=path.stat(follow_symlinks=False)
     except OSError:_fail('DESTINATION_FILE_UNAVAILABLE')
     if (not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or
@@ -180,9 +180,17 @@ def _verify_snapshot(path,expected):
         with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro&immutable=1',
                                      uri=True,timeout=SNAPSHOT_BUSY_TIMEOUT_MS/1000)) as db:
             db.set_progress_handler(lambda:1 if time.monotonic()>=deadline else 0,1000)
-            rows=db.execute('PRAGMA quick_check(1)').fetchmany(2)
+            try:rows=db.execute('PRAGMA quick_check(1)').fetchmany(2)
+            except sqlite3.DatabaseError:_fail('INTEGRITY_REVIEW_REQUIRED')
+            if rows!=[('ok',)]:_fail('INTEGRITY_REVIEW_REQUIRED')
+            try:portfolio=audit_portfolio(db)
+            except (sqlite3.DatabaseError,ValueError,TypeError,KeyError,OverflowError):
+                _fail('PORTFOLIO_INTEGRITY_REVIEW_REQUIRED')
     except sqlite3.DatabaseError:_fail('INTEGRITY_REVIEW_REQUIRED')
-    if rows!=[('ok',)]:_fail('INTEGRITY_REVIEW_REQUIRED')
+    if (type(portfolio) is not dict or portfolio.get('integrity_ok') is not True or
+        portfolio.get('simulation_only') is not True or
+        portfolio.get('orders_enabled') is not False):
+        _fail('PORTFOLIO_INTEGRITY_REVIEW_REQUIRED')
     for suffix in ('-journal','-wal','-shm'):
         try:Path(str(path)+suffix).lstat()
         except FileNotFoundError:continue
@@ -265,6 +273,7 @@ def backup_snapshot():
         raise
     return {"mode":"LOCAL_SQLITE_BACKUP","filename":filename,"bytes":size,
             "sha256":digest,"integrity_check":"SQLITE_QUICK_CHECK_OK",
+            "portfolio_integrity_check":"LOCAL_HASH_CHAIN_AND_ACCOUNTING_OK",
             "content_flushed":True,"directory_entry_synced":directory_synced,
             "stored_in":"Local NEXUS_PORTABLE_DATA/recovery_snapshots",
             "source_modified":False,"migration_performed":False,

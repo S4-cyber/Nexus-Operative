@@ -137,6 +137,64 @@ def _digest_regular(path,expected):
         _fail('DESTINATION_FILE_CHANGED')
     return digest.hexdigest(),final.st_size
 
+
+def _flush_snapshot(path,expected):
+    """Flush the completed image and durably publish its entry where supported."""
+    flags=(os.O_RDWR|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|
+           getattr(os,'O_NONBLOCK',0))
+    try:
+        descriptor=os.open(path,flags)
+        try:
+            opened=os.fstat(descriptor)
+            if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink!=1 or
+                (opened.st_dev,opened.st_ino)!=expected):
+                _fail('DESTINATION_FILE_CHANGED')
+            os.fsync(descriptor)
+            final=os.fstat(descriptor)
+        finally:os.close(descriptor)
+    except ValueError:raise
+    except OSError:_fail('DESTINATION_FLUSH_REVIEW_REQUIRED')
+    if ((final.st_dev,final.st_ino)!=expected or final.st_size!=opened.st_size or
+        final.st_mtime_ns!=opened.st_mtime_ns):
+        _fail('DESTINATION_FILE_CHANGED')
+    # Python cannot portably open a Windows directory for flush. The file is
+    # still flushed there; native power-loss acceptance remains a release gate.
+    if os.name=='nt':return False
+    try:
+        descriptor=os.open(path.parent,os.O_RDONLY|getattr(os,'O_DIRECTORY',0))
+        try:os.fsync(descriptor)
+        finally:os.close(descriptor)
+    except OSError:_fail('DIRECTORY_FLUSH_REVIEW_REQUIRED')
+    return True
+
+
+def _verify_snapshot(path,expected):
+    """Read-only quick-check one stable completed image without sidecars."""
+    try:before=path.stat(follow_symlinks=False)
+    except OSError:_fail('DESTINATION_FILE_UNAVAILABLE')
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or
+        (before.st_dev,before.st_ino)!=expected):
+        _fail('DESTINATION_FILE_CHANGED')
+    deadline=time.monotonic()+SNAPSHOT_BUSY_TIMEOUT_MS/1000
+    try:
+        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro&immutable=1',
+                                     uri=True,timeout=SNAPSHOT_BUSY_TIMEOUT_MS/1000)) as db:
+            db.set_progress_handler(lambda:1 if time.monotonic()>=deadline else 0,1000)
+            rows=db.execute('PRAGMA quick_check(1)').fetchmany(2)
+    except sqlite3.DatabaseError:_fail('INTEGRITY_REVIEW_REQUIRED')
+    if rows!=[('ok',)]:_fail('INTEGRITY_REVIEW_REQUIRED')
+    for suffix in ('-journal','-wal','-shm'):
+        try:Path(str(path)+suffix).lstat()
+        except FileNotFoundError:continue
+        except OSError:_fail('DESTINATION_FILE_UNAVAILABLE')
+        _fail('DESTINATION_SIDECAR_REVIEW_REQUIRED')
+    try:after=path.stat(follow_symlinks=False)
+    except OSError:_fail('DESTINATION_FILE_UNAVAILABLE')
+    if ((after.st_dev,after.st_ino)!=expected or after.st_nlink!=1 or
+        (after.st_size,after.st_mtime_ns,after.st_ctime_ns)!=
+        (before.st_size,before.st_mtime_ns,before.st_ctime_ns)):
+        _fail('DESTINATION_FILE_CHANGED')
+
 def recovery_report():
     audit=audit_portfolio()
     with LOCK,_connect() as db:
@@ -197,6 +255,8 @@ def backup_snapshot():
                     _backup_with_deadline(source,target)
                 if _regular_identity(source_path,'SOURCE')!=opened:_fail('SOURCE_FILE_CHANGED')
                 destination_identity=_regular_identity(destination,'DESTINATION')
+                directory_synced=_flush_snapshot(destination,destination_identity)
+                _verify_snapshot(destination,destination_identity)
                 digest,size=_digest_regular(destination,destination_identity)
     except Exception:
         if destination is not None:
@@ -204,7 +264,9 @@ def backup_snapshot():
             except OSError:pass
         raise
     return {"mode":"LOCAL_SQLITE_BACKUP","filename":filename,"bytes":size,
-            "sha256":digest,"stored_in":"Local NEXUS_PORTABLE_DATA/recovery_snapshots",
+            "sha256":digest,"integrity_check":"SQLITE_QUICK_CHECK_OK",
+            "content_flushed":True,"directory_entry_synced":directory_synced,
+            "stored_in":"Local NEXUS_PORTABLE_DATA/recovery_snapshots",
             "source_modified":False,"migration_performed":False,
             "orders_enabled":False,
             "note":"File remains on this computer. Backups may include sensitive simulated account history; protect access."}

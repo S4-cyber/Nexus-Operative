@@ -33,6 +33,9 @@ def test_backup_is_consistent_and_original_unchanged(tmp_path,monkeypatch):
     before=(tmp_path/"paper_portfolio.sqlite3").stat().st_size
     receipt=backup_snapshot()
     assert len(receipt["sha256"])==64
+    assert receipt["integrity_check"]=="SQLITE_QUICK_CHECK_OK"
+    assert receipt["content_flushed"] is True
+    assert receipt["directory_entry_synced"] is (os.name!="nt")
     assert receipt["source_modified"] is False
     with sqlite3.connect(tmp_path/"recovery_snapshots"/receipt["filename"]) as db:
         assert db.execute("SELECT COUNT(*) FROM ledger").fetchone()[0]==2
@@ -102,6 +105,27 @@ def test_backup_failure_removes_exclusive_partial(tmp_path,monkeypatch):
     except ValueError as error:assert str(error)=="PAPER_SNAPSHOT_DATABASE_BUSY"
     else:raise AssertionError("injected snapshot failure accepted")
     assert not list((tmp_path/"recovery_snapshots").iterdir())
+
+def test_backup_integrity_failure_is_redacted_and_removes_candidate(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    initialize(10000)
+    verify=recovery._verify_snapshot
+    def corrupt_then_verify(path,identity):
+        with open(path,'r+b',buffering=0) as stream:
+            stream.seek(0);stream.write(b'not a sqlite image')
+        verify(path,identity)
+    monkeypatch.setattr(recovery,"_verify_snapshot",corrupt_then_verify)
+    response=TestClient(app).post("/api/paper/portfolio/snapshot")
+    assert response.status_code==503
+    assert response.json()["detail"]=="PAPER_SNAPSHOT_INTEGRITY_REVIEW_REQUIRED"
+    assert not list((tmp_path/"recovery_snapshots").iterdir())
+
+def test_snapshot_flush_syncs_file_and_supported_directory(tmp_path,monkeypatch):
+    path=tmp_path/'snapshot.sqlite3';path.write_bytes(b'snapshot')
+    identity=recovery._regular_identity(path,'DESTINATION')
+    calls=[];monkeypatch.setattr(recovery.os,'fsync',lambda descriptor:calls.append(descriptor))
+    assert recovery._flush_snapshot(path,identity) is (os.name!='nt')
+    assert len(calls)==(1 if os.name=='nt' else 2)
 
 def test_backup_capacity_refuses_without_pruning(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))

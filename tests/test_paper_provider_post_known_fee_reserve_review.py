@@ -1,6 +1,7 @@
 """Provider POST/reference composition to retained known-fee reserve path."""
 import json
 import shutil
+import sqlite3
 from decimal import Decimal
 from pathlib import Path
 
@@ -172,6 +173,50 @@ def test_selected_file_replacement_at_same_path_fails_closed(
             match='PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_FILE_IDENTITY_CHANGED'):
         subject.review(**args)
     assert path.read_bytes()==backup.read_bytes()==clone.read_bytes()
+
+
+@pytest.mark.parametrize('target', (
+    'post_budget', 'journal', 'pacing_path', 'activity_store_path',
+    'acceptance_store_path'))
+def test_same_head_journal_rewrite_fails_closed(tmp_path, monkeypatch, target):
+    args = subject._fixture(tmp_path)
+    path = Path(args[target].path if target in ('post_budget', 'journal')
+        else args[target])
+    original = subject.references.review
+
+    def rewrite(**kwargs):
+        result = original(**kwargs)
+        with sqlite3.connect(path) as database:
+            database.execute('PRAGMA user_version=1')
+        return result
+
+    monkeypatch.setattr(subject.references, 'review', rewrite)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_FILE_SET_CHANGED'):
+        subject.review(**args)
+
+
+def test_rollback_sidecar_fails_before_reserve_path(tmp_path, monkeypatch):
+    args = subject._fixture(tmp_path)
+    sidecar = Path(str(args['post_budget'].path) + '-journal')
+    original = subject.references.review
+    reserve_called = False
+
+    def add_sidecar(**kwargs):
+        result = original(**kwargs)
+        sidecar.write_bytes(b'uncommitted')
+        return result
+
+    def reserve(records, opening):
+        nonlocal reserve_called
+        reserve_called = True
+
+    monkeypatch.setattr(subject.references, 'review', add_sidecar)
+    monkeypatch.setattr(subject, '_reserve_path', reserve)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_SQLITE_SIDECAR_REVIEW_REQUIRED'):
+        subject.review(**args)
+    assert not reserve_called
 
 
 def test_fixture_is_public_aggregate_only():

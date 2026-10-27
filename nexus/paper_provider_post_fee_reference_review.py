@@ -16,10 +16,12 @@ from nexus.paper_provider_post_budget import PaperProviderPostBudget
 from nexus import paper_provider_post_reconciliation_review as reconciliation
 from nexus import paper_request_activity_acceptance as accepted
 from nexus.sqlite_journal_guard import (
-    capture_file_identities, check_path_set, require_file_identities)
+    capture_file_fingerprints, capture_file_identities, check_path_set,
+    require_file_fingerprints, require_file_identities)
 
 
 POLICY = 'nexus.paper-provider-post-fee-reference-review.v1'
+JOURNAL_LIMITS = reconciliation.JOURNAL_LIMITS
 FLAGS = tuple(dict.fromkeys((*reconciliation.FLAGS, *accepted.FLAGS,
     'retained_fee_references_verified', 'fee_execution_links_verified',
     'fee_coverage_complete', 'fee_posting_interval_verified',
@@ -56,9 +58,11 @@ def _require_store_binding(post_budget, journal, expected):
 
 
 def _require_bindings(post_budget, journal, store_binding, paths,
-                      file_binding):
+                      file_binding, file_fingerprints):
     _require_store_binding(post_budget, journal, store_binding)
     require_file_identities(paths, file_binding,
+        'PAPER_PROVIDER_POST_FEE_REFERENCE_')
+    require_file_fingerprints(paths, JOURNAL_LIMITS, file_fingerprints,
         'PAPER_PROVIDER_POST_FEE_REFERENCE_')
 
 
@@ -92,8 +96,10 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     check_path_set(paths, 'PAPER_PROVIDER_POST_FEE_REFERENCE_')
     file_binding = capture_file_identities(paths,
         'PAPER_PROVIDER_POST_FEE_REFERENCE_')
+    file_fingerprints = capture_file_fingerprints(paths, JOURNAL_LIMITS,
+        'PAPER_PROVIDER_POST_FEE_REFERENCE_')
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     options = dict(post_budget=post_budget,
         expected_post_head=expected_post_head, account_id=account_id,
         journal=journal, expected_request_head=expected_request_head,
@@ -106,7 +112,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         post_closing_observation=post_closing_observation)
     base = reconciliation.review(**options)
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     if not _component_valid(base):
         _fail('RECONCILIATION_INVALID')
 
@@ -118,7 +124,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         expected_activity_head=expected_activity_head)
     activity = accepted.review(**common)
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     if (activity.get('read_only') is not True or
             activity.get('complete_accepted_history_replayed') is not True or
             any(activity.get(flag) is not False for flag in accepted.FLAGS)):
@@ -127,11 +133,11 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     store = BrokerActivityStore(activity_store_path, account_id)
     retained = store.inspect()
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     acceptance = PaperActivityAcceptanceStore(acceptance_store_path, account_id)
     scopes = acceptance.replay_scopes()
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     accepted_receipts = {scope['retained_receipt_sha256'] for scope in scopes}
     if accepted_receipts != set(retained['receipts']):
         _fail('ACCEPTED_RECEIPT_PARTITION')
@@ -185,13 +191,13 @@ def review(post_budget, *, expected_post_head, account_id, journal,
 
     repeated = reconciliation.review(**options)
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     final_retained = store.inspect()
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     final_scopes = acceptance.replay_scopes()
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     if repeated != base or final_retained != retained or final_scopes != scopes:
         _fail('HISTORY_CHANGED_DURING_REVIEW')
     scope = dict(policy=POLICY, account_sha256=journal_account,

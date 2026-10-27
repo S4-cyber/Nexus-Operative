@@ -11,14 +11,20 @@ import sqlite3
 
 from nexus.alpaca_paper_contract import sha
 from nexus.broker_activity_store import BrokerActivityStore
+from nexus.broker_activity_store import MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES
 from nexus import paper_observation_review
 from nexus import portable_paper_observation as portable
 from nexus import alpaca_activity_normalizer as adapter
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
+from nexus.paper_activity_acceptance_store import MAX_DATABASE_BYTES as ACCEPTANCE_DATABASE_BYTES
 from nexus.paper_activity_acceptance_probe import status as acceptance_status
+from nexus.paper_read_pacing import MAX_DATABASE_BYTES as PACING_DATABASE_BYTES
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints, check_path_set, require_file_fingerprints)
 
 POLICY = 'nexus.paper-reconciliation-acceptance.v2'
-STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v6'
+STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v7'
+JOURNAL_FINGERPRINT_PREFIX = 'PAPER_RECONCILIATION_ACCEPTANCE_'
 
 
 def _fail(code):
@@ -44,6 +50,13 @@ def _accepted(status):
         and status['latest_acceptance_record_replayed'] is True
         and status['all_accepted_transitions_replayed'] is True
     )
+
+
+def _journal_fingerprint_scope(pacing_path, activity_store_path, acceptance_store_path):
+    paths = check_path_set((pacing_path, activity_store_path, acceptance_store_path),
+        JOURNAL_FINGERPRINT_PREFIX)
+    limits = (PACING_DATABASE_BYTES, ACTIVITY_DATABASE_BYTES, ACCEPTANCE_DATABASE_BYTES)
+    return paths, limits, capture_file_fingerprints(paths, limits, JOURNAL_FINGERPRINT_PREFIX)
 
 
 def _declared_window_coverage(receipts, scopes, first, last):
@@ -76,6 +89,8 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
            opening_observation, closing_observation):
     """Read-only composition of accepted collection history and balance review."""
+    journal_paths, journal_limits, journal_fingerprints = _journal_fingerprint_scope(
+        pacing_path, activity_store_path, acceptance_store_path)
     before = acceptance_status(expected_account_id=expected_account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path)
@@ -104,6 +119,8 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     if component['head_sha256'] != after['retention_head_sha256']:
         _fail('COMPONENT_HEAD_DISAGREEMENT')
+    require_file_fingerprints(journal_paths, journal_limits, journal_fingerprints,
+        JOURNAL_FINGERPRINT_PREFIX)
 
     scope = dict(policy=POLICY, account_sha256=after['account_sha256'],
         pacing_head_sha256=after['pacing_head_sha256'],
@@ -116,7 +133,8 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
         observation_review_sha256=component['input_sha256'])
     return dict(mode='PAPER_RECONCILIATION_ACCEPTANCE_REVIEW',
         status='REVIEW_REQUIRED', read_only=True, **scope, input_sha256=sha(scope),
-        journals_rechecked_unchanged=True, complete_accepted_history_replayed=True,
+        journals_rechecked_unchanged=True, journal_files_rechecked_unchanged=True,
+        complete_accepted_history_replayed=True,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
         accepted_pacing_operations_typed=True,
         accepted_pacing_result_receipts_bound=True,
@@ -246,6 +264,8 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         acceptance_store_path, expected_activity_head, pre_opening_observation,
         opening_observation, closing_observation, post_closing_observation):
     """Bind four ordered supplied observations without promoting them to quiet instants."""
+    journal_paths, journal_limits, journal_fingerprints = _journal_fingerprint_scope(
+        pacing_path, activity_store_path, acceptance_store_path)
     status_options=dict(expected_account_id=expected_account_id,pacing_path=pacing_path,
         activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
     before=acceptance_status(**status_options)
@@ -295,6 +315,8 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
     after=acceptance_status(**status_options)
     if before!=after or store.inspect()['head_sha256']!=expected_activity_head:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
+    require_file_fingerprints(journal_paths, journal_limits, journal_fingerprints,
+        JOURNAL_FINGERPRINT_PREFIX)
     scope=dict(policy=STABILITY_POLICY,account_sha256=after['account_sha256'],
         activity_head_sha256=expected_activity_head,
         accepted_reconciliation_sha256=accepted['input_sha256'],
@@ -313,6 +335,7 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         guard_collection_observed_fee_events=0,
         guard_retained_fee_date_overlaps=0,
         accepted_declared_windows_cover_guard_envelope=True,journals_rechecked_unchanged=True,
+        journal_files_rechecked_unchanged=True,
         admission_reserved=False,source_attested=False,source_coverage_verified=False,
         activity_coverage_verified=False,fee_coverage_complete=False,
         fee_execution_links_verified=False,balance_instants_verified=False,
@@ -473,14 +496,17 @@ def fixture_report():
                      'read_completed_at':epoch+99}}}},
             [{'retained_receipt_sha256':'receipt'}],_guard_windows(
                 pre_opening,opening,closing,post_closing))==['synthetic-private-fee']
+        file_fingerprints_rechecked=(result['journal_files_rechecked_unchanged'] is True and
+            guarded['journal_files_rechecked_unchanged'] is True)
         passed=(result == repeated and guarded == guarded_repeated and before == after and
             unbound_rejected and continuation_rejected and outside_rejected and covered and
             changed_guard_rejected and unordered_guard_rejected and outer_guard_coverage_rejected and
             exact_bound and replayed and complete and cursor_complete and arithmetic and guard_bound and
             declared_source_mismatch_rejected and fee_date_overlap_detected and late_collection_fill_detected and
-            late_collection_fee_detected)
+            late_collection_fee_detected and file_fingerprints_rechecked)
         return dict(passed=passed, repeat_review_matches=result == repeated,
             stability_guard_repeat_matches=guarded == guarded_repeated,
+            journal_file_fingerprints_rechecked=file_fingerprints_rechecked,
             journals_unchanged=before == after, unbound_history_rejected=unbound_rejected,
             continuation_required_history_rejected=continuation_rejected,
             out_of_window_observations_rejected=outside_rejected,

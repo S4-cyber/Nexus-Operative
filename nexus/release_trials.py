@@ -1211,7 +1211,8 @@ def _validate(profile, result):
             result['complete_collection_observations_accepted'] is True and
             result['all_collection_cursor_sequences_complete'] is True and
             result['declared_windows_cover_observation_envelope'] is True and
-            result['observation_arithmetic_evaluated'] is True,
+            result['observation_arithmetic_evaluated'] is True and
+            result['journal_file_fingerprints_rechecked'] is True,
             'RECONCILIATION_ACCEPTANCE_BINDING')
         _require(all(result[name] is True for name in ('stability_guard_bound',
             'stability_guard_repeat_matches','changed_guard_balance_rejected',

@@ -53,6 +53,17 @@ def test_sampled_file_identity_rejects_byte_identical_path_replacement(
         guard.require_file_identities((path,),expected,'TEST_')
 
 
+def test_bounded_file_fingerprint_rejects_same_identity_byte_change_and_sidecar(tmp_path):
+    path=tmp_path/'journal.sqlite3';path.write_bytes(b'private fixture')
+    expected=guard.capture_file_fingerprints((path,),(1024,),'TEST_')
+    path.write_bytes(b'changed fixture')
+    with pytest.raises(ValueError,match='TEST_FILE_SET_CHANGED'):
+        guard.require_file_fingerprints((path,),(1024,),expected,'TEST_')
+    path.with_name(path.name+'-journal').write_bytes(b'retained rollback')
+    with pytest.raises(ValueError,match='TEST_SQLITE_SIDECAR_REVIEW_REQUIRED'):
+        guard.capture_file_fingerprints((path,),(1024,),'TEST_')
+
+
 @pytest.mark.parametrize('operation',['recovery','collection'])
 @pytest.mark.parametrize('suffix',SUFFIXES)
 def test_saved_read_wrappers_refuse_collisions_before_accessing_credentials(tmp_path,monkeypatch,operation,suffix):

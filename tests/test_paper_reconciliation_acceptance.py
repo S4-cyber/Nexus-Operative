@@ -1,6 +1,7 @@
 """Accepted-history binding for supplied balance observations."""
 import copy
 import json
+import sqlite3
 import subprocess
 import sys
 
@@ -66,6 +67,7 @@ def test_complete_accepted_history_binds_exact_observations_and_head_without_wri
     assert result['requested_window_boundaries_verified'] is False
     assert len(result['declared_collection_window_union_sha256']) == 64
     assert result['journals_rechecked_unchanged'] is True
+    assert result['journal_files_rechecked_unchanged'] is True
     assert result['accepted_transitions']==1
     assert result['activity_head_sha256']==options['expected_activity_head']
     assert result['opening_manifest_sha256']==options['opening_observation']['manifest_sha256']
@@ -93,6 +95,7 @@ def test_four_observation_stability_guard_is_exact_bound_read_only_and_non_autho
     assert result['guard_retained_fee_date_overlaps']==0
     assert result['accepted_declared_windows_cover_guard_envelope']
     assert result['journals_rechecked_unchanged']
+    assert result['journal_files_rechecked_unchanged']
     assert result['accepted_reconciliation_review']['observation_review']['arithmetic_evaluated']
     assert result==subject.review_with_stability_guards(**options)
     assert snapshot(tmp_path)==before
@@ -277,6 +280,29 @@ def test_any_journal_change_during_composition_is_rejected(tmp_path,monkeypatch)
         subject.review(**options)
 
 
+def test_same_head_sqlite_file_rewrite_during_review_is_rejected(tmp_path,monkeypatch):
+    options=prepared(tmp_path);original=subject.paper_observation_review.review
+    def changed(*args,**kwargs):
+        result=original(*args,**kwargs)
+        with sqlite3.connect(options['acceptance_store_path']) as db:
+            db.execute('PRAGMA user_version=1')
+        return result
+    monkeypatch.setattr(subject.paper_observation_review,'review',changed)
+    with pytest.raises(ValueError,match='FILE_SET_CHANGED'):
+        subject.review(**options)
+
+
+def test_reconciliation_refuses_rollback_sidecar_before_arithmetic(tmp_path,monkeypatch):
+    options=prepared(tmp_path)
+    sidecar=options['activity_store_path'].with_name(
+        options['activity_store_path'].name+'-journal')
+    sidecar.write_bytes(b'retained rollback evidence')
+    monkeypatch.setattr(subject.paper_observation_review,'review',
+        lambda *a,**k:pytest.fail('sidecar reached balance arithmetic'))
+    with pytest.raises(ValueError,match='SQLITE_SIDECAR_REVIEW_REQUIRED'):
+        subject.review(**options)
+
+
 @pytest.mark.parametrize('field,value',[('cross_journal_recovery_state','ACCEPTED_HISTORY_CONTENT_DISAGREEMENT_REVIEW_REQUIRED'),
     ('latest_acceptance_record_replayed',False),('all_accepted_transitions_replayed',False),
     ('accepted_transitions',0),('preexisting_history_unverified',True),('sessions',2),
@@ -397,6 +423,7 @@ def test_release_fixture_is_repeatable_vault_and_provider_silent():
     assert result['requested_window_boundaries_verified'] is False
     assert result['observation_arithmetic_evaluated'] and 'review' not in result
     assert result['stability_guard_bound'] and result['stability_guard_repeat_matches']
+    assert result['journal_file_fingerprints_rechecked']
     assert result['changed_guard_balance_rejected'] and result['unordered_guard_windows_rejected']
     assert result['outer_guard_window_coverage_rejected']
     assert result['guard_retained_fill_events_absent']

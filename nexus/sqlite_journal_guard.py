@@ -3,6 +3,7 @@
 Sampled local file checks only; not an atomic descriptor binding, OS ACL audit,
 encryption, database replay or protection against an administrator racing paths.
 """
+import hashlib
 import os
 from pathlib import Path
 import stat
@@ -71,6 +72,82 @@ def require_file_identities(paths, expected, prefix):
         fail()
     if current != expected:
         fail()
+
+
+def capture_file_fingerprints(paths, maximum_bytes, prefix):
+    """Sample bounded single-link files and their bytes without path following.
+
+    The result is private process-local comparison material.  It is not an
+    atomic multi-file snapshot, a writer lock, an ACL check or external
+    anchoring.  Rollback/WAL/shared-memory sidecars fail closed because a
+    reconciliation review must not claim a stable file set while SQLite
+    recovery or another writer may be active.
+    """
+    def fail(code): raise ValueError(prefix + code) from None
+    if (type(paths) not in (list, tuple) or type(maximum_bytes) not in (list, tuple) or
+            not 1 <= len(paths) <= 8 or len(paths) != len(maximum_bytes) or
+            any(type(limit) is not int or limit <= 0 for limit in maximum_bytes)):
+        fail('FILE_FINGERPRINT_SCOPE_INVALID')
+    fingerprints = []
+    for value, limit in zip(paths, maximum_bytes):
+        path = Path(value)
+        for suffix in ('-journal', '-wal', '-shm'):
+            try: path.with_name(path.name + suffix).lstat()
+            except FileNotFoundError: continue
+            except OSError: fail('FILE_SET_UNAVAILABLE')
+            fail('SQLITE_SIDECAR_REVIEW_REQUIRED')
+        try:
+            observed = path.lstat()
+            if (stat.S_ISLNK(observed.st_mode) or not stat.S_ISREG(observed.st_mode) or
+                    observed.st_nlink != 1 or not 1 <= observed.st_size <= limit):
+                fail('FILE_FINGERPRINT_UNAVAILABLE')
+            resolved = path.resolve()
+            flags = (os.O_RDONLY | getattr(os, 'O_BINARY', 0) |
+                getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+            digest = hashlib.sha256()
+            with os.fdopen(os.open(resolved, flags), 'rb', buffering=0) as stream:
+                before = os.fstat(stream.fileno())
+                if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+                        not 1 <= before.st_size <= limit or
+                        (before.st_dev, before.st_ino) != (observed.st_dev, observed.st_ino)):
+                    fail('FILE_FINGERPRINT_CHANGED')
+                remaining = limit + 1
+                while remaining:
+                    chunk = stream.read(min(1024 * 1024, remaining))
+                    if not chunk: break
+                    digest.update(chunk); remaining -= len(chunk)
+                after = os.fstat(stream.fileno())
+            final = path.lstat()
+            boundary = lambda item:(item.st_dev, item.st_ino, item.st_size,
+                item.st_mtime_ns, item.st_ctime_ns, item.st_nlink)
+            if (remaining == 0 or boundary(observed) != boundary(before) or
+                    boundary(before) != boundary(after) or boundary(after) != boundary(final) or
+                    not stat.S_ISREG(final.st_mode)):
+                fail('FILE_FINGERPRINT_CHANGED')
+            for suffix in ('-journal', '-wal', '-shm'):
+                try: path.with_name(path.name + suffix).lstat()
+                except FileNotFoundError: continue
+                except OSError: fail('FILE_SET_UNAVAILABLE')
+                fail('SQLITE_SIDECAR_REVIEW_REQUIRED')
+            fingerprints.append((str(resolved), *boundary(after), digest.hexdigest()))
+        except ValueError:
+            raise
+        except (OSError, RuntimeError, TypeError):
+            fail('FILE_SET_UNAVAILABLE')
+    return tuple(fingerprints)
+
+
+def require_file_fingerprints(paths, maximum_bytes, expected, prefix):
+    """Fail closed if a bounded private file set changed since its sample."""
+    if type(expected) is not tuple:
+        raise ValueError(prefix + 'FILE_SET_CHANGED') from None
+    try: current = capture_file_fingerprints(paths, maximum_bytes, prefix)
+    except ValueError as error:
+        if str(error) == prefix + 'SQLITE_SIDECAR_REVIEW_REQUIRED':
+            raise
+        raise ValueError(prefix + 'FILE_SET_CHANGED') from None
+    if current != expected:
+        raise ValueError(prefix + 'FILE_SET_CHANGED') from None
 
 
 PATH_CHECKS=('recovery_companions_rejected','ancestors_rejected','normalized_aliases_rejected','unrelated_paths_unchanged')

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.322.0'
+REVISION = '0.323.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -295,7 +295,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.322.0 extends bounded private file fingerprints into the standalone four-journal request/activity acceptance composition. The request, pacing, activity and acceptance SQLite files must retain stable resolved paths, regular single-link identity, size, timestamps and bounded no-follow SHA-256 content across every existing replay boundary. Same-head rewrites, replacements and retained rollback, WAL or shared-memory sidecars fail closed. Public output exposes only a boolean stability marker; paths and digests remain private. This is sampled local consistency, not an atomic snapshot, writer exclusion, ACL audit, provider/source attestation, complete activity or fee coverage, account acceptance or external anchoring. No retry, repair, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account submission/reconciliation, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.323.0 extends bounded private file fingerprints into public Activity SSE cursor and reconnect-budget reads. Existing path/store identity fences remain, while stable regular single-link identity, size, timestamps and bounded no-follow SHA-256 content are now required across each SQLite replay. Same-inode rewrites, replacements and retained rollback, WAL or shared-memory sidecars fail closed. Missing histories remain passive and absent. This is sampled local consistency, not an atomic snapshot, writer exclusion, ACL audit, provider stream attestation, delivery completeness, reconnect acceptance or external anchoring. No automatic retry, sleep, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, explicit reconnect confirmation, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account stream/reconciliation acceptance, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

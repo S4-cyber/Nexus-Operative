@@ -21,7 +21,8 @@ from nexus.alpaca_activity_sse_reconnect_review import (
 from nexus.alpaca_activity_sse_review import SOURCES, ULID
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.sqlite_journal_guard import (
-    capture_file_identities, check_existing, require_file_identities)
+    capture_file_fingerprints, capture_file_identities, check_existing,
+    require_file_fingerprints, require_file_identities)
 
 
 SCHEMA = 'nexus.private-alpaca-activity-sse-cursor-store.v1'
@@ -354,6 +355,7 @@ class ActivitySSECursorStore:
         """Replay the complete chain and return the private current cursor."""
         cursor_binding = (self.path, self.account_sha256)
         file_binding = None
+        file_fingerprint = None
 
         def require_cursor_binding():
             if not _store_binding_matches(self, cursor_binding):
@@ -361,12 +363,18 @@ class ActivitySSECursorStore:
             if file_binding is not None:
                 require_file_identities((cursor_binding[0],), file_binding,
                     'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+                require_file_fingerprints((cursor_binding[0],),
+                    (MAX_DATABASE_BYTES,), file_fingerprint,
+                    'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
 
         self._check()
         require_cursor_binding()
         present = cursor_binding[0].exists()
         if present:
             file_binding = capture_file_identities((cursor_binding[0],),
+                'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+            file_fingerprint = capture_file_fingerprints(
+                (cursor_binding[0],), (MAX_DATABASE_BYTES,),
                 'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
         if not present:
             head, cursor, records = ZERO, None, []
@@ -394,6 +402,7 @@ class ActivitySSECursorStore:
         """Return hashes for the latest checkpoint, never its private cursor."""
         cursor_binding = (self.path, self.account_sha256)
         file_binding = None
+        file_fingerprint = None
 
         def require_cursor_binding():
             if not _store_binding_matches(self, cursor_binding):
@@ -401,12 +410,18 @@ class ActivitySSECursorStore:
             if file_binding is not None:
                 require_file_identities((cursor_binding[0],), file_binding,
                     'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+                require_file_fingerprints((cursor_binding[0],),
+                    (MAX_DATABASE_BYTES,), file_fingerprint,
+                    'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
 
         self._check()
         require_cursor_binding()
         if not cursor_binding[0].exists():
             _fail('CHECKPOINT_MISSING')
         file_binding = capture_file_identities((cursor_binding[0],),
+            'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+        file_fingerprint = capture_file_fingerprints(
+            (cursor_binding[0],), (MAX_DATABASE_BYTES,),
             'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
         with closing(self._connect()[0]) as db:
             with _transaction(db):

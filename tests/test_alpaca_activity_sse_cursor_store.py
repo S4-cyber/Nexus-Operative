@@ -529,6 +529,37 @@ def test_public_read_rejects_same_path_byte_identical_replacement(
 
 
 @pytest.mark.parametrize('method', ('inspect', 'latest_checkpoint_binding'))
+def test_public_read_rejects_same_inode_rewrite(tmp_path, monkeypatch, method):
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    checkpoint(store)
+    original_load = store._load
+
+    def rewrite(*args, **kwargs):
+        result = original_load(*args, **kwargs)
+        with path.open('r+b', buffering=0) as stream:
+            stream.seek(60)
+            stream.write((1).to_bytes(4, 'big'))
+        return result
+
+    monkeypatch.setattr(store, '_load', rewrite)
+    with pytest.raises(ValueError, match=
+            'ALPACA_ACTIVITY_SSE_CURSOR_STORE_FILE_SET_CHANGED'):
+        getattr(store, method)()
+
+
+@pytest.mark.parametrize('suffix', ('-wal', '-shm'))
+def test_public_read_refuses_sqlite_sidecars(tmp_path, suffix):
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    checkpoint(store)
+    path.with_name(path.name + suffix).write_bytes(b'uncommitted')
+    with pytest.raises(ValueError, match=
+            'ALPACA_ACTIVITY_SSE_CURSOR_STORE_WAL_SIDECAR_REVIEW_REQUIRED'):
+        store.inspect()
+
+
+@pytest.mark.parametrize('method', ('inspect', 'latest_checkpoint_binding'))
 @pytest.mark.parametrize('retarget_field', ('path', 'account_sha256'))
 def test_public_read_replay_cannot_retarget_store(tmp_path, monkeypatch,
         method, retarget_field):

@@ -20,7 +20,8 @@ from nexus.alpaca_activity_sse_review import ULID
 from nexus.alpaca_activity_sse_transport import ActivitySSETransportError
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.sqlite_journal_guard import (
-    capture_file_identities, check_existing, require_file_identities)
+    capture_file_fingerprints, capture_file_identities, check_existing,
+    require_file_fingerprints, require_file_identities)
 
 
 SCHEMA = 'nexus.private-alpaca-activity-sse-reconnect-budget.v1'
@@ -923,6 +924,7 @@ class ActivitySSEReconnectBudget:
         """Replay the full private budget; a missing path remains absent."""
         budget_binding = (self.path, self.account_sha256)
         file_binding = None
+        file_fingerprint = None
 
         def require_budget_binding():
             if not _budget_binding_matches(self, budget_binding):
@@ -931,6 +933,9 @@ class ActivitySSEReconnectBudget:
                 try:
                     require_file_identities((budget_binding[0],),
                         file_binding,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                    require_file_fingerprints((budget_binding[0],),
+                        (MAX_DATABASE_BYTES,), file_fingerprint,
                         'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
                 except ValueError as error:
                     raise ActivitySSEReconnectBudgetError(
@@ -943,6 +948,9 @@ class ActivitySSEReconnectBudget:
             try:
                 file_binding = capture_file_identities(
                     (budget_binding[0],),
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                file_fingerprint = capture_file_fingerprints(
+                    (budget_binding[0],), (MAX_DATABASE_BYTES,),
                     'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
             except ValueError as error:
                 raise ActivitySSEReconnectBudgetError(str(error)) from None

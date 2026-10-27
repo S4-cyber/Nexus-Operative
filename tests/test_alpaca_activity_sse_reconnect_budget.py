@@ -714,6 +714,42 @@ def test_budget_inspect_rejects_same_path_byte_identical_replacement(
     assert retained['head_sha256'] == reserved['head_sha256']
 
 
+def test_budget_inspect_rejects_same_inode_rewrite(tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    path = budget.path
+    original_load = budget._load
+
+    def rewrite(*args, **kwargs):
+        result = original_load(*args, **kwargs)
+        with path.open('r+b', buffering=0) as stream:
+            stream.seek(60)
+            stream.write((1).to_bytes(4, 'big'))
+        return result
+
+    monkeypatch.setattr(budget, '_load', rewrite)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError, match=
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        budget.inspect()
+
+
+@pytest.mark.parametrize('suffix', ('-wal', '-shm'))
+def test_budget_inspect_refuses_sqlite_sidecars(tmp_path, suffix):
+    _, budget = stores(tmp_path)
+    budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    path = budget.path
+    path.with_name(path.name + suffix).write_bytes(b'uncommitted')
+    with pytest.raises(ValueError, match=
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_WAL_SIDECAR_REVIEW_REQUIRED'):
+        budget.inspect()
+
+
 @pytest.mark.parametrize('retarget_field', ('path', 'account_sha256'))
 def test_budget_inspect_replay_cannot_retarget_store(
         tmp_path, monkeypatch, retarget_field):

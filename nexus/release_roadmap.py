@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.317.0'
+REVISION = '0.318.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -145,6 +145,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the private three-journal observation reconciliation now samples bounded no-follow SHA-256 fingerprints for the exact pacing, activity and acceptance SQLite files before and after semantic replay, rejecting same-head byte rewrites, identity/metadata changes and rollback/WAL/shared-memory sidecars without exposing paths or private digests' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the higher account-evidence composition extends that stability guard to its request journal and spans pinned, explicitly sampled current-head and four-observation reviews, so all four exact local files must remain byte, identity and metadata stable around the composed result' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -291,7 +295,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.317.0 surrounds the private three-journal broker-paper reconciliation composition with bounded no-follow whole-file fingerprints. The exact pacing, retained-activity and acceptance databases must remain regular single-link files with stable identity, metadata and SHA-256 content across semantic replay and balance review; rollback, WAL or shared-memory sidecars fail closed before arithmetic. This detects same-head local file rewrites that semantic head comparison alone could miss. The sample is read-only and exposes no paths or private digests, but it is not an atomic multi-file snapshot, writer lock, ACL audit, external anchor, provider/source attestation or account acceptance. No retry, repair, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account submission/reconciliation, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.318.0 extends the private whole-file stability boundary from the three-journal inventory reconciliation into the complete four-journal account-evidence composition. The exact request, pacing, retained-activity and acceptance SQLite files must remain regular single-link files with stable identity, metadata and bounded no-follow SHA-256 content around pinned, explicitly sampled current-head and four-observation reviews; rollback, WAL or shared-memory sidecars fail closed before a composed result. This detects request-journal and cross-component same-head local rewrites that semantic head comparison alone could miss. The sample is read-only and exposes no paths or private digests, but it is not an atomic multi-file snapshot, writer lock, ACL audit, external anchor, provider/source attestation or account acceptance. No retry, repair, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account submission/reconciliation, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

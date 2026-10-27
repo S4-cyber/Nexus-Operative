@@ -1,6 +1,7 @@
 """Private composed review: mismatches, races and CLI privacy, no actual IO."""
 import copy
 import json
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -37,7 +38,8 @@ def test_complete_bundle_reuses_one_history_without_writes_or_authority(tmp_path
     args=options(tmp_path);before=snapshot(tmp_path)
     monkeypatch.setattr(paper_credentials,'_vault',lambda:pytest.fail('vault access'))
     r=subject.review(**args)
-    assert r['component_heads_agree'] and r['journals_rechecked_unchanged'] and r['complete_accepted_history_replayed']
+    assert r['component_heads_agree'] and r['journals_rechecked_unchanged']
+    assert r['journal_files_rechecked_unchanged'] and r['complete_accepted_history_replayed']
     assert r['local_request_terms_agree'] and r['inventory_arithmetic_evaluated']
     assert r['original_requests_reviewed']==1 and r['explicit_fills_reviewed']==2
     assert r['gross_only_ending_balances']=={'USD':'802','BTC':'2'}
@@ -54,6 +56,7 @@ def test_guarded_bundle_binds_all_components_without_writes_or_authority(tmp_pat
     assert r['mode']=='PAPER_ACCOUNT_EVIDENCE_STABILITY_GUARD_REVIEW'
     assert r['policy']==subject.STABILITY_POLICY and r['stability_guard_bound']
     assert r['component_heads_agree'] and r['local_request_terms_agree']
+    assert r['journal_files_rechecked_unchanged']
     assert r['guard_manifests_distinct'] and r['guard_windows_ordered']
     assert r['adjacent_guard_balances_stable'] and r['guard_retained_fill_events_absent']
     assert r['guard_declared_sources_agree']
@@ -164,6 +167,24 @@ def test_append_after_last_component_is_detected_without_repair(tmp_path,monkeyp
     monkeypatch.setattr(subject.inventory,'review',append)
     with pytest.raises(ValueError,match='JOURNALS_CHANGED_DURING_REVIEW'):subject.review(**args)
     if kind=='requests':assert len(BrokerRequestJournal(args['request_journal_path'],args['expected_account_id']).recovery()['requests'])==2
+
+
+def test_same_head_request_journal_rewrite_during_bundle_is_rejected(tmp_path,monkeypatch):
+    args=options(tmp_path);original=subject.inventory.review
+    def changed(**kw):
+        result=original(**kw)
+        with sqlite3.connect(args['request_journal_path']) as db:db.execute('PRAGMA user_version=1')
+        return result
+    monkeypatch.setattr(subject.inventory,'review',changed)
+    with pytest.raises(ValueError,match='FILE_SET_CHANGED'):subject.review(**args)
+
+
+def test_account_evidence_refuses_request_rollback_sidecar_before_components(tmp_path,monkeypatch):
+    args=options(tmp_path)
+    path=args['request_journal_path'].with_name(args['request_journal_path'].name+'-journal')
+    path.write_bytes(b'retained rollback evidence')
+    monkeypatch.setattr(subject.requests,'review',lambda **kw:pytest.fail('sidecar reached component review'))
+    with pytest.raises(ValueError,match='SQLITE_SIDECAR_REVIEW_REQUIRED'):subject.review(**args)
 
 
 def test_missing_history_stays_absent(tmp_path):
@@ -311,6 +332,16 @@ def test_current_head_change_is_not_retried_or_repaired(tmp_path,monkeypatch):
     with pytest.raises(ValueError,match='HEAD_DISAGREEMENT'):subject.review_current(**current_options(args))
     assert calls==[args['expected_request_head']]
     assert len(BrokerRequestJournal(args['request_journal_path'],args['expected_account_id']).recovery()['requests'])==2
+
+
+def test_current_head_wrapper_rejects_same_head_rewrite_after_sampling(tmp_path,monkeypatch):
+    args=options(tmp_path);original=subject.review
+    def changed(**kw):
+        with sqlite3.connect(args['request_journal_path']) as db:db.execute('PRAGMA user_version=1')
+        return original(**kw)
+    monkeypatch.setattr(subject,'review',changed)
+    with pytest.raises(ValueError,match='FILE_SET_CHANGED'):
+        subject.review_current(**current_options(args))
 
 
 def test_current_heads_missing_history_creates_nothing(tmp_path):

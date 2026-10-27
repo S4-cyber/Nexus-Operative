@@ -10,6 +10,7 @@ import sqlite3
 import threading
 import time
 from collections import deque
+from contextlib import closing,contextmanager
 from decimal import Decimal
 from pathlib import Path
 from nexus.public_data import PRODUCTS, read_ticker
@@ -17,6 +18,27 @@ from nexus.public_data import PRODUCTS, read_ticker
 SYMBOLS=("BTC-USD","ETH-USD","SOL-USD")
 MIN_INTERVAL=25.0
 MAX_OBSERVATIONS=1000
+DB_BUSY_TIMEOUT_MS=10_000
+_journal_lock=threading.RLock()
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+def _busy():raise ValueError('MARKET_OBSERVER_DATABASE_BUSY') from None
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded statement/final-commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
 
 def journal_path():
     root=Path(os.environ.get("NEXUS_PORTABLE_DATA",str(Path.home()/".nexus-operative")))
@@ -24,23 +46,38 @@ def journal_path():
     return root/"market_observations.sqlite3"
 
 def _db():
-    con=sqlite3.connect(journal_path(),timeout=10)
-    con.execute("""CREATE TABLE IF NOT EXISTS observations(
-      id INTEGER PRIMARY KEY AUTOINCREMENT, at REAL NOT NULL,
-      product TEXT NOT NULL, status TEXT NOT NULL, detail_json TEXT NOT NULL)""")
-    return con
+    con=None
+    try:
+        con=sqlite3.connect(journal_path(),timeout=DB_BUSY_TIMEOUT_MS/1000)
+        con.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+        con.execute('PRAGMA synchronous=FULL')
+        con.execute("""CREATE TABLE IF NOT EXISTS observations(
+          id INTEGER PRIMARY KEY AUTOINCREMENT, at REAL NOT NULL,
+          product TEXT NOT NULL, status TEXT NOT NULL, detail_json TEXT NOT NULL)""")
+        return con
+    except sqlite3.OperationalError as error:
+        if con is not None:con.close()
+        if _database_busy(error):_busy()
+        raise
+    except BaseException:
+        if con is not None:con.close()
+        raise
 
 def persist(record):
-    with _db() as db:
-        db.execute("INSERT INTO observations(at,product,status,detail_json) VALUES(?,?,?,?)",
-                   (record["observed_at"],record["product"],record["decision"],json.dumps(record,allow_nan=False)))
-        db.execute("""DELETE FROM observations WHERE id NOT IN
-                       (SELECT id FROM observations ORDER BY id DESC LIMIT ?)""",(MAX_OBSERVATIONS,))
+    with _journal_lock,closing(_db()) as db:
+        with _transaction(db):
+            db.execute('BEGIN IMMEDIATE')
+            db.execute("INSERT INTO observations(at,product,status,detail_json) VALUES(?,?,?,?)",
+                       (record["observed_at"],record["product"],record["decision"],json.dumps(record,allow_nan=False)))
+            db.execute("""DELETE FROM observations WHERE id NOT IN
+                           (SELECT id FROM observations ORDER BY id DESC LIMIT ?)""",(MAX_OBSERVATIONS,))
 
 def history(limit=30):
     if type(limit) is not int or not 1<=limit<=100:raise ValueError("Bad limit")
-    with _db() as db:
-        rows=db.execute("SELECT detail_json FROM observations ORDER BY id DESC LIMIT ?",(limit,)).fetchall()
+    with _journal_lock,closing(_db()) as db:
+        with _transaction(db):
+            db.execute('BEGIN')
+            rows=db.execute("SELECT detail_json FROM observations ORDER BY id DESC LIMIT ?",(limit,)).fetchall()
     return [json.loads(r[0]) for r in rows]
 
 def assess(product,quote,prior):

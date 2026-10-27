@@ -1,7 +1,9 @@
 import sqlite3
 import json
 import hashlib
+from contextlib import closing
 import pytest
+import nexus.historical_candles as historical_candles
 from fastapi.testclient import TestClient
 from nexus.app import app
 from nexus.historical_candles import collect,history,parse_candles,fetch_candles
@@ -82,3 +84,40 @@ def test_digest_matching_but_invalid_ohlcv_is_rejected(tmp_path, monkeypatch):
     assert "CORRUPTED_BAR" in result["issues"]
     assert result["candles"][-1]["valid"] is False
     assert result["suitable_for_backtesting"] is False
+
+def test_candle_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(historical_candles,'DB_BUSY_TIMEOUT_MS',50)
+    collect("BTC-USD",60,now=1200,transport=lambda _:[row(900),row(960)])
+    path=tmp_path/'research_candles.sqlite3';before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match='^HISTORICAL_CANDLES_DATABASE_BUSY$'):
+            collect("BTC-USD",60,now=1200,transport=lambda _:[row(1020)])
+        assert path.read_bytes()==before
+    assert collect("BTC-USD",60,now=1200,transport=lambda _:[row(1020)])['inserted']==1
+
+def test_candle_reader_blocked_commit_rolls_back_and_recovers(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(historical_candles,'DB_BUSY_TIMEOUT_MS',50)
+    collect("BTC-USD",60,now=1200,transport=lambda _:[row(900),row(960)])
+    path=tmp_path/'research_candles.sqlite3';before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN')
+        blocker.execute('SELECT count(*) FROM candles').fetchone()
+        with pytest.raises(ValueError,match='^HISTORICAL_CANDLES_DATABASE_BUSY$'):
+            collect("BTC-USD",60,now=1200,transport=lambda _:[row(1020)])
+        assert path.read_bytes()==before
+    assert collect("BTC-USD",60,now=1200,transport=lambda _:[row(1020)])['inserted']==1
+
+def test_candle_exclusive_read_contention_is_bounded_and_recovers(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(historical_candles,'DB_BUSY_TIMEOUT_MS',50)
+    collect("BTC-USD",60,now=1200,transport=lambda _:[row(900),row(960)])
+    path=tmp_path/'research_candles.sqlite3';expected=history('BTC-USD',60);before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match='^HISTORICAL_CANDLES_DATABASE_BUSY$'):
+            history('BTC-USD',60)
+        assert path.read_bytes()==before
+    assert history('BTC-USD',60)==expected

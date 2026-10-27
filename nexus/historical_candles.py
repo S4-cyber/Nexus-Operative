@@ -10,6 +10,7 @@ import os
 import sqlite3
 import threading
 import time
+from contextlib import closing,contextmanager
 from datetime import datetime,timezone
 from decimal import Decimal,InvalidOperation
 from pathlib import Path
@@ -21,16 +22,48 @@ GRANULARITIES={60,300,900,3600,21600,86400}
 MAX_RESPONSE=131072
 MAX_BARS=300
 _lock=threading.RLock()
+DB_BUSY_TIMEOUT_MS=10_000
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+def _busy():raise ValueError('HISTORICAL_CANDLES_DATABASE_BUSY') from None
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded statement/final-commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
 
 def _db():
     folder=Path(os.environ.get("NEXUS_PORTABLE_DATA",str(Path.home()/".nexus-operative")))
     folder.mkdir(parents=True,exist_ok=True)
-    db=sqlite3.connect(folder/"research_candles.sqlite3",timeout=10)
-    db.execute("""CREATE TABLE IF NOT EXISTS candles(
-       product TEXT NOT NULL, granularity INTEGER NOT NULL, starts_at INTEGER NOT NULL,
-       payload TEXT NOT NULL, digest TEXT NOT NULL, revision_count INTEGER NOT NULL DEFAULT 0,
-       PRIMARY KEY(product,granularity,starts_at))""")
-    return db
+    db=None
+    try:
+        db=sqlite3.connect(folder/"research_candles.sqlite3",
+            timeout=DB_BUSY_TIMEOUT_MS/1000)
+        db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute("""CREATE TABLE IF NOT EXISTS candles(
+           product TEXT NOT NULL, granularity INTEGER NOT NULL, starts_at INTEGER NOT NULL,
+           payload TEXT NOT NULL, digest TEXT NOT NULL, revision_count INTEGER NOT NULL DEFAULT 0,
+           PRIMARY KEY(product,granularity,starts_at))""")
+        return db
+    except sqlite3.OperationalError as error:
+        if db is not None:db.close()
+        if _database_busy(error):_busy()
+        raise
+    except BaseException:
+        if db is not None:db.close()
+        raise
 
 def _price(raw,zero=False):
     if isinstance(raw,bool):raise ValueError("Boolean market number")
@@ -104,22 +137,25 @@ def fetch_candles(product,granularity=300,now=None,transport=None):
 def collect(product,granularity=300,now=None,transport=None):
     rows=fetch_candles(product,granularity,now,transport)
     inserted=revised=unchanged=0
-    with _lock,_db() as db:
-        for row in rows:
-            raw=json.dumps(row,sort_keys=True,separators=(",",":"))
-            digest=hashlib.sha256(raw.encode()).hexdigest()
-            prev=db.execute("SELECT digest FROM candles WHERE product=? AND granularity=? AND starts_at=?",
-                            (product,granularity,row["starts_at"])).fetchone()
-            if prev is None:
-                db.execute("INSERT INTO candles(product,granularity,starts_at,payload,digest) VALUES(?,?,?,?,?)",
-                           (product,granularity,row["starts_at"],raw,digest))
-                inserted+=1
-            elif prev[0]!=digest:
-                # Preserve a revision flag; never silently label revised bars stable.
-                db.execute("UPDATE candles SET payload=?,digest=?,revision_count=revision_count+1 WHERE product=? AND granularity=? AND starts_at=?",
-                           (raw,digest,product,granularity,row["starts_at"]))
-                revised+=1
-            else:unchanged+=1
+    with _lock,closing(_db()) as db:
+        with _transaction(db):
+            # Serialize insert/revision classification across local processes.
+            db.execute('BEGIN IMMEDIATE')
+            for row in rows:
+                raw=json.dumps(row,sort_keys=True,separators=(",",":"))
+                digest=hashlib.sha256(raw.encode()).hexdigest()
+                prev=db.execute("SELECT digest FROM candles WHERE product=? AND granularity=? AND starts_at=?",
+                                (product,granularity,row["starts_at"])).fetchone()
+                if prev is None:
+                    db.execute("INSERT INTO candles(product,granularity,starts_at,payload,digest) VALUES(?,?,?,?,?)",
+                               (product,granularity,row["starts_at"],raw,digest))
+                    inserted+=1
+                elif prev[0]!=digest:
+                    # Preserve a revision flag; never silently label revised bars stable.
+                    db.execute("UPDATE candles SET payload=?,digest=?,revision_count=revision_count+1 WHERE product=? AND granularity=? AND starts_at=?",
+                               (raw,digest,product,granularity,row["starts_at"]))
+                    revised+=1
+                else:unchanged+=1
     return {"mode":"READ_ONLY_HISTORICAL_CANDLES","product":product,"granularity":granularity,
         "received":len(rows),"inserted":inserted,"revised":revised,"unchanged":unchanged,
         "exchange_provenance":"coinbase_exchange_public_unattested",
@@ -128,9 +164,11 @@ def collect(product,granularity=300,now=None,transport=None):
 def history(product,granularity=300,limit=300):
     if product not in PRODUCTS or granularity not in GRANULARITIES or type(limit)!=int or not 2<=limit<=1000:
         raise ValueError("Invalid history request")
-    with _lock,_db() as db:
-        rows=db.execute("SELECT starts_at,payload,digest,revision_count FROM candles WHERE product=? AND granularity=? ORDER BY starts_at DESC LIMIT ?",
-                        (product,granularity,limit)).fetchall()
+    with _lock,closing(_db()) as db:
+        with _transaction(db):
+            db.execute('BEGIN')
+            rows=db.execute("SELECT starts_at,payload,digest,revision_count FROM candles WHERE product=? AND granularity=? ORDER BY starts_at DESC LIMIT ?",
+                            (product,granularity,limit)).fetchall()
     result=[];issues=[];prior=None
     for stamp,payload,digest,revisions in reversed(rows):
         if prior is not None and stamp-prior!=granularity:

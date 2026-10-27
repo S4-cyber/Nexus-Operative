@@ -215,6 +215,42 @@ def test_finish_postcommit_same_inode_rewrite_withholds_result_acknowledgement(
     assert replay['head_sha256'] == retained['head_sha256']
 
 
+def test_finish_exact_replay_same_inode_rewrite_withholds_acknowledgement(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reservation = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, expected_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED',
+        confirm_reconnect_attempt=True, emergency_stop_check=STOP_CLEAR)
+    options = dict(evaluated_at=1000, outcome='CHECKPOINT_UNCERTAIN',
+        detail_code='CHECKPOINT_STATE_UNCERTAIN')
+    committed = budget.finish(reservation['token'], **options)
+    original_inspect = budget.inspect
+    calls = 0
+
+    def rewrite_before_cold_replay():
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            with budget.path.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        return original_inspect()
+
+    monkeypatch.setattr(budget, 'inspect', rewrite_before_cold_replay)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError, match=
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        budget.finish(reservation['token'], **options)
+    cold = subject.ActivitySSEReconnectBudget(budget.path, ACCOUNT)
+    retained = cold.inspect()
+    assert retained['head_sha256'] == committed['head_sha256']
+    assert retained['last_attempt_head_sha256'] == reservation['token']
+    assert retained['last_outcome'] == 'CHECKPOINT_UNCERTAIN'
+    replay = cold.finish(reservation['token'], **options)
+    assert replay['duplicate_result']
+    assert replay['head_sha256'] == committed['head_sha256']
+
+
 def test_public_read_lock_contention_fails_closed_then_recovers(
         tmp_path, monkeypatch):
     _, budget = stores(tmp_path)

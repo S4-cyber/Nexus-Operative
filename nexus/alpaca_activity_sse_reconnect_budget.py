@@ -1197,6 +1197,15 @@ class ActivitySSEReconnectBudget:
 
             retry_clear_before_commit = stop_clear()
             require_budget_binding()
+        try:
+            initial_identity = capture_file_identities(
+                (budget_binding[0],),
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            initial_fingerprint = capture_file_fingerprints(
+                (budget_binding[0],), (MAX_DATABASE_BYTES,),
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+        except ValueError as error:
+            raise ActivitySSEReconnectBudgetError(str(error)) from None
         current = self.inspect()
         require_budget_binding()
         if current['pending_token'] != token:
@@ -1215,7 +1224,54 @@ class ActivitySSEReconnectBudget:
                         current['checkpoint_receipt_sha256'] !=
                             checkpoint_receipt_sha256):
                     _fail('RESULT_REPLAY_DISAGREEMENT')
-                return dict(current, duplicate_result=True)
+                try:
+                    require_file_identities((budget_binding[0],),
+                        initial_identity,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                    require_file_fingerprints((budget_binding[0],),
+                        (MAX_DATABASE_BYTES,), initial_fingerprint,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                    retained = self.inspect()
+                    require_file_identities((budget_binding[0],),
+                        initial_identity,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                    require_file_fingerprints((budget_binding[0],),
+                        (MAX_DATABASE_BYTES,), initial_fingerprint,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                except ValueError as error:
+                    raise ActivitySSEReconnectBudgetError(
+                        str(error)) from None
+                require_budget_binding()
+                if (retained != current or
+                        retained['account_sha256'] != budget_binding[1] or
+                        retained['pending_token'] is not None or
+                        retained['head_sha256'] !=
+                            retained['last_result_head_sha256'] or
+                        retained['last_attempt_head_sha256'] != token or
+                        retained['last_evaluated_at'] != now or
+                        retained['last_requested_outcome'] != outcome or
+                        retained['last_requested_detail_code'] != detail_code or
+                        retained['last_requested_retry_after_seconds'] !=
+                            provider_retry_after_seconds or
+                        retained['checkpoint_head_sha256'] !=
+                            checkpoint_head_sha256 or
+                        retained['checkpoint_receipt_sha256'] !=
+                            checkpoint_receipt_sha256 or
+                        any(retained[flag] is not False for flag in FLAGS)):
+                    _fail('RESULT_ACKNOWLEDGEMENT_UNCERTAIN')
+                result = dict(retained, duplicate_result=True)
+                try:
+                    require_file_identities((budget_binding[0],),
+                        initial_identity,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                    require_file_fingerprints((budget_binding[0],),
+                        (MAX_DATABASE_BYTES,), initial_fingerprint,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                except ValueError as error:
+                    raise ActivitySSEReconnectBudgetError(
+                        str(error)) from None
+                require_budget_binding()
+                return result
             _fail('TOKEN_CHANGED')
         db, _ = self._connect(write=True)
         with closing(db):

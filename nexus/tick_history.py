@@ -10,23 +10,56 @@ import os
 import sqlite3
 import threading
 import time
+from contextlib import closing,contextmanager
 from datetime import datetime
 from pathlib import Path
 from nexus.public_data import PRODUCTS, read_ticker
 
 _lock=threading.RLock()
 MAX_TICKS=20000
+DB_BUSY_TIMEOUT_MS=10_000
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+def _busy():raise ValueError('TICK_HISTORY_DATABASE_BUSY') from None
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded statement/final-commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
 
 def _db():
     folder=Path(os.environ.get("NEXUS_PORTABLE_DATA",str(Path.home()/".nexus-operative")))
     folder.mkdir(parents=True,exist_ok=True)
-    db=sqlite3.connect(folder/"chronological_quotes.sqlite3",timeout=10)
-    db.execute("""CREATE TABLE IF NOT EXISTS ticks(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      product TEXT NOT NULL, exchange_at REAL NOT NULL, captured_at REAL NOT NULL,
-      payload TEXT NOT NULL, digest TEXT NOT NULL)""")
-    db.execute("CREATE INDEX IF NOT EXISTS ticks_product_id ON ticks(product,id)")
-    return db
+    db=None
+    try:
+        db=sqlite3.connect(folder/"chronological_quotes.sqlite3",
+            timeout=DB_BUSY_TIMEOUT_MS/1000)
+        db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute("""CREATE TABLE IF NOT EXISTS ticks(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          product TEXT NOT NULL, exchange_at REAL NOT NULL, captured_at REAL NOT NULL,
+          payload TEXT NOT NULL, digest TEXT NOT NULL)""")
+        db.execute("CREATE INDEX IF NOT EXISTS ticks_product_id ON ticks(product,id)")
+        return db
+    except sqlite3.OperationalError as error:
+        if db is not None:db.close()
+        if _database_busy(error):_busy()
+        raise
+    except BaseException:
+        if db is not None:db.close()
+        raise
 
 def normalize(product,q,now):
     if product not in PRODUCTS or not isinstance(q,dict) or q.get("product")!=product:
@@ -56,14 +89,17 @@ def capture_tick(product,reader=None,clock=None):
     normalized=normalize(product,reader(product),now)
     payload=json.dumps(normalized,sort_keys=True,separators=(",",":"),allow_nan=False)
     digest=hashlib.sha256(payload.encode()).hexdigest()
-    with _lock,_db() as db:
-        latest=db.execute("SELECT exchange_at FROM ticks WHERE product=? ORDER BY id DESC LIMIT 1",(product,)).fetchone()
-        if latest and normalized["exchange_at"]<=latest[0]:
-            return {"decision":"DUPLICATE_OR_OUT_OF_ORDER","stored":False,
-                    "product":product,"live_orders_enabled":False}
-        db.execute("INSERT INTO ticks(product,exchange_at,captured_at,payload,digest) VALUES(?,?,?,?,?)",
-                   (product,normalized["exchange_at"],now,payload,digest))
-        db.execute("DELETE FROM ticks WHERE id NOT IN (SELECT id FROM ticks ORDER BY id DESC LIMIT ?)",(MAX_TICKS,))
+    with _lock,closing(_db()) as db:
+        with _transaction(db):
+            # Serialize the latest-timestamp decision across local processes.
+            db.execute('BEGIN IMMEDIATE')
+            latest=db.execute("SELECT exchange_at FROM ticks WHERE product=? ORDER BY id DESC LIMIT 1",(product,)).fetchone()
+            if latest and normalized["exchange_at"]<=latest[0]:
+                return {"decision":"DUPLICATE_OR_OUT_OF_ORDER","stored":False,
+                        "product":product,"live_orders_enabled":False}
+            db.execute("INSERT INTO ticks(product,exchange_at,captured_at,payload,digest) VALUES(?,?,?,?,?)",
+                       (product,normalized["exchange_at"],now,payload,digest))
+            db.execute("DELETE FROM ticks WHERE id NOT IN (SELECT id FROM ticks ORDER BY id DESC LIMIT ?)",(MAX_TICKS,))
     return {"decision":"STORED_RESEARCH_TICK","stored":True,"product":product,
             "sha256":digest,"exchange_at":normalized["exchange_at"],
             "live_orders_enabled":False,"simulation_only":True}
@@ -73,8 +109,10 @@ def dataset(product,limit=250,gap_seconds=60):
     if type(limit) is not int or not 2<=limit<=1000:raise ValueError("Invalid limit")
     if type(gap_seconds) not in (int,float) or isinstance(gap_seconds,bool) or not math.isfinite(gap_seconds) or not 1<=gap_seconds<=3600:
         raise ValueError("Invalid gap threshold")
-    with _lock,_db() as db:
-        records=db.execute("SELECT id,product,exchange_at,captured_at,payload,digest FROM ticks WHERE product=? ORDER BY id DESC LIMIT ?",(product,limit)).fetchall()
+    with _lock,closing(_db()) as db:
+        with _transaction(db):
+            db.execute('BEGIN')
+            records=db.execute("SELECT id,product,exchange_at,captured_at,payload,digest FROM ticks WHERE product=? ORDER BY id DESC LIMIT ?",(product,limit)).fetchall()
     ticks=[]
     issues=[]
     previous=None

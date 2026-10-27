@@ -1,6 +1,9 @@
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
+import pytest
+import nexus.tick_history as tick_history
 from nexus.app import app
 from nexus.tick_history import capture_tick,dataset
 
@@ -43,3 +46,40 @@ def test_invalid_quote_and_api_remain_read_only(tmp_path,monkeypatch):
     assert c.post("/api/research-ticks/INVALID/capture").status_code==404
     assert c.get("/api/research-ticks/BTC-USD?limit=1").status_code==422
     assert c.get("/api/research-ticks/BTC-USD").json()["live_orders_enabled"] is False
+
+def test_tick_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(tick_history,'DB_BUSY_TIMEOUT_MS',50)
+    capture_tick("BTC-USD",reader=lambda _:quote(1000),clock=lambda:1001)
+    path=tmp_path/'chronological_quotes.sqlite3';before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match='^TICK_HISTORY_DATABASE_BUSY$'):
+            capture_tick("BTC-USD",reader=lambda _:quote(1030),clock=lambda:1031)
+        assert path.read_bytes()==before
+    assert capture_tick("BTC-USD",reader=lambda _:quote(1030),clock=lambda:1031)['stored']
+
+def test_tick_reader_blocked_commit_rolls_back_and_recovers(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(tick_history,'DB_BUSY_TIMEOUT_MS',50)
+    capture_tick("BTC-USD",reader=lambda _:quote(1000),clock=lambda:1001)
+    path=tmp_path/'chronological_quotes.sqlite3';before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN')
+        blocker.execute('SELECT count(*) FROM ticks').fetchone()
+        with pytest.raises(ValueError,match='^TICK_HISTORY_DATABASE_BUSY$'):
+            capture_tick("BTC-USD",reader=lambda _:quote(1030),clock=lambda:1031)
+        assert path.read_bytes()==before
+    assert capture_tick("BTC-USD",reader=lambda _:quote(1030),clock=lambda:1031)['stored']
+
+def test_tick_exclusive_read_contention_is_bounded_and_recovers(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(tick_history,'DB_BUSY_TIMEOUT_MS',50)
+    capture_tick("BTC-USD",reader=lambda _:quote(1000),clock=lambda:1001)
+    path=tmp_path/'chronological_quotes.sqlite3';expected=dataset('BTC-USD');before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match='^TICK_HISTORY_DATABASE_BUSY$'):
+            dataset('BTC-USD')
+        assert path.read_bytes()==before
+    assert dataset('BTC-USD')==expected

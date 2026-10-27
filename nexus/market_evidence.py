@@ -10,23 +10,56 @@ import os
 import sqlite3
 import threading
 import time
+from contextlib import closing,contextmanager
 from pathlib import Path
 from nexus.cross_venue import crosscheck, corroborate, fetch_kraken
 from nexus.public_data import PRODUCTS, read_ticker
 
 _lock=threading.RLock()
 MAX_ROWS=1200
+DB_BUSY_TIMEOUT_MS=10_000
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+def _busy():raise ValueError('MARKET_EVIDENCE_DATABASE_BUSY') from None
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded statement/final-commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
 
 def _db():
     path=Path(os.environ.get("NEXUS_PORTABLE_DATA",str(Path.home()/".nexus-operative")))
     path.mkdir(parents=True,exist_ok=True)
-    db=sqlite3.connect(path/"market_evidence.sqlite3",timeout=10)
-    db.execute("""CREATE TABLE IF NOT EXISTS observations(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      observed_at REAL NOT NULL, product TEXT NOT NULL,
-      decision TEXT NOT NULL, details TEXT NOT NULL,
-      sha256 TEXT NOT NULL)""")
-    return db
+    db=None
+    try:
+        db=sqlite3.connect(path/"market_evidence.sqlite3",
+            timeout=DB_BUSY_TIMEOUT_MS/1000)
+        db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute("""CREATE TABLE IF NOT EXISTS observations(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          observed_at REAL NOT NULL, product TEXT NOT NULL,
+          decision TEXT NOT NULL, details TEXT NOT NULL,
+          sha256 TEXT NOT NULL)""")
+        return db
+    except sqlite3.OperationalError as error:
+        if db is not None:db.close()
+        if _database_busy(error):_busy()
+        raise
+    except BaseException:
+        if db is not None:db.close()
+        raise
 
 def _write(product,report,when):
     # Persist only whitelisted, bounded structured diagnostic fields.
@@ -39,10 +72,12 @@ def _write(product,report,when):
     payload=json.dumps(details,sort_keys=True,separators=(",",":"),allow_nan=False)
     if len(payload.encode())>4096:raise ValueError("Oversized diagnostic")
     digest=hashlib.sha256(payload.encode()).hexdigest()
-    with _lock,_db() as db:
-        db.execute("INSERT INTO observations(observed_at,product,decision,details,sha256) VALUES(?,?,?,?,?)",
-                   (when,product,report["decision"],payload,digest))
-        db.execute("DELETE FROM observations WHERE id NOT IN (SELECT id FROM observations ORDER BY id DESC LIMIT ?)",(MAX_ROWS,))
+    with _lock,closing(_db()) as db:
+        with _transaction(db):
+            db.execute('BEGIN IMMEDIATE')
+            db.execute("INSERT INTO observations(observed_at,product,decision,details,sha256) VALUES(?,?,?,?,?)",
+                       (when,product,report["decision"],payload,digest))
+            db.execute("DELETE FROM observations WHERE id NOT IN (SELECT id FROM observations ORDER BY id DESC LIMIT ?)",(MAX_ROWS,))
     return {"record_sha256":digest,"stored_locally":True}
 
 def capture(product,coinbase_reader=None,kraken_reader=None,clock=None):
@@ -63,11 +98,13 @@ def capture(product,coinbase_reader=None,kraken_reader=None,clock=None):
 def recent(product=None,limit=25):
     if product is not None and product not in PRODUCTS:raise ValueError("Unsupported product")
     if type(limit) is not int or not 1<=limit<=100:raise ValueError("Invalid history limit")
-    with _lock,_db() as db:
-        if product is None:
-            records=db.execute("SELECT id,observed_at,product,decision,details,sha256 FROM observations ORDER BY id DESC LIMIT ?",(limit,)).fetchall()
-        else:
-            records=db.execute("SELECT id,observed_at,product,decision,details,sha256 FROM observations WHERE product=? ORDER BY id DESC LIMIT ?",(product,limit)).fetchall()
+    with _lock,closing(_db()) as db:
+        with _transaction(db):
+            db.execute('BEGIN')
+            if product is None:
+                records=db.execute("SELECT id,observed_at,product,decision,details,sha256 FROM observations ORDER BY id DESC LIMIT ?",(limit,)).fetchall()
+            else:
+                records=db.execute("SELECT id,observed_at,product,decision,details,sha256 FROM observations WHERE product=? ORDER BY id DESC LIMIT ?",(product,limit)).fetchall()
     items=[]
     for identifier,when,p,decision,payload,digest in records:
         valid=hashlib.sha256(payload.encode()).hexdigest()==digest

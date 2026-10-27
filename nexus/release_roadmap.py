@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.324.0'
+REVISION = '0.325.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -295,7 +295,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.324.0 extends bounded private file stability through the Activity SSE post-commit acknowledgement boundary. A cursor checkpoint samples the committed file before its final admission callback, requires stable identity and SHA-256 bytes afterward, then cold-replays the exact durable checkpoint before returning a receipt. A reconnect reservation similarly samples the committed budget, cold-replays it and requires the exact pending token, attempt, cursor head, reason and false authority flags before granting one provider-request authorization. Same-inode rewrites withhold acknowledgement while the durable record remains pending for exact review or replay. This is sampled local consistency, not atomic writer exclusion, ACL audit, provider stream attestation, delivery completeness, reconnect acceptance or external anchoring. No automatic retry, sleep, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, explicit reconnect confirmation, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account stream/reconciliation acceptance, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.325.0 extends bounded private file stability through the Activity SSE reconnect-result acknowledgement boundary. After a reconnect result commits, the exact budget identity and SHA-256 bytes must remain stable while a cold replay proves the result head, reservation token, outcome, detail, requested outcome, backoff, checkpoint binding and false authority flags. A same-inode rewrite withholds acknowledgement while the durable result remains available for exact no-network replay. This is sampled local consistency, not atomic writer exclusion, ACL audit, provider stream attestation, delivery completeness, reconnect acceptance or external anchoring. No automatic retry, sleep, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, explicit reconnect confirmation, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account stream/reconciliation acceptance, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

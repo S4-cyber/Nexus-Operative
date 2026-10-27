@@ -1265,10 +1265,71 @@ class ActivitySSEReconnectBudget:
                 if (loaded['head_sha256'] != head or
                         loaded['last_outcome'] != retained_outcome):
                     _fail('COMMIT_REPLAY_DISAGREEMENT')
+        try:
+            committed_identity = capture_file_identities(
+                (budget_binding[0],),
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            committed_fingerprint = capture_file_fingerprints(
+                (budget_binding[0],), (MAX_DATABASE_BYTES,),
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            retained = self.inspect()
+            require_file_identities((budget_binding[0],),
+                committed_identity,
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            require_file_fingerprints((budget_binding[0],),
+                (MAX_DATABASE_BYTES,), committed_fingerprint,
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+        except ValueError as error:
+            raise ActivitySSEReconnectBudgetError(str(error)) from None
         require_budget_binding()
-        retained = self.inspect()
+        if (retained['account_sha256'] != budget_binding[1] or
+                retained['head_sha256'] != head or
+                retained['pending_token'] is not None or
+                retained['attempts'] != state['attempts'] or
+                retained['expected_cursor_head_sha256'] !=
+                    state['expected_cursor_head_sha256'] or
+                retained['last_evaluated_at'] != now or
+                retained['last_outcome'] != retained_outcome or
+                retained['last_detail_code'] != retained_detail or
+                retained['last_requested_outcome'] != outcome or
+                retained['last_requested_detail_code'] != detail_code or
+                retained['last_requested_retry_after_seconds'] !=
+                    provider_retry_after_seconds or
+                retained['last_applied_backoff_seconds'] != applied_backoff or
+                retained['provider_directed_backoff_observed'] !=
+                    (detail_code in PROVIDER_DELAY_ERRORS and
+                        provider_retry_after_seconds > 0) or
+                retained['last_begin_expected_head_sha256'] !=
+                    state['last_begin_expected_head_sha256'] or
+                retained['last_reconnect_reason'] !=
+                    state['last_reconnect_reason'] or
+                retained['next_allowed_at'] != next_at or
+                retained['checkpoint_head_sha256'] != checkpoint_head_sha256 or
+                retained['checkpoint_receipt_sha256'] !=
+                    checkpoint_receipt_sha256 or
+                retained['last_attempt_head_sha256'] != token or
+                retained['last_result_head_sha256'] != head or
+                retained['review_required'] !=
+                    (retained_outcome not in
+                        ('CHECKPOINT_COMMITTED', 'RETRY_REQUIRED')) or
+                retained['completed'] !=
+                    (retained_outcome == 'CHECKPOINT_COMMITTED') or
+                retained['emergency_stop_prior_head_sha256'] !=
+                    state['emergency_stop_prior_head_sha256'] or
+                any(retained[flag] is not False for flag in FLAGS)):
+            _fail('RESULT_ACKNOWLEDGEMENT_UNCERTAIN')
+        result = dict(retained, duplicate_result=False)
+        try:
+            require_file_identities((budget_binding[0],),
+                committed_identity,
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            require_file_fingerprints((budget_binding[0],),
+                (MAX_DATABASE_BYTES,), committed_fingerprint,
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+        except ValueError as error:
+            raise ActivitySSEReconnectBudgetError(str(error)) from None
         require_budget_binding()
-        return dict(retained, duplicate_result=False)
+        return result
 
     def close_pending_for_outcome_uncertainty(self, *, evaluated_at,
             expected_head, confirm_outcome_uncertain=False,

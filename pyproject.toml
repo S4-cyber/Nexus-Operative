@@ -1,6 +1,6 @@
 [project]
 name = "nexus-operative"
-version = "0.311.0"
+version = "0.312.0"
 description = "Simulated trading research and Nexus PORTAL desktop application"
 requires-python = ">=3.10"
 dependencies = ["fastapi>=0.110,<1", "uvicorn>=0.27,<1", "pydantic>=2,<3", "cryptography>=42,<48", "pywebview>=5,<7", "keyring>=25,<27"]

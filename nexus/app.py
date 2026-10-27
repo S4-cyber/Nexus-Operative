@@ -70,7 +70,7 @@ async def application_lifespan(application):
                     try:await asyncio.to_thread(refresh_worker.shutdown)
                     finally:await asyncio.to_thread(found_market_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.311.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.312.0",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -297,6 +297,8 @@ def record_historical_replay(value: HistoricalReplay):
         result=replay(value.closes,value.capital,value.tier,value.direction)
         return record_replay(request,result)
     except ValueError as exc:
+        if str(exc)=='PAPER_REPLAY_JOURNAL_DATABASE_BUSY':
+            raise HTTPException(status_code=503,detail=str(exc))
         raise HTTPException(status_code=422,detail=str(exc))
 
 @app.get("/api/paper/replay/history")
@@ -304,6 +306,8 @@ def replay_history(limit: int = 20):
     try:
         return {"mode":"LOCAL_PAPER_JOURNAL","simulation_only":True,"runs":recent_replays(limit)}
     except ValueError as exc:
+        if str(exc)=='PAPER_REPLAY_JOURNAL_DATABASE_BUSY':
+            raise HTTPException(status_code=503,detail=str(exc))
         raise HTTPException(status_code=422,detail=str(exc))
 
 @app.post("/api/paper/risk-screen")
@@ -348,7 +352,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.311.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.312.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}

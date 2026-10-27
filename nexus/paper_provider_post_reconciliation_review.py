@@ -10,14 +10,23 @@ from pathlib import Path
 from nexus.alpaca_paper_contract import sha
 from nexus import paper_account_evidence_review as evidence
 from nexus import paper_provider_post_activity_review as post_activity
+from nexus.broker_activity_store import MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES
 from nexus.broker_request_journal import BrokerRequestJournal
+from nexus.broker_request_journal import MAX_DATABASE_BYTES as REQUEST_DATABASE_BYTES
+from nexus.paper_activity_acceptance_store import MAX_DATABASE_BYTES as ACCEPTANCE_DATABASE_BYTES
 from nexus.paper_activity_acceptance_probe import status as acceptance_status
+from nexus.paper_read_pacing import MAX_DATABASE_BYTES as PACING_DATABASE_BYTES
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
+from nexus.paper_provider_post_budget import MAX_DATABASE_BYTES as POST_DATABASE_BYTES
 from nexus.sqlite_journal_guard import (
-    capture_file_identities, require_file_identities)
+    capture_file_fingerprints, capture_file_identities,
+    require_file_fingerprints, require_file_identities)
 
 
-POLICY = 'nexus.paper-provider-post-reconciliation-review.v1'
+POLICY = 'nexus.paper-provider-post-reconciliation-review.v2'
+JOURNAL_LIMITS = (POST_DATABASE_BYTES, REQUEST_DATABASE_BYTES,
+    PACING_DATABASE_BYTES, ACTIVITY_DATABASE_BYTES,
+    ACCEPTANCE_DATABASE_BYTES)
 FLAGS = tuple(dict.fromkeys((*post_activity.FLAGS, *evidence.FLAGS,
     'provider_account_accepted', 'balance_reconciled',
     'spendable_funds_verified', 'automatic_retry', 'automatic_continuation')))
@@ -51,9 +60,11 @@ def _require_store_binding(post_budget, journal, expected):
 
 
 def _require_bindings(post_budget, journal, store_binding, paths,
-                      file_binding):
+                      file_binding, file_fingerprints):
     _require_store_binding(post_budget, journal, store_binding)
     require_file_identities(paths, file_binding,
+        'PAPER_PROVIDER_POST_RECONCILIATION_')
+    require_file_fingerprints(paths, JOURNAL_LIMITS, file_fingerprints,
         'PAPER_PROVIDER_POST_RECONCILIATION_')
 
 
@@ -96,26 +107,28 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     post_activity._check_related_paths(paths)
     file_binding = capture_file_identities(paths,
         'PAPER_PROVIDER_POST_RECONCILIATION_')
+    file_fingerprints = capture_file_fingerprints(paths, JOURNAL_LIMITS,
+        'PAPER_PROVIDER_POST_RECONCILIATION_')
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
 
     first_post = post_budget.inspect()
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     attempts = post_budget.history()
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     recoveries = post_budget.recovery_history()
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     first_request = journal.recovery()
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     first_activity = acceptance_status(expected_account_id=account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path)
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     if first_post['head_sha256'] != expected_post_head:
         _fail('POST_HEAD_CHANGED')
     if first_request['head_sha256'] != expected_request_head:
@@ -126,7 +139,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     posts = post_activity.review(post_budget,
         expected_post_head=expected_post_head, account_bindings=[binding])
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     if (posts.get('status') != 'COMPLETE_LOCAL_POST_ACTIVITY_CONSISTENT' or
             posts.get('read_only') is not True or
             posts.get('complete_local_post_activity_consistent') is not True or
@@ -145,7 +158,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         closing_observation=closing_observation,
         post_closing_observation=post_closing_observation)
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     required = ('complete_accepted_history_replayed', 'component_heads_agree',
         'stability_guard_bound', 'guard_manifests_distinct',
         'guard_windows_ordered', 'adjacent_guard_balances_stable',
@@ -155,7 +168,9 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         'guard_collection_observed_fee_events_absent',
         'guard_retained_fee_date_overlaps_absent',
         'accepted_declared_windows_cover_guard_envelope',
-        'journals_rechecked_unchanged', 'inventory_arithmetic_evaluated')
+        'journals_rechecked_unchanged',
+        'journal_files_rechecked_unchanged',
+        'inventory_arithmetic_evaluated')
     if (account.get('mode') !=
             'PAPER_ACCOUNT_EVIDENCE_STABILITY_GUARD_REVIEW' or
             account.get('status') != 'REVIEW_REQUIRED' or
@@ -171,7 +186,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path)
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
     if (post_budget.inspect() != first_post or
             post_budget.history() != attempts or
             post_budget.recovery_history() != recoveries):
@@ -179,7 +194,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     if journal.recovery() != first_request or current_activity != first_activity:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding)
+        file_binding, file_fingerprints)
 
     gross = account.get('gross_only_minus_observed')
     try:
@@ -219,6 +234,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         complete_accepted_history_replayed=True,
         guarded_balance_evidence_bound=True,
         journals_rechecked_unchanged=True,
+        journal_files_rechecked_unchanged=True,
         post_attempts=posts['post_attempts'],
         exact_activity_bindings=posts['exact_activity_bindings'],
         exact_not_sent_bindings=posts['exact_not_sent_bindings'],
@@ -227,7 +243,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         inventory_arithmetic_evaluated=account['inventory_arithmetic_evaluated'],
         gross_only_difference_absent=gross_absent,
         uncertainty_preserved=True, **{flag: False for flag in FLAGS},
-        limitations='One private exact-head local composition binds the selected provider POST history to complete accepted request/activity replay and four supplied guarded balance observations. A zero gross-only residual omits fee obligations and proves neither complete activity, fee links, holds, settled/spendable funds, provider source, broker-account acceptance nor profitability. Separate journals are not an atomic or distributed snapshot. This performs no provider/vault IO, retry, continuation, ledger write, routing, funding, live trading or release approval.')
+        limitations='One private exact-head local composition binds the selected provider POST history to complete accepted request/activity replay and four supplied guarded balance observations. The five selected journal files are sampled repeatedly with bounded private fingerprints, not held as an atomic snapshot or under writer exclusion. A zero gross-only residual omits fee obligations and proves neither complete activity, fee links, holds, settled/spendable funds, provider source, broker-account acceptance nor profitability. This performs no provider/vault IO, retry, continuation, ledger write, routing, funding, live trading or release approval.')
 
 
 def _fixture(root, *, resolve_unknown=True, fee_mode=None):
@@ -283,6 +299,8 @@ def fixture_report():
                 result['guarded_balance_evidence_bound'],
             accepted_history_replayed=
                 result['complete_accepted_history_replayed'],
+            journal_file_fingerprints_rechecked=
+                result['journal_files_rechecked_unchanged'],
             gross_only_residual_checked=
                 result['inventory_arithmetic_evaluated'] and
                 result['gross_only_difference_absent'],

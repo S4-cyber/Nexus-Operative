@@ -1,6 +1,7 @@
 """Exact POST/activity/account-evidence composition tests."""
 import copy
 import shutil
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -33,6 +34,7 @@ def test_exact_post_activity_and_guarded_balance_evidence_bind_without_writes(tm
     assert result['exact_post_activity_bindings']
     assert result['guarded_balance_evidence_bound']
     assert result['journals_rechecked_unchanged']
+    assert result['journal_files_rechecked_unchanged']
     assert result['post_attempts'] == 2
     assert result['exact_activity_bindings'] == 1
     assert result['exact_not_sent_bindings'] == 1
@@ -120,7 +122,7 @@ def test_final_request_race_refuses(tmp_path, monkeypatch):
         return result
 
     monkeypatch.setattr(subject.evidence, 'review_with_stability_guards', raced)
-    with pytest.raises(ValueError, match='JOURNALS_CHANGED_DURING_REVIEW'):
+    with pytest.raises(ValueError, match='FILE_SET_CHANGED'):
         subject.review(**options)
 
 
@@ -209,12 +211,69 @@ def test_ancillary_file_replacement_at_same_path_fails_closed(
     assert path.read_bytes()==backup.read_bytes()==clone.read_bytes()
 
 
+@pytest.mark.parametrize('target', (
+    'post_budget', 'request_journal', 'pacing_path',
+    'activity_store_path', 'acceptance_store_path'))
+def test_same_head_journal_rewrite_fails_closed(
+        tmp_path, monkeypatch, target):
+    options = subject._fixture(tmp_path)
+    paths = {
+        'post_budget': options['post_budget'].path,
+        'request_journal': options['journal'].path,
+        'pacing_path': options['pacing_path'],
+        'activity_store_path': options['activity_store_path'],
+        'acceptance_store_path': options['acceptance_store_path'],
+    }
+    path = Path(paths[target])
+    original = subject.post_activity.review
+
+    def rewrite(*args, **kwargs):
+        result = original(*args, **kwargs)
+        with sqlite3.connect(path) as database:
+            database.execute('PRAGMA user_version=1')
+        return result
+
+    monkeypatch.setattr(subject.post_activity, 'review', rewrite)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_RECONCILIATION_FILE_SET_CHANGED'):
+        subject.review(**options)
+    if target == 'post_budget':
+        assert (options['post_budget'].inspect()['head_sha256'] ==
+            options['expected_post_head'])
+
+
+def test_post_budget_rollback_sidecar_fails_before_account_review(
+        tmp_path, monkeypatch):
+    options = subject._fixture(tmp_path)
+    original = subject.post_activity.review
+    sidecar = Path(str(options['post_budget'].path) + '-journal')
+    account_called = False
+
+    def add_sidecar(*args, **kwargs):
+        result = original(*args, **kwargs)
+        sidecar.write_bytes(b'uncommitted')
+        return result
+
+    def account(**kwargs):
+        nonlocal account_called
+        account_called = True
+
+    monkeypatch.setattr(subject.post_activity, 'review', add_sidecar)
+    monkeypatch.setattr(subject.evidence, 'review_with_stability_guards',
+        account)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_RECONCILIATION_SQLITE_SIDECAR_REVIEW_REQUIRED'):
+        subject.review(**options)
+    assert not account_called
+
+
 def test_fixture_is_private_and_never_authoritative():
     result = subject.fixture_report()
     assert result['passed']
     for key in ('exact_post_activity_bound',
                 'guarded_account_evidence_bound',
                 'accepted_history_replayed',
+                'journal_file_fingerprints_rechecked',
                 'gross_only_residual_checked',
                 'unresolved_unknown_rejected',
                 'repeat_review_matches', 'journals_unchanged',

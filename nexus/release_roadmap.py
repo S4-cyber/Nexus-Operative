@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.318.0'
+REVISION = '0.319.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -295,7 +295,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.318.0 extends the private whole-file stability boundary from the three-journal inventory reconciliation into the complete four-journal account-evidence composition. The exact request, pacing, retained-activity and acceptance SQLite files must remain regular single-link files with stable identity, metadata and bounded no-follow SHA-256 content around pinned, explicitly sampled current-head and four-observation reviews; rollback, WAL or shared-memory sidecars fail closed before a composed result. This detects request-journal and cross-component same-head local rewrites that semantic head comparison alone could miss. The sample is read-only and exposes no paths or private digests, but it is not an atomic multi-file snapshot, writer lock, ACL audit, external anchor, provider/source attestation or account acceptance. No retry, repair, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account submission/reconciliation, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.319.0 extends the private whole-file stability boundary through the higher provider-POST reconciliation composition. The exact provider POST budget plus request, pacing, retained-activity and acceptance SQLite files must remain regular single-link files with stable identity, metadata and bounded no-follow SHA-256 content across every outer review boundary; rollback, WAL or shared-memory sidecars fail closed before a composed result. This detects same-head provider-budget and cross-component local rewrites that semantic head comparison alone could miss. The sample is read-only and exposes no paths or private digests, but it is not an atomic five-file snapshot, writer lock, ACL audit, external anchor, provider/source attestation or account acceptance. No retry, repair, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account submission/reconciliation, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

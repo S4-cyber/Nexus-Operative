@@ -18,15 +18,22 @@ from nexus.paper_read_projection import digest as projection_digest
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_contract import preview
 from nexus.broker_activity_store import BrokerActivityStore
+from nexus.broker_activity_store import MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES
 from nexus.broker_request_journal import BrokerRequestJournal
+from nexus.broker_request_journal import MAX_DATABASE_BYTES as REQUEST_DATABASE_BYTES
 from nexus import broker_request_activity_review as request_review
 from nexus.paper_activity_acceptance_probe import status as acceptance_status
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore, PROFILE
+from nexus.paper_activity_acceptance_store import MAX_DATABASE_BYTES as ACCEPTANCE_DATABASE_BYTES
 from nexus.paper_read_pacing import PaperReadPacing
+from nexus.paper_read_pacing import MAX_DATABASE_BYTES as PACING_DATABASE_BYTES
+from nexus.sqlite_journal_guard import capture_file_fingerprints, check_path_set, require_file_fingerprints
 
 POLICY = 'nexus.paper-request-activity-acceptance.v1'
 FLAGS = tuple(dict.fromkeys((*request_review.FLAGS, 'admission_reserved',
     'automatic_continuation', 'requested_window_boundaries_verified')))
+JOURNAL_LIMITS = (REQUEST_DATABASE_BYTES, PACING_DATABASE_BYTES,
+    ACTIVITY_DATABASE_BYTES, ACCEPTANCE_DATABASE_BYTES)
 
 
 def _fail(code):
@@ -75,27 +82,47 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
            activity_store_path, acceptance_store_path,
            expected_request_head, expected_activity_head):
     """Review immutable request terms/fills only after full accepted-history replay."""
-    from nexus.sqlite_journal_guard import check_path_set
-    check_path_set((request_journal_path,pacing_path,activity_store_path,acceptance_store_path),'PAPER_REQUEST_ACTIVITY_ACCEPTANCE_')
+    paths = check_path_set((request_journal_path, pacing_path,
+        activity_store_path, acceptance_store_path),
+        'PAPER_REQUEST_ACTIVITY_ACCEPTANCE_')
+    (request_journal_path, pacing_path, activity_store_path,
+        acceptance_store_path) = paths
+    prefix = 'PAPER_REQUEST_ACTIVITY_ACCEPTANCE_'
+    fingerprints = None
+    try:
+        fingerprints = capture_file_fingerprints(paths, JOURNAL_LIMITS, prefix)
+    except ValueError as error:
+        if str(error) != prefix + 'FILE_SET_UNAVAILABLE':
+            raise
+    def require_unchanged():
+        require_file_fingerprints(paths, JOURNAL_LIMITS, fingerprints,
+            prefix)
     before = acceptance_status(expected_account_id=expected_account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path)
     if not _complete(before):
         _fail('ACCEPTED_HISTORY_REQUIRED')
+    if fingerprints is None:
+        raise ValueError(prefix + 'FILE_SET_UNAVAILABLE') from None
+    require_unchanged()
     if before['retention_head_sha256'] != expected_activity_head:
         _fail('ACTIVITY_HEAD_DISAGREEMENT')
 
     journal = BrokerRequestJournal(request_journal_path, expected_account_id)
     store = BrokerActivityStore(activity_store_path, expected_account_id)
     origins=_request_origins(journal,store,acceptance_store_path,expected_account_id,expected_request_head)
+    require_unchanged()
     component = request_review.review(journal, store,
         expected_request_head=expected_request_head,
         expected_activity_head=expected_activity_head)
+    require_unchanged()
 
     after = acceptance_status(expected_account_id=expected_account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path)
+    require_unchanged()
     recovered = journal.recovery()
+    require_unchanged()
     if before != after or recovered['head_sha256'] != expected_request_head:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     if component['activity_head_sha256'] != after['retention_head_sha256']:
@@ -110,7 +137,8 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
         request_activity_review_sha256=component['input_sha256'])
     return dict(mode='PAPER_REQUEST_ACTIVITY_ACCEPTANCE_REVIEW',
         status='REVIEW_REQUIRED', read_only=True, **scope, input_sha256=sha(scope),**origins,
-        journals_rechecked_unchanged=True, complete_accepted_history_replayed=True,
+        journals_rechecked_unchanged=True, journal_files_rechecked_unchanged=True,
+        complete_accepted_history_replayed=True,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
         accepted_pacing_operations_typed=True,
         accepted_pacing_result_receipts_bound=True,

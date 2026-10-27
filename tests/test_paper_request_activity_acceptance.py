@@ -1,6 +1,7 @@
 """Accepted-history composition for original requests and explicit fills."""
 import copy
 import json
+import sqlite3
 import subprocess
 import sys
 
@@ -103,7 +104,8 @@ def test_complete_accepted_history_binds_original_terms_and_explicit_fills(tmp_p
     assert result['complete_accepted_history_replayed'] is True
     assert result['local_request_activity_agreement'] is True
     assert result['request_activity_review']['request_reviews'][0]['explicit_fill_count']==2
-    assert result['journals_rechecked_unchanged'] is True and snapshot(tmp_path)==before
+    assert result['journals_rechecked_unchanged'] is True
+    assert result['journal_files_rechecked_unchanged'] is True and snapshot(tmp_path)==before
     assert result['accepted_pacing_operations_typed'] is True
     assert result['accepted_pacing_result_receipts_bound'] is True
     assert all(result[name] is False for name in subject.FLAGS)
@@ -206,6 +208,49 @@ def test_request_change_during_review_is_detected_and_preserved(tmp_path,monkeyp
         return result
     monkeypatch.setattr(subject.BrokerRequestJournal,'recovery',lambda self:changed())
     with pytest.raises(ValueError,match='JOURNALS_CHANGED_DURING_REVIEW'):subject.review(**options)
+
+
+@pytest.mark.parametrize('selected', ('request_journal_path', 'pacing_path',
+    'activity_store_path', 'acceptance_store_path'))
+def test_every_selected_same_head_rewrite_fails_closed(tmp_path, monkeypatch, selected):
+    options,_,_=prepared(tmp_path)
+    path=options[selected]
+    original=subject.acceptance_status
+    calls=0
+
+    def rewrite(**kwargs):
+        nonlocal calls
+        result=original(**kwargs);calls+=1
+        if calls==1:
+            with sqlite3.connect(path) as database:
+                database.execute('PRAGMA user_version=1')
+        return result
+
+    monkeypatch.setattr(subject,'acceptance_status',rewrite)
+    with pytest.raises(ValueError,match=
+            'PAPER_REQUEST_ACTIVITY_ACCEPTANCE_FILE_SET_CHANGED'):
+        subject.review(**options)
+
+
+def test_rollback_sidecar_fails_before_request_component(tmp_path, monkeypatch):
+    options,_,_=prepared(tmp_path)
+    path=options['acceptance_store_path']
+    sidecar=path.with_name(path.name+'-journal')
+    original=subject.acceptance_status
+    calls=0
+
+    def add_sidecar(**kwargs):
+        nonlocal calls
+        result=original(**kwargs);calls+=1
+        if calls==1:sidecar.write_bytes(b'uncommitted')
+        return result
+
+    monkeypatch.setattr(subject,'acceptance_status',add_sidecar)
+    monkeypatch.setattr(subject.request_review,'review',
+        lambda *args,**kwargs:pytest.fail('sidecar reached request component'))
+    with pytest.raises(ValueError,match=
+            'PAPER_REQUEST_ACTIVITY_ACCEPTANCE_SQLITE_SIDECAR_REVIEW_REQUIRED'):
+        subject.review(**options)
 
 
 def test_cli_is_read_only_and_returns_private_review(tmp_path):

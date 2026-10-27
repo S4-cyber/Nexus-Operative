@@ -6,6 +6,7 @@ preserves a consistent snapshot while normal journal locks are respected.
 """
 import hashlib
 import os
+import shutil
 import sqlite3
 import stat
 import time
@@ -15,6 +16,11 @@ from nexus.paper_portfolio import LOCK, _connect
 from nexus.portfolio_governor import audit_portfolio
 
 SNAPSHOT_BUSY_TIMEOUT_MS=10_000
+MAX_SOURCE_BYTES=512*1024*1024
+MAX_RETAINED_SNAPSHOTS=64
+MAX_RETAINED_SNAPSHOT_BYTES=4*1024*1024*1024
+MAX_SNAPSHOT_DIRECTORY_ENTRIES=256
+SNAPSHOT_FREE_SPACE_RESERVE_BYTES=64*1024*1024
 
 
 def _fail(code):raise ValueError('PAPER_SNAPSHOT_'+code) from None
@@ -51,6 +57,51 @@ def _require_directory(path):
     except OSError:_fail('DIRECTORY_UNAVAILABLE')
     if stat.S_ISLNK(observed.st_mode):_fail('DIRECTORY_SYMLINK')
     if not stat.S_ISDIR(observed.st_mode):_fail('DIRECTORY_REQUIRED')
+
+
+def _regular_size(path,expected,scope):
+    flags=(os.O_RDONLY|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|
+           getattr(os,'O_NONBLOCK',0))
+    try:
+        with os.fdopen(os.open(path,flags),'rb',buffering=0) as stream:
+            opened=os.fstat(stream.fileno())
+    except OSError:_fail(scope+'_FILE_UNAVAILABLE')
+    if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink!=1 or
+        (opened.st_dev,opened.st_ino)!=expected):
+        _fail(scope+'_FILE_CHANGED')
+    return opened.st_size
+
+
+def _snapshot_capacity(directory,source_bytes):
+    if source_bytes>MAX_SOURCE_BYTES:_fail('SOURCE_CAPACITY_REVIEW_REQUIRED')
+    retained=0;retained_bytes=0;entries=0
+    try:
+        with os.scandir(directory) as listing:
+            for entry in listing:
+                entries+=1
+                if entries>MAX_SNAPSHOT_DIRECTORY_ENTRIES:
+                    _fail('DIRECTORY_CAPACITY_REVIEW_REQUIRED')
+                name=entry.name
+                if (name.startswith('paper_snapshot_') and
+                    name.endswith(('.sqlite3-journal','.sqlite3-wal','.sqlite3-shm'))):
+                    _fail('RETAINED_SIDECAR_REVIEW_REQUIRED')
+                if not (name.startswith('paper_snapshot_') and name.endswith('.sqlite3')):
+                    continue
+                observed=entry.stat(follow_symlinks=False)
+                if stat.S_ISLNK(observed.st_mode):_fail('RETAINED_SYMLINK')
+                if not stat.S_ISREG(observed.st_mode):_fail('RETAINED_REGULAR_FILE_REQUIRED')
+                if observed.st_nlink!=1:_fail('RETAINED_HARDLINK_REVIEW_REQUIRED')
+                if observed.st_size>MAX_SOURCE_BYTES:_fail('RETAINED_CAPACITY_REVIEW_REQUIRED')
+                retained+=1;retained_bytes+=observed.st_size
+    except ValueError:raise
+    except OSError:_fail('DIRECTORY_UNAVAILABLE')
+    if (retained>=MAX_RETAINED_SNAPSHOTS or
+        retained_bytes+source_bytes>MAX_RETAINED_SNAPSHOT_BYTES):
+        _fail('CAPACITY_REVIEW_REQUIRED')
+    try:free=shutil.disk_usage(directory).free
+    except OSError:_fail('FREE_SPACE_UNAVAILABLE')
+    if free<source_bytes+SNAPSHOT_FREE_SPACE_RESERVE_BYTES:
+        _fail('FREE_SPACE_REVIEW_REQUIRED')
 
 
 def _backup_with_deadline(source,target):
@@ -131,6 +182,8 @@ def backup_snapshot():
                 if before is not None and opened!=before:_fail('SOURCE_FILE_CHANGED')
                 directory=source_path.parent/"recovery_snapshots"
                 _require_directory(directory)
+                source_bytes=_regular_size(source_path,opened,'SOURCE')
+                _snapshot_capacity(directory,source_bytes)
                 # A UTC timestamp plus no-follow exclusive create avoids replacing
                 # previous exports and requests private POSIX permissions.
                 filename="paper_snapshot_"+str(time.time_ns())+".sqlite3"

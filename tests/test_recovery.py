@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import shutil
 import stat
 import time
 import pytest
@@ -101,6 +102,71 @@ def test_backup_failure_removes_exclusive_partial(tmp_path,monkeypatch):
     except ValueError as error:assert str(error)=="PAPER_SNAPSHOT_DATABASE_BUSY"
     else:raise AssertionError("injected snapshot failure accepted")
     assert not list((tmp_path/"recovery_snapshots").iterdir())
+
+def test_backup_capacity_refuses_without_pruning(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    initialize(10000)
+    receipt=backup_snapshot();snapshot=tmp_path/"recovery_snapshots"/receipt["filename"]
+    before=snapshot.read_bytes()
+    monkeypatch.setattr(recovery,"MAX_RETAINED_SNAPSHOTS",1)
+    response=TestClient(app).post("/api/paper/portfolio/snapshot")
+    assert response.status_code==503
+    assert response.json()["detail"]=="PAPER_SNAPSHOT_CAPACITY_REVIEW_REQUIRED"
+    assert list((tmp_path/"recovery_snapshots").iterdir())==[snapshot]
+    assert snapshot.read_bytes()==before
+
+def test_backup_source_and_free_space_caps_fail_before_candidate(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    initialize(10000)
+    monkeypatch.setattr(recovery,"MAX_SOURCE_BYTES",1)
+    response=TestClient(app).post("/api/paper/portfolio/snapshot")
+    assert response.status_code==503
+    assert response.json()["detail"]=="PAPER_SNAPSHOT_SOURCE_CAPACITY_REVIEW_REQUIRED"
+    monkeypatch.setattr(recovery,"MAX_SOURCE_BYTES",512*1024*1024)
+    usage=shutil.disk_usage(tmp_path)
+    monkeypatch.setattr(recovery.shutil,"disk_usage",lambda _path:usage._replace(free=0))
+    response=TestClient(app).post("/api/paper/portfolio/snapshot")
+    assert response.status_code==503
+    assert response.json()["detail"]=="PAPER_SNAPSHOT_FREE_SPACE_REVIEW_REQUIRED"
+    assert not list((tmp_path/"recovery_snapshots").iterdir())
+
+def test_backup_rejects_retained_snapshot_links_and_sidecars(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    initialize(10000)
+    directory=tmp_path/"recovery_snapshots";directory.mkdir()
+    external=tmp_path/"external.sqlite3";external.write_bytes(b"retained")
+    link=directory/"paper_snapshot_1.sqlite3"
+    try:link.symlink_to(external)
+    except OSError:pytest.skip("symlink creation unavailable")
+    response=TestClient(app).post("/api/paper/portfolio/snapshot")
+    assert response.status_code==503
+    assert response.json()["detail"]=="PAPER_SNAPSHOT_RETAINED_SYMLINK"
+    assert external.read_bytes()==b"retained"
+    link.unlink();sidecar=directory/"paper_snapshot_1.sqlite3-journal"
+    sidecar.write_bytes(b"pending")
+    response=TestClient(app).post("/api/paper/portfolio/snapshot")
+    assert response.status_code==503
+    assert response.json()["detail"]=="PAPER_SNAPSHOT_RETAINED_SIDECAR_REVIEW_REQUIRED"
+    assert sidecar.read_bytes()==b"pending"
+
+def test_backup_aggregate_and_directory_entry_caps_preserve_files(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    initialize(10000)
+    directory=tmp_path/"recovery_snapshots";directory.mkdir()
+    retained=directory/"paper_snapshot_1.sqlite3";retained.write_bytes(b"retained")
+    monkeypatch.setattr(recovery,"MAX_RETAINED_SNAPSHOT_BYTES",1)
+    response=TestClient(app).post("/api/paper/portfolio/snapshot")
+    assert response.status_code==503
+    assert response.json()["detail"]=="PAPER_SNAPSHOT_CAPACITY_REVIEW_REQUIRED"
+    assert retained.read_bytes()==b"retained"
+    retained.unlink();first=directory/"operator-note";second=directory/"operator-review"
+    first.write_bytes(b"first");second.write_bytes(b"second")
+    monkeypatch.setattr(recovery,"MAX_RETAINED_SNAPSHOT_BYTES",4*1024*1024*1024)
+    monkeypatch.setattr(recovery,"MAX_SNAPSHOT_DIRECTORY_ENTRIES",1)
+    response=TestClient(app).post("/api/paper/portfolio/snapshot")
+    assert response.status_code==503
+    assert response.json()["detail"]=="PAPER_SNAPSHOT_DIRECTORY_CAPACITY_REVIEW_REQUIRED"
+    assert first.read_bytes()==b"first" and second.read_bytes()==b"second"
 
 def test_recovery_api_never_authorizes_or_resets(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))

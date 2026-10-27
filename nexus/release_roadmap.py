@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.305.0'
+REVISION = '0.306.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.305.0 gives retained original-request quote evidence and sustained forward-trial review one explicit ten-second SQLite contention boundary. Busy/locked exhaustion fails closed with stable redacted diagnostics; quote writes roll back an unacknowledged commit, and both public reads recover exactly after lock release. Four real-lock tests cover quote writer admission, reader-blocked final commit and exclusive read snapshots. No retry is introduced. This is local evidence-path hardening, not quote-source attestation, provider acceptance, account or activity coverage, native power-loss proof, trial realism or new authority. No credential, account, request, order, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.306.0 gives the core simulated paper portfolio and durable order journal one explicit ten-second SQLite contention boundary. Busy/locked exhaustion during connection, writer admission, statements, final commit or replay fails closed with stable redacted diagnostics; failed writes roll back without acknowledgement and reads recover exactly after lock release. Six real-lock tests cover writer admission, reader-blocked final commit and exclusive replay for both journals. No retry is introduced, and the independent emergency-cut latch is unchanged. This is local simulated-accounting durability hardening, not broker acceptance, provider reconciliation, native power-loss proof, trial realism or new authority. No credential, account, request, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

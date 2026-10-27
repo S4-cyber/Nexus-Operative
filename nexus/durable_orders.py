@@ -20,8 +20,28 @@ from nexus.execution_capacity import report as capacity_report, CONTROL_RESERVE
 
 MAX_COMMANDS = 10000
 MAX_RETAINED_COMMANDS = 100000
+DB_BUSY_TIMEOUT_MS = 10_000
 ROTATION_MARKER = 'nexus-order-rotation.intent'
 METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal', 'bind_replacement_epoch'))
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+def _busy():raise ValueError('ORDER_JOURNAL_DATABASE_BUSY') from None
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded statement/final-commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
 
 
 class DurableOrderGateway:
@@ -51,12 +71,22 @@ class DurableOrderGateway:
         self._require_rotation_clear()
         path = self._path()
         path.parent.mkdir(parents=True, exist_ok=True)
-        db = sqlite3.connect(path, timeout=10)
-        db.execute('PRAGMA synchronous=FULL')
-        db.execute('''CREATE TABLE IF NOT EXISTS commands(
-            sequence INTEGER PRIMARY KEY, payload TEXT NOT NULL)''')
-        db.execute('CREATE TABLE IF NOT EXISTS order_checkpoints(sequence INTEGER PRIMARY KEY,prefix_sha256 TEXT NOT NULL,state_json TEXT NOT NULL)')
-        return db
+        db = None
+        try:
+            db = sqlite3.connect(path, timeout=DB_BUSY_TIMEOUT_MS/1000)
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('''CREATE TABLE IF NOT EXISTS commands(
+                sequence INTEGER PRIMARY KEY, payload TEXT NOT NULL)''')
+            db.execute('CREATE TABLE IF NOT EXISTS order_checkpoints(sequence INTEGER PRIMARY KEY,prefix_sha256 TEXT NOT NULL,state_json TEXT NOT NULL)')
+            return db
+        except sqlite3.OperationalError as error:
+            if db is not None:db.close()
+            if _database_busy(error):_busy()
+            raise
+        except BaseException:
+            if db is not None:db.close()
+            raise
 
     @contextmanager
     def _read_connection(self):
@@ -68,9 +98,18 @@ class DurableOrderGateway:
             yield None
             return
         if not stat.S_ISREG(observed.st_mode):raise ValueError('ORDER_HISTORY_REGULAR_FILE_REQUIRED')
-        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=10)) as db:
+        db=None
+        try:
+            db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+                timeout=DB_BUSY_TIMEOUT_MS/1000)
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             db.execute('BEGIN')
             yield db
+        except sqlite3.OperationalError as error:
+            if _database_busy(error):_busy()
+            raise
+        finally:
+            if db is not None:db.close()
 
     def _read_restore(self, db, *, compare_portfolio=False):
         if db is None:
@@ -127,22 +166,23 @@ class DurableOrderGateway:
             if method not in METHODS:raise ValueError('INVALID_COMMAND')
             payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
             prepared.append((method,args,kwargs,payload))
-        with closing(self._connect()) as db,db:
-            portfolio=execution_portfolio.attach(db,self._path().parent/'paper_portfolio.sqlite3')
-            db.execute('BEGIN IMMEDIATE')
-            gateway,count=self._restore(db)
-            results=[]
-            for method,args,kwargs,payload in prepared:
-                if method=='simulate_quote_fill' and execution_clock is not None:
-                    evaluated=execution_clock()
-                    try:valid=type(evaluated) in (int,float) and math.isfinite(evaluated)
-                    except OverflowError:valid=False
-                    if not valid:raise ValueError('INVALID_EXECUTION_CLOCK_SAMPLE')
-                    if len(args)>8:args=(*args[:8],evaluated,*args[9:])
-                    else:kwargs={**kwargs,'evaluated_at':evaluated}
-                    payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
-                result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
-                results.append(result)
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                portfolio=execution_portfolio.attach(db,self._path().parent/'paper_portfolio.sqlite3')
+                db.execute('BEGIN IMMEDIATE')
+                gateway,count=self._restore(db)
+                results=[]
+                for method,args,kwargs,payload in prepared:
+                    if method=='simulate_quote_fill' and execution_clock is not None:
+                        evaluated=execution_clock()
+                        try:valid=type(evaluated) in (int,float) and math.isfinite(evaluated)
+                        except OverflowError:valid=False
+                        if not valid:raise ValueError('INVALID_EXECUTION_CLOCK_SAMPLE')
+                        if len(args)>8:args=(*args[:8],evaluated,*args[9:])
+                        else:kwargs={**kwargs,'evaluated_at':evaluated}
+                        payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
+                    result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
+                    results.append(result)
         return results
 
     def _apply(self,db,portfolio,gateway,count,method,args,kwargs,payload):

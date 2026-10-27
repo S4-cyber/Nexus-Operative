@@ -7,7 +7,7 @@ import os
 import sqlite3
 import threading
 import time
-from contextlib import closing
+from contextlib import closing,contextmanager
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from nexus.public_data import PRODUCTS
@@ -16,6 +16,43 @@ LOCK=threading.RLock()
 D=Decimal
 FEE=D("0.001")
 MAX_SPREAD_BPS=D("150")
+DB_BUSY_TIMEOUT_MS=10_000
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+def _busy():raise ValueError('PAPER_PORTFOLIO_DATABASE_BUSY') from None
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded statement/final-commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
+
+
+@contextmanager
+def _snapshot(path):
+    """Read one bounded portfolio snapshot without leaking SQLite lock text."""
+    db=None
+    try:
+        db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+            timeout=DB_BUSY_TIMEOUT_MS/1000)
+        db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+        db.execute('BEGIN')
+        yield db
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
+    finally:
+        if db is not None:db.close()
 
 def num(x):
     if isinstance(x,bool):raise ValueError("Invalid number")
@@ -27,9 +64,19 @@ def num(x):
 def _connect():
     path=Path(os.environ.get("NEXUS_PORTABLE_DATA",str(Path.home()/".nexus-operative")))
     path.mkdir(parents=True,exist_ok=True)
-    db=sqlite3.connect(path/"paper_portfolio.sqlite3",timeout=10)
-    create_schema(db)
-    return db
+    db=None
+    try:
+        db=sqlite3.connect(path/"paper_portfolio.sqlite3",timeout=DB_BUSY_TIMEOUT_MS/1000)
+        db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+        create_schema(db)
+        return db
+    except sqlite3.OperationalError as error:
+        if db is not None:db.close()
+        if _database_busy(error):_busy()
+        raise
+    except BaseException:
+        if db is not None:db.close()
+        raise
 
 def create_schema(db):
     db.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY,value TEXT NOT NULL)")
@@ -56,8 +103,7 @@ def state():
 
 
 def _read_state(path):
-    with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=10)) as db:
-        db.execute('BEGIN')
+    with _snapshot(path) as db:
         meta=dict(db.execute("SELECT key,value FROM meta"))
         positions=[{"product":p,"quantity":float(D(q)),"entry":float(D(e))}
                    for p,q,e in db.execute("SELECT product,quantity,entry FROM positions ORDER BY product")]
@@ -71,13 +117,15 @@ def _read_state(path):
 def initialize(capital):
     capital=num(capital)
     if capital>D("1000000"):raise ValueError("Capital outside paper limit")
-    with LOCK,_connect() as db:
-        if db.execute("SELECT value FROM meta WHERE key='initial'").fetchone():
-            raise ValueError("Already initialized; no automatic reset")
-        db.executemany("INSERT INTO meta(key,value) VALUES(?,?)",[("initial",str(capital)),("cash",str(capital)),("position_journal_version","2"),("hash_chain_version","1")])
-        cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"INIT","",str(capital)))
-        from nexus.transaction_seals import append_seal
-        append_seal(db,cur.lastrowid)
+    with LOCK:
+        with closing(_connect()) as db:
+            with _transaction(db):
+                if db.execute("SELECT value FROM meta WHERE key='initial'").fetchone():
+                    raise ValueError("Already initialized; no automatic reset")
+                db.executemany("INSERT INTO meta(key,value) VALUES(?,?)",[("initial",str(capital)),("cash",str(capital)),("position_journal_version","2"),("hash_chain_version","1")])
+                cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"INIT","",str(capital)))
+                from nexus.transaction_seals import append_seal
+                append_seal(db,cur.lastrowid)
     return state()
 
 def check_quote(product,quote):
@@ -111,52 +159,57 @@ def buy(product,notional,quote):
     _,ask=check_quote(product,quote)
     from nexus.portfolio_governor import require_safe_ledger
     require_safe_ledger()
-    with LOCK,_connect() as db:
-        meta=dict(db.execute("SELECT key,value FROM meta"))
-        if meta.get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
-        if "cash" not in meta:raise ValueError("Initialize first")
-        if db.execute("SELECT 1 FROM positions WHERE product=?",(product,)).fetchone():
-            raise ValueError("Already holding this paper product")
-        cash=verify_ledger(db);capital=D(meta["initial"])
-        exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
-        if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")
-        if amount>capital*D(".02") or amount*(D(1)+FEE)>cash:
-            raise ValueError("Position cap or cash exceeded")
-        qty=amount/ask
-        delta=-amount*(D(1)+FEE)
-        db.execute("INSERT INTO positions(product,quantity,entry) VALUES(?,?,?)",(product,str(qty),str(ask)))
-        db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
-        cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_BUY",product,str(delta)))
-        db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
-                   (cur.lastrowid,"PAPER_BUY",product,str(qty),str(ask)))
-        from nexus.transaction_seals import append_seal
-        append_seal(db,cur.lastrowid)
+    with LOCK:
+        with closing(_connect()) as db:
+            with _transaction(db):
+                meta=dict(db.execute("SELECT key,value FROM meta"))
+                if meta.get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
+                if "cash" not in meta:raise ValueError("Initialize first")
+                if db.execute("SELECT 1 FROM positions WHERE product=?",(product,)).fetchone():
+                    raise ValueError("Already holding this paper product")
+                cash=verify_ledger(db);capital=D(meta["initial"])
+                exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
+                if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")
+                if amount>capital*D(".02") or amount*(D(1)+FEE)>cash:
+                    raise ValueError("Position cap or cash exceeded")
+                qty=amount/ask
+                delta=-amount*(D(1)+FEE)
+                db.execute("INSERT INTO positions(product,quantity,entry) VALUES(?,?,?)",(product,str(qty),str(ask)))
+                db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
+                cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_BUY",product,str(delta)))
+                db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
+                           (cur.lastrowid,"PAPER_BUY",product,str(qty),str(ask)))
+                from nexus.transaction_seals import append_seal
+                append_seal(db,cur.lastrowid)
     return state()
 
 def sell(product,quote):
     bid,_=check_quote(product,quote)
-    with LOCK,_connect() as db:
-        if dict(db.execute("SELECT key,value FROM meta")).get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
-        cash=verify_ledger(db)
-        pos=db.execute("SELECT quantity,entry FROM positions WHERE product=?",(product,)).fetchone()
-        if not pos:raise ValueError("Paper position unavailable")
-        qty=D(pos[0]);delta=qty*bid*(D(1)-FEE)
-        db.execute("DELETE FROM positions WHERE product=?",(product,))
-        db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
-        cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_SELL",product,str(delta)))
-        db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
-                   (cur.lastrowid,"PAPER_SELL",product,str(qty),str(pos[1])))
-        from nexus.transaction_seals import append_seal
-        append_seal(db,cur.lastrowid)
+    with LOCK:
+        with closing(_connect()) as db:
+            with _transaction(db):
+                if dict(db.execute("SELECT key,value FROM meta")).get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
+                cash=verify_ledger(db)
+                pos=db.execute("SELECT quantity,entry FROM positions WHERE product=?",(product,)).fetchone()
+                if not pos:raise ValueError("Paper position unavailable")
+                qty=D(pos[0]);delta=qty*bid*(D(1)-FEE)
+                db.execute("DELETE FROM positions WHERE product=?",(product,))
+                db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
+                cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_SELL",product,str(delta)))
+                db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
+                           (cur.lastrowid,"PAPER_SELL",product,str(qty),str(pos[1])))
+                from nexus.transaction_seals import append_seal
+                append_seal(db,cur.lastrowid)
     return state()
 
 def reconcile(quotes):
     info=state()
     if not info["initialized"]:return {**info,"reconciled":False,"reason":"Paper portfolio uninitialized"}
-    with LOCK,_connect() as db:
-        try:verified_cash=verify_ledger(db)
-        except (ValueError,InvalidOperation):
-            return {**info,"reconciled":False,"reason":"Cash journal mismatch"}
+    with LOCK:
+        with closing(_connect()) as db:
+            try:verified_cash=verify_ledger(db)
+            except (ValueError,InvalidOperation):
+                return {**info,"reconciled":False,"reason":"Cash journal mismatch"}
     equity=verified_cash
     for pos in info["positions"]:
         try: bid,_=check_quote(pos["product"],quotes[pos["product"]])

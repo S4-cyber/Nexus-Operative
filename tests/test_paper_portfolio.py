@@ -1,7 +1,10 @@
 import time
+import sqlite3
+from contextlib import closing
 import pytest
 from fastapi.testclient import TestClient
 from nexus.app import app
+import nexus.paper_portfolio as portfolio
 from nexus.paper_portfolio import initialize,buy,sell,state,reconcile
 from nexus.strategy_branches import available_branches
 
@@ -69,7 +72,6 @@ def test_passive_state_and_http_do_not_initialize_missing_accounting(tmp_path,mo
 
 
 def test_passive_state_refuses_corrupt_or_incomplete_history_without_repair(tmp_path,monkeypatch):
-    import sqlite3
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));path=tmp_path/'paper_portfolio.sqlite3'
     path.write_bytes(b'corrupt fixture');before=path.read_bytes()
     with pytest.raises(sqlite3.Error):state()
@@ -81,3 +83,40 @@ def test_passive_state_refuses_corrupt_or_incomplete_history_without_repair(tmp_
     before=path.read_bytes()
     with pytest.raises(sqlite3.Error):state()
     assert path.read_bytes()==before
+
+
+def test_writer_contention_is_bounded_redacted_and_leaves_portfolio_unchanged(tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    monkeypatch.setattr(portfolio,'DB_BUSY_TIMEOUT_MS',50)
+    initialize(1000);path=tmp_path/'paper_portfolio.sqlite3';before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match='^PAPER_PORTFOLIO_DATABASE_BUSY$'):
+            buy('BTC-USD',10,quote())
+        assert path.read_bytes()==before
+    assert buy('BTC-USD',10,quote())['positions'][0]['product']=='BTC-USD'
+
+
+def test_reader_blocked_final_commit_is_bounded_and_rolls_back_portfolio(tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    monkeypatch.setattr(portfolio,'DB_BUSY_TIMEOUT_MS',50)
+    initialize(1000);path=tmp_path/'paper_portfolio.sqlite3';before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN')
+        blocker.execute('SELECT count(*) FROM ledger').fetchone()
+        with pytest.raises(ValueError,match='^PAPER_PORTFOLIO_DATABASE_BUSY$'):
+            buy('BTC-USD',10,quote())
+        assert path.read_bytes()==before
+    assert buy('BTC-USD',10,quote())['event_count']==2
+
+
+def test_exclusive_contention_is_bounded_and_read_snapshot_recovers(tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    monkeypatch.setattr(portfolio,'DB_BUSY_TIMEOUT_MS',50)
+    expected=initialize(1000);path=tmp_path/'paper_portfolio.sqlite3';before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match='^PAPER_PORTFOLIO_DATABASE_BUSY$'):
+            state()
+        assert path.read_bytes()==before
+    assert state()==expected

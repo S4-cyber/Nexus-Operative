@@ -2,6 +2,7 @@ import sqlite3
 from contextlib import closing
 from concurrent.futures import ThreadPoolExecutor
 import pytest
+import nexus.durable_orders as durable_orders
 from nexus.durable_orders import DurableOrderGateway
 from nexus.order_accounting import order_id_fingerprint, retired_id_set_sha256
 
@@ -163,3 +164,45 @@ def test_recovery_api_and_failed_reset_keep_halt(tmp_path, monkeypatch):
     monkeypatch.setattr(g, 'reset', failure)
     assert client.post('/api/simulate/halt/reset', json={'confirm_reset':True}).status_code == 503
     assert backend._halted is True
+
+
+def _journal_fixture(tmp_path):
+    path=tmp_path/'orders.sqlite3';portfolio=tmp_path/'paper_portfolio.sqlite3'
+    gateway=DurableOrderGateway(path)
+    gateway.submit('first','BTC-USD','BUY',25)
+    return gateway,path,portfolio,(path.read_bytes(),portfolio.read_bytes())
+
+
+def test_writer_contention_is_bounded_redacted_and_leaves_order_journals_unchanged(tmp_path,monkeypatch):
+    monkeypatch.setattr(durable_orders,'DB_BUSY_TIMEOUT_MS',50)
+    gateway,path,portfolio,before=_journal_fixture(tmp_path)
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match='^ORDER_JOURNAL_DATABASE_BUSY$'):
+            gateway.submit('second','BTC-USD','BUY',25)
+        assert (path.read_bytes(),portfolio.read_bytes())==before
+    assert gateway.submit('second','BTC-USD','BUY',25)['id']=='second'
+
+
+def test_reader_blocked_final_commit_is_bounded_and_rolls_back_order_journals(tmp_path,monkeypatch):
+    monkeypatch.setattr(durable_orders,'DB_BUSY_TIMEOUT_MS',50)
+    gateway,path,portfolio,before=_journal_fixture(tmp_path)
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN')
+        blocker.execute('SELECT count(*) FROM commands').fetchone()
+        with pytest.raises(ValueError,match='^ORDER_JOURNAL_DATABASE_BUSY$'):
+            gateway.submit('second','BTC-USD','BUY',25)
+        assert (path.read_bytes(),portfolio.read_bytes())==before
+    assert gateway.submit('second','BTC-USD','BUY',25)['id']=='second'
+
+
+def test_exclusive_contention_is_bounded_and_order_replay_recovers(tmp_path,monkeypatch):
+    monkeypatch.setattr(durable_orders,'DB_BUSY_TIMEOUT_MS',50)
+    gateway,path,portfolio,before=_journal_fixture(tmp_path)
+    expected=gateway.recovery_report()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match='^ORDER_JOURNAL_DATABASE_BUSY$'):
+            gateway.recovery_report()
+        assert (path.read_bytes(),portfolio.read_bytes())==before
+    assert gateway.recovery_report()==expected

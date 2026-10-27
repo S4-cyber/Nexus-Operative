@@ -7,21 +7,35 @@ simulation gateway; they never override portfolio or global risk vetoes.
 import sqlite3,threading,time
 from contextlib import closing
 from decimal import Decimal
-from nexus.state import db_path,load_settings,read_effective_settings
+from nexus.state import (DB_BUSY_TIMEOUT_MS,db_path,load_settings,
+    read_effective_settings,settings_busy,settings_database_busy,settings_transaction)
 
 TIERS={"terrestrial":Decimal("0.01"),"solar":Decimal("0.02"),"universal":Decimal("0.03")}
 _lock=threading.RLock()
 
 def _db():
-    db=sqlite3.connect(db_path(),timeout=5)
-    db.execute("CREATE TABLE IF NOT EXISTS tier_permissions (tier TEXT PRIMARY KEY, enabled INTEGER NOT NULL CHECK(enabled IN (0,1)))")
-    return db
+    db=None
+    try:
+        db=sqlite3.connect(db_path(),timeout=DB_BUSY_TIMEOUT_MS/1000)
+        db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute("CREATE TABLE IF NOT EXISTS tier_permissions (tier TEXT PRIMARY KEY, enabled INTEGER NOT NULL CHECK(enabled IN (0,1)))")
+        return db
+    except sqlite3.OperationalError as error:
+        if db is not None:db.close()
+        if settings_database_busy(error):settings_busy()
+        raise
+    except BaseException:
+        if db is not None:db.close()
+        raise
 
 def current():
     with _lock:
         config=load_settings()
-        with closing(_db()) as db,db:
-            saved=dict(db.execute("SELECT tier,enabled FROM tier_permissions"))
+        with closing(_db()) as db:
+            with settings_transaction(db):
+                db.execute('BEGIN')
+                saved=dict(db.execute("SELECT tier,enabled FROM tier_permissions"))
     return {"mode":"LOCAL_SIMULATED_RISK_PERMISSIONS",
         "tiers":[{"tier":tier,"enabled":saved.get(tier,0)==1,
                   "maximum_intent_fraction":float(frac),
@@ -35,10 +49,11 @@ def current():
 def configure(tier,enabled):
     if tier not in TIERS or type(enabled) is not bool:
         raise ValueError("INVALID_TIER_PERMISSION")
-    with _lock,closing(_db()) as db,db:
-        db.execute("BEGIN IMMEDIATE")
-        if enabled:read_effective_settings(db)
-        db.execute("INSERT INTO tier_permissions(tier,enabled) VALUES(?,?) ON CONFLICT(tier) DO UPDATE SET enabled=excluded.enabled",(tier,int(enabled)))
+    with _lock,closing(_db()) as db:
+        with settings_transaction(db):
+            db.execute("BEGIN IMMEDIATE")
+            if enabled:read_effective_settings(db)
+            db.execute("INSERT INTO tier_permissions(tier,enabled) VALUES(?,?) ON CONFLICT(tier) DO UPDATE SET enabled=excluded.enabled",(tier,int(enabled)))
     try:return current()
     except ValueError as exc:
         if enabled or str(exc)!='PAPER_SETTINGS_REVIEW_REQUIRED':raise

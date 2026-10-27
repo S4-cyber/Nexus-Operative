@@ -146,3 +146,46 @@ def test_actual_settings_controller_clears_unverified_values_without_starting_tr
     if not node:pytest.skip('Node required for actual settings controller check')
     result=subprocess.run([node,str(Path(__file__).resolve().parents[1]/'tools/paper_settings_smoke.cjs')],capture_output=True,text=True,timeout=20)
     assert result.returncode==0,result.stderr
+
+
+def test_settings_writer_contention_rolls_back_and_recovers(tmp_path,monkeypatch):
+    import sqlite3
+    from nexus import state
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));save_settings(DEFAULTS)
+    path=tmp_path/'portal_settings.sqlite3';before=path.read_bytes()
+    monkeypatch.setattr(state,'DB_BUSY_TIMEOUT_MS',25)
+    changed={**DEFAULTS,'paper_budget':2500}
+    with sqlite3.connect(path) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match='^PAPER_SETTINGS_DATABASE_BUSY$'):save_settings(changed)
+        assert path.read_bytes()==before
+    assert save_settings(changed)==changed
+
+
+def test_settings_reader_blocked_commit_rolls_back_and_recovers(tmp_path,monkeypatch):
+    import sqlite3
+    from nexus import state
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));save_settings(DEFAULTS)
+    path=tmp_path/'portal_settings.sqlite3';before=path.read_bytes()
+    monkeypatch.setattr(state,'DB_BUSY_TIMEOUT_MS',25)
+    changed={**DEFAULTS,'paper_budget':2500}
+    with sqlite3.connect(path) as blocker:
+        blocker.execute('BEGIN');blocker.execute('SELECT COUNT(*) FROM configuration').fetchone()
+        with pytest.raises(ValueError,match='^PAPER_SETTINGS_DATABASE_BUSY$'):save_settings(changed)
+        assert path.read_bytes()==before
+    assert save_settings(changed)==changed
+
+
+def test_settings_exclusive_contention_is_stable_at_api_and_recovers(tmp_path,monkeypatch):
+    import sqlite3
+    from nexus import state
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));save_settings(DEFAULTS)
+    path=tmp_path/'portal_settings.sqlite3';before=path.read_bytes()
+    monkeypatch.setattr(state,'DB_BUSY_TIMEOUT_MS',25)
+    with sqlite3.connect(path) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match='^PAPER_SETTINGS_DATABASE_BUSY$'):load_settings()
+        reply=TestClient(app).get('/api/paper/settings')
+        assert reply.status_code==503 and reply.json()=={'detail':'PAPER_SETTINGS_DATABASE_BUSY'}
+        assert path.read_bytes()==before
+    assert load_settings()==DEFAULTS

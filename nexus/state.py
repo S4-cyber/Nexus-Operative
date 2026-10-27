@@ -21,6 +21,26 @@ DEFAULTS = {
 
 _settings_root = ContextVar('nexus_isolated_settings_root', default=None)
 _connect_lock = threading.RLock()
+DB_BUSY_TIMEOUT_MS = 10_000
+
+
+def settings_database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+def settings_busy():raise ValueError('PAPER_SETTINGS_DATABASE_BUSY') from None
+
+
+@contextmanager
+def settings_transaction(conn):
+    """Normalize bounded statement/final-commit contention without retry."""
+    try:
+        with conn:yield
+    except sqlite3.OperationalError as error:
+        if settings_database_busy(error):settings_busy()
+        raise
 
 @contextmanager
 def isolated_settings(directory):
@@ -44,8 +64,11 @@ def _connect():
             for name in ('emergency_cut.intent',*(base+suffix for base in
                 ('portal_settings.sqlite3','paper_portfolio.sqlite3','order_lifecycle.sqlite3','paper_forward.sqlite3')
                 for suffix in ('','-journal','-wal','-shm'))))
-        conn = sqlite3.connect(path, timeout=5)
+        conn = None
         try:
+            conn = sqlite3.connect(path, timeout=DB_BUSY_TIMEOUT_MS/1000)
+            conn.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+            conn.execute('PRAGMA synchronous=FULL')
             if fresh:
                 conn.execute('BEGIN IMMEDIATE')
                 fresh=not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' LIMIT 1").fetchone()
@@ -60,8 +83,12 @@ def _connect():
                 conn.execute('INSERT INTO audit_events(time,event) VALUES(?,?)',
                              (int(time.time()),'new_install_paper_defaults'))
             conn.commit()
+        except sqlite3.OperationalError as error:
+            if conn is not None:conn.close()
+            if settings_database_busy(error):settings_busy()
+            raise
         except BaseException:
-            conn.close()
+            if conn is not None:conn.close()
             raise
         return conn
 
@@ -102,22 +129,27 @@ def read_effective_settings(conn):
 
 
 def load_settings():
-    with closing(_connect()) as conn,conn:
-        conn.execute('BEGIN')
-        return read_effective_settings(conn)
+    with closing(_connect()) as conn:
+        with settings_transaction(conn):
+            conn.execute('BEGIN')
+            return read_effective_settings(conn)
 
 
 def save_settings(values):
     _validate_settings(values)
-    with closing(_connect()) as conn,conn:
-        for key, value in values.items():
-            conn.execute("INSERT OR REPLACE INTO configuration(key,value) VALUES (?,?)", (key, json.dumps(value)))
-        conn.execute("INSERT INTO audit_events(time,event) VALUES (?,?)", (int(time.time()), "paper_settings_updated"))
+    with closing(_connect()) as conn:
+        with settings_transaction(conn):
+            conn.execute('BEGIN IMMEDIATE')
+            for key, value in values.items():
+                conn.execute("INSERT OR REPLACE INTO configuration(key,value) VALUES (?,?)", (key, json.dumps(value)))
+            conn.execute("INSERT INTO audit_events(time,event) VALUES (?,?)", (int(time.time()), "paper_settings_updated"))
     return load_settings()
 
 def audit(event):
     if event not in {"portal_resumed", "portal_paused", "emergency_halt", "emergency_halt_reset_paused","emergency_halt_reset_disengaged"}:
         raise ValueError("Unrecognized audit event")
-    with closing(_connect()) as conn,conn:
-        conn.execute("INSERT INTO audit_events(time,event) VALUES (?,?)", (int(time.time()), event))
+    with closing(_connect()) as conn:
+        with settings_transaction(conn):
+            conn.execute('BEGIN IMMEDIATE')
+            conn.execute("INSERT INTO audit_events(time,event) VALUES (?,?)", (int(time.time()), event))
 

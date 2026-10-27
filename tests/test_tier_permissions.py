@@ -104,3 +104,48 @@ def test_ledger_ui_has_explicit_tier_selector():
     assert 'id="papertier"' in html
     assert "tier:byId('papertier').value" in html
 
+
+def test_tier_writer_contention_never_enables_and_recovers(tmp_path,monkeypatch):
+    import sqlite3
+    from nexus import state,tier_permissions
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));current()
+    path=tmp_path/'portal_settings.sqlite3';before=path.read_bytes()
+    monkeypatch.setattr(state,'DB_BUSY_TIMEOUT_MS',25)
+    monkeypatch.setattr(tier_permissions,'DB_BUSY_TIMEOUT_MS',25)
+    with sqlite3.connect(path) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match='^PAPER_SETTINGS_DATABASE_BUSY$'):configure('solar',True)
+        assert path.read_bytes()==before
+    assert not next(row for row in current()['tiers'] if row['tier']=='solar')['enabled']
+    assert next(row for row in configure('solar',True)['tiers'] if row['tier']=='solar')['enabled']
+
+
+def test_tier_reader_blocked_commit_rolls_back_and_recovers(tmp_path,monkeypatch):
+    import sqlite3
+    from nexus import state,tier_permissions
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));current()
+    path=tmp_path/'portal_settings.sqlite3';before=path.read_bytes()
+    monkeypatch.setattr(state,'DB_BUSY_TIMEOUT_MS',25)
+    monkeypatch.setattr(tier_permissions,'DB_BUSY_TIMEOUT_MS',25)
+    with sqlite3.connect(path) as blocker:
+        blocker.execute('BEGIN');blocker.execute('SELECT COUNT(*) FROM tier_permissions').fetchone()
+        with pytest.raises(ValueError,match='^PAPER_SETTINGS_DATABASE_BUSY$'):configure('solar',True)
+        assert path.read_bytes()==before
+    assert next(row for row in configure('solar',True)['tiers'] if row['tier']=='solar')['enabled']
+
+
+def test_tier_exclusive_contention_is_stable_at_api_and_recovers(tmp_path,monkeypatch):
+    import sqlite3
+    from nexus import state,tier_permissions
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));expected=current()
+    path=tmp_path/'portal_settings.sqlite3';before=path.read_bytes()
+    monkeypatch.setattr(state,'DB_BUSY_TIMEOUT_MS',25)
+    monkeypatch.setattr(tier_permissions,'DB_BUSY_TIMEOUT_MS',25)
+    with sqlite3.connect(path) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match='^PAPER_SETTINGS_DATABASE_BUSY$'):current()
+        reply=TestClient(app).get('/api/tiers/permissions')
+        assert reply.status_code==503 and reply.json()=={'detail':'PAPER_SETTINGS_DATABASE_BUSY'}
+        assert path.read_bytes()==before
+    assert current()==expected
+

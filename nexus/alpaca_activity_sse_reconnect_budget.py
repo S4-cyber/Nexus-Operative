@@ -1014,6 +1014,18 @@ class ActivitySSEReconnectBudget:
         require_budget_binding()
         if not clear:
             _fail('EMERGENCY_STOP_ACTIVE')
+        initial_identity = None
+        initial_fingerprint = None
+        if budget_binding[0].exists():
+            try:
+                initial_identity = capture_file_identities(
+                    (budget_binding[0],),
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                initial_fingerprint = capture_file_fingerprints(
+                    (budget_binding[0],), (MAX_DATABASE_BYTES,),
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            except ValueError as error:
+                raise ActivitySSEReconnectBudgetError(str(error)) from None
         current = _budget_state_for_attempt(self)
         require_budget_binding()
         if current['head_sha256'] != expected:
@@ -1027,6 +1039,17 @@ class ActivitySSEReconnectBudget:
                     current['expected_cursor_head_sha256'] != cursor_head or
                     current['last_reconnect_reason'] != reconnect_reason):
                 _fail('BEGIN_REPLAY_DISAGREEMENT')
+            if initial_identity is None or initial_fingerprint is None:
+                _fail('RESERVATION_ACKNOWLEDGEMENT_UNCERTAIN')
+            try:
+                require_file_identities((budget_binding[0],),
+                    initial_identity,
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                require_file_fingerprints((budget_binding[0],),
+                    (MAX_DATABASE_BYTES,), initial_fingerprint,
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            except ValueError as error:
+                raise ActivitySSEReconnectBudgetError(str(error)) from None
             db, _ = self._connect(write=True)
             with closing(db):
                 with _transaction(db):
@@ -1048,12 +1071,45 @@ class ActivitySSEReconnectBudget:
                         _fail('EMERGENCY_STOP_ACTIVE')
                     token = state['pending_token']
                     attempt = state['attempts']
+            try:
+                retained = _budget_state_for_attempt(self)
+                require_file_identities((budget_binding[0],),
+                    initial_identity,
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                require_file_fingerprints((budget_binding[0],),
+                    (MAX_DATABASE_BYTES,), initial_fingerprint,
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            except ValueError as error:
+                raise ActivitySSEReconnectBudgetError(str(error)) from None
             require_budget_binding()
-            return dict(token=token, attempt=attempt,
+            if (retained != current or
+                    retained['account_sha256'] != budget_binding[1] or
+                    retained['pending_token'] != token or
+                    retained['head_sha256'] != token or
+                    retained['attempts'] != attempt or
+                    retained['expected_cursor_head_sha256'] != cursor_head or
+                    retained['last_evaluated_at'] != now or
+                    retained['last_begin_expected_head_sha256'] != expected or
+                    retained['last_reconnect_reason'] != reconnect_reason or
+                    retained['review_required'] or retained['completed'] or
+                    any(retained[flag] is not False for flag in FLAGS)):
+                _fail('RESERVATION_ACKNOWLEDGEMENT_UNCERTAIN')
+            result = dict(token=token, attempt=attempt,
                 head_sha256=token,
                 expected_cursor_head_sha256=cursor_head,
                 duplicate_reservation=True,
                 provider_request_authorized=False)
+            try:
+                require_file_identities((budget_binding[0],),
+                    initial_identity,
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                require_file_fingerprints((budget_binding[0],),
+                    (MAX_DATABASE_BYTES,), initial_fingerprint,
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            except ValueError as error:
+                raise ActivitySSEReconnectBudgetError(str(error)) from None
+            require_budget_binding()
+            return result
         if current['pending_token'] is not None:
             _fail('PENDING_REVIEW')
         if current['review_required'] or current['completed']:

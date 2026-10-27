@@ -2178,6 +2178,42 @@ def test_reservation_lost_ack_exact_replay_is_byte_stable(tmp_path):
     assert samples == [False, False, False, False]
 
 
+def test_reservation_exact_replay_same_inode_rewrite_withholds_acknowledgement(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    options = dict(evaluated_at=1000, expected_cursor_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    reserved = budget.begin(**options)
+    original = subject._budget_state_for_attempt
+    calls = 0
+
+    def rewrite_before_cold_replay(store):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            with budget.path.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        return original(store)
+
+    monkeypatch.setattr(subject, '_budget_state_for_attempt',
+        rewrite_before_cold_replay)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError, match=
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        budget.begin(**options)
+    cold = subject.ActivitySSEReconnectBudget(budget.path, ACCOUNT)
+    retained = cold.inspect()
+    assert retained['pending_token'] == reserved['token']
+    assert retained['head_sha256'] == reserved['head_sha256']
+    assert retained['attempts'] == 1 and retained['last_outcome'] is None
+    replay = cold.begin(**options)
+    assert replay['duplicate_reservation']
+    assert not replay['provider_request_authorized']
+    assert replay['token'] == reserved['token']
+
+
 @pytest.mark.parametrize('change', [
     {'evaluated_at': 1001},
     {'expected_cursor_head': 'a' * 64},

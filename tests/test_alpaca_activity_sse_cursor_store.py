@@ -181,6 +181,32 @@ def test_exact_stale_head_replay_is_idempotent_and_byte_stable(tmp_path):
     assert path.read_bytes() == saved
 
 
+def test_exact_replay_same_inode_rewrite_withholds_duplicate_receipt(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    report, before, after = checked()
+    first = checkpoint(store, report, before, after)
+    calls = 0
+
+    def admission():
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            with path.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        return report['input_sha256']
+
+    with pytest.raises(ValueError, match=
+            'ALPACA_ACTIVITY_SSE_CURSOR_STORE_FILE_SET_CHANGED'):
+        checkpoint(store, report, before, after, admission=admission)
+    cold = subject.ActivitySSECursorStore(path, ACCOUNT)
+    retained = cold.inspect()
+    assert retained['head_sha256'] == first['head_sha256']
+    replay = checkpoint(cold, report, before, after)
+    assert replay['duplicate'] and replay['head_sha256'] == first['head_sha256']
+
+
 def test_checkpoint_can_bind_reconnect_reservation_for_exact_recovery(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     store = subject.ActivitySSECursorStore(path, ACCOUNT)

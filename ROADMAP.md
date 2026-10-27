@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.325.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.326.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.325.0 extends bounded private file stability through the Activity SSE reconnect-result acknowledgement boundary. After a reconnect result commits, the exact budget identity and SHA-256 bytes must remain stable while a cold replay proves the result head, reservation token, outcome, detail, requested outcome, backoff, checkpoint binding and false authority flags. A same-inode rewrite withholds acknowledgement while the durable result remains available for exact no-network replay. This is sampled local consistency, not atomic writer exclusion, ACL audit, provider stream attestation, delivery completeness, reconnect acceptance or external anchoring. No automatic retry, sleep, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, explicit reconnect confirmation, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account stream/reconciliation acceptance, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.326.0 extends bounded private file stability through exact Activity SSE checkpoint acknowledgement replay. Fresh and duplicate checkpoint receipts now share one committed-file identity, SHA-256 and cold-binding proof, followed by a final stable sample immediately before return. A same-inode rewrite during exact lost-ack replay withholds the duplicate receipt while the durable checkpoint remains available for a later idempotent no-write replay. This is sampled local consistency, not atomic writer exclusion, ACL audit, provider stream attestation, delivery completeness, reconnect acceptance or external anchoring. No automatic retry, sleep, provider access, credential access, order, funding, live, cloud or release permission is added. OFF defaults, explicit reconnect confirmation, limits, exits and the independent emergency-cut latch remain unchanged. Actual-account stream/reconciliation acceptance, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

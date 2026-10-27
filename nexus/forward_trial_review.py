@@ -4,7 +4,7 @@ Declared source labels and local hashes are not market/source attestation. This
 checks operational evidence only, not returns, balances or broker acceptance.
 """
 import argparse
-from contextlib import closing
+from contextlib import closing,contextmanager
 from datetime import datetime, timezone
 from decimal import Decimal, localcontext
 import hashlib
@@ -25,6 +25,7 @@ MINIMUM_SECONDS=72*3600
 MAX_WINDOW_SECONDS=7*86400
 MAX_GAP_SECONDS=10
 MAX_PAYLOAD_BYTES=64*1024*1024
+DB_BUSY_TIMEOUT_MS=10_000
 PUBLIC='PUBLIC_READER_SINGLE_SOURCE_UNATTESTED'
 INJECTED='INJECTED_TRANSPORT_UNATTESTED'
 FLAGS=('source_attested','market_realism_authenticated','account_reconciled','broker_paper_accepted',
@@ -40,6 +41,29 @@ def existing_history(path):
 
 
 def _fail():raise ValueError('FORWARD_TRIAL_REVIEW_FAILED') from None
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+@contextmanager
+def _snapshot(path):
+    """Open one bounded read snapshot and redact exhausted lock contention."""
+    db=None
+    try:
+        db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+            timeout=DB_BUSY_TIMEOUT_MS/1000)
+        db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+        db.execute('BEGIN')
+        yield db
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_fail()
+        raise
+    finally:
+        if db is not None:db.close()
 
 
 def _window(token):
@@ -106,9 +130,8 @@ def _review(path, *, after, until):
     path=Path(path)
     if not existing_history(path):raise FileNotFoundError('FORWARD_TRIAL_REVIEW_FAILED')
     deadline=time.monotonic()+20
-    with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=5)) as db:
+    with _snapshot(path) as db:
         db.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)
-        db.execute('BEGIN')
         count,size,largest=db.execute('SELECT COUNT(*),COALESCE(SUM(length(CAST(payload AS BLOB))),0),COALESCE(MAX(length(CAST(payload AS BLOB))),0) FROM forward_quotes').fetchone()
         if count>forward_evidence.LIMIT or size>MAX_PAYLOAD_BYTES or largest>8192:_fail()
         n,metadata_bytes,largest_metadata=db.execute('SELECT COUNT(*),COALESCE(SUM(length(CAST(policy_json AS BLOB))+length(CAST(counts_json AS BLOB))+length(CAST(last_json AS BLOB))),0),COALESCE(MAX(MAX(length(CAST(policy_json AS BLOB)),length(CAST(counts_json AS BLOB)),length(CAST(last_json AS BLOB)))),0) FROM sessions').fetchone()

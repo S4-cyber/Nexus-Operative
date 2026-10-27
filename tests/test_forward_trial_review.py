@@ -212,3 +212,13 @@ def test_explicit_cli_emits_private_diagnostics_and_fixed_failure(tmp_path,monke
     path.write_bytes(b'private corrupt fixture')
     result=subprocess.run(command,env=env,capture_output=True,text=True,timeout=10)
     assert result.returncode==2 and result.stdout.strip()=='FORWARD_TRIAL_REVIEW_FAILED' and not result.stderr
+
+
+def test_read_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')])
+    expected=run(path);before=path.read_bytes()
+    monkeypatch.setattr(trial,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(path) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):run(path)
+    assert path.read_bytes()==before and run(path)==expected

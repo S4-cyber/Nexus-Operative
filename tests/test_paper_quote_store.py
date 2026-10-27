@@ -275,3 +275,42 @@ s.retain(v,client_order_id='nx_quote_fixture',expected_request_head=sys.argv[5],
         review=store.inspect(expected_request_head=args['expected_request_head'])
         assert review['retained_records']==2 and review['records'][1]['observation']['quote']['bid']=='99'
     assert snapshot(tmp_path)==before and store.request_path.read_bytes()==request_before
+
+
+def contended_retain(tmp_path):
+    store,value,args=setup(tmp_path);first=store.retain(value,**args)
+    args['expected_quote_head']=first['head_sha256'];value=deepcopy(value)
+    value['quote']['bid']='99';digest(value)
+    return store,value,args
+
+
+def test_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    store,value,args=contended_retain(tmp_path);before=store.path.read_bytes()
+    monkeypatch.setattr(subject,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match=r'^PAPER_QUOTE_STORE_DATABASE_BUSY$'):
+            store.retain(value,**args)
+    assert store.path.read_bytes()==before
+    assert not store.retain(value,**args)['duplicate']
+
+
+def test_reader_blocked_commit_rolls_back_and_recovers(tmp_path,monkeypatch):
+    store,value,args=contended_retain(tmp_path);before=store.path.read_bytes()
+    monkeypatch.setattr(subject,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN');blocker.execute('SELECT count(*) FROM records').fetchone()
+        with pytest.raises(ValueError,match=r'^PAPER_QUOTE_STORE_DATABASE_BUSY$'):
+            store.retain(value,**args)
+    assert store.path.read_bytes()==before
+    assert not store.retain(value,**args)['duplicate']
+
+
+def test_read_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    store,_,args=contended_retain(tmp_path);expected=store.inspect(expected_request_head=args['expected_request_head'])
+    monkeypatch.setattr(subject,'DB_BUSY_TIMEOUT_MS',50)
+    with sqlite3.connect(store.path) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match=r'^PAPER_QUOTE_STORE_DATABASE_BUSY$'):
+            store.inspect(expected_request_head=args['expected_request_head'])
+    assert store.inspect(expected_request_head=args['expected_request_head'])==expected

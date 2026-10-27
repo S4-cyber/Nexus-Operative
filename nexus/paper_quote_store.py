@@ -3,7 +3,7 @@
 Offline only. A stored source label/digest is not provider attestation, proof of
 capture causality, a decision/arrival benchmark, encryption or order authority.
 """
-from contextlib import closing
+from contextlib import closing,contextmanager
 import json
 import os
 from pathlib import Path
@@ -24,12 +24,29 @@ ZERO='0'*64
 MAX_RECORDS=128
 MAX_RECORD_BYTES=8192
 MAX_DATABASE_BYTES=4*1024*1024
+DB_BUSY_TIMEOUT_MS=10_000
 CHECKS=('original_prefix_bound','exact_nanoseconds_retained','duplicate_reused',
     'restart_replay','request_bytes_unchanged','authority_withheld')
 SCOPE_KEYS=('profile','account_sha256','quote','source','account_fields_sha256','read_timing')
 
 
 def _fail(code):raise ValueError('PAPER_QUOTE_STORE_'+code)
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded SQLite statement/commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_fail('DATABASE_BUSY')
+        raise
 
 
 def _head(value):
@@ -125,8 +142,10 @@ class PaperQuoteStore:
                 fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(fd);new=True
             except FileExistsError:pass
             self._check()
-        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),uri=True,timeout=5)
+        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),
+            uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
         try:
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')
                 size=db.execute('PRAGMA page_size').fetchone()[0]
@@ -136,6 +155,10 @@ class PaperQuoteStore:
                     self._insert(db,0,dict(profile=PROFILE,account_sha256=self.account),ZERO)
             else:db.execute('BEGIN')
             return db,new
+        except sqlite3.OperationalError as error:
+            db.close()
+            if _database_busy(error):_fail('DATABASE_BUSY')
+            raise
         except BaseException:db.close();raise
 
     @staticmethod
@@ -166,7 +189,8 @@ class PaperQuoteStore:
     def inspect(self,*,expected_request_head):
         self._check();requests=self._requests(expected_request_head)
         if self.path.exists():
-            with closing(self._connect()[0]) as db:head,records=self._load(db,requests)
+            with closing(self._connect()[0]) as db:
+                with _transaction(db):head,records=self._load(db,requests)
         else:head,records=ZERO,[]
         if self._requests(expected_request_head)!=requests:_fail('REQUEST_CHANGED_DURING_REVIEW')
         return dict(mode='PAPER_REQUEST_QUOTE_HISTORY',profile=PROFILE,status='REVIEW_REQUIRED',
@@ -193,7 +217,7 @@ class PaperQuoteStore:
         if precommit_check() is not True:_fail('INPUT_REVOKED')
         db,new=self._connect(write=True)
         with closing(db):
-            with db:
+            with _transaction(db):
                 head,records=self._load(db,requests)
                 if new and expected_quote_head==ZERO:pass  # First binding row is created in this transaction.
                 elif head!=expected_quote_head:_fail('QUOTE_HEAD_CHANGED')

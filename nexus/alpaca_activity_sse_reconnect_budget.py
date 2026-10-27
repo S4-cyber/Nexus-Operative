@@ -613,16 +613,16 @@ def _perform_control_closure(reconnect_budget, operation, *,
             if not _budget_binding_matches(reconnect_budget, budget_binding):
                 _fail('STORE_BINDING_CHANGED')
             raise error
-        if recovered is not None:
-            return recovered
-        raise error
+        if recovered is None:
+            raise error
+        retained, duplicate = recovered
     except Exception:
         if not _budget_binding_matches(reconnect_budget, budget_binding):
             _fail('STORE_BINDING_CHANGED')
         recovered = recover_exact_terminal()
         if recovered is None:
             _fail(code)
-        return recovered
+        retained, duplicate = recovered
     if not _budget_binding_matches(reconnect_budget, budget_binding):
         _fail('STORE_BINDING_CHANGED')
     if duplicate is not expected_duplicate:
@@ -632,7 +632,39 @@ def _perform_control_closure(reconnect_budget, operation, *,
         detail=detail, waiting=waiting, code=code)
     if not _budget_binding_matches(reconnect_budget, budget_binding):
         _fail('STORE_BINDING_CHANGED')
-    return stable, duplicate
+    try:
+        committed_identity = capture_file_identities(
+            (budget_binding[0],),
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+        committed_fingerprint = capture_file_fingerprints(
+            (budget_binding[0],), (MAX_DATABASE_BYTES,),
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+        confirmed = _inspect_after_result_error(reconnect_budget, code)
+        require_file_identities((budget_binding[0],), committed_identity,
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+        require_file_fingerprints((budget_binding[0],),
+            (MAX_DATABASE_BYTES,), committed_fingerprint,
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+    except ValueError as error:
+        raise ActivitySSEReconnectBudgetError(str(error)) from None
+    exact = (_exact_waiting_stop_result(confirmed, expected,
+                evaluated_at, duplicate) if waiting else
+        _exact_control_failure_result(confirmed, expected,
+            evaluated_at, detail, duplicate))
+    if confirmed != stable or not exact:
+        _fail(code)
+    result = (confirmed, duplicate)
+    try:
+        require_file_identities((budget_binding[0],), committed_identity,
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+        require_file_fingerprints((budget_binding[0],),
+            (MAX_DATABASE_BYTES,), committed_fingerprint,
+            'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+    except ValueError as error:
+        raise ActivitySSEReconnectBudgetError(str(error)) from None
+    if not _budget_binding_matches(reconnect_budget, budget_binding):
+        _fail('STORE_BINDING_CHANGED')
+    return result
 
 
 class ActivitySSEReconnectBudget:

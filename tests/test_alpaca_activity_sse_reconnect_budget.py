@@ -1881,6 +1881,48 @@ def test_uncertain_outcome_close_lost_ack_replay_is_byte_stable(tmp_path):
     assert budget.path.read_bytes() == saved
 
 
+def test_control_closure_exact_replay_same_inode_rewrite_withholds_acknowledgement(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    options = dict(reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+        confirm_outcome_uncertain=True, confirm_no_retry=True)
+    first = subject.close_pending_reconnect_for_outcome_uncertainty(
+        **options)
+    original = subject._inspect_after_result_error
+    inspections = 0
+
+    def rewrite_before_final_replay(reconnect_budget, code):
+        nonlocal inspections
+        inspections += 1
+        if inspections == 3:
+            with budget.path.open('r+b') as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+                stream.flush()
+        return original(reconnect_budget, code)
+
+    monkeypatch.setattr(subject, '_inspect_after_result_error',
+        rewrite_before_final_replay)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        subject.close_pending_reconnect_for_outcome_uncertainty(**options)
+    stable = budget.inspect()
+    assert stable['review_required'] and stable['pending_token'] is None
+    assert stable['head_sha256'] == \
+        first['reconnect_budget_head_sha256']
+    monkeypatch.setattr(subject, '_inspect_after_result_error', original)
+    replay = subject.close_pending_reconnect_for_outcome_uncertainty(
+        **options)
+    assert replay['duplicate_close']
+    assert replay['reconnect_budget_head_sha256'] == \
+        first['reconnect_budget_head_sha256']
+
+
 def test_uncertain_outcome_close_rejects_unbound_result_acknowledgement(
         tmp_path, monkeypatch):
     _, budget = stores(tmp_path)

@@ -4,6 +4,7 @@ from contextlib import closing
 
 from fastapi.testclient import TestClient
 import pytest
+import nexus.paper_forward as paper_forward
 from nexus.paper_forward import PaperForwardRunner
 from test_paper_forward import setup
 
@@ -78,4 +79,45 @@ def test_combined_diagnostics_share_one_sqlite_snapshot_during_real_wal_append(t
     after=runner.diagnostics()
     assert after['storage_capacity']['sessions_retained']==before['storage_capacity']['sessions_retained']+1
     assert len(after['history'])==len(before['history'])+1
+    runner.stop()
+
+
+def test_session_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
+    monkeypatch.setattr(paper_forward,'DB_BUSY_TIMEOUT_MS',50)
+    runner,gateway,clock=setup(tmp_path,monkeypatch)
+    path=tmp_path/'paper_forward.sqlite3';before=path.read_bytes();last=runner.status()['last_event']
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match='^PAPER_FORWARD_DATABASE_BUSY$'):
+            runner._record('HOLD','LOCK_FIXTURE')
+        assert path.read_bytes()==before and runner.status()['last_event']==last
+    assert runner._record('HOLD','LOCK_FIXTURE')['reason']=='LOCK_FIXTURE'
+    runner.stop()
+
+
+def test_reader_blocked_quote_commit_rolls_back_without_advancing_memory_head(tmp_path,monkeypatch):
+    monkeypatch.setattr(paper_forward,'DB_BUSY_TIMEOUT_MS',50)
+    runner,gateway,clock=setup(tmp_path,monkeypatch)
+    path=tmp_path/'paper_forward.sqlite3';before=path.read_bytes();head=runner._observation_hash
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN')
+        blocker.execute('SELECT count(*) FROM forward_quotes').fetchone()
+        with pytest.raises(ValueError,match='^PAPER_FORWARD_DATABASE_BUSY$'):
+            runner._record_quote(clock.quote('BTC-USD'),True)
+        assert path.read_bytes()==before and runner._observation_hash==head
+    runner._record_quote(clock.quote('BTC-USD'),True)
+    assert runner._observation_hash and runner._observation_hash!=head
+    runner.stop()
+
+
+def test_exclusive_contention_is_bounded_and_diagnostic_snapshot_recovers(tmp_path,monkeypatch):
+    monkeypatch.setattr(paper_forward,'DB_BUSY_TIMEOUT_MS',50)
+    runner,gateway,clock=setup(tmp_path,monkeypatch)
+    path=tmp_path/'paper_forward.sqlite3';expected=runner.diagnostics();before=path.read_bytes()
+    with closing(sqlite3.connect(path)) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match='^PAPER_FORWARD_DATABASE_BUSY$'):
+            runner.diagnostics()
+        assert path.read_bytes()==before
+    assert runner.diagnostics()==expected
     runner.stop()

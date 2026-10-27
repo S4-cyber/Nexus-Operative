@@ -30,6 +30,26 @@ RANKING_INTERVAL=POLICY['ranking_seconds']
 PRODUCT=POLICY['product']
 CLOCK_DISCONTINUITY_TOLERANCE_SECONDS=2
 SESSION_LIMIT=1000
+DB_BUSY_TIMEOUT_MS=10_000
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+def _busy():raise ValueError('PAPER_FORWARD_DATABASE_BUSY') from None
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded statement/final-commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
 
 
 class OrderCleanupFailure(Exception):
@@ -57,14 +77,24 @@ class PaperForwardRunner:
     def _db(self):
         root=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))
         root.mkdir(parents=True,exist_ok=True)
-        db=sqlite3.connect(root/'paper_forward.sqlite3',timeout=10)
-        db.execute('PRAGMA synchronous=FULL')
-        db.execute('CREATE TABLE IF NOT EXISTS cycles(id INTEGER PRIMARY KEY,at REAL NOT NULL,detail TEXT NOT NULL)')
-        db.execute("""CREATE TABLE IF NOT EXISTS sessions(
-            id TEXT PRIMARY KEY,started_at REAL NOT NULL,updated_at REAL NOT NULL,
-            state TEXT NOT NULL,policy_json TEXT NOT NULL,counts_json TEXT NOT NULL,last_json TEXT NOT NULL)""")
-        forward_evidence.schema(db)
-        return db
+        db=None
+        try:
+            db=sqlite3.connect(root/'paper_forward.sqlite3',timeout=DB_BUSY_TIMEOUT_MS/1000)
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('CREATE TABLE IF NOT EXISTS cycles(id INTEGER PRIMARY KEY,at REAL NOT NULL,detail TEXT NOT NULL)')
+            db.execute("""CREATE TABLE IF NOT EXISTS sessions(
+                id TEXT PRIMARY KEY,started_at REAL NOT NULL,updated_at REAL NOT NULL,
+                state TEXT NOT NULL,policy_json TEXT NOT NULL,counts_json TEXT NOT NULL,last_json TEXT NOT NULL)""")
+            forward_evidence.schema(db)
+            return db
+        except sqlite3.OperationalError as error:
+            if db is not None:db.close()
+            if _database_busy(error):_busy()
+            raise
+        except BaseException:
+            if db is not None:db.close()
+            raise
 
     @contextmanager
     def _read_db(self):
@@ -75,9 +105,18 @@ class PaperForwardRunner:
         except FileNotFoundError:
             yield None
             return
-        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=10)) as db:
+        db=None
+        try:
+            db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+                timeout=DB_BUSY_TIMEOUT_MS/1000)
+            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             db.execute('BEGIN')
             yield db
+        except sqlite3.OperationalError as error:
+            if _database_busy(error):_busy()
+            raise
+        finally:
+            if db is not None:db.close()
 
     def _record(self,decision,reason,**extra):
         observed=self.clock()
@@ -86,35 +125,38 @@ class PaperForwardRunner:
         row=dict(at=recorded,clock_sample_valid=valid,session=self._session,cycle=self._cycles,quote_evidence_sha256=self._observation_hash,decision=decision,reason=reason,
                  product=PRODUCT,tier=self._tier,simulation_only=True,**extra)
         row['policy_id']=self._policy['id'];row['policy_sha256']=self._policy['policy_sha256']
-        with closing(self._db()) as db,db:
-            db.execute('BEGIN IMMEDIATE')
-            old=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(self._session,)).fetchone()
-            if old is None:
-                if decision!='START':raise ValueError('FORWARD_SESSION_MISSING')
-                if db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]>=SESSION_LIMIT:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
-                started=row['at'];state='RUNNING';counts={}
-            else:
-                if decision=='START':raise ValueError('FORWARD_SESSION_ID_REUSED')
-                policy,counts,last=forward_sessions.parse(*old)
-                if policy!=self._policy:raise ValueError('FORWARD_SESSION_POLICY_CHANGED')
-                started,updated,state=old[:3]
-                row['at']=max(row['at'],updated)
-            counts[decision]=counts.get(decision,0)+1
-            if decision=='PAUSED':state='PAUSED'
-            elif decision=='STOP':state='STOPPED'
-            db.execute('INSERT OR REPLACE INTO sessions VALUES (?,?,?,?,?,?,?)',
-                       (self._session,started,row['at'],state,json.dumps(self._policy,sort_keys=True),json.dumps(counts,sort_keys=True),json.dumps(row,allow_nan=False)))
-            db.execute('INSERT INTO cycles(at,detail) VALUES (?,?)',(row['at'],json.dumps(row,allow_nan=False)))
-            db.execute('DELETE FROM cycles WHERE id NOT IN (SELECT id FROM cycles ORDER BY id DESC LIMIT 1000)')
+        with closing(self._db()) as db:
+            with _transaction(db):
+                db.execute('BEGIN IMMEDIATE')
+                old=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(self._session,)).fetchone()
+                if old is None:
+                    if decision!='START':raise ValueError('FORWARD_SESSION_MISSING')
+                    if db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]>=SESSION_LIMIT:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
+                    started=row['at'];state='RUNNING';counts={}
+                else:
+                    if decision=='START':raise ValueError('FORWARD_SESSION_ID_REUSED')
+                    policy,counts,last=forward_sessions.parse(*old)
+                    if policy!=self._policy:raise ValueError('FORWARD_SESSION_POLICY_CHANGED')
+                    started,updated,state=old[:3]
+                    row['at']=max(row['at'],updated)
+                counts[decision]=counts.get(decision,0)+1
+                if decision=='PAUSED':state='PAUSED'
+                elif decision=='STOP':state='STOPPED'
+                db.execute('INSERT OR REPLACE INTO sessions VALUES (?,?,?,?,?,?,?)',
+                           (self._session,started,row['at'],state,json.dumps(self._policy,sort_keys=True),json.dumps(counts,sort_keys=True),json.dumps(row,allow_nan=False)))
+                db.execute('INSERT INTO cycles(at,detail) VALUES (?,?)',(row['at'],json.dumps(row,allow_nan=False)))
+                db.execute('DELETE FROM cycles WHERE id NOT IN (SELECT id FROM cycles ORDER BY id DESC LIMIT 1000)')
         with self._lock:self._last=row
         return row
 
     def _record_quote(self,quote,eligible,error=None):
-        with closing(self._db()) as db,db:
-            db.execute('BEGIN IMMEDIATE')
-            self._observation_hash=forward_evidence.append(db,self._session,self._cycles,self.clock(),quote,eligible,
-                'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
-                self._policy['policy_sha256'],error)
+        with closing(self._db()) as db:
+            with _transaction(db):
+                db.execute('BEGIN IMMEDIATE')
+                candidate=forward_evidence.append(db,self._session,self._cycles,self.clock(),quote,eligible,
+                    'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
+                    self._policy['policy_sha256'],error)
+        self._observation_hash=candidate
 
     def request_cut(self):
         """Signal only: no locks owned by execution, IO, ownership release or acknowledgment."""

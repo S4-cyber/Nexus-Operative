@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.306.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.307.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.306.0 gives the core simulated paper portfolio and durable order journal one explicit ten-second SQLite contention boundary. Busy/locked exhaustion during connection, writer admission, statements, final commit or replay fails closed with stable redacted diagnostics; failed writes roll back without acknowledgement and reads recover exactly after lock release. Six real-lock tests cover writer admission, reader-blocked final commit and exclusive replay for both journals. No retry is introduced, and the independent emergency-cut latch is unchanged. This is local simulated-accounting durability hardening, not broker acceptance, provider reconciliation, native power-loss proof, trial realism or new authority. No credential, account, request, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.307.0 gives the unattended paper-forward session, cycle and quote-evidence journal one explicit ten-second SQLite contention boundary. Busy/locked exhaustion during connection/schema access, writer admission, statements, final commit or diagnostic replay fails closed with the stable redacted PAPER_FORWARD_DATABASE_BUSY diagnostic; failed writes roll back without acknowledgement and reads recover exactly after lock release. The in-memory quote-evidence head now advances only after its transaction commits. Three real-lock tests cover session writer admission, reader-blocked quote commit and exclusive combined diagnostics. No retry is introduced, and the independent emergency-cut latch is unchanged. This is local sustained-trial evidence durability hardening, not broker acceptance, quote-source attestation, native power-loss proof, trial realism or new authority. No credential, account, request, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

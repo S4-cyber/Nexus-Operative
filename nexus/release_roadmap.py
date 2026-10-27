@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.309.0'
+REVISION = '0.310.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -280,7 +280,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.309.0 gives the single-source historical-candle and opt-in read-only observer journals one explicit ten-second SQLite contention boundary. Busy/locked exhaustion during connection/schema access, cross-process writer admission, statements, final commit or diagnostic replay fails closed with stable redacted journal-specific diagnostics; failed writes roll back without acknowledgement and reads recover exactly after lock release. Candle insert/revision classification is now serialized across local processes. Six real-lock tests cover writer admission, reader-blocked final commit and exclusive replay for both journals. No retry is introduced, and the independent emergency-cut latch is unchanged. This is local retained research-evidence durability hardening, not source attestation, complete market coverage, trial realism, broker acceptance, native power-loss proof or new authority. No credential, account, request, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.310.0 gives the retained local-paper matrix observation journal one explicit ten-second SQLite contention boundary. Busy/locked exhaustion during connection/schema access, cross-process writer admission, statements, final commit or diagnostic replay fails closed with the stable redacted MATRIX_OBSERVATION_DATABASE_BUSY diagnostic; failed writes roll back without acknowledgement and history recovers exactly after lock release. Writer admission still precedes public quote IO, so a competing journal owner cannot trigger redundant market reads. Three real-lock tests cover writer admission, reader-blocked final commit and exclusive replay. No retry is introduced, and the independent emergency-cut latch is unchanged. This is local observation-evidence durability hardening, not quote-source attestation, account acceptance, accounting verification, trial realism, native power-loss proof or new authority. No credential, account, request, funding, Portal, live, cloud or release permission is added. Actual-account submission/reconciliation, fee/hold/funds acceptance and sustained trials remain unverified. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -383,3 +383,42 @@ def test_preexisting_oversized_database_cannot_bypass_budget_with_free_pages(acc
     assert result==dict(recorded=False,reason='OBSERVATION_DATABASE_BYTE_CAP')
     assert (path/'matrix_observations.sqlite3').stat().st_size==allocated
     assert m.history('all')['retention']['total_samples']==1
+
+
+def test_writer_contention_fails_before_quote_io_and_recovers_exactly(account,monkeypatch):
+    path,clock=account;m.capture(quote);clock[0]+=6
+    journal=path/'matrix_observations.sqlite3';before=journal.read_bytes()
+    monkeypatch.setattr(m,'DB_BUSY_TIMEOUT_MS',25)
+    with sqlite3.connect(journal) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        with pytest.raises(ValueError,match='^MATRIX_OBSERVATION_DATABASE_BUSY$'):
+            m.capture(lambda p:pytest.fail('writer admission must precede quote IO'))
+        assert journal.read_bytes()==before
+    assert m.capture(quote)['recorded']
+    assert m.history('all')['retention']['total_samples']==2
+
+
+def test_reader_blocked_commit_rolls_back_and_recovers_exactly(account,monkeypatch):
+    path,clock=account;m.capture(quote);clock[0]+=6
+    journal=path/'matrix_observations.sqlite3';before=journal.read_bytes()
+    monkeypatch.setattr(m,'DB_BUSY_TIMEOUT_MS',25)
+    with sqlite3.connect(journal) as blocker:
+        blocker.execute('BEGIN')
+        blocker.execute('SELECT COUNT(*) FROM observations').fetchone()
+        with pytest.raises(ValueError,match='^MATRIX_OBSERVATION_DATABASE_BUSY$'):
+            m.capture(quote)
+        assert journal.read_bytes()==before
+    assert m.capture(quote)['recorded']
+    assert m.history('all')['retention']['total_samples']==2
+
+
+def test_exclusive_contention_bounds_history_and_recovers_exactly(account,monkeypatch):
+    path,_=account;m.capture(quote)
+    journal=path/'matrix_observations.sqlite3';expected=m.history('all');before=journal.read_bytes()
+    monkeypatch.setattr(m,'DB_BUSY_TIMEOUT_MS',25)
+    with sqlite3.connect(journal) as blocker:
+        blocker.execute('BEGIN EXCLUSIVE')
+        with pytest.raises(ValueError,match='^MATRIX_OBSERVATION_DATABASE_BUSY$'):
+            m.history('all')
+        assert journal.read_bytes()==before
+    assert m.history('all')==expected

@@ -10,7 +10,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from decimal import Decimal, localcontext
-from contextlib import closing
+from contextlib import closing,contextmanager
 from nexus.public_data import PRODUCTS, read_ticker
 from nexus.paper_portfolio import check_quote, FEE
 
@@ -23,6 +23,26 @@ INSERT_WRITE_BUDGET=1024*1024
 MAX_POINT_BYTES=65536
 MIN_INTERVAL=5
 RANGES={'1m':60,'1h':3600,'1d':86400,'1mo':30*86400,'1y':365*86400,'ytd':None,'all':None}
+DB_BUSY_TIMEOUT_MS=10_000
+
+
+def _database_busy(error):
+    code=getattr(error,'sqlite_errorcode',None)
+    return (code in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or
+        any(word in str(error).lower() for word in ('busy','locked')))
+
+
+def _busy():raise ValueError('MATRIX_OBSERVATION_DATABASE_BUSY') from None
+
+
+@contextmanager
+def _transaction(db):
+    """Normalize bounded statement/final-commit contention without retry."""
+    try:
+        with db:yield
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
 
 
 def root():return Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))
@@ -122,8 +142,10 @@ def storage_admission(db=None,extra_bytes=INSERT_WRITE_BUDGET,*,check_database=T
 
 def _open():
     root().mkdir(parents=True,exist_ok=True)
-    db=sqlite3.connect(root()/'matrix_observations.sqlite3',timeout=2)
+    db=None
     try:
+        db=sqlite3.connect(root()/'matrix_observations.sqlite3',timeout=DB_BUSY_TIMEOUT_MS/1000)
+        db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
         db.execute('PRAGMA synchronous=FULL')
         page_size=db.execute('PRAGMA page_size').fetchone()[0]
         db.execute('PRAGMA max_page_count='+str(max(1,MAX_DATABASE_BYTES//page_size)))
@@ -132,8 +154,28 @@ def _open():
         db.execute('CREATE TABLE IF NOT EXISTS archived_observations(id INTEGER PRIMARY KEY,at REAL NOT NULL,payload TEXT NOT NULL)')
         db.execute('CREATE INDEX IF NOT EXISTS archived_observations_at ON archived_observations(at)')
         return db
+    except sqlite3.OperationalError as error:
+        if db is not None:db.close()
+        if _database_busy(error):_busy()
+        raise
     except BaseException:
-        db.close()
+        if db is not None:db.close()
+        raise
+
+
+def _history_db(path):
+    db=None
+    try:
+        db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+            timeout=DB_BUSY_TIMEOUT_MS/1000)
+        db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+        return db
+    except sqlite3.OperationalError as error:
+        if db is not None:db.close()
+        if _database_busy(error):_busy()
+        raise
+    except BaseException:
+        if db is not None:db.close()
         raise
 
 
@@ -167,34 +209,35 @@ def capture(reader=read_ticker):
         if before is None:return dict(recorded=False,reason='PAPER_ACCOUNT_UNINITIALIZED')
         admission=storage_admission(check_database=False)
         if admission:return dict(recorded=False,reason=admission)
-        with closing(_open()) as db, db:
-            db.execute('BEGIN IMMEDIATE')
-            last=db.execute('SELECT id,at FROM observations ORDER BY id DESC LIMIT 1').fetchone()
-            retained_head=db.execute('SELECT MAX(id) FROM archived_observations').fetchone()[0]
-            if retained_head is not None and (last is None or retained_head>=last[0]):
-                raise ValueError('MATRIX_RETAINED_IDENTITY_HEAD_DISAGREEMENT')
-            now=time.time()
-            if last and now-last[1]<MIN_INTERVAL:return dict(recorded=False,reason='OBSERVATION_INTERVAL_OR_CLOCK')
-            admission=storage_admission(db)
-            if admission:return dict(recorded=False,reason=admission)
-            capacity=retain_capacity(db,now)
-            if capacity:return dict(recorded=False,reason=capacity)
-            quotes={}
-            for pos in before['positions']:
-                if pos['product'] not in PRODUCTS:continue
-                try:quotes[pos['product']]=reader(pos['product'])
-                except (ValueError,OSError,TimeoutError):pass
-            after=account()
-            if after is None or after['fingerprint']!=before['fingerprint']:
-                return dict(recorded=False,reason='ACCOUNT_CHANGED_DURING_OBSERVATION')
-            observed_at=time.time()
-            if observed_at<now:return dict(recorded=False,reason='OBSERVATION_CLOCK_REGRESSION')
-            point=observation(after,quotes,observed_at)
-            payload=json.dumps(point,sort_keys=True)
-            if len(payload.encode('utf-8'))>MAX_POINT_BYTES:raise _StorageBlocked('OBSERVATION_PAYLOAD_LIMIT')
-            admission=storage_admission(db)
-            if admission:raise _StorageBlocked(admission)
-            db.execute('INSERT INTO observations(at,payload) VALUES(?,?)',(point['at'],payload))
+        with closing(_open()) as db:
+            with _transaction(db):
+                db.execute('BEGIN IMMEDIATE')
+                last=db.execute('SELECT id,at FROM observations ORDER BY id DESC LIMIT 1').fetchone()
+                retained_head=db.execute('SELECT MAX(id) FROM archived_observations').fetchone()[0]
+                if retained_head is not None and (last is None or retained_head>=last[0]):
+                    raise ValueError('MATRIX_RETAINED_IDENTITY_HEAD_DISAGREEMENT')
+                now=time.time()
+                if last and now-last[1]<MIN_INTERVAL:return dict(recorded=False,reason='OBSERVATION_INTERVAL_OR_CLOCK')
+                admission=storage_admission(db)
+                if admission:return dict(recorded=False,reason=admission)
+                capacity=retain_capacity(db,now)
+                if capacity:return dict(recorded=False,reason=capacity)
+                quotes={}
+                for pos in before['positions']:
+                    if pos['product'] not in PRODUCTS:continue
+                    try:quotes[pos['product']]=reader(pos['product'])
+                    except (ValueError,OSError,TimeoutError):pass
+                after=account()
+                if after is None or after['fingerprint']!=before['fingerprint']:
+                    return dict(recorded=False,reason='ACCOUNT_CHANGED_DURING_OBSERVATION')
+                observed_at=time.time()
+                if observed_at<now:return dict(recorded=False,reason='OBSERVATION_CLOCK_REGRESSION')
+                point=observation(after,quotes,observed_at)
+                payload=json.dumps(point,sort_keys=True)
+                if len(payload.encode('utf-8'))>MAX_POINT_BYTES:raise _StorageBlocked('OBSERVATION_PAYLOAD_LIMIT')
+                admission=storage_admission(db)
+                if admission:raise _StorageBlocked(admission)
+                db.execute('INSERT INTO observations(at,payload) VALUES(?,?)',(point['at'],payload))
         return dict(recorded=True,point=point)
     except _StorageBlocked as exc:
         return dict(recorded=False,reason=str(exc))
@@ -211,24 +254,25 @@ def history(span='1d',now=None):
     start=0 if span=='all' else datetime(datetime.fromtimestamp(now,timezone.utc).year,1,1,tzinfo=timezone.utc).timestamp() if span=='ytd' else now-RANGES[span]
     path=root()/'matrix_observations.sqlite3';points=[];count=0;first=None;active=0;archived=0;storage=storage_status()
     if path.exists():
-        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=2)) as db, db:
-            db.execute('BEGIN')
-            storage=storage_status(db)
-            tables=['observations']
-            if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='archived_observations'").fetchone():tables.append('archived_observations')
-            active=db.execute('SELECT COUNT(*) FROM observations').fetchone()[0]
-            if len(tables)>1:archived=db.execute('SELECT COUNT(*) FROM archived_observations').fetchone()[0]
-            first_values=[db.execute('SELECT MIN(at) FROM '+table).fetchone()[0] for table in tables]
-            first=min((v for v in first_values if v is not None),default=None)
-            counts=[db.execute('SELECT COUNT(*) FROM '+table+' WHERE at>=? AND at<=?',(start,now)).fetchone()[0] for table in tables]
-            count=sum(counts);step=max(1,math.ceil(count/1198))
-            # Rank only IDs (not large JSON payloads), then load the bounded selected
-            # original rows. Legacy pre-archive databases remain GET-only compatible.
-            combined=' UNION ALL '.join('SELECT id,'+str(i)+' AS source FROM '+table+' WHERE at>=? AND at<=?' for i,table in enumerate(tables))
-            selected='WITH combined AS ('+combined+'), ranked AS (SELECT id,source,ROW_NUMBER() OVER(ORDER BY id) n FROM combined), selected AS (SELECT id,source FROM ranked WHERE (n-1)%?=0 OR n=?) '
-            payloads=' UNION ALL '.join('SELECT o.id,o.payload FROM selected s JOIN '+table+' o ON o.id=s.id WHERE s.source='+str(i) for i,table in enumerate(tables))
-            params=[v for _ in tables for v in (start,now)]+[step,count]
-            points=[json.loads(row[1]) for row in db.execute(selected+payloads+' ORDER BY 1',params)]
+        with closing(_history_db(path)) as db:
+            with _transaction(db):
+                db.execute('BEGIN')
+                storage=storage_status(db)
+                tables=['observations']
+                if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='archived_observations'").fetchone():tables.append('archived_observations')
+                active=db.execute('SELECT COUNT(*) FROM observations').fetchone()[0]
+                if len(tables)>1:archived=db.execute('SELECT COUNT(*) FROM archived_observations').fetchone()[0]
+                first_values=[db.execute('SELECT MIN(at) FROM '+table).fetchone()[0] for table in tables]
+                first=min((v for v in first_values if v is not None),default=None)
+                counts=[db.execute('SELECT COUNT(*) FROM '+table+' WHERE at>=? AND at<=?',(start,now)).fetchone()[0] for table in tables]
+                count=sum(counts);step=max(1,math.ceil(count/1198))
+                # Rank only IDs (not large JSON payloads), then load the bounded selected
+                # original rows. Legacy pre-archive databases remain GET-only compatible.
+                combined=' UNION ALL '.join('SELECT id,'+str(i)+' AS source FROM '+table+' WHERE at>=? AND at<=?' for i,table in enumerate(tables))
+                selected='WITH combined AS ('+combined+'), ranked AS (SELECT id,source,ROW_NUMBER() OVER(ORDER BY id) n FROM combined), selected AS (SELECT id,source FROM ranked WHERE (n-1)%?=0 OR n=?) '
+                payloads=' UNION ALL '.join('SELECT o.id,o.payload FROM selected s JOIN '+table+' o ON o.id=s.id WHERE s.source='+str(i) for i,table in enumerate(tables))
+                params=[v for _ in tables for v in (start,now)]+[step,count]
+                points=[json.loads(row[1]) for row in db.execute(selected+payloads+' ORDER BY 1',params)]
     state=account()
     return dict(mode='OBSERVED_LOCAL_PAPER_HISTORY',range=span,range_start=start,range_end=now,timezone='UTC',
         points=points,observations_in_range=count,retained_since=first,downsampled=count>len(points),

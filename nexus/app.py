@@ -70,7 +70,7 @@ async def application_lifespan(application):
                     try:await asyncio.to_thread(refresh_worker.shutdown)
                     finally:await asyncio.to_thread(found_market_worker.shutdown)
 
-app = FastAPI(title="Nexus Operative", version="0.312.0",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.313.0",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -352,7 +352,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.312.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.313.0", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -491,8 +491,13 @@ def portfolio_recovery_report():
 def portfolio_local_snapshot():
     try:
         return backup_snapshot()
+    except ValueError as exc:
+        detail=str(exc)
+        if not detail.startswith("PAPER_SNAPSHOT_"):
+            detail="PAPER_SNAPSHOT_UNAVAILABLE"
+        raise HTTPException(status_code=503,detail=detail)
     except (OSError,sqlite3.Error) as exc:
-        raise HTTPException(status_code=503,detail="Local paper snapshot unavailable")
+        raise HTTPException(status_code=503,detail="PAPER_SNAPSHOT_UNAVAILABLE")
 
 @app.get("/api/paper/portfolio/integrity")
 def paper_portfolio_integrity():

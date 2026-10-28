@@ -161,3 +161,45 @@ def test_path_fixture_cannot_attest_ownership_or_trading_authority(field):
         ('release_trials_'+release_roadmap.REVISION.replace('.','_')+'.json')).read_text())['profiles']['pacing']
     result['path_preflight'][field]=True
     with pytest.raises(ValueError,match='JOURNAL_PATH_AUTHORITY'):release_trials._validate('pacing',result)
+
+
+def test_fingerprint_windows_boundary_preserves_identity_but_separates_creation_time_apis():
+    from types import SimpleNamespace
+    fields=dict(st_dev=1,st_ino=2,st_size=3,st_mtime_ns=4,st_ctime_ns=5,st_nlink=1)
+    path=SimpleNamespace(**fields);handle=SimpleNamespace(**dict(fields,st_ctime_ns=6))
+    assert guard._fingerprint_boundary(path,host='nt')==guard._fingerprint_boundary(handle,host='nt')
+    assert guard._fingerprint_boundary(path,host='posix')!=guard._fingerprint_boundary(handle,host='posix')
+    for name in ('st_dev','st_ino','st_size','st_mtime_ns','st_nlink'):
+        changed=SimpleNamespace(**dict(fields,**{name:fields[name]+1}))
+        assert guard._fingerprint_boundary(path,host='nt')!=guard._fingerprint_boundary(changed,host='nt')
+
+
+@pytest.mark.parametrize('change',['stable','handle_changes','path_changes'])
+def test_windows_fingerprint_retains_within_api_ctime_fences(tmp_path,monkeypatch,change):
+    import os
+    from types import SimpleNamespace
+    path=tmp_path/'private.sqlite3';path.write_bytes(b'fixture')
+    boundary=guard._fingerprint_boundary
+    monkeypatch.setattr(guard,'_fingerprint_boundary',lambda item:boundary(item,host='nt'))
+    original=os.fstat;handle_calls=[]
+    def fstat(fd):
+        value=original(fd);handle_calls.append(1)
+        return SimpleNamespace(**{key:getattr(value,key) for key in
+            ('st_dev','st_ino','st_size','st_mtime_ns','st_nlink','st_mode')},
+            st_ctime_ns=value.st_ctime_ns+1_000_000_000+(len(handle_calls) if change=='handle_changes' else 0))
+    monkeypatch.setattr(guard.os,'fstat',fstat)
+    lstat=Path.lstat;path_calls=[]
+    def shifted(self,*args,**kwargs):
+        value=lstat(self,*args,**kwargs)
+        if self!=path:return value
+        path_calls.append(1)
+        return SimpleNamespace(**{key:getattr(value,key) for key in
+            ('st_dev','st_ino','st_size','st_mtime_ns','st_nlink','st_mode')},
+            st_ctime_ns=value.st_ctime_ns+(1 if change=='path_changes' and len(path_calls)>1 else 0))
+    if change=='path_changes':monkeypatch.setattr(Path,'lstat',shifted)
+    if change=='stable':
+        expected=guard.capture_file_fingerprints((path,),(1024,),'TEST_')
+        guard.require_file_fingerprints((path,),(1024,),expected,'TEST_')
+    else:
+        with pytest.raises(ValueError,match='FILE_FINGERPRINT_CHANGED'):
+            guard.capture_file_fingerprints((path,),(1024,),'TEST_')

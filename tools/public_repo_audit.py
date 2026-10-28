@@ -10,7 +10,9 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 
-MAX_BYTES = 512 * 1024 * 1024
+# Full reachable history measured 548,857,439 uncompressed bytes on 2026-10-28.
+# Keep a finite budget with growth headroom; scan all objects without pruning.
+MAX_BYTES = 1024 * 1024 * 1024
 MAX_OBJECTS = 100000
 PRIVATE_MAGIC = (b'SQLite format 3\x00', b'-----'+b'BEGIN PRIVATE KEY-----', b'-----'+b'BEGIN RSA PRIVATE KEY-----',
                  b'-----'+b'BEGIN EC PRIVATE KEY-----', b'-----'+b'BEGIN OPENSSH PRIVATE KEY-----',
@@ -118,8 +120,12 @@ def main():
     parser.add_argument('--repository',default='.');parser.add_argument('--history',action='store_true')
     parser.add_argument('--require-ref',action='append',default=[]);args=parser.parse_args()
     try:report=audit(args.repository,history=args.history,required_refs=args.require_ref)
-    except (OSError,ValueError,UnicodeError,subprocess.SubprocessError):
-        print('PUBLIC_REPOSITORY_AUDIT_INCOMPLETE');return 2
+    except (OSError,ValueError,UnicodeError,subprocess.SubprocessError) as error:
+        allowed={'FULL_HISTORY_REQUIRED','INVALID_REQUIRED_REF','GIT_AUDIT_INCOMPLETE',
+            'INVALID_GIT_OBJECT','OBJECT_AUDIT_CAP','INVALID_OBJECT_SIZE',
+            'HISTORY_BYTE_CAP','OBJECT_AUDIT_INCOMPLETE'}
+        code=str(error) if type(error) is ValueError and str(error) in allowed else 'INTERNAL_ERROR'
+        print('PUBLIC_REPOSITORY_AUDIT_INCOMPLETE:'+code);return 2
     print(json.dumps(report,sort_keys=True));return 0 if report['passed'] else 1
 
 

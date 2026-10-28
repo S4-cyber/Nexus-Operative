@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.8. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.9. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.8 requires the transport-bound v6 checkpoint profile in lost or malformed acknowledgement recovery and explicit no-network reconciliation. Legacy v1-v4 histories remain readable but cannot retire a current reconnect reservation without durable transport evidence. No raw transport, provider request, credential access, cursor mutation, retry authority or UI control is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.9 repairs Windows backup cleanup and retained-file metadata handling, separates path/handle creation-time checks while retaining file identity and content fences, and expands the finite full-history audit budget to 1 GiB after measuring 548,857,439 reachable bytes. Backups explicitly close target connections before cleanup. The audit still scans every reachable object and reports only fixed incomplete-scan reasons. These repairs do not close actual broker-paper, sustained-market, owner-profile, funds/live/cloud or independent acceptance. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages and no established release date.
 
 ```mermaid
 flowchart TD

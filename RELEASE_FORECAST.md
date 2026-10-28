@@ -1,5 +1,17 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Reassessment on 2026-10-28
+
+Current candidate: v0.340.9, based on v0.340.8 source ced0884bb08acad99654042ea8a2c7f24a2678b9. The October 28 hosted checks exposed Windows backup/metadata defects and a reached full-history audit budget. Repairs are under fresh validation; the failed source is not a verified installer checkpoint. There is no measured improvement to the 0/9 fully accepted major-stage count. The 40% engineering estimate is a carried-forward low-confidence baseline, not a current operational-readiness score.
+
+Functionality has advanced: an internal explicitly confirmed single-attempt paper POST boundary, shared-local request/outcome recovery and bounded Activity SSE transport/checkpoint/reconnect coordination now exist. These are not yet an accepted saved-write-credential, Portal or autonomous broker-order route. The fixed local BTC virtual experiment and advisory numerical council remain the usable experimental flow. Deposits, live execution and computer-off cloud remain unfinished.
+
+Planning ranges remain conditional rather than deadlines. A connected-paper acceptance candidate may require another 2–6 weeks after the Windows gate is restored and an authorized account/private test environment is available; an additional 1–3 weeks of sustained operational evaluation may follow. The previous January–April 2027 full-scope 1.0 window remains a low-confidence scenario, with later delivery possible. Current patch cadence does not establish accepted-gate velocity, and green CI alone cannot close actual-account, policy, funding, cloud or independent-review gates.
+
+Owner involvement: no setup is needed for ongoing coding. Prepare a paper-only account and a Windows ordinary-user test profile for the supervised acceptance stage; enter secrets only through the documented local credential flow. No bank deposit or paid AI is required for local paper testing. See STARTUP_GUIDE.md for the owner checklist.
+
+## Previous assessment retained for history
+
 Assessment date: 2026-10-28 (America/Los_Angeles).
 Parent source reviewed: `8bff74772b0f2c4aa16902f2b45a5fc555fda1fa` (v0.340.7), whose published tree matched the prior locally tested tree. The GitHub connector exposed no workflow or status records for that exact commit, so no v0.340.7 hosted pass is claimed. v0.340.8 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
@@ -30,7 +42,7 @@ These are carried-forward engineering estimates, not acceptance percentages or e
 | D5: Secure deposits and available funds | 0% | Not implemented | Selected provider-hosted funding, scoped credentials and pending/settled/failed/reversed/duplicate transfer reconciliation |
 | D6: Governed autonomous live trading | 10% | Blocked; foundational controls only | Validated policy, live adapter, accepted funds/risk controls, monitoring and separately authorized limited rollout |
 | D7: Computer-off cloud and shared hub | 10% | Local stores/ownership only; no accepted deployment | Hosting choice, authenticated remote control, encryption/key recovery, distributed fencing, quotas and multi-day computer-off acceptance |
-| D8: Expansion and opportunity selection | 35% | Bounded research discovery exists | Authorized sources/venues, cost/liquidity/diversification evidence and reviewed discovery-to-policy integration |
+| D8: Speed, resilience and independent acceptance | 35% | Durable latency, recovery, security and operational fixtures exist | Full feed-to-broker measurements, sustained load/outage/storage acceptance and independent security/risk review |
 | D9: Final 1.0 production release | 0% | Blocked | All agreed stage evidence, independent security/risk review and explicit owner approval |
 
 The highest percentages describe reusable local foundations. They do not mean the remaining integration can be completed by closing a few cosmetic items.

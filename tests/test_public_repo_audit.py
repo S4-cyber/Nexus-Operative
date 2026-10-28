@@ -132,3 +132,20 @@ def test_quote_evidence_ciphertext_and_plaintext_profile_are_private_when_rename
     result=audit.audit(root,history=True)
     assert not result['passed']
     assert {'PRIVATE_BINARY_OR_KEY_CONTENT','PRIVATE_FINANCIAL_REPORT'}<={f['rule'] for f in result['findings']}
+
+
+def test_aggregate_history_byte_cap_still_refuses_without_skipping_objects(tmp_path,monkeypatch):
+    root=repository(tmp_path);commit(root,'public.txt',b'public fixture')
+    monkeypatch.setattr(audit,'MAX_BYTES',1)
+    with pytest.raises(ValueError,match='HISTORY_BYTE_CAP'):audit.audit(root,history=True)
+
+
+@pytest.mark.parametrize('reason,expected',[('HISTORY_BYTE_CAP','HISTORY_BYTE_CAP'),
+    ('PRIVATE_PATH_OR_SECRET','INTERNAL_ERROR')])
+def test_incomplete_audit_reports_only_allowlisted_reason(tmp_path,monkeypatch,capsys,reason,expected):
+    import sys
+    monkeypatch.setattr(sys,'argv',['audit','--repository',str(tmp_path)])
+    def failed(*args,**kwargs):raise ValueError(reason)
+    monkeypatch.setattr(audit,'audit',failed)
+    assert audit.main()==2
+    assert capsys.readouterr().out=='PUBLIC_REPOSITORY_AUDIT_INCOMPLETE:'+expected+'\n'

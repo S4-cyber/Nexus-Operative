@@ -1,5 +1,11 @@
 # Nexus workspaces and startup checklist
 
+## What the owner needs for the next acceptance milestone
+
+Coding and offline fixture validation can continue without owner setup. Actual connected-paper acceptance needs an authorized paper-only account and a Windows machine/private ordinary-user profile. The current paper-order transport and Activity SSE coordination are internal explicitly confirmed boundaries, not a ready autonomous broker connection. Follow a verified build's documented onboarding and supervised test instructions; do not paste API secrets or bank credentials into chat or GitHub. Local virtual-paper operation requires no bank deposit or paid AI subscription.
+
+The owner can help by recording Windows version, installation/startup results, Start Portal/Engage Paper/emergency-stop behavior and sanitized error messages. Keep private backups and original account evidence outside the repository. Scoped paper write-credential/operator integration and source/account/fee/hold/funds acceptance remain engineering and operational gates; an installed key or successful read cannot approve them.
+
 ## Recovering a reviewed account read-pacing block
 
 Use `NexusOperative.exe --paper-tool account-recovery` only after independently reviewing an existing private account pacing tail. Supply `--pacing`, its exact current `--expected-head`, the exact bound `--expected-account`, `--confirm-reviewed-block` and `--confirm-preserve-uncertainty`. The command appends one recovery boundary; it does not open saved keys, contact the broker, retry or start the desktop. It preserves the original authentication/review/interruption outcome, all operation history, the retained cooldown and session capacity. An interrupted unknown remains blocked even after its full-day cooldown until this review is recorded.

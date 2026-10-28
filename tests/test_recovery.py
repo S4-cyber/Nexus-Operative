@@ -216,3 +216,33 @@ def test_recovery_api_never_authorizes_or_resets(tmp_path,monkeypatch):
     assert receipt.json()["orders_enabled"] is False
     assert client.get("/api/paper/portfolio/recovery-report").json()["status"]=="VERIFIED_LOCAL_STRUCTURE"
     assert client.get("/api/status").json()["live_orders_enabled"] is False
+
+
+def test_backup_closes_target_connection_before_failure_cleanup(tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));initialize(10000)
+    connections=[]
+    def failed(source,target):
+        connections.append(target);raise ValueError('PAPER_SNAPSHOT_DATABASE_BUSY')
+    monkeypatch.setattr(recovery,'_backup_with_deadline',failed)
+    with pytest.raises(ValueError,match='PAPER_SNAPSHOT_DATABASE_BUSY'):backup_snapshot()
+    assert len(connections)==1
+    with pytest.raises(sqlite3.ProgrammingError,match='closed'):connections[0].execute('SELECT 1')
+    assert not list((tmp_path/'recovery_snapshots').iterdir())
+
+
+def test_snapshot_capacity_uses_path_stat_not_incomplete_directory_entry_metadata(tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));initialize(10000)
+    directory=tmp_path/'recovery_snapshots';directory.mkdir()
+    (directory/'paper_snapshot_1.sqlite3').write_bytes(b'retained')
+    original=recovery.os.scandir
+    class Entry:
+        def __init__(self,entry):self.name=entry.name;self.path=entry.path
+        def stat(self,**kwargs):raise AssertionError('DirEntry metadata is incomplete on Windows')
+    class Scan:
+        def __enter__(self):
+            self.scan=original(directory);return (Entry(entry) for entry in self.scan)
+        def __exit__(self,*args):self.scan.close()
+    monkeypatch.setattr(recovery.os,'scandir',lambda path:Scan())
+    monkeypatch.setattr(recovery,'MAX_RETAINED_SNAPSHOTS',1)
+    with pytest.raises(ValueError,match='PAPER_SNAPSHOT_CAPACITY_REVIEW_REQUIRED'):
+        recovery._snapshot_capacity(directory,1)

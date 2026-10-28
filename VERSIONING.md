@@ -1,6 +1,6 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.8 (pre-release).** This build requires transport-bound v6 evidence not only for the normal checkpoint acknowledgement, but also for lost/malformed acknowledgement recovery and explicit no-network reconciliation. Legacy v1-v4 history remains readable but cannot retire a current reservation. This is sampled local stability, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.9 (pre-release).** v0.340.9 repairs Windows backup cleanup and retained-file metadata handling, separates path/handle creation-time checks while retaining file identity and content fences, and expands the finite full-history audit budget to 1 GiB after measuring 548,857,439 reachable bytes. Backups explicitly close target connections before cleanup. The audit still scans every reachable object and reports only fixed incomplete-scan reasons. These repairs do not close actual broker-paper, sustained-market, owner-profile, funds/live/cloud or independent acceptance. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages and no established release date.
 
 ## v0.340.8 transport-bound recovery closure
 

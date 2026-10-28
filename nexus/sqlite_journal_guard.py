@@ -74,6 +74,14 @@ def require_file_identities(paths, expected, prefix):
         fail()
 
 
+def _fingerprint_boundary(item, *, host=None):
+    # Windows path and handle APIs can disagree on creation-time precision.
+    # Compare ctime within each API below; retain all common identity fields.
+    host=os.name if host is None else host
+    return (item.st_dev,item.st_ino,item.st_size,item.st_mtime_ns,
+        item.st_ctime_ns if host!='nt' else None,item.st_nlink)
+
+
 def capture_file_fingerprints(paths, maximum_bytes, prefix):
     """Sample bounded single-link files and their bytes without path following.
 
@@ -118,10 +126,11 @@ def capture_file_fingerprints(paths, maximum_bytes, prefix):
                     digest.update(chunk); remaining -= len(chunk)
                 after = os.fstat(stream.fileno())
             final = path.lstat()
-            boundary = lambda item:(item.st_dev, item.st_ino, item.st_size,
-                item.st_mtime_ns, item.st_ctime_ns, item.st_nlink)
+            boundary = _fingerprint_boundary
             if (remaining == 0 or boundary(observed) != boundary(before) or
                     boundary(before) != boundary(after) or boundary(after) != boundary(final) or
+                    before.st_ctime_ns != after.st_ctime_ns or
+                    observed.st_ctime_ns != final.st_ctime_ns or
                     not stat.S_ISREG(final.st_mode)):
                 fail('FILE_FINGERPRINT_CHANGED')
             for suffix in ('-journal', '-wal', '-shm'):
@@ -129,7 +138,10 @@ def capture_file_fingerprints(paths, maximum_bytes, prefix):
                 except FileNotFoundError: continue
                 except OSError: fail('FILE_SET_UNAVAILABLE')
                 fail('SQLITE_SIDECAR_REVIEW_REQUIRED')
-            fingerprints.append((str(resolved), *boundary(after), digest.hexdigest()))
+            # A later review compares the same path API ctime as well as bytes.
+            stable=(after.st_dev,after.st_ino,after.st_size,after.st_mtime_ns,
+                final.st_ctime_ns,after.st_nlink)
+            fingerprints.append((str(resolved), *stable, digest.hexdigest()))
         except ValueError:
             raise
         except (OSError, RuntimeError, TypeError):

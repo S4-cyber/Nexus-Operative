@@ -87,7 +87,7 @@ def _snapshot_capacity(directory,source_bytes):
                     _fail('RETAINED_SIDECAR_REVIEW_REQUIRED')
                 if not (name.startswith('paper_snapshot_') and name.endswith('.sqlite3')):
                     continue
-                observed=entry.stat(follow_symlinks=False)
+                observed=Path(entry.path).stat(follow_symlinks=False)
                 if stat.S_ISLNK(observed.st_mode):_fail('RETAINED_SYMLINK')
                 if not stat.S_ISREG(observed.st_mode):_fail('RETAINED_REGULAR_FILE_REQUIRED')
                 if observed.st_nlink!=1:_fail('RETAINED_HARDLINK_REVIEW_REQUIRED')
@@ -258,7 +258,7 @@ def backup_snapshot():
                        getattr(os,'O_NOFOLLOW',0))
                 descriptor=os.open(destination,flags,0o600)
                 os.close(descriptor)
-                with sqlite3.connect(destination,timeout=SNAPSHOT_BUSY_TIMEOUT_MS/1000) as target:
+                with closing(sqlite3.connect(destination,timeout=SNAPSHOT_BUSY_TIMEOUT_MS/1000)) as target, target:
                     target.execute(f'PRAGMA busy_timeout={SNAPSHOT_BUSY_TIMEOUT_MS}')
                     _backup_with_deadline(source,target)
                 if _regular_identity(source_path,'SOURCE')!=opened:_fail('SOURCE_FILE_CHANGED')

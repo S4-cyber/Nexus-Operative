@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.339.0 recovers a terminal reconnect-budget result from either a thrown/lost or malformed acknowledgement only through exact cold journal replay, while preserving OFF-by-default fail-closed behavior. The v0.338.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.0 recovers each no-network reconnect safety closure from either a thrown/lost or malformed acknowledgement only through exact cold journal replay, while preserving OFF-by-default fail-closed behavior. The v0.339.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.340.0 no-network safety-closure acknowledgement recovery
+
+Outcome-clock uncertainty retirement, pending-attempt emergency abort and retry-wait emergency close now discard every returned acknowledgement field and cold-replay the complete reconnect-budget journal. Only the exact requested terminal record may continue. An uncommitted forged return, a different terminal state or a same-inode rewrite remains fixed uncertainty. These no-network functions receive no credentials or cursor store, perform no provider request and grant no retry authority.
+
+The direct cursor/reconnect suites passed 394 tests and the complete Activity SSE set passed 509. Final local validation passed 4,362 tests with one expected non-Windows skip and one existing warning. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `24a9c4a51cfc243478f92ad590b89d14a00ea0e62b31fc670e040edb1ab46a64`; evidence SHA256 is `bdf9a1bfb43d0b9298eb8e374b7a578515903c208ebd7b2e98826f44f4c373eb`. The exact 703-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.339.0 malformed reconnect-budget result acknowledgement recovery
 

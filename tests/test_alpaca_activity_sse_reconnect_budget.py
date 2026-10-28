@@ -2272,7 +2272,7 @@ def test_control_closure_exact_replay_same_inode_rewrite_withholds_acknowledgeme
         first['reconnect_budget_head_sha256']
 
 
-def test_uncertain_outcome_close_rejects_unbound_result_acknowledgement(
+def test_uncertain_outcome_close_recovers_malformed_result_acknowledgement(
         tmp_path, monkeypatch):
     _, budget = stores(tmp_path)
     reserved = budget.begin(evaluated_at=1000,
@@ -2287,6 +2287,28 @@ def test_uncertain_outcome_close_rejects_unbound_result_acknowledgement(
 
     monkeypatch.setattr(budget, 'close_pending_for_outcome_uncertainty',
         altered_acknowledgement)
+    result = subject.close_pending_reconnect_for_outcome_uncertainty(
+        reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'],
+        evaluated_at=1001, confirm_outcome_uncertain=True,
+        confirm_no_retry=True)
+    state = budget.inspect()
+    assert result['pending_outcome_closed'] and not result['duplicate_close']
+    assert result['reconnect_budget_head_sha256'] == state['head_sha256']
+    assert state['review_required'] and state['pending_token'] is None
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+
+
+def test_control_closure_rejects_malformed_return_without_exact_commit(
+        tmp_path, monkeypatch):
+    _, budget = stores(tmp_path)
+    reserved = budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO, reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO, emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    saved = budget.path.read_bytes()
+    monkeypatch.setattr(budget, 'close_pending_for_outcome_uncertainty',
+        lambda **kwargs: ({'head_sha256': 'f' * 64}, False))
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
             match='OUTCOME_UNCERTAIN_CLOSE_UNCERTAIN'):
         subject.close_pending_reconnect_for_outcome_uncertainty(
@@ -2294,9 +2316,10 @@ def test_uncertain_outcome_close_rejects_unbound_result_acknowledgement(
             expected_budget_head=reserved['head_sha256'],
             evaluated_at=1001, confirm_outcome_uncertain=True,
             confirm_no_retry=True)
+    assert budget.path.read_bytes() == saved
     state = budget.inspect()
-    assert state['review_required'] and state['pending_token'] is None
-    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+    assert state['pending_token'] == reserved['token']
+    assert not state['review_required'] and not state['completed']
 
 
 @pytest.mark.parametrize('domain_error', (False, True))
@@ -3075,7 +3098,7 @@ def test_emergency_stop_abort_lost_ack_replay_is_idempotent(tmp_path):
     assert budget.path.read_bytes() == saved
 
 
-def test_emergency_stop_abort_rejects_unbound_result_acknowledgement(
+def test_emergency_stop_abort_recovers_malformed_result_acknowledgement(
         tmp_path, monkeypatch):
     _, budget = stores(tmp_path)
     reserved = budget.begin(evaluated_at=1000,
@@ -3090,14 +3113,15 @@ def test_emergency_stop_abort_rejects_unbound_result_acknowledgement(
 
     monkeypatch.setattr(budget, 'abort_pending_for_emergency_stop',
         altered_acknowledgement)
-    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
-            match='EMERGENCY_STOP_ABORT_UNCERTAIN'):
-        subject.abort_pending_reconnect_for_emergency_stop(
-            reconnect_budget=budget,
-            expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
-            emergency_stop_check=lambda: True,
-            confirm_emergency_stop_abort=True)
+    result = subject.abort_pending_reconnect_for_emergency_stop(
+        reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'], evaluated_at=1001,
+        emergency_stop_check=lambda: True,
+        confirm_emergency_stop_abort=True)
     state = budget.inspect()
+    assert result['pending_reconnect_aborted'] and \
+        not result['duplicate_abort']
+    assert result['reconnect_budget_head_sha256'] == state['head_sha256']
     assert state['review_required'] and state['pending_token'] is None
     assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
 
@@ -3346,7 +3370,7 @@ def test_emergency_stop_waiting_close_lost_ack_replay_is_idempotent(tmp_path):
     assert budget.path.read_bytes() == saved
 
 
-def test_emergency_stop_waiting_close_rejects_unbound_acknowledgement(
+def test_emergency_stop_waiting_close_recovers_malformed_acknowledgement(
         tmp_path, monkeypatch):
     budget, _, waiting = waiting_retry(tmp_path)
     original = budget.close_waiting_retry_for_emergency_stop
@@ -3357,14 +3381,14 @@ def test_emergency_stop_waiting_close_rejects_unbound_acknowledgement(
 
     monkeypatch.setattr(budget, 'close_waiting_retry_for_emergency_stop',
         altered_acknowledgement)
-    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
-            match='EMERGENCY_STOP_CLOSE_UNCERTAIN'):
-        subject.close_waiting_reconnect_for_emergency_stop(
-            reconnect_budget=budget,
-            expected_budget_head=waiting['head_sha256'],
-            evaluated_at=1000.5, emergency_stop_check=lambda: True,
-            confirm_emergency_stop_close=True)
+    result = subject.close_waiting_reconnect_for_emergency_stop(
+        reconnect_budget=budget,
+        expected_budget_head=waiting['head_sha256'],
+        evaluated_at=1000.5, emergency_stop_check=lambda: True,
+        confirm_emergency_stop_close=True)
     state = budget.inspect()
+    assert result['waiting_retry_closed'] and not result['duplicate_close']
+    assert result['reconnect_budget_head_sha256'] == state['head_sha256']
     assert state['review_required'] and state['pending_token'] is None
     assert state['last_detail_code'] == 'EMERGENCY_STOP_ACTIVE'
 

@@ -723,27 +723,6 @@ def _exact_waiting_stop_result(retained, prior_head, evaluated_at,
         return False
 
 
-def _validated_control_closure(reconnect_budget, retained, duplicate, *,
-        expected_head, evaluated_at, detail, waiting, code):
-    """Bind a safety-control acknowledgement to an exact durable replay."""
-    if type(retained) is not dict or type(duplicate) is not bool:
-        _fail(code)
-    acknowledgement = dict(retained)
-    if 'duplicate_result' in acknowledgement:
-        if acknowledgement.pop('duplicate_result') is not duplicate:
-            _fail(code)
-    acknowledged = _validated_budget_view(reconnect_budget,
-        acknowledgement, code)
-    stable = _inspect_after_result_error(reconnect_budget, code)
-    exact = (_exact_waiting_stop_result(stable, expected_head,
-                evaluated_at, duplicate) if waiting else
-        _exact_control_failure_result(stable, expected_head,
-            evaluated_at, detail, duplicate))
-    if acknowledged != stable or not exact:
-        _fail(code)
-    return stable
-
-
 def _perform_control_closure(reconnect_budget, operation, *,
         budget_binding, expected_head, evaluated_at, detail, waiting, code):
     """Run one local safety closure with exact lost-ack recovery."""
@@ -764,7 +743,7 @@ def _perform_control_closure(reconnect_budget, operation, *,
         return ((stable, expected_duplicate) if exact else None)
 
     try:
-        retained, duplicate = operation()
+        operation()
     except ActivitySSEReconnectBudgetError as error:
         if not _budget_binding_matches(reconnect_budget, budget_binding):
             _fail('STORE_BINDING_CHANGED')
@@ -790,13 +769,24 @@ def _perform_control_closure(reconnect_budget, operation, *,
         if recovered is None:
             _fail(code)
         retained, duplicate = recovered
+    else:
+        # A returned closure acknowledgement is transport, not durable
+        # evidence.  It may be structurally malformed even though the exact
+        # terminal journal record committed.  Discard every returned field
+        # and accept only the same cold exact replay used after a completely
+        # lost acknowledgement.  A forged return without that commit, or a
+        # concurrently changed record, still fails closed.
+        recovered = recover_exact_terminal()
+        if recovered is None:
+            _fail(code)
+        retained, duplicate = recovered
     if not _budget_binding_matches(reconnect_budget, budget_binding):
         _fail('STORE_BINDING_CHANGED')
     if duplicate is not expected_duplicate:
         _fail(code)
-    stable = _validated_control_closure(reconnect_budget, retained,
-        duplicate, expected_head=expected, evaluated_at=evaluated_at,
-        detail=detail, waiting=waiting, code=code)
+    # recover_exact_terminal already returned a totally validated built-in
+    # journal view and proved its exact requested closure semantics.
+    stable = retained
     if not _budget_binding_matches(reconnect_budget, budget_binding):
         _fail('STORE_BINDING_CHANGED')
     try:

@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.14 (pre-release).** This build makes exact lost-result acknowledgement recovery plus two-journal byte-stable reconciliation replay mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.15 (pre-release).** This build pins reconnect-budget content across the pre-commit checkpoint-reconciliation decision and makes the same-inode rewrite refusal mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.15 pre-commit reconciliation budget fingerprint
+
+Explicit checkpoint reconciliation now captures the reconnect-budget fingerprint together with the two-file identity set and existing cursor fingerprint. It rechecks the budget bytes after initial replay, after the cursor-binding decision and before the sole expected local result commit. Duplicate recovery retains the entry fingerprint throughout. A same-inode rewrite fails closed with fixed file-set uncertainty, preserves the pending reservation and cannot cause another provider request. The injected release fixture and negative control make the invariant mandatory.
+
+Final local validation passed 4,388 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 423 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `d2e48a29e9076286673fca2acad4071ec2c876a6f7ec87e4dca5277b728790a2`; `validation/release_trials_0_340_15.json` SHA256 is `69c17aa0be2ca7a6f449c377b11072b7faeb54147a8cca01ce43ccf11fc2c0e7`. Exact-source v0.340.14 parent `91ca3a31eea7f4727d236938035d459fd6f63f92` passed public security 40771468125, research safety/browser/evidence 40771468266 and Windows packaging/installer 40771470440. Fresh exact-source v0.340.15 workflows remain mandatory.
 
 ## v0.340.14 reconciliation lost-result acknowledgement evidence
 

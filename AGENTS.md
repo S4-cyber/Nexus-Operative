@@ -1,6 +1,12 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.14 promotes the reconciliation result-acknowledgement crash boundary into mandatory Activity SSE release evidence. The injected fixture must lose the return after the durable reconciliation result commits, recover that exact result once, and replay the same explicit no-network reconciliation without changing either the cursor or reconnect-budget journal or performing another provider request. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+Current checkpoint: v0.340.15 content-pins the reconnect-budget journal from entry into explicit checkpoint reconciliation through the cursor-binding decision. A same-inode rewrite now fails closed before the expected local result commit, retains the exact pending reservation and performs no additional provider request. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+
+## v0.340.15 pre-commit reconciliation budget fingerprint
+
+Explicit checkpoint reconciliation already pinned the two journal identities and cursor content from entry, but it captured reconnect-budget content only after the terminal result stage. The entry boundary now captures the budget fingerprint too, rechecks it after initial replay, after the cursor-binding decision and immediately before the one expected local result commit. Duplicate recovery retains that same entry fingerprint through return. A same-inode rewrite therefore receives fixed `FILE_SET_CHANGED`, preserves the pending reservation and never repeats provider IO. The injected fixture makes this mandatory release evidence and a negative control proves false evidence is rejected.
+
+Final local validation passed 4,388 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 423 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `d2e48a29e9076286673fca2acad4071ec2c876a6f7ec87e4dca5277b728790a2`; `validation/release_trials_0_340_15.json` SHA256 is `69c17aa0be2ca7a6f449c377b11072b7faeb54147a8cca01ce43ccf11fc2c0e7`. Exact-source v0.340.14 parent `91ca3a31eea7f4727d236938035d459fd6f63f92` passed public security 40771468125, research safety/browser/evidence 40771468266 and Windows packaging/installer 40771470440. Fresh exact-source v0.340.15 workflows remain mandatory.
 
 ## v0.340.14 reconciliation lost-result acknowledgement evidence
 

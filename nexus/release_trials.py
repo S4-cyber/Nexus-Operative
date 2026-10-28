@@ -1112,6 +1112,7 @@ def _validate(profile, result):
                 'checkpoint_and_budget_recover_together',
                 'pending_checkpoint_result_recovers_without_second_get',
                 'checkpoint_reconciliation_lost_result_ack_recovers_exactly_once',
+                'reconciliation_pins_budget_before_cursor_decision',
                 'checkpoint_reconciliation_replay_is_byte_stable',
                 'emergency_stop_retires_pending_without_external_access',
                 'emergency_stop_closes_retry_wait_without_new_attempt',

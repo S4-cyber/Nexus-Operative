@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.15 pre-commit reconciliation budget fingerprint
+
+Pin reconnect-budget content at explicit reconciliation entry, not only after the terminal result stage. Recheck the exact private file fingerprint after initial budget replay, after reading the durable cursor binding and immediately before the expected local budget result commit. On duplicate recovery, retain that original fingerprint through the final return. A same-inode rewrite must fail with fixed file-set uncertainty, leave the pending reservation intact and never perform another provider request.
+
+The injected fixture commits a transport-bound cursor checkpoint, rewrites the budget file between initial replay and cursor-binding return, and requires the new refusal plus preserved pending state. The release validator and negative control make this evidence mandatory. No UI, permission, credential, retry, order, funds, live, cloud or release authority changes.
+
+Final local validation passed 4,388 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 423 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `d2e48a29e9076286673fca2acad4071ec2c876a6f7ec87e4dca5277b728790a2`; `validation/release_trials_0_340_15.json` SHA256 is `69c17aa0be2ca7a6f449c377b11072b7faeb54147a8cca01ce43ccf11fc2c0e7`. Exact-source v0.340.14 parent `91ca3a31eea7f4727d236938035d459fd6f63f92` passed public security 40771468125, research safety/browser/evidence 40771468266 and Windows packaging/installer 40771470440. Fresh exact-source v0.340.15 workflows remain mandatory.
+
 ## v0.340.14 reconciliation lost-result acknowledgement evidence
 
 Require the Activity release profile to exercise the crash boundary after explicit checkpoint reconciliation durably commits but before its result reaches the caller. The injected fixture loses that acknowledgement, recovers the exact completed result once from the private reconnect-budget journal, and then replays the original heads while requiring both cursor and budget bytes to remain unchanged. The entire sequence must retain the single original injected provider request, perform no automatic retry and keep every authority flag false. Deliberately falsifying either recovery or replay evidence must reject the profile.

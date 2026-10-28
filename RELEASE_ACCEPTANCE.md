@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.15 pre-commit reconciliation budget fingerprint
+
+The Activity release profile now requires explicit checkpoint reconciliation to detect a same-inode reconnect-budget rewrite between initial budget replay and the cursor-binding decision. The refusal must retain the exact pending reservation, avoid a terminal result or retry and preserve the single original injected provider request. A deliberately false field must reject the profile. The runtime change grants no provider, credential, account, order, funds, live, cloud or release authority.
+
+Final local validation passed 4,388 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 423 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `d2e48a29e9076286673fca2acad4071ec2c876a6f7ec87e4dca5277b728790a2`; `validation/release_trials_0_340_15.json` SHA256 is `69c17aa0be2ca7a6f449c377b11072b7faeb54147a8cca01ce43ccf11fc2c0e7`. Exact-source v0.340.14 parent `91ca3a31eea7f4727d236938035d459fd6f63f92` passed public security 40771468125, research safety/browser/evidence 40771468266 and Windows packaging/installer 40771470440. Fresh exact-source v0.340.15 workflows remain mandatory.
+
 ## v0.340.14 reconciliation lost-result acknowledgement evidence
 
 The Activity release profile now requires the explicit checkpoint-reconciliation result to survive a lost acknowledgement after the durable commit. The first call must recover that exact terminal result once without a second provider request; the duplicate replay must leave both durable journals byte-stable, avoid acknowledgement recovery and retry, and preserve all false-authority flags. Deliberately false recovery and replay fields must reject the profile. This changes no runtime provider, account, order, funds, live, cloud or release authority.

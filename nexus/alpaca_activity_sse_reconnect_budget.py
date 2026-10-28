@@ -2452,6 +2452,8 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             journal_paths, file_prefix)
         cursor_fingerprint = capture_file_fingerprints(
             (journal_paths[0],), (MAX_CURSOR_DATABASE_BYTES,), file_prefix)
+        initial_budget_fingerprint = capture_file_fingerprints(
+            (journal_paths[1],), (MAX_DATABASE_BYTES,), file_prefix)
     except ValueError as error:
         raise ActivitySSEReconnectBudgetError(str(error)) from None
 
@@ -2482,7 +2484,7 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
     except Exception:
         require_store_bindings()
         _fail('RECOVERY_STATE_UNCERTAIN')
-    require_store_bindings()
+    require_journal_files(initial_budget_fingerprint)
     try:
         duplicate = state['head_sha256'] != budget_head
         if duplicate:
@@ -2529,7 +2531,7 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
     except Exception:
         require_store_bindings()
         _fail('CURSOR_BINDING_REVIEW_FAILED')
-    require_store_bindings()
+    require_journal_files(initial_budget_fingerprint)
     if not binding_matches:
         _fail('CHECKPOINT_BINDING_DISAGREEMENT')
     result_acknowledgement_recovered = False
@@ -2539,6 +2541,7 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             _fail('CHECKPOINT_BINDING_DISAGREEMENT')
         recovered = state
     else:
+        require_journal_files(initial_budget_fingerprint)
         recovered, result_acknowledgement_recovered = \
             _finish_with_exact_recovery(reconnect_budget,
             lambda: reconnect_budget.finish(state['pending_token'],
@@ -2573,8 +2576,9 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
                 retained['checkpoint_receipt_sha256'], result_time)):
         _fail('RECOVERY_RESULT_UNCERTAIN')
     try:
-        budget_fingerprint = capture_file_fingerprints(
-            (journal_paths[1],), (MAX_DATABASE_BYTES,), file_prefix)
+        budget_fingerprint = (initial_budget_fingerprint if duplicate else
+            capture_file_fingerprints(
+                (journal_paths[1],), (MAX_DATABASE_BYTES,), file_prefix))
         confirmed_checkpoint = _validated_checkpoint_binding(cursor_store,
             cursor_store.latest_checkpoint_binding(),
             'RECOVERY_RESULT_UNCERTAIN')
@@ -2798,6 +2802,52 @@ def fixture_report():
         recovery_replay_unchanged = (
             recovery_cursor.path.read_bytes() == recovery_cursor_bytes and
             recovery_budget.path.read_bytes() == recovery_bytes)
+        rewrite_cursor = ActivitySSECursorStore(
+            root / 'rewrite-cursor.sqlite3', account)
+        rewrite_budget = ActivitySSEReconnectBudget(
+            root / 'rewrite-budget.sqlite3', account)
+        rewrite_reserved = rewrite_budget.begin(evaluated_at=2500,
+            expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
+            confirm_reconnect_attempt=True)
+        rewrite_opener = Opener(raw)
+        rewrite_checkpoint = checkpoint.collect_and_checkpoint_once(
+            'fixture_key_only_123', 'fixture_secret_only_123',
+            expected_account_id=account, initial_events=initial,
+            reconnect_reason='CONNECTION_DROPPED',
+            cursor_store=rewrite_cursor, expected_cursor_head=ZERO,
+            confirm_read_only_paper=True, confirm_cursor_checkpoint=True,
+            opener=rewrite_opener, wall_clock=lambda: 2500,
+            elapsed_clock=lambda: 50, permission_check=lambda: True,
+            emergency_stop_check=lambda: False,
+            credential_check=lambda: True,
+            reconnect_reservation_token=rewrite_reserved['token'])
+        rewrite_budget_bytes = rewrite_budget.path.read_bytes()
+        original_rewrite_binding = rewrite_cursor.latest_checkpoint_binding
+        def rewrite_budget_before_binding_return():
+            retained = original_rewrite_binding()
+            with rewrite_budget.path.open('r+b') as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+                stream.flush()
+            return retained
+        rewrite_cursor.latest_checkpoint_binding = \
+            rewrite_budget_before_binding_return
+        rewrite_code = None
+        try:
+            reconcile_pending_checkpoint(cursor_store=rewrite_cursor,
+                reconnect_budget=rewrite_budget,
+                expected_budget_head=rewrite_reserved['head_sha256'],
+                expected_checkpoint_head=
+                    rewrite_checkpoint['checkpoint_head_sha256'],
+                evaluated_at=2501,
+                confirm_checkpoint_reconciliation=True)
+        except ActivitySSEReconnectBudgetError as error:
+            rewrite_code = str(error)
+        rewrite_budget.path.write_bytes(rewrite_budget_bytes)
+        rewrite_state = ActivitySSEReconnectBudget(
+            rewrite_budget.path, account).inspect()
         stop_budget = ActivitySSEReconnectBudget(
             root / 'stop-budget.sqlite3', account)
         stop_reserved = stop_budget.begin(evaluated_at=3000,
@@ -2989,6 +3039,13 @@ def fixture_report():
                 recovery_finish_calls == [True] and
                 len(recovery_opener.requests) == 1 and
                 recovery_budget.inspect()['completed'],
+            reconciliation_pins_budget_before_cursor_decision=
+                rewrite_code is not None and rewrite_code.endswith(
+                    'FILE_SET_CHANGED') and
+                len(rewrite_opener.requests) == 1 and
+                rewrite_state['pending_token'] == rewrite_reserved['token'] and
+                not rewrite_state['completed'] and
+                not rewrite_state['review_required'],
             checkpoint_reconciliation_replay_is_byte_stable=
                 recovered_replay['pending_checkpoint_reconciled'] and
                 recovered_replay['duplicate_recovery'] and

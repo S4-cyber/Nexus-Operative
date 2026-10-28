@@ -4408,6 +4408,37 @@ def test_reconciliation_post_result_binding_rejects_custom_equality(
     assert state['completed'] and state['pending_token'] is None
 
 
+def test_reconciliation_budget_rewrite_before_cursor_binding_fails_closed(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    original = cursor.latest_checkpoint_binding
+
+    def rewrite_budget_before_binding_return():
+        retained = original()
+        with budget.path.open('r+b') as stream:
+            stream.seek(60)
+            stream.write((1).to_bytes(4, 'big'))
+            stream.flush()
+        return retained
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        rewrite_budget_before_binding_return)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    budget.path.write_bytes(saved)
+    state = budget.inspect()
+    assert state['pending_token'] == reserved['token']
+    assert not state['completed'] and not state['review_required']
+
+
 @pytest.mark.parametrize('store_name', ('cursor', 'budget'))
 def test_reconciliation_final_same_inode_rewrite_withholds_acknowledgement(
         tmp_path, monkeypatch, store_name):

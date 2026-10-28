@@ -2482,7 +2482,11 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
         state = _validated_budget_view(reconnect_budget,
             reconnect_budget.inspect(), 'RECOVERY_STATE_UNCERTAIN')
     except Exception:
-        require_store_bindings()
+        # A failing reader is not allowed to hide a same-inode change to
+        # either journal behind the more general semantic-review diagnostic.
+        # No local result has been committed yet, so the entry fingerprints
+        # remain the exact expected two-file scope on this exceptional exit.
+        require_journal_files(initial_budget_fingerprint)
         _fail('RECOVERY_STATE_UNCERTAIN')
     require_journal_files(initial_budget_fingerprint)
     try:
@@ -2529,7 +2533,11 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             complete_counts_bound is True and
             retained_reservation == sha(reservation_token))
     except Exception:
-        require_store_bindings()
+        # Preserve the entry file proof on exceptional cursor-review exits as
+        # well as successful ones.  A reader that changes a journal and then
+        # raises must surface FILE_SET_CHANGED before the pending reservation
+        # can be mistaken for an ordinary binding-review failure.
+        require_journal_files(initial_budget_fingerprint)
         _fail('CURSOR_BINDING_REVIEW_FAILED')
     require_journal_files(initial_budget_fingerprint)
     if not binding_matches:
@@ -2848,6 +2856,30 @@ def fixture_report():
         rewrite_budget.path.write_bytes(rewrite_budget_bytes)
         rewrite_state = ActivitySSEReconnectBudget(
             rewrite_budget.path, account).inspect()
+        rewrite_cursor.latest_checkpoint_binding = original_rewrite_binding
+        exceptional_budget_bytes = rewrite_budget.path.read_bytes()
+        def rewrite_budget_then_fail_cursor_read():
+            with rewrite_budget.path.open('r+b') as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+                stream.flush()
+            raise RuntimeError('private fixture failed cursor read')
+        rewrite_cursor.latest_checkpoint_binding = \
+            rewrite_budget_then_fail_cursor_read
+        exceptional_rewrite_code = None
+        try:
+            reconcile_pending_checkpoint(cursor_store=rewrite_cursor,
+                reconnect_budget=rewrite_budget,
+                expected_budget_head=rewrite_reserved['head_sha256'],
+                expected_checkpoint_head=
+                    rewrite_checkpoint['checkpoint_head_sha256'],
+                evaluated_at=2502,
+                confirm_checkpoint_reconciliation=True)
+        except ActivitySSEReconnectBudgetError as error:
+            exceptional_rewrite_code = str(error)
+        rewrite_budget.path.write_bytes(exceptional_budget_bytes)
+        exceptional_rewrite_state = ActivitySSEReconnectBudget(
+            rewrite_budget.path, account).inspect()
         stop_budget = ActivitySSEReconnectBudget(
             root / 'stop-budget.sqlite3', account)
         stop_reserved = stop_budget.begin(evaluated_at=3000,
@@ -3046,6 +3078,14 @@ def fixture_report():
                 rewrite_state['pending_token'] == rewrite_reserved['token'] and
                 not rewrite_state['completed'] and
                 not rewrite_state['review_required'],
+            reconciliation_exception_rechecks_entry_files=
+                exceptional_rewrite_code is not None and
+                exceptional_rewrite_code.endswith('FILE_SET_CHANGED') and
+                len(rewrite_opener.requests) == 1 and
+                exceptional_rewrite_state['pending_token'] ==
+                    rewrite_reserved['token'] and
+                not exceptional_rewrite_state['completed'] and
+                not exceptional_rewrite_state['review_required'],
             checkpoint_reconciliation_replay_is_byte_stable=
                 recovered_replay['pending_checkpoint_reconciled'] and
                 recovered_replay['duplicate_recovery'] and

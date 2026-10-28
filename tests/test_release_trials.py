@@ -434,6 +434,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('explicit_activity_sse_reconnect_budget','pending_checkpoint_result_recovers_without_second_get'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','checkpoint_reconciliation_lost_result_ack_recovers_exactly_once'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','reconciliation_pins_budget_before_cursor_decision'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
+        (('explicit_activity_sse_reconnect_budget','reconciliation_exception_rechecks_entry_files'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','checkpoint_reconciliation_replay_is_byte_stable'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','emergency_stop_retires_pending_without_external_access'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','emergency_stop_closes_retry_wait_without_new_attempt'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),

@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.15 (pre-release).** This build pins reconnect-budget content across the pre-commit checkpoint-reconciliation decision and makes the same-inode rewrite refusal mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.16 (pre-release).** This build rechecks both exact entry journal fingerprints when initial reconciliation readers fail and makes the exceptional file-set refusal mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.16 exceptional reconciliation file-set proof
+
+Initial reconnect-budget replay and cursor-binding review now recheck both entry journal identities and fingerprints on exceptional exits, not only after successful reads. A reader that rewrites the cursor or budget file and then raises receives fixed `FILE_SET_CHANGED` before the general semantic-review diagnostic. The pending reservation remains intact, and the path cannot retry or repeat provider IO. Four direct regressions cover both readers and both journals; the injected fixture and negative control make this mandatory release evidence.
+
+Final local validation passed 4,392 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 427 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `7c1061a85dc6c9202e5a8e4bd87a79115759d4215c0902ff50ec3ab08efcd52f`; `validation/release_trials_0_340_16.json` SHA256 is `ba1dd6d821a3b386309cbcc767486ecc892c4b934e6342ca310d19ac244c4ee7`. Exact-source v0.340.15 parent `36b87f3d9f6887bdf71d8319d3ac5bff5870bcf0` passed public security 40778805767, research safety/browser/evidence 40778806020 and Windows packaging/installer 40778805786. Fresh exact-source v0.340.16 workflows remain mandatory.
 
 ## v0.340.15 pre-commit reconciliation budget fingerprint
 

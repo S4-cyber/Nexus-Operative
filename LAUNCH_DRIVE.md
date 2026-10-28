@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.16 exceptional reconciliation file-set proof
+
+Recheck both exact entry journal fingerprints when initial budget replay or cursor-binding review raises during explicit no-network checkpoint reconciliation. A same-inode cursor or reconnect-budget rewrite must take precedence over the general semantic-review diagnostic, retain the pending reservation and perform no new provider request. Successful reads keep their existing checks, and the one expected local result commit remains unchanged.
+
+Four direct regressions exercise both failing readers against both journals. The injected release fixture rewrites the budget and then raises from cursor review; the release validator and negative control make the fixed file-set refusal mandatory. No UI, permission, credential, retry, order, funds, live, cloud or release authority changes.
+
+Final local validation passed 4,392 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 427 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `7c1061a85dc6c9202e5a8e4bd87a79115759d4215c0902ff50ec3ab08efcd52f`; `validation/release_trials_0_340_16.json` SHA256 is `ba1dd6d821a3b386309cbcc767486ecc892c4b934e6342ca310d19ac244c4ee7`. Exact-source v0.340.15 parent `36b87f3d9f6887bdf71d8319d3ac5bff5870bcf0` passed public security 40778805767, research safety/browser/evidence 40778806020 and Windows packaging/installer 40778805786. Fresh exact-source v0.340.16 workflows remain mandatory.
+
 ## v0.340.15 pre-commit reconciliation budget fingerprint
 
 Pin reconnect-budget content at explicit reconciliation entry, not only after the terminal result stage. Recheck the exact private file fingerprint after initial budget replay, after reading the durable cursor binding and immediately before the expected local budget result commit. On duplicate recovery, retain that original fingerprint through the final return. A same-inode rewrite must fail with fixed file-set uncertainty, leave the pending reservation intact and never perform another provider request.

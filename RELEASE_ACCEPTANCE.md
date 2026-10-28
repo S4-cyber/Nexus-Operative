@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.16 exceptional reconciliation file-set proof
+
+The Activity release profile now requires explicit checkpoint reconciliation to recheck both entry journal fingerprints when cursor-binding review changes the reconnect-budget file and then raises. The fixed file-set refusal must retain the exact pending reservation, avoid a terminal result or retry and preserve the single original injected provider request. A deliberately false field must reject the profile. The runtime change grants no provider, credential, account, order, funds, live, cloud or release authority.
+
+Final local validation passed 4,392 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 427 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `7c1061a85dc6c9202e5a8e4bd87a79115759d4215c0902ff50ec3ab08efcd52f`; `validation/release_trials_0_340_16.json` SHA256 is `ba1dd6d821a3b386309cbcc767486ecc892c4b934e6342ca310d19ac244c4ee7`. Exact-source v0.340.15 parent `36b87f3d9f6887bdf71d8319d3ac5bff5870bcf0` passed public security 40778805767, research safety/browser/evidence 40778806020 and Windows packaging/installer 40778805786. Fresh exact-source v0.340.16 workflows remain mandatory.
+
 ## v0.340.15 pre-commit reconciliation budget fingerprint
 
 The Activity release profile now requires explicit checkpoint reconciliation to detect a same-inode reconnect-budget rewrite between initial budget replay and the cursor-binding decision. The refusal must retain the exact pending reservation, avoid a terminal result or retry and preserve the single original injected provider request. A deliberately false field must reject the profile. The runtime change grants no provider, credential, account, order, funds, live, cloud or release authority.

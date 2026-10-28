@@ -4244,6 +4244,39 @@ def test_reconciliation_initial_budget_inspection_failure_is_sanitized(
     assert original_inspect()['pending_token'] == reserved['token']
 
 
+@pytest.mark.parametrize('changed_store', ('cursor', 'budget'))
+def test_reconciliation_failed_budget_read_rechecks_entry_files(tmp_path,
+        monkeypatch, changed_store):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    cursor_bytes = cursor.path.read_bytes()
+    budget_bytes = budget.path.read_bytes()
+    original_inspect = budget.inspect
+    changed_path = cursor.path if changed_store == 'cursor' else budget.path
+
+    def rewrite_then_fail():
+        with changed_path.open('r+b') as stream:
+            stream.seek(60)
+            stream.write((1).to_bytes(4, 'big'))
+            stream.flush()
+        raise RuntimeError('private failed budget read')
+
+    monkeypatch.setattr(budget, 'inspect', rewrite_then_fail)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    cursor.path.write_bytes(cursor_bytes)
+    budget.path.write_bytes(budget_bytes)
+    state = original_inspect()
+    assert state['pending_token'] == reserved['token']
+    assert not state['completed'] and not state['review_required']
+
+
 @pytest.mark.parametrize('malformed', (None, {}, [], {'head_sha256': None}))
 def test_reconciliation_malformed_initial_budget_view_fails_closed(
         tmp_path, monkeypatch, malformed):
@@ -4337,6 +4370,40 @@ def test_reconciliation_cursor_binding_failure_is_sanitized(
     assert 'private' not in str(raised.value)
     assert len(opener.requests) == 1
     assert budget.path.read_bytes() == saved
+
+
+@pytest.mark.parametrize('changed_store', ('cursor', 'budget'))
+def test_reconciliation_failed_cursor_read_rechecks_entry_files(tmp_path,
+        monkeypatch, changed_store):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    cursor_bytes = cursor.path.read_bytes()
+    budget_bytes = budget.path.read_bytes()
+    original_inspect = budget.inspect
+    changed_path = cursor.path if changed_store == 'cursor' else budget.path
+
+    def rewrite_then_fail():
+        with changed_path.open('r+b') as stream:
+            stream.seek(60)
+            stream.write((1).to_bytes(4, 'big'))
+            stream.flush()
+        raise RuntimeError('private failed cursor read')
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        rewrite_then_fail)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    cursor.path.write_bytes(cursor_bytes)
+    budget.path.write_bytes(budget_bytes)
+    state = original_inspect()
+    assert state['pending_token'] == reserved['token']
+    assert not state['completed'] and not state['review_required']
 
 
 @pytest.mark.parametrize('malformed', (None, {}, [], {'head_sha256': None}))

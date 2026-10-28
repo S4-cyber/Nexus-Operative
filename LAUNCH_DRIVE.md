@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.14 reconciliation lost-result acknowledgement evidence
+
+Require the Activity release profile to exercise the crash boundary after explicit checkpoint reconciliation durably commits but before its result reaches the caller. The injected fixture loses that acknowledgement, recovers the exact completed result once from the private reconnect-budget journal, and then replays the original heads while requiring both cursor and budget bytes to remain unchanged. The entire sequence must retain the single original injected provider request, perform no automatic retry and keep every authority flag false. Deliberately falsifying either recovery or replay evidence must reject the profile.
+
+This is offline evidence-contract hardening for durable reconciliation, not new provider, account, retry, order, funds, live, cloud or release authority. It changes no Portal control or modifiable parameter. Keep all engagement permissions OFF by default and preserve limits, exits and the independent emergency-cut latch.
+
+Final local validation passed 4,387 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 422 tests and the release/evidence/roadmap/version/workflow/packaging focus passed 160. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `46f64e4f9e36f049792752c3c99e35e3b9ac18043540081f92fb957d4337587f`; `validation/release_trials_0_340_14.json` SHA256 is `9484e7b7106b0eb4dba74da5056034015d777809ce52d7e3507ac9b528b3a731`. Exact-source v0.340.13 parent `bd6ba40e875e9c43515e1e1109fa8e3310c06822` passed public security 40762502737, research safety/browser/evidence 40762503262 and Windows packaging/installer 40762502802. Fresh exact-source v0.340.14 workflows remain mandatory.
+
 ## v0.340.13 byte-stable checkpoint reconciliation replay evidence
 
 Require the Activity release profile to exercise the duplicate path after one successful explicit reconciliation of a transport-bound cursor checkpoint and pending reconnect budget. Preserve the completed budget bytes, replay with the exact original budget/checkpoint heads, and require `duplicate_recovery`, no result-acknowledgement recovery, no automatic retry, no second provider request and an unchanged durable budget journal. Deliberately falsifying this field must reject the profile.

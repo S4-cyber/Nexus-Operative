@@ -2772,13 +2772,21 @@ def fixture_report():
             emergency_stop_check=lambda: False,
             credential_check=lambda: True,
             reconnect_reservation_token=reserved['token'])
+        original_recovery_finish = recovery_budget.finish
+        recovery_finish_calls = []
+        def lose_recovery_result_acknowledgement(*args, **kwargs):
+            recovery_finish_calls.append(True)
+            original_recovery_finish(*args, **kwargs)
+            raise RuntimeError(
+                'private fixture lost reconciliation acknowledgement')
+        recovery_budget.finish = lose_recovery_result_acknowledgement
         recovered = reconcile_pending_checkpoint(cursor_store=
             ActivitySSECursorStore(recovery_cursor.path, account),
-            reconnect_budget=ActivitySSEReconnectBudget(
-                recovery_budget.path, account),
+            reconnect_budget=recovery_budget,
             expected_budget_head=reserved['head_sha256'],
             expected_checkpoint_head=committed['checkpoint_head_sha256'],
             evaluated_at=2001, confirm_checkpoint_reconciliation=True)
+        recovery_cursor_bytes = recovery_cursor.path.read_bytes()
         recovery_bytes = recovery_budget.path.read_bytes()
         recovered_replay = reconcile_pending_checkpoint(cursor_store=
             ActivitySSECursorStore(recovery_cursor.path, account),
@@ -2787,8 +2795,9 @@ def fixture_report():
             expected_budget_head=reserved['head_sha256'],
             expected_checkpoint_head=committed['checkpoint_head_sha256'],
             evaluated_at=2002, confirm_checkpoint_reconciliation=True)
-        recovery_replay_unchanged = \
-            recovery_budget.path.read_bytes() == recovery_bytes
+        recovery_replay_unchanged = (
+            recovery_cursor.path.read_bytes() == recovery_cursor_bytes and
+            recovery_budget.path.read_bytes() == recovery_bytes)
         stop_budget = ActivitySSEReconnectBudget(
             root / 'stop-budget.sqlite3', account)
         stop_reserved = stop_budget.begin(evaluated_at=3000,
@@ -2968,7 +2977,16 @@ def fixture_report():
             pending_checkpoint_result_recovers_without_second_get=
                 recovered['pending_checkpoint_reconciled'] and
                 not recovered['duplicate_recovery'] and
+                recovered['result_acknowledgement_recovered'] and
                 not recovered['provider_request_performed'] and
+                recovery_finish_calls == [True] and
+                len(recovery_opener.requests) == 1 and
+                recovery_budget.inspect()['completed'],
+            checkpoint_reconciliation_lost_result_ack_recovers_exactly_once=
+                recovered['pending_checkpoint_reconciled'] and
+                recovered['result_acknowledgement_recovered'] and
+                not recovered['duplicate_recovery'] and
+                recovery_finish_calls == [True] and
                 len(recovery_opener.requests) == 1 and
                 recovery_budget.inspect()['completed'],
             checkpoint_reconciliation_replay_is_byte_stable=

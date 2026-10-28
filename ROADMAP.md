@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.13. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.14. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.13 makes exact split-state reconciliation replay mandatory release evidence. The injected fixture now completes one transport-bound pending checkpoint, replays the same explicit no-network reconciliation, and requires an unchanged budget journal, a duplicate-recovery result and only the original provider request. A false replay invariant fails the Activity release profile. No retry, credential access, UI control or runtime authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.14 makes the reconciliation result-acknowledgement crash boundary mandatory Activity release evidence. The injected fixture commits one transport-bound pending checkpoint, loses the reconciliation return after the durable budget result, recovers that exact result once, then replays with both cursor and budget journals byte-stable and only the original provider request. False recovery or replay invariants fail the profile. No retry, credential access, UI control or runtime authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

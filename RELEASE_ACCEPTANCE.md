@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.14 reconciliation lost-result acknowledgement evidence
+
+The Activity release profile now requires the explicit checkpoint-reconciliation result to survive a lost acknowledgement after the durable commit. The first call must recover that exact terminal result once without a second provider request; the duplicate replay must leave both durable journals byte-stable, avoid acknowledgement recovery and retry, and preserve all false-authority flags. Deliberately false recovery and replay fields must reject the profile. This changes no runtime provider, account, order, funds, live, cloud or release authority.
+
+Final local validation passed 4,387 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 422 tests and the release/evidence/roadmap/version/workflow/packaging focus passed 160. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `46f64e4f9e36f049792752c3c99e35e3b9ac18043540081f92fb957d4337587f`; `validation/release_trials_0_340_14.json` SHA256 is `9484e7b7106b0eb4dba74da5056034015d777809ce52d7e3507ac9b528b3a731`. Exact-source v0.340.13 parent `bd6ba40e875e9c43515e1e1109fa8e3310c06822` passed public security 40762502737, research safety/browser/evidence 40762503262 and Windows packaging/installer 40762502802. Fresh exact-source v0.340.14 workflows remain mandatory.
+
 ## v0.340.13 byte-stable checkpoint reconciliation replay evidence
 
 The Activity release profile now requires an exact duplicate reconciliation after one transport-bound pending checkpoint is completed. The replay must leave the durable reconnect-budget bytes unchanged, identify itself as duplicate recovery, avoid result-acknowledgement recovery and automatic retry, and preserve the single original provider request. A deliberately false replay field must reject the profile. This changes no runtime provider, account, order, funds, live, cloud or release authority.

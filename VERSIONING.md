@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.13 (pre-release).** This build makes exact byte-stable split-state reconciliation replay mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.14 (pre-release).** This build makes exact lost-result acknowledgement recovery plus two-journal byte-stable reconciliation replay mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.14 reconciliation lost-result acknowledgement evidence
+
+The injected fixture now loses the explicit reconciliation return after the terminal reconnect-budget result commits, requires exact durable recovery once, and then replays the same original heads. The duplicate replay must leave both the cursor and budget journals byte-stable, perform no result-acknowledgement recovery, schedule no retry and preserve the single original provider request. A false recovery or replay invariant fails the profile. Runtime behavior is unchanged and no provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Final local validation passed 4,387 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 422 tests and the release/evidence/roadmap/version/workflow/packaging focus passed 160. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `46f64e4f9e36f049792752c3c99e35e3b9ac18043540081f92fb957d4337587f`; `validation/release_trials_0_340_14.json` SHA256 is `9484e7b7106b0eb4dba74da5056034015d777809ce52d7e3507ac9b528b3a731`. Exact-source v0.340.13 parent `bd6ba40e875e9c43515e1e1109fa8e3310c06822` passed public security 40762502737, research safety/browser/evidence 40762503262 and Windows packaging/installer 40762502802. Fresh exact-source v0.340.14 workflows remain mandatory.
 
 ## v0.340.13 byte-stable checkpoint reconciliation replay evidence
 

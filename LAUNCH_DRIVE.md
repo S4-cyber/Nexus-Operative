@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.337.0 redacts arbitrary exception detail after exact recovery of a lost Activity SSE checkpoint acknowledgement while preserving OFF-by-default fail-closed behavior. The v0.336.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.338.0 extends the exact lost-acknowledgement split-state proof to malformed Activity SSE checkpoint returns while preserving OFF-by-default fail-closed behavior. The v0.337.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.338.0 malformed-checkpoint-ack split-state stability
+
+A malformed checkpoint return is never accepted as durable evidence. If acknowledgement validation fails after a cursor transition, the coordinator independently cold-recovers only the cursor binding whose prior head and reconnect-reservation digest match the exact pending attempt. It then applies the same shared cursor/budget identity, fingerprint and semantic replay proof used for a completely lost acknowledgement before returning fixed checkpoint uncertainty. The pending reservation remains available only for explicit no-network reconciliation and grants no second request. Forged acknowledgements with no committed cursor remain rejected; same-inode cursor or budget mutation during the final proof returns fixed file-set uncertainty.
+
+The direct cursor/reconnect suites passed 392 tests and the complete Activity SSE set passed 507. Final local validation passed 4,360 tests with one expected non-Windows skip and one existing warning. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `40150fea94a70c3f3802deea4e2c568adf5b0f8620d6e37cb413f1b50e507eab`; evidence SHA256 is `7f53729d1d9d34bdbfa7cd0c5e6537668caaa679f55c6aec6d15f225798502e0`. The exact 701-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.337.0 lost-checkpoint-ack diagnostic redaction
 

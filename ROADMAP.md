@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.337.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.338.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.337.0 redacts a lost Activity SSE checkpoint acknowledgement after the exact reservation-bound checkpoint has been recovered with a trusted completion clock. The coordinator preserves the pending reconnect reservation for explicit no-network reconciliation, proves both journals remain stable through shared identity/fingerprint checks and cold semantic replay, then surfaces only one fixed typed diagnostic instead of arbitrary provider or implementation exception text. A mismatched checkpoint or same-inode cursor/budget rewrite still returns fixed uncertainty after exactly one request. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.338.0 extends the exact lost-acknowledgement split-state proof to malformed Activity SSE checkpoint return values. A malformed return remains untrusted and yields fixed checkpoint uncertainty, but when the cursor journal independently proves this exact reservation committed, the coordinator preserves the pending reconnect reservation for explicit no-network reconciliation and holds both journals through shared identity/fingerprint checks and cold semantic replay before surfacing the diagnostic. A forged result, binding disagreement or same-inode cursor/budget rewrite fails closed after at most one request. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

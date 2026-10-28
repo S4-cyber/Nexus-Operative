@@ -2095,8 +2095,34 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             provider_retry_after=provider_retry_after)
         raise
     require_store_bindings()
-    checkpoint_binding = _checkpoint_binding_for_attempt(cursor_store,
-        result, token=token, expected_cursor_head=expected_cursor_head)
+    try:
+        checkpoint_binding = _checkpoint_binding_for_attempt(cursor_store,
+            result, token=token, expected_cursor_head=expected_cursor_head)
+    except ActivitySSEReconnectBudgetError:
+        require_store_bindings()
+        after_head = _cursor_head_for_attempt(cursor_store)
+        require_store_bindings()
+        if after_head != expected_cursor_head:
+            # A malformed return is not evidence, but the cursor journal may
+            # still prove that this exact attempt committed. Preserve that
+            # recoverable split state only after the same two-file proof used
+            # for a completely lost acknowledgement, then retain the fixed
+            # acknowledgement diagnostic from the original validation.
+            checkpoint_binding = _recover_checkpoint_binding_for_attempt(
+                cursor_store, token=token,
+                expected_cursor_head=expected_cursor_head)
+            if checkpoint_binding['head_sha256'] != after_head:
+                _fail('CHECKPOINT_STATE_UNCERTAIN')
+            _bind_pending_checkpoint_files(cursor_store, reconnect_budget,
+                journal_paths=journal_paths, file_prefix=file_prefix,
+                require_store_bindings=require_store_bindings,
+                checkpoint_binding=checkpoint_binding, token=token,
+                attempt=attempt,
+                expected_cursor_head=expected_cursor_head,
+                expected_budget_head=expected_budget_head,
+                evaluated_at=evaluated_at,
+                reconnect_reason=reconnect_reason)
+        raise
     require_store_bindings()
     try:
         completed_at = _outcome_time(result_clock, evaluated_at)

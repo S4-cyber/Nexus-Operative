@@ -1301,6 +1301,44 @@ def test_checkpoint_ack_requires_exact_durable_cursor_binding(tmp_path,
     assert budget.inspect()['completed']
 
 
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_malformed_checkpoint_ack_file_change_fails_closed(tmp_path,
+        monkeypatch, store_name):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original_collect = subject.checkpoint.collect_and_checkpoint_once
+    original_validate = subject._validated_checkpoint_binding
+    replays = 0
+
+    def corrupt_ack(*args, **kwargs):
+        result = original_collect(*args, **kwargs)
+        return {**result, 'checkpoint_receipt_sha256': 'f' * 64}
+
+    def change_during_final_split_state_proof(*args, **kwargs):
+        nonlocal replays
+        retained = original_validate(*args, **kwargs)
+        replays += 1
+        if replays == 3:
+            target = cursor.path if store_name == 'cursor' else budget.path
+            with target.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        return retained
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        corrupt_ack)
+    monkeypatch.setattr(subject, '_validated_checkpoint_binding',
+        change_during_final_split_state_proof)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert replays == 3 and len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
 @pytest.mark.parametrize('field', subject.FLAGS)
 def test_checkpoint_ack_cannot_promote_authority_flags(tmp_path, monkeypatch,
         field):

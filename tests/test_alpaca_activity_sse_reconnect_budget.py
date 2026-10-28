@@ -1891,6 +1891,38 @@ def test_failed_clock_result_inspection_failure_is_sanitized(
         'OUTCOME_CLOCK_UNCERTAIN'
 
 
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_failed_clock_final_file_change_withholds_clock_error_acknowledgement(
+        tmp_path, monkeypatch, store_name):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original = subject._inspect_after_result_error
+
+    def change_file_after_sample(*args, **kwargs):
+        if store_name == 'budget':
+            with budget.path.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        retained = original(*args, **kwargs)
+        if store_name == 'cursor':
+            cursor.path.write_bytes(b'appeared after clock closure')
+        return retained
+
+    monkeypatch.setattr(subject, '_inspect_after_result_error',
+        change_file_after_sample)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: (_ for _ in ()).throw(
+                RuntimeError('private clock failure')))
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] is None and state['review_required']
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
+    assert state['last_evaluated_at'] == 1000
+
+
 @pytest.mark.parametrize('post_attempt', ['failure', 'malformed'])
 def test_provider_failure_cursor_recovery_inspection_is_fail_closed(
         tmp_path, monkeypatch, post_attempt):

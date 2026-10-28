@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.332.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.333.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.332.0 extends bounded private file stability through failed Activity SSE attempt acknowledgement. After one failed provider request and durable outcome commit, the cursor state used to classify retry, review or checkpoint uncertainty and the reconnect-budget result are held in one shared proof. Existing cursor journals receive bounded identity and fingerprint checks; an absent cursor main file and SQLite sidecars must remain absent. Exact cursor and result semantics are cold-replayed before the typed provider failure is surfaced. A late cursor appearance or same-inode budget rewrite returns fixed file-set uncertainty after exactly one request while preserving the durable outcome for inspection. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.333.0 extends bounded private file stability through failed Activity SSE outcome-clock closure acknowledgement. If a provider request fails and its completion time is invalid, regresses or is unavailable, the unchanged-cursor path closes the pending attempt as REVIEW_REQUIRED from the trusted reservation time. It then holds that cursor decision and the terminal reconnect-budget result in one shared identity/fingerprint proof, cold-replays both exact semantics and rechecks the files before surfacing the typed clock error. A late cursor appearance or same-inode budget rewrite returns fixed file-set uncertainty after exactly one request while preserving the durable review outcome. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

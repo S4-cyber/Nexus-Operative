@@ -446,6 +446,74 @@ def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     return retained
 
 
+def _bind_failed_attempt_result_files(cursor_store, reconnect_budget, *,
+        journal_paths, file_prefix, require_store_bindings, cursor_head,
+        retained, token, evaluated_at, outcome, detail,
+        provider_retry_after):
+    """Hold the cursor decision and terminal budget result through return.
+
+    A first failed attempt may legitimately have no cursor database yet. In
+    that case the cursor main file and every SQLite sidecar must stay absent.
+    Otherwise both journals retain one bounded identity/fingerprint sample.
+    """
+    cursor_path = journal_paths[0]
+
+    def cursor_files_absent():
+        for path in (cursor_path, *(cursor_path.with_name(
+                cursor_path.name + suffix) for suffix in
+                ('-journal', '-wal', '-shm'))):
+            try:
+                path.lstat()
+            except FileNotFoundError:
+                continue
+            except OSError:
+                raise ValueError(file_prefix +
+                    'FILE_SET_UNAVAILABLE') from None
+            return False
+        return True
+
+    try:
+        cursor_missing = cursor_files_absent()
+        failure_paths = ((journal_paths[1],) if cursor_missing else
+            journal_paths)
+        failure_limits = ((MAX_DATABASE_BYTES,) if cursor_missing else
+            (MAX_CURSOR_DATABASE_BYTES, MAX_DATABASE_BYTES))
+        failure_identities = capture_file_identities(
+            failure_paths, file_prefix)
+        failure_fingerprints = capture_file_fingerprints(
+            failure_paths, failure_limits, file_prefix)
+    except ValueError as failure:
+        raise ActivitySSEReconnectBudgetError(str(failure)) from None
+
+    def require_failure_files():
+        try:
+            if cursor_missing and not cursor_files_absent():
+                raise ValueError(file_prefix + 'FILE_SET_CHANGED')
+            require_file_identities(failure_paths,
+                failure_identities, file_prefix)
+            require_file_fingerprints(failure_paths, failure_limits,
+                failure_fingerprints, file_prefix)
+        except ValueError as failure:
+            if str(failure) == file_prefix + \
+                    'SQLITE_SIDECAR_REVIEW_REQUIRED':
+                raise ActivitySSEReconnectBudgetError(
+                    str(failure)) from None
+            raise ActivitySSEReconnectBudgetError(file_prefix +
+                'FILE_SET_CHANGED') from None
+        require_store_bindings()
+
+    confirmed_cursor_head = _cursor_head_for_attempt(cursor_store)
+    confirmed_failure = _inspect_after_result_error(reconnect_budget,
+        'RESULT_RECORD_UNCERTAIN')
+    require_failure_files()
+    if (confirmed_cursor_head != cursor_head or
+            not _same_result_head(confirmed_failure, retained) or
+            not _exact_failure_result(confirmed_failure, token,
+                evaluated_at, outcome, detail, provider_retry_after)):
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_failure_files()
+
+
 def _exact_checkpoint_result(retained, token, checkpoint_head,
         checkpoint_receipt, evaluated_at=None):
     """Recognize only the exact terminal checkpoint result.
@@ -1853,8 +1921,17 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             # exact no-network checkpoint reconciliation path instead.
             after_head = _cursor_head_for_attempt(cursor_store)
             if after_head == expected_cursor_head:
-                _close_failed_clock_uncertainty(reconnect_budget,
+                retained = _close_failed_clock_uncertainty(reconnect_budget,
                     reservation['token'], evaluated_at)
+                _bind_failed_attempt_result_files(cursor_store,
+                    reconnect_budget, journal_paths=journal_paths,
+                    file_prefix=file_prefix,
+                    require_store_bindings=require_store_bindings,
+                    cursor_head=after_head, retained=retained,
+                    token=reservation['token'], evaluated_at=evaluated_at,
+                    outcome='REVIEW_REQUIRED',
+                    detail='OUTCOME_CLOCK_UNCERTAIN',
+                    provider_retry_after=0)
             raise
         require_store_bindings()
         after_head = _cursor_head_for_attempt(cursor_store)
@@ -1891,67 +1968,13 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
 
         # A failed provider attempt still returns a durable scheduling
         # decision to its caller (by re-raising the typed provider failure).
-        # Hold the cursor state used for that decision and the committed budget
-        # result inside one bounded file sample through that final boundary.
-        # A first failed attempt may legitimately have no cursor database yet;
-        # in that case prove the main file and all SQLite sidecars stay absent.
-        cursor_path = journal_paths[0]
-
-        def cursor_files_absent():
-            for path in (cursor_path, *(cursor_path.with_name(
-                    cursor_path.name + suffix) for suffix in
-                    ('-journal', '-wal', '-shm'))):
-                try:
-                    path.lstat()
-                except FileNotFoundError:
-                    continue
-                except OSError:
-                    raise ValueError(file_prefix +
-                        'FILE_SET_UNAVAILABLE') from None
-                return False
-            return True
-
-        try:
-            cursor_missing = cursor_files_absent()
-            failure_paths = ((journal_paths[1],) if cursor_missing else
-                journal_paths)
-            failure_limits = ((MAX_DATABASE_BYTES,) if cursor_missing else
-                (MAX_CURSOR_DATABASE_BYTES, MAX_DATABASE_BYTES))
-            failure_identities = capture_file_identities(
-                failure_paths, file_prefix)
-            failure_fingerprints = capture_file_fingerprints(
-                failure_paths, failure_limits, file_prefix)
-        except ValueError as failure:
-            raise ActivitySSEReconnectBudgetError(str(failure)) from None
-
-        def require_failure_files():
-            try:
-                if cursor_missing and not cursor_files_absent():
-                    raise ValueError(file_prefix + 'FILE_SET_CHANGED')
-                require_file_identities(failure_paths,
-                    failure_identities, file_prefix)
-                require_file_fingerprints(failure_paths, failure_limits,
-                    failure_fingerprints, file_prefix)
-            except ValueError as failure:
-                if str(failure) == file_prefix + \
-                        'SQLITE_SIDECAR_REVIEW_REQUIRED':
-                    raise ActivitySSEReconnectBudgetError(
-                        str(failure)) from None
-                raise ActivitySSEReconnectBudgetError(file_prefix +
-                    'FILE_SET_CHANGED') from None
-            require_store_bindings()
-
-        confirmed_after_head = _cursor_head_for_attempt(cursor_store)
-        confirmed_failure = _inspect_after_result_error(reconnect_budget,
-            'RESULT_RECORD_UNCERTAIN')
-        require_failure_files()
-        if (confirmed_after_head != after_head or
-                not _same_result_head(confirmed_failure, retained) or
-                not _exact_failure_result(confirmed_failure,
-                    reservation['token'], completed_at, outcome, detail,
-                    provider_retry_after)):
-            _fail('RESULT_RECORD_UNCERTAIN')
-        require_failure_files()
+        _bind_failed_attempt_result_files(cursor_store, reconnect_budget,
+            journal_paths=journal_paths, file_prefix=file_prefix,
+            require_store_bindings=require_store_bindings,
+            cursor_head=after_head, retained=retained,
+            token=reservation['token'], evaluated_at=completed_at,
+            outcome=outcome, detail=detail,
+            provider_retry_after=provider_retry_after)
         raise
     require_store_bindings()
     checkpoint_binding = _checkpoint_binding_for_attempt(cursor_store,

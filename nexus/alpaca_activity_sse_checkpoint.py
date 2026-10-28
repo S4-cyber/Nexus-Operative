@@ -21,6 +21,14 @@ from nexus.alpaca_paper_contract import canonical, sha
 
 
 POLICY = 'nexus.explicit-alpaca-paper-activity-sse-checkpoint.v1'
+LIMITATIONS = ('One explicitly authorized bounded resumption GET and one '
+    'local exact-head cursor checkpoint. Private supplied prior events and '
+    'returned replay events passed strict local duplicate, cursor, trade and '
+    'fee-link review. This does not attest provider source, complete delivery '
+    'or historical replay, native power-loss durability, fee coverage, '
+    'balances, holds, funds, routing, live trading or release approval. There '
+    'is no automatic retry, loop, backoff, ledger application, order '
+    'submission or money movement.')
 FLAGS = ('provider_source_attested', 'stream_delivery_verified',
     'historical_replay_complete', 'native_power_loss_durability_verified',
     'fee_coverage_complete', 'broker_account_reconciled',
@@ -213,14 +221,7 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         actual_vault_access=False, automatic_retry=False,
         automatic_reconnect_performed=False, automatic_backoff_verified=False,
         ledger_applied=False, **{flag: False for flag in FLAGS},
-        limitations='One explicitly authorized bounded resumption GET and one '
-            'local exact-head cursor checkpoint. Private supplied prior events '
-            'and returned replay events passed strict local duplicate, cursor, '
-            'trade and fee-link review. This does not attest provider source, '
-            'complete delivery or historical replay, native power-loss '
-            'durability, fee coverage, balances, holds, funds, routing, live '
-            'trading or release approval. There is no automatic retry, loop, '
-            'backoff, ledger application, order submission or money movement.')
+        limitations=LIMITATIONS)
 
 
 def fixture_report():

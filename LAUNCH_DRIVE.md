@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.4 binds checkpoint transport-provenance claims to the actual opener boundary so an injected fixture cannot be relabelled as provider HTTPS access. The v0.340.3 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.5 rejects any noncanonical checkpoint acknowledgement before its fields can cross the reconnect boundary. The v0.340.4 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.340.5 canonical checkpoint acknowledgement boundary
+
+The coordinator now requires the checkpoint return to be an exact built-in mapping with the complete fixed key set, expected policy and limitations, digest-only identity fields and bounded review-count relationships. An unexpected private extension or altered evidence field is rejected before the public reconnect result is constructed. The exact committed cursor and pending budget reservation remain available only for explicit no-network reconciliation; no second request, credential access, cursor mutation, automatic retry or authority is added.
+
+Final local validation passed 4,369 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 319, direct cursor/reconnect passed 413 and complete Activity SSE passed 516. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `7cec99b40e0a07fef52fa8fac01fe1ecd048cb8c20562492be6a74c29a0be068`; evidence SHA256 is `897d367e563e7f16627e58d5c03ecda0467719eab9d2a80228ede7419a5688ec`. No UI or modifiable parameter changed.
 
 ## v0.340.4 checkpoint transport-provenance binding
 

@@ -1421,6 +1421,30 @@ def test_checkpoint_ack_cannot_coherently_promote_injected_transport(
     assert cursor.latest_checkpoint_binding()['reconnect_reservation_bound']
 
 
+def test_checkpoint_ack_rejects_unexpected_private_extension(tmp_path,
+        monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def extended_ack(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return {**result,
+            'unexpected_private_detail': 'must-not-cross-boundary'}
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        extended_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+    assert cursor.latest_checkpoint_binding()['reconnect_reservation_bound']
+
+
 def test_forged_checkpoint_ack_cannot_complete_reconnect_budget(tmp_path,
         monkeypatch):
     cursor, budget = stores(tmp_path)

@@ -78,6 +78,18 @@ CHECKPOINT_ACK_TRUE = ('single_get_attempt', 'single_reconnect_attempt',
 CHECKPOINT_ACK_FALSE = ('actual_vault_access', 'automatic_retry',
     'automatic_reconnect_performed', 'automatic_backoff_verified',
     'ledger_applied')
+CHECKPOINT_ACK_COUNTS = ('initial_events_reviewed',
+    'replay_events_reviewed', 'redelivered_events_deduplicated',
+    'new_events_processed')
+CHECKPOINT_ACK_KEYS = frozenset((
+    'mode', 'status', 'policy', 'source', 'account_sha256',
+    'transport_input_sha256', 'reconnect_input_sha256',
+    'checkpoint_head_sha256', 'checkpoint_receipt_sha256',
+    'checkpoint_cursor_sha256', *CHECKPOINT_ACK_COUNTS,
+    *CHECKPOINT_ACK_TRUE, 'duplicate_checkpoint',
+    'actual_provider_access', 'actual_stream_connection',
+    'actual_reconnect_performed', *CHECKPOINT_ACK_FALSE, *FLAGS,
+    'limitations'))
 CHECKPOINT_BINDING_KEYS = frozenset((
     'mode', 'status', 'account_sha256', 'head_sha256',
     'expected_head_sha256', 'checkpoint_receipt_sha256', 'cursor_sha256',
@@ -407,15 +419,24 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
     authorize closing the reconnect budget.
     """
     try:
-        if (type(result) is not dict or
+        if (type(result) is not dict or set(result) != CHECKPOINT_ACK_KEYS or
                 type(expected_actual_provider_access) is not bool):
             raise TypeError
+        _digest(result['transport_input_sha256'])
+        _digest(result['reconnect_input_sha256'])
         acknowledged_head = _digest(result['checkpoint_head_sha256'])
         acknowledged_receipt = _digest(
             result['checkpoint_receipt_sha256'])
         acknowledged_cursor = _digest(result['checkpoint_cursor_sha256'])
-        if (result['mode'] != 'EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT' or
+        counts = tuple(result[field] for field in CHECKPOINT_ACK_COUNTS)
+        if (any(type(value) is not int or not 0 <= value <= 2000
+                    for value in counts) or
+                counts[0] == 0 or counts[1] == 0 or counts[3] == 0 or
+                counts[2] + counts[3] != counts[1] or
+                result['mode'] != 'EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT' or
                 result['status'] != 'REVIEW_REQUIRED' or
+                result['policy'] != checkpoint.POLICY or
+                result['limitations'] != checkpoint.LIMITATIONS or
                 result['account_sha256'] != cursor_store.account_sha256 or
                 any(result[field] is not True
                     for field in CHECKPOINT_ACK_TRUE) or

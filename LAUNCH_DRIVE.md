@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-27
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.333.0 extends bounded private file stability through failed Activity SSE outcome-clock closure acknowledgement while preserving OFF-by-default fail-closed behavior. The v0.332.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.334.0 extends bounded private file stability through Activity SSE checkpoint-success outcome-clock failure acknowledgement while preserving OFF-by-default fail-closed behavior. The v0.333.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.334.0 checkpoint-success outcome-clock failure acknowledgement stability
+
+A one-attempt reconnect that commits its cursor checkpoint before discovering an untrusted completion clock now retains the exact committed cursor binding and still-pending reconnect reservation through one final shared acknowledgement proof. The pending reservation remains available only for explicit no-network checkpoint reconciliation; it grants no second request. Both journal identities and bounded fingerprints are held across cold replay of the exact checkpoint and reservation semantics. Same-inode cursor or budget rewrites return fixed file-set uncertainty after exactly one provider request while preserving the recoverable split state.
+
+The direct cursor/reconnect suites passed 384 tests and the complete Activity SSE set passed 499. Final local validation passed 4,352 tests with one expected non-Windows skip and one existing warning. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `2dd26fd763c592a01bbfdb6e7dc3a911bc88ae1de31460b19f798eb939a8ccc8`; evidence SHA256 is `497d449fe8d0d2a9f3ed019c4159feee644b606328040d92edba8144b8d77218`. The exact 697-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.333.0 failed Activity SSE outcome-clock closure acknowledgement stability
 

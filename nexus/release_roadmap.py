@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.333.0'
+REVISION = '0.334.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -295,7 +295,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.333.0 extends bounded private file stability through failed Activity SSE outcome-clock closure acknowledgement. If a provider request fails and its completion time is invalid, regresses or is unavailable, the unchanged-cursor path closes the pending attempt as REVIEW_REQUIRED from the trusted reservation time. It then holds that cursor decision and the terminal reconnect-budget result in one shared identity/fingerprint proof, cold-replays both exact semantics and rechecks the files before surfacing the typed clock error. A late cursor appearance or same-inode budget rewrite returns fixed file-set uncertainty after exactly one request while preserving the durable review outcome. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.334.0 extends bounded private file stability through Activity SSE checkpoint-success outcome-clock failure acknowledgement. If the cursor checkpoint commits but the completion time is invalid, regresses or is unavailable, the path preserves the exact pending reconnect reservation for explicit no-network reconciliation. Before surfacing the typed clock error it holds the committed cursor binding and pending budget reservation in one shared identity/fingerprint proof, cold-replays both exact semantics and rechecks both files. A same-inode cursor or budget rewrite returns fixed file-set uncertainty after exactly one request while preserving the recoverable split state. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

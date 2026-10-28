@@ -514,6 +514,60 @@ def _bind_failed_attempt_result_files(cursor_store, reconnect_budget, *,
     require_failure_files()
 
 
+def _bind_pending_checkpoint_files(cursor_store, reconnect_budget, *,
+        journal_paths, file_prefix, require_store_bindings,
+        checkpoint_binding, token, attempt, expected_cursor_head,
+        expected_budget_head, evaluated_at, reconnect_reason):
+    """Hold a committed cursor and pending reservation through clock error.
+
+    A checkpoint may commit before the outcome clock can provide a trusted
+    completion time. Preserve that recoverable split state, but acknowledge it
+    only while both journals retain one exact bounded sample and cold replay.
+    """
+    try:
+        journal_identities = capture_file_identities(
+            journal_paths, file_prefix)
+        journal_fingerprints = capture_file_fingerprints(journal_paths,
+            (MAX_CURSOR_DATABASE_BYTES, MAX_DATABASE_BYTES), file_prefix)
+    except ValueError as error:
+        raise ActivitySSEReconnectBudgetError(str(error)) from None
+
+    def require_journal_files():
+        try:
+            require_file_identities(journal_paths, journal_identities,
+                file_prefix)
+            require_file_fingerprints(journal_paths,
+                (MAX_CURSOR_DATABASE_BYTES, MAX_DATABASE_BYTES),
+                journal_fingerprints, file_prefix)
+        except ValueError as error:
+            if str(error) == file_prefix + \
+                    'SQLITE_SIDECAR_REVIEW_REQUIRED':
+                raise ActivitySSEReconnectBudgetError(str(error)) from None
+            raise ActivitySSEReconnectBudgetError(file_prefix +
+                'FILE_SET_CHANGED') from None
+        require_store_bindings()
+
+    try:
+        confirmed_checkpoint = _validated_checkpoint_binding(cursor_store,
+            cursor_store.latest_checkpoint_binding(),
+            'CHECKPOINT_STATE_UNCERTAIN')
+        confirmed_pending = _budget_state_for_attempt(reconnect_budget)
+    except ActivitySSEReconnectBudgetError:
+        raise
+    except Exception:
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_journal_files()
+    if (confirmed_checkpoint != checkpoint_binding or
+            not _exact_pending_reservation(confirmed_pending,
+                token=token, attempt=attempt,
+                cursor_head=expected_cursor_head,
+                expected_budget_head=expected_budget_head,
+                evaluated_at=evaluated_at,
+                reconnect_reason=reconnect_reason)):
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_journal_files()
+
+
 def _exact_checkpoint_result(retained, token, checkpoint_head,
         checkpoint_receipt, evaluated_at=None):
     """Recognize only the exact terminal checkpoint result.
@@ -1980,7 +2034,18 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
     checkpoint_binding = _checkpoint_binding_for_attempt(cursor_store,
         result, token=token, expected_cursor_head=expected_cursor_head)
     require_store_bindings()
-    completed_at = _outcome_time(result_clock, evaluated_at)
+    try:
+        completed_at = _outcome_time(result_clock, evaluated_at)
+    except ActivitySSEReconnectBudgetError:
+        require_store_bindings()
+        _bind_pending_checkpoint_files(cursor_store, reconnect_budget,
+            journal_paths=journal_paths, file_prefix=file_prefix,
+            require_store_bindings=require_store_bindings,
+            checkpoint_binding=checkpoint_binding, token=token,
+            attempt=attempt, expected_cursor_head=expected_cursor_head,
+            expected_budget_head=expected_budget_head,
+            evaluated_at=evaluated_at, reconnect_reason=reconnect_reason)
+        raise
     require_store_bindings()
     result_acknowledgement_recovered = False
     try:

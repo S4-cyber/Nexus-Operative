@@ -1592,6 +1592,38 @@ def test_success_with_uncertain_outcome_clock_uses_no_network_recovery(
     assert len(opener.requests) == 1 and budget.inspect()['completed']
 
 
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_uncertain_success_clock_final_file_change_withholds_clock_error(
+        tmp_path, monkeypatch, store_name):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject._validated_checkpoint_binding
+    replays = 0
+
+    def change_after_checkpoint_replay(*args, **kwargs):
+        nonlocal replays
+        retained = original(*args, **kwargs)
+        replays += 1
+        if replays == 2:
+            target = cursor.path if store_name == 'cursor' else budget.path
+            with target.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        return retained
+
+    monkeypatch.setattr(subject, '_validated_checkpoint_binding',
+        change_after_checkpoint_replay)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: 999)
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
 def test_transport_failure_records_backoff_without_sleep_or_second_get(tmp_path):
     cursor, budget = stores(tmp_path)
     opener = Opener([TimeoutError('private')])

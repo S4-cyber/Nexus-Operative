@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-27
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.331.0 extends bounded private file stability through the live Activity SSE reconnect success acknowledgement while preserving OFF-by-default fail-closed behavior. The v0.330.0 parent head was rechecked, but no pull-request workflow or status records were exposed, so no v0.330 hosted pass is claimed. Fresh exact-source v0.331.0 workflows remain required; no parent result transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Conditional planning ranges are manual scenarios, not measured completion forecasts, release dates or permissions. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials. Do not extrapolate release time from versions, commits or passing test counts.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.332.0 extends bounded private file stability through failed Activity SSE attempt acknowledgement while preserving OFF-by-default fail-closed behavior. The v0.331.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.332.0 failed Activity SSE attempt acknowledgement stability
+
+A failed one-attempt reconnect now retains the cursor state used to classify retry/review/checkpoint uncertainty and the committed reconnect-budget result through one final shared acknowledgement proof. Existing cursor journals receive bounded identity/fingerprint checks; an absent cursor must remain absent with no rollback/WAL/shared-memory sidecar. Both exact semantics are cold-replayed before the typed provider failure is surfaced. A late cursor appearance or same-inode budget rewrite returns fixed file-set uncertainty after exactly one provider request while preserving the durable outcome for inspection.
+
+The direct cursor/reconnect suites passed 380 tests and the complete Activity SSE set passed 495. Final local validation passed 4,348 tests with one expected non-Windows skip and one existing warning. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `22eb3c167d58f57af706721463b65c3807fe27a76ade8d5d2e0409c08df25b37`; evidence SHA256 is `71460a351d5eebed5bf63ddba82058157beab6ebc12e24532b748e3d71f2b068`. The exact 695-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.331.0 live Activity SSE success acknowledgement stability
 

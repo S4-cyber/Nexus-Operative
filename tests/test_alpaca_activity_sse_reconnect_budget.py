@@ -1617,6 +1617,35 @@ def test_transport_failure_records_backoff_without_sleep_or_second_get(tmp_path)
     assert second['attempt'] == 2
 
 
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_failure_final_file_change_withholds_provider_failure_acknowledgement(
+        tmp_path, monkeypatch, store_name):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original = subject._inspect_after_result_error
+
+    def change_file_after_sample(*args, **kwargs):
+        if store_name == 'budget':
+            with budget.path.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        retained = original(*args, **kwargs)
+        if store_name == 'cursor':
+            cursor.path.write_bytes(b'appeared after failure decision')
+        return retained
+
+    monkeypatch.setattr(subject, '_inspect_after_result_error',
+        change_file_after_sample)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] is None
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert state['next_allowed_at'] == 1001
+
+
 def test_failure_recovers_exact_lost_result_acknowledgement(
         tmp_path, monkeypatch):
     cursor, budget = stores(tmp_path)

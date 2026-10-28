@@ -1888,6 +1888,70 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         if not _exact_failure_result(retained, reservation['token'],
                 completed_at, outcome, detail, provider_retry_after):
             _fail('RESULT_RECORD_UNCERTAIN')
+
+        # A failed provider attempt still returns a durable scheduling
+        # decision to its caller (by re-raising the typed provider failure).
+        # Hold the cursor state used for that decision and the committed budget
+        # result inside one bounded file sample through that final boundary.
+        # A first failed attempt may legitimately have no cursor database yet;
+        # in that case prove the main file and all SQLite sidecars stay absent.
+        cursor_path = journal_paths[0]
+
+        def cursor_files_absent():
+            for path in (cursor_path, *(cursor_path.with_name(
+                    cursor_path.name + suffix) for suffix in
+                    ('-journal', '-wal', '-shm'))):
+                try:
+                    path.lstat()
+                except FileNotFoundError:
+                    continue
+                except OSError:
+                    raise ValueError(file_prefix +
+                        'FILE_SET_UNAVAILABLE') from None
+                return False
+            return True
+
+        try:
+            cursor_missing = cursor_files_absent()
+            failure_paths = ((journal_paths[1],) if cursor_missing else
+                journal_paths)
+            failure_limits = ((MAX_DATABASE_BYTES,) if cursor_missing else
+                (MAX_CURSOR_DATABASE_BYTES, MAX_DATABASE_BYTES))
+            failure_identities = capture_file_identities(
+                failure_paths, file_prefix)
+            failure_fingerprints = capture_file_fingerprints(
+                failure_paths, failure_limits, file_prefix)
+        except ValueError as failure:
+            raise ActivitySSEReconnectBudgetError(str(failure)) from None
+
+        def require_failure_files():
+            try:
+                if cursor_missing and not cursor_files_absent():
+                    raise ValueError(file_prefix + 'FILE_SET_CHANGED')
+                require_file_identities(failure_paths,
+                    failure_identities, file_prefix)
+                require_file_fingerprints(failure_paths, failure_limits,
+                    failure_fingerprints, file_prefix)
+            except ValueError as failure:
+                if str(failure) == file_prefix + \
+                        'SQLITE_SIDECAR_REVIEW_REQUIRED':
+                    raise ActivitySSEReconnectBudgetError(
+                        str(failure)) from None
+                raise ActivitySSEReconnectBudgetError(file_prefix +
+                    'FILE_SET_CHANGED') from None
+            require_store_bindings()
+
+        confirmed_after_head = _cursor_head_for_attempt(cursor_store)
+        confirmed_failure = _inspect_after_result_error(reconnect_budget,
+            'RESULT_RECORD_UNCERTAIN')
+        require_failure_files()
+        if (confirmed_after_head != after_head or
+                not _same_result_head(confirmed_failure, retained) or
+                not _exact_failure_result(confirmed_failure,
+                    reservation['token'], completed_at, outcome, detail,
+                    provider_retry_after)):
+            _fail('RESULT_RECORD_UNCERTAIN')
+        require_failure_files()
         raise
     require_store_bindings()
     checkpoint_binding = _checkpoint_binding_for_attempt(cursor_store,

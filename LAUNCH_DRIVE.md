@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.1 corrects the production-prefixed fixed-diagnostic match for all three no-network reconnect safety closures, while preserving exact cold replay and OFF-by-default fail-closed behavior. The v0.340.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.2 restricts the shared result-write typed-error recovery boundary while preserving exact replay for generic lost or malformed acknowledgements and OFF-by-default fail-closed behavior. The v0.340.1 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.340.2 authoritative result-denial preservation
+
+The shared reconnect-budget result helper now recovers a typed `finish` failure only when it is the exact production-prefixed `RESULT_ACKNOWLEDGEMENT_UNCERTAIN` diagnostic. Current store-binding, token, clock, head, confirmation, emergency-stop and state denials remain authoritative even if an older exact terminal result matches the requested write. Generic lost acknowledgements and malformed returns retain complete cold-journal recovery. Four integration regressions exercise success, provider-failure, trusted-time uncertainty retirement and no-network checkpoint reconciliation. This adds no provider request, credential access, cursor mutation or retry authority.
+
+Final local validation passed 4,366 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 316, direct cursor/reconnect passed 398 and complete Activity SSE passed 513. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `b9d72918768124542f6f6d682862cc26a30f4ada69f872b1f6cc572f6b058c90`; evidence SHA256 is `f7709e6171815968b2c8e462c40673d56987b5f989a96bfa6c76e6e803d5e720`. Compileall, dependencies, roadmap determinism, Portal syntax and fourteen Node controllers passed. The exact 705-path candidate snapshot passed the artifact audit with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.340.1 production fixed-diagnostic recovery match
 

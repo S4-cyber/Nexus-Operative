@@ -167,6 +167,18 @@ def _finish_with_exact_recovery(reconnect_budget, operation, code):
     recovered = False
     try:
         retained = operation()
+    except ActivitySSEReconnectBudgetError as error:
+        # Only ``finish``'s own fixed post-commit acknowledgement diagnostic
+        # is eligible for exact durable recovery.  Store binding, token,
+        # clock, confirmation, emergency-stop and state denials are current
+        # safety decisions and must not be replaced by an older exact result
+        # that happens to match the requested terminal semantics.
+        if str(error) != (
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_'
+                'RESULT_ACKNOWLEDGEMENT_UNCERTAIN'):
+            raise
+        retained = _inspect_after_result_error(reconnect_budget, code)
+        recovered = True
     except Exception:
         retained = _inspect_after_result_error(reconnect_budget, code)
         recovered = True

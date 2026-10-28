@@ -1561,6 +1561,27 @@ def test_success_recovers_only_exact_lost_result_acknowledgement(
         state['last_requested_detail_code'] == 'SUCCESS'
 
 
+def test_success_does_not_recover_authoritative_typed_result_denial(
+        tmp_path, monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = budget.finish
+
+    def denied_after_commit(*args, **kwargs):
+        original(*args, **kwargs)
+        subject._fail('STORE_BINDING_CHANGED')
+
+    monkeypatch.setattr(budget, 'finish', denied_after_commit)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='STORE_BINDING_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: 1007)
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['completed'] and state['pending_token'] is None
+
+
 def test_success_rejects_uncommitted_result_acknowledgement_failure(
         tmp_path, monkeypatch):
     _, raw = segments()
@@ -1881,6 +1902,27 @@ def test_failure_recovers_exact_lost_result_acknowledgement(
     assert state['next_allowed_at'] == 1008
 
 
+def test_failure_does_not_recover_authoritative_typed_result_denial(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original = budget.finish
+
+    def denied_after_commit(*args, **kwargs):
+        original(*args, **kwargs)
+        subject._fail('CLOCK_REGRESSION')
+
+    monkeypatch.setattr(budget, 'finish', denied_after_commit)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CLOCK_REGRESSION'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: 1007)
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] is None
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+
+
 def test_failure_recovers_malformed_result_acknowledgement(
         tmp_path, monkeypatch):
     cursor, budget = stores(tmp_path)
@@ -2053,6 +2095,28 @@ def test_failed_clock_uncertainty_recovers_lost_result_acknowledgement(
     assert state['last_outcome'] == 'REVIEW_REQUIRED'
     assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
     assert state['last_evaluated_at'] == 1000
+
+
+def test_failed_clock_does_not_recover_authoritative_typed_result_denial(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original = budget.finish
+
+    def denied_after_commit(*args, **kwargs):
+        original(*args, **kwargs)
+        subject._fail('HEAD_CHANGED')
+
+    monkeypatch.setattr(budget, 'finish', denied_after_commit)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='HEAD_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: (_ for _ in ()).throw(
+                RuntimeError('private clock failure')))
+    assert len(opener.requests) == 1 and not cursor.path.exists()
+    state = budget.inspect()
+    assert state['review_required'] and state['pending_token'] is None
+    assert state['last_detail_code'] == 'OUTCOME_CLOCK_UNCERTAIN'
 
 
 @pytest.mark.parametrize('change', [
@@ -3797,6 +3861,28 @@ def test_reconciliation_recovers_exact_lost_result_acknowledgement(
     assert result['pending_checkpoint_reconciled']
     assert result['result_acknowledgement_recovered']
     assert not result['duplicate_recovery']
+    assert budget.inspect()['completed']
+
+
+def test_reconciliation_does_not_recover_authoritative_typed_result_denial(
+        tmp_path, monkeypatch):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original = budget.finish
+
+    def denied_after_commit(*args, **kwargs):
+        original(*args, **kwargs)
+        subject._fail('CONFIRMATION_REQUIRED')
+
+    monkeypatch.setattr(budget, 'finish', denied_after_commit)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CONFIRMATION_REQUIRED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
     assert budget.inspect()['completed']
 
 

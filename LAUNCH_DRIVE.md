@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.2 restricts the shared result-write typed-error recovery boundary while preserving exact replay for generic lost or malformed acknowledgements and OFF-by-default fail-closed behavior. The v0.340.1 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.3 binds provider-request authority to a validated pre-BEGIN budget snapshot so corrupted replay flags cannot restore duplicate request authority. The v0.340.2 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.340.3 durable reservation-freshness binding
+
+The explicit reconnect coordinator now captures a totally validated budget state before BEGIN and requires the returned duplicate/request-authority booleans to agree with that durable pre-state. An already-pending reservation cannot be relabelled fresh by a corrupted acknowledgement, and an intervening concurrent reservation fails closed. This prevents a duplicate provider read without adding credentials, cursor mutation, automatic retry or any new authority.
+
+Final local validation passed 4,367 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 317, direct cursor/reconnect passed 411 and complete Activity SSE passed 514. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `c10f1931c12f55f6de180db2e98ea1e3a1731b6be465ac65e663aeb5fe03c182`; evidence SHA256 is `b827cc05bd842a2e4a73e38e7d46f0fa14d78996d3667f10fa1dc7d272c7716f`. No UI or modifiable parameter changed.
 
 ## v0.340.2 authoritative result-denial preservation
 

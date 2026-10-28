@@ -2747,6 +2747,34 @@ def test_coordinator_refuses_replayed_reservation_before_provider_io(
     assert not cursor.path.exists()
 
 
+def test_corrupt_replayed_reservation_ack_cannot_restore_request_authority(
+        tmp_path, monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+        emergency_stop_check=STOP_CLEAR,
+        confirm_reconnect_attempt=True)
+    saved = budget.path.read_bytes()
+    original_begin = budget.begin
+
+    def corrupt_replay_ack(**kwargs):
+        replay = original_begin(**kwargs)
+        assert replay['duplicate_reservation']
+        return {**replay, 'duplicate_reservation': False,
+            'provider_request_authorized': True}
+
+    monkeypatch.setattr(budget, 'begin', corrupt_replay_ack)
+    opener = Opener([raw])
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RESERVATION_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_budget_head=ZERO)
+    assert not opener.requests
+    assert budget.path.read_bytes() == saved
+    assert not cursor.path.exists()
+
+
 def test_legacy_pending_reservation_remains_readable_without_replay(
         tmp_path):
     _, budget = stores(tmp_path)

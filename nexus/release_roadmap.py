@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.2'
+REVISION = '0.340.3'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -307,7 +307,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.2 restricts the shared reconnect-budget result recovery helper to its exact production-prefixed post-commit acknowledgement-uncertainty diagnostic. Generic lost acknowledgements and malformed returned views retain exact cold-journal recovery, while current store-binding, token, clock, confirmation, emergency-stop and state denials remain authoritative across success, provider-failure, trusted-time uncertainty closure and no-network checkpoint reconciliation. No provider request, credential access, cursor mutation, retry authority or UI control is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.3 binds reconnect provider-request authority to a totally validated budget snapshot captured before BEGIN. A replayed pending reservation cannot regain fresh-request authority through corrupted acknowledgement booleans; a concurrent reservation appearing after the snapshot also fails closed. No new provider request, credential access, cursor mutation, retry authority or UI control is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

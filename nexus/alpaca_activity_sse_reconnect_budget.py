@@ -1896,6 +1896,10 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
     require_store_bindings()
     if before_head != expected_cursor_head:
         _fail('CURSOR_HEAD_CHANGED')
+    reservation_before = _budget_state_for_attempt(reconnect_budget)
+    require_store_bindings()
+    reservation_preexisted = (
+        reservation_before['head_sha256'] != expected_budget_head)
     try:
         reservation = reconnect_budget.begin(evaluated_at=evaluated_at,
             expected_cursor_head=expected_cursor_head,
@@ -1926,7 +1930,9 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                 not 1 <= attempt <= MAX_ATTEMPTS or
                 type(duplicate) is not bool or
                 type(request_authorized) is not bool or
-                duplicate == request_authorized):
+                duplicate == request_authorized or
+                duplicate is not reservation_preexisted or
+                request_authorized is reservation_preexisted):
             raise ValueError('reservation acknowledgement disagreement')
     except Exception:
         # A malformed return may follow a committed BEGIN whose caller-side

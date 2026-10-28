@@ -1,12 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-Assessment date: 2026-10-27 (America/Los_Angeles).
-Parent source reviewed: `ae083136a1a4e1f93821c0d4097b683228ae5ca1` (v0.335.0), whose published tree matched the prior locally tested tree. The GitHub connector exposed no workflow or status records for that exact commit, so no v0.335 hosted pass is claimed. v0.336.0 is the current candidate and requires fresh exact-source checks.
+Assessment date: 2026-10-28 (America/Los_Angeles).
+Parent source reviewed: `99d6fd0b96ea77656bae740b0430e7b961e9a141` (v0.336.0), whose published tree matched the prior locally tested tree. The GitHub connector exposed no workflow or status records for that exact commit, so no v0.336 hosted pass is claimed. v0.337.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.336.0 extends bounded private file stability through lost Activity SSE checkpoint acknowledgements with a trusted completion clock. If the checkpoint call raises after its cursor commit, the path cold-recovers only the exact reservation-bound checkpoint and preserves its pending budget reservation instead of overwriting that split state with a generic terminal uncertainty result. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.337.0 redacts arbitrary provider or implementation exception detail after the exact reservation-bound checkpoint has been recovered with a trusted completion clock. The path preserves the pending budget reservation for explicit no-network reconciliation and surfaces one fixed typed lost-acknowledgement diagnostic with the original context suppressed. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
-Local candidate evidence: final local validation passed 4,358 tests with one expected non-Windows skip and one existing warning; the direct cursor/reconnect suites passed 390 and the complete Activity SSE set passed 505. All sixteen profiles and saved-evidence verification matched 387 source files / `5faa0115e6e73acdfc94d1ec0f56ffedeef077f32d7adf1d1a704812c8e29674`; v0.336.0 evidence SHA256 is `a2d759a863a8de721ee39b602ec9b9a6790c9d47b2f8d8aad36afb40c395c5f1`. The exact 699-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. Fresh exact-source v0.336.0 hosted workflows and every independent gate remain open.
+Local candidate evidence: final local validation passed 4,358 tests with one expected non-Windows skip and one existing warning; the direct cursor/reconnect suites passed 390 and the complete Activity SSE set passed 505. All sixteen profiles and saved-evidence verification matched 387 source files / `11e49d586d3866bd33699eb88f4ae242e2a2de9720a29fd453bdc5f09372689e`; v0.337.0 evidence SHA256 is `602310d8f23ce6884ea025c96c6d7b076ea9bc0c2b9ee766adb23aa4d4c335a2`. The exact 700-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. Fresh exact-source v0.337.0 hosted workflows and every independent gate remain open.
 
 ## Current assessment
 
@@ -15,7 +15,7 @@ Local candidate evidence: final local validation passed 4,358 tests with one exp
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.335.0 parent `ae083136a1a4e1f93821c0d4097b683228ae5ca1` had no connector-visible workflow or status records at review. Fresh v0.336.0 hosted results remain required; no parent result transfers to this candidate.
+- Exact v0.336.0 parent `99d6fd0b96ea77656bae740b0430e7b961e9a141` had no connector-visible workflow or status records at review. Fresh v0.337.0 hosted results remain required; no parent result transfers to this candidate.
 
 ## Roadmap coverage
 

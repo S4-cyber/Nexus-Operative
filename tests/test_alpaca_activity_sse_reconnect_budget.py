@@ -1636,9 +1636,14 @@ def test_lost_checkpoint_ack_with_valid_clock_uses_no_network_recovery(
 
     monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
         lose_acknowledgement)
-    with pytest.raises(RuntimeError,
-            match='private lost checkpoint acknowledgement'):
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
         call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_' \
+        'CHECKPOINT_ACKNOWLEDGEMENT_LOST'
+    assert 'private' not in str(raised.value)
+    assert raised.value.__cause__ is None
+    assert raised.value.__suppress_context__
     binding = cursor.latest_checkpoint_binding()
     state = budget.inspect()
     assert len(opener.requests) == 1 and binding['reconnect_reservation_bound']

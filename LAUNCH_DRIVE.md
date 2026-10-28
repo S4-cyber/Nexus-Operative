@@ -1,8 +1,14 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
-## Delivery planning update — 2026-10-27
+## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.336.0 extends bounded private file stability through lost Activity SSE checkpoint acknowledgements with a trusted completion clock while preserving OFF-by-default fail-closed behavior. The v0.335.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.337.0 redacts arbitrary exception detail after exact recovery of a lost Activity SSE checkpoint acknowledgement while preserving OFF-by-default fail-closed behavior. The v0.336.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.337.0 lost-checkpoint-ack diagnostic redaction
+
+A one-attempt reconnect whose checkpoint call raises after its durable cursor commit no longer returns arbitrary underlying exception text after proving the exact checkpoint is recoverable. With a trustworthy completion clock, the coordinator cold-recovers only the checkpoint whose prior head and reconnect-reservation digest match the pending attempt, holds the cursor and budget journals through the existing shared file proof, and preserves the reservation for explicit no-network reconciliation. It then raises one fixed typed diagnostic with the original exception context suppressed. No second provider request is granted. Mismatched bindings and same-inode cursor or budget changes continue to fail closed.
+
+The direct cursor/reconnect suites passed 390 tests and the complete Activity SSE set passed 505. Final local validation passed 4,358 tests with one expected non-Windows skip and one existing warning. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `11e49d586d3866bd33699eb88f4ae242e2a2de9720a29fd453bdc5f09372689e`; evidence SHA256 is `602310d8f23ce6884ea025c96c6d7b076ea9bc0c2b9ee766adb23aa4d4c335a2`. The exact 700-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.336.0 valid-clock lost-checkpoint-ack recovery stability
 

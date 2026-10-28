@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.336.0. Branch: `development/windows-portal-foundation`.
+Revision: 0.337.0. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.336.0 extends bounded private file stability through lost Activity SSE checkpoint acknowledgements with a trusted completion clock. If the checkpoint call raises after its cursor commit, the path no longer overwrites an exactly recoverable split state with a generic terminal uncertainty result. It cold-recovers only the exact reservation-bound checkpoint, preserves the pending reconnect reservation for explicit no-network reconciliation, then holds both journals in one shared identity/fingerprint proof and rechecks their exact semantics. A mismatched checkpoint or same-inode cursor/budget rewrite returns fixed uncertainty after exactly one request. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.337.0 redacts a lost Activity SSE checkpoint acknowledgement after the exact reservation-bound checkpoint has been recovered with a trusted completion clock. The coordinator preserves the pending reconnect reservation for explicit no-network reconciliation, proves both journals remain stable through shared identity/fingerprint checks and cold semantic replay, then surfaces only one fixed typed diagnostic instead of arbitrary provider or implementation exception text. A mismatched checkpoint or same-inode cursor/budget rewrite still returns fixed uncertainty after exactly one request. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

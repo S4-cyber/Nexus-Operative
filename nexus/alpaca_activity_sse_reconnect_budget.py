@@ -2050,7 +2050,12 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                 expected_budget_head=expected_budget_head,
                 evaluated_at=evaluated_at,
                 reconnect_reason=reconnect_reason)
-            raise
+            # The durable checkpoint is recoverable, but the original
+            # exception is not a safe public diagnostic: it may contain
+            # provider, transport or private implementation detail.  Retain
+            # the exact split state for explicit no-network reconciliation
+            # and surface only one fixed typed acknowledgement failure.
+            _fail('CHECKPOINT_ACKNOWLEDGEMENT_LOST')
         code = str(error)
         provider_retry_after = (error.provider_retry_after_seconds
             if isinstance(error, ActivitySSETransportError) else 0)

@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.6 (pre-release).** This build requires the returned reconnect review digest and all four aggregate counts to equal the exact values journaled by the durable cursor checkpoint. A coherent count mutation fails closed even when its internal arithmetic remains plausible. This is sampled local stability, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.7 (pre-release).** This build requires the returned transport-review digest to equal the exact value journaled by the durable cursor checkpoint. A valid-looking substituted hash fails closed. This is sampled local stability, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.7 durable checkpoint transport-digest binding
+
+The acknowledgement validator previously checked the transport digest's syntax without a durable comparison. The cursor store now uses v5/v6 profiles when a transport digest is supplied, exposes only that digest in its public binding, and preserves read compatibility with v1–v4 history. The coordinator requires the new bound profile and exact equality before completing the reconnect budget. A disagreement returns fixed checkpoint-state uncertainty and preserves the pending reservation for explicit review.
+
+Final local validation passed 4,374 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite passed 322, direct cursor/reconnect passed 418 and complete Activity SSE passed 521. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `8d86066ac89fe7b866f7d48151a448ee2dbd4300c6c6a112d7c9b007b6722d60`; `validation/release_trials_0_340_7.json` SHA256 is `436f2b7c714b9f9f83d0075095e9050f47fd1710f79916b0d38b49a9c3de38a8`. No provider request, credentials, cursor mutation, retry authority, UI control, order, funds or cloud authority was added. Exact-source v0.340.6 parent `de1ed22e1474f042e4a66b0f79c0bd131c35d7d8` exposed no connector-visible workflow or status records at review.
 
 ## v0.340.6 durable checkpoint review-count binding
 

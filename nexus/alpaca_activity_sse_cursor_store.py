@@ -30,6 +30,14 @@ LEGACY_PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v1'
 LEGACY_BOUND_PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v2'
 PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v3'
 BOUND_PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v4'
+TRANSPORT_PROFILE = 'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v5'
+TRANSPORT_BOUND_PROFILE = \
+    'nexus.reviewed-alpaca-activity-sse-cursor-checkpoint.v6'
+COMPLETE_PROFILES = (PROFILE, BOUND_PROFILE, TRANSPORT_PROFILE,
+    TRANSPORT_BOUND_PROFILE)
+BOUND_PROFILES = (LEGACY_BOUND_PROFILE, BOUND_PROFILE,
+    TRANSPORT_BOUND_PROFILE)
+TRANSPORT_PROFILES = (TRANSPORT_PROFILE, TRANSPORT_BOUND_PROFILE)
 ZERO = '0' * 64
 MAX_CHECKPOINTS = 256
 MAX_RECORD_BYTES = 8192
@@ -171,7 +179,7 @@ class ActivitySSECursorStore:
         return digest
 
     def _review_scope(self, value, previous_cursor, next_cursor, expected_head,
-            reconnect_reservation_token=None):
+            reconnect_reservation_token=None, transport_input_sha256=None):
         if type(value) is not dict:
             _fail('REVIEW_INVALID')
         if (any(type(key) is not str for key in value) or
@@ -224,11 +232,17 @@ class ActivitySSECursorStore:
                 trades + fees != unique or linked > trades):
             _fail('COUNT_INVALID')
         profile = PROFILE
+        transport_digest = None
+        if transport_input_sha256 is not None:
+            transport_digest = _digest(transport_input_sha256,
+                'TRANSPORT_DIGEST_INVALID')
+            profile = TRANSPORT_PROFILE
         reservation_sha256 = None
         if reconnect_reservation_token is not None:
             reservation_sha256 = sha(_digest(reconnect_reservation_token,
                 'RECONNECT_RESERVATION_INVALID'))
-            profile = BOUND_PROFILE
+            profile = (TRANSPORT_BOUND_PROFILE
+                if transport_digest is not None else BOUND_PROFILE)
         scope = dict(profile=profile, review_policy=REVIEW_POLICY,
             account_sha256=self.account_sha256,
             expected_head_sha256=expected_head,
@@ -243,6 +257,8 @@ class ActivitySSECursorStore:
             unique_fees_reviewed=fees, linked_orders=linked)
         if reservation_sha256 is not None:
             scope['reconnect_reservation_sha256'] = reservation_sha256
+        if transport_digest is not None:
+            scope['transport_input_sha256'] = transport_digest
         return dict(kind='CHECKPOINT', scope=scope,
             receipt_sha256=sha(scope))
 
@@ -300,6 +316,13 @@ class ActivitySSECursorStore:
                 elif profile == BOUND_PROFILE:
                     expected_scope = base_scope | complete_count_scope | {
                         'reconnect_reservation_sha256'}
+                elif profile == TRANSPORT_PROFILE:
+                    expected_scope = base_scope | complete_count_scope | {
+                        'transport_input_sha256'}
+                elif profile == TRANSPORT_BOUND_PROFILE:
+                    expected_scope = base_scope | complete_count_scope | {
+                        'reconnect_reservation_sha256',
+                        'transport_input_sha256'}
                 if (type(scope) is not dict or
                         expected_scope is None or set(scope) != expected_scope):
                     _fail('PAYLOAD_INVALID')
@@ -307,9 +330,12 @@ class ActivitySSECursorStore:
                         scope['account_sha256'] != self.account_sha256 or
                         body['receipt_sha256'] != sha(scope)):
                     _fail('SCOPE_INVALID')
-                if scope['profile'] in (LEGACY_BOUND_PROFILE, BOUND_PROFILE):
+                if scope['profile'] in BOUND_PROFILES:
                     _digest(scope['reconnect_reservation_sha256'],
                         'RECONNECT_RESERVATION_INVALID')
+                if scope['profile'] in TRANSPORT_PROFILES:
+                    _digest(scope['transport_input_sha256'],
+                        'TRANSPORT_DIGEST_INVALID')
                 _digest(scope['expected_head_sha256'])
                 logical_parent = ZERO if not records else parent
                 if scope['expected_head_sha256'] != logical_parent:
@@ -333,7 +359,7 @@ class ActivitySSECursorStore:
                     'COUNT_INVALID')
                 if (duplicates + new != replay or initial + new != unique):
                     _fail('COUNT_INVALID')
-                if scope['profile'] in (PROFILE, BOUND_PROFILE):
+                if scope['profile'] in COMPLETE_PROFILES:
                     trades = _positive(scope['unique_trades_reviewed'],
                         'COUNT_INVALID')
                     fees = _positive(scope['unique_fees_reviewed'],
@@ -386,7 +412,7 @@ class ActivitySSECursorStore:
                     require_cursor_binding()
         require_cursor_binding()
         complete_review_counts_bound = bool(records) and \
-            records[-1]['body']['scope']['profile'] in (PROFILE, BOUND_PROFILE)
+            records[-1]['body']['scope']['profile'] in COMPLETE_PROFILES
         return dict(mode='PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_HISTORY',
             status='REVIEW_REQUIRED', initialized=bool(records),
             account_sha256=cursor_binding[1], head_sha256=head,
@@ -443,6 +469,8 @@ class ActivitySSECursorStore:
             expected_head_sha256=scope['expected_head_sha256'],
             checkpoint_receipt_sha256=latest['body']['receipt_sha256'],
             cursor_sha256=sha(scope['next_cursor']),
+            transport_input_sha256=scope.get('transport_input_sha256'),
+            transport_input_bound=scope.get('profile') in TRANSPORT_PROFILES,
             review_input_sha256=scope['review_input_sha256'],
             initial_events_reviewed=scope['initial_events_reviewed'],
             replay_events_reviewed=scope['replay_events_reviewed'],
@@ -452,13 +480,14 @@ class ActivitySSECursorStore:
             reconnect_reservation_sha256=
                 scope.get('reconnect_reservation_sha256'),
             reconnect_reservation_bound=
-                scope.get('profile') in (LEGACY_BOUND_PROFILE, BOUND_PROFILE),
+                scope.get('profile') in BOUND_PROFILES,
             complete_review_counts_bound=
-                scope.get('profile') in (PROFILE, BOUND_PROFILE),
+                scope.get('profile') in COMPLETE_PROFILES,
             read_only=True, **{flag: False for flag in FLAGS})
 
     def checkpoint(self, review, *, previous_cursor, next_cursor,
-            expected_head, admission=None, reconnect_reservation_token=None):
+            expected_head, admission=None, reconnect_reservation_token=None,
+            transport_input_sha256=None):
         """Commit one reviewed advance; exact lost-ack replay is idempotent."""
         cursor_binding = (self.path, self.account_sha256)
 
@@ -468,7 +497,7 @@ class ActivitySSECursorStore:
 
         expected = _digest(expected_head, 'HEAD_INVALID')
         body = self._review_scope(review, previous_cursor, next_cursor,
-            expected, reconnect_reservation_token)
+            expected, reconnect_reservation_token, transport_input_sha256)
         require_cursor_binding()
         expected_input = body['scope']['review_input_sha256']
         if admission is None:
@@ -510,6 +539,10 @@ class ActivitySSECursorStore:
                         body['receipt_sha256'] or
                     binding['cursor_sha256'] !=
                         sha(body['scope']['next_cursor']) or
+                    binding['transport_input_sha256'] !=
+                        body['scope'].get('transport_input_sha256') or
+                    binding['transport_input_bound'] !=
+                        ('transport_input_sha256' in body['scope']) or
                     binding['reconnect_reservation_sha256'] !=
                         body['scope'].get(
                             'reconnect_reservation_sha256') or
@@ -610,9 +643,11 @@ class ActivitySSECursorStore:
             head_sha256=head, cursor_sha256=sha(body['scope']['next_cursor']),
             receipt_sha256=body['receipt_sha256'], duplicate=duplicate,
             reconnect_reservation_bound=
-                body['scope']['profile'] == BOUND_PROFILE,
+                body['scope']['profile'] in BOUND_PROFILES,
+            transport_input_bound=
+                body['scope']['profile'] in TRANSPORT_PROFILES,
             complete_review_counts_bound=
-                body['scope']['profile'] in (PROFILE, BOUND_PROFILE),
+                body['scope']['profile'] in COMPLETE_PROFILES,
             local_cursor_checkpoint_committed=True,
             process_restart_recoverable=True,
             **{flag: False for flag in FLAGS})

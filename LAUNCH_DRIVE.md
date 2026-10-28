@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.6 requires the reconnect review digest and all four counts to match the exact durable cursor checkpoint. The v0.340.5 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.7 requires the transport-review digest to match the exact durable cursor checkpoint. The v0.340.6 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.340.7 durable checkpoint transport-digest binding
+
+New backward-readable v5/v6 cursor profiles retain the transport-review digest without retaining any raw transport or private event data. The reconnect coordinator requires the acknowledgement digest to equal that durable record in addition to all existing schema, provenance, cursor, reservation, review-digest and count checks. A substituted hash is rejected while the pending reservation remains available for explicit no-network reconciliation. No additional request, credential access, cursor mutation, automatic retry or authority is added.
+
+Final local validation passed 4,374 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 322, direct cursor/reconnect passed 418 and complete Activity SSE passed 521. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `8d86066ac89fe7b866f7d48151a448ee2dbd4300c6c6a112d7c9b007b6722d60`; evidence SHA256 is `436f2b7c714b9f9f83d0075095e9050f47fd1710f79916b0d38b49a9c3de38a8`. No UI or modifiable parameter changed.
 
 ## v0.340.6 durable checkpoint review-count binding
 

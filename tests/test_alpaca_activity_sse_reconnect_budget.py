@@ -1471,6 +1471,28 @@ def test_checkpoint_ack_review_counts_must_match_durable_binding(tmp_path,
     assert cursor.latest_checkpoint_binding()['complete_review_counts_bound']
 
 
+def test_checkpoint_ack_transport_digest_must_match_durable_binding(tmp_path,
+        monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def altered_transport_digest(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return {**result, 'transport_input_sha256': 'f' * 64}
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        altered_transport_digest)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
 def test_forged_checkpoint_ack_cannot_complete_reconnect_budget(tmp_path,
         monkeypatch):
     cursor, budget = stores(tmp_path)

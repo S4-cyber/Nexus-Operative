@@ -92,12 +92,17 @@ def test_single_get_review_and_exact_head_checkpoint_are_aggregate_only(tmp_path
     assert result['mode'] == 'EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT'
     assert result['single_get_attempt'] and result['single_reconnect_attempt']
     assert result['cursor_checkpoint_eligible'] and result['cursor_written']
+    assert result['transport_input_bound']
     assert result['complete_review_counts_bound']
     assert result['redelivered_events_deduplicated'] == 1
     assert result['new_events_processed'] == 1
     assert len(opener.requests) == 1 and opener.response.closed
     assert cold['current_event_id'] == '01K00000000000000000000004'
     assert cold['head_sha256'] == result['checkpoint_head_sha256']
+    binding = store.latest_checkpoint_binding()
+    assert binding['transport_input_bound']
+    assert binding['transport_input_sha256'] == \
+        result['transport_input_sha256']
     encoded = json.dumps(result, sort_keys=True)
     assert all(token not in encoded for token in (ACCOUNT, KEY, SECRET,
         '01K0000', '11111111', 'fixture_client'))

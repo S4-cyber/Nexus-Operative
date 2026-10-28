@@ -74,7 +74,8 @@ CHECKPOINT_ACK_TRUE = ('single_get_attempt', 'single_reconnect_attempt',
     'explicit_read_authorization', 'explicit_checkpoint_authorization',
     'cursor_checkpoint_eligible', 'cursor_written',
     'local_cursor_checkpoint_committed', 'process_restart_recoverable',
-    'reconnect_reservation_bound', 'complete_review_counts_bound')
+    'reconnect_reservation_bound', 'transport_input_bound',
+    'complete_review_counts_bound')
 CHECKPOINT_ACK_FALSE = ('actual_vault_access', 'automatic_retry',
     'automatic_reconnect_performed', 'automatic_backoff_verified',
     'ledger_applied')
@@ -93,6 +94,7 @@ CHECKPOINT_ACK_KEYS = frozenset((
 CHECKPOINT_BINDING_KEYS = frozenset((
     'mode', 'status', 'account_sha256', 'head_sha256',
     'expected_head_sha256', 'checkpoint_receipt_sha256', 'cursor_sha256',
+    'transport_input_sha256', 'transport_input_bound',
     'review_input_sha256', *CHECKPOINT_ACK_COUNTS,
     'reconnect_reservation_sha256', 'reconnect_reservation_bound',
     'complete_review_counts_bound',
@@ -369,6 +371,13 @@ def _validated_checkpoint_binding(cursor_store, value, code):
         _digest(value['expected_head_sha256'])
         _digest(value['checkpoint_receipt_sha256'])
         _digest(value['cursor_sha256'])
+        transport_bound = value['transport_input_bound']
+        if type(transport_bound) is not bool:
+            raise TypeError
+        if transport_bound:
+            _digest(value['transport_input_sha256'])
+        elif value['transport_input_sha256'] is not None:
+            raise ValueError
         _digest(value['review_input_sha256'])
         counts = tuple(value[field] for field in CHECKPOINT_ACK_COUNTS)
         if (any(type(item) is not int or not 0 < item <= 2000
@@ -477,12 +486,15 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
                 retained['status'] != 'REVIEW_REQUIRED' or
                 retained['account_sha256'] != cursor_store.account_sha256 or
                 retained['reconnect_reservation_bound'] is not True or
+                retained['transport_input_bound'] is not True or
                 retained['complete_review_counts_bound'] is not True or
                 retained['read_only'] is not True or
                 retained_head != acknowledged_head or
                 retained_expected != expected_cursor_head or
                 retained_receipt != acknowledged_receipt or
                 retained_cursor != acknowledged_cursor or
+                retained['transport_input_sha256'] !=
+                    result['transport_input_sha256'] or
                 retained['review_input_sha256'] !=
                     result['reconnect_input_sha256'] or
                 any(retained[field] != result[field]

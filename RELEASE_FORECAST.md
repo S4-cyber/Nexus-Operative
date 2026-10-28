@@ -1,12 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-28 (America/Los_Angeles).
-Parent source reviewed: `71cc042dae3fe2ad827141e2e7cd595b0a0400b1` (v0.340.5), whose published tree matched the prior locally tested tree. The GitHub connector exposed no workflow or status records for that exact commit, so no v0.340.5 hosted pass is claimed. v0.340.6 is the current candidate and requires fresh exact-source checks.
+Parent source reviewed: `de1ed22e1474f042e4a66b0f79c0bd131c35d7d8` (v0.340.6), whose published tree matched the prior locally tested tree. The GitHub connector exposed no workflow or status records for that exact commit, so no v0.340.6 hosted pass is claimed. v0.340.7 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.340.6 binds the reconnect review digest and every returned count to the exact durable cursor checkpoint. Internal plausibility is no longer sufficient for a coherently altered acknowledgement. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.340.7 binds the transport-review digest to the exact durable cursor checkpoint using backward-readable v5/v6 profiles. Digest syntax alone is no longer sufficient. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
-Local candidate evidence: final local validation passed 4,370 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 320, direct cursor/reconnect passed 414 and complete Activity SSE passed 517. All sixteen profiles and saved-evidence verification matched 387 source files / `cf57f1113809d5dbfe655c30108e7cd9e60f55b038d2412ea064b1641e1eadd0`; v0.340.6 evidence SHA256 is `f8496f2e0d78c88e409b9dddd7312ea80902f019b30b5d65aea5eba4973e3272`. Local Gitleaks is unavailable. Fresh exact-source v0.340.6 hosted workflows and every independent gate remain open.
+Local candidate evidence: final local validation passed 4,374 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 322, direct cursor/reconnect passed 418 and complete Activity SSE passed 521. All sixteen profiles and saved-evidence verification matched 387 source files / `8d86066ac89fe7b866f7d48151a448ee2dbd4300c6c6a112d7c9b007b6722d60`; v0.340.7 evidence SHA256 is `436f2b7c714b9f9f83d0075095e9050f47fd1710f79916b0d38b49a9c3de38a8`. Local Gitleaks is unavailable. Fresh exact-source v0.340.7 hosted workflows and every independent gate remain open.
 
 ## Current assessment
 
@@ -15,7 +15,7 @@ Local candidate evidence: final local validation passed 4,370 tests with one exp
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.340.5 parent `71cc042dae3fe2ad827141e2e7cd595b0a0400b1` had no connector-visible workflow or status records at review. Fresh v0.340.6 hosted results remain required; no parent result transfers to this candidate.
+- Exact v0.340.6 parent `de1ed22e1474f042e4a66b0f79c0bd131c35d7d8` had no connector-visible workflow or status records at review. Fresh v0.340.7 hosted results remain required; no parent result transfers to this candidate.
 
 ## Roadmap coverage
 

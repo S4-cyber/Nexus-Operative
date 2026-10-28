@@ -225,6 +225,28 @@ def test_checkpoint_can_bind_reconnect_reservation_for_exact_recovery(tmp_path):
     assert all(binding[flag] is False for flag in subject.FLAGS)
 
 
+def test_checkpoint_can_bind_transport_digest_for_exact_recovery(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    digest = 'b' * 64
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    saved = checkpoint(store, transport_input_sha256=digest)
+    binding = subject.ActivitySSECursorStore(
+        path, ACCOUNT).latest_checkpoint_binding()
+    assert saved['transport_input_bound']
+    assert binding['transport_input_bound']
+    assert binding['transport_input_sha256'] == digest
+    assert not binding['reconnect_reservation_bound']
+    assert binding['complete_review_counts_bound']
+
+
+def test_invalid_transport_digest_never_creates_storage(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    with pytest.raises(ValueError, match='TRANSPORT_DIGEST_INVALID'):
+        checkpoint(subject.ActivitySSECursorStore(path, ACCOUNT),
+            transport_input_sha256='bad')
+    assert not path.exists()
+
+
 def test_invalid_reconnect_reservation_never_creates_storage(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     with pytest.raises(ValueError, match='RECONNECT_RESERVATION_INVALID'):

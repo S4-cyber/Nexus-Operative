@@ -171,6 +171,7 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         _fail('CURSOR_HEAD_CHANGED')
 
     private_input_sha256 = sha(dict(initial=initial, replay=replay))
+    transport_input_sha256 = transport_review['input_sha256']
     review_input_sha256 = checked['input_sha256']
 
     def admission():
@@ -187,7 +188,8 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
             previous_cursor=persisted,
             next_cursor=replay[-1]['event_id'],
             expected_head=expected_cursor_head, admission=admission,
-            reconnect_reservation_token=reservation)
+            reconnect_reservation_token=reservation,
+            transport_input_sha256=transport_input_sha256)
     except ValueError:
         # Cursor-store diagnostics are already fixed and contain no private data.
         raise
@@ -195,7 +197,7 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         status='REVIEW_REQUIRED', policy=POLICY,
         source=transport_review['source'],
         account_sha256=initial_review['account_sha256'],
-        transport_input_sha256=transport_review['input_sha256'],
+        transport_input_sha256=transport_input_sha256,
         reconnect_input_sha256=checked['input_sha256'],
         checkpoint_head_sha256=saved['head_sha256'],
         checkpoint_receipt_sha256=saved['receipt_sha256'],
@@ -212,6 +214,7 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         local_cursor_checkpoint_committed=True,
         process_restart_recoverable=True,
         reconnect_reservation_bound=saved['reconnect_reservation_bound'],
+        transport_input_bound=saved['transport_input_bound'],
         complete_review_counts_bound=saved['complete_review_counts_bound'],
         duplicate_checkpoint=saved['duplicate'],
         actual_provider_access=transport_review['actual_provider_access'],

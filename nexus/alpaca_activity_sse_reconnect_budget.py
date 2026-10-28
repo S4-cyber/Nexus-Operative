@@ -423,6 +423,29 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
     return retained
 
 
+def _recover_checkpoint_binding_for_attempt(cursor_store, *, token,
+        expected_cursor_head):
+    """Recover one exact committed checkpoint after its return was lost.
+
+    The checkpoint call may raise after its durable cursor commit, leaving no
+    acknowledgement dictionary to validate.  Only the cold journal binding
+    can recover that state, and it must prove the exact prior cursor head and
+    reconnect reservation owned by this one attempt.
+    """
+    try:
+        retained = _validated_checkpoint_binding(cursor_store,
+            cursor_store.latest_checkpoint_binding(),
+            'CHECKPOINT_STATE_UNCERTAIN')
+        if (retained['expected_head_sha256'] != expected_cursor_head or
+                retained['reconnect_reservation_bound'] is not True or
+                retained['complete_review_counts_bound'] is not True or
+                retained['reconnect_reservation_sha256'] != sha(token)):
+            raise ValueError
+    except Exception:
+        _fail('CHECKPOINT_STATE_UNCERTAIN')
+    return retained
+
+
 def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     """Retain terminal review state from the last trusted admission time.
 
@@ -1986,6 +2009,23 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                     outcome='REVIEW_REQUIRED',
                     detail='OUTCOME_CLOCK_UNCERTAIN',
                     provider_retry_after=0)
+            else:
+                checkpoint_binding = \
+                    _recover_checkpoint_binding_for_attempt(cursor_store,
+                        token=token,
+                        expected_cursor_head=expected_cursor_head)
+                if checkpoint_binding['head_sha256'] != after_head:
+                    _fail('CHECKPOINT_STATE_UNCERTAIN')
+                _bind_pending_checkpoint_files(cursor_store,
+                    reconnect_budget, journal_paths=journal_paths,
+                    file_prefix=file_prefix,
+                    require_store_bindings=require_store_bindings,
+                    checkpoint_binding=checkpoint_binding, token=token,
+                    attempt=attempt,
+                    expected_cursor_head=expected_cursor_head,
+                    expected_budget_head=expected_budget_head,
+                    evaluated_at=evaluated_at,
+                    reconnect_reason=reconnect_reason)
             raise
         require_store_bindings()
         after_head = _cursor_head_for_attempt(cursor_store)

@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-27
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.334.0 extends bounded private file stability through Activity SSE checkpoint-success outcome-clock failure acknowledgement while preserving OFF-by-default fail-closed behavior. The v0.333.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.335.0 extends bounded private file stability through lost Activity SSE checkpoint acknowledgements combined with outcome-clock failure while preserving OFF-by-default fail-closed behavior. The v0.334.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.335.0 lost-checkpoint-ack outcome-clock failure stability
+
+A one-attempt reconnect whose checkpoint call raises after its durable cursor commit can no longer surface an untrusted-clock error from an unproven split state. The coordinator cold-recovers the latest cursor binding only when its prior head and reconnect-reservation digest match the exact pending attempt. It then holds the recovered cursor checkpoint and pending budget reservation through shared identity/fingerprint checks and a second cold replay before surfacing the typed clock error. The reservation remains available only for explicit no-network checkpoint reconciliation and grants no second request. A different checkpoint or same-inode cursor/budget rewrite returns fixed uncertainty while preserving the recoverable split state.
+
+The direct cursor/reconnect suites passed 387 tests and the complete Activity SSE set passed 502. Final local validation passed 4,355 tests with one expected non-Windows skip and one existing warning. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `aae4c8bd50d89bb7da10bfe750b0f457f7fc5295ad5a763f2c191d10fc5cfa85`; evidence SHA256 is `42a63ea011f11ba35142b1dfe733603d149e38093825104939242d92261a6231`. The exact 698-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.334.0 checkpoint-success outcome-clock failure acknowledgement stability
 

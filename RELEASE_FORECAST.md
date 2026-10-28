@@ -1,12 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-27 (America/Los_Angeles).
-Parent source reviewed: `7fbc924e9520e9f31edb8187fac0c0651a62686b` (v0.333.0), whose published tree matched the prior locally tested tree. The GitHub connector exposed no workflow or status records for that exact commit, so no v0.333 hosted pass is claimed. v0.334.0 is the current candidate and requires fresh exact-source checks.
+Parent source reviewed: `095de2434f4ce895d144ed7dc5cecfd2168f9144` (v0.334.0), whose published tree matched the prior locally tested tree. The GitHub connector exposed no workflow or status records for that exact commit, so no v0.334 hosted pass is claimed. v0.335.0 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.334.0 extends bounded private file stability through Activity SSE checkpoint-success outcome-clock failure acknowledgement. If the cursor checkpoint commits but the completion time is invalid, regresses or is unavailable, the path preserves the exact pending reconnect reservation for explicit no-network reconciliation, then holds the committed cursor binding and pending budget reservation in one bounded proof before surfacing the typed clock error. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.335.0 extends bounded private file stability through lost Activity SSE checkpoint acknowledgements combined with outcome-clock failure. If the checkpoint call raises after its cursor commit and the completion time is invalid, regresses or is unavailable, the path cold-recovers only the exact reservation-bound checkpoint and then holds it with the pending budget reservation in one bounded proof before surfacing the typed clock error. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
-Local candidate evidence: final local validation passed 4,352 tests with one expected non-Windows skip and one existing warning; the direct cursor/reconnect suites passed 384 and the complete Activity SSE set passed 499. All sixteen profiles and saved-evidence verification matched 387 source files / `2dd26fd763c592a01bbfdb6e7dc3a911bc88ae1de31460b19f798eb939a8ccc8`; v0.334.0 evidence SHA256 is `497d449fe8d0d2a9f3ed019c4159feee644b606328040d92edba8144b8d77218`. The exact 697-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. Fresh exact-source v0.334.0 hosted workflows and every independent gate remain open.
+Local candidate evidence: final local validation passed 4,355 tests with one expected non-Windows skip and one existing warning; the direct cursor/reconnect suites passed 387 and the complete Activity SSE set passed 502. All sixteen profiles and saved-evidence verification matched 387 source files / `aae4c8bd50d89bb7da10bfe750b0f457f7fc5295ad5a763f2c191d10fc5cfa85`; v0.335.0 evidence SHA256 is `42a63ea011f11ba35142b1dfe733603d149e38093825104939242d92261a6231`. The exact 698-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. Fresh exact-source v0.335.0 hosted workflows and every independent gate remain open.
 
 ## Current assessment
 
@@ -15,7 +15,7 @@ Local candidate evidence: final local validation passed 4,352 tests with one exp
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.333.0 parent `7fbc924e9520e9f31edb8187fac0c0651a62686b` had no connector-visible workflow or status records at review. Fresh v0.334.0 hosted results remain required; no parent result transfers to this candidate.
+- Exact v0.334.0 parent `095de2434f4ce895d144ed7dc5cecfd2168f9144` had no connector-visible workflow or status records at review. Fresh v0.335.0 hosted results remain required; no parent result transfers to this candidate.
 
 ## Roadmap coverage
 

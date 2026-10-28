@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.10'
+REVISION = '0.340.11'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -307,7 +307,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.10 rejects a duplicate checkpoint acknowledgement from the sole fresh request-authorized reconnect reservation. Ambiguous cursor-write ownership preserves the exact transport-bound checkpoint and pending reservation for explicit no-network reconciliation instead of automatically closing the budget. No second request, credential access, retry authority or UI control is added. The v0.340.9 Windows portability and complete-history audit repairs remain intact. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.11 terminally closes a malformed checkpoint acknowledgement as review-required checkpoint uncertainty when no cursor commit can be proven. The reservation is no longer stranded pending without a checkpoint, and no retry, second request, credential access or UI control is added. Proven split commits still retain the exact transport-bound checkpoint and pending reservation for explicit no-network reconciliation. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -548,6 +548,27 @@ def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     return retained
 
 
+def _close_checkpoint_state_uncertainty(reconnect_budget, token,
+        evaluated_at):
+    """Close a reservation when no checkpoint commit can be proven.
+
+    A malformed checkpoint acknowledgement is never evidence of success. If
+    the cursor head also remains unchanged, there is no split commit to
+    reconcile later, so retaining a pending reservation would strand the
+    budget indefinitely. Record terminal review-required uncertainty without
+    granting another attempt or scheduling a retry.
+    """
+    retained, _ = _finish_with_exact_recovery(reconnect_budget,
+        lambda: reconnect_budget.finish(token,
+            evaluated_at=evaluated_at, outcome='CHECKPOINT_UNCERTAIN',
+            detail_code='CHECKPOINT_STATE_UNCERTAIN'),
+        'RESULT_RECORD_UNCERTAIN')
+    if not _exact_failure_result(retained, token, evaluated_at,
+            'CHECKPOINT_UNCERTAIN', 'CHECKPOINT_STATE_UNCERTAIN', 0):
+        _fail('RESULT_RECORD_UNCERTAIN')
+    return retained
+
+
 def _bind_failed_attempt_result_files(cursor_store, reconnect_budget, *,
         journal_paths, file_prefix, require_store_bindings, cursor_head,
         retained, token, evaluated_at, outcome, detail,
@@ -2191,6 +2212,19 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                 expected_budget_head=expected_budget_head,
                 evaluated_at=evaluated_at,
                 reconnect_reason=reconnect_reason)
+        else:
+            retained = _close_checkpoint_state_uncertainty(
+                reconnect_budget, token, evaluated_at)
+            require_store_bindings()
+            _bind_failed_attempt_result_files(cursor_store,
+                reconnect_budget, journal_paths=journal_paths,
+                file_prefix=file_prefix,
+                require_store_bindings=require_store_bindings,
+                cursor_head=after_head, retained=retained, token=token,
+                evaluated_at=evaluated_at,
+                outcome='CHECKPOINT_UNCERTAIN',
+                detail='CHECKPOINT_STATE_UNCERTAIN',
+                provider_retry_after=0)
         raise
     require_store_bindings()
     try:

@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.11 terminal checkpoint-uncertainty closure
+
+A malformed checkpoint acknowledgement with no cursor transition now closes its exact reconnect reservation as terminal review-required checkpoint uncertainty instead of leaving a pending reservation that has no checkpoint to reconcile. It schedules no retry and performs no provider request. A proven cursor transition still preserves the transport-bound checkpoint and pending reservation for explicit no-network reconciliation. No UI control or modifiable parameter changed, and all engagement permissions remain OFF by default.
+
+Final local validation passed 4,387 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite passed 326, the direct cursor/checkpoint/reconnect set passed 427 and the complete Activity SSE set passed 525. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `03bc6b1657566fa1183ec5e3f6b26de703f9a23d7a8e041a88074eaa262bd182`; `validation/release_trials_0_340_11.json` SHA256 is `14372259f74a1ef77b954c77431ee2746316a5d38afffb64fb33dca872c18515`. Exact-source v0.340.10 parent `ce8716bb65fb1526a6541af1d3770dec19381e37` passed public security 40750285177, research safety 40750285009 and Windows packaging/installer 40750284994; both hosted Windows regression lanes reported 4,368 passed / 19 platform skips. Those parent results do not transfer to v0.340.11, which requires fresh exact-source workflows.
+
 ## v0.340.10 fresh-reservation checkpoint ownership
 
 The sole fresh request-authorized reconnect reservation now rejects a duplicate checkpoint acknowledgement. Ambiguous cursor-write ownership preserves the transport-bound checkpoint and pending reservation for explicit no-network reconciliation; it cannot automatically close the budget and it performs no second provider request. The v0.340.9 Windows portability and complete-history audit repairs remain intact. No UI control or modifiable parameter changed, and all engagement permissions remain OFF by default.

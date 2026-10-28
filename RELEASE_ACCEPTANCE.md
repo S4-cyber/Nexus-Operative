@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.11 terminal checkpoint-uncertainty closure
+
+A malformed checkpoint acknowledgement with no cursor transition now durably closes its reservation as terminal review-required checkpoint uncertainty. It cannot schedule a retry or perform another provider request. Proven cursor transitions retain the exact split-state proof and explicit no-network reconciliation path. This grants no provider, credential, retry, order, funds, live, cloud or release authority.
+
+Final local validation passed 4,387 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite passed 326, the direct cursor/checkpoint/reconnect set passed 427 and the complete Activity SSE set passed 525. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `03bc6b1657566fa1183ec5e3f6b26de703f9a23d7a8e041a88074eaa262bd182`; `validation/release_trials_0_340_11.json` SHA256 is `14372259f74a1ef77b954c77431ee2746316a5d38afffb64fb33dca872c18515`. No UI or modifiable parameter changed. Exact-source v0.340.10 parent `ce8716bb65fb1526a6541af1d3770dec19381e37` passed public security 40750285177, research safety 40750285009 and Windows packaging/installer 40750284994; both hosted Windows regression lanes reported 4,368 passed / 19 platform skips. Those parent results do not transfer to v0.340.11, which requires fresh exact-source workflows.
+
 ## v0.340.10 fresh-reservation checkpoint ownership
 
 A fresh request-authorized reconnect reservation rejects duplicate checkpoint acknowledgements and preserves ambiguous split state for explicit no-network reconciliation. This performs no second provider request and grants no provider, credential, retry, order, funds, live, cloud or release authority. The v0.340.9 Windows portability and full-history audit repairs remain part of the candidate and require fresh exact-source hosted validation.
@@ -16,7 +22,7 @@ The actual reachable-history scan reproduced HISTORY_BYTE_CAP: 9,422 objects tot
 
 No UI control or editable parameter is added. Preserve seven tabs, black/bright-purple bottom-right help, OFF engagement defaults, independent emergency fencing, bounded risk and exits. These fixes grant no provider, account, fee/hold/funds, routing, live/cloud or release acceptance. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. The current operational priority is a green Windows build followed by authorized connected-paper acceptance and sustained genuine-market trials.
 
-Current build: **0.340.10 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.340.11 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## v0.228.0 shared-local provider POST budget
 

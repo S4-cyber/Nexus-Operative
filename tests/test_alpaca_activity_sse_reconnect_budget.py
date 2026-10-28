@@ -1426,6 +1426,26 @@ def test_fresh_reservation_rejects_duplicate_checkpoint_acknowledgement(
     assert len(opener.requests) == 1 and budget.inspect()['completed']
 
 
+def test_malformed_ack_without_checkpoint_closes_terminal_uncertainty(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([])
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        lambda *args, **kwargs: {})
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert not opener.requests
+    state = budget.inspect()
+    assert state['pending_token'] is None
+    assert state['last_outcome'] == 'CHECKPOINT_UNCERTAIN'
+    assert state['last_detail_code'] == 'CHECKPOINT_STATE_UNCERTAIN'
+    assert state['review_required'] and not state['completed']
+    assert state['next_allowed_at'] == 0
+    assert not cursor.path.exists()
+
+
 def test_checkpoint_ack_cannot_coherently_promote_injected_transport(
         tmp_path, monkeypatch):
     _, raw = segments()
@@ -1544,8 +1564,11 @@ def test_forged_checkpoint_ack_cannot_complete_reconnect_budget(tmp_path,
         'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_CHECKPOINT_STATE_UNCERTAIN'
     assert not opener.requests and not cursor.path.exists()
     state = budget.inspect()
-    assert state['pending_token'] == state['head_sha256']
-    assert state['last_outcome'] is None and not state['completed']
+    assert state['pending_token'] is None
+    assert state['last_outcome'] == 'CHECKPOINT_UNCERTAIN'
+    assert state['last_detail_code'] == 'CHECKPOINT_STATE_UNCERTAIN'
+    assert state['review_required'] and not state['completed']
+    assert state['next_allowed_at'] == 0
 
 
 def test_checkpoint_binding_must_remain_stable_across_result_commit(tmp_path,

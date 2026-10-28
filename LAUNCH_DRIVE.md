@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-27
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.335.0 extends bounded private file stability through lost Activity SSE checkpoint acknowledgements combined with outcome-clock failure while preserving OFF-by-default fail-closed behavior. The v0.334.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.336.0 extends bounded private file stability through lost Activity SSE checkpoint acknowledgements with a trusted completion clock while preserving OFF-by-default fail-closed behavior. The v0.335.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.336.0 valid-clock lost-checkpoint-ack recovery stability
+
+A one-attempt reconnect whose checkpoint call raises after its durable cursor commit no longer replaces that exact recoverable split state with a generic `CHECKPOINT_UNCERTAIN` budget result. When the completion clock is trustworthy, the coordinator cold-recovers the latest cursor binding only if its prior head and reconnect-reservation digest match the exact pending attempt. It then holds the cursor checkpoint and pending budget reservation through shared identity/fingerprint checks and a second cold replay before surfacing the original checkpoint-call error. The reservation remains available only for explicit no-network reconciliation and grants no second request. A different checkpoint or same-inode cursor/budget rewrite returns fixed uncertainty.
+
+The direct cursor/reconnect suites passed 390 tests and the complete Activity SSE set passed 505. Final local validation passed 4,358 tests with one expected non-Windows skip and one existing warning. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `5faa0115e6e73acdfc94d1ec0f56ffedeef077f32d7adf1d1a704812c8e29674`; evidence SHA256 is `a2d759a863a8de721ee39b602ec9b9a6790c9d47b2f8d8aad36afb40c395c5f1`. The exact 699-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.335.0 lost-checkpoint-ack outcome-clock failure stability
 

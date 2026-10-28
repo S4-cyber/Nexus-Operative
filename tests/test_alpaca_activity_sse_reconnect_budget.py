@@ -1623,6 +1623,74 @@ def test_lost_checkpoint_ack_with_uncertain_clock_uses_no_network_recovery(
     assert len(opener.requests) == 1 and budget.inspect()['completed']
 
 
+def test_lost_checkpoint_ack_with_valid_clock_uses_no_network_recovery(
+        tmp_path, monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def lose_acknowledgement(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError('private lost checkpoint acknowledgement')
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        lose_acknowledgement)
+    with pytest.raises(RuntimeError,
+            match='private lost checkpoint acknowledgement'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    binding = cursor.latest_checkpoint_binding()
+    state = budget.inspect()
+    assert len(opener.requests) == 1 and binding['reconnect_reservation_bound']
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+    recovered = subject.reconcile_pending_checkpoint(cursor_store=cursor,
+        reconnect_budget=budget, expected_budget_head=state['head_sha256'],
+        expected_checkpoint_head=binding['head_sha256'], evaluated_at=1002,
+        confirm_checkpoint_reconciliation=True)
+    assert recovered['pending_checkpoint_reconciled']
+    assert not recovered['provider_request_performed']
+    assert len(opener.requests) == 1 and budget.inspect()['completed']
+
+
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_lost_checkpoint_ack_valid_clock_file_change_fails_closed(
+        tmp_path, monkeypatch, store_name):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original_collect = subject.checkpoint.collect_and_checkpoint_once
+    original_validate = subject._validated_checkpoint_binding
+    replays = 0
+
+    def lose_acknowledgement(*args, **kwargs):
+        original_collect(*args, **kwargs)
+        raise RuntimeError('private lost checkpoint acknowledgement')
+
+    def change_after_recovery_replay(*args, **kwargs):
+        nonlocal replays
+        retained = original_validate(*args, **kwargs)
+        replays += 1
+        if replays == 2:
+            target = cursor.path if store_name == 'cursor' else budget.path
+            with target.open('r+b', buffering=0) as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+        return retained
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        lose_acknowledgement)
+    monkeypatch.setattr(subject, '_validated_checkpoint_binding',
+        change_after_recovery_replay)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
 @pytest.mark.parametrize('store_name', ('cursor', 'budget'))
 def test_lost_checkpoint_ack_uncertain_clock_file_change_fails_closed(
         tmp_path, monkeypatch, store_name):

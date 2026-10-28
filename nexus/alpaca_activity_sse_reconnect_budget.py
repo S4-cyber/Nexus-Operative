@@ -2030,12 +2030,31 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         require_store_bindings()
         after_head = _cursor_head_for_attempt(cursor_store)
         require_store_bindings()
+        if after_head != expected_cursor_head:
+            # The checkpoint call may have raised after its durable cursor
+            # commit.  Do not overwrite an exactly recoverable split state
+            # with a generic uncertainty result.  Preserve the pending budget
+            # only when the cursor cold replay proves this attempt's prior
+            # head and reservation, then require explicit no-network recovery.
+            checkpoint_binding = _recover_checkpoint_binding_for_attempt(
+                cursor_store, token=token,
+                expected_cursor_head=expected_cursor_head)
+            if checkpoint_binding['head_sha256'] != after_head:
+                _fail('CHECKPOINT_STATE_UNCERTAIN')
+            _bind_pending_checkpoint_files(cursor_store, reconnect_budget,
+                journal_paths=journal_paths, file_prefix=file_prefix,
+                require_store_bindings=require_store_bindings,
+                checkpoint_binding=checkpoint_binding, token=token,
+                attempt=attempt,
+                expected_cursor_head=expected_cursor_head,
+                expected_budget_head=expected_budget_head,
+                evaluated_at=evaluated_at,
+                reconnect_reason=reconnect_reason)
+            raise
         code = str(error)
         provider_retry_after = (error.provider_retry_after_seconds
             if isinstance(error, ActivitySSETransportError) else 0)
-        if after_head != expected_cursor_head:
-            outcome, detail = 'CHECKPOINT_UNCERTAIN', 'CURSOR_ADVANCED_WITHOUT_BUDGET_ACK'
-        elif code in RETRYABLE_ERRORS and reservation['attempt'] < MAX_ATTEMPTS:
+        if code in RETRYABLE_ERRORS and reservation['attempt'] < MAX_ATTEMPTS:
             outcome, detail = 'RETRY_REQUIRED', code
         else:
             outcome, detail = 'REVIEW_REQUIRED', 'NONRETRYABLE_FAILURE'

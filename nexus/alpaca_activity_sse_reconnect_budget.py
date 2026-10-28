@@ -751,7 +751,7 @@ def _perform_control_closure(reconnect_budget, operation, *,
         # eligible for durable recovery.  Head, clock, confirmation, stop and
         # state denials remain authoritative even if an older terminal record
         # happens to match the requested attempt.
-        if str(error) != code:
+        if str(error) != 'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_' + code:
             raise
         try:
             recovered = recover_exact_terminal()

@@ -2335,8 +2335,7 @@ def test_uncertain_outcome_close_recovers_lost_acknowledgement(
     def lost_acknowledgement(**kwargs):
         original(**kwargs)
         if domain_error:
-            raise subject.ActivitySSEReconnectBudgetError(
-                'OUTCOME_UNCERTAIN_CLOSE_UNCERTAIN')
+            subject._fail('OUTCOME_UNCERTAIN_CLOSE_UNCERTAIN')
         raise RuntimeError('private acknowledgement channel')
 
     monkeypatch.setattr(budget, 'close_pending_for_outcome_uncertainty',
@@ -3139,8 +3138,7 @@ def test_emergency_stop_abort_recovers_lost_acknowledgement(
     def lost_acknowledgement(**kwargs):
         original(**kwargs)
         if domain_error:
-            raise subject.ActivitySSEReconnectBudgetError(
-                'EMERGENCY_STOP_ABORT_UNCERTAIN')
+            subject._fail('EMERGENCY_STOP_ABORT_UNCERTAIN')
         raise RuntimeError('private acknowledgement channel')
 
     monkeypatch.setattr(budget, 'abort_pending_for_emergency_stop',
@@ -3402,8 +3400,7 @@ def test_emergency_stop_waiting_close_recovers_lost_acknowledgement(
     def lost_acknowledgement(**kwargs):
         original(**kwargs)
         if domain_error:
-            raise subject.ActivitySSEReconnectBudgetError(
-                'EMERGENCY_STOP_CLOSE_UNCERTAIN')
+            subject._fail('EMERGENCY_STOP_CLOSE_UNCERTAIN')
         raise RuntimeError('private acknowledgement channel')
 
     monkeypatch.setattr(budget, 'close_waiting_retry_for_emergency_stop',

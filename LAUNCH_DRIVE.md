@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.0 recovers each no-network reconnect safety closure from either a thrown/lost or malformed acknowledgement only through exact cold journal replay, while preserving OFF-by-default fail-closed behavior. The v0.339.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.1 corrects the production-prefixed fixed-diagnostic match for all three no-network reconnect safety closures, while preserving exact cold replay and OFF-by-default fail-closed behavior. The v0.340.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.340.1 production fixed-diagnostic recovery match
+
+The no-network closure wrapper now recognizes only the complete production-prefixed fixed acknowledgement-uncertainty diagnostic before exact cold-journal recovery. Generic lost-channel errors retain the same recovery, while unrelated typed confirmation, head, clock, stop and state denials remain authoritative. The correction applies to outcome-clock uncertainty retirement, pending-attempt emergency abort and retry-wait emergency close. It adds no provider request, credential access, cursor mutation or retry authority.
+
+The direct cursor/reconnect suites passed 394 tests and the complete Activity SSE set passed 509. Final local validation passed 4,362 tests with one expected non-Windows skip and one existing warning. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `07f2feb5104287b6d878b689c985b9ca9c11fbae0ff6be828461e0ac38f78b4b`; evidence SHA256 is `62def5726ba50a5ecdb79274564606e1a16da25992618e653a48c4d27d0a4325`. The exact 704-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.340.0 no-network safety-closure acknowledgement recovery
 

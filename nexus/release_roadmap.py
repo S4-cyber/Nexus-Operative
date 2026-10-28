@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.0'
+REVISION = '0.340.1'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -149,6 +149,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; no-network outcome-uncertainty and emergency-stop closures now also discard structurally returned acknowledgements and accept only an exact cold-replayed terminal journal record, while an uncommitted return or changed file remains fixed uncertainty' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; those no-network closures now recognize their production-prefixed fixed acknowledgement-uncertainty diagnostics before exact recovery, while unrelated typed denials remain authoritative' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -303,7 +307,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.0 makes the three no-network reconnect safety closures symmetric for lost and malformed acknowledgements. Outcome-clock uncertainty retirement, pending-attempt emergency abort and retry-wait emergency close now discard every returned field and accept only an independently cold-replayed exact terminal journal record. A forged return without a matching commit or a changed file remains fixed uncertainty. No provider request, credential access, cursor mutation, retry authority or UI control is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.1 corrects the typed fixed-diagnostic match used by the three no-network reconnect safety closures. Production-prefixed post-commit acknowledgement-uncertainty errors now enter the same exact cold-journal recovery path as generic lost acknowledgements, while unrelated confirmation, head, clock, stop and state denials remain authoritative. No provider request, credential access, cursor mutation, retry authority or UI control is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.7 (pre-release).** This build requires the returned transport-review digest to equal the exact value journaled by the durable cursor checkpoint. A valid-looking substituted hash fails closed. This is sampled local stability, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.8 (pre-release).** This build requires transport-bound v6 evidence not only for the normal checkpoint acknowledgement, but also for lost/malformed acknowledgement recovery and explicit no-network reconciliation. Legacy v1-v4 history remains readable but cannot retire a current reservation. This is sampled local stability, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.8 transport-bound recovery closure
+
+The v0.340.7 primary acknowledgement path required a v6 transport-bound checkpoint, but two recovery paths still accepted the backward-readable v4 reservation profile. Both now require `transport_input_bound` to be exactly true before retaining or retiring the current reservation. A legacy or mixed-version checkpoint fails closed, preserves review state and grants no new provider request or retry.
+
+Final local validation passed 4,376 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite passed 324, the direct cursor/checkpoint/reconnect set passed 425 and complete Activity SSE passed 523. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `78814f7447e35664f46dbc5d8b4b05a47bf62512535163f3a93173c8a120f0b7`; `validation/release_trials_0_340_8.json` SHA256 is `ca09a62b2b2a3f22871332b7167bd1132cab0e857b75590238d22ad14c783d01`. No provider request, credentials, cursor mutation, retry authority, UI control, order, funds or cloud authority was added. Exact-source v0.340.7 parent `8bff74772b0f2c4aa16902f2b45a5fc555fda1fa` exposed no connector-visible workflow or status records at review.
 
 ## v0.340.7 durable checkpoint transport-digest binding
 

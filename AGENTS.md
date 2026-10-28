@@ -1,6 +1,12 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.7 binds the transport-review digest to the exact durable cursor checkpoint through backward-readable v5/v6 profiles. A syntactically valid substituted transport hash now fails closed while the pending reservation remains available for explicit review. This stores only a digest and adds no raw transport, request, credential access, cursor mutation, retry authority, order, funds or cloud operation. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new Portal control or modifiable parameter.
+Current checkpoint: v0.340.8 requires transport-bound v6 evidence in lost or malformed checkpoint-acknowledgement recovery and explicit no-network reconciliation. Legacy v1-v4 histories remain readable, but cannot retire a current reconnect reservation without the durable transport digest added in v0.340.7. This adds no raw transport, request, credential access, cursor mutation, retry authority, order, funds or cloud operation. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new Portal control or modifiable parameter.
+
+## v0.340.8 transport-bound recovery closure
+
+The primary checkpoint acknowledgement path required a transport-bound v6 cursor record, but its lost/malformed-acknowledgement recovery helper and the explicit no-network reconciliation path still accepted a reservation-bound v4 record. A current reservation could therefore be retired after a mixed-version checkpoint without durable transport evidence. Both recovery boundaries now require `transport_input_bound` to be exactly true. Legacy v1-v4 records remain readable for inspection; disagreement retains the pending reservation for explicit review and performs no second provider request.
+
+Final local validation passed 4,376 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite passed 324, the direct cursor/checkpoint/reconnect set passed 425 and complete Activity SSE passed 523. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `78814f7447e35664f46dbc5d8b4b05a47bf62512535163f3a93173c8a120f0b7`; `validation/release_trials_0_340_8.json` SHA256 is `ca09a62b2b2a3f22871332b7167bd1132cab0e857b75590238d22ad14c783d01`. No UI or modifiable parameter changed, so all seven beginner tabs and black/bright-purple bottom-right help remain unchanged. Exact-source v0.340.7 parent `8bff74772b0f2c4aa16902f2b45a5fc555fda1fa` exposed no connector-visible workflow or status records at review.
 
 ## v0.340.7 durable checkpoint transport-digest binding
 

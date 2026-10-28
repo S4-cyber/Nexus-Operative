@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.7 requires the transport-review digest to match the exact durable cursor checkpoint. The v0.340.6 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.8 requires the transport-bound v6 profile in lost/malformed acknowledgement recovery and explicit no-network reconciliation. The v0.340.7 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.340.8 transport-bound recovery closure
+
+Current-attempt checkpoint recovery and explicit no-network reconciliation now require the durable cursor binding to report `transport_input_bound=true`. Legacy v1-v4 histories remain readable, but a reservation-bound v4 checkpoint cannot close a current reconnect budget. A disagreement preserves the pending reservation and performs no second provider request. No credential access, cursor mutation, automatic retry, order, funds or cloud authority is added.
+
+Final local validation passed 4,376 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 324, the direct cursor/checkpoint/reconnect set passed 425 and complete Activity SSE passed 523. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `78814f7447e35664f46dbc5d8b4b05a47bf62512535163f3a93173c8a120f0b7`; evidence SHA256 is `ca09a62b2b2a3f22871332b7167bd1132cab0e857b75590238d22ad14c783d01`. No UI or modifiable parameter changed.
 
 ## v0.340.7 durable checkpoint transport-digest binding
 

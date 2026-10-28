@@ -521,6 +521,7 @@ def _recover_checkpoint_binding_for_attempt(cursor_store, *, token,
             'CHECKPOINT_STATE_UNCERTAIN')
         if (retained['expected_head_sha256'] != expected_cursor_head or
                 retained['reconnect_reservation_bound'] is not True or
+                retained['transport_input_bound'] is not True or
                 retained['complete_review_counts_bound'] is not True or
                 retained['reconnect_reservation_sha256'] != sha(token)):
             raise ValueError
@@ -2474,8 +2475,10 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
         retained_expected = _digest(retained['expected_head_sha256'],
             'CURSOR_BINDING_REVIEW_FAILED')
         reservation_bound = retained['reconnect_reservation_bound']
+        transport_bound = retained['transport_input_bound']
         complete_counts_bound = retained['complete_review_counts_bound']
         if (type(reservation_bound) is not bool or
+                type(transport_bound) is not bool or
                 type(complete_counts_bound) is not bool):
             _fail('CURSOR_BINDING_REVIEW_FAILED')
         retained_reservation = (None if not reservation_bound else _digest(
@@ -2486,6 +2489,7 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             retained_expected ==
                 state['expected_cursor_head_sha256'] and
             reservation_bound is True and
+            transport_bound is True and
             complete_counts_bound is True and
             retained_reservation == sha(reservation_token))
     except Exception:

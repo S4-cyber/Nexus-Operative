@@ -3734,7 +3734,7 @@ def test_emergency_stop_waiting_close_rejects_pending_or_absent_episode(
 
 
 def committed_pending_checkpoint(tmp_path,
-        reservation_token=USE_RESERVED_TOKEN):
+        reservation_token=USE_RESERVED_TOKEN, transport_bound=True):
     initial, raw = segments()
     cursor, budget = stores(tmp_path)
     reserved = budget.begin(evaluated_at=1000,
@@ -3744,6 +3744,14 @@ def committed_pending_checkpoint(tmp_path,
     token = (reserved['token'] if reservation_token is USE_RESERVED_TOKEN
         else reservation_token)
     opener = Opener([raw])
+    if not transport_bound:
+        original_checkpoint = cursor.checkpoint
+
+        def legacy_checkpoint(*args, **kwargs):
+            kwargs.pop('transport_input_sha256', None)
+            return original_checkpoint(*args, **kwargs)
+
+        cursor.checkpoint = legacy_checkpoint
     checkpoint = subject.checkpoint.collect_and_checkpoint_once(
         KEY, SECRET, expected_account_id=ACCOUNT, initial_events=initial,
         reconnect_reason='CONNECTION_DROPPED', cursor_store=cursor,
@@ -3755,6 +3763,34 @@ def committed_pending_checkpoint(tmp_path,
         credential_check=lambda: True,
         reconnect_reservation_token=token)
     return cursor, budget, reserved, checkpoint, opener
+
+
+def test_current_attempt_recovery_rejects_legacy_transport_unbound_checkpoint(
+        tmp_path):
+    cursor, _, reserved, checkpoint, _ = committed_pending_checkpoint(
+        tmp_path, transport_bound=False)
+    assert not checkpoint['transport_input_bound']
+    assert not cursor.latest_checkpoint_binding()['transport_input_bound']
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        subject._recover_checkpoint_binding_for_attempt(cursor,
+            token=reserved['token'], expected_cursor_head=ZERO)
+
+
+def test_reconciliation_rejects_legacy_transport_unbound_checkpoint(tmp_path):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path, transport_bound=False)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_BINDING_DISAGREEMENT'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
 
 
 def test_exact_bound_checkpoint_recovers_pending_result_without_network(tmp_path):

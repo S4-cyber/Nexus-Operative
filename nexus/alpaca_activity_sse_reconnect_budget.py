@@ -1697,6 +1697,12 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
     cursor_binding = (cursor_store.path, cursor_store.account_sha256)
     budget_binding = (reconnect_budget.path,
         reconnect_budget.account_sha256)
+    file_prefix = 'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_'
+    try:
+        journal_paths = check_path_set(
+            (cursor_binding[0], budget_binding[0]), file_prefix)
+    except ValueError as error:
+        raise ActivitySSEReconnectBudgetError(str(error)) from None
 
     def require_store_bindings():
         if not _store_bindings_match(cursor_store, reconnect_budget,
@@ -1924,7 +1930,50 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                 checkpoint_binding['checkpoint_receipt_sha256'],
                 completed_at)):
         _fail('RESULT_RECORD_UNCERTAIN')
-    return dict(result, mode='EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT',
+
+    # The cursor and reconnect-budget commits form one returned success.  Once
+    # both writes are complete, retain one exact two-file sample across a cold
+    # semantic replay and the final acknowledgement boundary.  A same-inode
+    # rewrite must not turn independently valid reads into a mixed success.
+    try:
+        journal_identities = capture_file_identities(
+            journal_paths, file_prefix)
+        journal_fingerprints = capture_file_fingerprints(journal_paths,
+            (MAX_CURSOR_DATABASE_BYTES, MAX_DATABASE_BYTES), file_prefix)
+    except ValueError as error:
+        raise ActivitySSEReconnectBudgetError(str(error)) from None
+
+    def require_journal_files():
+        try:
+            require_file_identities(journal_paths, journal_identities,
+                file_prefix)
+            require_file_fingerprints(journal_paths,
+                (MAX_CURSOR_DATABASE_BYTES, MAX_DATABASE_BYTES),
+                journal_fingerprints, file_prefix)
+        except ValueError as error:
+            raise ActivitySSEReconnectBudgetError(str(error)) from None
+        require_store_bindings()
+
+    try:
+        confirmed_checkpoint_binding = _validated_checkpoint_binding(
+            cursor_store, cursor_store.latest_checkpoint_binding(),
+            'RESULT_RECORD_UNCERTAIN')
+        confirmed_result = _inspect_after_result_error(reconnect_budget,
+            'RESULT_RECORD_UNCERTAIN')
+    except ActivitySSEReconnectBudgetError:
+        raise
+    except Exception:
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_journal_files()
+    if (confirmed_checkpoint_binding != checkpoint_binding or
+            not _same_result_head(confirmed_result, stable_result) or
+            not _exact_checkpoint_result(confirmed_result,
+                reservation['token'], checkpoint_binding['head_sha256'],
+                checkpoint_binding['checkpoint_receipt_sha256'],
+                completed_at)):
+        _fail('RESULT_RECORD_UNCERTAIN')
+    acknowledgement = dict(result,
+        mode='EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT',
         reconnect_budget_policy=POLICY,
         reconnect_attempt_number=reservation['attempt'],
         reconnect_attempt_cap=MAX_ATTEMPTS,
@@ -1936,8 +1985,10 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         automatic_retry=False, automatic_reconnect_performed=False,
         automatic_backoff_verified=False, actual_vault_access=False,
         ledger_applied=False, **{flag: False for flag in FLAGS},
-        reconnect_budget_head_sha256=stable_result['head_sha256'],
+        reconnect_budget_head_sha256=confirmed_result['head_sha256'],
         reconnect_budget_completed=True)
+    require_journal_files()
+    return acknowledgement
 
 
 def abort_pending_reconnect_for_emergency_stop(*, reconnect_budget,

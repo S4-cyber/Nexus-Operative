@@ -333,6 +333,61 @@ def test_success_reserves_before_one_get_and_closes_episode(tmp_path):
             confirm_reconnect_attempt=True)
 
 
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_success_final_same_inode_rewrite_withholds_acknowledgement(
+        tmp_path, monkeypatch, store_name):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    if store_name == 'cursor':
+        original = subject._validated_checkpoint_binding
+        inspections = 0
+
+        def rewrite_before_final_replay(*args, **kwargs):
+            nonlocal inspections
+            inspections += 1
+            if inspections == 3:
+                with cursor.path.open('r+b', buffering=0) as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(subject, '_validated_checkpoint_binding',
+            rewrite_before_final_replay)
+    else:
+        original = subject._inspect_after_result_error
+        inspections = 0
+
+        def rewrite_before_final_replay(*args, **kwargs):
+            nonlocal inspections
+            inspections += 1
+            if inspections == 2:
+                with budget.path.open('r+b', buffering=0) as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(subject, '_inspect_after_result_error',
+            rewrite_before_final_replay)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    checkpoint_binding = cursor.latest_checkpoint_binding()
+    assert state['completed'] and state['pending_token'] is None
+    assert state['last_outcome'] == 'CHECKPOINT_COMMITTED'
+    monkeypatch.undo()
+    recovered = subject.reconcile_pending_checkpoint(cursor_store=cursor,
+        reconnect_budget=budget,
+        expected_budget_head=state['last_attempt_head_sha256'],
+        expected_checkpoint_head=checkpoint_binding['head_sha256'],
+        evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert recovered['duplicate_recovery']
+    assert not recovered['provider_request_performed']
+    assert len(opener.requests) == 1
+
+
 def test_initial_cursor_inspection_failure_is_sanitized_before_reservation(
         tmp_path, monkeypatch):
     cursor, budget = stores(tmp_path)

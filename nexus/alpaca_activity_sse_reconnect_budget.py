@@ -2880,6 +2880,19 @@ def fixture_report():
         except ActivitySSEReconnectBudgetError as error:
             automatic_uncertain_code = str(error)
         automatic_uncertain_state = automatic_uncertain_budget.inspect()
+        checkpoint_uncertain_cursor = ActivitySSECursorStore(
+            root / 'checkpoint-uncertain-cursor.sqlite3', account)
+        checkpoint_uncertain_budget = ActivitySSEReconnectBudget(
+            root / 'checkpoint-uncertain-budget.sqlite3', account)
+        checkpoint_uncertain_reserved = checkpoint_uncertain_budget.begin(
+            evaluated_at=7600, expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
+            confirm_reconnect_attempt=True)
+        checkpoint_uncertain_closed = _close_checkpoint_state_uncertainty(
+            checkpoint_uncertain_budget,
+            checkpoint_uncertain_reserved['token'], 7600)
+        checkpoint_uncertain_state = checkpoint_uncertain_budget.inspect()
         uncertain_budget = ActivitySSEReconnectBudget(
             root / 'uncertain-budget.sqlite3', account)
         uncertain_reserved = uncertain_budget.begin(evaluated_at=8000,
@@ -2904,7 +2917,8 @@ def fixture_report():
         encoded = json.dumps(
             [result, cold_budget, recovered, stopped, waiting_closed,
                 retry_stop_state, rate_state, service_state,
-                automatic_uncertain_state, uncertain_closed,
+                automatic_uncertain_state, checkpoint_uncertain_closed,
+                checkpoint_uncertain_state, uncertain_closed,
                 uncertain_replay, uncertain_state],
             sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
@@ -3010,6 +3024,21 @@ def fixture_report():
                 automatic_uncertain_state['last_detail_code'] ==
                     'OUTCOME_CLOCK_UNCERTAIN' and
                 automatic_uncertain_state['next_allowed_at'] == 0,
+            checkpoint_uncertainty_closes_without_retry_or_external_access=
+                not checkpoint_uncertain_closed['duplicate_result'] and
+                checkpoint_uncertain_closed['head_sha256'] ==
+                    checkpoint_uncertain_state['head_sha256'] and
+                checkpoint_uncertain_state['attempts'] == 1 and
+                checkpoint_uncertain_state['pending_token'] is None and
+                checkpoint_uncertain_state['review_required'] and
+                not checkpoint_uncertain_state['completed'] and
+                checkpoint_uncertain_state['last_evaluated_at'] == 7600 and
+                checkpoint_uncertain_state['last_outcome'] ==
+                    'CHECKPOINT_UNCERTAIN' and
+                checkpoint_uncertain_state['last_detail_code'] ==
+                    'CHECKPOINT_STATE_UNCERTAIN' and
+                checkpoint_uncertain_state['next_allowed_at'] == 0 and
+                not checkpoint_uncertain_cursor.path.exists(),
             uncertain_outcome_closes_without_retry_or_external_access=
                 uncertain_closed['pending_outcome_closed'] and
                 not uncertain_closed['duplicate_close'] and

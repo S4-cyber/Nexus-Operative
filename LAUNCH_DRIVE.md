@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.12 mandatory reconnect-uncertainty release evidence
+
+Require the Activity release profile to prove four terminal fail-closed reconnect states: outcome-clock regression closes from the last trusted admission time, checkpoint uncertainty closes without a proven cursor transition, explicit outcome uncertainty closes without retry or external access, and an exact close replay is byte-stable. The injected checkpoint-uncertainty trial creates no cursor database and retains `CHECKPOINT_UNCERTAIN` / `CHECKPOINT_STATE_UNCERTAIN`, review-required state and zero next-attempt time. Deliberately falsifying any of the four fields must reject the profile.
+
+This is an offline evidence-contract hardening, not new provider, account, retry, order, funds, live, cloud or release authority. It changes no Portal control or modifiable parameter. Keep all engagement permissions OFF by default and preserve limits, exits and the independent emergency-cut latch.
+
+Final local validation passed 4,387 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite plus release-profile acceptance passed 327 tests and the release/evidence/roadmap/version/workflow/packaging focus passed 160. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `c147e877423aed724eaa162be9da52364d93fb22392f0c5b041d6af12f2d477e`; `validation/release_trials_0_340_12.json` SHA256 is `f475e963bc3fe49248172c23057dcd4b1a69cad0530f36b3555c19c73555944f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. No UI or modifiable parameter changed. Exact-source v0.340.11 parent `3aef2f52cdbf79abfaf85908b26033a1f6a84e67` passed public security 40755802466 plus the separately budgeted browser and saved-evidence jobs; its complete regression and Windows packaging lanes were still running at the final prepublication check. Fresh v0.340.12 exact-source workflows remain mandatory.
+
 ## v0.340.11 terminal checkpoint-uncertainty closure
 
 A malformed checkpoint acknowledgement with no cursor transition now closes its exact reconnect reservation as terminal review-required checkpoint uncertainty instead of leaving a pending reservation that has no checkpoint to reconcile. It schedules no retry and performs no provider request. A proven cursor transition still preserves the transport-bound checkpoint and pending reservation for explicit no-network reconciliation. No UI control or modifiable parameter changed, and all engagement permissions remain OFF by default.

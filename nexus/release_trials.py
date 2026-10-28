@@ -1117,6 +1117,10 @@ def _validate(profile, result):
                 'provider_retry_after_extends_durable_backoff',
                 'provider_service_retry_after_extends_durable_backoff',
                 'attempt_completion_anchors_reconnect_cooldown',
+                'failed_clock_uncertainty_closes_from_trusted_admission',
+                'checkpoint_uncertainty_closes_without_retry_or_external_access',
+                'uncertain_outcome_closes_without_retry_or_external_access',
+                'uncertain_outcome_close_replay_is_byte_stable',
                 'no_sleep_loop_or_financial_authority',
                 'no_private_identifier_or_credential_echo')) and
             reconnect_budget['actual_storage_retained'] is False,

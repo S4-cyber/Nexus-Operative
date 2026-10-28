@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.12 mandatory reconnect-uncertainty release evidence
+
+The Activity release profile now requires four terminal reconnect-uncertainty proofs and rejects a false value for each one. The added injected checkpoint-uncertainty scenario closes review-required state without a cursor database, pending token, retry schedule or external access. Existing trusted-admission clock closure, explicit no-network outcome closure and byte-stable close replay are now also mandatory instead of informational fixture fields. This changes no runtime provider, account, order, funds, live, cloud or release authority.
+
+Final local validation passed 4,387 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite plus release-profile acceptance passed 327 tests and the release/evidence/roadmap/version/workflow/packaging focus passed 160. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `c147e877423aed724eaa162be9da52364d93fb22392f0c5b041d6af12f2d477e`; `validation/release_trials_0_340_12.json` SHA256 is `f475e963bc3fe49248172c23057dcd4b1a69cad0530f36b3555c19c73555944f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. No UI or modifiable parameter changed. Exact-source v0.340.11 parent `3aef2f52cdbf79abfaf85908b26033a1f6a84e67` passed public security 40755802466 plus the separately budgeted browser and saved-evidence jobs; its complete regression and Windows packaging lanes were still running at the final prepublication check. Fresh v0.340.12 exact-source workflows remain mandatory.
+
 ## v0.340.11 terminal checkpoint-uncertainty closure
 
 A malformed checkpoint acknowledgement with no cursor transition now durably closes its reservation as terminal review-required checkpoint uncertainty. It cannot schedule a retry or perform another provider request. Proven cursor transitions retain the exact split-state proof and explicit no-network reconciliation path. This grants no provider, credential, retry, order, funds, live, cloud or release authority.
@@ -22,7 +28,7 @@ The actual reachable-history scan reproduced HISTORY_BYTE_CAP: 9,422 objects tot
 
 No UI control or editable parameter is added. Preserve seven tabs, black/bright-purple bottom-right help, OFF engagement defaults, independent emergency fencing, bounded risk and exits. These fixes grant no provider, account, fee/hold/funds, routing, live/cloud or release acceptance. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. The current operational priority is a green Windows build followed by authorized connected-paper acceptance and sustained genuine-market trials.
 
-Current build: **0.340.11 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.340.12 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## v0.228.0 shared-local provider POST budget
 

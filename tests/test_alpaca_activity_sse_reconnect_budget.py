@@ -1395,6 +1395,32 @@ def test_checkpoint_ack_requires_exact_safety_shape(tmp_path, monkeypatch,
     assert state['last_outcome'] is None and not state['completed']
 
 
+def test_checkpoint_ack_cannot_coherently_promote_injected_transport(
+        tmp_path, monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def promoted_ack(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return {**result, 'source': 'PAPER_HTTPS_READS',
+            'actual_provider_access': True,
+            'actual_stream_connection': True,
+            'actual_reconnect_performed': True}
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        promoted_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+    assert cursor.latest_checkpoint_binding()['reconnect_reservation_bound']
+
+
 def test_forged_checkpoint_ack_cannot_complete_reconnect_budget(tmp_path,
         monkeypatch):
     cursor, budget = stores(tmp_path)

@@ -399,7 +399,7 @@ def _exact_pending_reservation(state, *, token, attempt, cursor_head,
 
 
 def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
-        expected_cursor_head):
+        expected_cursor_head, expected_actual_provider_access):
     """Prove a checkpoint acknowledgement against its durable journal.
 
     The checkpoint function is an internal boundary, but its return value is
@@ -407,7 +407,8 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
     authorize closing the reconnect budget.
     """
     try:
-        if type(result) is not dict:
+        if (type(result) is not dict or
+                type(expected_actual_provider_access) is not bool):
             raise TypeError
         acknowledged_head = _digest(result['checkpoint_head_sha256'])
         acknowledged_receipt = _digest(
@@ -428,8 +429,10 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
                     result['actual_stream_connection'] or
                 result['actual_reconnect_performed'] is not
                     result['actual_stream_connection'] or
+                result['actual_provider_access'] is not
+                    expected_actual_provider_access or
                 result['source'] != ('PAPER_HTTPS_READS'
-                    if result['actual_provider_access'] else
+                    if expected_actual_provider_access else
                     'INJECTED_UNATTESTED')):
             raise ValueError
         retained = _validated_checkpoint_binding(cursor_store,
@@ -2117,7 +2120,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
     require_store_bindings()
     try:
         checkpoint_binding = _checkpoint_binding_for_attempt(cursor_store,
-            result, token=token, expected_cursor_head=expected_cursor_head)
+            result, token=token, expected_cursor_head=expected_cursor_head,
+            expected_actual_provider_access=opener is None)
     except ActivitySSEReconnectBudgetError:
         require_store_bindings()
         after_head = _cursor_head_for_attempt(cursor_store)

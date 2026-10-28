@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.3 binds provider-request authority to a validated pre-BEGIN budget snapshot so corrupted replay flags cannot restore duplicate request authority. The v0.340.2 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.4 binds checkpoint transport-provenance claims to the actual opener boundary so an injected fixture cannot be relabelled as provider HTTPS access. The v0.340.3 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.340.4 checkpoint transport-provenance binding
+
+The coordinator now compares the checkpoint return's provider-access, stream-connection, reconnect and source fields with whether it actually supplied an injected opener. A coherent four-field promotion is rejected before the reconnect budget closes, while the exact durable cursor binding remains required. This prevents a synthetic fixture from being reported as provider access without adding network, credentials, cursor mutation, automatic retry or authority.
+
+Final local validation passed 4,368 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 318, direct cursor/reconnect passed 412 and complete Activity SSE passed 515. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `9b152f9821eb7efb6e039a9a98edfc48d1d3022a7d951132ad822b3ecc3bc874`; evidence SHA256 is `5594dc98eb229d2c836487dcf5565dc6567ed764e2077a2a0f92f6bd54dae07b`. No UI or modifiable parameter changed.
 
 ## v0.340.3 durable reservation-freshness binding
 

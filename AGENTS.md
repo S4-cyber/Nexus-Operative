@@ -1,6 +1,12 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.3 binds reconnect provider-request authority to a totally validated budget snapshot captured before BEGIN. An already-pending reservation cannot regain fresh-request authority through corrupted replay acknowledgement booleans, and a reservation that appears concurrently after the snapshot fails closed. This removes duplicate provider-request authority and adds no request, credential access, cursor mutation, retry authority, order, funds or cloud operation. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new Portal control or modifiable parameter.
+Current checkpoint: v0.340.4 binds checkpoint transport-provenance acknowledgement fields to the coordinator's actual opener boundary. A self-consistent corrupted return cannot relabel an injected fixture as provider HTTPS access; the exact durable cursor binding remains mandatory. This adds no request, credential access, cursor mutation, retry authority, order, funds or cloud operation. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new Portal control or modifiable parameter.
+
+## v0.340.4 checkpoint transport-provenance binding
+
+The reconnect coordinator previously required internally consistent provider-access, stream-connection, reconnect and source fields, but did not compare them with whether the call actually used the injected opener seam. A corrupted checkpoint return could flip all four fields coherently and falsely report actual provider HTTPS access while still matching the durable cursor record. The coordinator now derives the expected provenance from its own call boundary and rejects any disagreement before closing the reconnect result.
+
+Final local validation passed 4,368 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite passed 318, direct cursor/reconnect passed 412 and complete Activity SSE passed 515. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `9b152f9821eb7efb6e039a9a98edfc48d1d3022a7d951132ad822b3ecc3bc874`; `validation/release_trials_0_340_4.json` SHA256 is `5594dc98eb229d2c836487dcf5565dc6567ed764e2077a2a0f92f6bd54dae07b`. No UI or modifiable parameter changed, so all seven beginner tabs and black/bright-purple bottom-right help remain unchanged. Exact-source v0.340.3 parent `3066f83a04c696524bd2351ba9c907d14320f98d` exposed no connector-visible workflow or status records at review.
 
 ## v0.340.3 durable reservation-freshness binding
 

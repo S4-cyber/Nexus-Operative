@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.3. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.4. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.3 binds reconnect provider-request authority to a totally validated budget snapshot captured before BEGIN. A replayed pending reservation cannot regain fresh-request authority through corrupted acknowledgement booleans; a concurrent reservation appearing after the snapshot also fails closed. No new provider request, credential access, cursor mutation, retry authority or UI control is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.4 binds checkpoint transport-provenance acknowledgement fields to the actual coordinator call boundary. An injected opener cannot be relabelled as provider HTTPS access by a self-consistent corrupted return; the exact durable cursor binding remains required before the reconnect result can close. No new provider request, credential access, cursor mutation, retry authority or UI control is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

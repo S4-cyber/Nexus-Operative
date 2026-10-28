@@ -1,12 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
 Assessment date: 2026-10-28 (America/Los_Angeles).
-Parent source reviewed: `83ae6d7050d4a0db67f03318eed217582bfe1e7a` (v0.340.4), whose published tree matched the prior locally tested tree. The GitHub connector exposed no workflow or status records for that exact commit, so no v0.340.4 hosted pass is claimed. v0.340.5 is the current candidate and requires fresh exact-source checks.
+Parent source reviewed: `71cc042dae3fe2ad827141e2e7cd595b0a0400b1` (v0.340.5), whose published tree matched the prior locally tested tree. The GitHub connector exposed no workflow or status records for that exact commit, so no v0.340.5 hosted pass is claimed. v0.340.6 is the current candidate and requires fresh exact-source checks.
 This is a planning record, not a release authorization or a change to runtime permissions.
 
-Engineering checkpoint note: v0.340.5 rejects noncanonical checkpoint acknowledgement mappings before any returned fields can cross the reconnect boundary. Exact keys, fixed policy/limitations, digest syntax and bounded review-count relationships supplement the durable cursor binding. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
+Engineering checkpoint note: v0.340.6 binds the reconnect review digest and every returned count to the exact durable cursor checkpoint. Internal plausibility is no longer sufficient for a coherently altered acknowledgement. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or sustained acceptance. The carried-forward percentage and conditional planning windows are unchanged.
 
-Local candidate evidence: final local validation passed 4,369 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 319, direct cursor/reconnect passed 413 and complete Activity SSE passed 516. All sixteen profiles and saved-evidence verification matched 387 source files / `7cec99b40e0a07fef52fa8fac01fe1ecd048cb8c20562492be6a74c29a0be068`; v0.340.5 evidence SHA256 is `897d367e563e7f16627e58d5c03ecda0467719eab9d2a80228ede7419a5688ec`. Local Gitleaks is unavailable. Fresh exact-source v0.340.5 hosted workflows and every independent gate remain open.
+Local candidate evidence: final local validation passed 4,370 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 320, direct cursor/reconnect passed 414 and complete Activity SSE passed 517. All sixteen profiles and saved-evidence verification matched 387 source files / `cf57f1113809d5dbfe655c30108e7cd9e60f55b038d2412ea064b1641e1eadd0`; v0.340.6 evidence SHA256 is `f8496f2e0d78c88e409b9dddd7312ea80902f019b30b5d65aea5eba4973e3272`. Local Gitleaks is unavailable. Fresh exact-source v0.340.6 hosted workflows and every independent gate remain open.
 
 ## Current assessment
 
@@ -15,7 +15,7 @@ Local candidate evidence: final local validation passed 4,369 tests with one exp
 - Fully accepted major production stages: **0/9**. That is 0% of complete stage signoffs, not 0% working software. A calibrated numerical operational-readiness score is not established.
 - Local research, the numerical council and an explicitly engaged fixed-BTC virtual trading experiment exist. Learned council signals do not yet direct orders.
 - The next major operational gate is connected broker-paper execution and actual-account acceptance. A production broker submission adapter, secure funding, governed live operation and computer-off deployment remain unfinished.
-- Exact v0.340.4 parent `83ae6d7050d4a0db67f03318eed217582bfe1e7a` had no connector-visible workflow or status records at review. Fresh v0.340.5 hosted results remain required; no parent result transfers to this candidate.
+- Exact v0.340.5 parent `71cc042dae3fe2ad827141e2e7cd595b0a0400b1` had no connector-visible workflow or status records at review. Fresh v0.340.6 hosted results remain required; no parent result transfers to this candidate.
 
 ## Roadmap coverage
 

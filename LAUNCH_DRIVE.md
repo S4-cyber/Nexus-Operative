@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.5 rejects any noncanonical checkpoint acknowledgement before its fields can cross the reconnect boundary. The v0.340.4 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.340.6 requires the reconnect review digest and all four counts to match the exact durable cursor checkpoint. The v0.340.5 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.340.6 durable checkpoint review-count binding
+
+The complete cursor checkpoint now returns the journaled review-input digest and safe aggregate counts in its public binding, never its private cursor. The reconnect coordinator requires the acknowledgement digest and every count to equal that durable record, in addition to the existing exact-schema and arithmetic checks. A coherent mutation is rejected with fixed checkpoint-state uncertainty while the pending reservation remains available for explicit no-network reconciliation. No additional request, credential access, cursor mutation, automatic retry or authority is added.
+
+Final local validation passed 4,370 tests with one expected non-Windows skip and one existing warning; the reconnect-budget suite passed 320, direct cursor/reconnect passed 414 and complete Activity SSE passed 517. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `cf57f1113809d5dbfe655c30108e7cd9e60f55b038d2412ea064b1641e1eadd0`; evidence SHA256 is `f8496f2e0d78c88e409b9dddd7312ea80902f019b30b5d65aea5eba4973e3272`. No UI or modifiable parameter changed.
 
 ## v0.340.5 canonical checkpoint acknowledgement boundary
 

@@ -399,7 +399,7 @@ class ActivitySSECursorStore:
             **{flag: False for flag in FLAGS})
 
     def latest_checkpoint_binding(self):
-        """Return hashes for the latest checkpoint, never its private cursor."""
+        """Return bounded evidence for the latest checkpoint, never its cursor."""
         return self._latest_checkpoint_binding()
 
     def _latest_checkpoint_binding(self):
@@ -443,6 +443,12 @@ class ActivitySSECursorStore:
             expected_head_sha256=scope['expected_head_sha256'],
             checkpoint_receipt_sha256=latest['body']['receipt_sha256'],
             cursor_sha256=sha(scope['next_cursor']),
+            review_input_sha256=scope['review_input_sha256'],
+            initial_events_reviewed=scope['initial_events_reviewed'],
+            replay_events_reviewed=scope['replay_events_reviewed'],
+            redelivered_events_deduplicated=
+                scope['redelivered_events_deduplicated'],
+            new_events_processed=scope['new_events_processed'],
             reconnect_reservation_sha256=
                 scope.get('reconnect_reservation_sha256'),
             reconnect_reservation_bound=

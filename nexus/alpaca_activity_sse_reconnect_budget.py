@@ -93,6 +93,7 @@ CHECKPOINT_ACK_KEYS = frozenset((
 CHECKPOINT_BINDING_KEYS = frozenset((
     'mode', 'status', 'account_sha256', 'head_sha256',
     'expected_head_sha256', 'checkpoint_receipt_sha256', 'cursor_sha256',
+    'review_input_sha256', *CHECKPOINT_ACK_COUNTS,
     'reconnect_reservation_sha256', 'reconnect_reservation_bound',
     'complete_review_counts_bound',
     'read_only', *CHECKPOINT_BINDING_FALSE))
@@ -368,6 +369,12 @@ def _validated_checkpoint_binding(cursor_store, value, code):
         _digest(value['expected_head_sha256'])
         _digest(value['checkpoint_receipt_sha256'])
         _digest(value['cursor_sha256'])
+        _digest(value['review_input_sha256'])
+        counts = tuple(value[field] for field in CHECKPOINT_ACK_COUNTS)
+        if (any(type(item) is not int or not 0 < item <= 2000
+                    for item in counts) or
+                counts[2] + counts[3] != counts[1]):
+            raise ValueError
         bound = value['reconnect_reservation_bound']
         complete = value['complete_review_counts_bound']
         if type(bound) is not bool or type(complete) is not bool:
@@ -476,6 +483,10 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
                 retained_expected != expected_cursor_head or
                 retained_receipt != acknowledged_receipt or
                 retained_cursor != acknowledged_cursor or
+                retained['review_input_sha256'] !=
+                    result['reconnect_input_sha256'] or
+                any(retained[field] != result[field]
+                    for field in CHECKPOINT_ACK_COUNTS) or
                 retained_reservation != sha(token)):
             raise ValueError
     except Exception:

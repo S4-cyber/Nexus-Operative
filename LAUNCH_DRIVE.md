@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.13 byte-stable checkpoint reconciliation replay evidence
+
+Require the Activity release profile to exercise the duplicate path after one successful explicit reconciliation of a transport-bound cursor checkpoint and pending reconnect budget. Preserve the completed budget bytes, replay with the exact original budget/checkpoint heads, and require `duplicate_recovery`, no result-acknowledgement recovery, no automatic retry, no second provider request and an unchanged durable budget journal. Deliberately falsifying this field must reject the profile.
+
+This is offline evidence-contract hardening for durable reconciliation, not new provider, account, retry, order, funds, live, cloud or release authority. It changes no Portal control or modifiable parameter. Keep all engagement permissions OFF by default and preserve limits, exits and the independent emergency-cut latch.
+
+Final local validation passed 4,387 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite plus release-profile acceptance passed 327 tests and the release/evidence/roadmap/version/workflow/packaging focus passed 160. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `416eddc37b9fb940532cb47cbadcd2b0f9fb7d5525c620f41ab78e7a47abd5e8`; `validation/release_trials_0_340_13.json` SHA256 is `967b8e1994ad9d762186653bf695ff20bb0c56edfd3d0343ac1f2a8da2f9ef47`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. No UI or modifiable parameter changed. Exact-source v0.340.12 parent `5a5ecc5f28565b5f31a900d498366d7387d97bc0` passed public security 40759560258 plus the separately budgeted browser and saved-evidence jobs; its complete regression and Windows build lanes were still running at the final prepublication check. Fresh v0.340.13 exact-source workflows remain mandatory.
+
 ## v0.340.12 mandatory reconnect-uncertainty release evidence
 
 Require the Activity release profile to prove four terminal fail-closed reconnect states: outcome-clock regression closes from the last trusted admission time, checkpoint uncertainty closes without a proven cursor transition, explicit outcome uncertainty closes without retry or external access, and an exact close replay is byte-stable. The injected checkpoint-uncertainty trial creates no cursor database and retains `CHECKPOINT_UNCERTAIN` / `CHECKPOINT_STATE_UNCERTAIN`, review-required state and zero next-attempt time. Deliberately falsifying any of the four fields must reject the profile.

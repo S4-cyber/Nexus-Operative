@@ -2779,6 +2779,16 @@ def fixture_report():
             expected_budget_head=reserved['head_sha256'],
             expected_checkpoint_head=committed['checkpoint_head_sha256'],
             evaluated_at=2001, confirm_checkpoint_reconciliation=True)
+        recovery_bytes = recovery_budget.path.read_bytes()
+        recovered_replay = reconcile_pending_checkpoint(cursor_store=
+            ActivitySSECursorStore(recovery_cursor.path, account),
+            reconnect_budget=ActivitySSEReconnectBudget(
+                recovery_budget.path, account),
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=committed['checkpoint_head_sha256'],
+            evaluated_at=2002, confirm_checkpoint_reconciliation=True)
+        recovery_replay_unchanged = \
+            recovery_budget.path.read_bytes() == recovery_bytes
         stop_budget = ActivitySSEReconnectBudget(
             root / 'stop-budget.sqlite3', account)
         stop_reserved = stop_budget.begin(evaluated_at=3000,
@@ -2915,7 +2925,8 @@ def fixture_report():
                 confirm_no_retry=True)
         uncertain_state = uncertain_budget.inspect()
         encoded = json.dumps(
-            [result, cold_budget, recovered, stopped, waiting_closed,
+            [result, cold_budget, recovered, recovered_replay, stopped,
+                waiting_closed,
                 retry_stop_state, rate_state, service_state,
                 automatic_uncertain_state, checkpoint_uncertain_closed,
                 checkpoint_uncertain_state, uncertain_closed,
@@ -2956,9 +2967,20 @@ def fixture_report():
                     cold_cursor['head_sha256'],
             pending_checkpoint_result_recovers_without_second_get=
                 recovered['pending_checkpoint_reconciled'] and
+                not recovered['duplicate_recovery'] and
                 not recovered['provider_request_performed'] and
                 len(recovery_opener.requests) == 1 and
                 recovery_budget.inspect()['completed'],
+            checkpoint_reconciliation_replay_is_byte_stable=
+                recovered_replay['pending_checkpoint_reconciled'] and
+                recovered_replay['duplicate_recovery'] and
+                not recovered_replay['result_acknowledgement_recovered'] and
+                not recovered_replay['provider_request_performed'] and
+                not recovered_replay['automatic_retry'] and
+                recovery_replay_unchanged and
+                recovered_replay['reconnect_budget_head_sha256'] ==
+                    recovery_budget.inspect()['head_sha256'] and
+                len(recovery_opener.requests) == 1,
             emergency_stop_retires_pending_without_external_access=
                 stopped['pending_reconnect_aborted'] and
                 len(stop_samples) == 2 and

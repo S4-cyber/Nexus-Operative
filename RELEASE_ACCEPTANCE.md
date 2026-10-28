@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.13 byte-stable checkpoint reconciliation replay evidence
+
+The Activity release profile now requires an exact duplicate reconciliation after one transport-bound pending checkpoint is completed. The replay must leave the durable reconnect-budget bytes unchanged, identify itself as duplicate recovery, avoid result-acknowledgement recovery and automatic retry, and preserve the single original provider request. A deliberately false replay field must reject the profile. This changes no runtime provider, account, order, funds, live, cloud or release authority.
+
+Final local validation passed 4,387 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite plus release-profile acceptance passed 327 tests and the release/evidence/roadmap/version/workflow/packaging focus passed 160. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `416eddc37b9fb940532cb47cbadcd2b0f9fb7d5525c620f41ab78e7a47abd5e8`; `validation/release_trials_0_340_13.json` SHA256 is `967b8e1994ad9d762186653bf695ff20bb0c56edfd3d0343ac1f2a8da2f9ef47`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. No UI or modifiable parameter changed. Exact-source v0.340.12 parent `5a5ecc5f28565b5f31a900d498366d7387d97bc0` passed public security 40759560258 plus the separately budgeted browser and saved-evidence jobs; its complete regression and Windows build lanes were still running at the final prepublication check. Fresh v0.340.13 exact-source workflows remain mandatory.
+
 ## v0.340.12 mandatory reconnect-uncertainty release evidence
 
 The Activity release profile now requires four terminal reconnect-uncertainty proofs and rejects a false value for each one. The added injected checkpoint-uncertainty scenario closes review-required state without a cursor database, pending token, retry schedule or external access. Existing trusted-admission clock closure, explicit no-network outcome closure and byte-stable close replay are now also mandatory instead of informational fixture fields. This changes no runtime provider, account, order, funds, live, cloud or release authority.
@@ -28,7 +34,7 @@ The actual reachable-history scan reproduced HISTORY_BYTE_CAP: 9,422 objects tot
 
 No UI control or editable parameter is added. Preserve seven tabs, black/bright-purple bottom-right help, OFF engagement defaults, independent emergency fencing, bounded risk and exits. These fixes grant no provider, account, fee/hold/funds, routing, live/cloud or release acceptance. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. The current operational priority is a green Windows build followed by authorized connected-paper acceptance and sustained genuine-market trials.
 
-Current build: **0.340.12 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.340.13 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## v0.228.0 shared-local provider POST budget
 

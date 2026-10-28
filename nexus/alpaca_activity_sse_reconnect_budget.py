@@ -458,7 +458,7 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
                     for field in CHECKPOINT_ACK_TRUE) or
                 any(result[field] is not False
                     for field in CHECKPOINT_ACK_FALSE + FLAGS) or
-                type(result['duplicate_checkpoint']) is not bool or
+                result['duplicate_checkpoint'] is not False or
                 type(result['actual_provider_access']) is not bool or
                 type(result['actual_stream_connection']) is not bool or
                 type(result['actual_reconnect_performed']) is not bool or

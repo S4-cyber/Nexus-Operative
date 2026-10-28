@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Candidate update on 2026-10-28
+
+Current candidate: v0.340.10, based on published v0.340.9 source `626300003a00ad14427158cfc0e7d3c6d9525020`. The v0.340.9 Windows portability and full-history audit repairs are retained. v0.340.10 adds only a fail-closed reconnect checkpoint-ownership correction: duplicate acknowledgement from the one fresh request-authorized reservation preserves the exact split state for explicit no-network reconciliation and performs no second provider request. Fresh exact-source hosted results remain required.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
+
+Final local validation passed 4,386 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite passed 325, the direct cursor/checkpoint/reconnect set passed 426, the complete Activity SSE set passed 524 and the merged Windows/audit/reconnect/release set passed 678. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `93126997f77d60b1c4b78902f1db0f1abcc3a47e14b7ee6d7b0e8c55d8098051`; `validation/release_trials_0_340_10.json` SHA256 is `38503e3167e123bc2295a2d4fe887835a31958fb2da1aa9af622398a0475d511`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax, all fourteen Node controllers and 23 packaging/workflow contracts passed. No UI or modifiable parameter changed. Exact-source v0.340.9 parent `626300003a00ad14427158cfc0e7d3c6d9525020` was preserved; fresh v0.340.10 hosted and native Windows results remain required.
+
 ## Reassessment on 2026-10-28
 
 Current candidate: v0.340.9, based on v0.340.8 source ced0884bb08acad99654042ea8a2c7f24a2678b9. The October 28 hosted checks exposed Windows backup/metadata defects and a reached full-history audit budget. Repairs are under fresh validation; the failed source is not a verified installer checkpoint. There is no measured improvement to the 0/9 fully accepted major-stage count. The 40% engineering estimate is a carried-forward low-confidence baseline, not a current operational-readiness score.

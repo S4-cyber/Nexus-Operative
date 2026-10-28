@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.10 fresh-reservation checkpoint ownership
+
+The sole fresh request-authorized reconnect reservation now rejects a duplicate checkpoint acknowledgement. Ambiguous cursor-write ownership preserves the transport-bound checkpoint and pending reservation for explicit no-network reconciliation; it cannot automatically close the budget and it performs no second provider request. The v0.340.9 Windows portability and complete-history audit repairs remain intact. No UI control or modifiable parameter changed, and all engagement permissions remain OFF by default.
+
+Final local validation passed 4,386 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite passed 325, the direct cursor/checkpoint/reconnect set passed 426, the complete Activity SSE set passed 524 and the merged Windows/audit/reconnect/release set passed 678. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `93126997f77d60b1c4b78902f1db0f1abcc3a47e14b7ee6d7b0e8c55d8098051`; `validation/release_trials_0_340_10.json` SHA256 is `38503e3167e123bc2295a2d4fe887835a31958fb2da1aa9af622398a0475d511`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax, all fourteen Node controllers and 23 packaging/workflow contracts passed. No UI or modifiable parameter changed. Exact-source v0.340.9 parent `626300003a00ad14427158cfc0e7d3c6d9525020` was preserved; fresh v0.340.10 hosted and native Windows results remain required.
+
 ## v0.340.9 Windows portability and complete-history audit repair
 
 Exact v0.340.8 source ced0884bb08acad99654042ea8a2c7f24a2678b9 failed security 40735154460, safety 40735154501 and Windows 40735154550. The separate Windows offline-evidence and rendered-browser jobs passed. Safety regression reported five backup failures after 4,353 passes/19 skips; the other Windows lane reported 596 failures/3,762 passes/19 skips, dominated by the shared file-fingerprint boundary. Packaging was skipped, so no current verified installer follows from these runs.

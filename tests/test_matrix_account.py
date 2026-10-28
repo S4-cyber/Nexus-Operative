@@ -413,7 +413,10 @@ def test_reader_blocked_commit_rolls_back_and_recovers_exactly(account,monkeypat
 
 
 def test_exclusive_contention_bounds_history_and_recovers_exactly(account,monkeypatch):
-    path,_=account;m.capture(quote)
+    path,_=account
+    retained_usage=m.shutil.disk_usage(path)
+    monkeypatch.setattr(m.shutil,'disk_usage',lambda _:retained_usage)
+    m.capture(quote)
     journal=path/'matrix_observations.sqlite3';expected=m.history('all');before=journal.read_bytes()
     monkeypatch.setattr(m,'DB_BUSY_TIMEOUT_MS',25)
     with sqlite3.connect(journal) as blocker:

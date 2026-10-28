@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.10 fresh-reservation checkpoint ownership
+
+A fresh request-authorized reconnect reservation rejects duplicate checkpoint acknowledgements and preserves ambiguous split state for explicit no-network reconciliation. This performs no second provider request and grants no provider, credential, retry, order, funds, live, cloud or release authority. The v0.340.9 Windows portability and full-history audit repairs remain part of the candidate and require fresh exact-source hosted validation.
+
+Final local validation passed 4,386 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget suite passed 325, the direct cursor/checkpoint/reconnect set passed 426, the complete Activity SSE set passed 524 and the merged Windows/audit/reconnect/release set passed 678. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `93126997f77d60b1c4b78902f1db0f1abcc3a47e14b7ee6d7b0e8c55d8098051`; `validation/release_trials_0_340_10.json` SHA256 is `38503e3167e123bc2295a2d4fe887835a31958fb2da1aa9af622398a0475d511`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax, all fourteen Node controllers and 23 packaging/workflow contracts passed. No UI or modifiable parameter changed. Exact-source v0.340.9 parent `626300003a00ad14427158cfc0e7d3c6d9525020` was preserved; fresh v0.340.10 hosted and native Windows results remain required.
+
 ## v0.340.9 Windows portability and complete-history audit repair
 
 Exact v0.340.8 source ced0884bb08acad99654042ea8a2c7f24a2678b9 failed security 40735154460, safety 40735154501 and Windows 40735154550. The separate Windows offline-evidence and rendered-browser jobs passed. Safety regression reported five backup failures after 4,353 passes/19 skips; the other Windows lane reported 596 failures/3,762 passes/19 skips, dominated by the shared file-fingerprint boundary. Packaging was skipped, so no current verified installer follows from these runs.
@@ -10,7 +16,7 @@ The actual reachable-history scan reproduced HISTORY_BYTE_CAP: 9,422 objects tot
 
 No UI control or editable parameter is added. Preserve seven tabs, black/bright-purple bottom-right help, OFF engagement defaults, independent emergency fencing, bounded risk and exits. These fixes grant no provider, account, fee/hold/funds, routing, live/cloud or release acceptance. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. The current operational priority is a green Windows build followed by authorized connected-paper acceptance and sustained genuine-market trials.
 
-Current build: **0.340.9 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
+Current build: **0.340.10 prerelease**. Production 1.0 remains blocked. This checklist records evidence scope, not runtime permission. No claim that an environment is perfect or a strategy will be profitable follows from passing these checks.
 
 ## v0.228.0 shared-local provider POST budget
 

@@ -1395,6 +1395,37 @@ def test_checkpoint_ack_requires_exact_safety_shape(tmp_path, monkeypatch,
     assert state['last_outcome'] is None and not state['completed']
 
 
+def test_fresh_reservation_rejects_duplicate_checkpoint_acknowledgement(
+        tmp_path, monkeypatch):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def duplicate_acknowledgement(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return {**result, 'duplicate_checkpoint': True}
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        duplicate_acknowledgement)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    binding = cursor.latest_checkpoint_binding()
+    state = budget.inspect()
+    assert binding['transport_input_bound']
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+    reconciled = subject.reconcile_pending_checkpoint(cursor_store=cursor,
+        reconnect_budget=budget, expected_budget_head=state['head_sha256'],
+        expected_checkpoint_head=binding['head_sha256'], evaluated_at=1001,
+        confirm_checkpoint_reconciliation=True)
+    assert reconciled['pending_checkpoint_reconciled']
+    assert not reconciled['provider_request_performed']
+    assert len(opener.requests) == 1 and budget.inspect()['completed']
+
+
 def test_checkpoint_ack_cannot_coherently_promote_injected_transport(
         tmp_path, monkeypatch):
     _, raw = segments()

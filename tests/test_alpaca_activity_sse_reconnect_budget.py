@@ -1579,7 +1579,7 @@ def test_success_rejects_uncommitted_result_acknowledgement_failure(
 
 @pytest.mark.parametrize('kind', ('mapping_subclass', 'extra_field',
     'promoted_authority'))
-def test_success_rejects_noncanonical_budget_result_acknowledgement(
+def test_success_recovers_noncanonical_budget_result_acknowledgement(
         tmp_path, monkeypatch, kind):
     class BudgetMapping(dict):
         pass
@@ -1599,10 +1599,9 @@ def test_success_rejects_noncanonical_budget_result_acknowledgement(
         return {**value, 'release_approved': True}
 
     monkeypatch.setattr(budget, 'finish', altered_finish)
-    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
-            match='RESULT_RECORD_UNCERTAIN'):
-        call(tmp_path, opener, stores=(cursor, budget))
+    result, _, _ = call(tmp_path, opener, stores=(cursor, budget))
     assert len(opener.requests) == 1
+    assert result['result_acknowledgement_recovered']
     state = original_inspect()
     assert state['completed'] and state['pending_token'] is None
 
@@ -1879,6 +1878,27 @@ def test_failure_recovers_exact_lost_result_acknowledgement(
     assert state['last_outcome'] == 'RETRY_REQUIRED'
     assert state['last_evaluated_at'] == 1007
     assert state['last_applied_backoff_seconds'] == 1
+    assert state['next_allowed_at'] == 1008
+
+
+def test_failure_recovers_malformed_result_acknowledgement(
+        tmp_path, monkeypatch):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([TimeoutError('private')])
+    original = budget.finish
+
+    def malformed_ack(*args, **kwargs):
+        return {**original(*args, **kwargs), 'release_approved': True}
+
+    monkeypatch.setattr(budget, 'finish', malformed_ack)
+    with pytest.raises(ValueError, match='TRANSPORT_UNAVAILABLE'):
+        call(tmp_path, opener, stores=(cursor, budget),
+            outcome_clock=lambda: 1007)
+    state = budget.inspect()
+    assert len(opener.requests) == 1
+    assert state['pending_token'] is None and not state['review_required']
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert state['last_evaluated_at'] == 1007
     assert state['next_allowed_at'] == 1008
 
 
@@ -3944,7 +3964,7 @@ def test_reconciliation_budget_view_cannot_promote_authority(tmp_path,
 
 @pytest.mark.parametrize('kind', ('mapping_subclass', 'extra_field',
     'promoted_authority'))
-def test_reconciliation_rejects_noncanonical_budget_result_acknowledgement(
+def test_reconciliation_recovers_noncanonical_budget_result_acknowledgement(
         tmp_path, monkeypatch, kind):
     class BudgetMapping(dict):
         pass
@@ -3963,14 +3983,14 @@ def test_reconciliation_rejects_noncanonical_budget_result_acknowledgement(
         return {**value, 'release_approved': True}
 
     monkeypatch.setattr(budget, 'finish', altered_finish)
-    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
-            match='RECOVERY_RESULT_UNCERTAIN'):
-        subject.reconcile_pending_checkpoint(cursor_store=cursor,
-            reconnect_budget=budget,
-            expected_budget_head=reserved['head_sha256'],
-            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
-            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    result = subject.reconcile_pending_checkpoint(cursor_store=cursor,
+        reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'],
+        expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+        evaluated_at=1001, confirm_checkpoint_reconciliation=True)
     assert len(opener.requests) == 1
+    assert result['result_acknowledgement_recovered']
+    assert not result['provider_request_performed']
     state = original_inspect()
     assert state['completed'] and state['pending_token'] is None
 

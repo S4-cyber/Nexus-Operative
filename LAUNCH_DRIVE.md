@@ -2,7 +2,13 @@
 
 ## Delivery planning update — 2026-10-28
 
-See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.338.0 extends the exact lost-acknowledgement split-state proof to malformed Activity SSE checkpoint returns while preserving OFF-by-default fail-closed behavior. The v0.337.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+See [RELEASE_FORECAST.md](RELEASE_FORECAST.md) for milestone coverage, carried-forward rough implementation estimates and conditional delivery windows. v0.339.0 recovers a terminal reconnect-budget result from either a thrown/lost or malformed acknowledgement only through exact cold journal replay, while preserving OFF-by-default fail-closed behavior. The v0.338.0 parent exposed no connector-visible workflow or status records, so no hosted pass transfers. Implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. Prioritize actual-account paper submission/reconciliation acceptance and sustained trials.
+
+## v0.339.0 malformed reconnect-budget result acknowledgement recovery
+
+A reconnect-budget result return is transport, not durable evidence. The coordinator now treats a malformed result acknowledgement exactly like a thrown/lost acknowledgement: it ignores every returned field, cold-replays the complete private budget journal, and lets the existing exact-result and two-journal stability proofs decide whether the write committed. This applies to successful checkpoints, failed-attempt retry/review scheduling, trusted-reservation-time uncertainty closure and explicit no-network checkpoint reconciliation. Uncommitted or mismatched state remains fixed uncertainty; at most one provider request is made and explicit reconciliation makes none.
+
+The direct cursor/reconnect suites passed 393 tests and the complete Activity SSE set passed 508. Final local validation passed 4,361 tests with one expected non-Windows skip and one existing warning. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `364d8bcde833c9b52dfea98007af1dbb02834ba1dc84769fd8a49009a575de01`; evidence SHA256 is `b12b8b74204360b855f898a444d55f51e2a38b888b4f8b3045276ce27d3c7522`. The exact 702-path public snapshot audit passed with zero findings; local Gitleaks is unavailable. No UI or modifiable parameter changed.
 
 ## v0.338.0 malformed-checkpoint-ack split-state stability
 

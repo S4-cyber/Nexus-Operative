@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.338.0'
+REVISION = '0.339.0'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -141,6 +141,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the reconnect-budget public inspection boundary now pins its exact path/account identity across file preflight, database connection and full journal replay, returning fixed store-binding uncertainty rather than a mixed-scope view if any internal seam retargets the mutable store' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; terminal reconnect-budget acknowledgements are now treated symmetrically whether lost by exception or returned malformed: success, failed-attempt scheduling, trusted-time uncertainty closure and explicit no-network checkpoint reconciliation cold-replay the exact durable result before continuing, while uncommitted or mismatched state remains fixed uncertainty and no additional provider request is granted' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -295,7 +299,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.338.0 extends the exact lost-acknowledgement split-state proof to malformed Activity SSE checkpoint return values. A malformed return remains untrusted and yields fixed checkpoint uncertainty, but when the cursor journal independently proves this exact reservation committed, the coordinator preserves the pending reconnect reservation for explicit no-network reconciliation and holds both journals through shared identity/fingerprint checks and cold semantic replay before surfacing the diagnostic. A forged result, binding disagreement or same-inode cursor/budget rewrite fails closed after at most one request. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.339.0 makes durable reconnect-budget result recovery symmetric for lost and malformed acknowledgements. Success, failed-attempt scheduling, trusted-time uncertainty closure and explicit no-network checkpoint reconciliation now discard malformed returned fields and cold-replay the exact terminal journal record before continuing. Uncommitted, mismatched or changed state remains fixed uncertainty; one provider request is retained and explicit reconciliation performs none. This is sampled local consistency, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

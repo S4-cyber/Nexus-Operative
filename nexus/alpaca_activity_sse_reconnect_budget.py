@@ -156,6 +156,30 @@ def _inspect_after_result_error(reconnect_budget, code):
     return _validated_budget_view(reconnect_budget, retained, code)
 
 
+def _finish_with_exact_recovery(reconnect_budget, operation, code):
+    """Treat a returned result acknowledgement as untrusted transport.
+
+    A result write may commit before its return is lost *or* malformed.  Both
+    cases receive only a cold, totally validated journal replay; callers must
+    still prove the exact requested terminal semantics before acknowledging
+    success or surfacing the original provider failure.
+    """
+    recovered = False
+    try:
+        retained = operation()
+    except Exception:
+        retained = _inspect_after_result_error(reconnect_budget, code)
+        recovered = True
+    else:
+        try:
+            retained = _validated_budget_view(reconnect_budget, retained,
+                code, result_acknowledgement=True)
+        except ActivitySSEReconnectBudgetError:
+            retained = _inspect_after_result_error(reconnect_budget, code)
+            recovered = True
+    return retained, recovered
+
+
 def _validated_cursor_view(cursor_store, value, code):
     """Validate one complete public replay of the private cursor journal."""
     try:
@@ -453,16 +477,11 @@ def _close_failed_clock_uncertainty(reconnect_budget, token, evaluated_at):
     It cannot schedule a retry.  Inspecting after an exception recovers a
     committed result whose acknowledgement was lost.
     """
-    try:
-        retained = reconnect_budget.finish(token,
+    retained, _ = _finish_with_exact_recovery(reconnect_budget,
+        lambda: reconnect_budget.finish(token,
             evaluated_at=evaluated_at, outcome='REVIEW_REQUIRED',
-            detail_code='OUTCOME_CLOCK_UNCERTAIN')
-    except Exception:
-        retained = _inspect_after_result_error(reconnect_budget,
-            'RESULT_RECORD_UNCERTAIN')
-    else:
-        retained = _validated_budget_view(reconnect_budget, retained,
-            'RESULT_RECORD_UNCERTAIN', result_acknowledgement=True)
+            detail_code='OUTCOME_CLOCK_UNCERTAIN'),
+        'RESULT_RECORD_UNCERTAIN')
     if not _exact_failure_result(retained, token, evaluated_at,
             'REVIEW_REQUIRED', 'OUTCOME_CLOCK_UNCERTAIN', 0):
         _fail('RESULT_RECORD_UNCERTAIN')
@@ -2065,20 +2084,13 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             outcome, detail = 'REVIEW_REQUIRED', 'NONRETRYABLE_FAILURE'
         if outcome != 'RETRY_REQUIRED':
             provider_retry_after = 0
-        try:
-            retained = reconnect_budget.finish(reservation['token'],
+        retained, _ = _finish_with_exact_recovery(reconnect_budget,
+            lambda: reconnect_budget.finish(reservation['token'],
                 evaluated_at=completed_at, outcome=outcome,
                 detail_code=detail,
                 emergency_stop_check=emergency_stop_check,
-                provider_retry_after_seconds=provider_retry_after)
-        except Exception:
-            require_store_bindings()
-            retained = _inspect_after_result_error(reconnect_budget,
-                'RESULT_RECORD_UNCERTAIN')
-        else:
-            require_store_bindings()
-            retained = _validated_budget_view(reconnect_budget, retained,
-                'RESULT_RECORD_UNCERTAIN', result_acknowledgement=True)
+                provider_retry_after_seconds=provider_retry_after),
+            'RESULT_RECORD_UNCERTAIN')
         require_store_bindings()
         if not _exact_failure_result(retained, reservation['token'],
                 completed_at, outcome, detail, provider_retry_after):
@@ -2137,23 +2149,15 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             evaluated_at=evaluated_at, reconnect_reason=reconnect_reason)
         raise
     require_store_bindings()
-    result_acknowledgement_recovered = False
-    try:
-        retained = reconnect_budget.finish(reservation['token'],
+    retained, result_acknowledgement_recovered = \
+        _finish_with_exact_recovery(reconnect_budget,
+        lambda: reconnect_budget.finish(reservation['token'],
             evaluated_at=completed_at, outcome='CHECKPOINT_COMMITTED',
             detail_code='SUCCESS',
             checkpoint_head_sha256=checkpoint_binding['head_sha256'],
             checkpoint_receipt_sha256=
-                checkpoint_binding['checkpoint_receipt_sha256'])
-    except Exception:
-        require_store_bindings()
-        retained = _inspect_after_result_error(reconnect_budget,
-            'RESULT_RECORD_UNCERTAIN')
-        result_acknowledgement_recovered = True
-    else:
-        require_store_bindings()
-        retained = _validated_budget_view(reconnect_budget, retained,
-            'RESULT_RECORD_UNCERTAIN', result_acknowledgement=True)
+                checkpoint_binding['checkpoint_receipt_sha256']),
+        'RESULT_RECORD_UNCERTAIN')
     require_store_bindings()
     try:
         stable_checkpoint_binding = _validated_checkpoint_binding(
@@ -2441,29 +2445,16 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
             _fail('CHECKPOINT_BINDING_DISAGREEMENT')
         recovered = state
     else:
-        try:
-            recovered = reconnect_budget.finish(state['pending_token'],
+        recovered, result_acknowledgement_recovered = \
+            _finish_with_exact_recovery(reconnect_budget,
+            lambda: reconnect_budget.finish(state['pending_token'],
                 evaluated_at=now, outcome='CHECKPOINT_COMMITTED',
                 detail_code='SUCCESS',
                 checkpoint_head_sha256=retained['head_sha256'],
                 checkpoint_receipt_sha256=
-                    retained['checkpoint_receipt_sha256'])
-        except Exception:
-            require_store_bindings()
-            try:
-                recovered = _inspect_after_result_error(reconnect_budget,
-                    'RECOVERY_RESULT_UNCERTAIN')
-            except Exception:
-                require_store_bindings()
-                raise
-            require_store_bindings()
-            result_acknowledgement_recovered = True
-        else:
-            require_store_bindings()
-            recovered = _validated_budget_view(reconnect_budget, recovered,
-                'RECOVERY_RESULT_UNCERTAIN',
-                result_acknowledgement=True)
-            require_store_bindings()
+                    retained['checkpoint_receipt_sha256']),
+            'RECOVERY_RESULT_UNCERTAIN')
+        require_store_bindings()
     require_store_bindings()
     try:
         unchanged = _validated_checkpoint_binding(cursor_store,

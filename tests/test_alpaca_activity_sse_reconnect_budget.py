@@ -3736,6 +3736,60 @@ def test_reconciliation_post_result_binding_rejects_custom_equality(
     assert state['completed'] and state['pending_token'] is None
 
 
+@pytest.mark.parametrize('store_name', ('cursor', 'budget'))
+def test_reconciliation_final_same_inode_rewrite_withholds_acknowledgement(
+        tmp_path, monkeypatch, store_name):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    options = dict(cursor_store=cursor, reconnect_budget=budget,
+        expected_budget_head=reserved['head_sha256'],
+        expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+        evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    if store_name == 'cursor':
+        original = cursor.latest_checkpoint_binding
+        inspections = 0
+
+        def rewrite_before_final_replay():
+            nonlocal inspections
+            inspections += 1
+            if inspections == 3:
+                with cursor.path.open('r+b') as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+                    stream.flush()
+            return original()
+
+        monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+            rewrite_before_final_replay)
+    else:
+        original = subject._inspect_after_result_error
+        inspections = 0
+
+        def rewrite_before_final_replay(reconnect_budget, code):
+            nonlocal inspections
+            inspections += 1
+            if inspections == 2:
+                with budget.path.open('r+b') as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+                    stream.flush()
+            return original(reconnect_budget, code)
+
+        monkeypatch.setattr(subject, '_inspect_after_result_error',
+            rewrite_before_final_replay)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'):
+        subject.reconcile_pending_checkpoint(**options)
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['completed'] and state['pending_token'] is None
+    monkeypatch.undo()
+    replay = subject.reconcile_pending_checkpoint(**dict(options,
+        evaluated_at=1002))
+    assert replay['duplicate_recovery']
+    assert replay['reconnect_budget_head_sha256'] == state['head_sha256']
+
+
 @pytest.mark.parametrize(('token','code'), [
     ('b' * 64, 'CHECKPOINT_BINDING_DISAGREEMENT'),
     (None, 'CHECKPOINT_BINDING_DISAGREEMENT'),

@@ -15,12 +15,15 @@ import time
 
 from nexus import alpaca_activity_sse_checkpoint as checkpoint
 from nexus.alpaca_activity_sse_cursor_store import (
-    FLAGS as CURSOR_FLAGS, MAX_CHECKPOINTS, ActivitySSECursorStore)
+    FLAGS as CURSOR_FLAGS, MAX_CHECKPOINTS,
+    MAX_DATABASE_BYTES as MAX_CURSOR_DATABASE_BYTES,
+    ActivitySSECursorStore)
 from nexus.alpaca_activity_sse_review import ULID
 from nexus.alpaca_activity_sse_transport import ActivitySSETransportError
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_existing,
+    check_path_set,
     require_file_fingerprints, require_file_identities)
 
 
@@ -2053,12 +2056,37 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
     budget_binding = (reconnect_budget.path,
         reconnect_budget.account_sha256)
     cursor_binding = (cursor_store.path, cursor_store.account_sha256)
+    file_prefix = 'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_'
+    try:
+        journal_paths = check_path_set(
+            (cursor_binding[0], budget_binding[0]), file_prefix)
+        journal_identities = capture_file_identities(
+            journal_paths, file_prefix)
+        cursor_fingerprint = capture_file_fingerprints(
+            (journal_paths[0],), (MAX_CURSOR_DATABASE_BYTES,), file_prefix)
+    except ValueError as error:
+        raise ActivitySSEReconnectBudgetError(str(error)) from None
 
     def require_store_bindings():
         if not _store_bindings_match(cursor_store, reconnect_budget,
                 cursor_binding=cursor_binding,
                 budget_binding=budget_binding):
             _fail('STORE_BINDING_CHANGED')
+
+    def require_journal_files(budget_fingerprint=None):
+        """Retain the exact two-file reconciliation scope through return."""
+        try:
+            require_file_identities(journal_paths, journal_identities,
+                file_prefix)
+            require_file_fingerprints((journal_paths[0],),
+                (MAX_CURSOR_DATABASE_BYTES,), cursor_fingerprint,
+                file_prefix)
+            if budget_fingerprint is not None:
+                require_file_fingerprints((journal_paths[1],),
+                    (MAX_DATABASE_BYTES,), budget_fingerprint, file_prefix)
+        except ValueError as error:
+            raise ActivitySSEReconnectBudgetError(str(error)) from None
+        require_store_bindings()
 
     try:
         state = _validated_budget_view(reconnect_budget,
@@ -2166,7 +2194,23 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
                 retained['head_sha256'],
                 retained['checkpoint_receipt_sha256'], result_time)):
         _fail('RECOVERY_RESULT_UNCERTAIN')
-    return dict(mode=
+    try:
+        budget_fingerprint = capture_file_fingerprints(
+            (journal_paths[1],), (MAX_DATABASE_BYTES,), file_prefix)
+        confirmed_checkpoint = _validated_checkpoint_binding(cursor_store,
+            cursor_store.latest_checkpoint_binding(),
+            'RECOVERY_RESULT_UNCERTAIN')
+        confirmed_budget = _inspect_after_result_error(reconnect_budget,
+            'RECOVERY_RESULT_UNCERTAIN')
+    except ValueError as error:
+        raise ActivitySSEReconnectBudgetError(str(error)) from None
+    require_journal_files(budget_fingerprint)
+    if (confirmed_checkpoint != retained or confirmed_budget != stable or
+            not _exact_checkpoint_result(confirmed_budget,
+                reservation_token, retained['head_sha256'],
+                retained['checkpoint_receipt_sha256'], result_time)):
+        _fail('RECOVERY_RESULT_UNCERTAIN')
+    result = dict(mode=
             'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_RESULT_RECOVERY',
         status='REVIEW_REQUIRED', policy=POLICY,
         pending_checkpoint_reconciled=True,
@@ -2176,11 +2220,13 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
         explicit_reconciliation_confirmation=True,
         provider_request_performed=False, automatic_retry=False,
         automatic_reconnect_performed=False,
-        reconnect_budget_head_sha256=stable['head_sha256'],
-        checkpoint_head_sha256=retained['head_sha256'],
+        reconnect_budget_head_sha256=confirmed_budget['head_sha256'],
+        checkpoint_head_sha256=confirmed_checkpoint['head_sha256'],
         checkpoint_receipt_sha256=
-            retained['checkpoint_receipt_sha256'],
+            confirmed_checkpoint['checkpoint_receipt_sha256'],
         **{flag: False for flag in FLAGS})
+    require_journal_files(budget_fingerprint)
+    return result
 
 
 def fixture_report():

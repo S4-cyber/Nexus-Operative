@@ -1,5 +1,6 @@
 """Provider POST/reference composition to retained known-fee reserve path."""
 import json
+import os
 import shutil
 import sqlite3
 from decimal import Decimal
@@ -38,6 +39,8 @@ def test_known_fee_reserve_path_matches_supplied_closing_without_writes(tmp_path
     assert result['retained_known_fee_debits'] == {'USD': '1', 'BTC': '0'}
     assert result['minimum_known_fee_reserved_balances'] == {
         'USD': '801', 'BTC': '0'}
+    assert result['journal_files_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert result['known_fee_reservation_is_retrospective']
     assert all(result[flag] is False for flag in subject.FLAGS)
     assert subject.review(**args) == result
@@ -194,6 +197,96 @@ def test_same_head_journal_rewrite_fails_closed(tmp_path, monkeypatch, target):
     with pytest.raises(ValueError, match=
             'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_FILE_SET_CHANGED'):
         subject.review(**args)
+
+
+def _mutate_metadata_and_fail(path):
+    stat = os.stat(path)
+    os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+    raise RuntimeError('injected known fee reserve reader failure')
+
+
+@pytest.mark.parametrize('target', (
+    'post_budget', 'journal', 'pacing_path', 'activity_store_path',
+    'acceptance_store_path'))
+def test_initial_reference_failure_rechecks_all_journals(
+        tmp_path, monkeypatch, target):
+    args = subject._fixture(tmp_path)
+    path = Path(args[target].path if target in ('post_budget', 'journal')
+        else args[target])
+    before = snapshot(tmp_path)
+    original = subject.references.review
+
+    def failed_reference(**kwargs):
+        original(**kwargs)
+        _mutate_metadata_and_fail(path)
+
+    monkeypatch.setattr(subject.references, 'review', failed_reference)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_FILE_SET_CHANGED'):
+        subject.review(**args)
+    assert snapshot(tmp_path) == before
+
+
+@pytest.mark.parametrize('reader', (
+    'opening_totals', 'closing_totals', 'retained_activity', 'reserve_path',
+    'repeated_reference', 'final_retained'))
+def test_later_reader_failure_rechecks_all_journals(
+        tmp_path, monkeypatch, reader):
+    args = subject._fixture(tmp_path)
+    before = snapshot(tmp_path)
+    if reader in ('opening_totals', 'closing_totals'):
+        original = subject._totals
+        calls = 0
+
+        def failed(observation):
+            nonlocal calls
+            result = original(observation)
+            calls += 1
+            if calls == (1 if reader == 'opening_totals' else 2):
+                target = (args['pacing_path'] if reader == 'opening_totals'
+                    else args['acceptance_store_path'])
+                _mutate_metadata_and_fail(target)
+            return result
+
+        monkeypatch.setattr(subject, '_totals', failed)
+    elif reader in ('retained_activity', 'final_retained'):
+        original = subject.BrokerActivityStore.inspect
+        calls = 0
+
+        def failed(store):
+            nonlocal calls
+            result = original(store)
+            calls += 1
+            if calls == (1 if reader == 'retained_activity' else 2):
+                _mutate_metadata_and_fail(args['activity_store_path'])
+            return result
+
+        monkeypatch.setattr(subject.BrokerActivityStore, 'inspect', failed)
+    elif reader == 'reserve_path':
+        original = subject._reserve_path
+
+        def failed(records, opening):
+            original(records, opening)
+            _mutate_metadata_and_fail(args['journal'].path)
+
+        monkeypatch.setattr(subject, '_reserve_path', failed)
+    else:
+        original = subject.references.review
+        calls = 0
+
+        def failed(**kwargs):
+            nonlocal calls
+            result = original(**kwargs)
+            calls += 1
+            if calls == 2:
+                _mutate_metadata_and_fail(args['post_budget'].path)
+            return result
+
+        monkeypatch.setattr(subject.references, 'review', failed)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_FILE_SET_CHANGED'):
+        subject.review(**args)
+    assert snapshot(tmp_path) == before
 
 
 def test_rollback_sidecar_fails_before_reserve_path(tmp_path, monkeypatch):

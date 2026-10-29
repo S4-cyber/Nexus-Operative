@@ -41,6 +41,8 @@ def _component_valid(result):
         and result.get('all_retained_fees_explicitly_referenced') is True
         and result.get('all_references_resolve_to_accepted_original_fills') is True
         and result.get('journals_rechecked_unchanged') is True
+        and result.get('journal_files_rechecked_unchanged') is True
+        and result.get('semantic_reader_failures_rechecked') is True
         and any(result.get(flag) is not False for flag in references.FLAGS)
             is False)
 
@@ -64,6 +66,21 @@ def _require_bindings(post_budget, journal, store_binding, paths,
         'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_')
     require_file_fingerprints(paths, JOURNAL_LIMITS, file_fingerprints,
         'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_')
+
+
+def _stable_reader(post_budget, journal, store_binding, paths,
+                   file_binding, file_fingerprints):
+    def read(reader):
+        try:
+            value = reader()
+        except BaseException:
+            _require_bindings(post_budget, journal, store_binding, paths,
+                file_binding, file_fingerprints)
+            raise
+        _require_bindings(post_budget, journal, store_binding, paths,
+            file_binding, file_fingerprints)
+        return value
+    return read
 
 
 def _frozen_path(value, code):
@@ -181,6 +198,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         'PAPER_PROVIDER_POST_KNOWN_FEE_RESERVE_')
     _require_bindings(post_budget, journal, store_binding, paths,
         file_binding, file_fingerprints)
+    stable_read = _stable_reader(post_budget, journal, store_binding, paths,
+        file_binding, file_fingerprints)
     options = dict(post_budget=post_budget,
         expected_post_head=expected_post_head, account_id=account_id,
         journal=journal, expected_request_head=expected_request_head,
@@ -191,33 +210,26 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         opening_observation=opening_observation,
         closing_observation=closing_observation,
         post_closing_observation=post_closing_observation)
-    base = references.review(**options)
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    base = stable_read(lambda: references.review(**options))
     if not _component_valid(base):
         _fail('REFERENCE_COMPONENT_INVALID')
-    opening_manifest, opening = _totals(opening_observation)
-    closing_manifest, closing = _totals(closing_observation)
+    opening_manifest, opening = stable_read(
+        lambda: _totals(opening_observation))
+    closing_manifest, closing = stable_read(
+        lambda: _totals(closing_observation))
     if (opening_manifest['account_id'] != account_id or
             closing_manifest['account_id'] != account_id):
         _fail('ACCOUNT_DISAGREEMENT')
 
     store = BrokerActivityStore(activity_store_path, account_id)
-    retained = store.inspect()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
-    path = _reserve_path(retained['normalized_activities'], opening)
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    retained = stable_read(store.inspect)
+    path = stable_read(lambda: _reserve_path(
+        retained['normalized_activities'], opening))
     if path['ending'] != closing:
         _fail('KNOWN_FEE_ADJUSTED_BALANCE_DISAGREEMENT')
 
-    repeated = references.review(**options)
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
-    final_retained = store.inspect()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    repeated = stable_read(lambda: references.review(**options))
+    final_retained = stable_read(store.inspect)
     if repeated != base or final_retained != retained:
         _fail('HISTORY_CHANGED_DURING_REVIEW')
     scope = dict(policy=POLICY, account_sha256=journal_account,
@@ -251,6 +263,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         minimum_known_fee_reserved_balances={k: text(v)
             for k, v in path['minimum'].items()},
         journals_rechecked_unchanged=True,
+        journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,
         known_fee_reservation_is_retrospective=True,
         **{flag: False for flag in FLAGS},
         limitations='Retrospective private local consistency over only retained, explicitly referenced fee obligations. Known fees are conservatively reserved at their accepted fill group, independent of their unverified reported posting date. This neither proves complete fee/activity coverage nor provider source/reference semantics, fee posting, exact balance instants, holds, settlement or spendable funds. Separate journals are not atomic or distributed. No provider/vault IO, write, retry, continuation, ledger, routing, funding, live trading or release approval.')
@@ -311,6 +325,10 @@ def fixture_report():
                 result['retained_known_fee_debits_covered'],
             known_fee_adjusted_closing_balances_match=
                 result['known_fee_adjusted_closing_balances_match'],
+            journal_file_fingerprints_rechecked=
+                result['journal_files_rechecked_unchanged'],
+            semantic_reader_failures_rechecked=
+                result['semantic_reader_failures_rechecked'],
             balance_disagreement_rejected=failures['balance'],
             insufficient_known_fee_funding_rejected=failures['funding'],
             missing_fee_history_rejected=failures['missing'],

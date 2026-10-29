@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.34 known-fee reserve semantic-operation file-set proof
+
+Known-fee reserve review must recheck the exact five-store identity and bounded fingerprint set after every semantic operation returns or raises. Initial post-fee reference review and every later supplied-balance, retained-activity, reserve-path and repeat-reader mutation failure must receive the composition's fixed file-set refusal. Eleven direct regressions and mandatory saved evidence cover these boundaries. Runtime authority remains unchanged.
+
+Published v0.340.33 source is `b861ef9e76254fec57e1717a7f6571dfa384116e`; its hosted run records were not exposed by the connected GitHub status surface during this sprint. Fresh exact-source v0.340.34 workflows remain mandatory.
+
+Pre-publication local verification passed the 330-test known-fee/post-fee/provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus with one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification passed. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.34 wheel build passed. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.34 workflows remain mandatory.
+
 ## v0.340.33 post-fee reference semantic-reader file-set proof
 
 Post-fee reference review must recheck the exact five-store identity and bounded fingerprint set after every semantic reader returns or raises. Initial provider-POST reconciliation and every later accepted-history, retained-activity, acceptance-scope and repeat-reader mutation failure must receive the composition's fixed file-set refusal. Eleven direct regressions and mandatory saved evidence cover these boundaries. Runtime authority remains unchanged.

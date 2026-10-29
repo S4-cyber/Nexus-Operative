@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.33 (pre-release).** This build rechecks all five post-fee reference journals after every semantic reader returns or raises. A reader can no longer mutate a journal and hide the file-set change behind a generic or lower-layer failure. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.34 (pre-release).** This build rechecks all five known-fee reserve journals after every semantic operation returns or raises. A reader or reserve calculation can no longer mutate a journal and hide the file-set change behind a generic or lower-layer failure. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.34 known-fee reserve semantic-operation file-set proof
+
+The known-fee reserve composition rechecks the POST-budget, request, pacing, retained-activity and acceptance store identities and bounded fingerprints after post-fee reference review, opening/closing observation validation, retained-activity inspection and reserve-path calculation return or raise. Eleven direct regressions cover every exceptional boundary. Mandatory saved evidence requires both guarantees.
+
+Published v0.340.33 source is `b861ef9e76254fec57e1717a7f6571dfa384116e`; its hosted run records were not exposed by the connected GitHub status surface during this sprint. Fresh exact-source v0.340.34 workflows remain mandatory.
+
+Pre-publication local verification passed the 330-test known-fee/post-fee/provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus with one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification passed. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.34 wheel build passed. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.34 workflows remain mandatory.
 
 ## v0.340.33 post-fee reference semantic-reader file-set proof
 

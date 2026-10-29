@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.33 rechecks the provider-POST budget, request, pacing, retained-activity and acceptance journals after every post-fee reference semantic reader on normal and exceptional exits. A reader can no longer mutate any of the five journals and hide the file-set change behind a generic or lower-layer failure. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.34 rechecks the provider-POST budget, request, pacing, retained-activity and acceptance journals after every known-fee reserve semantic operation on normal and exceptional exits. A reader or reserve calculation can no longer mutate any of the five journals and hide the file-set change behind a generic or lower-layer failure. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.34 known-fee reserve semantic-operation file-set proof
+
+The known-fee reserve composition now holds the exact five-store identity and bounded fingerprint set across post-fee reference review, opening/closing observation validation, retained-activity inspection and reserve-path calculation. Every normal or exceptional exit rechecks the complete set. Eleven direct regressions mutate each store at the initial reader and every later semantic boundary; mandatory saved evidence requires both the fingerprint and exceptional-exit fences.
+
+Published v0.340.33 source is `b861ef9e76254fec57e1717a7f6571dfa384116e`; its hosted run records were not exposed by the connected GitHub status surface during this sprint. Fresh exact-source v0.340.34 workflows remain mandatory.
+
+Pre-publication local verification passed the 330-test known-fee/post-fee/provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus with one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification passed. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.34 wheel build passed. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.34 workflows remain mandatory.
 
 ## v0.340.33 post-fee reference semantic-reader file-set proof
 

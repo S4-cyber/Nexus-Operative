@@ -1089,6 +1089,8 @@ def _validate(profile, result):
                 'retained_known_fee_reservations_applied',
                 'retained_known_fee_debits_covered',
                 'known_fee_adjusted_closing_balances_match',
+                'journal_file_fingerprints_rechecked',
+                'semantic_reader_failures_rechecked',
                 'balance_disagreement_rejected',
                 'insufficient_known_fee_funding_rejected',
                 'missing_fee_history_rejected',

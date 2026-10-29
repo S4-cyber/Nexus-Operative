@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.34 known-fee reserve semantic-operation file-set proof
+
+The known-fee reserve composition now rechecks the POST-budget, request, pacing, retained-activity and acceptance stores after every semantic operation returns or raises. Eleven direct regressions cover all five stores at the initial boundary plus supplied-balance validation, retained-activity, reserve-path and final repeat boundaries; mandatory saved evidence requires the fence. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Published v0.340.33 source is `b861ef9e76254fec57e1717a7f6571dfa384116e`; its hosted run records were not exposed by the connected GitHub status surface during this sprint. Fresh exact-source v0.340.34 workflows remain mandatory.
+
+Pre-publication local verification passed the 330-test known-fee/post-fee/provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus with one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification passed. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.34 wheel build passed. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.34 workflows remain mandatory.
+
 ## v0.340.33 post-fee reference semantic-reader file-set proof
 
 The post-fee reference composition now rechecks the POST-budget, request, pacing, retained-activity and acceptance stores after every semantic reader returns or raises. Eleven direct regressions cover all five stores at the initial boundary plus accepted-history, retained-activity, acceptance-scope and final repeat boundaries; mandatory saved evidence requires the fence. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.19 failed-attempt post-result file-set proof
+
+Failed connected-paper attempts now retain one exact settled cursor/reconnect-budget file set across cursor and budget stability reads plus independent confirmation reads. Both files are rechecked on normal and exceptional exits. A same-inode rewrite plus reader failure returns fixed `FILE_SET_CHANGED`; the durable retry/review result remains available and there is no second provider request. Eight direct reader/phase/journal regressions and mandatory release evidence cover the boundary. No retry, provider, credential, account, order, funds, live, cloud, UI or release authority is added.
+
+Final local validation passed 4,416 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 451 tests, and the release-evidence/roadmap/version/workflow/packaging focus passed 64. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `2e341425905c660947b858643603f8656f6d5975d165fc4da89a99f651d95784`; `validation/release_trials_0_340_19.json` SHA256 is `2eb020c7ffa4e6cff15c8a64275acd34f5e39e2b33b737367d417d384d0e4de2`. Exact-source v0.340.18 parent `0d2d8ae64bb6fc92490ebb05200ca595ee230e05` passed public security 40799539905, research safety/browser/evidence 40799539900 and Windows packaging/installer 40799539748. Fresh exact-source v0.340.19 workflows remain mandatory.
+
 ## v0.340.18 primary-success post-result file-set proof
 
 The primary connected-paper attempt now captures exact cursor and reconnect-budget identities and fingerprints immediately after the expected terminal result commits. Both stability reads and both final confirmation reads recheck both journals on normal and exceptional exits. Eight direct regressions cover both reader families, both read phases and both journal targets. The injected fixture rewrites the settled budget and raises from the first post-result cursor read; the release validator and negative control make the fixed file-set refusal mandatory. The committed result remains available for explicit duplicate replay, no provider request is repeated and no UI, permission, credential, funding, live or cloud authority changes.

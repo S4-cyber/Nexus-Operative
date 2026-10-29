@@ -2100,6 +2100,84 @@ def test_failure_final_file_change_withholds_provider_failure_acknowledgement(
     assert state['next_allowed_at'] == 1001
 
 
+@pytest.mark.parametrize(('reader_name', 'failed_read'), (
+    ('cursor', 1), ('cursor', 2), ('budget', 1), ('budget', 2)))
+@pytest.mark.parametrize('changed_store', ('cursor', 'budget'))
+def test_failure_failed_post_result_read_rechecks_settled_files(
+        tmp_path, monkeypatch, reader_name, failed_read, changed_store):
+    # Retain a real cursor journal so both settled files exercise same-inode
+    # rewrites. The failing attempt uses a fresh independent budget episode.
+    initial, raw = segments()
+    cursor, completed_budget = stores(tmp_path)
+    call(tmp_path, Opener([raw]), stores=(cursor, completed_budget))
+    cursor_head = cursor.inspect()['head_sha256']
+    replay = [json.loads(line.removeprefix('data: '))
+        for line in raw.decode().splitlines() if line.startswith('data: ')]
+    retained_events = [*initial, replay[-1]]
+    budget = subject.ActivitySSEReconnectBudget(
+        tmp_path / 'failure-budget.sqlite3', ACCOUNT)
+    opener = Opener([TimeoutError('private')])
+    original_finish = budget.finish
+    original_cursor_inspect = cursor.inspect
+    original_budget_inspect = budget.inspect
+    original_result_inspect = subject._inspect_after_result_error
+    changed_path = cursor.path if changed_store == 'cursor' else budget.path
+    retained_bytes = []
+    settled = False
+    reads = 0
+
+    def finish(*args, **kwargs):
+        nonlocal settled
+        result = original_finish(*args, **kwargs)
+        settled = True
+        return result
+
+    def fail_changed_cursor_read():
+        nonlocal reads
+        if settled:
+            reads += 1
+            if reads == failed_read:
+                retained_bytes.append(changed_path.read_bytes())
+                with changed_path.open('r+b') as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+                    stream.flush()
+                raise RuntimeError('private failed post-result read')
+        return original_cursor_inspect()
+
+    def fail_changed_result_inspect(reconnect_budget, code):
+        nonlocal reads
+        reads += 1
+        if reads == failed_read:
+            retained_bytes.append(changed_path.read_bytes())
+            with changed_path.open('r+b') as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+                stream.flush()
+            raise RuntimeError('private failed post-result read')
+        return original_result_inspect(reconnect_budget, code)
+
+    monkeypatch.setattr(budget, 'finish', finish)
+    if reader_name == 'cursor':
+        monkeypatch.setattr(cursor, 'inspect', fail_changed_cursor_read)
+    else:
+        monkeypatch.setattr(subject, '_inspect_after_result_error',
+            fail_changed_result_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_cursor_head=cursor_head, initial_events=retained_events)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'
+    assert 'private' not in str(raised.value)
+    assert reads == failed_read and len(opener.requests) == 1
+    assert len(retained_bytes) == 1
+    changed_path.write_bytes(retained_bytes[0])
+    state = original_budget_inspect()
+    assert not state['completed'] and state['pending_token'] is None
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert state['next_allowed_at'] == 1001
+
+
 def test_failure_recovers_exact_lost_result_acknowledgement(
         tmp_path, monkeypatch):
     cursor, budget = stores(tmp_path)

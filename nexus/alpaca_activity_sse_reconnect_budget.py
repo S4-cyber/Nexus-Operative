@@ -625,12 +625,44 @@ def _bind_failed_attempt_result_files(cursor_store, reconnect_budget, *,
                 'FILE_SET_CHANGED') from None
         require_store_bindings()
 
-    confirmed_cursor_head = _cursor_head_for_attempt(cursor_store)
-    confirmed_failure = _inspect_after_result_error(reconnect_budget,
-        'RESULT_RECORD_UNCERTAIN')
+    try:
+        stable_cursor_head = _cursor_head_for_attempt(cursor_store)
+    except Exception:
+        # A semantic reader cannot conceal a same-file rewrite behind its
+        # broader cursor uncertainty diagnostic after the result committed.
+        require_failure_files()
+        raise
     require_failure_files()
-    if (confirmed_cursor_head != cursor_head or
-            not _same_result_head(confirmed_failure, retained) or
+    try:
+        stable_failure = _inspect_after_result_error(reconnect_budget,
+            'RESULT_RECORD_UNCERTAIN')
+    except Exception:
+        # The terminal result is already durable. Retain its exact sampled
+        # file set even when the cold replay itself raises.
+        require_failure_files()
+        raise
+    require_failure_files()
+    if (stable_cursor_head != cursor_head or
+            not _same_result_head(stable_failure, retained) or
+            not _exact_failure_result(stable_failure, token,
+                evaluated_at, outcome, detail, provider_retry_after)):
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_failure_files()
+    try:
+        confirmed_cursor_head = _cursor_head_for_attempt(cursor_store)
+    except Exception:
+        require_failure_files()
+        raise
+    require_failure_files()
+    try:
+        confirmed_failure = _inspect_after_result_error(reconnect_budget,
+            'RESULT_RECORD_UNCERTAIN')
+    except Exception:
+        require_failure_files()
+        raise
+    require_failure_files()
+    if (confirmed_cursor_head != stable_cursor_head or
+            not _same_result_head(confirmed_failure, stable_failure) or
             not _exact_failure_result(confirmed_failure, token,
                 evaluated_at, outcome, detail, provider_retry_after)):
         _fail('RESULT_RECORD_UNCERTAIN')
@@ -2826,6 +2858,57 @@ def fixture_report():
                 settled_success_budget_bytes[0])
         settled_success_state = ActivitySSEReconnectBudget(
             settled_success_budget.path, account).inspect()
+        settled_failure_cursor = ActivitySSECursorStore(
+            settled_success_cursor.path, account)
+        settled_failure_cursor_head = \
+            settled_failure_cursor.inspect()['head_sha256']
+        settled_failure_budget = ActivitySSEReconnectBudget(
+            root / 'settled-failure-budget.sqlite3', account)
+        settled_failure_opener = Opener(TimeoutError('fixture timeout'))
+        original_failure_finish = settled_failure_budget.finish
+        original_failure_cursor_inspect = settled_failure_cursor.inspect
+        settled_failure_finish_calls = []
+        settled_failure_cursor_reads = []
+        settled_failure_budget_bytes = []
+        def mark_settled_failure(*args, **kwargs):
+            retained = original_failure_finish(*args, **kwargs)
+            settled_failure_finish_calls.append(True)
+            return retained
+        def rewrite_failure_budget_then_fail_cursor_read():
+            retained = original_failure_cursor_inspect()
+            if settled_failure_finish_calls:
+                settled_failure_cursor_reads.append(True)
+                if len(settled_failure_cursor_reads) == 2:
+                    settled_failure_budget_bytes.append(
+                        settled_failure_budget.path.read_bytes())
+                    with settled_failure_budget.path.open('r+b') as stream:
+                        stream.seek(60)
+                        stream.write((1).to_bytes(4, 'big'))
+                        stream.flush()
+                    raise RuntimeError(
+                        'private fixture failed settled failure cursor read')
+            return retained
+        settled_failure_budget.finish = mark_settled_failure
+        settled_failure_cursor.inspect = \
+            rewrite_failure_budget_then_fail_cursor_read
+        settled_failure_code = None
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=1600, opener=settled_failure_opener,
+                **dict(common, cursor_store=settled_failure_cursor,
+                    reconnect_budget=settled_failure_budget,
+                    expected_cursor_head=settled_failure_cursor_head,
+                    initial_events=[*initial, later_fee],
+                    wall_clock=lambda: 1600,
+                    outcome_clock=lambda: 1601))
+        except ActivitySSEReconnectBudgetError as error:
+            settled_failure_code = str(error)
+        if settled_failure_budget_bytes:
+            settled_failure_budget.path.write_bytes(
+                settled_failure_budget_bytes[0])
+        settled_failure_state = ActivitySSEReconnectBudget(
+            settled_failure_budget.path, account).inspect()
         recovery_cursor = ActivitySSECursorStore(
             root / 'recovery-cursor.sqlite3', account)
         recovery_budget = ActivitySSEReconnectBudget(
@@ -3111,7 +3194,8 @@ def fixture_report():
                 confirm_no_retry=True)
         uncertain_state = uncertain_budget.inspect()
         encoded = json.dumps(
-            [result, cold_budget, recovered, recovered_replay, stopped,
+            [result, cold_budget, settled_failure_state, recovered,
+                recovered_replay, stopped,
                 waiting_closed,
                 retry_stop_state, rate_state, service_state,
                 automatic_uncertain_state, checkpoint_uncertain_closed,
@@ -3162,6 +3246,17 @@ def fixture_report():
                 settled_success_state['last_outcome'] ==
                     'CHECKPOINT_COMMITTED' and
                 not settled_success_state['review_required'],
+            failure_exception_rechecks_settled_files=
+                settled_failure_code is not None and
+                settled_failure_code.endswith('FILE_SET_CHANGED') and
+                settled_failure_finish_calls == [True] and
+                settled_failure_cursor_reads == [True, True] and
+                len(settled_failure_budget_bytes) == 1 and
+                len(settled_failure_opener.requests) == 1 and
+                not settled_failure_state['completed'] and
+                settled_failure_state['pending_token'] is None and
+                settled_failure_state['last_outcome'] == 'RETRY_REQUIRED' and
+                not settled_failure_state['review_required'],
             pending_checkpoint_result_recovers_without_second_get=
                 recovered['pending_checkpoint_reconciled'] and
                 not recovered['duplicate_recovery'] and

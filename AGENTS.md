@@ -1,6 +1,12 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.18 pins the exact settled cursor and reconnect-budget bytes immediately after the primary connected-paper success commits, before any later semantic stability reader runs. A reader that rewrites either journal and raises now fails with fixed file-set uncertainty while retaining the committed terminal result and performing no second provider request. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+Current checkpoint: v0.340.19 extends the exact settled cursor and reconnect-budget proof to failed connected-paper attempts. Both semantic reader families now have stability and independent confirmation reads, with both journals rechecked on every normal and exceptional exit. A reader that rewrites either settled journal and raises fails with fixed file-set uncertainty while retaining the durable retry/review result and performing no second provider request. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+
+## v0.340.19 failed-attempt post-result file-set proof
+
+Failed connected-paper attempts now cold-replay the unchanged cursor decision and exact terminal reconnect-budget result twice. The settled cursor and budget identities and fingerprints are rechecked before and after each reader, including exceptional exits. Eight direct regressions cover both reader families, both read phases and both journal targets. The injected fixture rewrites the settled budget and raises from the confirmation cursor read; the release validator and negative control make the fixed file-set refusal mandatory.
+
+Final local validation passed 4,416 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 451 tests, and the release-evidence/roadmap/version/workflow/packaging focus passed 64. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `2e341425905c660947b858643603f8656f6d5975d165fc4da89a99f651d95784`; `validation/release_trials_0_340_19.json` SHA256 is `2eb020c7ffa4e6cff15c8a64275acd34f5e39e2b33b737367d417d384d0e4de2`. Exact-source v0.340.18 parent `0d2d8ae64bb6fc92490ebb05200ca595ee230e05` passed public security 40799539905, research safety/browser/evidence 40799539900 and Windows packaging/installer 40799539748. Fresh exact-source v0.340.19 workflows remain mandatory.
 
 ## v0.340.18 primary-success post-result file-set proof
 

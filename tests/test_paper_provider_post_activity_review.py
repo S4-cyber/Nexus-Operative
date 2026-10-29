@@ -1,5 +1,6 @@
 """Exact-head provider POST to accepted-activity composition tests."""
 import json
+import os
 import shutil
 import sqlite3
 from pathlib import Path
@@ -41,6 +42,8 @@ def test_recovered_unknown_and_not_sent_bind_exact_accepted_history(tmp_path):
     assert result['exact_not_sent_bindings'] == 1
     assert result['unresolved_unknown_attempts'] == 0
     assert result['reasons'] == []
+    assert result['journal_files_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert all(result[flag] is False for flag in subject.FLAGS)
     assert files(tmp_path) == before
     encoded = json.dumps(result)
@@ -121,9 +124,117 @@ def test_request_change_after_activity_component_fails_final_recheck(
             '100', asset, metadata_at=91000, evaluated_at=91001))
         return result
     monkeypatch.setattr(subject.activity, 'review', changed)
-    with pytest.raises(ValueError, match='JOURNALS_CHANGED_DURING_REVIEW'):
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED'):
         subject.review(budget, expected_post_head=head,
             account_bindings=[binding])
+
+
+def _selected_paths(budget, binding):
+    return dict(post_budget=budget.path, request_journal=binding['journal'].path,
+        pacing=Path(binding['pacing_path']),
+        activity=Path(binding['activity_store_path']),
+        acceptance=Path(binding['acceptance_store_path']))
+
+
+def _mutate_metadata_and_fail(path):
+    stat = os.stat(path)
+    os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+    raise RuntimeError('injected provider post activity reader failure')
+
+
+@pytest.mark.parametrize('target', (
+    'post_budget', 'request_journal', 'pacing', 'activity', 'acceptance'))
+def test_initial_reader_failure_rechecks_every_selected_journal(
+        tmp_path, monkeypatch, target):
+    budget,head,binding=prepared(tmp_path)
+    paths=_selected_paths(budget,binding)
+    before={path:path.read_bytes() for path in paths.values()}
+    original=budget.inspect
+
+    def failed():
+        original()
+        _mutate_metadata_and_fail(paths[target])
+
+    monkeypatch.setattr(budget,'inspect',failed)
+    with pytest.raises(ValueError,match=
+            'PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED'):
+        subject.review(budget,expected_post_head=head,
+            account_bindings=[binding])
+    assert before=={path:path.read_bytes() for path in before}
+
+
+@pytest.mark.parametrize(('reader','target'), (
+    ('post_history','pacing'),
+    ('post_recovery_history','acceptance'),
+    ('post_review','activity'),
+    ('activity_review','request_journal'),
+    ('request_recovery','post_budget'),
+    ('acceptance_status','pacing'),
+    ('final_post','activity'),
+    ('final_history','acceptance'),
+    ('final_recovery','request_journal')))
+def test_later_reader_failure_rechecks_every_selected_journal(
+        tmp_path, monkeypatch, reader, target):
+    budget,head,binding=prepared(tmp_path)
+    paths=_selected_paths(budget,binding)
+    before={path:path.read_bytes() for path in paths.values()}
+    if reader in ('post_history','post_recovery_history'):
+        method='history' if reader=='post_history' else 'recovery_history'
+        original=getattr(budget,method)
+
+        def failed():
+            original()
+            _mutate_metadata_and_fail(paths[target])
+
+        monkeypatch.setattr(budget,method,failed)
+    elif reader in ('post_review','activity_review'):
+        component=subject.posts if reader=='post_review' else subject.activity
+        original=component.review
+
+        def failed(*args,**kwargs):
+            original(*args,**kwargs)
+            _mutate_metadata_and_fail(paths[target])
+
+        monkeypatch.setattr(component,'review',failed)
+    elif reader=='request_recovery':
+        original=binding['journal'].recovery;calls=0
+
+        def failed():
+            nonlocal calls
+            result=original();calls+=1
+            if calls==3:_mutate_metadata_and_fail(paths[target])
+            return result
+
+        monkeypatch.setattr(binding['journal'],'recovery',failed)
+    elif reader=='acceptance_status':
+        original=subject.activity.acceptance_status;calls=0
+
+        def failed(**kwargs):
+            nonlocal calls
+            result=original(**kwargs);calls+=1
+            if calls==3:_mutate_metadata_and_fail(paths[target])
+            return result
+
+        monkeypatch.setattr(subject.activity,'acceptance_status',failed)
+    else:
+        method = dict(final_post='inspect', final_history='history',
+            final_recovery='recovery_history')[reader]
+        fail_at = 4 if reader=='final_post' else 3
+        original=getattr(budget,method);calls=0
+
+        def failed():
+            nonlocal calls
+            result=original();calls+=1
+            if calls==fail_at:_mutate_metadata_and_fail(paths[target])
+            return result
+
+        monkeypatch.setattr(budget,method,failed)
+    with pytest.raises(ValueError,match=
+            'PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED'):
+        subject.review(budget,expected_post_head=head,
+            account_bindings=[binding])
+    assert before=={path:path.read_bytes() for path in before}
 
 
 @pytest.mark.parametrize('target', ('post_budget', 'journal'))
@@ -200,8 +311,8 @@ def test_ancillary_file_replacement_at_same_path_fails_closed(
 
 
 @pytest.mark.parametrize(('target','code'), (
-    ('post_budget','PAPER_PROVIDER_POST_REVIEW_FILE_SET_CHANGED'),
-    ('journal','PAPER_PROVIDER_POST_REVIEW_FILE_SET_CHANGED'),
+    ('post_budget','PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED'),
+    ('journal','PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED'),
     ('pacing_path','PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED'),
     ('activity_store_path','PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED'),
     ('acceptance_store_path','PAPER_PROVIDER_POST_ACTIVITY_FILE_SET_CHANGED')))
@@ -274,5 +385,7 @@ def test_fixture_is_private_and_never_authoritative():
     assert result['not_sent_bound_without_activity']
     assert result['unresolved_unknown_requires_review']
     assert result['journals_unchanged']
+    assert result['journal_file_fingerprints_rechecked']
+    assert result['semantic_reader_failures_rechecked']
     assert result['output_never_authoritative']
     assert all(result[flag] is False for flag in subject.FLAGS)

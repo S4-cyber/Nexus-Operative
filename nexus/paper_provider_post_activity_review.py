@@ -85,10 +85,28 @@ def _require_store_binding(post_budget, bindings, expected):
 
 
 def _require_bindings(post_budget, bindings, store_binding, paths,
-                      file_binding):
+                      file_binding, file_limits, file_fingerprints):
     _require_store_binding(post_budget, bindings, store_binding)
     require_file_identities(paths, file_binding,
         'PAPER_PROVIDER_POST_ACTIVITY_')
+    require_file_fingerprints(paths, file_limits, file_fingerprints,
+        'PAPER_PROVIDER_POST_ACTIVITY_')
+
+
+def _stable_reader(post_budget, bindings, store_binding, paths,
+                   file_binding, file_limits, file_fingerprints):
+    """Recheck every selected journal after each semantic reader exit."""
+    def read(reader):
+        try:
+            value = reader()
+        except BaseException:
+            _require_bindings(post_budget, bindings, store_binding, paths,
+                file_binding, file_limits, file_fingerprints)
+            raise
+        _require_bindings(post_budget, bindings, store_binding, paths,
+            file_binding, file_limits, file_fingerprints)
+        return value
+    return read
 
 
 def review(post_budget, *, expected_post_head, account_bindings):
@@ -150,28 +168,23 @@ def review(post_budget, *, expected_post_head, account_bindings):
     file_fingerprints = capture_file_fingerprints(paths, file_limits,
         'PAPER_PROVIDER_POST_ACTIVITY_')
     _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
+        file_binding, file_limits, file_fingerprints)
+    stable_read = _stable_reader(post_budget, bindings, store_binding, paths,
+        file_binding, file_limits, file_fingerprints)
 
-    first_post = post_budget.inspect()
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
+    first_post = stable_read(post_budget.inspect)
     if first_post['events'] == 0 or first_post['head_sha256'] != expected_post_head:
         _fail('POST_HEAD_CHANGED')
-    attempts = post_budget.history()
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
-    recoveries = post_budget.recovery_history()
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
+    attempts = stable_read(post_budget.history)
+    recoveries = stable_read(post_budget.recovery_history)
     if (len(attempts) != first_post['completed_attempts'] or
             len(recoveries) != first_post['recoveries']):
         _fail('POST_HISTORY_CHANGED')
 
-    post_result = posts.review(post_budget, expected_post_head=expected_post_head,
+    post_result = stable_read(lambda: posts.review(post_budget,
+        expected_post_head=expected_post_head,
         request_bindings=[dict(journal=item['journal'],
-            expected_head=item['expected_request_head']) for item in bindings])
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
+            expected_head=item['expected_request_head']) for item in bindings]))
     reasons = []
     if not post_result['complete_local_history_consistent']:
         reasons.append('POST_HISTORY_INCOMPLETE')
@@ -182,15 +195,14 @@ def review(post_budget, *, expected_post_head, account_bindings):
     untracked_activity_orders = 0
     unexpected_activity_blockers = 0
     for item in bindings:
-        component = activity.review(expected_account_id=item['account_id'],
+        component = stable_read(lambda item=item: activity.review(
+            expected_account_id=item['account_id'],
             request_journal_path=item['journal'].path,
             pacing_path=item['pacing_path'],
             activity_store_path=item['activity_store_path'],
             acceptance_store_path=item['acceptance_store_path'],
             expected_request_head=item['expected_request_head'],
-            expected_activity_head=item['expected_activity_head'])
-        _require_bindings(post_budget, bindings, store_binding, paths,
-            file_binding)
+            expected_activity_head=item['expected_activity_head']))
         nested = component.get('request_activity_review')
         valid = (component.get('read_only') is True and
             component.get('status') == 'REVIEW_REQUIRED' and
@@ -294,16 +306,12 @@ def review(post_budget, *, expected_post_head, account_bindings):
         reasons.append('UNBOUND_REQUEST_ACTIVITY_ROW')
 
     for item in bindings:
-        current_request = item['journal'].recovery()
-        _require_bindings(post_budget, bindings, store_binding, paths,
-            file_binding)
-        current_activity = activity.acceptance_status(
+        current_request = stable_read(item['journal'].recovery)
+        current_activity = stable_read(lambda item=item: activity.acceptance_status(
             expected_account_id=item['account_id'],
             pacing_path=item['pacing_path'],
             activity_store_path=item['activity_store_path'],
-            acceptance_store_path=item['acceptance_store_path'])
-        _require_bindings(post_budget, bindings, store_binding, paths,
-            file_binding)
+            acceptance_store_path=item['acceptance_store_path']))
         expected_heads = accepted_heads.get(item['_account_digest'])
         if (current_request['head_sha256'] != item['expected_request_head'] or
                 not activity._complete(current_activity) or
@@ -314,17 +322,9 @@ def review(post_budget, *, expected_post_head, account_bindings):
                  current_activity['acceptance_head_sha256']) != expected_heads):
             _fail('JOURNALS_CHANGED_DURING_REVIEW')
 
-    final_post = post_budget.inspect()
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
-    final_attempts = post_budget.history()
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
-    final_recoveries = post_budget.recovery_history()
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding)
-    require_file_fingerprints(paths, file_limits, file_fingerprints,
-        'PAPER_PROVIDER_POST_ACTIVITY_')
+    final_post = stable_read(post_budget.inspect)
+    final_attempts = stable_read(post_budget.history)
+    final_recoveries = stable_read(post_budget.recovery_history)
     if (final_post != first_post or final_attempts != attempts or
             final_recoveries != recoveries):
         _fail('POST_HISTORY_CHANGED')
@@ -342,6 +342,8 @@ def review(post_budget, *, expected_post_head, account_bindings):
         untracked_activity_orders=untracked_activity_orders,
         unexpected_activity_blockers=unexpected_activity_blockers,
         reasons=list(dict.fromkeys(reasons)), uncertainty_preserved=True,
+        journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,
         **{flag: False for flag in FLAGS},
         limitations='Exact-head local composition over explicitly selected cooperating journals only. Observed/recovered POST attempts must agree with complete accepted local activity history; NOT_SENT attempts must retain no observation or fills. This does not attest provider source or activity/fee completeness, make journals atomic, verify fee links, holds, balances or spendable funds, coordinate another credential/process/host, authorize transport, apply a ledger or approve release.')
 
@@ -436,12 +438,18 @@ def fixture_report():
             passed=(result['complete_local_post_activity_consistent'] and
                 result['exact_activity_bindings'] == 1 and
                 result['exact_not_sent_bindings'] == 1 and unchanged and
-                unresolved['reasons'] == ['UNRESOLVED_POST_OUTCOME']),
+                unresolved['reasons'] == ['UNRESOLVED_POST_OUTCOME'] and
+                result['journal_files_rechecked_unchanged'] and
+                result['semantic_reader_failures_rechecked']),
             recovered_unknown_bound_to_accepted_activity=
                 result['exact_activity_bindings'] == 1,
             not_sent_bound_without_activity=result['exact_not_sent_bindings'] == 1,
             unresolved_unknown_requires_review=
                 unresolved['reasons'] == ['UNRESOLVED_POST_OUTCOME'],
+            journal_file_fingerprints_rechecked=
+                result['journal_files_rechecked_unchanged'],
+            semantic_reader_failures_rechecked=
+                result['semantic_reader_failures_rechecked'],
             journals_unchanged=unchanged, output_never_authoritative=
                 all(result[flag] is False for flag in FLAGS),
             **{flag: False for flag in FLAGS})

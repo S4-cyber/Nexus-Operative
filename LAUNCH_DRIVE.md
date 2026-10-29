@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.36 provider-POST/activity semantic-reader file-set proof
+
+Provider-POST/activity review now rechecks the POST budget plus every selected account's request, pacing, retained-activity and acceptance stores after every semantic reader returns or raises. Fourteen direct regressions cover all five initial mutation targets and every later POST, composed-review, request-recovery, acceptance-status and repeat-reader boundary. Mandatory saved evidence requires both fences. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.35 passed public security run 40930705184 and research safety/browser/evidence run 40930705434. Windows EXE/installer/reinstall/uninstall run 40930705219 was still running at the latest check. Fresh exact-source v0.340.36 workflows remain mandatory.
+
+Pre-publication local validation passed 4,496 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused set passed 133 tests. All sixteen offline profiles and saved-evidence verification matched 387 source files / `9b7594fc374223388f97f5132bbb985b4068794b1a986a1ec75416d542c0be8d`; report SHA-256 is `c3632131e1961a97bf34deda65fdb3d3694aba5002ac70eac9b4bec88d89c900`. Compile, dependency, deterministic-roadmap, fourteen Node controller, wheel, public-artifact and targeted credential-pattern checks passed. Playwright is unavailable locally, so exact-source browser and Windows/installer CI remain required.
+
 ## v0.340.35 provider-POST history semantic-reader file-set proof
 
 Provider-POST history review now rechecks the POST-budget store and every explicitly selected request store after each POST status/history/recovery and request recovery/prefix semantic reader returns or raises. Nine direct regressions cover mutation plus failure at the initial reader and every later boundary; mandatory saved evidence requires both fences. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.36 provider-POST/activity semantic-reader file-set proof
+
+Provider-POST/activity review must hold the exact POST-budget plus all selected request, pacing, retained-activity and acceptance identities and bounded fingerprints across every semantic reader. Every normal or exceptional reader exit must recheck the complete 5-to-29-file set. Initial mutation of any single-account store and mutation at every later POST, composed-review, request-recovery, acceptance-status and repeat-reader boundary must receive the fixed outer file-set refusal. Fourteen regressions and mandatory saved evidence cover these guarantees. Runtime authority remains unchanged.
+
+Exact-source v0.340.35 passed public security run 40930705184 and research safety/browser/evidence run 40930705434. Windows EXE/installer/reinstall/uninstall run 40930705219 was still running at the latest check. Fresh exact-source v0.340.36 workflows remain mandatory.
+
+Pre-publication local validation passed 4,496 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused set passed 133 tests. All sixteen offline profiles and saved-evidence verification matched 387 source files / `9b7594fc374223388f97f5132bbb985b4068794b1a986a1ec75416d542c0be8d`; report SHA-256 is `c3632131e1961a97bf34deda65fdb3d3694aba5002ac70eac9b4bec88d89c900`. Compile, dependency, deterministic-roadmap, fourteen Node controller, wheel, public-artifact and targeted credential-pattern checks passed. Playwright is unavailable locally, so exact-source browser and Windows/installer CI remain required. This evidence does not establish provider access, broker-paper acceptance, market realism, profitability, live/cloud readiness or release approval.
+
 ## v0.340.35 provider-POST history semantic-reader file-set proof
 
 Provider-POST history review must hold the exact POST-budget plus selected request-journal identity and bounded fingerprint set across all POST status/history/recovery and request recovery/prefix semantic readers. Every normal or exceptional reader exit must recheck the complete set. Nine regressions mutate either of two selected request journals or the POST budget before a reader raises; every case must receive the fixed composition-level file-set refusal. Mandatory saved evidence requires both fences. Runtime authority remains unchanged.

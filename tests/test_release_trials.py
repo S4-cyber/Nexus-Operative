@@ -359,6 +359,8 @@ def test_pacing_profile_requires_provider_post_activity_review_fences():
     for field in ('recovered_unknown_bound_to_accepted_activity',
                   'not_sent_bound_without_activity',
                   'unresolved_unknown_requires_review','journals_unchanged',
+                  'journal_file_fingerprints_rechecked',
+                  'semantic_reader_failures_rechecked',
                   'output_never_authoritative'):
         changed=copy.deepcopy(result);changed['provider_post_activity_review'][field]=False
         with pytest.raises(ValueError,match='POST_ACTIVITY_REVIEW_FENCES'):

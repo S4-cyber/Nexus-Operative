@@ -1004,7 +1004,8 @@ def _validate(profile, result):
             post_activity['passed'] is True and all(post_activity[k] is True for k in
             ('recovered_unknown_bound_to_accepted_activity',
              'not_sent_bound_without_activity','unresolved_unknown_requires_review',
-             'journals_unchanged','output_never_authoritative')),
+             'journals_unchanged','journal_file_fingerprints_rechecked',
+             'semantic_reader_failures_rechecked','output_never_authoritative')),
             'POST_ACTIVITY_REVIEW_FENCES')
         from nexus.paper_provider_post_activity_review import FLAGS as POST_ACTIVITY_FLAGS
         _require(all(post_activity[k] is False for k in POST_ACTIVITY_FLAGS),

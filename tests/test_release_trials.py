@@ -393,7 +393,8 @@ def test_request_activity_acceptance_is_mandatory_in_activity_profile():
     result=trials._execute('activity');trials._validate('activity',result)
     accepted=result['request_activity_acceptance']
     assert accepted['accepted_history_bound'] and accepted['unbound_activity_rejected']
-    for key in ('accepted_history_bound','unbound_activity_rejected'):
+    for key in ('accepted_history_bound','unbound_activity_rejected',
+                'semantic_reader_failures_rechecked'):
         changed=copy.deepcopy(result);changed['request_activity_acceptance'][key]=False
         with pytest.raises(ValueError,match='REQUEST_ACTIVITY_ACCEPTANCE'):trials._validate('activity',changed)
     changed=copy.deepcopy(result);changed['request_activity_acceptance']['ready_for_routing']=True

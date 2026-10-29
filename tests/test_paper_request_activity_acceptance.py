@@ -1,6 +1,7 @@
 """Accepted-history composition for original requests and explicit fills."""
 import copy
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -106,6 +107,7 @@ def test_complete_accepted_history_binds_original_terms_and_explicit_fills(tmp_p
     assert result['request_activity_review']['request_reviews'][0]['explicit_fill_count']==2
     assert result['journals_rechecked_unchanged'] is True
     assert result['journal_files_rechecked_unchanged'] is True and snapshot(tmp_path)==before
+    assert result['semantic_reader_failures_rechecked'] is True
     assert result['accepted_pacing_operations_typed'] is True
     assert result['accepted_pacing_result_receipts_bound'] is True
     assert all(result[name] is False for name in subject.FLAGS)
@@ -251,6 +253,27 @@ def test_rollback_sidecar_fails_before_request_component(tmp_path, monkeypatch):
     with pytest.raises(ValueError,match=
             'PAPER_REQUEST_ACTIVITY_ACCEPTANCE_SQLITE_SIDECAR_REVIEW_REQUIRED'):
         subject.review(**options)
+
+
+@pytest.mark.parametrize('phase', ('initial_status', 'component_review'))
+def test_semantic_reader_failure_cannot_hide_journal_mutation(
+        tmp_path, monkeypatch, phase):
+    options,_,_=prepared(tmp_path)
+    path=options['request_journal_path'];before=path.read_bytes()
+    original_mtime=path.stat().st_mtime_ns
+    def mutate_and_fail(*args,**kwargs):
+        os.utime(path,ns=(path.stat().st_atime_ns,
+            original_mtime+1_000_000_000))
+        raise RuntimeError('injected semantic reader failure')
+    if phase=='initial_status':
+        monkeypatch.setattr(subject,'acceptance_status',mutate_and_fail)
+    else:
+        monkeypatch.setattr(subject.request_review,'review',mutate_and_fail)
+    with pytest.raises(ValueError,match=
+            'PAPER_REQUEST_ACTIVITY_ACCEPTANCE_FILE_SET_CHANGED'):
+        subject.review(**options)
+    assert path.read_bytes()==before
+    assert path.stat().st_mtime_ns!=original_mtime
 
 
 def test_cli_is_read_only_and_returns_private_review(tmp_path):

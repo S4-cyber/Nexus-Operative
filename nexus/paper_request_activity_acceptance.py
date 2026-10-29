@@ -97,32 +97,40 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
     def require_unchanged():
         require_file_fingerprints(paths, JOURNAL_LIMITS, fingerprints,
             prefix)
-    before = acceptance_status(expected_account_id=expected_account_id,
-        pacing_path=pacing_path, activity_store_path=activity_store_path,
-        acceptance_store_path=acceptance_store_path)
+    def stable_read(reader):
+        try:
+            value = reader()
+        except BaseException:
+            if fingerprints is not None:
+                require_unchanged()
+            raise
+        if fingerprints is not None:
+            require_unchanged()
+        return value
+    before = stable_read(lambda: acceptance_status(
+        expected_account_id=expected_account_id, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path))
     if not _complete(before):
         _fail('ACCEPTED_HISTORY_REQUIRED')
     if fingerprints is None:
         raise ValueError(prefix + 'FILE_SET_UNAVAILABLE') from None
-    require_unchanged()
     if before['retention_head_sha256'] != expected_activity_head:
         _fail('ACTIVITY_HEAD_DISAGREEMENT')
 
     journal = BrokerRequestJournal(request_journal_path, expected_account_id)
     store = BrokerActivityStore(activity_store_path, expected_account_id)
-    origins=_request_origins(journal,store,acceptance_store_path,expected_account_id,expected_request_head)
-    require_unchanged()
-    component = request_review.review(journal, store,
+    origins=stable_read(lambda: _request_origins(journal,store,
+        acceptance_store_path,expected_account_id,expected_request_head))
+    component = stable_read(lambda: request_review.review(journal, store,
         expected_request_head=expected_request_head,
-        expected_activity_head=expected_activity_head)
-    require_unchanged()
+        expected_activity_head=expected_activity_head))
 
-    after = acceptance_status(expected_account_id=expected_account_id,
-        pacing_path=pacing_path, activity_store_path=activity_store_path,
-        acceptance_store_path=acceptance_store_path)
-    require_unchanged()
-    recovered = journal.recovery()
-    require_unchanged()
+    after = stable_read(lambda: acceptance_status(
+        expected_account_id=expected_account_id, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path))
+    recovered = stable_read(journal.recovery)
     if before != after or recovered['head_sha256'] != expected_request_head:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     if component['activity_head_sha256'] != after['retention_head_sha256']:
@@ -138,6 +146,7 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
     return dict(mode='PAPER_REQUEST_ACTIVITY_ACCEPTANCE_REVIEW',
         status='REVIEW_REQUIRED', read_only=True, **scope, input_sha256=sha(scope),**origins,
         journals_rechecked_unchanged=True, journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,
         complete_accepted_history_replayed=True,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
         accepted_pacing_operations_typed=True,
@@ -261,7 +270,7 @@ def fixture_report():
             result['accepted_pacing_request_targets_bound'] and
             result['local_request_activity_agreement'] and
             component['request_reviews'][0]['explicit_fill_count']==2 and
-            before==after and unbound)
+            result['semantic_reader_failures_rechecked'] and before==after and unbound)
         return dict(source='SYNTHETIC_LOCAL_ACCEPTED_REQUEST_FILL_FIXTURE',passed=passed,
             accepted_history_bound=result['complete_accepted_history_replayed'],
             accepted_pacing_operations_typed=result['accepted_pacing_operations_typed'],
@@ -270,6 +279,8 @@ def fixture_report():
             original_request_linked=result['local_request_activity_agreement'],
             explicit_fills_checked=component['request_reviews'][0]['explicit_fill_count']==2,
             journals_unchanged=before==after,unbound_activity_rejected=unbound,
+            semantic_reader_failures_rechecked=
+                result['semantic_reader_failures_rechecked'],
             actual_provider_access=False,actual_vault_access=False,
             **{flag:False for flag in FLAGS})
 

@@ -1325,7 +1325,9 @@ def _validate(profile, result):
         from nexus.paper_request_activity_acceptance import FLAGS as ACCEPTED_FLAGS
         _require(accepted['source']=='SYNTHETIC_LOCAL_ACCEPTED_REQUEST_FILL_FIXTURE' and
             all(accepted[k] is True for k in ('passed','accepted_history_bound','original_request_linked',
-                'accepted_pacing_operations_typed','accepted_pacing_result_receipts_bound','explicit_fills_checked','journals_unchanged','unbound_activity_rejected')),
+                'accepted_pacing_operations_typed','accepted_pacing_result_receipts_bound',
+                'explicit_fills_checked','journals_unchanged','unbound_activity_rejected',
+                'semantic_reader_failures_rechecked')),
             'REQUEST_ACTIVITY_ACCEPTANCE')
         _require(all(accepted[k] is False for k in ACCEPTED_FLAGS) and
             accepted['actual_provider_access'] is accepted['actual_vault_access'] is False,

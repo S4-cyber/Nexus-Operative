@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.28 (pre-release).** This build rechecks request-journal identity and bounded fingerprint after every locked SQLite replay, including exceptional exits. A same-file mutation during the final replay can no longer return stale terminal proof or clear the shared POST-budget review latch. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.29 (pre-release).** This build rechecks all four accepted-history journals when any request/fill semantic reader exits, including exceptions. A reader can no longer mutate a journal, raise, and hide the file-set change behind a generic failure. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.29 accepted-history semantic-reader file-set proof
+
+The accepted-history request/fill composition now rechecks the request, pacing, retained-activity and acceptance journal fingerprints after every semantic reader on normal and exceptional exits. A reader that changes a journal and then raises can no longer hide the mutation behind its own failure. Direct regressions cover the initial accepted-history reader and the request/activity component reader and require fixed file-set refusal with unchanged journal bytes.
+
+Exact-source v0.340.28 passed public security/Gitleaks run 40864995550, research regression/browser/evidence run 40864995639 and Windows EXE/installer/reinstall/uninstall run 40864995602.
+
+Final local validation passed 4,436 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the accepted-history/recovery/budget/release/evidence/roadmap/version/workflow/packaging focus passed 200 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `5c38ccd867862cadfeef6a89b5981fc510d06803cd246ec55c076a84e21b6a85`; `validation/release_trials_0_340_29.json` SHA256 is `90eeb681f2c322288e14e11db2861b1c4580a0a4d8b71716a456f699312d9d9b`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.29 wheel build passed. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.29 workflows remain mandatory.
 
 ## v0.340.28 post-replay request proof
 

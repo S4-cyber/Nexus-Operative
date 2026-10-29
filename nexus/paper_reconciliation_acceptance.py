@@ -59,6 +59,22 @@ def _journal_fingerprint_scope(pacing_path, activity_store_path, acceptance_stor
     return paths, limits, capture_file_fingerprints(paths, limits, JOURNAL_FINGERPRINT_PREFIX)
 
 
+def _stable_reader(paths, limits, fingerprints):
+    """Recheck the complete journal set after every semantic reader exit."""
+    def require_unchanged():
+        require_file_fingerprints(paths, limits, fingerprints,
+            JOURNAL_FINGERPRINT_PREFIX)
+    def read(reader):
+        try:
+            value=reader()
+        except BaseException:
+            require_unchanged()
+            raise
+        require_unchanged()
+        return value
+    return read
+
+
 def _declared_window_coverage(receipts, scopes, first, last):
     """Union requested windows exactly; never infer received/provider coverage."""
     opening = {k:paper_observation_review._instant(first['read_timing'][k])
@@ -91,9 +107,10 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
     """Read-only composition of accepted collection history and balance review."""
     journal_paths, journal_limits, journal_fingerprints = _journal_fingerprint_scope(
         pacing_path, activity_store_path, acceptance_store_path)
-    before = acceptance_status(expected_account_id=expected_account_id,
+    stable_read=_stable_reader(journal_paths,journal_limits,journal_fingerprints)
+    before = stable_read(lambda: acceptance_status(expected_account_id=expected_account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
-        acceptance_store_path=acceptance_store_path)
+        acceptance_store_path=acceptance_store_path))
     if not _accepted(before):
         _fail('ACCEPTED_HISTORY_REQUIRED')
     if before['retention_head_sha256'] != expected_activity_head:
@@ -101,27 +118,25 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
 
     first, last = portable.validate(opening_observation), portable.validate(closing_observation)
     store = BrokerActivityStore(activity_store_path, expected_account_id)
-    retained = store.inspect()
-    scopes = PaperActivityAcceptanceStore(acceptance_store_path, expected_account_id).replay_scopes()
+    retained = stable_read(store.inspect)
+    scopes = stable_read(PaperActivityAcceptanceStore(
+        acceptance_store_path, expected_account_id).replay_scopes)
     if retained['head_sha256'] != expected_activity_head or len(scopes) != before['accepted_transitions']:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     windows = _declared_window_coverage(retained['receipts'], scopes, first, last)
     window_digest = sha(dict(account_sha256=before['account_sha256'], windows=windows))
-    component = paper_observation_review.review(
+    component = stable_read(lambda: paper_observation_review.review(
         store,
         expected_account_id=expected_account_id, expected_head=expected_activity_head,
-        opening_observation=first, closing_observation=last)
+        opening_observation=first, closing_observation=last))
 
-    after = acceptance_status(expected_account_id=expected_account_id,
+    after = stable_read(lambda: acceptance_status(expected_account_id=expected_account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
-        acceptance_store_path=acceptance_store_path)
+        acceptance_store_path=acceptance_store_path))
     if before != after:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     if component['head_sha256'] != after['retention_head_sha256']:
         _fail('COMPONENT_HEAD_DISAGREEMENT')
-    require_file_fingerprints(journal_paths, journal_limits, journal_fingerprints,
-        JOURNAL_FINGERPRINT_PREFIX)
-
     scope = dict(policy=POLICY, account_sha256=after['account_sha256'],
         pacing_head_sha256=after['pacing_head_sha256'],
         activity_head_sha256=after['retention_head_sha256'],
@@ -134,6 +149,7 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
     return dict(mode='PAPER_RECONCILIATION_ACCEPTANCE_REVIEW',
         status='REVIEW_REQUIRED', read_only=True, **scope, input_sha256=sha(scope),
         journals_rechecked_unchanged=True, journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,
         complete_accepted_history_replayed=True,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
         accepted_pacing_operations_typed=True,
@@ -266,9 +282,10 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
     """Bind four ordered supplied observations without promoting them to quiet instants."""
     journal_paths, journal_limits, journal_fingerprints = _journal_fingerprint_scope(
         pacing_path, activity_store_path, acceptance_store_path)
+    stable_read=_stable_reader(journal_paths,journal_limits,journal_fingerprints)
     status_options=dict(expected_account_id=expected_account_id,pacing_path=pacing_path,
         activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
-    before=acceptance_status(**status_options)
+    before=stable_read(lambda: acceptance_status(**status_options))
     if not _accepted(before): _fail('ACCEPTED_HISTORY_REQUIRED')
     observations=[portable.validate(value) for value in (pre_opening_observation,
         opening_observation,closing_observation,post_closing_observation)]
@@ -290,15 +307,16 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
             guard['observed_inventory']!=inner['observed_inventory']):
             _fail('GUARD_BALANCE_CHANGED')
 
-    accepted=review(expected_account_id=expected_account_id,pacing_path=pacing_path,
+    accepted=stable_read(lambda: review(expected_account_id=expected_account_id,pacing_path=pacing_path,
         activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path,
         expected_activity_head=expected_activity_head,opening_observation=opening,
-        closing_observation=closing)
+        closing_observation=closing))
     if accepted['observation_review']['arithmetic_evaluated'] is not True:
         _fail('GUARD_INNER_REVIEW_BLOCKED')
     store=BrokerActivityStore(activity_store_path,expected_account_id)
-    retained=store.inspect()
-    scopes=PaperActivityAcceptanceStore(acceptance_store_path,expected_account_id).replay_scopes()
+    retained=stable_read(store.inspect)
+    scopes=stable_read(PaperActivityAcceptanceStore(
+        acceptance_store_path,expected_account_id).replay_scopes)
     if retained['head_sha256']!=expected_activity_head or len(scopes)!=before['accepted_transitions']:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     if not _guard_declared_sources_agree(retained,scopes,pre_opening['source']):
@@ -312,11 +330,10 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
     if collection_fee_events: _fail('GUARD_COLLECTION_FEE_PRESENT')
     fee_date_events=_guard_fee_date_events(retained,windows)
     if fee_date_events: _fail('GUARD_RETAINED_FEE_TIMING_AMBIGUOUS')
-    after=acceptance_status(**status_options)
-    if before!=after or store.inspect()['head_sha256']!=expected_activity_head:
+    after=stable_read(lambda: acceptance_status(**status_options))
+    final_activity=stable_read(store.inspect)
+    if before!=after or final_activity['head_sha256']!=expected_activity_head:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
-    require_file_fingerprints(journal_paths, journal_limits, journal_fingerprints,
-        JOURNAL_FINGERPRINT_PREFIX)
     scope=dict(policy=STABILITY_POLICY,account_sha256=after['account_sha256'],
         activity_head_sha256=expected_activity_head,
         accepted_reconciliation_sha256=accepted['input_sha256'],
@@ -336,6 +353,7 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         guard_retained_fee_date_overlaps=0,
         accepted_declared_windows_cover_guard_envelope=True,journals_rechecked_unchanged=True,
         journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,
         admission_reserved=False,source_attested=False,source_coverage_verified=False,
         activity_coverage_verified=False,fee_coverage_complete=False,
         fee_execution_links_verified=False,balance_instants_verified=False,
@@ -498,15 +516,20 @@ def fixture_report():
                 pre_opening,opening,closing,post_closing))==['synthetic-private-fee']
         file_fingerprints_rechecked=(result['journal_files_rechecked_unchanged'] is True and
             guarded['journal_files_rechecked_unchanged'] is True)
+        semantic_reader_failures_rechecked=(
+            result['semantic_reader_failures_rechecked'] is True and
+            guarded['semantic_reader_failures_rechecked'] is True)
         passed=(result == repeated and guarded == guarded_repeated and before == after and
             unbound_rejected and continuation_rejected and outside_rejected and covered and
             changed_guard_rejected and unordered_guard_rejected and outer_guard_coverage_rejected and
             exact_bound and replayed and complete and cursor_complete and arithmetic and guard_bound and
             declared_source_mismatch_rejected and fee_date_overlap_detected and late_collection_fill_detected and
-            late_collection_fee_detected and file_fingerprints_rechecked)
+            late_collection_fee_detected and file_fingerprints_rechecked and
+            semantic_reader_failures_rechecked)
         return dict(passed=passed, repeat_review_matches=result == repeated,
             stability_guard_repeat_matches=guarded == guarded_repeated,
             journal_file_fingerprints_rechecked=file_fingerprints_rechecked,
+            semantic_reader_failures_rechecked=semantic_reader_failures_rechecked,
             journals_unchanged=before == after, unbound_history_rejected=unbound_rejected,
             continuation_required_history_rejected=continuation_rejected,
             out_of_window_observations_rejected=outside_rejected,

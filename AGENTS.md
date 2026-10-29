@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.29 rechecks all four accepted-history journals when any request/fill semantic reader exits, including exceptions. A reader can no longer mutate a journal, raise, and hide the file-set change behind a generic failure. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.30 rechecks the pacing, retained-activity and acceptance journals when every accepted balance-reconciliation semantic reader exits, including exceptions and the outer four-observation stability confirmation. A reader can no longer mutate a journal, raise, and hide the file-set change behind a generic failure. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.30 balance-reconciliation semantic-reader file-set proof
+
+The accepted balance-reconciliation and outer four-observation stability compositions now recheck all three journal fingerprints after every journal-backed semantic reader on normal and exceptional exits. Direct regressions cover the initial status reader, balance component and outer final status reader and require fixed file-set refusal with unchanged journal bytes. Mandatory saved evidence requires this failure fence.
+
+Exact-source v0.340.29 passed public security/Gitleaks run 40871642366, research regression/browser/evidence run 40871642481 and Windows EXE/installer/reinstall/uninstall run 40871642371.
+
+Final local validation passed 4,439 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 205 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a6ca77522037b8c36a4bccd4319ab72e70a168a22bbccd89daa2c71bf88fd4d6`; `validation/release_trials_0_340_30.json` SHA256 is `c14bbad1ced17f5ba931e1b2565129aeebc8af4681a9ed11ed48ba2cf302dabd`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.30 wheel build passed; the wheel SHA256 is `25f6e9c211bb0de18835354dc09d25317c812fc624be8b01a447d53bc113487d`. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.30 workflows remain mandatory.
 
 ## v0.340.29 accepted-history semantic-reader file-set proof
 

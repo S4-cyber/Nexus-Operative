@@ -1,6 +1,7 @@
 """Accepted-history binding for supplied balance observations."""
 import copy
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -290,6 +291,50 @@ def test_same_head_sqlite_file_rewrite_during_review_is_rejected(tmp_path,monkey
     monkeypatch.setattr(subject.paper_observation_review,'review',changed)
     with pytest.raises(ValueError,match='FILE_SET_CHANGED'):
         subject.review(**options)
+
+
+def _mutate_metadata_and_fail(path):
+    stat=os.stat(path)
+    os.utime(path,ns=(stat.st_atime_ns,stat.st_mtime_ns+1_000_000_000))
+    raise RuntimeError('injected semantic reader failure')
+
+
+@pytest.mark.parametrize('reader',('initial_status','observation_review'))
+def test_reconciliation_rechecks_journals_when_semantic_reader_fails(
+        tmp_path,monkeypatch,reader):
+    options=prepared(tmp_path);before=snapshot(tmp_path)
+    if reader=='initial_status':
+        original=subject.acceptance_status
+        def failed_status(**kwargs):
+            original(**kwargs)
+            _mutate_metadata_and_fail(options['acceptance_store_path'])
+        monkeypatch.setattr(subject,'acceptance_status',failed_status)
+    else:
+        original=subject.paper_observation_review.review
+        def failed_review(*args,**kwargs):
+            original(*args,**kwargs)
+            _mutate_metadata_and_fail(options['acceptance_store_path'])
+        monkeypatch.setattr(subject.paper_observation_review,'review',failed_review)
+    with pytest.raises(ValueError,match='PAPER_RECONCILIATION_ACCEPTANCE_FILE_SET_CHANGED'):
+        subject.review(**options)
+    assert snapshot(tmp_path)==before
+
+
+def test_stability_review_rechecks_journals_when_final_status_reader_fails(
+        tmp_path,monkeypatch):
+    options=guarded(tmp_path);before=snapshot(tmp_path)
+    original=subject.acceptance_status;calls=0
+    def failed_status(**kwargs):
+        nonlocal calls
+        value=original(**kwargs);calls+=1
+        if calls==4:
+            _mutate_metadata_and_fail(options['acceptance_store_path'])
+        return value
+    monkeypatch.setattr(subject,'acceptance_status',failed_status)
+    with pytest.raises(ValueError,match='PAPER_RECONCILIATION_ACCEPTANCE_FILE_SET_CHANGED'):
+        subject.review_with_stability_guards(**options)
+    assert calls==4
+    assert snapshot(tmp_path)==before
 
 
 def test_reconciliation_refuses_rollback_sidecar_before_arithmetic(tmp_path,monkeypatch):

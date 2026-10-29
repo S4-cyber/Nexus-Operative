@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.30 balance-reconciliation semantic-reader file-set proof
+
+Accepted balance-reconciliation and its outer four-observation stability composition must recheck all three journal fingerprints after every journal-backed semantic reader exits, including exceptions. A status, retained-history, acceptance-scope, balance-component or final stability reader that changes a journal and raises must receive fixed file-set refusal. Direct regressions and mandatory saved evidence cover the initial, component and outer-final failure boundaries. Runtime authority remains unchanged.
+
+Exact-source v0.340.29 passed public security/Gitleaks run 40871642366, research regression/browser/evidence run 40871642481 and Windows EXE/installer/reinstall/uninstall run 40871642371.
+
+Final local validation passed 4,439 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 205 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a6ca77522037b8c36a4bccd4319ab72e70a168a22bbccd89daa2c71bf88fd4d6`; `validation/release_trials_0_340_30.json` SHA256 is `c14bbad1ced17f5ba931e1b2565129aeebc8af4681a9ed11ed48ba2cf302dabd`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.30 wheel build passed; the wheel SHA256 is `25f6e9c211bb0de18835354dc09d25317c812fc624be8b01a447d53bc113487d`. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.30 workflows remain mandatory.
+
 ## v0.340.29 accepted-history semantic-reader file-set proof
 
 The accepted-history request/fill composition now rechecks the request, pacing, retained-activity and acceptance journal fingerprints after every semantic reader on normal and exceptional exits. A reader that changes a journal and then raises can no longer hide the mutation behind its own failure. Direct regressions cover the initial accepted-history reader and the request/activity component reader and require fixed file-set refusal with unchanged journal bytes.

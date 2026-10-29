@@ -543,6 +543,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('complete_accepted_history_replayed',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('declared_windows_cover_observation_envelope',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('journal_file_fingerprints_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
+        (('semantic_reader_failures_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('stability_guard_bound',),False,'RECONCILIATION_STABILITY_GUARD'),
         (('guard_declared_sources_agree',),False,'RECONCILIATION_STABILITY_GUARD'),
         (('declared_source_mismatch_rejected',),False,'RECONCILIATION_STABILITY_GUARD'),

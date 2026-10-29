@@ -15,10 +15,13 @@ from nexus import paper_read_review
 from nexus.paper_activity_acceptance_probe import _private_path
 from nexus.paper_provider_read_budget import PaperProviderReadBudget
 from nexus.paper_read_pacing import PaperReadPacing
-from nexus.sqlite_journal_guard import check_path_set
+from nexus.sqlite_journal_guard import (
+    capture_file_identities,check_path_set,require_file_identities)
 
 PROFILE='nexus.paper-provider-result-input.v1'
 MAX_BYTES=3*1024*1024
+CHECKS=('review_checked','manifest_identity_rechecked',
+    'semantic_reader_failures_rechecked','source_files_preserved')
 
 
 def _fail():raise ValueError('PAPER_PROVIDER_RESULT_INPUT_INVALID') from None
@@ -68,23 +71,54 @@ def _decode(raw):
     return value
 
 
+def _manifest_binding(path,raw):
+    try:
+        observed=path.lstat()
+        identities=capture_file_identities((path,),'PAPER_PROVIDER_RESULT_INPUT_')
+        if _read(path)!=raw:_fail()
+        return identities,(observed.st_size,observed.st_mtime_ns),raw
+    except (OSError,ValueError,RuntimeError,TypeError):_fail()
+
+
+def _require_manifest(path,binding):
+    try:
+        require_file_identities((path,),binding[0],'PAPER_PROVIDER_RESULT_INPUT_')
+        observed=path.lstat();raw=_read(path)
+        require_file_identities((path,),binding[0],'PAPER_PROVIDER_RESULT_INPUT_')
+        if (observed.st_size,observed.st_mtime_ns)!=binding[1] or raw!=binding[2]:_fail()
+    except (OSError,ValueError,RuntimeError,TypeError):_fail()
+
+
+def _stable_manifest_reader(path,binding,reader):
+    try:value=reader()
+    except BaseException:
+        _require_manifest(path,binding)
+        raise
+    _require_manifest(path,binding)
+    return value
+
+
 def review_file(input_path):
-    """Sample one bounded manifest twice around the pinned, read-only review.
+    """Hold one sampled manifest binding across the pinned, read-only review.
 
     Relative journal paths resolve beside the manifest, never against defaults.
-    Repeated reads are not atomic path ownership or valid-tail/ABA protection.
+    This is not persistent descriptor ownership, an ACL audit or external anchor.
     """
-    path=_path(str(input_path),Path.cwd());raw=_read(path);value=_decode(raw)
-    provider=PaperProviderReadBudget(_path(value['provider_budget'],path.parent))
-    gates=[];heads={};bindings={}
-    for account in value['accounts']:
-        gate=PaperReadPacing(_path(account['pacing'],path.parent),account['account_id'])
-        if gate.account_digest in heads:_fail()
-        gates.append(gate);heads[gate.account_digest]=account['expected_head'];bindings[gate.account_digest]=account['bindings']
-    check_path_set((path,provider.path,*(gate.path for gate in gates)),'PAPER_PROVIDER_RESULT_INPUT_')
-    result=review_module.review(provider,gates,bindings,expected_provider_head=value['expected_provider_head'],expected_account_heads=heads)
-    if _read(path)!=raw:_fail()
-    return result
+    path=_path(str(input_path),Path.cwd());raw=_read(path)
+    manifest_binding=_manifest_binding(path,raw)
+    def read():
+        value=_decode(raw)
+        provider=PaperProviderReadBudget(_path(value['provider_budget'],path.parent))
+        gates=[];heads={};bindings={}
+        for account in value['accounts']:
+            gate=PaperReadPacing(_path(account['pacing'],path.parent),account['account_id'])
+            if gate.account_digest in heads:_fail()
+            gates.append(gate);heads[gate.account_digest]=account['expected_head'];bindings[gate.account_digest]=account['bindings']
+        check_path_set((path,provider.path,*(gate.path for gate in gates)),'PAPER_PROVIDER_RESULT_INPUT_')
+        result=review_module.review(provider,gates,bindings,expected_provider_head=value['expected_provider_head'],expected_account_heads=heads)
+        if _read(path)!=raw:_fail()
+        return result
+    return _stable_manifest_reader(path,manifest_binding,read)
 
 
 def _fixture(root):
@@ -98,6 +132,40 @@ def _fixture(root):
             bindings=bindings[gate.account_digest]) for gate in gates])
     path.write_text(canonical(value),encoding='utf-8')
     return path
+
+
+def fixture_report():
+    """Disposable manifest-bound review only; no provider, vault or authority."""
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix='nexus-provider-result-tool-') as directory:
+        root=Path(directory);path=_fixture(root)
+        files=lambda:{str(item.relative_to(root)):item.read_bytes()
+            for item in root.rglob('*') if item.is_file()}
+        before=files();result=review_file(path);preserved=files()==before
+        def replacement_refused():
+            probe=root/'identity-probe.json';probe.write_bytes(path.read_bytes())
+            raw=_read(probe);binding=_manifest_binding(probe,raw)
+            def replace():
+                candidate=root/'identity-replacement.json';candidate.write_bytes(raw)
+                candidate.replace(probe)
+            try:_stable_manifest_reader(probe,binding,replace)
+            except ValueError as error:return str(error)=='PAPER_PROVIDER_RESULT_INPUT_INVALID'
+            return False
+        def failure_refused():
+            probe=root/'failure-probe.json';probe.write_bytes(path.read_bytes())
+            raw=_read(probe);binding=_manifest_binding(probe,raw)
+            def mutate_then_fail():
+                probe.write_bytes(raw+b' ')
+                raise RuntimeError('injected lower-reader failure')
+            try:_stable_manifest_reader(probe,binding,mutate_then_fail)
+            except ValueError as error:return str(error)=='PAPER_PROVIDER_RESULT_INPUT_INVALID'
+            except RuntimeError:return False
+            return False
+        checks=dict(review_checked=result['local_provider_results_consistent'] is True,
+            manifest_identity_rechecked=replacement_refused(),
+            semantic_reader_failures_rechecked=failure_refused(),source_files_preserved=preserved)
+        return dict(source='TEMPORARY_INJECTED_PROVIDER_RESULT_TOOL',passed=all(checks.values()),
+            **checks,**{flag:False for flag in review_module.FLAGS})
 
 
 class _Parser(argparse.ArgumentParser):

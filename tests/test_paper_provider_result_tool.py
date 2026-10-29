@@ -25,6 +25,12 @@ def test_relative_paths_resolve_beside_manifest_without_writes_or_authority(mani
     assert files(tmp_path)==before
 
 
+def test_fixture_requires_manifest_identity_and_exceptional_exit_fences():
+    result=subject.fixture_report()
+    assert result['passed'] and all(result[key] is True for key in subject.CHECKS)
+    assert all(result[key] is False for key in reviewer.FLAGS)
+
+
 def test_path_descriptor_ctime_disagreement_is_not_treated_as_identity_change(manifest,monkeypatch):
     original=Path.lstat
     class StatProxy:
@@ -89,6 +95,28 @@ def test_changed_manifest_after_journal_review_loses_acknowledgment(manifest,mon
         result=original(*args,**kwargs);manifest.write_bytes(manifest.read_bytes()+b' ');return result
     monkeypatch.setattr(reviewer,'review',changed)
     with pytest.raises(ValueError,match='PAPER_PROVIDER_RESULT_INPUT_INVALID'):subject.review_file(manifest)
+
+
+def test_same_byte_manifest_replacement_during_review_is_refused(manifest,monkeypatch):
+    original=reviewer.review
+    def replaced(*args,**kwargs):
+        result=original(*args,**kwargs)
+        replacement=manifest.with_suffix('.replacement')
+        replacement.write_bytes(manifest.read_bytes())
+        replacement.replace(manifest)
+        return result
+    monkeypatch.setattr(reviewer,'review',replaced)
+    with pytest.raises(ValueError,match='PAPER_PROVIDER_RESULT_INPUT_INVALID'):
+        subject.review_file(manifest)
+
+
+def test_manifest_mutation_hidden_by_reader_failure_is_refused(manifest,monkeypatch):
+    def changed_then_failed(*args,**kwargs):
+        manifest.write_bytes(manifest.read_bytes()+b' ')
+        raise RuntimeError('lower reader failure must not mask manifest mutation')
+    monkeypatch.setattr(reviewer,'review',changed_then_failed)
+    with pytest.raises(ValueError,match='PAPER_PROVIDER_RESULT_INPUT_INVALID'):
+        subject.review_file(manifest)
 
 
 @pytest.mark.parametrize('suffix',['','-journal','-wal','-shm','.owner.lock'])

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.39 provider-result input-manifest proof
+
+The installed/source provider-result tool now holds its explicit private manifest by pathname identity, bounded bytes, size and modification time across the entire nested provider/account review. Normal and exceptional exits recheck the binding. Three direct regressions cover ordinary mutation, same-byte replacement and mutation hidden by a reader failure; disposable negative controls are mandatory typed pacing evidence. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.38 source `f505232799647653156a490033f31be4ae7495ea` passed public security run 40956554231, research safety/browser/evidence run 40956554000 and Windows EXE/installer/reinstall/uninstall run 40956554177. Fresh exact-source v0.340.39 workflows remain mandatory.
+
+Pre-publication local validation passed 4,516 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider-result/tool/release focus passed 309 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a758fb445bab9243c26ecd4c2558dc0005d1c19b3f7447ac906116b3ae826ff4`; `validation/release_trials_0_340_39.json` SHA-256 is `902d69a452bffb314aaf65079cf615e5ff75707397609d7385036a812393464e`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.39 wheel build passed; wheel SHA-256 is `78ab7620a4e9d51a6b5c1c17acb27e85fb2fbd5cfb39f51f016e9c448c910079`. The 742-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Playwright are unavailable.
+
 ## v0.340.38 normalized provider-result semantic-reader file-set proof
 
 Normalized provider-result review now rechecks the provider budget plus every selected account pacing journal after the initial provider review, each account result review and final provider repeat returns or raises. Six mutation-plus-failure and two retarget regressions cover the full outer composition; mandatory typed pacing evidence requires both fences. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

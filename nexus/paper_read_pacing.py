@@ -699,6 +699,8 @@ def typed_fixture_report():
         mixed_review=mixed_review_fixture()
         from nexus.paper_provider_result_review import fixture_report as result_fixture,CHECKS as RESULT_CHECKS,FLAGS as RESULT_FLAGS
         provider_results=result_fixture()
+        from nexus.paper_provider_result_tool import fixture_report as result_tool_fixture,CHECKS as RESULT_TOOL_CHECKS
+        provider_result_tool=result_tool_fixture()
         fixed=[typed_history[index] for index in (0,1,4)]
         wrong_fixed=True
         for record in fixed:
@@ -731,7 +733,12 @@ def typed_fixture_report():
                 (account.encode(),key.encode(),secret.encode(),b'nx_operation_fixture',b'2026-10-17T00:00:00Z')),
             provider_budget_authority_withheld=provider_state['local_provider_scope_coordinated'] is True and
                 provider_state['broker_wide_quota_verified'] is False and provider_state['ready_for_routing'] is False,
-            provider_results_review_checked=provider_results['passed'] is True and all(provider_results[k] is True for k in RESULT_CHECKS) and all(provider_results[k] is False for k in RESULT_FLAGS),
+            provider_results_review_checked=provider_results['passed'] is True and
+                all(provider_results[k] is True for k in RESULT_CHECKS) and
+                all(provider_results[k] is False for k in RESULT_FLAGS) and
+                provider_result_tool['passed'] is True and
+                all(provider_result_tool[k] is True for k in RESULT_TOOL_CHECKS) and
+                all(provider_result_tool[k] is False for k in RESULT_FLAGS),
             provider_account_review_consistent=provider_reviewed['local_provider_account_history_consistent'] is True and
                 provider_reviewed['matched_sessions']==5 and all(provider_reviewed[name] is False for name in PROVIDER_REVIEW_FLAGS),
             provider_account_review_durable=provider_review_history['retained_receipts']==1 and

@@ -5,12 +5,18 @@ vault, calls a provider, repairs history, reserves admission or grants broker,
 routing, funding, live-trading or release authority.
 """
 from collections import Counter
+from pathlib import Path
 import re
 
 from nexus.alpaca_paper_contract import sha
-from nexus.paper_provider_read_budget import PaperProviderReadBudget
-from nexus.paper_read_pacing import LEGACY_OPERATION,OPERATIONS,PaperReadPacing
-from nexus.sqlite_journal_guard import check_path_set
+from nexus.paper_provider_read_budget import (
+    MAX_DATABASE_BYTES as PROVIDER_DATABASE_BYTES, PaperProviderReadBudget)
+from nexus.paper_read_pacing import (
+    LEGACY_OPERATION, MAX_DATABASE_BYTES as ACCOUNT_DATABASE_BYTES,
+    OPERATIONS, PaperReadPacing)
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints, capture_file_identities, check_path_set,
+    require_file_fingerprints, require_file_identities)
 
 MAX_ACCOUNTS=6
 ZERO='0'*64
@@ -44,10 +50,60 @@ def _inputs(provider_budget,gates,expected_account_heads):
     return tuple(checked),heads
 
 
-def _account_rows(gates,reasons):
+def _store_binding(provider_budget,gates):
+    return (provider_budget.path,provider_budget.provider_scope,
+        provider_budget.provider_digest,
+        tuple((gate.path,gate.account_digest) for gate in gates))
+
+
+def _file_scope(paths,file_limits):
+    present=[];present_limits=[];absent=[]
+    for path,limit in zip(paths,file_limits):
+        try:Path(path).lstat()
+        except FileNotFoundError:absent.append(path)
+        except (OSError,RuntimeError,TypeError):_fail('FILE_IDENTITY_UNAVAILABLE')
+        else:present.append(path);present_limits.append(limit)
+    return tuple(present),tuple(present_limits),tuple(absent)
+
+
+def _require_absent(paths):
+    for path in paths:
+        try:Path(path).lstat()
+        except FileNotFoundError:continue
+        except (OSError,RuntimeError,TypeError):_fail('FILE_IDENTITY_CHANGED')
+        _fail('FILE_IDENTITY_CHANGED')
+
+
+def _require_bindings(provider_budget,gates,store_binding,paths,absent_paths,
+                      file_binding,file_limits,file_fingerprints):
+    if (type(provider_budget) is not PaperProviderReadBudget or
+            any(type(gate) is not PaperReadPacing for gate in gates) or
+            _store_binding(provider_budget,gates)!=store_binding):
+        _fail('STORE_BINDING_CHANGED')
+    _require_absent(absent_paths)
+    require_file_identities(paths,file_binding,'PAPER_PROVIDER_READ_REVIEW_')
+    require_file_fingerprints(paths,file_limits,file_fingerprints,
+        'PAPER_PROVIDER_READ_REVIEW_')
+
+
+def _stable_reader(provider_budget,gates,store_binding,paths,absent_paths,file_binding,
+                   file_limits,file_fingerprints):
+    def read(reader):
+        try:value=reader()
+        except BaseException:
+            _require_bindings(provider_budget,gates,store_binding,paths,absent_paths,
+                file_binding,file_limits,file_fingerprints)
+            raise
+        _require_bindings(provider_budget,gates,store_binding,paths,absent_paths,
+            file_binding,file_limits,file_fingerprints)
+        return value
+    return read
+
+
+def _account_rows(gates,reasons,stable_read):
     rows=[]
     for gate in gates:
-        for record in gate.operation_history():
+        for record in stable_read(gate.operation_history):
             operation=record['operation'];outcome=record['outcome']
             if operation==LEGACY_OPERATION:
                 reasons.add('LEGACY_ACCOUNT_HISTORY');continue
@@ -74,21 +130,33 @@ def review(provider_budget,gates,*,expected_provider_head,expected_account_heads
     """Compare every completed provider reservation with exact account history."""
     expected_provider_head=_digest(expected_provider_head,'PROVIDER_HEAD_INVALID')
     gates,expected_account_heads=_inputs(provider_budget,gates,expected_account_heads)
-    provider_before=provider_budget.inspect()
+    paths=(provider_budget.path,*(gate.path for gate in gates))
+    store_binding=_store_binding(provider_budget,gates)
+    file_limits=(PROVIDER_DATABASE_BYTES,
+        *((ACCOUNT_DATABASE_BYTES,)*len(gates)))
+    paths,file_limits,absent_paths=_file_scope(paths,file_limits)
+    file_binding=capture_file_identities(paths,'PAPER_PROVIDER_READ_REVIEW_')
+    file_fingerprints=capture_file_fingerprints(paths,file_limits,
+        'PAPER_PROVIDER_READ_REVIEW_')
+    _require_bindings(provider_budget,gates,store_binding,paths,absent_paths,file_binding,
+        file_limits,file_fingerprints)
+    stable_read=_stable_reader(provider_budget,gates,store_binding,paths,absent_paths,
+        file_binding,file_limits,file_fingerprints)
+    provider_before=stable_read(provider_budget.inspect)
     if provider_before['head_sha256']!=expected_provider_head:_fail('PROVIDER_HEAD_CHANGED')
-    account_before={gate.account_digest:gate.inspect() for gate in gates}
+    account_before={gate.account_digest:stable_read(gate.inspect) for gate in gates}
     if any(account_before[key]['head_sha256']!=expected_account_heads[key] for key in account_before):
         _fail('ACCOUNT_HEAD_CHANGED')
     reasons=set()
     if provider_before['pending_token'] is not None:reasons.add('PENDING_PROVIDER_HISTORY')
     if provider_before['review_required']:reasons.add('PROVIDER_REVIEW_BLOCK')
-    provider_history=provider_budget.history()
-    account_rows=_account_rows(gates,reasons);provider_rows=_provider_rows(provider_history,reasons)
+    provider_history=stable_read(provider_budget.history)
+    account_rows=_account_rows(gates,reasons,stable_read);provider_rows=_provider_rows(provider_history,reasons)
     if Counter(account_rows)!=Counter(provider_rows):reasons.add('PROVIDER_ACCOUNT_SESSION_MISMATCH')
     purposes={row[3] for row in provider_rows}
     if not set(OPERATIONS)<=purposes:reasons.add('FIVE_PURPOSE_HISTORY_INCOMPLETE')
-    provider_after=provider_budget.inspect()
-    account_after={gate.account_digest:gate.inspect() for gate in gates}
+    provider_after=stable_read(provider_budget.inspect)
+    account_after={gate.account_digest:stable_read(gate.inspect) for gate in gates}
     if provider_after!=provider_before:_fail('PROVIDER_HEAD_CHANGED')
     if account_after!=account_before:_fail('ACCOUNT_HEAD_CHANGED')
     manifest=[dict(account_sha256=key,head_sha256=expected_account_heads[key]) for key in sorted(expected_account_heads)]
@@ -99,7 +167,9 @@ def review(provider_budget,gates,*,expected_provider_head,expected_account_heads
         account_sessions_replayed=len(account_rows),matched_sessions=len(provider_rows) if consistent else 0,
         operation_counts={operation:sum(row[3]==operation for row in provider_rows) for operation in OPERATIONS},
         all_five_purposes_observed=set(OPERATIONS)<=purposes,local_provider_account_history_consistent=consistent,
-        review_reasons=sorted(reasons),admission_reserved=False,**{flag:False for flag in FLAGS},
+        review_reasons=sorted(reasons),admission_reserved=False,
+        journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,**{flag:False for flag in FLAGS},
         limitations='Exact-head replay of explicitly supplied local journals only. Matching digests do not attest provider identity, quotas, another path/credential/host, source coverage, clocks, fees, holds, funds, routing or release. No reservation, retry, repair or authority is granted.')
 
 
@@ -122,3 +192,44 @@ def retain_review(store_path,provider_budget,gates,*,expected_provider_head,expe
     store=PaperProviderReadReviewStore(store_path,provider_budget,gates)
     return store.append(value,expected_head=expected_store_head,admission=lambda:sha(scope()),
         precommit_check=precommit_check)
+
+
+def fixture_report():
+    """Disposable exact provider/account history composition; no provider I/O."""
+    import tempfile
+    from nexus import paper_read_review
+    with tempfile.TemporaryDirectory(prefix='nexus-provider-read-review-') as directory:
+        root=Path(directory);gate,_=paper_read_review._fixture(root/'account')
+        budget=PaperProviderReadBudget(root/'provider.sqlite3')
+        for index,record in enumerate(gate.operation_history()):
+            with budget.ownership() as owner:
+                token=budget.begin(account_id=gate.account,
+                    account_before_head_sha256=record['before_head_sha256'],
+                    operation=record['operation'],admission=lambda index=index:1000+index*61,
+                    ownership=owner)
+                budget.finish(token,
+                    account_after_head_sha256=record['after_head_sha256'],
+                    actual_gets=len(record['request_kinds']),
+                    admission=lambda index=index:1001+index*61,
+                    ownership=owner,status_code=200)
+        options=dict(expected_provider_head=budget.inspect()['head_sha256'],
+            expected_account_heads={gate.account_digest:gate.inspect()['head_sha256']})
+        files=lambda:{str(path.relative_to(root)):path.read_bytes()
+            for path in root.rglob('*') if path.is_file()}
+        before=files();result=review(budget,[gate],**options)
+        changed_head_denied=False
+        try:review(budget,[gate],expected_provider_head='f'*64,
+            expected_account_heads=options['expected_account_heads'])
+        except ValueError as error:
+            changed_head_denied=str(error)=='PAPER_PROVIDER_READ_REVIEW_PROVIDER_HEAD_CHANGED'
+        checks=dict(
+            exact_provider_account_history=result['local_provider_account_history_consistent'],
+            every_session_matched=result['matched_sessions']==5,
+            all_five_purposes_observed=result['all_five_purposes_observed'],
+            changed_head_denied=changed_head_denied,
+            journals_unchanged=files()==before,
+            journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
+            semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],
+            output_never_authoritative=all(result[flag] is False for flag in FLAGS))
+        return dict(source='TEMPORARY_LOCAL_PROVIDER_READ_HISTORY_FIXTURE',
+            passed=all(checks.values()),**checks,**{flag:False for flag in FLAGS})

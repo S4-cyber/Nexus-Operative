@@ -1,4 +1,6 @@
 """Provider/account read-history composition and durable receipt tests."""
+import os
+import shutil
 import sqlite3
 
 import pytest
@@ -42,7 +44,91 @@ def test_complete_provider_account_history_matches_without_authority_or_writes(t
     assert result['local_provider_account_history_consistent'] and result['all_five_purposes_observed']
     assert result['matched_sessions']==result['provider_sessions_replayed']==result['account_sessions_replayed']==5
     assert result['review_reasons']==[] and result['status']=='REVIEW_REQUIRED'
+    assert result['journal_files_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert all(result[key] is False for key in subject.FLAGS) and files(tmp_path)==before
+
+
+def _mutate_metadata_and_fail(path):
+    stat=os.stat(path)
+    os.utime(path,ns=(stat.st_atime_ns,stat.st_mtime_ns+1_000_000_000))
+    raise RuntimeError('injected provider read review failure')
+
+
+@pytest.mark.parametrize('target',('provider','account'))
+def test_initial_reader_failure_rechecks_every_selected_journal(
+        tmp_path,monkeypatch,target):
+    gate,budget=build(tmp_path);options=heads(gate,budget)
+    paths=dict(provider=budget.path,account=gate.path)
+    before={path:path.read_bytes() for path in paths.values()}
+    original=budget.inspect
+
+    def failed():
+        original();_mutate_metadata_and_fail(paths[target])
+
+    monkeypatch.setattr(budget,'inspect',failed)
+    with pytest.raises(ValueError,match=
+            'PAPER_PROVIDER_READ_REVIEW_FILE_SET_CHANGED'):
+        subject.review(budget,[gate],**options)
+    assert before=={path:path.read_bytes() for path in before}
+
+
+@pytest.mark.parametrize(('reader','target'),(
+    ('provider_history','account'),('account_history','provider'),
+    ('final_provider','account'),('final_account','provider')))
+def test_later_reader_failure_rechecks_every_selected_journal(
+        tmp_path,monkeypatch,reader,target):
+    gate,budget=build(tmp_path);options=heads(gate,budget)
+    paths=dict(provider=budget.path,account=gate.path)
+    before={path:path.read_bytes() for path in paths.values()}
+    if reader=='provider_history':
+        original=budget.history
+
+        def failed():
+            original();_mutate_metadata_and_fail(paths[target])
+
+        monkeypatch.setattr(budget,'history',failed)
+    elif reader=='account_history':
+        original=gate.operation_history
+
+        def failed():
+            original();_mutate_metadata_and_fail(paths[target])
+
+        monkeypatch.setattr(gate,'operation_history',failed)
+    else:
+        store=budget if reader=='final_provider' else gate
+        original=store.inspect;calls=0
+
+        def failed():
+            nonlocal calls
+            result=original();calls+=1
+            if calls==2:_mutate_metadata_and_fail(paths[target])
+            return result
+
+        monkeypatch.setattr(store,'inspect',failed)
+    with pytest.raises(ValueError,match=
+            'PAPER_PROVIDER_READ_REVIEW_FILE_SET_CHANGED'):
+        subject.review(budget,[gate],**options)
+    assert before=={path:path.read_bytes() for path in before}
+
+
+@pytest.mark.parametrize('target',('provider','account'))
+def test_store_objects_cannot_retarget_during_provider_history(
+        tmp_path,monkeypatch,target):
+    gate,budget=build(tmp_path);options=heads(gate,budget)
+    store=budget if target=='provider' else gate
+    original_path=store.path;clone=tmp_path/f'{target}-clone.sqlite3'
+    original=budget.history
+
+    def retarget():
+        result=original();shutil.copyfile(original_path,clone);store.path=clone
+        return result
+
+    monkeypatch.setattr(budget,'history',retarget)
+    with pytest.raises(ValueError,match=
+            'PAPER_PROVIDER_READ_REVIEW_STORE_BINDING_CHANGED'):
+        subject.review(budget,[gate],**options)
+    assert original_path.exists() and clone.exists()
 
 
 def test_one_provider_history_can_exactly_compose_multiple_account_journals(tmp_path):

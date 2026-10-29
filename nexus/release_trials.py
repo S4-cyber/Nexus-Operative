@@ -503,6 +503,8 @@ def _pacing_trial():
         post_recovery=post_recovery_fixture()
         from nexus.paper_provider_post_review import fixture_report as post_review_fixture
         post_review=post_review_fixture()
+        from nexus.paper_provider_read_review import fixture_report as provider_read_review_fixture
+        provider_read_review=provider_read_review_fixture()
         from nexus.paper_provider_post_activity_review import fixture_report as post_activity_fixture
         post_activity=post_activity_fixture()
         from nexus.paper_recovery_step import fixture_report as recovery_step_fixture
@@ -512,7 +514,7 @@ def _pacing_trial():
         from nexus.sqlite_journal_guard import path_fixture_report
         from nexus.alpaca_paper_contract import timestamp_fixture_report
         from nexus.paper_read_pacing import completion_fixture_report
-        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_history_review=provider_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -986,6 +988,17 @@ def _validate(profile, result):
             'actual_vault_access','broker_account_reconciled','spendable_funds_verified',
             'ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')),
             'POST_RECOVERY_AUTHORITY')
+        provider_read=result['provider_read_history_review']
+        _require(provider_read['source']=='TEMPORARY_LOCAL_PROVIDER_READ_HISTORY_FIXTURE' and
+            provider_read['passed'] is True and all(provider_read[k] is True for k in
+            ('exact_provider_account_history','every_session_matched',
+             'all_five_purposes_observed','changed_head_denied','journals_unchanged',
+             'journal_file_fingerprints_rechecked',
+             'semantic_reader_failures_rechecked','output_never_authoritative')),
+            'PROVIDER_READ_HISTORY_FENCES')
+        from nexus.paper_provider_read_review import FLAGS as PROVIDER_READ_FLAGS
+        _require(all(provider_read[k] is False for k in PROVIDER_READ_FLAGS),
+            'PROVIDER_READ_HISTORY_AUTHORITY')
         post_review=result['provider_post_history_review']
         _require(post_review['source']=='TEMPORARY_LOCAL_PROVIDER_POST_HISTORY_REVIEW_FIXTURE' and
             post_review['passed'] is True and all(post_review[k] is True for k in

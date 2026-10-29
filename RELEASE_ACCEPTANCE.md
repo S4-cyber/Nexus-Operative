@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.37 provider-read/account-history semantic-reader file-set proof
+
+Provider-read history review must hold exact store bindings, identities and bounded fingerprints for the shared provider budget plus every selected account pacing journal across all provider/account status and history readers. Every normal or exceptional reader exit must recheck the complete set. Initial/later mutation failures and path retargets must receive fixed outer refusals. Eight direct negative cases and mandatory saved pacing evidence cover these guarantees, including exact five-purpose session matching and stale-head denial. Runtime authority remains unchanged.
+
+Exact-source v0.340.36 source `2121daa8093f35f43fbe907f676541c146e53b98` passed public security run 40939350550, research safety/browser/evidence run 40939350351 and Windows EXE/installer/reinstall/uninstall run 40939350480. Fresh exact-source v0.340.37 workflows remain mandatory.
+
+Pre-publication local validation passed 4,505 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused set passed 127 tests. All sixteen offline profiles and saved-evidence verification matched 387 source files / `c6a2bcc2b20e867c7f11227987f99d78cfd528d04621651beae1cf8448a0e5eb`; report SHA-256 is `73290fdba06ae67a6e247d3ed8678adc3af543a6973a0e2dcfa648669071a61b`. Compile, dependency, deterministic-roadmap, fourteen Node controller and wheel checks passed. The 740-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Playwright are unavailable. Exact-source browser and Windows/installer CI remain required. This evidence does not establish provider access, broker-paper acceptance, market realism, profitability, live/cloud readiness or release approval.
+
 ## v0.340.36 provider-POST/activity semantic-reader file-set proof
 
 Provider-POST/activity review must hold the exact POST-budget plus all selected request, pacing, retained-activity and acceptance identities and bounded fingerprints across every semantic reader. Every normal or exceptional reader exit must recheck the complete 5-to-29-file set. Initial mutation of any single-account store and mutation at every later POST, composed-review, request-recovery, acceptance-status and repeat-reader boundary must receive the fixed outer file-set refusal. Fourteen regressions and mandatory saved evidence cover these guarantees. Runtime authority remains unchanged.

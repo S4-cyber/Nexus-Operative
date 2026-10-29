@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.37 provider-read/account-history semantic-reader file-set proof
+
+Provider-read history review now rechecks the shared provider budget plus every selected account pacing journal after each provider/account status or history reader returns or raises. Eight direct negative cases cover all initial/later reader and retarget boundaries. Mandatory saved pacing evidence requires exact session composition across all five read purposes, stale-head denial, unchanged journals and both recheck fences. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.36 source `2121daa8093f35f43fbe907f676541c146e53b98` passed public security run 40939350550, research safety/browser/evidence run 40939350351 and Windows EXE/installer/reinstall/uninstall run 40939350480. Fresh exact-source v0.340.37 workflows remain mandatory.
+
+Pre-publication local validation passed 4,505 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused set passed 127 tests. All sixteen offline profiles and saved-evidence verification matched 387 source files / `c6a2bcc2b20e867c7f11227987f99d78cfd528d04621651beae1cf8448a0e5eb`; report SHA-256 is `73290fdba06ae67a6e247d3ed8678adc3af543a6973a0e2dcfa648669071a61b`. Compile, dependency, deterministic-roadmap, fourteen Node controller and wheel checks passed. The 740-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Playwright are unavailable. Exact-source browser and Windows/installer CI remain required. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
 ## v0.340.36 provider-POST/activity semantic-reader file-set proof
 
 Provider-POST/activity review now rechecks the POST budget plus every selected account's request, pacing, retained-activity and acceptance stores after every semantic reader returns or raises. Fourteen direct regressions cover all five initial mutation targets and every later POST, composed-review, request-recovery, acceptance-status and repeat-reader boundary. Mandatory saved evidence requires both fences. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

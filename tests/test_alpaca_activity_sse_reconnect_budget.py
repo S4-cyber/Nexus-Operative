@@ -3966,6 +3966,67 @@ def committed_pending_checkpoint(tmp_path,
     return cursor, budget, reserved, checkpoint, opener
 
 
+@pytest.mark.parametrize(('reader_name', 'failed_read'), (
+    ('cursor', 1), ('cursor', 2), ('budget', 1), ('budget', 2)))
+@pytest.mark.parametrize('changed_store', ('cursor', 'budget'))
+def test_pending_checkpoint_failed_replay_rechecks_settled_files(
+        tmp_path, monkeypatch, reader_name, failed_read, changed_store):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    checkpoint_binding = cursor.latest_checkpoint_binding()
+    cursor_bytes = cursor.path.read_bytes()
+    budget_bytes = budget.path.read_bytes()
+    original_cursor_reader = subject._validated_checkpoint_binding
+    original_budget_reader = subject._budget_state_for_attempt
+    changed_path = cursor.path if changed_store == 'cursor' else budget.path
+    reads = 0
+
+    def rewrite_then_fail():
+        with changed_path.open('r+b') as stream:
+            stream.seek(60)
+            stream.write((1).to_bytes(4, 'big'))
+            stream.flush()
+        raise RuntimeError('private failed pending replay')
+
+    def cursor_reader(*args, **kwargs):
+        nonlocal reads
+        reads += 1
+        if reads == failed_read:
+            rewrite_then_fail()
+        return original_cursor_reader(*args, **kwargs)
+
+    def budget_reader(*args, **kwargs):
+        nonlocal reads
+        reads += 1
+        if reads == failed_read:
+            rewrite_then_fail()
+        return original_budget_reader(*args, **kwargs)
+
+    monkeypatch.setattr(subject,
+        ('_validated_checkpoint_binding' if reader_name == 'cursor'
+            else '_budget_state_for_attempt'),
+        cursor_reader if reader_name == 'cursor' else budget_reader)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        subject._bind_pending_checkpoint_files(cursor, budget,
+            journal_paths=subject.check_path_set((cursor.path, budget.path),
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_'),
+            file_prefix='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_',
+            require_store_bindings=lambda: None,
+            checkpoint_binding=checkpoint_binding,
+            token=reserved['token'], attempt=1,
+            expected_cursor_head=ZERO, expected_budget_head=ZERO,
+            evaluated_at=1000, reconnect_reason='CONNECTION_DROPPED')
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'
+    assert 'private' not in str(raised.value)
+    assert reads == failed_read and len(opener.requests) == 1
+    cursor.path.write_bytes(cursor_bytes)
+    budget.path.write_bytes(budget_bytes)
+    state = budget.inspect()
+    assert state['pending_token'] == reserved['token']
+    assert not state['completed'] and not state['review_required']
+
+
 def test_current_attempt_recovery_rejects_legacy_transport_unbound_checkpoint(
         tmp_path):
     cursor, _, reserved, checkpoint, _ = committed_pending_checkpoint(

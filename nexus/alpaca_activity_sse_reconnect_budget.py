@@ -702,17 +702,58 @@ def _bind_pending_checkpoint_files(cursor_store, reconnect_budget, *,
                 'FILE_SET_CHANGED') from None
         require_store_bindings()
 
+    require_journal_files()
+    try:
+        stable_checkpoint = _validated_checkpoint_binding(cursor_store,
+            cursor_store.latest_checkpoint_binding(),
+            'CHECKPOINT_STATE_UNCERTAIN')
+    except ActivitySSEReconnectBudgetError:
+        require_journal_files()
+        raise
+    except Exception:
+        require_journal_files()
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_journal_files()
+    try:
+        stable_pending = _budget_state_for_attempt(reconnect_budget)
+    except ActivitySSEReconnectBudgetError:
+        require_journal_files()
+        raise
+    except Exception:
+        require_journal_files()
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_journal_files()
+    if (stable_checkpoint != checkpoint_binding or
+            not _exact_pending_reservation(stable_pending,
+                token=token, attempt=attempt,
+                cursor_head=expected_cursor_head,
+                expected_budget_head=expected_budget_head,
+                evaluated_at=evaluated_at,
+                reconnect_reason=reconnect_reason)):
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_journal_files()
     try:
         confirmed_checkpoint = _validated_checkpoint_binding(cursor_store,
             cursor_store.latest_checkpoint_binding(),
             'CHECKPOINT_STATE_UNCERTAIN')
-        confirmed_pending = _budget_state_for_attempt(reconnect_budget)
     except ActivitySSEReconnectBudgetError:
+        require_journal_files()
         raise
     except Exception:
+        require_journal_files()
         _fail('RESULT_RECORD_UNCERTAIN')
     require_journal_files()
-    if (confirmed_checkpoint != checkpoint_binding or
+    try:
+        confirmed_pending = _budget_state_for_attempt(reconnect_budget)
+    except ActivitySSEReconnectBudgetError:
+        require_journal_files()
+        raise
+    except Exception:
+        require_journal_files()
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_journal_files()
+    if (confirmed_checkpoint != stable_checkpoint or
+            confirmed_pending != stable_pending or
             not _exact_pending_reservation(confirmed_pending,
                 token=token, attempt=attempt,
                 cursor_head=expected_cursor_head,
@@ -3027,6 +3068,41 @@ def fixture_report():
         exceptional_rewrite_state = ActivitySSEReconnectBudget(
             rewrite_budget.path, account).inspect()
         rewrite_cursor.latest_checkpoint_binding = original_rewrite_binding
+        pending_budget_bytes = rewrite_budget.path.read_bytes()
+        pending_binding_reads = []
+        pending_checkpoint_binding = original_rewrite_binding()
+        def rewrite_pending_budget_then_fail_confirmation():
+            retained = original_rewrite_binding()
+            pending_binding_reads.append(True)
+            if len(pending_binding_reads) == 2:
+                with rewrite_budget.path.open('r+b') as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+                    stream.flush()
+                raise RuntimeError(
+                    'private fixture failed pending confirmation read')
+            return retained
+        rewrite_cursor.latest_checkpoint_binding = \
+            rewrite_pending_budget_then_fail_confirmation
+        pending_rewrite_code = None
+        try:
+            _bind_pending_checkpoint_files(rewrite_cursor, rewrite_budget,
+                journal_paths=check_path_set(
+                    (rewrite_cursor.path, rewrite_budget.path),
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_'),
+                file_prefix='ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_',
+                require_store_bindings=lambda: None,
+                checkpoint_binding=pending_checkpoint_binding,
+                token=rewrite_reserved['token'], attempt=1,
+                expected_cursor_head=ZERO, expected_budget_head=ZERO,
+                evaluated_at=2500,
+                reconnect_reason='CONNECTION_DROPPED')
+        except ActivitySSEReconnectBudgetError as error:
+            pending_rewrite_code = str(error)
+        rewrite_budget.path.write_bytes(pending_budget_bytes)
+        pending_rewrite_state = ActivitySSEReconnectBudget(
+            rewrite_budget.path, account).inspect()
+        rewrite_cursor.latest_checkpoint_binding = original_rewrite_binding
         settled_budget_bytes = []
         settled_binding_reads = []
         def rewrite_settled_budget_then_fail_cursor_read():
@@ -3287,6 +3363,15 @@ def fixture_report():
                     rewrite_reserved['token'] and
                 not exceptional_rewrite_state['completed'] and
                 not exceptional_rewrite_state['review_required'],
+            pending_checkpoint_exception_rechecks_settled_files=
+                pending_rewrite_code is not None and
+                pending_rewrite_code.endswith('FILE_SET_CHANGED') and
+                pending_binding_reads == [True, True] and
+                len(rewrite_opener.requests) == 1 and
+                pending_rewrite_state['pending_token'] ==
+                    rewrite_reserved['token'] and
+                not pending_rewrite_state['completed'] and
+                not pending_rewrite_state['review_required'],
             reconciliation_exception_rechecks_settled_files=
                 settled_rewrite_code is not None and
                 settled_rewrite_code.endswith('FILE_SET_CHANGED') and

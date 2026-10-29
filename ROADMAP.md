@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.19. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.20. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.19 extends the settled two-journal proof to failed connected-paper attempts. Both cursor and reconnect-budget stability readers and their independent confirmation reads recheck the exact settled files on normal and exceptional exits, so a same-inode rewrite plus reader failure returns fixed file-set uncertainty while preserving the durable retry/review result and performing no second provider request. Eight direct reader/phase/journal regressions plus the injected fixture and negative control make this failure-path proof mandatory release evidence. No retry, credential access, UI control or runtime authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.20 extends the settled two-journal proof to the recoverable pending-checkpoint boundary. Cursor and reconnect-budget stability reads now have independent confirmation reads, and both journals are rechecked before and after every reader on normal and exceptional exits. A same-inode rewrite plus reader failure returns fixed file-set uncertainty while preserving the pending reservation for explicit no-network reconciliation and performing no second provider request. Eight direct reader/phase/journal regressions plus the injected fixture and negative control make this split-state proof mandatory release evidence. No retry, credential access, UI control or runtime authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

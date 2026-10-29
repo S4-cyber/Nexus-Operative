@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.20 pending-checkpoint file-set proof
+
+The recoverable checkpoint/pending-budget split now keeps one exact settled two-journal file set across cursor and budget stability reads plus independent confirmation reads. Both files are rechecked on normal and exceptional exits. A same-inode rewrite plus reader failure returns fixed `FILE_SET_CHANGED`; the pending reservation remains available for explicit no-network reconciliation and there is no second provider request. Eight direct reader/phase/journal regressions and mandatory release evidence cover the boundary. No retry, provider, credential, account, order, funds, live, cloud, UI or release authority is added.
+
+Final local validation passed 4,424 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 459 tests, and the release-evidence/roadmap/version/workflow/packaging focus passed 64. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `22bcdfd9d2b4876919df6efd6ebaeb584635c66f745091a2d32335a609b6bf57`; `validation/release_trials_0_340_20.json` SHA256 is `fcdd3821cdddbdfe8f4e6518b2890c9151dd45d9b7b3b8c3b5185683e980abbe`. Exact-source v0.340.19 parent `92229c2b0c601ba9b1874ef08380a7491ee48e4c` passed public security 40805363328, research safety/browser/evidence 40805363373 and Windows packaging/installer 40805364459. Fresh exact-source v0.340.20 workflows remain mandatory.
+
 ## v0.340.19 failed-attempt post-result file-set proof
 
 Failed connected-paper attempts now retain one exact settled cursor/reconnect-budget file set across cursor and budget stability reads plus independent confirmation reads. Both files are rechecked on normal and exceptional exits. A same-inode rewrite plus reader failure returns fixed `FILE_SET_CHANGED`; the durable retry/review result remains available and there is no second provider request. Eight direct reader/phase/journal regressions and mandatory release evidence cover the boundary. No retry, provider, credential, account, order, funds, live, cloud, UI or release authority is added.

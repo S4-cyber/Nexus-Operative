@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.22 mandatory private lifecycle release evidence
+
+Saved HTTP evidence must now prove that the exact application stop fence ran once on the private lifecycle worker, not merely report graceful shutdown. The validator requires the fixed dedicated scope and a negative control falsifies it. Runtime behavior and every authority flag remain unchanged.
+
+Exact-source v0.340.21 passed all three hosted workflows.
+
+Final local validation passed 4,426 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 175 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `416002023419f177923042f124a18ba0eb59696403fbdf564bcaf4a960fe65f0`; `validation/release_trials_0_340_22.json` SHA256 is `9a84557b23a451cc7d4c69ebcb837063b319436275c9258c918c67048c2a8cfb`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.22 wheel build passed. Fresh exact-source v0.340.22 workflows remain mandatory.
+
 ## v0.340.21 private lifecycle stop worker
 
 The application stop fence now runs on one private lifecycle worker so shared asyncio-executor saturation cannot postpone emergency-lane drain or reorder ordinary cleanup ahead of an in-flight cut. Worker-creation failure executes the same fence synchronously. Direct regressions saturate the shared executor, inject lifecycle-worker failure and retain cancelled-caller drain ordering. No runtime permission or authority changes.

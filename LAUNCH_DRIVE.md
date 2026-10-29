@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.22 mandatory private lifecycle release evidence
+
+The real-loopback HTTP release profile now records that the exact application stop fence ran once on the dedicated `nexus-lifecycle-stop` worker. Validation requires the fixed `DEDICATED_APPLICATION_LIFECYCLE_WORKER` scope, and a negative control proves generic graceful-shutdown evidence is insufficient. This adds no runtime behavior, control, permission or authority.
+
+Exact-source v0.340.21 passed security/Gitleaks, complete Windows regression, rendered-browser, saved-evidence, standalone EXE, installer, reinstall and uninstall workflows.
+
+Final local validation passed 4,426 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 175 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `416002023419f177923042f124a18ba0eb59696403fbdf564bcaf4a960fe65f0`; `validation/release_trials_0_340_22.json` SHA256 is `9a84557b23a451cc7d4c69ebcb837063b319436275c9258c918c67048c2a8cfb`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.22 wheel build passed. Fresh exact-source v0.340.22 workflows remain mandatory.
+
 ## v0.340.21 private lifecycle stop worker
 
 Application shutdown now uses one private lifecycle worker instead of the shared asyncio executor. It drains the independent emergency lane before stopping ordinary workers even when general workers are saturated. Worker-creation failure runs the same nested stop fence synchronously. The hosted regression keeps completion and ordering mandatory while allowing bounded Windows storage load beyond five seconds. This changes no Portal control, permission, retry, provider/account access, funds, live/cloud or release authority.

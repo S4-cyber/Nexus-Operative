@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.21 (pre-release).** This build gives ordered application shutdown a private lifecycle worker, independent of shared asyncio executor saturation, while retaining drain-before-cleanup ordering and a synchronous worker-creation fallback. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.22 (pre-release).** This build makes the private lifecycle stop worker mandatory saved release evidence in the real-loopback HTTP profile. It changes no runtime behavior or authority. This is local safety evidence, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.22 mandatory private lifecycle release evidence
+
+The disposable real-loopback Uvicorn profile delegates to the exact application stop fence and records only whether exactly one fixed-prefix private lifecycle worker ran. Saved evidence carries the fixed `DEDICATED_APPLICATION_LIFECYCLE_WORKER` scope. The release validator requires both fields, and a negative control proves a generic graceful-shutdown claim cannot pass.
+
+Exact-source v0.340.21 passed public security/Gitleaks run 40817043268, research regression/browser/evidence run 40817043275 and Windows EXE/installer/reinstall/uninstall run 40817043257.
+
+Final local validation passed 4,426 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 175 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `416002023419f177923042f124a18ba0eb59696403fbdf564bcaf4a960fe65f0`; `validation/release_trials_0_340_22.json` SHA256 is `9a84557b23a451cc7d4c69ebcb837063b319436275c9258c918c67048c2a8cfb`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.22 wheel build passed. Fresh exact-source v0.340.22 workflows remain mandatory.
 
 ## v0.340.21 private lifecycle stop worker
 

@@ -308,7 +308,19 @@ def _http_trial():
     from types import SimpleNamespace
     from nexus import credential_vault
     credential_vault.os = SimpleNamespace(name='nt')
-    from nexus.app import app
+    from nexus import app as api
+    app = api.app
+    lifecycle_stop_threads = []
+    original_shutdown = api._shutdown_application_workers
+
+    def observed_shutdown():
+        lifecycle_stop_threads.append(threading.current_thread().name)
+        return original_shutdown()
+
+    # Disposable-process evidence only. The wrapper delegates to the exact
+    # product fence and records only its fixed thread prefix, never private
+    # application state.
+    api._shutdown_application_workers = observed_shutdown
     root = Path(os.environ['NEXUS_PORTABLE_DATA'])
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listener.bind(('127.0.0.1', 0)); listener.listen(32)
@@ -374,7 +386,12 @@ def _http_trial():
     finally:
         server.should_exit = True; thread.join(timeout=10); listener.close()
     _require(not thread.is_alive(), 'HTTP_SHUTDOWN')
+    _require(len(lifecycle_stop_threads) == 1 and
+        lifecycle_stop_threads[0].startswith('nexus-lifecycle-stop'),
+        'HTTP_LIFECYCLE_WORKER')
     result['graceful_shutdown'] = True
+    result['private_lifecycle_stop_worker'] = True
+    result['lifecycle_stop_scope'] = 'DEDICATED_APPLICATION_LIFECYCLE_WORKER'
     from tools.packaged_paper_tools_smoke import run as paper_tools_trial
     result['paper_tools_source']=paper_tools_trial([sys.executable,str(Path(__file__).resolve().parents[1]/'portable'/'desktop.py')])
     return result
@@ -730,7 +747,11 @@ def _validate(profile, result):
         _require(all(result['first_run_defaults'][key] is True for key in FIRST_RUN_HTTP_CHECKS),'HTTP_FIRST_RUN_DEFAULTS')
         _require(result['passive_forward_reads_preserved_missing_storage'] is True,'HTTP_PASSIVE_FORWARD')
         _require(result['transport'] == 'REAL_LOOPBACK_TCP_HTTP' and result['graceful_shutdown'] is True
-                 and result['startup_engine_stopped'] is True, 'HTTP_LIFECYCLE')
+                 and result['startup_engine_stopped'] is True and
+                 result['private_lifecycle_stop_worker'] is True and
+                 result['lifecycle_stop_scope'] ==
+                    'DEDICATED_APPLICATION_LIFECYCLE_WORKER',
+                 'HTTP_LIFECYCLE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
         _require(all(result[k] is True for k in ('untrusted_host_rejected','cross_origin_rejected','api_no_store')) and result['proxy_headers_trusted'] is False,'HTTP_BOUNDARY_POLICY')
         paper = result['paper_pacing']

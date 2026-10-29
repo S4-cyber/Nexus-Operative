@@ -78,6 +78,8 @@ def test_real_http_process_starts_stopped_without_data_credentials_or_external_i
     assert child.returncode == 0, child.stderr
     report = json.loads(child.stdout)
     assert report['passed'] and report['graceful_shutdown'] and report['startup_engine_stopped']
+    assert report['private_lifecycle_stop_worker']
+    assert report['lifecycle_stop_scope'] == 'DEDICATED_APPLICATION_LIFECYCLE_WORKER'
     assert report['external_connections'] == report['credential_operations'] == report['startup_data_files'] == 0
     assert report['transport'] == 'REAL_LOOPBACK_TCP_HTTP'
     assert report['untrusted_host_rejected'] and report['cross_origin_rejected'] and report['api_no_store']
@@ -88,6 +90,8 @@ def test_real_http_process_starts_stopped_without_data_credentials_or_external_i
         with pytest.raises(trials.ReleaseTrialError,match='HTTP_PAPER_TOOLS'):trials._validate('http',altered)
     rejected=json.loads(json.dumps(report));rejected['first_run_defaults']['saved_off_preserved']=False
     with pytest.raises(trials.ReleaseTrialError,match='HTTP_FIRST_RUN_DEFAULTS'):trials._validate('http',rejected)
+    rejected=copy.deepcopy(report);rejected['private_lifecycle_stop_worker']=False
+    with pytest.raises(trials.ReleaseTrialError,match='HTTP_LIFECYCLE'):trials._validate('http',rejected)
     pacing = report['paper_pacing']
     assert all(pacing[k] is True for k in trials.PAPER_HTTP_CHECKS)
     assert pacing['injected_get_requests'] == 5

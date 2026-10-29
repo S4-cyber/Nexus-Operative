@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.21 gives application shutdown a private lifecycle worker, independent of the shared asyncio executor. The ordered fence drains the emergency lane before ordinary workers, still runs synchronously if worker creation fails, and no longer encodes a five-second local-storage SLA in the hosted-load regression. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+Current checkpoint: v0.340.22 makes the private lifecycle stop worker mandatory saved release evidence. The real loopback HTTP profile records the fixed dedicated-thread scope only after the exact product stop fence completes, and the validator plus negative control reject generic graceful shutdown without that proof. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+
+## v0.340.22 mandatory private lifecycle release evidence
+
+The bounded real-loopback Uvicorn profile wraps the exact application stop fence only inside its disposable child, records the fixed `DEDICATED_APPLICATION_LIFECYCLE_WORKER` scope, and requires exactly one `nexus-lifecycle-stop` worker after graceful shutdown. The release validator requires both the boolean and fixed scope, while a negative control falsifies the worker proof and must fail the HTTP profile. No private state, account data or thread identity is retained. Runtime behavior is unchanged.
+
+Exact-source v0.340.21 passed public security/Gitleaks run 40817043268, research regression/browser/evidence run 40817043275 and Windows EXE/installer/reinstall/uninstall run 40817043257.
+
+Final local validation passed 4,426 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 175 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `416002023419f177923042f124a18ba0eb59696403fbdf564bcaf4a960fe65f0`; `validation/release_trials_0_340_22.json` SHA256 is `9a84557b23a451cc7d4c69ebcb837063b319436275c9258c918c67048c2a8cfb`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.22 wheel build passed. Fresh exact-source v0.340.22 workflows remain mandatory.
 
 ## v0.340.21 private lifecycle stop worker
 

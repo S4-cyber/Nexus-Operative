@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.21. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.22. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.21 moves ordered application shutdown onto one private lifecycle worker, so a saturated shared asyncio executor cannot delay emergency-lane drain or let ordinary cleanup overtake an in-flight cut. Worker-creation failure runs the same nested stop fence synchronously, and hosted-load timing now tests completion without inventing a five-second storage SLA. Direct regressions cover shared-pool starvation, fallback and cancelled-caller shutdown ordering. No control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.22 makes the private lifecycle stop worker mandatory saved release evidence. The real loopback Uvicorn profile delegates to the exact application stop fence, records only the fixed dedicated-thread scope after shutdown, and the validator plus negative control reject generic graceful-shutdown evidence that does not prove the private worker ran. Runtime behavior is unchanged. No control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

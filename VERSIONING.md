@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.26 (pre-release).** This build extends resolved-unknown paper POST recovery with a bounded request-journal file fingerprint held through the shared budget commit. Same-file byte or metadata changes and SQLite sidecars fail closed. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.27 (pre-release).** This build makes the exact terminal request proof the final externally observable operation before resolved-unknown POST-budget commit. A final admission callback that changes the request journal now fails closed and rolls back the budget append. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.27 final pre-commit request proof
+
+The final request-journal proof now follows the final admission-clock and ownership checks inside the shared budget transaction. A direct regression changes only same-file metadata from the second admission callback; the held fingerprint rejects it and leaves budget bytes unchanged. Saved pacing evidence requires the new final-operation fence.
+
+Exact-source v0.340.26 passed public security/Gitleaks run 40848836838, research regression/browser/evidence run 40848836839 and Windows EXE/installer/reinstall/uninstall run 40848836803.
+
+Final local validation passed 4,432 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the recovery/budget/release/evidence/roadmap/version/workflow/packaging focus passed 178 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `134f73f6d3796200faf145c6478e1bed90300cc9493281c928557ebfae0695bf`; `validation/release_trials_0_340_27.json` SHA256 is `c7a60c36c62a64d334d14273d01162429f65c9cc63a14d5d4889bf69ff20c0c1`. Fresh exact-source v0.340.27 workflows remain mandatory.
 
 ## v0.340.26 request-journal fingerprint through POST recovery
 

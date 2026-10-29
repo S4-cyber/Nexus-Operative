@@ -73,7 +73,8 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
                 admission=admission, ownership=owner)
             return dict(result, request_writer_exclusion_held=True,
                 request_path_identity_rechecked=True,
-                request_file_fingerprint_rechecked=True)
+                request_file_fingerprint_rechecked=True,
+                request_proof_final_before_budget_commit=True)
 
 
 def fixture_report():
@@ -131,6 +132,8 @@ def fixture_report():
                 result['request_path_identity_rechecked'] is True,
             request_file_fingerprint_rechecked=
                 result['request_file_fingerprint_rechecked'] is True,
+            request_proof_final_before_budget_commit=
+                result['request_proof_final_before_budget_commit'] is True,
             original_request_not_rearmed=result['original_request_rearmed'] is False and
                 retained['submission_attempt_marked'],
             unknown_history_preserved=budget.history()==history,

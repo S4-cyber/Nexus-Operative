@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.27 final pre-commit request proof
+
+Resolved-unknown paper POST recovery now makes the exact terminal request proof the final externally observable operation before the shared budget transaction commits. The final admission-clock and ownership checks therefore cannot mutate the request journal after the last proof while still clearing the review latch. A direct regression mutates only same-file metadata from the second admission callback and requires byte-identical budget rollback.
+
+Exact-source v0.340.26 passed public security/Gitleaks run 40848836838, research regression/browser/evidence run 40848836839 and Windows EXE/installer/reinstall/uninstall run 40848836803.
+
+Final local validation passed 4,432 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the recovery/budget/release/evidence/roadmap/version/workflow/packaging focus passed 178 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `134f73f6d3796200faf145c6478e1bed90300cc9493281c928557ebfae0695bf`; `validation/release_trials_0_340_27.json` SHA256 is `c7a60c36c62a64d334d14273d01162429f65c9cc63a14d5d4889bf69ff20c0c1`. Fresh exact-source v0.340.27 workflows remain mandatory.
+
 ## v0.340.26 request-journal fingerprint through POST recovery
 
 Resolved-unknown paper POST recovery now holds a bounded fingerprint of the exact request SQLite file through the shared POST-budget commit. Every terminal proof rechecks identity, bytes, stable metadata and sidecar absence. A same-file mutation after the penultimate proof fails before commit and leaves the budget bytes unchanged. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

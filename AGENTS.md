@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.26 extends resolved-unknown paper POST recovery from writer exclusion and pathname identity to a bounded request-journal fingerprint held through the shared budget commit. A same-file byte or metadata change, or SQLite sidecar, now fails closed before stale terminal evidence can clear the review latch. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.27 makes the exact terminal request proof the final externally observable operation before a resolved-unknown POST-budget recovery commit. A final admission callback that changes the request journal now fails closed and rolls back the budget append. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.27 final pre-commit request proof
+
+The resolved-unknown POST-budget transaction now performs its final request-journal proof after the final admission-clock and ownership checks, immediately before transaction commit. A direct regression changes only request-journal metadata from the second admission callback; the held fingerprint detects the change and the budget journal remains byte-identical. Saved pacing evidence requires this final-operation ordering.
+
+Exact-source v0.340.26 passed public security/Gitleaks run 40848836838, research regression/browser/evidence run 40848836839 and Windows EXE/installer/reinstall/uninstall run 40848836803.
+
+Final local validation passed 4,432 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the recovery/budget/release/evidence/roadmap/version/workflow/packaging focus passed 178 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `134f73f6d3796200faf145c6478e1bed90300cc9493281c928557ebfae0695bf`; `validation/release_trials_0_340_27.json` SHA256 is `c7a60c36c62a64d334d14273d01162429f65c9cc63a14d5d4889bf69ff20c0c1`. Fresh exact-source v0.340.27 workflows remain mandatory.
 
 ## v0.340.26 request-journal fingerprint through POST recovery
 

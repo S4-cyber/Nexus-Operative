@@ -409,9 +409,11 @@ class PaperProviderPostBudget:
                     confirm_original_id_resolved=True, confirm_no_resubmission=True)
                 recovered_head = self._append(db, state['events'] + 1, body, head)
                 recovered = self._load(db)
-                if resolution_check() != proof: _fail('RESOLUTION_PROOF_CHANGED')
                 if clock(admission()) < now: _fail('CLOCK_REGRESSION')
                 self._owned(ownership)
+                # Keep the exact terminal proof as the final externally
+                # observable operation before this transaction commits.
+                if resolution_check() != proof: _fail('RESOLUTION_PROOF_CHANGED')
             return dict(mode='PAPER_PROVIDER_POST_BUDGET_RESOLVED_UNKNOWN_RECOVERY',
                 status='REVIEW_REQUIRED', head_sha256=recovered_head,
                 request_resolution_head_sha256=request_head,

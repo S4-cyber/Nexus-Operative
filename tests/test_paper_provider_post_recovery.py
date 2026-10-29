@@ -57,6 +57,7 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['request_writer_exclusion_held']
     assert result['request_path_identity_rechecked']
     assert result['request_file_fingerprint_rechecked']
+    assert result['request_proof_final_before_budget_commit']
     assert result['cooldown_shortened'] is False and result['uncertainty_preserved']
     assert state['recoveries']==1 and state['review_required'] is False
     recovery=budget.recovery_history()
@@ -181,6 +182,26 @@ def test_same_file_metadata_change_rolls_back_budget_recovery(
     assert request_path.stat().st_mtime_ns!=original_mtime
 
 
+def test_final_admission_mutation_is_rechecked_before_budget_commit(tmp_path):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    request_path=journal.path;request_before=request_path.read_bytes()
+    budget_before=budget.path.read_bytes();calls=0
+    original_mtime=request_path.stat().st_mtime_ns
+    def mutate_on_final_admission():
+        nonlocal calls
+        calls+=1
+        if calls==2:
+            os.utime(request_path,
+                ns=(request_path.stat().st_atime_ns,
+                    original_mtime+1_000_000_000))
+        return 1002
+    with pytest.raises(ValueError,match='LOCKED_SNAPSHOT_FILE_SET_CHANGED'):
+        recover(journal,budget,request_head,admission=mutate_on_final_admission)
+    assert calls==2 and budget.path.read_bytes()==budget_before
+    assert request_path.read_bytes()==request_before
+    assert request_path.stat().st_mtime_ns!=original_mtime
+
+
 def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monkeypatch,capsys):
     journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
     common=['fixture','--post-budget',str(budget.path),'--request-journal',str(journal.path),
@@ -196,3 +217,4 @@ def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monke
     result=json.loads(capsys.readouterr().out)
     assert result['review_block_cleared'] and not result['original_request_rearmed']
     assert result['request_file_fingerprint_rechecked']
+    assert result['request_proof_final_before_budget_commit']

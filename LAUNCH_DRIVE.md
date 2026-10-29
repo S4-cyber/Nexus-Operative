@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.26 request-journal fingerprint through POST recovery
+
+Resolved-unknown paper POST recovery now holds a bounded fingerprint of the exact request SQLite file through the shared POST-budget commit. Every terminal proof rechecks identity, bytes, stable metadata and sidecar absence. A same-file mutation after the penultimate proof fails before commit and leaves the budget bytes unchanged. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.25 passed security/Gitleaks run 40842929729, research regression/browser/evidence run 40842929944 and Windows EXE/installer/reinstall/uninstall run 40842929804.
+
+Final local validation passed 4,431 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the broker-recovery/reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 274 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `d4ab4ee8b9108e0965f913c1ffeeebfcb7493c7f5fcb1cabeea4059856eb5203`; `validation/release_trials_0_340_26.json` SHA256 is `0489875ac64cb179d36ed8d238c9f1a854ec1be956760a393ac5dce289bd2e6f`. Fresh exact-source v0.340.26 workflows remain mandatory.
+
 ## v0.340.25 request-journal writer exclusion during POST recovery
 
 Resolved-unknown paper POST recovery now keeps an exact-head request-journal write lock through the shared POST-budget recovery commit and verifies that the request pathname still names the sampled file before each terminal proof. A concurrent append can no longer move the request head between proof and commit, and a same-content file replacement fails before the budget transaction commits. Direct races require unchanged bytes on refusal. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

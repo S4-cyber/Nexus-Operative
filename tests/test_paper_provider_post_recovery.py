@@ -1,5 +1,6 @@
 """Exact-head recovery of a resolved ambiguous provider POST budget tail."""
 import json
+import os
 import shutil
 import sys
 
@@ -55,6 +56,7 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['review_block_cleared'] and result['original_request_rearmed'] is False
     assert result['request_writer_exclusion_held']
     assert result['request_path_identity_rechecked']
+    assert result['request_file_fingerprint_rechecked']
     assert result['cooldown_shortened'] is False and result['uncertainty_preserved']
     assert state['recoveries']==1 and state['review_required'] is False
     recovery=budget.recovery_history()
@@ -156,6 +158,29 @@ def test_request_path_retarget_rolls_back_budget_recovery(
     assert request_path.read_bytes()==replacement.read_bytes()
 
 
+def test_same_file_metadata_change_rolls_back_budget_recovery(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    request_path=journal.path;request_before=request_path.read_bytes()
+    budget_before=budget.path.read_bytes();original=subject._proof;calls=0
+    original_mtime=request_path.stat().st_mtime_ns
+    monkeypatch.setattr(subject,'BrokerRequestJournal',lambda *args:journal)
+    def mutate_after_snapshot(snapshot,*args,**kwargs):
+        nonlocal calls
+        calls+=1
+        result=original(snapshot,*args,**kwargs)
+        if calls==2:
+            os.utime(request_path,
+                ns=(request_path.stat().st_atime_ns, original_mtime+1_000_000_000))
+        return result
+    monkeypatch.setattr(subject,'_proof',mutate_after_snapshot)
+    with pytest.raises(ValueError,match='LOCKED_SNAPSHOT_FILE_SET_CHANGED'):
+        recover(journal,budget,request_head)
+    assert calls==2 and budget.path.read_bytes()==budget_before
+    assert request_path.read_bytes()==request_before
+    assert request_path.stat().st_mtime_ns!=original_mtime
+
+
 def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monkeypatch,capsys):
     journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
     common=['fixture','--post-budget',str(budget.path),'--request-journal',str(journal.path),
@@ -170,3 +195,4 @@ def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monke
     assert subject.main()==0
     result=json.loads(capsys.readouterr().out)
     assert result['review_block_cleared'] and not result['original_request_rearmed']
+    assert result['request_file_fingerprint_rechecked']

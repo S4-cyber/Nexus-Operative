@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.25 (pre-release).** This build closes a resolved-unknown paper POST recovery race by retaining exact request-journal writer exclusion and pathname identity checks through the shared budget commit. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.26 (pre-release).** This build extends resolved-unknown paper POST recovery with a bounded request-journal file fingerprint held through the shared budget commit. Same-file byte or metadata changes and SQLite sidecars fail closed. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.26 request-journal fingerprint through POST recovery
+
+The request-journal locked snapshot now samples identity plus bounded bytes and stable metadata before its write-excluding transaction. Each proof rechecks the single-link path, complete bounded SHA-256 fingerprint and absence of rollback/WAL/shared-memory sidecars. The shared POST-budget recovery append commits only while that guard remains active. A same-file metadata mutation after the penultimate proof therefore receives fixed file-set refusal and rolls the budget append back even though the pathname identity did not change.
+
+Direct tests retain the existing competing-writer and identical-clone-retarget races and add the same-file mutation boundary. The saved pacing profile now requires the fingerprint guard alongside writer exclusion and pathname identity. No UI or modifiable parameter changed; all seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged.
+
+Exact-source v0.340.25 passed public security/Gitleaks run 40842929729, research regression/browser/evidence run 40842929944 and Windows EXE/installer/reinstall/uninstall run 40842929804.
+
+Final local validation passed 4,431 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the broker-recovery/reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 274 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `d4ab4ee8b9108e0965f913c1ffeeebfcb7493c7f5fcb1cabeea4059856eb5203`; `validation/release_trials_0_340_26.json` SHA256 is `0489875ac64cb179d36ed8d238c9f1a854ec1be956760a393ac5dce289bd2e6f`. Fresh exact-source v0.340.26 workflows remain mandatory.
 
 ## v0.340.25 request-journal writer exclusion during POST recovery
 

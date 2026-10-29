@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.26 request-journal fingerprint through POST recovery
+
+An exact terminal original-ID proof may clear the shared POST-budget review latch only while the selected request journal retains its sampled identity, bounded bytes and stable metadata and has no SQLite sidecars. Recovery holds this fingerprint guard through the budget commit. Direct tests require a same-file mutation after the penultimate proof to roll the recovery back with unchanged budget bytes. Saved pacing evidence requires the new guard. Runtime authority remains unchanged.
+
+Exact-source v0.340.25 passed public security/Gitleaks run 40842929729, research regression/browser/evidence run 40842929944 and Windows EXE/installer/reinstall/uninstall run 40842929804.
+
+Final local validation passed 4,431 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the broker-recovery/reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 274 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `d4ab4ee8b9108e0965f913c1ffeeebfcb7493c7f5fcb1cabeea4059856eb5203`; `validation/release_trials_0_340_26.json` SHA256 is `0489875ac64cb179d36ed8d238c9f1a854ec1be956760a393ac5dce289bd2e6f`. Fresh exact-source v0.340.26 workflows remain mandatory.
+
 ## v0.340.25 request-journal writer exclusion during POST recovery
 
 An exact terminal original-ID proof may clear the shared POST-budget review latch only while the corresponding request journal remains writer-excluded and its pathname identity remains unchanged. Recovery now holds those guarantees through the budget commit. Direct tests require a competing append to be refused without changing request bytes and a same-content pathname replacement to roll the budget recovery back. Saved pacing evidence requires both guards. Runtime authority remains unchanged.

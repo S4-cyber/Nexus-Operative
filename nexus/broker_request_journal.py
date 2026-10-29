@@ -16,7 +16,8 @@ from uuid import UUID
 from nexus import alpaca_paper_contract as contract
 from nexus import broker_lookup_policy as lookup
 from nexus.sqlite_journal_guard import (
-    capture_file_identities, check_existing, require_file_identities)
+    capture_file_fingerprints, capture_file_identities, check_existing,
+    require_file_fingerprints, require_file_identities)
 
 MAX_REQUESTS = 128
 MAX_EVENTS = 4096
@@ -471,10 +472,15 @@ class BrokerRequestJournal:
             raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         identity = capture_file_identities((self.path,),
             'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
+        fingerprint = capture_file_fingerprints((self.path,),
+            (MAX_DATABASE_BYTES,), 'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
         with closing(self._connect(write=True)) as db:
             with _explicit_transaction(db):
                 def read():
                     require_file_identities((self.path,), identity,
+                        'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
+                    require_file_fingerprints((self.path,),
+                        (MAX_DATABASE_BYTES,), fingerprint,
                         'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
                     requests, _, _, head = self._load(db)
                     if head != expected_head:

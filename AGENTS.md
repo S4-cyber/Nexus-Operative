@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.25 closes a resolved-unknown paper POST recovery race. Recovery now holds exact request-journal SQLite writer exclusion while the shared POST-budget recovery commits and rechecks the request pathname identity before both terminal-proof samples. A concurrent request append or file replacement therefore fails closed without clearing the budget review latch. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.26 extends resolved-unknown paper POST recovery from writer exclusion and pathname identity to a bounded request-journal fingerprint held through the shared budget commit. A same-file byte or metadata change, or SQLite sidecar, now fails closed before stale terminal evidence can clear the review latch. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.26 request-journal fingerprint through POST recovery
+
+The exact locked request snapshot now captures the bounded single-link SQLite fingerprint before opening its write-excluding transaction. Every terminal proof rechecks file identity, bytes, size and stable metadata and rejects rollback/WAL/shared-memory sidecars. The POST-budget recovery transaction remains inside that guard. A direct regression mutates only the same request file's metadata after the penultimate proof; identity remains unchanged, the final fingerprint check refuses, and the budget journal remains byte-identical.
+
+Exact-source v0.340.25 passed public security/Gitleaks run 40842929729, research regression/browser/evidence run 40842929944 and Windows EXE/installer/reinstall/uninstall run 40842929804.
+
+Final local validation passed 4,431 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the broker-recovery/reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 274 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `d4ab4ee8b9108e0965f913c1ffeeebfcb7493c7f5fcb1cabeea4059856eb5203`; `validation/release_trials_0_340_26.json` SHA256 is `0489875ac64cb179d36ed8d238c9f1a854ec1be956760a393ac5dce289bd2e6f`. Fresh exact-source v0.340.26 workflows remain mandatory.
 
 ## v0.340.25 request-journal writer exclusion during POST recovery
 

@@ -975,6 +975,8 @@ def _validate(profile, result):
         _require(post_recovery['source']=='TEMPORARY_RESOLVED_UNKNOWN_POST_RECOVERY_FIXTURE' and
             post_recovery['passed'] is True and all(post_recovery[k] is True for k in
             ('unresolved_request_denied','exact_terminal_resolution_bound',
+             'request_writer_excluded_through_commit',
+             'request_path_identity_rechecked',
              'original_request_not_rearmed','unknown_history_preserved','cooldown_preserved')),
             'POST_RECOVERY_FENCES')
         _require(all(post_recovery[k] is False for k in ('actual_provider_access',

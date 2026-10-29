@@ -22,17 +22,13 @@ class _Parser(argparse.ArgumentParser):
         self.exit(2, 'PAPER_PROVIDER_POST_RECOVERY_USAGE_ERROR\n')
 
 
-def _proof(journal, client_order_id, expected_request_head):
-    recovery = journal.recovery()
-    selected = journal.lookup_request(client_order_id)
-    rows = [row for row in recovery['requests']
-            if row['client_order_id'] == client_order_id]
-    if (recovery['head_sha256'] != expected_request_head or
-            selected['head_sha256'] != expected_request_head or len(rows) != 1):
+def _proof(snapshot, client_order_id, expected_request_head):
+    row = snapshot['request']
+    if (snapshot['head_sha256'] != expected_request_head or
+            row['client_order_id'] != client_order_id):
         raise ValueError('PAPER_PROVIDER_POST_RECOVERY_REQUEST_HEAD_CHANGED')
-    row = rows[0]
-    return dict(account_sha256=selected['account_sha256'],
-        payload_sha256=selected['plan']['payload_sha256'],
+    return dict(account_sha256=snapshot['account_sha256'],
+        payload_sha256=row['payload_sha256'],
         client_order_sha256=hashlib.sha256(client_order_id.encode()).hexdigest(),
         request_resolution_head_sha256=expected_request_head,
         recovery_state=row['recovery_state'],
@@ -52,23 +48,31 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
     before = budget.inspect()
     if before['events'] == 0 or before['head_sha256'] != expected_post_budget_head:
         raise ValueError('PAPER_PROVIDER_POST_RECOVERY_SOURCE_REQUIRED')
-    expected = _proof(journal, client_order_id, expected_request_head)
-    if (expected['recovery_state'] != 'OBSERVED_TERMINAL_RECONCILIATION_REQUIRED' or
-            expected['lookup_by_original_client_id_required'] is not False):
-        raise ValueError('PAPER_PROVIDER_POST_RECOVERY_TERMINAL_PROOF_REQUIRED')
-    def check():
-        return _proof(journal, client_order_id, expected_request_head)
     with budget.ownership() as owner:
-        return budget.recover_resolved_unknown(
-            expected_head=expected_post_budget_head,
-            expected_account_id=expected_account_id,
-            expected_payload_sha256=expected['payload_sha256'],
-            expected_client_order_id=client_order_id,
-            expected_request_resolution_head=expected_request_head,
-            resolution_check=check,
-            confirm_original_id_resolved=confirm_original_id_resolved,
-            confirm_no_resubmission=confirm_no_resubmission,
-            admission=admission, ownership=owner)
+        with journal.locked_request_snapshot(client_order_id,
+                expected_head=expected_request_head) as read_request:
+            expected = _proof(read_request(), client_order_id,
+                expected_request_head)
+            if (expected['recovery_state'] !=
+                    'OBSERVED_TERMINAL_RECONCILIATION_REQUIRED' or
+                    expected['lookup_by_original_client_id_required'] is not False):
+                raise ValueError(
+                    'PAPER_PROVIDER_POST_RECOVERY_TERMINAL_PROOF_REQUIRED')
+            def check():
+                return _proof(read_request(), client_order_id,
+                    expected_request_head)
+            result = budget.recover_resolved_unknown(
+                expected_head=expected_post_budget_head,
+                expected_account_id=expected_account_id,
+                expected_payload_sha256=expected['payload_sha256'],
+                expected_client_order_id=client_order_id,
+                expected_request_resolution_head=expected_request_head,
+                resolution_check=check,
+                confirm_original_id_resolved=confirm_original_id_resolved,
+                confirm_no_resubmission=confirm_no_resubmission,
+                admission=admission, ownership=owner)
+            return dict(result, request_writer_exclusion_held=True,
+                request_path_identity_rechecked=True)
 
 
 def fixture_report():
@@ -120,6 +124,10 @@ def fixture_report():
         retained=journal.recovery()['requests'][0];after=budget.inspect()
         checks=dict(unresolved_request_denied=unresolved_denied,
             exact_terminal_resolution_bound=result['review_block_cleared'] is True,
+            request_writer_excluded_through_commit=
+                result['request_writer_exclusion_held'] is True,
+            request_path_identity_rechecked=
+                result['request_path_identity_rechecked'] is True,
             original_request_not_rearmed=result['original_request_rearmed'] is False and
                 retained['submission_attempt_marked'],
             unknown_history_preserved=budget.history()==history,

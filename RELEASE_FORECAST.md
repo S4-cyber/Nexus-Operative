@@ -1,12 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Candidate update on 2026-10-28
+## Candidate update on 2026-10-29
 
-Current candidate: v0.340.24, based on published v0.340.23 source `a943b0a97c46638d92e701bcafeae62ca0dba58a`. v0.340.23 passed public security/Gitleaks run 40828111534, complete regression plus browser/evidence run 40828111532 and Windows EXE/installer/reinstall/uninstall run 40828111548. v0.340.24 makes cancelled lifespan wait for and observe the private stop worker's exact terminal result, preventing an orphaned asyncio-wrapper failure while preserving cancellation after successful cleanup. No external authority is added. Fresh exact-source hosted results remain required.
+Current candidate: v0.340.25, based on published v0.340.24 source `a6ecd4ada24de17703e0f991466cf045e1577e76`. v0.340.24 passed public security/Gitleaks run 40834056530, complete regression plus browser/evidence run 40834056506 and Windows EXE/installer/reinstall/uninstall run 40834056514. v0.340.25 keeps the exact request journal writer-excluded and identity-pinned through resolved-unknown POST-budget recovery, preventing stale terminal evidence from clearing the shared review latch. No external authority is added. Fresh exact-source hosted results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Final local validation passed 4,428 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 177 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a99ef134fd7a0a30162e4a1d0ac9fdde1122a443f1efd9d2b0b0f1c348fc1511`; `validation/release_trials_0_340_24.json` SHA256 is `42adb651d83e1c532c5c36d71c17374365f30a7d1d379774d3a9ec43942f9a40`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.24 wheel build passed. Fresh exact-source v0.340.24 workflows remain mandatory. The rough weighted implementation estimate is intentionally unchanged because this safety hardening does not integrate a new accepted external gate.
+Final local validation passed 4,430 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the broker-recovery/reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 273 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `13f577218426aa564d98d2ee37c02245dc021654f3c30c958aa728a41bc40b20`; `validation/release_trials_0_340_25.json` SHA256 is `28ce4f536ad51d521a9b395a8410173a46f4408517bb92bb2fb7e5b9f4ef95e6`. Fresh exact-source v0.340.25 workflows remain mandatory. The rough weighted implementation estimate is intentionally unchanged because this safety hardening does not integrate a new accepted external gate.
 
 ## Prior v0.340.17 candidate record
 

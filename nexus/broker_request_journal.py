@@ -15,7 +15,8 @@ import tempfile
 from uuid import UUID
 from nexus import alpaca_paper_contract as contract
 from nexus import broker_lookup_policy as lookup
-from nexus.sqlite_journal_guard import check_existing
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, check_existing, require_file_identities)
 
 MAX_REQUESTS = 128
 MAX_EVENTS = 4096
@@ -452,6 +453,44 @@ class BrokerRequestJournal:
         if client_order_id not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         return dict(plan=json.loads(contract.canonical(requests[client_order_id]['plan'])),
                     account_sha256=self.account_digest,head_sha256=head)
+
+    @contextmanager
+    def locked_request_snapshot(self, client_order_id, *, expected_head):
+        """Hold writer exclusion while repeatedly replaying one exact request.
+
+        This is a local composition guard only.  It grants no lookup, retry,
+        submission or provider authority.  The yielded reader also rejects a
+        pathname replacement before returning a fresh snapshot.
+        """
+        self._identity(client_order_id)
+        if (type(expected_head) is not str or
+                re.fullmatch(r'[0-9a-f]{64}', expected_head) is None):
+            raise ValueError('BROKER_JOURNAL_LOCKED_SNAPSHOT_HEAD_INVALID')
+        self._check_path()
+        if not self.path.exists():
+            raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        identity = capture_file_identities((self.path,),
+            'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
+        with closing(self._connect(write=True)) as db:
+            with _explicit_transaction(db):
+                def read():
+                    require_file_identities((self.path,), identity,
+                        'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
+                    requests, _, _, head = self._load(db)
+                    if head != expected_head:
+                        raise ValueError(
+                            'BROKER_JOURNAL_LOCKED_SNAPSHOT_HEAD_CHANGED')
+                    request = requests.get(client_order_id)
+                    if request is None:
+                        raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+                    return dict(account_sha256=self.account_digest,
+                        head_sha256=head,
+                        request=self._summary(client_order_id, request))
+                read()
+                try:
+                    yield read
+                finally:
+                    db.rollback()
 
     def begin_lookup_checked(self, client_order_id, *, admission, expected_head=None):
         """Internal runtime hook: sample permission/time again under write admission."""

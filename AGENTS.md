@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.24 closes the cancelled-lifespan shutdown-failure boundary. Cancellation still waits for the private lifecycle worker; after it completes, the asyncio wrapper is cancelled so it cannot retain an unobserved exception. Successful cleanup preserves cancellation, while a stop-fence failure remains visible. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.25 closes a resolved-unknown paper POST recovery race. Recovery now holds exact request-journal SQLite writer exclusion while the shared POST-budget recovery commits and rechecks the request pathname identity before both terminal-proof samples. A concurrent request append or file replacement therefore fails closed without clearing the budget review latch. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.25 request-journal writer exclusion during POST recovery
+
+The explicit resolved-unknown recovery path acquires shared POST ownership first, then a write-excluding exact-head request-journal snapshot. Both terminal proof reads replay the held journal and verify its pathname still names the opened file. The POST-budget recovery transaction remains nested inside those guards, so a competing request writer cannot land between the final proof and budget commit; a same-content pathname replacement is detected before commit and rolls the budget append back. Direct tests exercise both races and require unchanged request or budget bytes.
+
+Exact-source v0.340.24 passed public security/Gitleaks run 40834056530, research regression/browser/evidence run 40834056506 and Windows EXE/installer/reinstall/uninstall run 40834056514.
+
+Final local validation passed 4,430 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the broker-recovery/reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 273 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `13f577218426aa564d98d2ee37c02245dc021654f3c30c958aa728a41bc40b20`; `validation/release_trials_0_340_25.json` SHA256 is `28ce4f536ad51d521a9b395a8410173a46f4408517bb92bb2fb7e5b9f4ef95e6`. Fresh exact-source v0.340.25 workflows remain mandatory.
 
 ## v0.340.24 cancelled-lifespan failure observation
 

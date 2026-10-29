@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.25 request-journal writer exclusion during POST recovery
+
+Resolved-unknown paper POST recovery now keeps an exact-head request-journal write lock through the shared POST-budget recovery commit and verifies that the request pathname still names the sampled file before each terminal proof. A concurrent append can no longer move the request head between proof and commit, and a same-content file replacement fails before the budget transaction commits. Direct races require unchanged bytes on refusal. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.24 passed security/Gitleaks run 40834056530, research regression/browser/evidence run 40834056506 and Windows EXE/installer/reinstall/uninstall run 40834056514.
+
+Final local validation passed 4,430 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the broker-recovery/reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 273 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `13f577218426aa564d98d2ee37c02245dc021654f3c30c958aa728a41bc40b20`; `validation/release_trials_0_340_25.json` SHA256 is `28ce4f536ad51d521a9b395a8410173a46f4408517bb92bb2fb7e5b9f4ef95e6`. Fresh exact-source v0.340.25 workflows remain mandatory.
+
 ## v0.340.24 cancelled-lifespan failure observation
 
 Lifespan cancellation now waits for the exact private shutdown worker, retrieves its terminal result and cancels the asyncio wrapper before returning. Successful cleanup preserves cancellation; a stop-fence failure remains visible instead of becoming an orphaned wrapper exception. Direct tests cover both outcomes, require no event-loop exception report and require the private lifecycle thread to be gone. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

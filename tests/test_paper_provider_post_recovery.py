@@ -1,10 +1,12 @@
 """Exact-head recovery of a resolved ambiguous provider POST budget tail."""
 import json
+import shutil
 import sys
 
 import pytest
 
 from nexus import paper_provider_post_recovery as subject
+from nexus import broker_request_journal as request_journal_module
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_provider_post_budget import PaperProviderPostBudget, ZERO
 from test_alpaca_paper_contract import plan, response
@@ -51,6 +53,8 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     state=budget.inspect();request=journal.recovery()['requests'][0]
     assert result['mode']=='PAPER_PROVIDER_POST_BUDGET_RESOLVED_UNKNOWN_RECOVERY'
     assert result['review_block_cleared'] and result['original_request_rearmed'] is False
+    assert result['request_writer_exclusion_held']
+    assert result['request_path_identity_rechecked']
     assert result['cooldown_shortened'] is False and result['uncertainty_preserved']
     assert state['recoveries']==1 and state['review_required'] is False
     recovery=budget.recovery_history()
@@ -109,6 +113,47 @@ def test_resolution_proof_change_rolls_back_recovery_event(tmp_path,monkeypatch)
     with pytest.raises(ValueError,match='RESOLUTION_PROOF_CHANGED'):
         recover(journal,budget,request_head)
     assert calls==3 and budget.path.read_bytes()==before
+
+
+def test_request_writer_is_excluded_through_budget_recovery_commit(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    request_before=journal.path.read_bytes();attempted=False
+    original=subject._proof
+    monkeypatch.setattr(request_journal_module,'DB_BUSY_TIMEOUT_MS',1)
+    def concurrent(snapshot,*args,**kwargs):
+        nonlocal attempted
+        if not attempted:
+            attempted=True
+            with pytest.raises(ValueError,match='BROKER_JOURNAL_DATABASE_BUSY'):
+                journal.observe('nx_fixture',response(status='filled',filled_qty='2',
+                    filled_avg_price='99'))
+        return original(snapshot,*args,**kwargs)
+    monkeypatch.setattr(subject,'_proof',concurrent)
+    result=recover(journal,budget,request_head)
+    assert attempted and result['review_block_cleared']
+    assert result['request_writer_exclusion_held']
+    assert journal.path.read_bytes()==request_before
+
+
+def test_request_path_retarget_rolls_back_budget_recovery(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    request_path=journal.path;replacement=tmp_path/'replacement.sqlite3'
+    shutil.copyfile(request_path,replacement)
+    budget_before=budget.path.read_bytes();original=subject._proof;calls=0
+    monkeypatch.setattr(subject,'BrokerRequestJournal',lambda *args:journal)
+    def retarget_after_snapshot(snapshot,*args,**kwargs):
+        nonlocal calls
+        calls+=1
+        result=original(snapshot,*args,**kwargs)
+        if calls==2:journal.path=replacement
+        return result
+    monkeypatch.setattr(subject,'_proof',retarget_after_snapshot)
+    with pytest.raises(ValueError,match='LOCKED_SNAPSHOT_FILE_IDENTITY_CHANGED'):
+        recover(journal,budget,request_head)
+    assert calls==2 and budget.path.read_bytes()==budget_before
+    assert request_path.read_bytes()==replacement.read_bytes()
 
 
 def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monkeypatch,capsys):

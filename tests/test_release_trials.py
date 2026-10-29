@@ -317,7 +317,9 @@ def test_pacing_profile_requires_single_attempt_submission_transport_fences():
 def test_pacing_profile_requires_resolved_unknown_post_recovery_fences():
     result=trials._pacing_trial();trials._validate('pacing',result)
     for field in ('unresolved_request_denied','exact_terminal_resolution_bound',
-                  'original_request_not_rearmed','unknown_history_preserved','cooldown_preserved'):
+                  'request_writer_excluded_through_commit',
+                  'request_path_identity_rechecked','original_request_not_rearmed',
+                  'unknown_history_preserved','cooldown_preserved'):
         changed=copy.deepcopy(result);changed['resolved_unknown_post_recovery'][field]=False
         with pytest.raises(ValueError,match='POST_RECOVERY_FENCES'):
             trials._validate('pacing',changed)

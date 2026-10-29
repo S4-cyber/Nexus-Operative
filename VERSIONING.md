@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.24 (pre-release).** This build closes the cancelled-lifespan shutdown-failure boundary: cancellation waits for and observes the private stop worker's exact terminal result, then prevents the asyncio wrapper from retaining an orphaned exception. It adds no external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.25 (pre-release).** This build closes a resolved-unknown paper POST recovery race by retaining exact request-journal writer exclusion and pathname identity checks through the shared budget commit. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.25 request-journal writer exclusion during POST recovery
+
+The resolved-unknown recovery boundary now acquires shared POST ownership and an exact-head request-journal write lock in the same order as submission. Its held reader replays the selected request and rechecks that the pathname still names the originally sampled single-link file before each proof. The budget recovery transaction commits while that guard is active. A competing request append receives bounded contention and cannot move the head between proof and commit; a same-content pathname replacement makes the proof fail and rolls the budget append back.
+
+Direct tests exercise both cases and require byte-preserving refusal or exact recovery. The saved pacing profile now requires writer exclusion and request-path identity rechecks alongside the existing original-ID, history, cooldown and no-rearm fences. No UI or modifiable parameter changed; all seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged.
+
+Exact-source v0.340.24 passed public security/Gitleaks run 40834056530, research regression/browser/evidence run 40834056506 and Windows EXE/installer/reinstall/uninstall run 40834056514.
+
+Final local validation passed 4,430 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the broker-recovery/reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 273 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `13f577218426aa564d98d2ee37c02245dc021654f3c30c958aa728a41bc40b20`; `validation/release_trials_0_340_25.json` SHA256 is `28ce4f536ad51d521a9b395a8410173a46f4408517bb92bb2fb7e5b9f4ef95e6`. Fresh exact-source v0.340.25 workflows remain mandatory.
 
 ## v0.340.24 cancelled-lifespan failure observation
 

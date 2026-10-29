@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.25 request-journal writer exclusion during POST recovery
+
+An exact terminal original-ID proof may clear the shared POST-budget review latch only while the corresponding request journal remains writer-excluded and its pathname identity remains unchanged. Recovery now holds those guarantees through the budget commit. Direct tests require a competing append to be refused without changing request bytes and a same-content pathname replacement to roll the budget recovery back. Saved pacing evidence requires both guards. Runtime authority remains unchanged.
+
+Exact-source v0.340.24 passed public security/Gitleaks run 40834056530, research regression/browser/evidence run 40834056506 and Windows EXE/installer/reinstall/uninstall run 40834056514.
+
+Final local validation passed 4,430 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the broker-recovery/reconciliation/release/evidence/roadmap/version/workflow/packaging focus passed 273 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `13f577218426aa564d98d2ee37c02245dc021654f3c30c958aa728a41bc40b20`; `validation/release_trials_0_340_25.json` SHA256 is `28ce4f536ad51d521a9b395a8410173a46f4408517bb92bb2fb7e5b9f4ef95e6`. Fresh exact-source v0.340.25 workflows remain mandatory.
+
 ## v0.340.24 cancelled-lifespan failure observation
 
 Cancellation of ASGI lifespan must not abandon the private stop worker or leave its exception on an unobserved asyncio wrapper. The application now waits for worker completion, retrieves the exact terminal result and cancels the wrapper. Direct positive and failure fixtures require cancellation to survive successful cleanup, a stop-fence error to remain visible, no event-loop exception report and no remaining private lifecycle thread. Runtime authority remains unchanged.

@@ -2,7 +2,7 @@
 
 ## Candidate update on 2026-10-29
 
-Current candidate: v0.340.35, based on published v0.340.34 source `ac3c59bd82daee800969d4b9db4d654792dfab15`. v0.340.35 rechecks the provider-POST budget and every selected request journal after every POST status/history/recovery and request recovery/prefix semantic reader, including exceptional exits. No external authority is added. The connected GitHub status surface exposed no hosted run or status records for v0.340.34 during this sprint; fresh exact-source v0.340.35 results remain required.
+Current candidate: v0.340.35, based on published v0.340.34 source `ac3c59bd82daee800969d4b9db4d654792dfab15`. v0.340.35 rechecks the provider-POST budget and every selected request journal after every POST status/history/recovery and request recovery/prefix semantic reader, including exceptional exits. No external authority is added. Exact-source v0.340.34 passed security 40919685121, safety/browser/evidence 40919684908 and Windows packaging/installer 40919685003; fresh exact-source v0.340.35 results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 

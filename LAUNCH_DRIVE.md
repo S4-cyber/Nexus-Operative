@@ -4,7 +4,7 @@
 
 Provider-POST history review now rechecks the POST-budget store and every explicitly selected request store after each POST status/history/recovery and request recovery/prefix semantic reader returns or raises. Nine direct regressions cover mutation plus failure at the initial reader and every later boundary; mandatory saved evidence requires both fences. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
 
-Published v0.340.34 source is `ac3c59bd82daee800969d4b9db4d654792dfab15`; the connected GitHub status surface exposed no hosted run or status records for that exact source during this sprint. Fresh exact-source v0.340.35 workflows remain mandatory.
+Exact-source v0.340.34 passed public security run 40919685121, research safety/browser/evidence run 40919684908 and Windows EXE/installer/reinstall/uninstall run 40919685003. Fresh exact-source v0.340.35 workflows remain mandatory.
 
 Pre-publication local validation passed 4,482 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused set passed 128 tests. All sixteen offline profiles and saved-evidence verification matched 387 source files / `71800c64a72a237e720c21af4360203ef2266feb12202eab5e00212ccc551b8b`; report SHA-256 is `a8c8bd4f318d6abb6f57b195790907ce2d90f251d0a03d4c00103d07de58bc98`. Compile, dependency, deterministic-roadmap, fourteen Node controller, wheel and public-artifact checks passed. Playwright is unavailable locally, so exact-source browser and Windows/installer CI remain required.
 

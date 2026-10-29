@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.23 (pre-release).** This build makes the ordered drain-before-cleanup application stop fence mandatory saved release evidence in the real-loopback HTTP profile. It changes no runtime behavior or authority. This is local safety evidence, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.24 (pre-release).** This build closes the cancelled-lifespan shutdown-failure boundary: cancellation waits for and observes the private stop worker's exact terminal result, then prevents the asyncio wrapper from retaining an orphaned exception. It adds no external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.24 cancelled-lifespan failure observation
+
+When lifespan cancellation races with the private shutdown worker, the application now waits for worker completion, retrieves the concurrent future's terminal result and cancels the still-pending asyncio wrapper. A successful stop fence preserves the original cancellation. A stop-fence failure remains visible and cannot be stranded as an unobserved wrapper exception. Direct fixtures require both outcomes to leave no lifecycle thread or event-loop exception report.
+
+Exact-source v0.340.23 passed public security/Gitleaks run 40828111534, research regression/browser/evidence run 40828111532 and Windows EXE/installer/reinstall/uninstall run 40828111548.
+
+Final local validation passed 4,428 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 177 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a99ef134fd7a0a30162e4a1d0ac9fdde1122a443f1efd9d2b0b0f1c348fc1511`; `validation/release_trials_0_340_24.json` SHA256 is `42adb651d83e1c532c5c36d71c17374365f30a7d1d379774d3a9ec43942f9a40`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.24 wheel build passed. Fresh exact-source v0.340.24 workflows remain mandatory.
 
 ## v0.340.23 ordered lifecycle stop-fence evidence
 

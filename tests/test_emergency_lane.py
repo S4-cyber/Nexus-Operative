@@ -208,6 +208,29 @@ def test_shutdown_worker_creation_failure_still_runs_stop_fence(lane,monkeypatch
     assert events==['drained','APPLICATION_SHUTDOWN','observer','refresh','found']
 
 
+@pytest.mark.parametrize('stop_failure',[False,True],ids=['preserve-cancellation','surface-stop-failure'])
+def test_cancelled_lifespan_observes_private_worker_completion(lane,monkeypatch,stop_failure):
+    entered=threading.Event();release=threading.Event();errors=[]
+    def stop_fence():
+        entered.set();assert release.wait(5)
+        if stop_failure:raise ValueError('STOP_FENCE_FAILED')
+    monkeypatch.setattr(api,'_shutdown_application_workers',stop_fence)
+    async def exercise():
+        loop=asyncio.get_running_loop();loop.set_exception_handler(lambda _loop,ctx:errors.append(ctx))
+        context=api.application_lifespan(None);await context.__aenter__()
+        closing=asyncio.create_task(context.__aexit__(None,None,None))
+        await until(entered.is_set)
+        timer=threading.Timer(.05,release.set);timer.start();closing.cancel()
+        try:
+            expected=ValueError if stop_failure else asyncio.CancelledError
+            with pytest.raises(expected,match='STOP_FENCE_FAILED' if stop_failure else None):await closing
+        finally:timer.join()
+        await asyncio.sleep(0)
+    asyncio.run(exercise())
+    assert not errors
+    assert not any(thread.name.startswith('nexus-lifecycle-stop') for thread in threading.enumerate())
+
+
 def test_failed_cleanup_has_no_success_ack_and_remains_retryable(lane,monkeypatch):
     c,g,r,w,starts,obs=lane;c.post('/api/portal',json={'enabled':True})
     original_stop=r.stop

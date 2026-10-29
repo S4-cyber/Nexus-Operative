@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.24 cancelled-lifespan failure observation
+
+Lifespan cancellation now waits for the exact private shutdown worker, retrieves its terminal result and cancels the asyncio wrapper before returning. Successful cleanup preserves cancellation; a stop-fence failure remains visible instead of becoming an orphaned wrapper exception. Direct tests cover both outcomes, require no event-loop exception report and require the private lifecycle thread to be gone. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.23 passed security/Gitleaks run 40828111534, research regression/browser/evidence run 40828111532 and Windows EXE/installer/reinstall/uninstall run 40828111548.
+
+Final local validation passed 4,428 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 177 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a99ef134fd7a0a30162e4a1d0ac9fdde1122a443f1efd9d2b0b0f1c348fc1511`; `validation/release_trials_0_340_24.json` SHA256 is `42adb651d83e1c532c5c36d71c17374365f30a7d1d379774d3a9ec43942f9a40`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.24 wheel build passed. Fresh exact-source v0.340.24 workflows remain mandatory.
+
 ## v0.340.23 ordered lifecycle stop-fence evidence
 
 The disposable real-loopback HTTP profile now records fixed completion labels after the exact emergency-lane drain and each ordinary application worker cleanup returns. Validation requires the drain to complete before paper-forward, observer, refresh and Found Markets cleanup; a negative control swaps the first two labels and must fail. This adds no runtime behavior, control, permission or authority.

@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.24 cancelled-lifespan failure observation
+
+Cancellation of ASGI lifespan must not abandon the private stop worker or leave its exception on an unobserved asyncio wrapper. The application now waits for worker completion, retrieves the exact terminal result and cancels the wrapper. Direct positive and failure fixtures require cancellation to survive successful cleanup, a stop-fence error to remain visible, no event-loop exception report and no remaining private lifecycle thread. Runtime authority remains unchanged.
+
+Exact-source v0.340.23 passed public security/Gitleaks run 40828111534, research regression/browser/evidence run 40828111532 and Windows EXE/installer/reinstall/uninstall run 40828111548.
+
+Final local validation passed 4,428 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 177 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a99ef134fd7a0a30162e4a1d0ac9fdde1122a443f1efd9d2b0b0f1c348fc1511`; `validation/release_trials_0_340_24.json` SHA256 is `42adb651d83e1c532c5c36d71c17374365f30a7d1d379774d3a9ec43942f9a40`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.24 wheel build passed. Fresh exact-source v0.340.24 workflows remain mandatory.
+
 ## v0.340.23 ordered lifecycle stop-fence evidence
 
 Saved HTTP evidence must now prove the exact emergency lane finished draining before any ordinary application worker cleanup completed. The disposable profile records only five fixed completion labels after delegating to each exact product operation. The validator requires the full order and a negative control swaps the drain and first cleanup labels. Runtime behavior and every authority flag remain unchanged.

@@ -75,14 +75,27 @@ async def application_lifespan(application):
                     lifecycle_executor=None
                 # Worker creation is not allowed to skip the stop fence.
                 _shutdown_application_workers()
-            else:await asyncio.shield(asyncio.wrap_future(future))
+            else:
+                wrapped=asyncio.wrap_future(future)
+                try:await asyncio.shield(wrapped)
+                except asyncio.CancelledError:
+                    # Cancellation is not allowed to abandon the stop fence or
+                    # leave its exception on an unobserved asyncio wrapper.
+                    # Finish the private worker synchronously, then cancel the
+                    # wrapper before preserving cancellation or surfacing the
+                    # worker failure from Future.result().
+                    lifecycle_executor.shutdown(wait=True,cancel_futures=False)
+                    lifecycle_executor=None
+                    try:future.result()
+                    finally:wrapped.cancel()
+                    raise
         finally:
             # If the lifespan task is cancelled, still wait for the private
             # worker: its nested finally chain is the application stop fence.
             if lifecycle_executor is not None:
                 lifecycle_executor.shutdown(wait=True,cancel_futures=False)
 
-app = FastAPI(title="Nexus Operative", version="0.340.23",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.340.24",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -364,7 +377,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.340.23", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.340.24", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}

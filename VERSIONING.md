@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.16 (pre-release).** This build rechecks both exact entry journal fingerprints when initial reconciliation readers fail and makes the exceptional file-set refusal mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.17 (pre-release).** This build pins the exact settled reconnect-budget bytes after checkpoint reconciliation commits, rechecks both journals around every later reader and makes the post-result exceptional file-set refusal mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.17 post-result reconciliation file-set proof
+
+After the expected checkpoint result commits, explicit reconciliation now captures that exact settled budget fingerprint and rechecks it plus the entry-pinned cursor around both stability reads and both final confirmation reads. A cursor or budget reader that rewrites either journal and raises receives fixed `FILE_SET_CHANGED`; the committed terminal result remains available for duplicate replay and no provider request is repeated. Eight direct regressions cover both reader families, both phases and both journal targets; the injected fixture and negative control make the invariant mandatory.
+
+Final local validation passed 4,400 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 435 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `bc2bab28c76bfa42bf409943c86f0e8eff426e4af1a6e6c9c0b7fbbdaf9462fa`; `validation/release_trials_0_340_17.json` SHA256 is `291c16cc7f36ed6172a4f7cace4232e9ab1cf4e6122541da9bccd7f5473990ca`. Exact-source v0.340.16 parent `5c4b132c64ae437c44eedf23326cc683b11fa833` passed public security 40786863780, research safety/browser/evidence 40786863799 and Windows packaging/installer 40786863778. Fresh exact-source v0.340.17 workflows remain mandatory.
 
 ## v0.340.16 exceptional reconciliation file-set proof
 

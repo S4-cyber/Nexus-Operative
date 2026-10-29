@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.16. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.17. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.16 rechecks both entry journal fingerprints when initial budget replay or cursor-binding review raises. A same-inode cursor or reconnect-budget rewrite can no longer be hidden behind a general semantic-review error: the boundary returns fixed file-set uncertainty, preserves the pending reservation and performs no additional provider request. The injected fixture and negative control make the exceptional-exit proof mandatory release evidence. No retry, credential access, UI control or runtime authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.17 captures the exact settled reconnect-budget fingerprint immediately after checkpoint reconciliation commits and rechecks both journals around every later cursor and budget reader, including exceptional exits. A same-inode rewrite after the expected local result can no longer be hidden behind generic recovery uncertainty: the boundary returns fixed file-set uncertainty, retains the committed terminal result and performs no provider request. Eight direct reader/target regressions plus the injected fixture and negative control make the post-result proof mandatory release evidence. No retry, credential access, UI control or runtime authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

@@ -1114,6 +1114,7 @@ def _validate(profile, result):
                 'checkpoint_reconciliation_lost_result_ack_recovers_exactly_once',
                 'reconciliation_pins_budget_before_cursor_decision',
                 'reconciliation_exception_rechecks_entry_files',
+                'reconciliation_exception_rechecks_settled_files',
                 'checkpoint_reconciliation_replay_is_byte_stable',
                 'emergency_stop_retires_pending_without_external_access',
                 'emergency_stop_closes_retry_wait_without_new_attempt',

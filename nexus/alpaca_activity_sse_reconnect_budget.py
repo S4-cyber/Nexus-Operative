@@ -2560,22 +2560,32 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
                     retained['checkpoint_receipt_sha256']),
             'RECOVERY_RESULT_UNCERTAIN')
         require_store_bindings()
-    require_store_bindings()
+    try:
+        settled_budget_fingerprint = (initial_budget_fingerprint if duplicate
+            else capture_file_fingerprints(
+                (journal_paths[1],), (MAX_DATABASE_BYTES,), file_prefix))
+    except ValueError as error:
+        raise ActivitySSEReconnectBudgetError(str(error)) from None
+    require_journal_files(settled_budget_fingerprint)
     try:
         unchanged = _validated_checkpoint_binding(cursor_store,
             cursor_store.latest_checkpoint_binding(),
             'RECOVERY_RESULT_UNCERTAIN')
     except Exception:
-        require_store_bindings()
+        # Once the expected result commits, later readers must not be able to
+        # rewrite either settled journal and hide that change behind a generic
+        # recovery diagnostic.  The cursor is still entry-pinned and the
+        # budget is pinned to the exact post-result bytes captured above.
+        require_journal_files(settled_budget_fingerprint)
         _fail('RECOVERY_RESULT_UNCERTAIN')
-    require_store_bindings()
+    require_journal_files(settled_budget_fingerprint)
     try:
         stable = _inspect_after_result_error(reconnect_budget,
             'RECOVERY_RESULT_UNCERTAIN')
     except Exception:
-        require_store_bindings()
+        require_journal_files(settled_budget_fingerprint)
         raise
-    require_store_bindings()
+    require_journal_files(settled_budget_fingerprint)
     result_time = None if duplicate else now
     if (unchanged != retained or
             not _same_result_head(stable, recovered) or
@@ -2584,17 +2594,15 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
                 retained['checkpoint_receipt_sha256'], result_time)):
         _fail('RECOVERY_RESULT_UNCERTAIN')
     try:
-        budget_fingerprint = (initial_budget_fingerprint if duplicate else
-            capture_file_fingerprints(
-                (journal_paths[1],), (MAX_DATABASE_BYTES,), file_prefix))
         confirmed_checkpoint = _validated_checkpoint_binding(cursor_store,
             cursor_store.latest_checkpoint_binding(),
             'RECOVERY_RESULT_UNCERTAIN')
         confirmed_budget = _inspect_after_result_error(reconnect_budget,
             'RECOVERY_RESULT_UNCERTAIN')
-    except ValueError as error:
-        raise ActivitySSEReconnectBudgetError(str(error)) from None
-    require_journal_files(budget_fingerprint)
+    except Exception:
+        require_journal_files(settled_budget_fingerprint)
+        _fail('RECOVERY_RESULT_UNCERTAIN')
+    require_journal_files(settled_budget_fingerprint)
     if (confirmed_checkpoint != retained or confirmed_budget != stable or
             not _exact_checkpoint_result(confirmed_budget,
                 reservation_token, retained['head_sha256'],
@@ -2615,7 +2623,7 @@ def reconcile_pending_checkpoint(*, cursor_store, reconnect_budget,
         checkpoint_receipt_sha256=
             confirmed_checkpoint['checkpoint_receipt_sha256'],
         **{flag: False for flag in FLAGS})
-    require_journal_files(budget_fingerprint)
+    require_journal_files(settled_budget_fingerprint)
     return result
 
 
@@ -2880,6 +2888,38 @@ def fixture_report():
         rewrite_budget.path.write_bytes(exceptional_budget_bytes)
         exceptional_rewrite_state = ActivitySSEReconnectBudget(
             rewrite_budget.path, account).inspect()
+        rewrite_cursor.latest_checkpoint_binding = original_rewrite_binding
+        settled_budget_bytes = []
+        settled_binding_reads = []
+        def rewrite_settled_budget_then_fail_cursor_read():
+            retained = original_rewrite_binding()
+            settled_binding_reads.append(True)
+            if len(settled_binding_reads) == 2:
+                settled_budget_bytes.append(rewrite_budget.path.read_bytes())
+                with rewrite_budget.path.open('r+b') as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+                    stream.flush()
+                raise RuntimeError(
+                    'private fixture failed settled cursor read')
+            return retained
+        rewrite_cursor.latest_checkpoint_binding = \
+            rewrite_settled_budget_then_fail_cursor_read
+        settled_rewrite_code = None
+        try:
+            reconcile_pending_checkpoint(cursor_store=rewrite_cursor,
+                reconnect_budget=rewrite_budget,
+                expected_budget_head=rewrite_reserved['head_sha256'],
+                expected_checkpoint_head=
+                    rewrite_checkpoint['checkpoint_head_sha256'],
+                evaluated_at=2503,
+                confirm_checkpoint_reconciliation=True)
+        except ActivitySSEReconnectBudgetError as error:
+            settled_rewrite_code = str(error)
+        if settled_budget_bytes:
+            rewrite_budget.path.write_bytes(settled_budget_bytes[0])
+        settled_rewrite_state = ActivitySSEReconnectBudget(
+            rewrite_budget.path, account).inspect()
         stop_budget = ActivitySSEReconnectBudget(
             root / 'stop-budget.sqlite3', account)
         stop_reserved = stop_budget.begin(evaluated_at=3000,
@@ -3086,6 +3126,17 @@ def fixture_report():
                     rewrite_reserved['token'] and
                 not exceptional_rewrite_state['completed'] and
                 not exceptional_rewrite_state['review_required'],
+            reconciliation_exception_rechecks_settled_files=
+                settled_rewrite_code is not None and
+                settled_rewrite_code.endswith('FILE_SET_CHANGED') and
+                settled_binding_reads == [True, True] and
+                len(settled_budget_bytes) == 1 and
+                len(rewrite_opener.requests) == 1 and
+                settled_rewrite_state['completed'] and
+                settled_rewrite_state['pending_token'] is None and
+                settled_rewrite_state['last_outcome'] ==
+                    'CHECKPOINT_COMMITTED' and
+                not settled_rewrite_state['review_required'],
             checkpoint_reconciliation_replay_is_byte_stable=
                 recovered_replay['pending_checkpoint_reconciled'] and
                 recovered_replay['duplicate_recovery'] and

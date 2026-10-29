@@ -4406,6 +4406,67 @@ def test_reconciliation_failed_cursor_read_rechecks_entry_files(tmp_path,
     assert not state['completed'] and not state['review_required']
 
 
+@pytest.mark.parametrize(('reader_name', 'failed_read'), (
+    ('cursor', 2), ('cursor', 3), ('budget', 1), ('budget', 2)))
+@pytest.mark.parametrize('changed_store', ('cursor', 'budget'))
+def test_reconciliation_failed_post_result_read_rechecks_settled_files(
+        tmp_path, monkeypatch, reader_name, failed_read, changed_store):
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    original_cursor_binding = cursor.latest_checkpoint_binding
+    original_budget_inspect = budget.inspect
+    original_result_inspect = subject._inspect_after_result_error
+    changed_path = cursor.path if changed_store == 'cursor' else budget.path
+    retained_bytes = []
+    reads = 0
+
+    def fail_changed_read():
+        nonlocal reads
+        reads += 1
+        if reads == failed_read:
+            retained_bytes.append(changed_path.read_bytes())
+            with changed_path.open('r+b') as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+                stream.flush()
+            raise RuntimeError('private failed post-result read')
+        return original_cursor_binding()
+
+    def fail_changed_result_inspect(reconnect_budget, code):
+        nonlocal reads
+        reads += 1
+        if reads == failed_read:
+            retained_bytes.append(changed_path.read_bytes())
+            with changed_path.open('r+b') as stream:
+                stream.seek(60)
+                stream.write((1).to_bytes(4, 'big'))
+                stream.flush()
+            raise RuntimeError('private failed post-result read')
+        return original_result_inspect(reconnect_budget, code)
+
+    if reader_name == 'cursor':
+        monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+            fail_changed_read)
+    else:
+        monkeypatch.setattr(subject, '_inspect_after_result_error',
+            fail_changed_result_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'
+    assert 'private' not in str(raised.value)
+    assert reads == failed_read and len(opener.requests) == 1
+    assert len(retained_bytes) == 1
+    changed_path.write_bytes(retained_bytes[0])
+    state = original_budget_inspect()
+    assert state['completed'] and state['pending_token'] is None
+    assert state['last_outcome'] == 'CHECKPOINT_COMMITTED'
+
+
 @pytest.mark.parametrize('malformed', (None, {}, [], {'head_sha256': None}))
 def test_reconciliation_malformed_cursor_binding_fails_closed(
         tmp_path, monkeypatch, malformed):

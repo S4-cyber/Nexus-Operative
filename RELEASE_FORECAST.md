@@ -2,6 +2,14 @@
 
 ## Candidate update on 2026-10-28
 
+Current candidate: v0.340.17, based on published v0.340.16 source `5c4b132c64ae437c44eedf23326cc683b11fa833`. All three v0.340.16 exact-source workflows passed. v0.340.17 additionally pins the settled post-result budget bytes and rechecks both journals around every later cursor and budget reader, preventing a same-inode rewrite plus exception from being hidden behind general recovery uncertainty. It adds no runtime retry, provider access, credential access or UI authority. Fresh exact-source hosted results remain required.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
+
+Final local validation passed 4,400 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 435 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `bc2bab28c76bfa42bf409943c86f0e8eff426e4af1a6e6c9c0b7fbbdaf9462fa`; `validation/release_trials_0_340_17.json` SHA256 is `291c16cc7f36ed6172a4f7cace4232e9ab1cf4e6122541da9bccd7f5473990ca`. Fresh v0.340.17 security, browser/evidence/regression and Windows packaging workflows remain mandatory. The rough weighted implementation estimate is intentionally unchanged because this hardening does not integrate a new accepted external gate.
+
+## Prior v0.340.16 candidate record
+
 Current candidate: v0.340.16, based on published v0.340.15 source `36b87f3d9f6887bdf71d8319d3ac5bff5870bcf0`. All three v0.340.15 exact-source workflows passed. v0.340.16 additionally requires the initial reconciliation fingerprints to remain unchanged on exceptional budget/cursor reader exits, preventing a same-inode rewrite from being hidden behind a general semantic diagnostic. It adds no runtime retry, provider access, credential access or UI authority. Fresh exact-source hosted results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.

@@ -1,6 +1,12 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.15 content-pins the reconnect-budget journal from entry into explicit checkpoint reconciliation through the cursor-binding decision. A same-inode rewrite now fails closed before the expected local result commit, retains the exact pending reservation and performs no additional provider request. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+Current checkpoint: v0.340.17 pins the exact settled reconnect-budget bytes immediately after explicit checkpoint reconciliation commits and rechecks both journals around every later cursor and budget reader, including exceptional exits. A same-inode rewrite after the expected result now fails with fixed file-set uncertainty while retaining the committed terminal result and performing no provider request. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+
+## v0.340.17 post-result reconciliation file-set proof
+
+Explicit checkpoint reconciliation now captures the exact settled budget fingerprint immediately after the expected local result commits, then rechecks that fingerprint plus the entry-pinned cursor around both stability reads and both final confirmation reads. A cursor or budget reader that rewrites either journal and raises cannot hide the mutation behind generic recovery uncertainty. Eight direct regressions cover the two reader families, both read phases and both journal targets. The injected fixture rewrites the settled budget and raises from the post-result cursor read; the release validator and negative control make the fixed file-set refusal mandatory.
+
+Final local validation passed 4,400 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 435 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `bc2bab28c76bfa42bf409943c86f0e8eff426e4af1a6e6c9c0b7fbbdaf9462fa`; `validation/release_trials_0_340_17.json` SHA256 is `291c16cc7f36ed6172a4f7cace4232e9ab1cf4e6122541da9bccd7f5473990ca`. Exact-source v0.340.16 parent `5c4b132c64ae437c44eedf23326cc683b11fa833` passed public security 40786863780, research safety/browser/evidence 40786863799 and Windows packaging/installer 40786863778. Fresh exact-source v0.340.17 workflows remain mandatory.
 
 ## v0.340.15 pre-commit reconciliation budget fingerprint
 

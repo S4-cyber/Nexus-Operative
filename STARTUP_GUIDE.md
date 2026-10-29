@@ -1,5 +1,7 @@
 # Nexus workspaces and startup checklist
 
+For a verified binary and practical owner test steps, read [WINDOWS_ACCEPTANCE.md](WINDOWS_ACCEPTANCE.md) and [OWNER_PAPER_ACCEPTANCE.md](OWNER_PAPER_ACCEPTANCE.md). The checklist uses local virtual funds and preserves separate research, Engage and emergency-stop controls.
+
 ## What the owner needs for the next acceptance milestone
 
 Coding and offline fixture validation can continue without owner setup. Actual connected-paper acceptance needs an authorized paper-only account and a Windows machine/private ordinary-user profile. The current paper-order transport and Activity SSE coordination are internal explicitly confirmed boundaries, not a ready autonomous broker connection. Follow a verified build's documented onboarding and supervised test instructions; do not paste API secrets or bank credentials into chat or GitHub. Local virtual-paper operation requires no bank deposit or paid AI subscription.

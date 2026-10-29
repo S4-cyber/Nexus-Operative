@@ -1,5 +1,13 @@
 # Windows distribution and acceptance evidence
 
+## Verified test installer — v0.340.39 (2026-10-29)
+
+[Download installer ZIP](https://github.com/S4-cyber/Nexus-Operative/actions/runs/40965603928/artifacts/12939305842), containing NexusOperative-Setup-0.340.39.exe; artifact expiry 2026-11-05T22:46:16Z. GitHub may require sign-in. The archive downloaded during this handoff matched the GitHub artifact SHA256 `2e3977de385763785eda29d81f98cf297b9c89e17913e5360e43962c679157fa`, passed ZIP integrity checking and contained exactly the expected setup EXE. Extracted setup SHA256: `3377e9d1863713da2874e0e2377ed0bdb9828572650f093a4b41e2c5a8f50e72` (28,687,028 bytes).
+
+Exact source `4d6c90138bdb9d55813e17b75a4461d550ace70f` passed Windows EXE/installer/reinstall/uninstall run 40965603928, safety/browser/evidence run 40965604002 and public-security run 40965603983. Installer evidence artifact 12939046401 and distribution artifact 12938014299 remain separate records. v0.340.40 is a newer source candidate whose Windows build was still running at this check; it is not substituted for this tested binary.
+
+Use [OWNER_PAPER_ACCEPTANCE.md](OWNER_PAPER_ACCEPTANCE.md) for the ordinary-user installation, research/Engage/stop/restart/Matrix checks and later 72-hour observation plan. The verified automated checkpoint does not close owner-profile/ACL, actual-account/broker, sustained-market, funds/live/cloud or independent acceptance. This is an experimental paper-only installer, not a 1.0 release. Preserve private backups and review compatibility before changing versions.
+
 ## v0.191.0 account-response normalization candidate
 
 The installed/source tool catalogue adds `account-response-review`, a network-, vault- and write-silent private review of one exact retained ACCOUNT_INVENTORY session. Native acceptance must verify bounded regular private files, distinct/source-install-external paths, byte-exact response matching, production normalizer replay, portable-observation equality, exact-head/session fencing, unchanged input files, sanitized failures and standalone/installed parity. It must not contact a provider, create storage, retry, grant account/funds authority or start the Portal.

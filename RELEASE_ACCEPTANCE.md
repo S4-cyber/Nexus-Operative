@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.33 post-fee reference semantic-reader file-set proof
+
+Post-fee reference review must recheck the exact five-store identity and bounded fingerprint set after every semantic reader returns or raises. Initial provider-POST reconciliation and every later accepted-history, retained-activity, acceptance-scope and repeat-reader mutation failure must receive the composition's fixed file-set refusal. Eleven direct regressions and mandatory saved evidence cover these boundaries. Runtime authority remains unchanged.
+
+Exact-source v0.340.32 passed public security/Gitleaks run 40900066686, research regression/browser/evidence run 40900067028 and Windows EXE/installer/reinstall/uninstall run 40900066663.
+
+Pre-publication local verification passed the 291-test post-fee/provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus with one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification passed. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.33 wheel build passed. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.33 workflows remain mandatory.
+
 ## v0.340.32 provider-POST reconciliation semantic-reader file-set proof
 
 Provider-POST reconciliation must recheck the exact five-store identity and bounded fingerprint set after every semantic reader returns or raises. Initial POST-budget inspection, POST-activity composition, guarded account-evidence composition and final accepted-status failures that mutate any selected journal must receive fixed file-set refusal. Direct regressions and mandatory saved evidence cover these boundaries. Runtime authority remains unchanged.

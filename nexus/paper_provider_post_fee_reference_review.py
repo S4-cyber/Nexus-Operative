@@ -41,6 +41,8 @@ def _component_valid(result):
         and result.get('complete_accepted_history_replayed') is True
         and result.get('guarded_balance_evidence_bound') is True
         and result.get('journals_rechecked_unchanged') is True
+        and result.get('journal_files_rechecked_unchanged') is True
+        and result.get('semantic_reader_failures_rechecked') is True
         and any(result.get(flag) is not False for flag in reconciliation.FLAGS)
             is False)
 
@@ -64,6 +66,21 @@ def _require_bindings(post_budget, journal, store_binding, paths,
         'PAPER_PROVIDER_POST_FEE_REFERENCE_')
     require_file_fingerprints(paths, JOURNAL_LIMITS, file_fingerprints,
         'PAPER_PROVIDER_POST_FEE_REFERENCE_')
+
+
+def _stable_reader(post_budget, journal, store_binding, paths,
+                   file_binding, file_fingerprints):
+    def read(reader):
+        try:
+            value = reader()
+        except BaseException:
+            _require_bindings(post_budget, journal, store_binding, paths,
+                file_binding, file_fingerprints)
+            raise
+        _require_bindings(post_budget, journal, store_binding, paths,
+            file_binding, file_fingerprints)
+        return value
+    return read
 
 
 def _frozen_path(value, code):
@@ -100,6 +117,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         'PAPER_PROVIDER_POST_FEE_REFERENCE_')
     _require_bindings(post_budget, journal, store_binding, paths,
         file_binding, file_fingerprints)
+    stable_read = _stable_reader(post_budget, journal, store_binding, paths,
+        file_binding, file_fingerprints)
     options = dict(post_budget=post_budget,
         expected_post_head=expected_post_head, account_id=account_id,
         journal=journal, expected_request_head=expected_request_head,
@@ -110,9 +129,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         opening_observation=opening_observation,
         closing_observation=closing_observation,
         post_closing_observation=post_closing_observation)
-    base = reconciliation.review(**options)
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    base = stable_read(lambda: reconciliation.review(**options))
     if not _component_valid(base):
         _fail('RECONCILIATION_INVALID')
 
@@ -122,22 +139,16 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         acceptance_store_path=acceptance_store_path,
         expected_request_head=expected_request_head,
         expected_activity_head=expected_activity_head)
-    activity = accepted.review(**common)
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    activity = stable_read(lambda: accepted.review(**common))
     if (activity.get('read_only') is not True or
             activity.get('complete_accepted_history_replayed') is not True or
             any(activity.get(flag) is not False for flag in accepted.FLAGS)):
         _fail('ACCEPTED_ACTIVITY_INVALID')
 
     store = BrokerActivityStore(activity_store_path, account_id)
-    retained = store.inspect()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    retained = stable_read(store.inspect)
     acceptance = PaperActivityAcceptanceStore(acceptance_store_path, account_id)
-    scopes = acceptance.replay_scopes()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    scopes = stable_read(acceptance.replay_scopes)
     accepted_receipts = {scope['retained_receipt_sha256'] for scope in scopes}
     if accepted_receipts != set(retained['receipts']):
         _fail('ACCEPTED_RECEIPT_PARTITION')
@@ -189,15 +200,9 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             fill_activity_id=execution_id, broker_order_id=order_id,
             client_order_id=fill['client_order_id']))
 
-    repeated = reconciliation.review(**options)
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
-    final_retained = store.inspect()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
-    final_scopes = acceptance.replay_scopes()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    repeated = stable_read(lambda: reconciliation.review(**options))
+    final_retained = stable_read(store.inspect)
+    final_scopes = stable_read(acceptance.replay_scopes)
     if repeated != base or final_retained != retained or final_scopes != scopes:
         _fail('HISTORY_CHANGED_DURING_REVIEW')
     scope = dict(policy=POLICY, account_sha256=journal_account,
@@ -222,6 +227,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         all_retained_fees_explicitly_referenced=True,
         all_references_resolve_to_accepted_original_fills=True,
         journals_rechecked_unchanged=True,
+        journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,
         reference_semantics_unverified=True,
         **{flag: False for flag in FLAGS},
         limitations='One private exact-head local composition binds every retained fee reference pair to an accepted original fill after provider POST, request/activity and guarded balance reconciliation. REST order/execution reference fields remain unverified hints; date-only fees have no posting instant. This does not prove provider source, fee completeness, fee allocation to the observed balance interval, holds, settled/spendable funds, profitability or broker-account acceptance. Separate journals are not atomic or distributed. No provider/vault IO, write, retry, continuation, ledger, routing, funding, live trading or release approval.')
@@ -270,6 +277,10 @@ def fixture_report():
                 result['explicitly_referenced_fee_records'] == 1,
             references_resolve_to_accepted_original_fills=
                 result['all_references_resolve_to_accepted_original_fills'],
+            journal_file_fingerprints_rechecked=
+                result['journal_files_rechecked_unchanged'],
+            semantic_reader_failures_rechecked=
+                result['semantic_reader_failures_rechecked'],
             date_only_scope_preserved=result['date_only_fee_references'] == 1 and
                 result['timestamped_fee_references'] == 0 and
                 result['reference_semantics_unverified'] is True,

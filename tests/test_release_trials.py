@@ -427,6 +427,8 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('provider_post_fee_references','accepted_receipt_partition_complete'),False,'PROVIDER_POST_FEE_REFERENCES'),
         (('provider_post_fee_references','all_retained_fees_explicitly_referenced'),False,'PROVIDER_POST_FEE_REFERENCES'),
         (('provider_post_fee_references','references_resolve_to_accepted_original_fills'),False,'PROVIDER_POST_FEE_REFERENCES'),
+        (('provider_post_fee_references','journal_file_fingerprints_rechecked'),False,'PROVIDER_POST_FEE_REFERENCES'),
+        (('provider_post_fee_references','semantic_reader_failures_rechecked'),False,'PROVIDER_POST_FEE_REFERENCES'),
         (('provider_post_fee_references','unreferenced_fee_rejected'),False,'PROVIDER_POST_FEE_REFERENCES'),
         (('provider_post_fee_references','fee_execution_links_verified'),True,'PROVIDER_POST_FEE_REFERENCES_AUTHORITY'),
         (('provider_post_known_fee_reserve','retained_known_fee_debits_covered'),False,'PROVIDER_POST_KNOWN_FEE_RESERVE'),

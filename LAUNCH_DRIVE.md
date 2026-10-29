@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.33 post-fee reference semantic-reader file-set proof
+
+The post-fee reference composition now rechecks the POST-budget, request, pacing, retained-activity and acceptance stores after every semantic reader returns or raises. Eleven direct regressions cover all five stores at the initial boundary plus accepted-history, retained-activity, acceptance-scope and final repeat boundaries; mandatory saved evidence requires the fence. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.32 passed public security/Gitleaks run 40900066686, research regression/browser/evidence run 40900067028 and Windows EXE/installer/reinstall/uninstall run 40900066663.
+
+Pre-publication local verification passed the 291-test post-fee/provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus with one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification passed. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.33 wheel build passed. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.33 workflows remain mandatory.
+
 ## v0.340.32 provider-POST reconciliation semantic-reader file-set proof
 
 The exact provider-POST reconciliation composition now rechecks the POST-budget, request, pacing, retained-activity and acceptance stores after every semantic reader returns or raises. Direct regressions cover all five journals at the initial boundary plus both composed reviews and the final accepted-status boundary; mandatory saved evidence requires the fence. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

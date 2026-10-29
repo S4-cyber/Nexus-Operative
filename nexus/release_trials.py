@@ -1069,6 +1069,8 @@ def _validate(profile, result):
                 'accepted_receipt_partition_complete',
                 'all_retained_fees_explicitly_referenced',
                 'references_resolve_to_accepted_original_fills',
+                'journal_file_fingerprints_rechecked',
+                'semantic_reader_failures_rechecked',
                 'date_only_scope_preserved',
                 'missing_fee_history_rejected',
                 'unreferenced_fee_rejected',

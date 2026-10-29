@@ -1,5 +1,6 @@
 """Exact provider POST reconciliation to retained fee-reference composition."""
 import json
+import os
 import shutil
 import sqlite3
 from pathlib import Path
@@ -36,6 +37,8 @@ def test_binds_every_retained_fee_reference_without_writes(tmp_path):
     assert result['date_only_fee_references'] == 1
     assert result['timestamped_fee_references'] == 0
     assert result['all_references_resolve_to_accepted_original_fills']
+    assert result['journal_files_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert result['reference_semantics_unverified']
     assert all(result[flag] is False for flag in subject.FLAGS)
     assert subject.review(**args) == result
@@ -200,6 +203,96 @@ def test_same_head_journal_rewrite_fails_closed(tmp_path, monkeypatch, target):
     with pytest.raises(ValueError, match=
             'PAPER_PROVIDER_POST_FEE_REFERENCE_FILE_SET_CHANGED'):
         subject.review(**args)
+
+
+def _mutate_metadata_and_fail(path):
+    stat = os.stat(path)
+    os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+    raise RuntimeError('injected post fee reference reader failure')
+
+
+@pytest.mark.parametrize('target', (
+    'post_budget', 'journal', 'pacing_path', 'activity_store_path',
+    'acceptance_store_path'))
+def test_initial_reconciliation_failure_rechecks_all_journals(
+        tmp_path, monkeypatch, target):
+    args = subject._fixture(tmp_path)
+    path = Path(args[target].path if target in ('post_budget', 'journal')
+        else args[target])
+    before = snapshot(tmp_path)
+    original = subject.reconciliation.review
+
+    def failed_reconciliation(**kwargs):
+        original(**kwargs)
+        _mutate_metadata_and_fail(path)
+
+    monkeypatch.setattr(subject.reconciliation, 'review',
+        failed_reconciliation)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_FEE_REFERENCE_FILE_SET_CHANGED'):
+        subject.review(**args)
+    assert snapshot(tmp_path) == before
+
+
+@pytest.mark.parametrize('reader', (
+    'accepted_activity', 'retained_activity', 'acceptance_scopes',
+    'repeated_reconciliation', 'final_retained', 'final_scopes'))
+def test_later_reader_failure_rechecks_all_journals(
+        tmp_path, monkeypatch, reader):
+    args = subject._fixture(tmp_path)
+    before = snapshot(tmp_path)
+    if reader == 'accepted_activity':
+        original = subject.accepted.review
+
+        def failed(**kwargs):
+            original(**kwargs)
+            _mutate_metadata_and_fail(args['journal'].path)
+
+        monkeypatch.setattr(subject.accepted, 'review', failed)
+    elif reader in ('retained_activity', 'final_retained'):
+        original = subject.BrokerActivityStore.inspect
+        calls = 0
+
+        def failed(store):
+            nonlocal calls
+            result = original(store)
+            calls += 1
+            if calls == (1 if reader == 'retained_activity' else 2):
+                _mutate_metadata_and_fail(args['activity_store_path'])
+            return result
+
+        monkeypatch.setattr(subject.BrokerActivityStore, 'inspect', failed)
+    elif reader in ('acceptance_scopes', 'final_scopes'):
+        original = subject.PaperActivityAcceptanceStore.replay_scopes
+        calls = 0
+
+        def failed(store):
+            nonlocal calls
+            result = original(store)
+            calls += 1
+            if calls == (1 if reader == 'acceptance_scopes' else 2):
+                _mutate_metadata_and_fail(args['acceptance_store_path'])
+            return result
+
+        monkeypatch.setattr(subject.PaperActivityAcceptanceStore,
+            'replay_scopes', failed)
+    else:
+        original = subject.reconciliation.review
+        calls = 0
+
+        def failed(**kwargs):
+            nonlocal calls
+            result = original(**kwargs)
+            calls += 1
+            if calls == 2:
+                _mutate_metadata_and_fail(args['post_budget'].path)
+            return result
+
+        monkeypatch.setattr(subject.reconciliation, 'review', failed)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_FEE_REFERENCE_FILE_SET_CHANGED'):
+        subject.review(**args)
+    assert snapshot(tmp_path) == before
 
 
 def test_rollback_sidecar_fails_before_outer_activity_inspection(

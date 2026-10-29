@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.32 (pre-release).** This build rechecks all five provider-POST reconciliation journals after every semantic reader returns or raises. A reader can no longer mutate a journal and hide the file-set change behind a generic or later semantic failure. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.33 (pre-release).** This build rechecks all five post-fee reference journals after every semantic reader returns or raises. A reader can no longer mutate a journal and hide the file-set change behind a generic or lower-layer failure. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.33 post-fee reference semantic-reader file-set proof
+
+The post-fee reference composition rechecks the POST-budget, request, pacing, retained-activity and acceptance store identities and bounded fingerprints after provider-POST reconciliation, accepted-history, retained-activity and acceptance-scope readers return or raise. Eleven direct regressions cover every exceptional boundary. Mandatory saved evidence requires both guarantees.
+
+Exact-source v0.340.32 passed public security/Gitleaks run 40900066686, research regression/browser/evidence run 40900067028 and Windows EXE/installer/reinstall/uninstall run 40900066663.
+
+Pre-publication local verification passed the 291-test post-fee/provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus with one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification passed. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.33 wheel build passed. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.33 workflows remain mandatory.
 
 ## v0.340.32 provider-POST reconciliation semantic-reader file-set proof
 

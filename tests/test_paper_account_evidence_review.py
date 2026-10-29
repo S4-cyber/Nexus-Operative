@@ -1,6 +1,7 @@
 """Private composed review: mismatches, races and CLI privacy, no actual IO."""
 import copy
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -87,7 +88,7 @@ def test_guarded_bundle_rejects_changed_guard_and_post_component_request_race(tm
             metadata_at=1000,evaluated_at=1001))
         return result
     monkeypatch.setattr(subject.inventory,'review_with_stability_guards',append)
-    with pytest.raises(ValueError,match='JOURNALS_CHANGED_DURING_REVIEW'):
+    with pytest.raises(ValueError,match='FILE_SET_CHANGED'):
         subject.review_with_stability_guards(**args)
 
 
@@ -165,7 +166,7 @@ def test_append_after_last_component_is_detected_without_repair(tmp_path,monkeyp
             journal.prepare(preview('new_prepared','BTC-USD','BUY','2','100',asset,metadata_at=1000,evaluated_at=1001))
         return r
     monkeypatch.setattr(subject.inventory,'review',append)
-    with pytest.raises(ValueError,match='JOURNALS_CHANGED_DURING_REVIEW'):subject.review(**args)
+    with pytest.raises(ValueError,match='FILE_SET_CHANGED'):subject.review(**args)
     if kind=='requests':assert len(BrokerRequestJournal(args['request_journal_path'],args['expected_account_id']).recovery()['requests'])==2
 
 
@@ -177,6 +178,62 @@ def test_same_head_request_journal_rewrite_during_bundle_is_rejected(tmp_path,mo
         return result
     monkeypatch.setattr(subject.inventory,'review',changed)
     with pytest.raises(ValueError,match='FILE_SET_CHANGED'):subject.review(**args)
+
+
+def _mutate_metadata_and_fail(path):
+    stat=os.stat(path)
+    os.utime(path,ns=(stat.st_atime_ns,stat.st_mtime_ns+1_000_000_000))
+    raise RuntimeError('injected account evidence reader failure')
+
+
+@pytest.mark.parametrize('reader',('initial_status','request_component'))
+def test_account_bundle_rechecks_journals_when_semantic_reader_fails(
+        tmp_path,monkeypatch,reader):
+    args=options(tmp_path);before=snapshot(tmp_path)
+    if reader=='initial_status':
+        original=subject.acceptance_status
+        def failed_status(**kwargs):
+            original(**kwargs)
+            _mutate_metadata_and_fail(args['acceptance_store_path'])
+        monkeypatch.setattr(subject,'acceptance_status',failed_status)
+    else:
+        original=subject.requests.review
+        def failed_review(**kwargs):
+            original(**kwargs)
+            _mutate_metadata_and_fail(args['request_journal_path'])
+        monkeypatch.setattr(subject.requests,'review',failed_review)
+    with pytest.raises(ValueError,match='PAPER_ACCOUNT_EVIDENCE_FILE_SET_CHANGED'):
+        subject.review(**args)
+    assert snapshot(tmp_path)==before
+
+
+def test_guarded_account_bundle_rechecks_journals_when_final_status_reader_fails(
+        tmp_path,monkeypatch):
+    args=guarded_options(tmp_path);before=snapshot(tmp_path)
+    original=subject.acceptance_status;calls=0
+    def failed_status(**kwargs):
+        nonlocal calls
+        value=original(**kwargs);calls+=1
+        if calls==3:
+            _mutate_metadata_and_fail(args['acceptance_store_path'])
+        return value
+    monkeypatch.setattr(subject,'acceptance_status',failed_status)
+    with pytest.raises(ValueError,match='PAPER_ACCOUNT_EVIDENCE_FILE_SET_CHANGED'):
+        subject.review_with_stability_guards(**args)
+    assert calls==3
+    assert snapshot(tmp_path)==before
+
+
+def test_current_account_bundle_rechecks_initial_status_reader_failure(
+        tmp_path,monkeypatch):
+    args=options(tmp_path);before=snapshot(tmp_path);original=subject.acceptance_status
+    def failed_status(**kwargs):
+        original(**kwargs)
+        _mutate_metadata_and_fail(args['acceptance_store_path'])
+    monkeypatch.setattr(subject,'acceptance_status',failed_status)
+    with pytest.raises(ValueError,match='PAPER_ACCOUNT_EVIDENCE_FILE_SET_CHANGED'):
+        subject.review_current(**current_options(args))
+    assert snapshot(tmp_path)==before
 
 
 def test_account_evidence_refuses_request_rollback_sidecar_before_components(tmp_path,monkeypatch):
@@ -329,7 +386,7 @@ def test_current_head_change_is_not_retried_or_repaired(tmp_path,monkeypatch):
         journal.prepare(preview('new_after_sample','BTC-USD','BUY','2','100',asset,metadata_at=1000,evaluated_at=1001))
         return original(**kw)
     monkeypatch.setattr(subject,'review',changed)
-    with pytest.raises(ValueError,match='HEAD_DISAGREEMENT'):subject.review_current(**current_options(args))
+    with pytest.raises(ValueError,match='FILE_SET_CHANGED'):subject.review_current(**current_options(args))
     assert calls==[args['expected_request_head']]
     assert len(BrokerRequestJournal(args['request_journal_path'],args['expected_account_id']).recovery()['requests'])==2
 

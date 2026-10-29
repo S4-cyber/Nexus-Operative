@@ -53,6 +53,24 @@ def _require_journal_fingerprints(paths,expected):
     require_file_fingerprints(paths,JOURNAL_LIMITS,expected,'PAPER_ACCOUNT_EVIDENCE_')
 
 
+def _stable_reader(paths):
+    """Capture once and recheck all four journals after each reader exits."""
+    fingerprints=None
+    try:
+        fingerprints=_capture_journal_fingerprints(paths)
+    except ValueError as error:
+        if str(error)!='PAPER_ACCOUNT_EVIDENCE_FILE_SET_UNAVAILABLE':raise
+    def read(reader):
+        try:
+            value=reader()
+        except BaseException:
+            if fingerprints is not None:_require_journal_fingerprints(paths,fingerprints)
+            raise
+        if fingerprints is not None:_require_journal_fingerprints(paths,fingerprints)
+        return value
+    return read,fingerprints
+
+
 def review_current(*,expected_account_id,request_journal_path,pacing_path,activity_store_path,
                    acceptance_store_path,opening_observation,closing_observation):
     """Explicitly sample current local heads, then use the strict pinned review.
@@ -61,20 +79,22 @@ def review_current(*,expected_account_id,request_journal_path,pacing_path,activi
     sampled head fails the ordinary review; there is no automatic retry.
     """
     paths=_review_paths(request_journal_path,pacing_path,activity_store_path,acceptance_store_path)
-    current=acceptance_status(expected_account_id=expected_account_id,pacing_path=pacing_path,
-        activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
+    stable_read,fingerprints=_stable_reader(paths)
+    current=stable_read(lambda: acceptance_status(expected_account_id=expected_account_id,
+        pacing_path=pacing_path,activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path))
     if not requests._complete(current):_fail('COMPLETE_ACCEPTED_HISTORY_REQUIRED')
-    request=BrokerRequestJournal(request_journal_path,expected_account_id).recovery()
-    fingerprints=_capture_journal_fingerprints(paths)
-    result=review(expected_account_id=expected_account_id,request_journal_path=request_journal_path,
+    if fingerprints is None:raise ValueError('PAPER_ACCOUNT_EVIDENCE_FILE_SET_UNAVAILABLE') from None
+    request=stable_read(BrokerRequestJournal(request_journal_path,expected_account_id).recovery)
+    result=stable_read(lambda: review(expected_account_id=expected_account_id,
+        request_journal_path=request_journal_path,
         pacing_path=pacing_path,activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path,
         expected_request_head=request['head_sha256'],expected_activity_head=current['retention_head_sha256'],
-        opening_observation=opening_observation,closing_observation=closing_observation)
+        opening_observation=opening_observation,closing_observation=closing_observation))
     # Also fence the pacing/acceptance heads sampled before request replay.
     if any(result[key]!=current[source] for key,source in
            (('pacing_head_sha256','pacing_head_sha256'),('acceptance_head_sha256','acceptance_head_sha256'))):
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
-    _require_journal_fingerprints(paths,fingerprints)
     return dict(result,head_selection='EXPLICIT_CURRENT_LOCAL_HEADS_NO_AUTOMATIC_RETRY')
 
 
@@ -83,22 +103,23 @@ def review_current_with_stability_guards(*,expected_account_id,request_journal_p
         opening_observation,closing_observation,post_closing_observation):
     """Sample current heads once, then run the guarded pinned composition."""
     paths=_review_paths(request_journal_path,pacing_path,activity_store_path,acceptance_store_path)
-    current=acceptance_status(expected_account_id=expected_account_id,pacing_path=pacing_path,
-        activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
+    stable_read,fingerprints=_stable_reader(paths)
+    current=stable_read(lambda: acceptance_status(expected_account_id=expected_account_id,
+        pacing_path=pacing_path,activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path))
     if not requests._complete(current):_fail('COMPLETE_ACCEPTED_HISTORY_REQUIRED')
-    request=BrokerRequestJournal(request_journal_path,expected_account_id).recovery()
-    fingerprints=_capture_journal_fingerprints(paths)
-    result=review_with_stability_guards(expected_account_id=expected_account_id,
+    if fingerprints is None:raise ValueError('PAPER_ACCOUNT_EVIDENCE_FILE_SET_UNAVAILABLE') from None
+    request=stable_read(BrokerRequestJournal(request_journal_path,expected_account_id).recovery)
+    result=stable_read(lambda: review_with_stability_guards(expected_account_id=expected_account_id,
         request_journal_path=request_journal_path,pacing_path=pacing_path,
         activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path,
         expected_request_head=request['head_sha256'],
         expected_activity_head=current['retention_head_sha256'],
         pre_opening_observation=pre_opening_observation,opening_observation=opening_observation,
-        closing_observation=closing_observation,post_closing_observation=post_closing_observation)
+        closing_observation=closing_observation,post_closing_observation=post_closing_observation))
     if any(result[key]!=current[source] for key,source in
            (('pacing_head_sha256','pacing_head_sha256'),('acceptance_head_sha256','acceptance_head_sha256'))):
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
-    _require_journal_fingerprints(paths,fingerprints)
     return dict(result,head_selection='EXPLICIT_CURRENT_LOCAL_HEADS_NO_AUTOMATIC_RETRY')
 
 
@@ -115,12 +136,13 @@ def public_summary(result):
         result.get('read_only') is not True or any(result.get(k) is not False for k in FLAGS)):
         _fail('PUBLIC_SUMMARY_INVALID')
     checks=('journals_rechecked_unchanged','journal_files_rechecked_unchanged',
+        'semantic_reader_failures_rechecked',
         'complete_accepted_history_replayed','component_heads_agree',
         'local_request_terms_agree','all_retained_request_origins_bound','inventory_arithmetic_evaluated')
     counts={'original_requests_reviewed':128,'explicit_fills_reviewed':2000,
         'request_origin_bound_transitions':128,'legacy_unbound_request_transitions':128}
     if (any(type(result.get(k)) is not bool for k in checks) or
-        any(result[k] is not True for k in checks[:4]) or
+        any(result[k] is not True for k in checks[:5]) or
         any(type(result.get(k)) is not int or not 0<=result[k]<=cap for k,cap in counts.items())):
         _fail('PUBLIC_SUMMARY_INVALID')
     gross=result.get('gross_only_minus_observed')
@@ -156,29 +178,32 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
     for head in (expected_request_head,expected_activity_head):
         if type(head) is not str or re.fullmatch('[0-9a-f]{64}',head) is None:_fail('HEAD_REFERENCE')
     paths=_review_paths(request_journal_path,pacing_path,activity_store_path,acceptance_store_path)
+    stable_read,fingerprints=_stable_reader(paths)
     first,last=portable.validate(opening_observation),portable.validate(closing_observation)
     common=dict(expected_account_id=expected_account_id,pacing_path=pacing_path,
         activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
-    before=acceptance_status(**common)
+    before=stable_read(lambda: acceptance_status(**common))
     if not requests._complete(before):_fail('COMPLETE_ACCEPTED_HISTORY_REQUIRED')
+    if fingerprints is None:raise ValueError('PAPER_ACCOUNT_EVIDENCE_FILE_SET_UNAVAILABLE') from None
     context=dict(account_sha256=before['account_sha256'],request_head_sha256=expected_request_head,
         activity_head_sha256=expected_activity_head,pacing_head_sha256=before['pacing_head_sha256'],
         acceptance_head_sha256=before['acceptance_head_sha256'])
     if context['activity_head_sha256']!=before['retention_head_sha256']:_fail('ACTIVITY_HEAD_DISAGREEMENT')
-    fingerprints=_capture_journal_fingerprints(paths)
-    request_result=requests.review(**common,request_journal_path=request_journal_path,
-        expected_request_head=expected_request_head,expected_activity_head=expected_activity_head)
-    inventory_result=inventory.review(**common,expected_activity_head=expected_activity_head,
-        opening_observation=first,closing_observation=last)
+    request_result=stable_read(lambda: requests.review(**common,
+        request_journal_path=request_journal_path,expected_request_head=expected_request_head,
+        expected_activity_head=expected_activity_head))
+    inventory_result=stable_read(lambda: inventory.review(**common,
+        expected_activity_head=expected_activity_head,opening_observation=first,
+        closing_observation=last))
     for component,heads in ((request_result,HEADS),(inventory_result,tuple(k for k in HEADS if k!='request_head_sha256'))):
         if any(component.get(k)!=context[k] for k in heads):_fail('COMPONENT_HEAD_DISAGREEMENT')
         if (component.get('read_only') is not True or component.get('status')!='REVIEW_REQUIRED' or
             any(component.get(k) is not False for k in requests.FLAGS) or
             any(component[k] is not False for k in FLAGS if k in component)):_fail('COMPONENT_AUTHORITY_DISAGREEMENT')
-    after=acceptance_status(**common)
-    request_after=BrokerRequestJournal(request_journal_path,expected_account_id).recovery()
+    after=stable_read(lambda: acceptance_status(**common))
+    request_after=stable_read(BrokerRequestJournal(
+        request_journal_path,expected_account_id).recovery)
     if before!=after or request_after['head_sha256']!=expected_request_head:_fail('JOURNALS_CHANGED_DURING_REVIEW')
-    _require_journal_fingerprints(paths,fingerprints)
     pair=inventory_result['observation_review'];balance=pair['retained_balance_review']
     gross=None if balance is None else balance['gross_fill_review']
     rows=request_result['request_activity_review']['request_reviews']
@@ -188,6 +213,7 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
     return dict(mode='PAPER_ACCOUNT_EVIDENCE_BUNDLE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
         **scope,input_sha256=sha(scope),journals_rechecked_unchanged=True,
         journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,
         complete_accepted_history_replayed=True,component_heads_agree=True,
         local_request_terms_agree=request_result['local_request_activity_agreement'],
         **{k:request_result[k] for k in ('request_origin_bound_transitions','legacy_unbound_request_transitions',
@@ -212,17 +238,20 @@ def review_with_stability_guards(*,expected_account_id,request_journal_path,paci
         pre_opening_observation,opening_observation,closing_observation,post_closing_observation):
     """Compose exact request/activity heads with the four-observation guard."""
     paths=_review_paths(request_journal_path,pacing_path,activity_store_path,acceptance_store_path)
-    fingerprints=_capture_journal_fingerprints(paths)
-    base=review(expected_account_id=expected_account_id,request_journal_path=request_journal_path,
+    stable_read,fingerprints=_stable_reader(paths)
+    if fingerprints is None:raise ValueError('PAPER_ACCOUNT_EVIDENCE_FILE_SET_UNAVAILABLE') from None
+    base=stable_read(lambda: review(expected_account_id=expected_account_id,
+        request_journal_path=request_journal_path,
         pacing_path=pacing_path,activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path,expected_request_head=expected_request_head,
         expected_activity_head=expected_activity_head,opening_observation=opening_observation,
-        closing_observation=closing_observation)
-    guarded=inventory.review_with_stability_guards(expected_account_id=expected_account_id,
+        closing_observation=closing_observation))
+    guarded=stable_read(lambda: inventory.review_with_stability_guards(
+        expected_account_id=expected_account_id,
         pacing_path=pacing_path,activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path,expected_activity_head=expected_activity_head,
         pre_opening_observation=pre_opening_observation,opening_observation=opening_observation,
-        closing_observation=closing_observation,post_closing_observation=post_closing_observation)
+        closing_observation=closing_observation,post_closing_observation=post_closing_observation))
     inner=guarded.get('accepted_reconciliation_review')
     if (type(inner) is not dict or sha(inner)!=base['inventory_review_sha256'] or
         guarded.get('account_sha256')!=base['account_sha256'] or
@@ -240,15 +269,15 @@ def review_with_stability_guards(*,expected_account_id,request_journal_path,paci
     if (any(type(guarded.get(k)) is not int or guarded[k]!=0 for k in guard_counts) or
         any(guarded.get(k) is not True for k in guard_truth)):
         _fail('COMPONENT_GUARD_DISAGREEMENT')
-    current=acceptance_status(expected_account_id=expected_account_id,pacing_path=pacing_path,
-        activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
-    request=BrokerRequestJournal(request_journal_path,expected_account_id).recovery()
+    current=stable_read(lambda: acceptance_status(expected_account_id=expected_account_id,
+        pacing_path=pacing_path,activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path))
+    request=stable_read(BrokerRequestJournal(request_journal_path,expected_account_id).recovery)
     if (request['head_sha256']!=expected_request_head or
         any(current[source]!=base[key] for key,source in
             (('account_sha256','account_sha256'),('activity_head_sha256','retention_head_sha256'),
              ('pacing_head_sha256','pacing_head_sha256'),('acceptance_head_sha256','acceptance_head_sha256')))):
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
-    _require_journal_fingerprints(paths,fingerprints)
     scope=dict(policy=STABILITY_POLICY,**{k:base[k] for k in HEADS},
         account_evidence_sha256=base['input_sha256'],stability_guard_sha256=guarded['input_sha256'],
         pre_opening_manifest_sha256=guarded['pre_opening_manifest_sha256'],
@@ -256,6 +285,7 @@ def review_with_stability_guards(*,expected_account_id,request_journal_path,paci
         closing_manifest_sha256=guarded['closing_manifest_sha256'],
         post_closing_manifest_sha256=guarded['post_closing_manifest_sha256'])
     copied=('accepted_transitions','journals_rechecked_unchanged','journal_files_rechecked_unchanged',
+        'semantic_reader_failures_rechecked',
         'complete_accepted_history_replayed',
         'component_heads_agree','local_request_terms_agree','request_origin_bound_transitions',
         'legacy_unbound_request_transitions','retained_request_origin_prefixes_replayed',
@@ -343,6 +373,9 @@ def fixture_report():
             journal_file_fingerprints_rechecked=
                 result['journal_files_rechecked_unchanged'] is True and
                 guarded['journal_files_rechecked_unchanged'] is True,
+            semantic_reader_failures_rechecked=
+                result['semantic_reader_failures_rechecked'] is True and
+                guarded['semantic_reader_failures_rechecked'] is True,
             journals_unchanged=unchanged)
         return dict(source='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE',passed=all(checks.values()),
             **checks,actual_provider_access=False,actual_vault_access=False,**{flag:False for flag in FLAGS})

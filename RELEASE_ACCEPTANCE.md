@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.21 private lifecycle stop worker
+
+The application stop fence now runs on one private lifecycle worker so shared asyncio-executor saturation cannot postpone emergency-lane drain or reorder ordinary cleanup ahead of an in-flight cut. Worker-creation failure executes the same fence synchronously. Direct regressions saturate the shared executor, inject lifecycle-worker failure and retain cancelled-caller drain ordering. No runtime permission or authority changes.
+
+Exact-source v0.340.20 passed public security and Windows packaging/installer, while its research workflow failed only the Windows offline regression after 4,405 passes and 19 skips; the separate saved-evidence and browser jobs passed. Fresh exact-source v0.340.21 workflows remain mandatory.
+
+Final local validation passed 4,426 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused emergency/release/workflow/packaging set passed 79 tests and the direct emergency-lane file passed 15. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `34be7604e6b2c42fc7b32d43a7c2b8b9ac0e5c297af065e69b1a9f09a7dc0077`; `validation/release_trials_0_340_21.json` SHA256 is `57d29e96a05d9d45a09836a1d1b471313f15e0b938fb68bb8e8d1a72f85e1b00`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.21 wheel build passed. Fresh exact-source v0.340.21 workflows remain mandatory.
+
 ## v0.340.20 pending-checkpoint file-set proof
 
 The recoverable checkpoint/pending-budget split now keeps one exact settled two-journal file set across cursor and budget stability reads plus independent confirmation reads. Both files are rechecked on normal and exceptional exits. A same-inode rewrite plus reader failure returns fixed `FILE_SET_CHANGED`; the pending reservation remains available for explicit no-network reconciliation and there is no second provider request. Eight direct reader/phase/journal regressions and mandatory release evidence cover the boundary. No retry, provider, credential, account, order, funds, live, cloud, UI or release authority is added.

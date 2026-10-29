@@ -159,12 +159,53 @@ def test_shutdown_drains_unacknowledged_cut_before_other_cleanup_and_can_reopen(
             with pytest.raises(api.HTTPException) as info:await api.halt()
             assert info.value.status_code==503
         finally:release.set()
-        await asyncio.wait_for(closing,5)
+        # Hosted Windows storage can be slow after the full regression suite;
+        # the product fence is ordering/completion, not a five-second disk SLA.
+        await asyncio.wait_for(closing,30)
     asyncio.run(exercise())
     assert events.index('cut_committed')<events.index('APPLICATION_SHUTDOWN')
     assert api._cut_executor is None and api._cut_future is None and api._cut_pending==0
     assert not api._cut_lane_closing and g.recovery_report()['halted']
     assert c.post('/api/simulate/halt').status_code==200
+
+
+def test_shutdown_drain_bypasses_saturated_default_executor(lane,monkeypatch):
+    c,g,r,w,starts,obs=lane;entered=threading.Event();release=threading.Event();threads=[];events=[]
+    original_drain=api._drain_emergency_lane
+    def block_general():entered.set();assert release.wait(30)
+    def tracked_drain():threads.append(threading.current_thread().name);original_drain();events.append('drained')
+    monkeypatch.setattr(api,'_drain_emergency_lane',tracked_drain)
+    monkeypatch.setattr(api,'paper_forward_runner',SimpleNamespace(stop=lambda reason:events.append(reason),request_cut=lambda:None))
+    monkeypatch.setattr(api.observer,'stop',lambda:events.append('observer'))
+    monkeypatch.setattr(api.refresh_worker,'shutdown',lambda:events.append('refresh'))
+    monkeypatch.setattr(api.found_market_worker,'shutdown',lambda:events.append('found'))
+    async def exercise():
+        loop=asyncio.get_running_loop();loop.set_default_executor(ThreadPoolExecutor(max_workers=1,thread_name_prefix='blocked-general-shutdown'))
+        busy=loop.run_in_executor(None,block_general);await until(entered.is_set)
+        context=api.application_lifespan(None);await context.__aenter__()
+        try:
+            await asyncio.wait_for(context.__aexit__(None,None,None),2)
+            assert not release.is_set()
+        finally:
+            release.set();await busy
+    asyncio.run(exercise())
+    assert threads and threads[0].startswith('nexus-lifecycle-stop')
+    assert events==['drained','APPLICATION_SHUTDOWN','observer','refresh','found']
+
+
+def test_shutdown_worker_creation_failure_still_runs_stop_fence(lane,monkeypatch):
+    c,g,r,w,starts,obs=lane;events=[]
+    monkeypatch.setattr(api,'ThreadPoolExecutor',lambda **_:(_ for _ in ()).throw(RuntimeError('PRIVATE')))
+    monkeypatch.setattr(api,'_drain_emergency_lane',lambda:events.append('drained'))
+    monkeypatch.setattr(api,'paper_forward_runner',SimpleNamespace(stop=lambda reason:events.append(reason),request_cut=lambda:None))
+    monkeypatch.setattr(api.observer,'stop',lambda:events.append('observer'))
+    monkeypatch.setattr(api.refresh_worker,'shutdown',lambda:events.append('refresh'))
+    monkeypatch.setattr(api.found_market_worker,'shutdown',lambda:events.append('found'))
+    async def exercise():
+        context=api.application_lifespan(None);await context.__aenter__()
+        await context.__aexit__(None,None,None)
+    asyncio.run(exercise())
+    assert events==['drained','APPLICATION_SHUTDOWN','observer','refresh','found']
 
 
 def test_failed_cleanup_has_no_success_ack_and_remains_retryable(lane,monkeypatch):

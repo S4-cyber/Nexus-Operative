@@ -61,16 +61,28 @@ from nexus.paper_portfolio import initialize as init_paper_portfolio, state as p
 async def application_lifespan(application):
     try:yield
     finally:
-        try:await asyncio.to_thread(_drain_emergency_lane)
+        # Shutdown has its own worker. The default asyncio executor may be
+        # occupied by a slow feed/storage call, but that must not delay the
+        # emergency lane drain or let later cleanup overtake an in-flight cut.
+        lifecycle_executor=None
+        try:
+            try:
+                lifecycle_executor=ThreadPoolExecutor(max_workers=1,thread_name_prefix='nexus-lifecycle-stop')
+                future=lifecycle_executor.submit(_shutdown_application_workers)
+            except Exception:
+                if lifecycle_executor is not None:
+                    lifecycle_executor.shutdown(wait=False,cancel_futures=True)
+                    lifecycle_executor=None
+                # Worker creation is not allowed to skip the stop fence.
+                _shutdown_application_workers()
+            else:await asyncio.shield(asyncio.wrap_future(future))
         finally:
-            try:await asyncio.to_thread(paper_forward_runner.stop,'APPLICATION_SHUTDOWN')
-            finally:
-                try:await asyncio.to_thread(observer.stop)
-                finally:
-                    try:await asyncio.to_thread(refresh_worker.shutdown)
-                    finally:await asyncio.to_thread(found_market_worker.shutdown)
+            # If the lifespan task is cancelled, still wait for the private
+            # worker: its nested finally chain is the application stop fence.
+            if lifecycle_executor is not None:
+                lifecycle_executor.shutdown(wait=True,cancel_futures=False)
 
-app = FastAPI(title="Nexus Operative", version="0.340.20",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.340.21",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -352,7 +364,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.340.20", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.340.21", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -969,6 +981,18 @@ def _drain_emergency_lane():
                 _cut_executor=None
                 _cut_future=None
             _cut_lane_closing=False
+
+
+def _shutdown_application_workers():
+    """Drain the independent cut before any ordinary application cleanup."""
+    try:_drain_emergency_lane()
+    finally:
+        try:paper_forward_runner.stop('APPLICATION_SHUTDOWN')
+        finally:
+            try:observer.stop()
+            finally:
+                try:refresh_worker.shutdown()
+                finally:found_market_worker.shutdown()
 
 
 @app.post("/api/simulate/halt")

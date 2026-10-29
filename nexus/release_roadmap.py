@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.20'
+REVISION = '0.340.21'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -307,7 +307,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.20 extends the settled two-journal proof to the recoverable pending-checkpoint boundary. Cursor and reconnect-budget stability reads now have independent confirmation reads, and both journals are rechecked before and after every reader on normal and exceptional exits. A same-inode rewrite plus reader failure returns fixed file-set uncertainty while preserving the pending reservation for explicit no-network reconciliation and performing no second provider request. Eight direct reader/phase/journal regressions plus the injected fixture and negative control make this split-state proof mandatory release evidence. No retry, credential access, UI control or runtime authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.21 moves ordered application shutdown onto one private lifecycle worker, so a saturated shared asyncio executor cannot delay emergency-lane drain or let ordinary cleanup overtake an in-flight cut. Worker-creation failure runs the same nested stop fence synchronously, and hosted-load timing now tests completion without inventing a five-second storage SLA. Direct regressions cover shared-pool starvation, fallback and cancelled-caller shutdown ordering. No control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

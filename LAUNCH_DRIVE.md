@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.21 private lifecycle stop worker
+
+Application shutdown now uses one private lifecycle worker instead of the shared asyncio executor. It drains the independent emergency lane before stopping ordinary workers even when general workers are saturated. Worker-creation failure runs the same nested stop fence synchronously. The hosted regression keeps completion and ordering mandatory while allowing bounded Windows storage load beyond five seconds. This changes no Portal control, permission, retry, provider/account access, funds, live/cloud or release authority.
+
+Exact-source v0.340.20 passed public security run 40811927961 and Windows packaging/installer run 40811927826. Research run 40811927832 failed only the Windows offline-regression job after 4,405 passes and 19 platform skips; its saved-evidence and rendered-browser jobs passed. Fresh exact-source v0.340.21 workflows remain mandatory.
+
+Final local validation passed 4,426 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused emergency/release/workflow/packaging set passed 79 tests and the direct emergency-lane file passed 15. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `34be7604e6b2c42fc7b32d43a7c2b8b9ac0e5c297af065e69b1a9f09a7dc0077`; `validation/release_trials_0_340_21.json` SHA256 is `57d29e96a05d9d45a09836a1d1b471313f15e0b938fb68bb8e8d1a72f85e1b00`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.21 wheel build passed. Fresh exact-source v0.340.21 workflows remain mandatory.
+
 ## v0.340.20 pending-checkpoint file-set proof
 
 Recoverable split state now cold-replays the exact checkpoint binding and pending reconnect reservation twice, with both settled journals rechecked around every reader on normal and exceptional exits. A same-inode rewrite plus reader failure returns fixed `FILE_SET_CHANGED`, retains the original pending reservation for explicit no-network reconciliation and performs no second provider request. Eight direct reader/phase/journal regressions and mandatory release evidence cover the boundary. No retry, provider, credential, account, order, funds, live, cloud, UI or release authority is added.

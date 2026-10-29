@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.39 holds the explicit private provider-result manifest across the complete installed-tool composition by exact pathname identity, bounded bytes, size and modification time. Normal and exceptional exits receive an outer manifest recheck. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.40 holds the pacing journal, four exact private account-response bodies and portable observation by exact pathname identity and bounded fingerprints across the complete account-response replay. Normal and exceptional semantic-reader exits recheck the complete set; pacing-store retargeting and sampled file changes receive fixed outer refusals. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.40 account-response semantic-reader file-set proof
+
+The exact-byte account-response reviewer now freezes all six private inputs before constructing the pacing reader, then rechecks the complete identity/fingerprint set after database construction, every status/history/read/decode/normalization/portable/digest reader and the final head repeat returns or raises. Six mutation-plus-failure cases cover every selected file, a late normalizer case covers a nested exceptional exit and a store-retarget case covers the pacing object. Mandatory reconciliation evidence now requires the private-set and exceptional-exit guarantees; the packaged executable smoke requires the corresponding output claims.
+
+Exact-source v0.340.39 source `4d6c90138bdb9d55813e17b75a4461d550ace70f` passed public security run 40965603983, research safety/browser/evidence run 40965604002 and Windows EXE/installer/reinstall/uninstall run 40965603928. Fresh exact-source v0.340.40 workflows remain mandatory.
+
+Pre-publication local validation passed 4,525 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the account-response/response-bundle/release focus passed 215 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `21bb76f4414ae09d5ad601d6be7b77f706e34b23a240e387453c5654cc400bed`; `validation/release_trials_0_340_40.json` SHA-256 is `bb8b25f919e41266e0756ee6dbc57eb23bd951aa428ed72caf43fab7e059692c`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.40 wheel build passed; wheel SHA-256 is `2c244c5804fe5d2d2061bf72d7a57912849339fd3513a6c269c384310178d655`. The 743-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Python Playwright are unavailable.
 
 ## v0.340.39 provider-result input-manifest proof
 

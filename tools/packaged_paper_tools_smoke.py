@@ -297,6 +297,8 @@ def run(command):
             response_review['exact_response_bytes_match'] is True and response_review['normalization_replayed'] is True and
             len(response_review['account_fields_sha256'])==64 and
             response_review['portable_observation_matches'] is True and response_review['journal_rechecked_unchanged'] is True and
+            response_review['private_file_set_rechecked_unchanged'] is True and
+            response_review['semantic_reader_failures_rechecked'] is True and
             all(response_review[k] is False for k in RESPONSE_FLAGS),'ACCOUNT_RESPONSE_REVIEW')
         activity_response_args=['--paper-tool','activity-response-review']
         for flag,key in (('pacing','pacing_path'),('activity-store','activity_store_path'),

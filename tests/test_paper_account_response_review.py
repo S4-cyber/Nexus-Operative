@@ -20,6 +20,8 @@ def test_exact_response_bytes_replay_normalization_without_writes(tmp_path):
     assert result['session_timing_envelope_match']
     assert len(result['account_fields_sha256'])==64
     assert result['journal_rechecked_unchanged'] and result['admission_reserved'] is False
+    assert result['private_file_set_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert all(result[flag] is False for flag in subject.FLAGS)
     assert result==subject.review(**options)
     assert before=={path.name:path.read_bytes() for path in tmp_path.iterdir()}
@@ -82,3 +84,50 @@ def test_cli_failure_is_fixed_and_does_not_echo_private_paths(tmp_path,capsys):
     output=capsys.readouterr()
     assert output.out.strip()=='PAPER_ACCOUNT_RESPONSE_REVIEW_FAILED' and output.err==''
     assert str(tmp_path) not in output.out
+
+
+@pytest.mark.parametrize('target',[
+    'pacing_path','account_before_path','positions_path','orders_path',
+    'account_after_path','observation_path'])
+def test_every_private_input_is_rechecked_when_semantic_reader_fails(
+        tmp_path,monkeypatch,target):
+    options=subject._fixture(tmp_path)
+    original=PaperReadPacing.inspect
+    def mutate_then_fail(self):
+        path=options[target]
+        path.write_bytes(path.read_bytes()+b' ')
+        raise RuntimeError('injected lower-reader failure')
+    monkeypatch.setattr(PaperReadPacing,'inspect',mutate_then_fail)
+    with pytest.raises(ValueError,match='PAPER_ACCOUNT_RESPONSE_REVIEW_FILE_SET_CHANGED'):
+        subject.review(**options)
+    monkeypatch.setattr(PaperReadPacing,'inspect',original)
+
+
+def test_late_normalizer_failure_cannot_hide_observation_change(tmp_path,monkeypatch):
+    options=subject._fixture(tmp_path)
+    def mutate_then_fail(*args,**kwargs):
+        path=options['observation_path']
+        path.write_bytes(path.read_bytes()+b' ')
+        raise RuntimeError('injected lower-reader failure')
+    monkeypatch.setattr(subject.inspection,'_report',mutate_then_fail)
+    with pytest.raises(ValueError,match='PAPER_ACCOUNT_RESPONSE_REVIEW_FILE_SET_CHANGED'):
+        subject.review(**options)
+
+
+def test_pacing_store_retarget_is_refused_at_outer_boundary(tmp_path,monkeypatch):
+    options=subject._fixture(tmp_path)
+    original=PaperReadPacing.inspect
+    def retarget(self):
+        result=original(self)
+        self.path=options['positions_path']
+        return result
+    monkeypatch.setattr(PaperReadPacing,'inspect',retarget)
+    with pytest.raises(ValueError,match='PAPER_ACCOUNT_RESPONSE_REVIEW_STORE_BINDING_CHANGED'):
+        subject.review(**options)
+
+
+def test_fixture_report_makes_file_set_guarantee_release_visible():
+    result=subject.fixture_report()
+    assert result['source']=='TEMPORARY_INJECTED_ACCOUNT_RESPONSE_REVIEW'
+    assert result['passed'] and all(result[key] for key in subject.CHECKS)
+    assert all(result[flag] is False for flag in subject.FLAGS)

@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.40 account-response semantic-reader file-set proof
+
+Exact account-response review must bind the pacing journal, four response bodies and portable observation by pathname identity and bounded fingerprints before reader construction, and recheck the complete set after every normal or exceptional semantic-reader exit. Pacing-store retargeting and any sampled input mutation must receive fixed outer refusals. Mandatory reconciliation evidence and the installed executable smoke must require both recheck claims. Runtime authority remains unchanged.
+
+Exact-source v0.340.39 source `4d6c90138bdb9d55813e17b75a4461d550ace70f` passed public security run 40965603983, research safety/browser/evidence run 40965604002 and Windows EXE/installer/reinstall/uninstall run 40965603928. Fresh exact-source v0.340.40 workflows remain mandatory.
+
+Pre-publication local validation passed 4,525 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the account-response/response-bundle/release focus passed 215 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `21bb76f4414ae09d5ad601d6be7b77f706e34b23a240e387453c5654cc400bed`; `validation/release_trials_0_340_40.json` SHA-256 is `bb8b25f919e41266e0756ee6dbc57eb23bd951aa428ed72caf43fab7e059692c`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.40 wheel build passed; wheel SHA-256 is `2c244c5804fe5d2d2061bf72d7a57912849339fd3513a6c269c384310178d655`. The 743-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Python Playwright are unavailable.
+
 ## v0.340.39 provider-result input-manifest proof
 
 The provider-result tool must bind the explicit private manifest's pathname identity, bounded bytes, size and modification time before decoding and retain that binding through the complete nested review. Every normal or exceptional exit must recheck it. Same-byte replacement and mutation hidden by a lower reader failure must receive the fixed outer input refusal; mandatory typed pacing evidence includes disposable negative controls for both cases. Runtime authority remains unchanged.

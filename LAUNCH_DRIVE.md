@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.28 post-replay request proof
+
+Resolved-unknown paper POST recovery now rechecks request-journal identity and its bounded fingerprint after every locked SQLite replay, including replay exceptions. A same-file mutation during the final replay cannot return stale terminal proof or clear the shared review latch. Two direct regressions require fixed file-set refusal and byte-identical budget rollback. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.27 passed security/Gitleaks run 40856397635, research regression/browser/evidence run 40856397362 and Windows EXE/installer/reinstall/uninstall run 40856397516.
+
+Final local validation passed 4,434 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the recovery/budget/release/evidence/roadmap/version/workflow/packaging focus passed 180 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a1752fb505174953d3671fa0fdef7341b33dcff61bd51f6c32b4e7138ac21fc8`; `validation/release_trials_0_340_28.json` SHA256 is `80eaa39c79fcfbc869278c58c5f7cf5cb81927e19b7d1991c11e20073c458d56`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.28 wheel build passed. The local Playwright browser smoke was unavailable because Playwright is not installed; fresh exact-source v0.340.28 workflows remain mandatory.
+
 ## v0.340.27 final pre-commit request proof
 
 Resolved-unknown paper POST recovery now makes the exact terminal request proof the final externally observable operation before the shared budget transaction commits. The final admission-clock and ownership checks therefore cannot mutate the request journal after the last proof while still clearing the review latch. A direct regression mutates only same-file metadata from the second admission callback and requires byte-identical budget rollback.

@@ -57,6 +57,7 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['request_writer_exclusion_held']
     assert result['request_path_identity_rechecked']
     assert result['request_file_fingerprint_rechecked']
+    assert result['request_replay_fingerprint_rechecked_after_load']
     assert result['request_proof_final_before_budget_commit']
     assert result['cooldown_shortened'] is False and result['uncertainty_preserved']
     assert state['recoveries']==1 and state['review_required'] is False
@@ -202,6 +203,55 @@ def test_final_admission_mutation_is_rechecked_before_budget_commit(tmp_path):
     assert request_path.stat().st_mtime_ns!=original_mtime
 
 
+def test_final_request_replay_mutation_is_rechecked_before_budget_commit(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    request_path=journal.path;request_before=request_path.read_bytes()
+    budget_before=budget.path.read_bytes();calls=0;original=journal._load
+    original_mtime=request_path.stat().st_mtime_ns
+    def mutate_after_replay(db):
+        nonlocal calls
+        calls+=1
+        result=original(db)
+        if calls==4:
+            os.utime(request_path,
+                ns=(request_path.stat().st_atime_ns,
+                    original_mtime+1_000_000_000))
+        return result
+    monkeypatch.setattr(journal,'_load',mutate_after_replay)
+    monkeypatch.setattr(subject,'BrokerRequestJournal',lambda *args:journal)
+    with pytest.raises(ValueError,match='LOCKED_SNAPSHOT_FILE_SET_CHANGED'):
+        recover(journal,budget,request_head)
+    assert calls==4 and budget.path.read_bytes()==budget_before
+    assert request_path.read_bytes()==request_before
+    assert request_path.stat().st_mtime_ns!=original_mtime
+
+
+def test_final_request_replay_failure_cannot_hide_mutation(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    request_path=journal.path;request_before=request_path.read_bytes()
+    budget_before=budget.path.read_bytes();calls=0;original=journal._load
+    original_mtime=request_path.stat().st_mtime_ns
+    def mutate_and_fail_after_replay(db):
+        nonlocal calls
+        calls+=1
+        result=original(db)
+        if calls==4:
+            os.utime(request_path,
+                ns=(request_path.stat().st_atime_ns,
+                    original_mtime+1_000_000_000))
+            raise RuntimeError('injected replay reader failure')
+        return result
+    monkeypatch.setattr(journal,'_load',mutate_and_fail_after_replay)
+    monkeypatch.setattr(subject,'BrokerRequestJournal',lambda *args:journal)
+    with pytest.raises(ValueError,match='LOCKED_SNAPSHOT_FILE_SET_CHANGED'):
+        recover(journal,budget,request_head)
+    assert calls==4 and budget.path.read_bytes()==budget_before
+    assert request_path.read_bytes()==request_before
+    assert request_path.stat().st_mtime_ns!=original_mtime
+
+
 def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monkeypatch,capsys):
     journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
     common=['fixture','--post-budget',str(budget.path),'--request-journal',str(journal.path),
@@ -217,4 +267,5 @@ def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monke
     result=json.loads(capsys.readouterr().out)
     assert result['review_block_cleared'] and not result['original_request_rearmed']
     assert result['request_file_fingerprint_rechecked']
+    assert result['request_replay_fingerprint_rechecked_after_load']
     assert result['request_proof_final_before_budget_commit']

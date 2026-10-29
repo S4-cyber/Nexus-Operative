@@ -476,13 +476,20 @@ class BrokerRequestJournal:
             (MAX_DATABASE_BYTES,), 'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
         with closing(self._connect(write=True)) as db:
             with _explicit_transaction(db):
-                def read():
+                def require_unchanged():
                     require_file_identities((self.path,), identity,
                         'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
                     require_file_fingerprints((self.path,),
                         (MAX_DATABASE_BYTES,), fingerprint,
                         'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
-                    requests, _, _, head = self._load(db)
+                def read():
+                    require_unchanged()
+                    try:
+                        requests, _, _, head = self._load(db)
+                    except BaseException:
+                        require_unchanged()
+                        raise
+                    require_unchanged()
                     if head != expected_head:
                         raise ValueError(
                             'BROKER_JOURNAL_LOCKED_SNAPSHOT_HEAD_CHANGED')

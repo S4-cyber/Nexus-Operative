@@ -320,6 +320,7 @@ def test_pacing_profile_requires_resolved_unknown_post_recovery_fences():
                   'request_writer_excluded_through_commit',
                   'request_path_identity_rechecked',
                   'request_file_fingerprint_rechecked',
+                  'request_replay_fingerprint_rechecked_after_load',
                   'request_proof_final_before_budget_commit',
                   'original_request_not_rearmed',
                   'unknown_history_preserved','cooldown_preserved'):

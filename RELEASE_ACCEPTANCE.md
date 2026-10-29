@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.28 post-replay request proof
+
+An exact terminal original-ID proof may clear the shared POST-budget review latch only when request-journal identity and bounded fingerprint remain unchanged both before and after its semantic SQLite replay. The same fixed file-set refusal applies if replay raises after mutation. Direct tests require byte-identical budget rollback, and saved pacing evidence makes the post-replay guard mandatory. Runtime authority remains unchanged.
+
+Exact-source v0.340.27 passed public security/Gitleaks run 40856397635, research regression/browser/evidence run 40856397362 and Windows EXE/installer/reinstall/uninstall run 40856397516.
+
+Final local validation passed 4,434 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the recovery/budget/release/evidence/roadmap/version/workflow/packaging focus passed 180 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a1752fb505174953d3671fa0fdef7341b33dcff61bd51f6c32b4e7138ac21fc8`; `validation/release_trials_0_340_28.json` SHA256 is `80eaa39c79fcfbc869278c58c5f7cf5cb81927e19b7d1991c11e20073c458d56`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.28 wheel build passed. The local Playwright browser smoke was unavailable because Playwright is not installed; fresh exact-source v0.340.28 workflows remain mandatory.
+
 ## v0.340.27 final pre-commit request proof
 
 The final exact terminal request proof must occur after the last admission-clock and ownership checks and immediately before the resolved-unknown budget transaction commits. A same-file mutation from the final admission callback must fail closed and leave the budget journal byte-identical. Saved pacing evidence requires this ordering. Runtime authority remains unchanged.

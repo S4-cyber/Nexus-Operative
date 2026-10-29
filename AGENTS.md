@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.27 makes the exact terminal request proof the final externally observable operation before a resolved-unknown POST-budget recovery commit. A final admission callback that changes the request journal now fails closed and rolls back the budget append. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.28 rechecks request-journal identity and bounded fingerprint after every locked SQLite replay, including exceptional exits. A same-file mutation during the final replay can no longer return stale terminal proof or clear the shared POST-budget review latch. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.28 post-replay request proof
+
+The write-excluding exact-head request reader now rechecks pathname identity, bounded bytes, size, stable metadata and SQLite sidecar absence after each semantic replay and before returning its snapshot. It performs the same recheck when replay raises. Direct regressions inject a same-file metadata mutation during the fourth and final replay, with and without a reader failure, and require fixed file-set refusal plus byte-identical POST-budget rollback.
+
+Exact-source v0.340.27 passed public security/Gitleaks run 40856397635, research regression/browser/evidence run 40856397362 and Windows EXE/installer/reinstall/uninstall run 40856397516.
+
+Final local validation passed 4,434 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the recovery/budget/release/evidence/roadmap/version/workflow/packaging focus passed 180 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `a1752fb505174953d3671fa0fdef7341b33dcff61bd51f6c32b4e7138ac21fc8`; `validation/release_trials_0_340_28.json` SHA256 is `80eaa39c79fcfbc869278c58c5f7cf5cb81927e19b7d1991c11e20073c458d56`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.28 wheel build passed. The local Playwright browser smoke was unavailable because Playwright is not installed; fresh exact-source v0.340.28 workflows remain mandatory.
 
 ## v0.340.27 final pre-commit request proof
 

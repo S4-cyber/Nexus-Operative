@@ -1,6 +1,13 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.17 (pre-release).** This build pins the exact settled reconnect-budget bytes after checkpoint reconciliation commits, rechecks both journals around every later reader and makes the post-result exceptional file-set refusal mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.18 (pre-release).** This build pins the exact settled cursor and reconnect-budget bytes immediately after the primary connected-paper success commits, rechecks both journals around every later reader and makes the primary-path exceptional file-set refusal mandatory Activity release evidence. This is sampled offline evidence, not provider acceptance, delivery completeness, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.18 primary-success post-result file-set proof
+
+The primary connected-paper attempt captures exact settled cursor and reconnect-budget identities and fingerprints before its first post-result stability read. Both stability reads and both confirmation reads recheck both journals on normal and exceptional exits. Eight direct reader/phase/journal regressions and mandatory release evidence prove that a same-inode rewrite plus reader failure returns fixed file-set uncertainty while the terminal result stays committed and no second provider request occurs.
+
+Final local validation passed 4,408 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 443 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `072d2d504d620b6c0a2bca8f5745650bc512bfd6a746cd39d88c89255b89776e`; `validation/release_trials_0_340_18.json` SHA256 is `415d70dab96dbe11a39f22709f330f43d4f5b99fd8f1e9f1cc59f01e2b8b30e2`. Exact-source v0.340.17 parent `78fe0baef69f89022edce3bdb0841bec34c75369` passed public security 40793995895, research safety/browser/evidence 40793996187 and Windows packaging/installer 40793996017. Fresh exact-source v0.340.18 workflows remain mandatory.
+
 
 ## v0.340.17 post-result reconciliation file-set proof
 

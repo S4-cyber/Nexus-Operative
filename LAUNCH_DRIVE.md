@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.18 primary-success post-result file-set proof
+
+The primary connected-paper attempt now captures exact cursor and reconnect-budget identities and fingerprints immediately after the expected terminal result commits. Both stability reads and both final confirmation reads recheck both journals on normal and exceptional exits. Eight direct regressions cover both reader families, both read phases and both journal targets. The injected fixture rewrites the settled budget and raises from the first post-result cursor read; the release validator and negative control make the fixed file-set refusal mandatory. The committed result remains available for explicit duplicate replay, no provider request is repeated and no UI, permission, credential, funding, live or cloud authority changes.
+
+Final local validation passed 4,408 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 443 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `072d2d504d620b6c0a2bca8f5745650bc512bfd6a746cd39d88c89255b89776e`; `validation/release_trials_0_340_18.json` SHA256 is `415d70dab96dbe11a39f22709f330f43d4f5b99fd8f1e9f1cc59f01e2b8b30e2`. Exact-source v0.340.17 parent `78fe0baef69f89022edce3bdb0841bec34c75369` passed public security 40793995895, research safety/browser/evidence 40793996187 and Windows packaging/installer 40793996017. Fresh exact-source v0.340.18 workflows remain mandatory.
+
 ## v0.340.17 post-result reconciliation file-set proof
 
 Pin the exact settled reconnect-budget bytes immediately after explicit checkpoint reconciliation commits, then recheck both journals around every later stability and confirmation reader. A reader that rewrites either the cursor or budget journal and raises must return fixed file-set uncertainty instead of hiding the mutation behind a general recovery diagnostic. The committed terminal result remains durable, and no provider request, retry or new authority is introduced.

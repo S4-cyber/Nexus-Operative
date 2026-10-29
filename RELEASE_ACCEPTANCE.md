@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.18 primary-success post-result file-set proof
+
+The primary connected-paper attempt now captures exact cursor and reconnect-budget identities and fingerprints immediately after the expected terminal result commits. Both stability reads and both final confirmation reads recheck both journals on normal and exceptional exits. Eight direct regressions cover both reader families, both read phases and both journal targets. The injected fixture rewrites the settled budget and raises from the first post-result cursor read; the release validator and negative control make the fixed file-set refusal mandatory. The committed result remains available for explicit duplicate replay, no provider request is repeated and no UI, permission, credential, funding, live or cloud authority changes.
+
+Final local validation passed 4,408 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 443 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `072d2d504d620b6c0a2bca8f5745650bc512bfd6a746cd39d88c89255b89776e`; `validation/release_trials_0_340_18.json` SHA256 is `415d70dab96dbe11a39f22709f330f43d4f5b99fd8f1e9f1cc59f01e2b8b30e2`. Exact-source v0.340.17 parent `78fe0baef69f89022edce3bdb0841bec34c75369` passed public security 40793995895, research safety/browser/evidence 40793996187 and Windows packaging/installer 40793996017. Fresh exact-source v0.340.18 workflows remain mandatory.
+
 ## v0.340.17 post-result reconciliation file-set proof
 
 The Activity release profile now requires explicit checkpoint reconciliation to detect a settled reconnect-budget rewrite followed by a post-result cursor-reader exception. The fixed file-set refusal must preserve the already committed terminal result, avoid retry or another provider request and retain every false-authority flag. A deliberately false field must reject the profile. The runtime change grants no provider, credential, account, order, funds, live, cloud or release authority.

@@ -1110,6 +1110,7 @@ def _validate(profile, result):
                 'emergency_stop_blocks_before_reconnect_storage',
                 'due_second_attempt_explicit_and_single',
                 'checkpoint_and_budget_recover_together',
+                'success_exception_rechecks_settled_files',
                 'pending_checkpoint_result_recovers_without_second_get',
                 'checkpoint_reconciliation_lost_result_ack_recovers_exactly_once',
                 'reconciliation_pins_budget_before_cursor_decision',

@@ -2250,28 +2250,11 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                 checkpoint_binding['checkpoint_receipt_sha256']),
         'RESULT_RECORD_UNCERTAIN')
     require_store_bindings()
-    try:
-        stable_checkpoint_binding = _validated_checkpoint_binding(
-            cursor_store, cursor_store.latest_checkpoint_binding(),
-            'RESULT_RECORD_UNCERTAIN')
-    except Exception:
-        _fail('RESULT_RECORD_UNCERTAIN')
-    require_store_bindings()
-    stable_result = _inspect_after_result_error(reconnect_budget,
-        'RESULT_RECORD_UNCERTAIN')
-    require_store_bindings()
-    if (stable_checkpoint_binding != checkpoint_binding or
-            not _same_result_head(stable_result, retained) or
-            not _exact_checkpoint_result(stable_result,
-                reservation['token'], checkpoint_binding['head_sha256'],
-                checkpoint_binding['checkpoint_receipt_sha256'],
-                completed_at)):
-        _fail('RESULT_RECORD_UNCERTAIN')
 
-    # The cursor and reconnect-budget commits form one returned success.  Once
-    # both writes are complete, retain one exact two-file sample across a cold
-    # semantic replay and the final acknowledgement boundary.  A same-inode
-    # rewrite must not turn independently valid reads into a mixed success.
+    # Both durable writes are complete. Pin their exact settled bytes before
+    # invoking any later semantic reader: a reader that mutates either
+    # journal and then raises must not hide the changed file behind generic
+    # result uncertainty.
     try:
         journal_identities = capture_file_identities(
             journal_paths, file_prefix)
@@ -2292,15 +2275,42 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         require_store_bindings()
 
     try:
+        stable_checkpoint_binding = _validated_checkpoint_binding(
+            cursor_store, cursor_store.latest_checkpoint_binding(),
+            'RESULT_RECORD_UNCERTAIN')
+    except Exception:
+        require_journal_files()
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_journal_files()
+    try:
+        stable_result = _inspect_after_result_error(reconnect_budget,
+            'RESULT_RECORD_UNCERTAIN')
+    except Exception:
+        require_journal_files()
+        raise
+    require_journal_files()
+    if (stable_checkpoint_binding != checkpoint_binding or
+            not _same_result_head(stable_result, retained) or
+            not _exact_checkpoint_result(stable_result,
+                reservation['token'], checkpoint_binding['head_sha256'],
+                checkpoint_binding['checkpoint_receipt_sha256'],
+                completed_at)):
+        _fail('RESULT_RECORD_UNCERTAIN')
+
+    try:
         confirmed_checkpoint_binding = _validated_checkpoint_binding(
             cursor_store, cursor_store.latest_checkpoint_binding(),
             'RESULT_RECORD_UNCERTAIN')
+    except Exception:
+        require_journal_files()
+        _fail('RESULT_RECORD_UNCERTAIN')
+    require_journal_files()
+    try:
         confirmed_result = _inspect_after_result_error(reconnect_budget,
             'RESULT_RECORD_UNCERTAIN')
-    except ActivitySSEReconnectBudgetError:
-        raise
     except Exception:
-        _fail('RESULT_RECORD_UNCERTAIN')
+        require_journal_files()
+        raise
     require_journal_files()
     if (confirmed_checkpoint_binding != checkpoint_binding or
             not _same_result_head(confirmed_result, stable_result) or
@@ -2771,6 +2781,51 @@ def fixture_report():
         cold_budget = ActivitySSEReconnectBudget(
             budget.path, account).inspect()
         cold_cursor = ActivitySSECursorStore(cursor.path, account).inspect()
+        settled_success_cursor = ActivitySSECursorStore(
+            root / 'settled-success-cursor.sqlite3', account)
+        settled_success_budget = ActivitySSEReconnectBudget(
+            root / 'settled-success-budget.sqlite3', account)
+        settled_success_opener = Opener(raw)
+        original_success_finish = settled_success_budget.finish
+        original_success_binding = \
+            settled_success_cursor.latest_checkpoint_binding
+        settled_success_finish_calls = []
+        settled_success_budget_bytes = []
+        def mark_settled_success(*args, **kwargs):
+            retained = original_success_finish(*args, **kwargs)
+            settled_success_finish_calls.append(True)
+            return retained
+        def rewrite_success_budget_then_fail_cursor_read():
+            retained = original_success_binding()
+            if settled_success_finish_calls:
+                settled_success_budget_bytes.append(
+                    settled_success_budget.path.read_bytes())
+                with settled_success_budget.path.open('r+b') as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+                    stream.flush()
+                raise RuntimeError(
+                    'private fixture failed settled success cursor read')
+            return retained
+        settled_success_budget.finish = mark_settled_success
+        settled_success_cursor.latest_checkpoint_binding = \
+            rewrite_success_budget_then_fail_cursor_read
+        settled_success_code = None
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=1500, opener=settled_success_opener,
+                **dict(common, cursor_store=settled_success_cursor,
+                    reconnect_budget=settled_success_budget,
+                    wall_clock=lambda: 1500,
+                    outcome_clock=lambda: 1501))
+        except ActivitySSEReconnectBudgetError as error:
+            settled_success_code = str(error)
+        if settled_success_budget_bytes:
+            settled_success_budget.path.write_bytes(
+                settled_success_budget_bytes[0])
+        settled_success_state = ActivitySSEReconnectBudget(
+            settled_success_budget.path, account).inspect()
         recovery_cursor = ActivitySSECursorStore(
             root / 'recovery-cursor.sqlite3', account)
         recovery_budget = ActivitySSEReconnectBudget(
@@ -3096,6 +3151,17 @@ def fixture_report():
                 cold_budget['completed'] and cold_cursor['initialized'] and
                 cold_budget['checkpoint_head_sha256'] ==
                     cold_cursor['head_sha256'],
+            success_exception_rechecks_settled_files=
+                settled_success_code is not None and
+                settled_success_code.endswith('FILE_SET_CHANGED') and
+                settled_success_finish_calls == [True] and
+                len(settled_success_budget_bytes) == 1 and
+                len(settled_success_opener.requests) == 1 and
+                settled_success_state['completed'] and
+                settled_success_state['pending_token'] is None and
+                settled_success_state['last_outcome'] ==
+                    'CHECKPOINT_COMMITTED' and
+                not settled_success_state['review_required'],
             pending_checkpoint_result_recovers_without_second_get=
                 recovered['pending_checkpoint_reconciled'] and
                 not recovered['duplicate_recovery'] and

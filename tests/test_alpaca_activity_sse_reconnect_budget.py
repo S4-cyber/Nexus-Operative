@@ -1670,6 +1670,75 @@ def test_post_result_binding_rejects_custom_equality_mapping(tmp_path,
     assert state['completed'] and state['pending_token'] is None
 
 
+@pytest.mark.parametrize(('reader_name', 'failed_read'), (
+    ('cursor', 1), ('cursor', 2), ('budget', 1), ('budget', 2)))
+@pytest.mark.parametrize('changed_store', ('cursor', 'budget'))
+def test_success_failed_post_result_read_rechecks_settled_files(
+        tmp_path, monkeypatch, reader_name, failed_read, changed_store):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original_finish = budget.finish
+    original_cursor_binding = cursor.latest_checkpoint_binding
+    original_budget_inspect = budget.inspect
+    original_result_inspect = subject._inspect_after_result_error
+    changed_path = cursor.path if changed_store == 'cursor' else budget.path
+    retained_bytes = []
+    settled = False
+    reads = 0
+
+    def finish(*args, **kwargs):
+        nonlocal settled
+        result = original_finish(*args, **kwargs)
+        settled = True
+        return result
+
+    def fail_changed_cursor_read():
+        nonlocal reads
+        if settled:
+            reads += 1
+            if reads == failed_read:
+                retained_bytes.append(changed_path.read_bytes())
+                with changed_path.open('r+b') as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+                    stream.flush()
+                raise RuntimeError('private failed post-result read')
+        return original_cursor_binding()
+
+    def fail_changed_result_inspect(reconnect_budget, code):
+        nonlocal reads
+        if settled:
+            reads += 1
+            if reads == failed_read:
+                retained_bytes.append(changed_path.read_bytes())
+                with changed_path.open('r+b') as stream:
+                    stream.seek(60)
+                    stream.write((1).to_bytes(4, 'big'))
+                    stream.flush()
+                raise RuntimeError('private failed post-result read')
+        return original_result_inspect(reconnect_budget, code)
+
+    monkeypatch.setattr(budget, 'finish', finish)
+    if reader_name == 'cursor':
+        monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+            fail_changed_cursor_read)
+    else:
+        monkeypatch.setattr(subject, '_inspect_after_result_error',
+            fail_changed_result_inspect)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_FILE_SET_CHANGED'
+    assert 'private' not in str(raised.value)
+    assert reads == failed_read and len(opener.requests) == 1
+    assert len(retained_bytes) == 1
+    changed_path.write_bytes(retained_bytes[0])
+    state = original_budget_inspect()
+    assert state['completed'] and state['pending_token'] is None
+    assert state['last_outcome'] == 'CHECKPOINT_COMMITTED'
+
+
 def test_success_result_and_exact_replay_bind_observed_completion_time(
         tmp_path):
     _, raw = segments()

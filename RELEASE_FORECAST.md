@@ -2,6 +2,14 @@
 
 ## Candidate update on 2026-10-28
 
+Current candidate: v0.340.18, based on published v0.340.17 source `78fe0baef69f89022edce3bdb0841bec34c75369`. All three v0.340.17 exact-source workflows passed. v0.340.18 pins the primary success path's two settled journals before any post-result semantic reader and rechecks both files around all stability and confirmation reads, so a same-inode rewrite plus reader exception returns fixed file-set uncertainty while the terminal result remains durable. It adds no runtime retry, provider access, credential access or UI authority. Fresh exact-source hosted results remain required.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
+
+Final local validation passed 4,408 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the reconnect-budget and release-trial files passed 443 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `072d2d504d620b6c0a2bca8f5745650bc512bfd6a746cd39d88c89255b89776e`; `validation/release_trials_0_340_18.json` SHA256 is `415d70dab96dbe11a39f22709f330f43d4f5b99fd8f1e9f1cc59f01e2b8b30e2`. Fresh v0.340.18 security, browser/evidence/regression and Windows packaging workflows remain mandatory. The rough weighted implementation estimate is intentionally unchanged because this hardening does not integrate a new accepted external gate.
+
+## Prior v0.340.17 candidate record
+
 Current candidate: v0.340.17, based on published v0.340.16 source `5c4b132c64ae437c44eedf23326cc683b11fa833`. All three v0.340.16 exact-source workflows passed. v0.340.17 additionally pins the settled post-result budget bytes and rechecks both journals around every later cursor and budget reader, preventing a same-inode rewrite plus exception from being hidden behind general recovery uncertainty. It adds no runtime retry, provider access, credential access or UI authority. Fresh exact-source hosted results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.

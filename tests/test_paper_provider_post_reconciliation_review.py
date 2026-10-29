@@ -1,5 +1,6 @@
 """Exact POST/activity/account-evidence composition tests."""
 import copy
+import os
 import shutil
 import sqlite3
 from pathlib import Path
@@ -35,6 +36,7 @@ def test_exact_post_activity_and_guarded_balance_evidence_bind_without_writes(tm
     assert result['guarded_balance_evidence_bound']
     assert result['journals_rechecked_unchanged']
     assert result['journal_files_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert result['post_attempts'] == 2
     assert result['exact_activity_bindings'] == 1
     assert result['exact_not_sent_bindings'] == 1
@@ -242,6 +244,90 @@ def test_same_head_journal_rewrite_fails_closed(
             options['expected_post_head'])
 
 
+def _mutate_metadata_and_fail(path):
+    stat = os.stat(path)
+    os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+    raise RuntimeError('injected provider reconciliation reader failure')
+
+
+@pytest.mark.parametrize('target', (
+    'post_budget', 'request_journal', 'pacing_path',
+    'activity_store_path', 'acceptance_store_path'))
+def test_initial_post_reader_failure_rechecks_all_journals(
+        tmp_path, monkeypatch, target):
+    options = subject._fixture(tmp_path)
+    paths = {
+        'post_budget': options['post_budget'].path,
+        'request_journal': options['journal'].path,
+        'pacing_path': options['pacing_path'],
+        'activity_store_path': options['activity_store_path'],
+        'acceptance_store_path': options['acceptance_store_path'],
+    }
+    before = files(tmp_path)
+    original = options['post_budget'].inspect
+
+    def failed_inspect():
+        original()
+        _mutate_metadata_and_fail(paths[target])
+
+    monkeypatch.setattr(options['post_budget'], 'inspect', failed_inspect)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_RECONCILIATION_FILE_SET_CHANGED'):
+        subject.review(**options)
+    assert files(tmp_path) == before
+
+
+@pytest.mark.parametrize('component', ('post_activity', 'account_evidence'))
+def test_component_failure_rechecks_all_journals(tmp_path, monkeypatch,
+        component):
+    options = subject._fixture(tmp_path)
+    before = files(tmp_path)
+    if component == 'post_activity':
+        original = subject.post_activity.review
+
+        def failed_component(*args, **kwargs):
+            original(*args, **kwargs)
+            _mutate_metadata_and_fail(options['journal'].path)
+
+        monkeypatch.setattr(subject.post_activity, 'review', failed_component)
+    else:
+        original = subject.evidence.review_with_stability_guards
+
+        def failed_component(**kwargs):
+            original(**kwargs)
+            _mutate_metadata_and_fail(options['acceptance_store_path'])
+
+        monkeypatch.setattr(subject.evidence,
+            'review_with_stability_guards', failed_component)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_RECONCILIATION_FILE_SET_CHANGED'):
+        subject.review(**options)
+    assert files(tmp_path) == before
+
+
+def test_final_status_reader_failure_rechecks_all_journals(
+        tmp_path, monkeypatch):
+    options = subject._fixture(tmp_path)
+    before = files(tmp_path)
+    original = subject.acceptance_status
+    calls = 0
+
+    def failed_status(**kwargs):
+        nonlocal calls
+        result = original(**kwargs)
+        calls += 1
+        if calls == 2:
+            _mutate_metadata_and_fail(options['activity_store_path'])
+        return result
+
+    monkeypatch.setattr(subject, 'acceptance_status', failed_status)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_RECONCILIATION_FILE_SET_CHANGED'):
+        subject.review(**options)
+    assert calls == 2
+    assert files(tmp_path) == before
+
+
 def test_post_budget_rollback_sidecar_fails_before_account_review(
         tmp_path, monkeypatch):
     options = subject._fixture(tmp_path)
@@ -274,6 +360,7 @@ def test_fixture_is_private_and_never_authoritative():
                 'guarded_account_evidence_bound',
                 'accepted_history_replayed',
                 'journal_file_fingerprints_rechecked',
+                'semantic_reader_failures_rechecked',
                 'gross_only_residual_checked',
                 'unresolved_unknown_rejected',
                 'repeat_review_matches', 'journals_unchanged',

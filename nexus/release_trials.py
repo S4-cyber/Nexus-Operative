@@ -1052,6 +1052,7 @@ def _validate(profile, result):
                 'exact_post_activity_bound','guarded_account_evidence_bound',
                 'accepted_history_replayed','gross_only_residual_checked',
                 'journal_file_fingerprints_rechecked',
+                'semantic_reader_failures_rechecked',
                 'unresolved_unknown_rejected','repeat_review_matches',
                 'journals_unchanged','output_never_authoritative')),
             'PROVIDER_POST_RECONCILIATION')

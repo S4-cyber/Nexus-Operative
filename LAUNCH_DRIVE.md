@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.32 provider-POST reconciliation semantic-reader file-set proof
+
+The exact provider-POST reconciliation composition now rechecks the POST-budget, request, pacing, retained-activity and acceptance stores after every semantic reader returns or raises. Direct regressions cover all five journals at the initial boundary plus both composed reviews and the final accepted-status boundary; mandatory saved evidence requires the fence. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.31 passed public security/Gitleaks run 40890609158, research regression/browser/evidence run 40890609455 and Windows EXE/installer/reinstall/uninstall run 40890609608.
+
+Final local validation passed 4,451 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus passed 252 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `4a5d7dc299594b78c8c40f6d2cb59f779c49caa22e5977c6031372e1dea961b9`; `validation/release_trials_0_340_32.json` SHA256 is `bbba19bc62ca6c59af5a68685fa6b8a22e32b68bbc95bf3a047d3062c0913a98`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.32 wheel build passed; the wheel SHA256 is `72627c7eac3dbce4b60dd8b62c7a44e83d2bb353dda7b8da00b796d04882f0be`. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.32 workflows remain mandatory.
+
 ## v0.340.31 account-evidence semantic-reader file-set proof
 
 The account-evidence bundle, current-head wrapper and outer four-observation stability composition now capture the request, pacing, retained-activity and acceptance journal fingerprints before their first semantic reader and recheck all four after every reader returns or raises. Direct regressions cover initial, component, guarded-final and current-head failure boundaries; mandatory saved evidence requires the fence. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

@@ -421,6 +421,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('provider_post_reconciliation','guarded_account_evidence_bound'),False,'PROVIDER_POST_RECONCILIATION'),
         (('provider_post_reconciliation','gross_only_residual_checked'),False,'PROVIDER_POST_RECONCILIATION'),
         (('provider_post_reconciliation','journal_file_fingerprints_rechecked'),False,'PROVIDER_POST_RECONCILIATION'),
+        (('provider_post_reconciliation','semantic_reader_failures_rechecked'),False,'PROVIDER_POST_RECONCILIATION'),
         (('provider_post_reconciliation','unresolved_unknown_rejected'),False,'PROVIDER_POST_RECONCILIATION'),
         (('provider_post_reconciliation','ready_for_routing'),True,'PROVIDER_POST_RECONCILIATION_AUTHORITY'),
         (('provider_post_fee_references','accepted_receipt_partition_complete'),False,'PROVIDER_POST_FEE_REFERENCES'),

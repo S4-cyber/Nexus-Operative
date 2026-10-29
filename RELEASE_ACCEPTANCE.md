@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.32 provider-POST reconciliation semantic-reader file-set proof
+
+Provider-POST reconciliation must recheck the exact five-store identity and bounded fingerprint set after every semantic reader returns or raises. Initial POST-budget inspection, POST-activity composition, guarded account-evidence composition and final accepted-status failures that mutate any selected journal must receive fixed file-set refusal. Direct regressions and mandatory saved evidence cover these boundaries. Runtime authority remains unchanged.
+
+Exact-source v0.340.31 passed public security/Gitleaks run 40890609158, research regression/browser/evidence run 40890609455 and Windows EXE/installer/reinstall/uninstall run 40890609608.
+
+Final local validation passed 4,451 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus passed 252 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `4a5d7dc299594b78c8c40f6d2cb59f779c49caa22e5977c6031372e1dea961b9`; `validation/release_trials_0_340_32.json` SHA256 is `bbba19bc62ca6c59af5a68685fa6b8a22e32b68bbc95bf3a047d3062c0913a98`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.32 wheel build passed; the wheel SHA256 is `72627c7eac3dbce4b60dd8b62c7a44e83d2bb353dda7b8da00b796d04882f0be`. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.32 workflows remain mandatory.
+
 ## v0.340.31 account-evidence semantic-reader file-set proof
 
 Account-evidence review, current-head selection and four-observation stability composition must capture all four journal fingerprints before their first semantic reader and recheck the full file set after every normal or exceptional reader exit. Initial, component, guarded-final and current-head mutation failures must receive fixed file-set refusal. Direct regressions and mandatory saved evidence cover these boundaries. Runtime authority remains unchanged.

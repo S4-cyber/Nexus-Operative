@@ -68,6 +68,22 @@ def _require_bindings(post_budget, journal, store_binding, paths,
         'PAPER_PROVIDER_POST_RECONCILIATION_')
 
 
+def _stable_reader(post_budget, journal, store_binding, paths,
+                   file_binding, file_fingerprints):
+    """Recheck the exact five-file binding whenever one reader exits."""
+    def read(reader):
+        try:
+            value = reader()
+        except BaseException:
+            _require_bindings(post_budget, journal, store_binding, paths,
+                file_binding, file_fingerprints)
+            raise
+        _require_bindings(post_budget, journal, store_binding, paths,
+            file_binding, file_fingerprints)
+        return value
+    return read
+
+
 def _frozen_path(value, code):
     try:
         return Path(value)
@@ -111,24 +127,17 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         'PAPER_PROVIDER_POST_RECONCILIATION_')
     _require_bindings(post_budget, journal, store_binding, paths,
         file_binding, file_fingerprints)
+    stable_read = _stable_reader(post_budget, journal, store_binding, paths,
+        file_binding, file_fingerprints)
 
-    first_post = post_budget.inspect()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
-    attempts = post_budget.history()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
-    recoveries = post_budget.recovery_history()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
-    first_request = journal.recovery()
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
-    first_activity = acceptance_status(expected_account_id=account_id,
-        pacing_path=pacing_path, activity_store_path=activity_store_path,
-        acceptance_store_path=acceptance_store_path)
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    first_post = stable_read(post_budget.inspect)
+    attempts = stable_read(post_budget.history)
+    recoveries = stable_read(post_budget.recovery_history)
+    first_request = stable_read(journal.recovery)
+    first_activity = stable_read(lambda: acceptance_status(
+        expected_account_id=account_id, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path))
     if first_post['head_sha256'] != expected_post_head:
         _fail('POST_HEAD_CHANGED')
     if first_request['head_sha256'] != expected_request_head:
@@ -136,10 +145,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     if first_activity['retention_head_sha256'] != expected_activity_head:
         _fail('ACTIVITY_HEAD_CHANGED')
 
-    posts = post_activity.review(post_budget,
-        expected_post_head=expected_post_head, account_bindings=[binding])
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+    posts = stable_read(lambda: post_activity.review(post_budget,
+        expected_post_head=expected_post_head, account_bindings=[binding]))
     if (posts.get('status') != 'COMPLETE_LOCAL_POST_ACTIVITY_CONSISTENT' or
             posts.get('read_only') is not True or
             posts.get('complete_local_post_activity_consistent') is not True or
@@ -147,7 +154,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             any(posts.get(flag) is not False for flag in post_activity.FLAGS)):
         _fail('POST_ACTIVITY_INCOMPLETE')
 
-    account = evidence.review_with_stability_guards(
+    account = stable_read(lambda: evidence.review_with_stability_guards(
         expected_account_id=account_id, request_journal_path=journal.path,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path,
@@ -156,9 +163,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         pre_opening_observation=pre_opening_observation,
         opening_observation=opening_observation,
         closing_observation=closing_observation,
-        post_closing_observation=post_closing_observation)
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
+        post_closing_observation=post_closing_observation))
     required = ('complete_accepted_history_replayed', 'component_heads_agree',
         'stability_guard_bound', 'guard_manifests_distinct',
         'guard_windows_ordered', 'adjacent_guard_balances_stable',
@@ -170,6 +175,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         'accepted_declared_windows_cover_guard_envelope',
         'journals_rechecked_unchanged',
         'journal_files_rechecked_unchanged',
+        'semantic_reader_failures_rechecked',
         'inventory_arithmetic_evaluated')
     if (account.get('mode') !=
             'PAPER_ACCOUNT_EVIDENCE_STABILITY_GUARD_REVIEW' or
@@ -182,19 +188,19 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             any(account.get(flag) is not False for flag in evidence.FLAGS)):
         _fail('ACCOUNT_EVIDENCE_INVALID')
 
-    current_activity = acceptance_status(expected_account_id=account_id,
-        pacing_path=pacing_path, activity_store_path=activity_store_path,
-        acceptance_store_path=acceptance_store_path)
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
-    if (post_budget.inspect() != first_post or
-            post_budget.history() != attempts or
-            post_budget.recovery_history() != recoveries):
+    current_activity = stable_read(lambda: acceptance_status(
+        expected_account_id=account_id, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path))
+    current_post = stable_read(post_budget.inspect)
+    current_attempts = stable_read(post_budget.history)
+    current_recoveries = stable_read(post_budget.recovery_history)
+    current_request = stable_read(journal.recovery)
+    if (current_post != first_post or current_attempts != attempts or
+            current_recoveries != recoveries):
         _fail('POST_HISTORY_CHANGED')
-    if journal.recovery() != first_request or current_activity != first_activity:
+    if current_request != first_request or current_activity != first_activity:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
-    _require_bindings(post_budget, journal, store_binding, paths,
-        file_binding, file_fingerprints)
 
     gross = account.get('gross_only_minus_observed')
     try:
@@ -235,6 +241,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         guarded_balance_evidence_bound=True,
         journals_rechecked_unchanged=True,
         journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,
         post_attempts=posts['post_attempts'],
         exact_activity_bindings=posts['exact_activity_bindings'],
         exact_not_sent_bindings=posts['exact_not_sent_bindings'],
@@ -301,6 +308,8 @@ def fixture_report():
                 result['complete_accepted_history_replayed'],
             journal_file_fingerprints_rechecked=
                 result['journal_files_rechecked_unchanged'],
+            semantic_reader_failures_rechecked=
+                result['semantic_reader_failures_rechecked'],
             gross_only_residual_checked=
                 result['inventory_arithmetic_evaluated'] and
                 result['gross_only_difference_absent'],

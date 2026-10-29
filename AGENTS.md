@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.31 rechecks the request, pacing, retained-activity and acceptance journals after every account-evidence semantic reader on normal and exceptional exits, including current-head and four-observation guarded compositions. A reader can no longer mutate any journal and hide the file-set change behind a generic or later semantic failure. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.32 rechecks the provider-POST budget, request, pacing, retained-activity and acceptance journals after every provider-POST reconciliation semantic reader on normal and exceptional exits. A reader can no longer mutate any of the five journals and hide the file-set change behind a generic or later semantic failure. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.32 provider-POST reconciliation semantic-reader file-set proof
+
+The exact provider-POST reconciliation composition now rechecks its five store identities and bounded fingerprints after each POST-budget, request, accepted-activity, POST-activity and guarded account-evidence reader returns or raises. Direct regressions cover all five journal mutations at the initial reader plus both component readers and the final accepted-status reader. Mandatory saved evidence requires the semantic-reader failure fence.
+
+Exact-source v0.340.31 passed public security/Gitleaks run 40890609158, research regression/browser/evidence run 40890609455 and Windows EXE/installer/reinstall/uninstall run 40890609608.
+
+Final local validation passed 4,451 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus passed 252 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `4a5d7dc299594b78c8c40f6d2cb59f779c49caa22e5977c6031372e1dea961b9`; `validation/release_trials_0_340_32.json` SHA256 is `bbba19bc62ca6c59af5a68685fa6b8a22e32b68bbc95bf3a047d3062c0913a98`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.32 wheel build passed; the wheel SHA256 is `72627c7eac3dbce4b60dd8b62c7a44e83d2bb353dda7b8da00b796d04882f0be`. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.32 workflows remain mandatory.
 
 ## v0.340.31 account-evidence semantic-reader file-set proof
 

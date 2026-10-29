@@ -340,6 +340,8 @@ def test_pacing_profile_requires_provider_post_history_review_fences():
     result=trials._pacing_trial();trials._validate('pacing',result)
     for field in ('exact_multi_account_history','every_attempt_bound','every_outcome_bound',
                   'exact_terminal_recovery_history',
+                  'journal_file_fingerprints_rechecked',
+                  'semantic_reader_failures_rechecked',
                   'outcome_disagreement_requires_review','changed_head_denied',
                   'omitted_account_requires_review','output_never_authoritative'):
         changed=copy.deepcopy(result);changed['provider_post_history_review'][field]=False

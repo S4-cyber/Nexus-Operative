@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.34 (pre-release).** This build rechecks all five known-fee reserve journals after every semantic operation returns or raises. A reader or reserve calculation can no longer mutate a journal and hide the file-set change behind a generic or lower-layer failure. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.35 (pre-release).** This build rechecks the provider-POST budget and every explicitly selected request journal after every POST status/history/recovery and request recovery/prefix semantic reader returns or raises. A semantic reader can no longer mutate a selected journal and hide the file-set change behind a generic or lower-layer failure. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.35 provider-POST history semantic-reader file-set proof
+
+The provider-POST history composition holds the exact POST-budget plus up to seven selected request-journal identities and bounded fingerprints across every POST status/history/recovery and request recovery/prefix reader. Nine direct regressions mutate the budget or either request journal before the initial or later reader raises. Every case now fails at the stronger file-set boundary, and mandatory saved evidence requires both guarantees.
+
+Published v0.340.34 source is `ac3c59bd82daee800969d4b9db4d654792dfab15`; the connected GitHub status surface exposed no hosted run or status records for that exact source during this sprint. Fresh exact-source v0.340.35 workflows remain mandatory.
+
+Pre-publication local validation passed 4,482 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider-POST/release-validator focus passed 128 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `71800c64a72a237e720c21af4360203ef2266feb12202eab5e00212ccc551b8b`; `validation/release_trials_0_340_35.json` SHA-256 is `a8c8bd4f318d6abb6f57b195790907ce2d90f251d0a03d4c00103d07de58bc98`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.35 wheel build passed; wheel SHA-256 is `0ef34196b7ad0a8873a0db5652a2c177ec16306f757d688b741cd7c12ad81ca9`. The 737-path public artifact audit found no findings. Playwright is unavailable locally, so exact-source browser and Windows/installer CI remain required.
 
 ## v0.340.34 known-fee reserve semantic-operation file-set proof
 

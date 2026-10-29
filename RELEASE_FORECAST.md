@@ -2,11 +2,11 @@
 
 ## Candidate update on 2026-10-29
 
-Current candidate: v0.340.34, based on published v0.340.33 source `b861ef9e76254fec57e1717a7f6571dfa384116e`. v0.340.34 rechecks all five known-fee reserve stores after every semantic operation, including exceptional exits from supplied-balance validation and reserve-path calculation. No external authority is added. The connected GitHub status surface did not expose v0.340.33 hosted runs during this sprint; fresh exact-source v0.340.34 results remain required.
+Current candidate: v0.340.35, based on published v0.340.34 source `ac3c59bd82daee800969d4b9db4d654792dfab15`. v0.340.35 rechecks the provider-POST budget and every selected request journal after every POST status/history/recovery and request recovery/prefix semantic reader, including exceptional exits. No external authority is added. The connected GitHub status surface exposed no hosted run or status records for v0.340.34 during this sprint; fresh exact-source v0.340.35 results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Pre-publication local verification passed the 330-test known-fee/post-fee/provider/account-evidence/release/evidence/roadmap/version/workflow/packaging focus with one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification passed. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.34 wheel build passed. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.34 workflows remain mandatory. The rough weighted implementation estimate is intentionally unchanged because this safety hardening does not integrate a new accepted external gate.
+Pre-publication local validation passed 4,482 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused set passed 128 tests. All sixteen bounded offline profiles and saved-evidence verification passed. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.35 wheel build passed. The 737-path public artifact audit found no findings. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.35 workflows remain mandatory. The rough weighted implementation estimate is intentionally unchanged because this safety hardening does not integrate a new accepted external gate.
 
 ## Prior v0.340.17 candidate record
 

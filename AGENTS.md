@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.34 rechecks the provider-POST budget, request, pacing, retained-activity and acceptance journals after every known-fee reserve semantic operation on normal and exceptional exits. A reader or reserve calculation can no longer mutate any of the five journals and hide the file-set change behind a generic or lower-layer failure. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.35 rechecks the provider-POST budget and every explicitly selected request journal after each POST status/history/recovery and request recovery/prefix reader on normal and exceptional exits. A semantic reader can no longer mutate any selected journal and hide the file-set change behind a generic or lower-layer failure. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.35 provider-POST history semantic-reader file-set proof
+
+The bounded provider-POST history composition now holds the exact identity and fingerprint set for the POST budget plus up to seven explicitly selected request journals across all seven semantic reader sites. Nine regressions mutate the POST budget or either request journal before raising from the initial status reader and each later history, recovery, prefix or final-status reader; every case receives the composition's fixed file-set refusal. Mandatory saved evidence requires both the journal-fingerprint and exceptional-exit fences.
+
+Published v0.340.34 source is `ac3c59bd82daee800969d4b9db4d654792dfab15`; the connected GitHub status surface exposed no hosted run or status records for that exact source during this sprint. Fresh exact-source v0.340.35 workflows remain mandatory.
+
+Pre-publication local validation passed 4,482 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider-POST/release-validator focus passed 128 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `71800c64a72a237e720c21af4360203ef2266feb12202eab5e00212ccc551b8b`; `validation/release_trials_0_340_35.json` SHA-256 is `a8c8bd4f318d6abb6f57b195790907ce2d90f251d0a03d4c00103d07de58bc98`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.35 wheel build passed; wheel SHA-256 is `0ef34196b7ad0a8873a0db5652a2c177ec16306f757d688b741cd7c12ad81ca9`. The 737-path public artifact audit found no findings. The local Playwright browser smoke remains unavailable because Playwright is not installed; fresh exact-source v0.340.35 browser and Windows workflows remain mandatory.
 
 ## v0.340.34 known-fee reserve semantic-operation file-set proof
 

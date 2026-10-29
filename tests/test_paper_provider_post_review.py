@@ -1,4 +1,5 @@
 """Exact-head composition of provider POST and request-journal histories."""
+import os
 import shutil
 import sqlite3
 
@@ -65,6 +66,8 @@ def test_complete_multi_account_checked_history_is_read_only(tmp_path):
     assert result['outcome_bound_attempts']==2
     assert result['retained_checked_request_markers']==2
     assert result['reasons']==[] and result['read_only']
+    assert result['journal_files_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert all(result[field] is False for field in subject.FLAGS)
     assert before=={path:path.read_bytes() for path in before}
 
@@ -287,6 +290,92 @@ def test_every_selected_same_head_rewrite_fails_closed(
             match='PAPER_PROVIDER_POST_REVIEW_FILE_SET_CHANGED'):
         subject.review(budget,expected_post_head=head,
             request_bindings=[binding(first),binding(second)])
+
+
+def _mutate_metadata_and_fail(path):
+    stat = os.stat(path)
+    os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+    raise RuntimeError('injected provider post history reader failure')
+
+
+@pytest.mark.parametrize('target', (
+    'post_budget', 'first_journal', 'second_journal'))
+def test_initial_post_reader_failure_rechecks_all_journals(
+        tmp_path, monkeypatch, target):
+    first,budget,head=retained(tmp_path,at=1000)
+    second,budget,head=retained(tmp_path,account=OTHER,identity='nx_other',
+        outcome='RESPONSE_OBSERVED',post_head=head,at=1061,budget=budget,
+        observed=True)
+    bindings=[binding(first),binding(second)]
+    paths=dict(post_budget=budget.path,first_journal=first.path,
+        second_journal=second.path)
+    before={path:path.read_bytes() for path in paths.values()}
+    original=budget.inspect
+
+    def failed():
+        original()
+        _mutate_metadata_and_fail(paths[target])
+
+    monkeypatch.setattr(budget,'inspect',failed)
+    with pytest.raises(ValueError,match='PAPER_PROVIDER_POST_REVIEW_FILE_SET_CHANGED'):
+        subject.review(budget,expected_post_head=head,request_bindings=bindings)
+    assert before=={path:path.read_bytes() for path in before}
+
+
+@pytest.mark.parametrize('reader', (
+    'post_history', 'post_recovery_history', 'initial_request',
+    'request_prefixes', 'final_request', 'final_post'))
+def test_later_reader_failure_rechecks_all_journals(
+        tmp_path, monkeypatch, reader):
+    first,budget,head=retained(tmp_path,at=1000)
+    second,budget,head=retained(tmp_path,account=OTHER,identity='nx_other',
+        outcome='RESPONSE_OBSERVED',post_head=head,at=1061,budget=budget,
+        observed=True)
+    bindings=[binding(first),binding(second)]
+    before={path:path.read_bytes() for path in
+        (budget.path,first.path,second.path)}
+    if reader in ('post_history','post_recovery_history'):
+        method='history' if reader=='post_history' else 'recovery_history'
+        original=getattr(budget,method)
+
+        def failed():
+            original()
+            _mutate_metadata_and_fail(
+                budget.path if reader=='post_history' else second.path)
+
+        monkeypatch.setattr(budget,method,failed)
+    elif reader in ('initial_request','final_request'):
+        original=first.recovery;calls=0
+
+        def failed():
+            nonlocal calls
+            result=original();calls+=1
+            if calls==(1 if reader=='initial_request' else 2):
+                _mutate_metadata_and_fail(first.path)
+            return result
+
+        monkeypatch.setattr(first,'recovery',failed)
+    elif reader=='request_prefixes':
+        original=second.observations_at_heads
+
+        def failed(heads):
+            original(heads)
+            _mutate_metadata_and_fail(second.path)
+
+        monkeypatch.setattr(second,'observations_at_heads',failed)
+    else:
+        original=budget.inspect;calls=0
+
+        def failed():
+            nonlocal calls
+            result=original();calls+=1
+            if calls==2:_mutate_metadata_and_fail(budget.path)
+            return result
+
+        monkeypatch.setattr(budget,'inspect',failed)
+    with pytest.raises(ValueError,match='PAPER_PROVIDER_POST_REVIEW_FILE_SET_CHANGED'):
+        subject.review(budget,expected_post_head=head,request_bindings=bindings)
+    assert before=={path:path.read_bytes() for path in before}
 
 
 def test_rollback_sidecar_fails_before_request_replay(tmp_path, monkeypatch):

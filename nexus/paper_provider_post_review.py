@@ -73,6 +73,22 @@ def _require_bindings(post_budget, bindings, store_binding, paths,
         'PAPER_PROVIDER_POST_REVIEW_')
 
 
+def _stable_reader(post_budget, bindings, store_binding, paths,
+                   file_binding, file_limits, file_fingerprints):
+    """Recheck every selected journal after each semantic reader exit."""
+    def read(reader):
+        try:
+            value = reader()
+        except BaseException:
+            _require_bindings(post_budget, bindings, store_binding, paths,
+                file_binding, file_limits, file_fingerprints)
+            raise
+        _require_bindings(post_budget, bindings, store_binding, paths,
+            file_binding, file_limits, file_fingerprints)
+        return value
+    return read
+
+
 def review(post_budget, *, expected_post_head, request_bindings):
     """Replay and compare every retained checked POST attempt.
 
@@ -109,20 +125,16 @@ def review(post_budget, *, expected_post_head, request_bindings):
         'PAPER_PROVIDER_POST_REVIEW_')
     _require_bindings(post_budget, bindings, store_binding, paths,
         file_binding, file_limits, file_fingerprints)
-
-    first_post = post_budget.inspect()
-    _require_bindings(post_budget, bindings, store_binding, paths,
+    stable_read = _stable_reader(post_budget, bindings, store_binding, paths,
         file_binding, file_limits, file_fingerprints)
+
+    first_post = stable_read(post_budget.inspect)
     if (first_post['events'] == 0 or first_post['head_sha256'] != expected_post_head):
         _fail('POST_HEAD_CHANGED')
-    attempts = post_budget.history()
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding, file_limits, file_fingerprints)
+    attempts = stable_read(post_budget.history)
     if len(attempts) != first_post['completed_attempts']:
         _fail('POST_HISTORY_CHANGED')
-    recoveries = post_budget.recovery_history()
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding, file_limits, file_fingerprints)
+    recoveries = stable_read(post_budget.recovery_history)
     if len(recoveries) != first_post['recoveries']:
         _fail('POST_HISTORY_CHANGED')
 
@@ -146,21 +158,16 @@ def review(post_budget, *, expected_post_head, request_bindings):
     prefixes = {}
     current_requests = {}
     for account, (journal, expected) in by_account.items():
-        initial = journal.recovery()
-        _require_bindings(post_budget, bindings, store_binding, paths,
-            file_binding, file_limits, file_fingerprints)
+        initial = stable_read(journal.recovery)
         if initial['head_sha256'] != expected or expected == ZERO:
             _fail('REQUEST_HEAD_CHANGED')
-        sample = journal.observations_at_heads(tuple(sorted(needed[account])))
-        _require_bindings(post_budget, bindings, store_binding, paths,
-            file_binding, file_limits, file_fingerprints)
+        sample = stable_read(lambda journal=journal, account=account:
+            journal.observations_at_heads(tuple(sorted(needed[account]))))
         if sample['current_head_sha256'] != expected:
             _fail('REQUEST_HEAD_CHANGED')
         prefixes[account] = sample['observations_by_head']
         current_requests[account] = initial['requests']
-        final = journal.recovery()
-        _require_bindings(post_budget, bindings, store_binding, paths,
-            file_binding, file_limits, file_fingerprints)
+        final = stable_read(journal.recovery)
         if final['head_sha256'] != expected or final['requests'] != initial['requests']:
             _fail('REQUEST_HISTORY_CHANGED')
 
@@ -258,9 +265,7 @@ def review(post_budget, *, expected_post_head, request_bindings):
     unbound_markers = len(set(retained_markers) - set(bound_marker_keys))
     duplicate_markers = len(retained_markers) - len(set(retained_markers))
 
-    final_post = post_budget.inspect()
-    _require_bindings(post_budget, bindings, store_binding, paths,
-        file_binding, file_limits, file_fingerprints)
+    final_post = stable_read(post_budget.inspect)
     if final_post['head_sha256'] != expected_post_head or final_post != first_post:
         _fail('POST_HISTORY_CHANGED')
     reasons = []
@@ -293,7 +298,9 @@ def review(post_budget, *, expected_post_head, request_bindings):
         duplicate_attempt_bindings=duplicate_attempt_bindings + duplicate_markers,
         request_journals=len(bindings), reasons=reasons,
         admission_reserved=False, automatic_retry=False, automatic_recovery=False,
-        uncertainty_preserved=True, **{flag: False for flag in FLAGS},
+        uncertainty_preserved=True, journal_files_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,
+        **{flag: False for flag in FLAGS},
         limitations='Exact-head local replay for explicitly selected cooperating journals only. Recovery binding confirms a retained terminal local request prefix, not provider identity or complete reconciliation. It does not bind raw provider bytes, resolve interrupted attempts, discover another path, credential, process, host or machine, attest broker quotas or source, reconcile fills, fees, holds or funds, or grant routing or release authority.')
 
 
@@ -430,6 +437,10 @@ def fixture_report():
         checks = dict(exact_multi_account_history=result['complete_local_history_consistent'],
             every_attempt_bound=result['exact_attempt_bindings'] == 2,
             every_outcome_bound=result['outcome_bound_attempts'] == 2,
+            journal_file_fingerprints_rechecked=(
+                result['journal_files_rechecked_unchanged']),
+            semantic_reader_failures_rechecked=(
+                result['semantic_reader_failures_rechecked']),
             exact_terminal_recovery_history=(
                 recovered_review['complete_local_history_consistent'] and
                 recovered_review['post_recoveries'] == 1 and

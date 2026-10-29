@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.22. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.23. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.22 makes the private lifecycle stop worker mandatory saved release evidence. The real loopback Uvicorn profile delegates to the exact application stop fence, records only the fixed dedicated-thread scope after shutdown, and the validator plus negative control reject generic graceful-shutdown evidence that does not prove the private worker ran. Runtime behavior is unchanged. No control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.23 makes the ordered application stop fence mandatory saved release evidence. The disposable real-loopback Uvicorn profile records fixed completion labels only after the exact emergency-lane drain and each ordinary worker cleanup returns, and the validator plus negative control reject cleanup that overtakes the drain. Runtime behavior is unchanged. No control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

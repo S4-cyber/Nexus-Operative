@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.22 makes the private lifecycle stop worker mandatory saved release evidence. The real loopback HTTP profile records the fixed dedicated-thread scope only after the exact product stop fence completes, and the validator plus negative control reject generic graceful shutdown without that proof. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+Current checkpoint: v0.340.23 makes the ordered application stop fence mandatory saved release evidence. The disposable real-loopback HTTP profile records fixed completion labels only after the exact emergency-lane drain and each ordinary worker cleanup returns, and the validator plus negative control reject cleanup that overtakes the drain. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no new retry, Portal control, modifiable parameter or runtime authority.
+
+## v0.340.23 ordered lifecycle stop-fence evidence
+
+The real-loopback Uvicorn profile installs observation delegates only immediately before ASGI shutdown. Each delegate calls the exact product operation first and then appends one fixed public label. Saved evidence must show emergency-lane drain completion before paper-forward, observer, refresh and Found Markets cleanup, with no private state, thread identity or account data retained. The release validator requires the exact order and a negative control swaps the first two labels and must fail. Runtime shutdown behavior is unchanged.
+
+Exact-source v0.340.22 passed public security/Gitleaks run 40822572465, research regression/browser/evidence run 40822572469 and Windows EXE/installer/reinstall/uninstall run 40822572400.
+
+Final local validation passed 4,426 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 175 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `7732038eaae4967856fe983ad99b35efadbf33fe4105589e631b99ab8da9cfa8`; `validation/release_trials_0_340_23.json` SHA256 is `a5922056634a2bdeb2378239751d9564e75dbc942ec0e81cce2f6ccfa5767d2b`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.23 wheel build passed. Fresh exact-source v0.340.23 workflows remain mandatory.
 
 ## v0.340.22 mandatory private lifecycle release evidence
 

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.23 ordered lifecycle stop-fence evidence
+
+The disposable real-loopback HTTP profile now records fixed completion labels after the exact emergency-lane drain and each ordinary application worker cleanup returns. Validation requires the drain to complete before paper-forward, observer, refresh and Found Markets cleanup; a negative control swaps the first two labels and must fail. This adds no runtime behavior, control, permission or authority.
+
+Exact-source v0.340.22 passed security/Gitleaks run 40822572465, research regression/browser/evidence run 40822572469 and Windows EXE/installer/reinstall/uninstall run 40822572400.
+
+Final local validation passed 4,426 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 175 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `7732038eaae4967856fe983ad99b35efadbf33fe4105589e631b99ab8da9cfa8`; `validation/release_trials_0_340_23.json` SHA256 is `a5922056634a2bdeb2378239751d9564e75dbc942ec0e81cce2f6ccfa5767d2b`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.23 wheel build passed. Fresh exact-source v0.340.23 workflows remain mandatory.
+
 ## v0.340.22 mandatory private lifecycle release evidence
 
 The real-loopback HTTP release profile now records that the exact application stop fence ran once on the dedicated `nexus-lifecycle-stop` worker. Validation requires the fixed `DEDICATED_APPLICATION_LIFECYCLE_WORKER` scope, and a negative control proves generic graceful-shutdown evidence is insufficient. This adds no runtime behavior, control, permission or authority.

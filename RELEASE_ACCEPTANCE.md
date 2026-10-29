@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.23 ordered lifecycle stop-fence evidence
+
+Saved HTTP evidence must now prove the exact emergency lane finished draining before any ordinary application worker cleanup completed. The disposable profile records only five fixed completion labels after delegating to each exact product operation. The validator requires the full order and a negative control swaps the drain and first cleanup labels. Runtime behavior and every authority flag remain unchanged.
+
+Exact-source v0.340.22 passed public security/Gitleaks run 40822572465, research regression/browser/evidence run 40822572469 and Windows EXE/installer/reinstall/uninstall run 40822572400.
+
+Final local validation passed 4,426 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the emergency/release/evidence/roadmap/version/workflow/packaging focus passed 175 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `7732038eaae4967856fe983ad99b35efadbf33fe4105589e631b99ab8da9cfa8`; `validation/release_trials_0_340_23.json` SHA256 is `a5922056634a2bdeb2378239751d9564e75dbc942ec0e81cce2f6ccfa5767d2b`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript, all fourteen Node controller smokes and a 0.340.23 wheel build passed. Fresh exact-source v0.340.23 workflows remain mandatory.
+
 ## v0.340.22 mandatory private lifecycle release evidence
 
 Saved HTTP evidence must now prove that the exact application stop fence ran once on the private lifecycle worker, not merely report graceful shutdown. The validator requires the fixed dedicated scope and a negative control falsifies it. Runtime behavior and every authority flag remain unchanged.

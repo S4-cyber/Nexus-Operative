@@ -23,6 +23,9 @@ PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
     'inspection_inventory_validated', 'cooldown_prevented_transport',
     'removal_completed_during_read', 'revoked_read_returned_no_observation',
     'pending_history_preserved', 'fresh_process_preserved_pending_history')
+APPLICATION_STOP_FENCE_ORDER = ('EMERGENCY_LANE_DRAINED',
+    'PAPER_FORWARD_STOPPED', 'OBSERVER_STOPPED', 'REFRESH_STOPPED',
+    'FOUND_MARKETS_STOPPED')
 SAFE_FAILURE_CODE = re.compile(r'RELEASE_TRIAL_[A-Z0-9_]+\Z')
 CHILD_FAILURE_LINE = re.compile(
     r'^nexus\.release_trials\.ReleaseTrialError: (RELEASE_TRIAL_[A-Z0-9_]+)$',
@@ -311,6 +314,7 @@ def _http_trial():
     from nexus import app as api
     app = api.app
     lifecycle_stop_threads = []
+    lifecycle_stop_order = []
     original_shutdown = api._shutdown_application_workers
 
     def observed_shutdown():
@@ -384,14 +388,57 @@ def _http_trial():
             credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
             limitations='Real local source-process HTTP only; paper credential and provider seams are injected fixtures with temporary retained pacing. No rendered browser, Windows executable, actual provider, order or sustained market test.')
     finally:
+        # Observe completion of each exact product fence operation only during
+        # ASGI shutdown. Earlier trial controls may legitimately stop ordinary
+        # workers, so installing these delegates sooner would not prove the
+        # shutdown fence's order.
+        original_drain = api._drain_emergency_lane
+        original_paper_stop = api.paper_forward_runner.stop
+        original_observer_stop = api.observer.stop
+        original_refresh_shutdown = api.refresh_worker.shutdown
+        original_found_shutdown = api.found_market_worker.shutdown
+
+        def observed_drain(*args, **kwargs):
+            value = original_drain(*args, **kwargs)
+            lifecycle_stop_order.append('EMERGENCY_LANE_DRAINED')
+            return value
+
+        def observed_paper_stop(*args, **kwargs):
+            value = original_paper_stop(*args, **kwargs)
+            lifecycle_stop_order.append('PAPER_FORWARD_STOPPED')
+            return value
+
+        def observed_observer_stop(*args, **kwargs):
+            value = original_observer_stop(*args, **kwargs)
+            lifecycle_stop_order.append('OBSERVER_STOPPED')
+            return value
+
+        def observed_refresh_shutdown(*args, **kwargs):
+            value = original_refresh_shutdown(*args, **kwargs)
+            lifecycle_stop_order.append('REFRESH_STOPPED')
+            return value
+
+        def observed_found_shutdown(*args, **kwargs):
+            value = original_found_shutdown(*args, **kwargs)
+            lifecycle_stop_order.append('FOUND_MARKETS_STOPPED')
+            return value
+
+        api._drain_emergency_lane = observed_drain
+        api.paper_forward_runner.stop = observed_paper_stop
+        api.observer.stop = observed_observer_stop
+        api.refresh_worker.shutdown = observed_refresh_shutdown
+        api.found_market_worker.shutdown = observed_found_shutdown
         server.should_exit = True; thread.join(timeout=10); listener.close()
     _require(not thread.is_alive(), 'HTTP_SHUTDOWN')
     _require(len(lifecycle_stop_threads) == 1 and
         lifecycle_stop_threads[0].startswith('nexus-lifecycle-stop'),
         'HTTP_LIFECYCLE_WORKER')
+    _require(lifecycle_stop_order == list(APPLICATION_STOP_FENCE_ORDER),
+        'HTTP_STOP_FENCE')
     result['graceful_shutdown'] = True
     result['private_lifecycle_stop_worker'] = True
     result['lifecycle_stop_scope'] = 'DEDICATED_APPLICATION_LIFECYCLE_WORKER'
+    result['shutdown_fence_order'] = lifecycle_stop_order
     from tools.packaged_paper_tools_smoke import run as paper_tools_trial
     result['paper_tools_source']=paper_tools_trial([sys.executable,str(Path(__file__).resolve().parents[1]/'portable'/'desktop.py')])
     return result
@@ -752,6 +799,8 @@ def _validate(profile, result):
                  result['lifecycle_stop_scope'] ==
                     'DEDICATED_APPLICATION_LIFECYCLE_WORKER',
                  'HTTP_LIFECYCLE')
+        _require(result['shutdown_fence_order'] == list(APPLICATION_STOP_FENCE_ORDER),
+            'HTTP_STOP_FENCE')
         _require(result['external_connections'] == result['credential_operations'] == result['startup_data_files'] == 0, 'HTTP_SIDE_EFFECTS')
         _require(all(result[k] is True for k in ('untrusted_host_rejected','cross_origin_rejected','api_no_store')) and result['proxy_headers_trusted'] is False,'HTTP_BOUNDARY_POLICY')
         paper = result['paper_pacing']

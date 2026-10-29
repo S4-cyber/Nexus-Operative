@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.37'
+REVISION = '0.340.38'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -307,7 +307,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.37 rechecks the shared provider-read budget and every selected account pacing journal after each provider/account status or history reader on normal and exceptional exits. Exact local provider/account history composition is now mandatory saved pacing evidence, including all five read purposes, exact session matching and stale-head refusal. No provider call, retry, control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.38 holds the shared provider-read budget and every selected account pacing journal across the full normalized-result composition, rechecking the complete file set after nested provider/account reviews on normal and exceptional exits. A nested semantic reader can no longer mutate or retarget another selected store and hide the change behind a generic failure. No provider call, retry, control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

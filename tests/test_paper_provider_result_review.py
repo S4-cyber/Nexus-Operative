@@ -1,6 +1,8 @@
 """Private normalized evidence must match every shared provider reservation."""
 from copy import deepcopy
 import json
+import os
+import shutil
 import pytest
 from nexus import paper_provider_result_review as subject, paper_provider_read_review as provider
 from nexus import paper_provider_read_review_store as stores, paper_read_review as accounts
@@ -24,7 +26,59 @@ def test_actual_readers_compose_without_mutation_or_authority(history,tmp_path):
     assert result['local_provider_results_consistent'] and result['normalized_sessions_matched']==5
     assert not result['review_reasons'] and all(result[k] is False for k in subject.FLAGS)
     assert not result['admission_reserved'] and files(tmp_path)==before
+    assert result['journal_files_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert gates[0].account not in json.dumps(result) and 'BTC/USD' not in json.dumps(result)
+
+
+def _mutate_metadata_and_fail(path):
+    status=os.stat(path)
+    os.utime(path,ns=(status.st_atime_ns,status.st_mtime_ns+1_000_000_000))
+    raise RuntimeError('injected provider result review failure')
+
+
+@pytest.mark.parametrize(('reader','target'),(
+    ('initial_provider','provider'),('initial_provider','account'),
+    ('account','provider'),('account','account'),
+    ('final_provider','provider'),('final_provider','account')))
+def test_semantic_reader_failure_rechecks_every_selected_journal(
+        history,monkeypatch,reader,target):
+    budget,gates,bindings,options=history
+    paths=dict(provider=budget.path,account=gates[0].path)
+    original_provider=provider.review;original_account=accounts.review
+    calls=[]
+    def changed_provider(*args,**kwargs):
+        result=original_provider(*args,**kwargs);calls.append(1)
+        if ((reader=='initial_provider' and len(calls)==1) or
+                (reader=='final_provider' and len(calls)==2)):
+            _mutate_metadata_and_fail(paths[target])
+        return result
+    def changed_account(*args,**kwargs):
+        result=original_account(*args,**kwargs)
+        if reader=='account':_mutate_metadata_and_fail(paths[target])
+        return result
+    monkeypatch.setattr(provider,'review',changed_provider)
+    monkeypatch.setattr(accounts,'review',changed_account)
+    with pytest.raises(ValueError,match=
+            'PAPER_PROVIDER_RESULT_REVIEW_FILE_SET_CHANGED'):
+        subject.review(budget,gates,bindings,**options)
+
+
+@pytest.mark.parametrize('target',('provider','account'))
+def test_nested_reader_cannot_retarget_selected_store(
+        history,tmp_path,monkeypatch,target):
+    budget,gates,bindings,options=history
+    store=budget if target=='provider' else gates[0]
+    original_path=store.path;clone=tmp_path/f'{target}-clone.sqlite3'
+    original=accounts.review
+    def retarget(*args,**kwargs):
+        result=original(*args,**kwargs)
+        shutil.copyfile(original_path,clone);store.path=clone
+        return result
+    monkeypatch.setattr(accounts,'review',retarget)
+    with pytest.raises(ValueError,match=
+            'PAPER_PROVIDER_RESULT_REVIEW_STORE_BINDING_CHANGED'):
+        subject.review(budget,gates,bindings,**options)
 
 
 @pytest.mark.parametrize('index',range(5))
@@ -98,7 +152,8 @@ def test_history_append_during_account_review_fails(history,monkeypatch):
             gate.begin(admission=lambda:1792369000,ownership=owner,operation='ACCOUNT_INVENTORY')
         return result
     monkeypatch.setattr(accounts,'review',append)
-    with pytest.raises(ValueError,match='ACCOUNT_HEAD_CHANGED'):subject.review(budget,gates,bindings,**options)
+    with pytest.raises(ValueError,match='PAPER_PROVIDER_RESULT_REVIEW_FILE_SET_CHANGED'):
+        subject.review(budget,gates,bindings,**options)
 
 
 def test_versioned_receipts_preserve_legacy_meaning_and_replay(history,tmp_path):

@@ -4,13 +4,22 @@ Hashes and successful composition grant no provider, source, funds or routing
 acceptance. Observations remain supplied private inputs and are never retained.
 """
 import json
+from pathlib import Path
 from nexus.alpaca_paper_contract import canonical,sha
 from nexus import paper_read_review as account_review
 from nexus import paper_provider_read_review as provider_review
+from nexus.paper_provider_read_budget import (
+    MAX_DATABASE_BYTES as PROVIDER_DATABASE_BYTES,PaperProviderReadBudget)
+from nexus.paper_read_pacing import (
+    MAX_DATABASE_BYTES as ACCOUNT_DATABASE_BYTES,PaperReadPacing)
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints,capture_file_identities,
+    require_file_fingerprints,require_file_identities)
 
 FLAGS=tuple(dict.fromkeys((*provider_review.FLAGS,*account_review.FLAGS)))
 CHECKS=('real_provider_and_results_match','changed_result_refused','missing_result_refused',
-        'receipt_replayed','private_content_not_retained','source_files_preserved')
+        'receipt_replayed','private_content_not_retained','source_files_preserved',
+        'journal_file_fingerprints_rechecked','semantic_reader_failures_rechecked')
 
 
 def _fail(code):raise ValueError('PAPER_PROVIDER_RESULT_REVIEW_'+code) from None
@@ -29,6 +38,56 @@ def _freeze(gates,bindings):
     except (TypeError,ValueError,OverflowError,RecursionError):_fail('ACCOUNT_BINDINGS_INVALID')
 
 
+def _store_binding(provider_budget,gates):
+    return (provider_budget.path,provider_budget.provider_scope,
+        provider_budget.provider_digest,
+        tuple((gate.path,gate.account_digest) for gate in gates))
+
+
+def _file_scope(paths,file_limits):
+    present=[];present_limits=[];absent=[]
+    for path,limit in zip(paths,file_limits):
+        try:Path(path).lstat()
+        except FileNotFoundError:absent.append(path)
+        except (OSError,RuntimeError,TypeError):_fail('FILE_IDENTITY_UNAVAILABLE')
+        else:present.append(path);present_limits.append(limit)
+    return tuple(present),tuple(present_limits),tuple(absent)
+
+
+def _require_absent(paths):
+    for path in paths:
+        try:Path(path).lstat()
+        except FileNotFoundError:continue
+        except (OSError,RuntimeError,TypeError):_fail('FILE_IDENTITY_CHANGED')
+        _fail('FILE_IDENTITY_CHANGED')
+
+
+def _require_bindings(provider_budget,gates,store_binding,paths,absent_paths,
+                      file_binding,file_limits,file_fingerprints):
+    if (type(provider_budget) is not PaperProviderReadBudget or
+            any(type(gate) is not PaperReadPacing for gate in gates) or
+            _store_binding(provider_budget,gates)!=store_binding):
+        _fail('STORE_BINDING_CHANGED')
+    _require_absent(absent_paths)
+    require_file_identities(paths,file_binding,'PAPER_PROVIDER_RESULT_REVIEW_')
+    require_file_fingerprints(paths,file_limits,file_fingerprints,
+        'PAPER_PROVIDER_RESULT_REVIEW_')
+
+
+def _stable_reader(provider_budget,gates,store_binding,paths,absent_paths,
+                   file_binding,file_limits,file_fingerprints):
+    def read(reader):
+        try:value=reader()
+        except BaseException:
+            _require_bindings(provider_budget,gates,store_binding,paths,
+                absent_paths,file_binding,file_limits,file_fingerprints)
+            raise
+        _require_bindings(provider_budget,gates,store_binding,paths,
+            absent_paths,file_binding,file_limits,file_fingerprints)
+        return value
+    return read
+
+
 def review(provider_budget,gates,bindings_by_account,*,expected_provider_head,expected_account_heads):
     """Freeze all supplied results and compare pinned full histories twice.
 
@@ -38,11 +97,24 @@ def review(provider_budget,gates,bindings_by_account,*,expected_provider_head,ex
     gates,heads=provider_review._inputs(provider_budget,gates,expected_account_heads)
     expected_provider_head=provider_review._digest(expected_provider_head,'PROVIDER_HEAD_INVALID')
     frozen=_freeze(gates,bindings_by_account)
-    before=provider_review.review(provider_budget,gates,expected_provider_head=expected_provider_head,expected_account_heads=heads)
+    paths=(provider_budget.path,*(gate.path for gate in gates))
+    store_binding=_store_binding(provider_budget,gates)
+    file_limits=(PROVIDER_DATABASE_BYTES,*((ACCOUNT_DATABASE_BYTES,)*len(gates)))
+    paths,file_limits,absent_paths=_file_scope(paths,file_limits)
+    file_binding=capture_file_identities(paths,'PAPER_PROVIDER_RESULT_REVIEW_')
+    file_fingerprints=capture_file_fingerprints(paths,file_limits,
+        'PAPER_PROVIDER_RESULT_REVIEW_')
+    _require_bindings(provider_budget,gates,store_binding,paths,absent_paths,
+        file_binding,file_limits,file_fingerprints)
+    stable_read=_stable_reader(provider_budget,gates,store_binding,paths,
+        absent_paths,file_binding,file_limits,file_fingerprints)
+    before=stable_read(lambda:provider_review.review(provider_budget,gates,
+        expected_provider_head=expected_provider_head,expected_account_heads=heads))
     reasons=set(before['review_reasons']);manifest=[];matched=0;supplied=0;accounts_ok=True
     for gate in sorted(gates,key=lambda g:g.account_digest):
         key=gate.account_digest;values=frozen[key]
-        result=account_review.review(gate,values,expected_head=heads[key])
+        result=stable_read(lambda gate=gate,values=values,key=key:
+            account_review.review(gate,values,expected_head=heads[key]))
         if result['account_sha256']!=key:_fail('ACCOUNT_SCOPE_CHANGED')
         valid=result['receipt_bindings_consistent'] is True
         accounts_ok=accounts_ok and valid
@@ -53,7 +125,8 @@ def review(provider_budget,gates,bindings_by_account,*,expected_provider_head,ex
             request_scope_sha256=sha(value['request_scope'])) for head,value in sorted(bindings.items())]
         manifest.append(dict(account_sha256=key,pacing_head_sha256=heads[key],
             binding_manifest_sha256=sha(scope),review_sha256=sha(result)))
-    after=provider_review.review(provider_budget,gates,expected_provider_head=expected_provider_head,expected_account_heads=heads)
+    after=stable_read(lambda:provider_review.review(provider_budget,gates,
+        expected_provider_head=expected_provider_head,expected_account_heads=heads))
     if after!=before:_fail('HISTORY_CHANGED')
     consistent=(before['local_provider_account_history_consistent'] is True and accounts_ok and
         matched==supplied==before['account_sessions_replayed']==before['provider_sessions_replayed'])
@@ -67,6 +140,7 @@ def review(provider_budget,gates,bindings_by_account,*,expected_provider_head,ex
         local_provider_account_history_consistent=before['local_provider_account_history_consistent'],
         all_account_result_bindings_consistent=accounts_ok,
         local_provider_results_consistent=consistent,review_reasons=sorted(reasons),admission_reserved=False,
+        journal_files_rechecked_unchanged=True,semantic_reader_failures_rechecked=True,
         **{flag:False for flag in FLAGS},
         limitations='Pinned, supplied, co-reported local histories and normalized observations only. No proof of raw-byte normalization, provider identity/quota, another path/credential/host, source coverage, clocks, fees, holds, funds, broker acceptance or routing. No reservation, retry, repair, migration or release authority. Output and optional receipt contain only aggregate counts and digests.')
 
@@ -122,5 +196,7 @@ def fixture_report():
             receipt_replayed=retained['head_sha256']==receipt['head_sha256'] and retained['receipts'][0]['scope']['profile']==RESULT_PROFILE,
             private_content_not_retained=all(value not in blob for value in
                 (gates[0].account.encode(),b'BTC/USD',b'nx_review_fixture',b'fixture_key_only_123',b'fixture_secret_only_123')),
-            source_files_preserved=source_same and all(p.read_bytes()==body for name,body in before.items() for p in (root/name,)))
+            source_files_preserved=source_same and all(p.read_bytes()==body for name,body in before.items() for p in (root/name,)),
+            journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
+            semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'])
         return dict(source='TEMPORARY_INJECTED_PROVIDER_RESULT_REVIEW',passed=all(checks.values()),**checks,**{key:False for key in FLAGS})

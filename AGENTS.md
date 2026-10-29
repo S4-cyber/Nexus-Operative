@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.37 rechecks the shared provider-read budget and every selected account pacing journal after each provider/account status or history reader on normal and exceptional exits. Exact local provider/account session composition across all five read purposes is now mandatory saved pacing evidence. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+Current checkpoint: v0.340.38 holds the shared provider-read budget and every selected account pacing journal across the full normalized-result composition. Every nested provider/account review is surrounded by an outer file-set recheck on normal and exceptional exits. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no provider call, retry, Portal control, modifiable parameter or external authority.
+
+## v0.340.38 normalized provider-result semantic-reader file-set proof
+
+The normalized provider-result composition now holds exact store bindings, identities and bounded fingerprints for the provider budget plus up to six selected account pacing journals across the initial provider-history review, every account normalized-result review and final provider-history repeat. A nested reader can no longer mutate or retarget another selected journal and hide the change behind a generic or lower-layer failure. Six mutation-plus-failure cases cover both journals at all three reader boundaries, and two retarget cases cover both store families. Mandatory typed pacing evidence requires both fingerprint and exceptional-exit guarantees.
+
+Exact-source v0.340.37 source `6de2cd5356a4367316e97240a3fb662ee23eee62` passed public security run 40948234735, research safety/browser/evidence run 40948234788 and Windows EXE/installer/reinstall/uninstall run 40948234648. Fresh exact-source v0.340.38 workflows remain mandatory.
+
+Pre-publication local validation passed 4,513 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the normalized-result/typed-pacing/release focus passed 199 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `f5d55c1d73e6e58e2ade08442dacbe0cefeb9233f23c8e47083ad34ff0258efb`; `validation/release_trials_0_340_38.json` SHA-256 is `f8b273377d6332cf4b7af6e950f66b62a55a9d0318fd732ce739f2a0ec986ae8`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.38 wheel build passed; wheel SHA-256 is `b2284d4fdeaae638a064e325f1e9f88f8306c5a9748256a93f19b564696a4b81`. The 741-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Playwright are unavailable. Fresh exact-source browser and Windows/installer CI remain required.
 
 ## v0.340.37 provider-read/account-history semantic-reader file-set proof
 

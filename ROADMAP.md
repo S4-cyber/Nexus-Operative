@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.37. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.38. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.37 rechecks the shared provider-read budget and every selected account pacing journal after each provider/account status or history reader on normal and exceptional exits. Exact local provider/account history composition is now mandatory saved pacing evidence, including all five read purposes, exact session matching and stale-head refusal. No provider call, retry, control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.38 holds the shared provider-read budget and every selected account pacing journal across the full normalized-result composition, rechecking the complete file set after nested provider/account reviews on normal and exceptional exits. A nested semantic reader can no longer mutate or retarget another selected store and hide the change behind a generic failure. No provider call, retry, control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

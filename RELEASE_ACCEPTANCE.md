@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.38 normalized provider-result semantic-reader file-set proof
+
+Normalized provider-result review must hold exact store bindings, identities and bounded fingerprints for the shared provider budget plus every selected account pacing journal across the complete nested provider/account result composition. Every normal or exceptional reader exit must recheck the complete set, and store retargeting must receive a fixed outer refusal. Six mutation-plus-failure cases and two retarget cases cover these guarantees; mandatory typed pacing evidence requires both recheck claims. Runtime authority remains unchanged.
+
+Exact-source v0.340.37 source `6de2cd5356a4367316e97240a3fb662ee23eee62` passed public security run 40948234735, research safety/browser/evidence run 40948234788 and Windows EXE/installer/reinstall/uninstall run 40948234648. Fresh exact-source v0.340.38 workflows remain mandatory.
+
+Pre-publication local validation passed 4,513 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused set passed 199 tests. All sixteen offline profiles and saved-evidence verification matched 387 source files / `f5d55c1d73e6e58e2ade08442dacbe0cefeb9233f23c8e47083ad34ff0258efb`; report SHA-256 is `f8b273377d6332cf4b7af6e950f66b62a55a9d0318fd732ce739f2a0ec986ae8`. Compile, dependency, deterministic-roadmap, fourteen Node controller and wheel checks passed. The 741-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Playwright are unavailable. Exact-source browser and Windows/installer CI remain required. This evidence does not establish provider access, broker-paper acceptance, market realism, profitability, live/cloud readiness or release approval.
+
 ## v0.340.37 provider-read/account-history semantic-reader file-set proof
 
 Provider-read history review must hold exact store bindings, identities and bounded fingerprints for the shared provider budget plus every selected account pacing journal across all provider/account status and history readers. Every normal or exceptional reader exit must recheck the complete set. Initial/later mutation failures and path retargets must receive fixed outer refusals. Eight direct negative cases and mandatory saved pacing evidence cover these guarantees, including exact five-purpose session matching and stale-head denial. Runtime authority remains unchanged.

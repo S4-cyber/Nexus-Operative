@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.38 normalized provider-result semantic-reader file-set proof
+
+Normalized provider-result review now rechecks the provider budget plus every selected account pacing journal after the initial provider review, each account result review and final provider repeat returns or raises. Six mutation-plus-failure and two retarget regressions cover the full outer composition; mandatory typed pacing evidence requires both fences. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.37 source `6de2cd5356a4367316e97240a3fb662ee23eee62` passed public security run 40948234735, research safety/browser/evidence run 40948234788 and Windows EXE/installer/reinstall/uninstall run 40948234648. Fresh exact-source v0.340.38 workflows remain mandatory.
+
+Pre-publication local validation passed 4,513 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused set passed 199 tests. All sixteen offline profiles and saved-evidence verification matched 387 source files / `f5d55c1d73e6e58e2ade08442dacbe0cefeb9233f23c8e47083ad34ff0258efb`; report SHA-256 is `f8b273377d6332cf4b7af6e950f66b62a55a9d0318fd732ce739f2a0ec986ae8`. Compile, dependency, deterministic-roadmap, fourteen Node controller and wheel checks passed. The 741-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Playwright are unavailable. Exact-source browser and Windows/installer CI remain required. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
 ## v0.340.37 provider-read/account-history semantic-reader file-set proof
 
 Provider-read history review now rechecks the shared provider budget plus every selected account pacing journal after each provider/account status or history reader returns or raises. Eight direct negative cases cover all initial/later reader and retarget boundaries. Mandatory saved pacing evidence requires exact session composition across all five read purposes, stale-head denial, unchanged journals and both recheck fences. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

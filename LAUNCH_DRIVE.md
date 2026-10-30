@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.57 response-budget completion cold replay
+
+The explicit one-attempt paper boundary now accepts provider-budget response completion only after two stable cold reads prove the exact committed token, account, client order, request-before head, payload, response-observation head, `RESPONSE_OBSERVED` outcome and one-POST count through the pinned store binding. A lost local commit acknowledgement is recovered without a second provider request. A completion that did not commit, or a malformed in-process result, remains pending and review-blocked with a fixed sanitized error. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.
+
+Published v0.340.56 source is `8d1dc322f25e9757d51eae197dc14f324c9a2d4e`; no exact-source hosted workflow runs were present at recovery. Exact-source v0.340.55 `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79` passed security 41071953019, research/browser/evidence 41071952902 and Windows EXE/installer/reinstall/uninstall 41071952842. Fresh v0.340.57 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local durability change does not close an external gate or predict profit.
+
+Local validation passed 4,648 tests with one expected non-Windows skip and one warning; the final response-budget/release/version/installer focus passed 271. All sixteen offline profiles and saved-evidence verification passed against 395 source files / `8eebeea7e80c4ca8a761263885fe598d310c49e342020b31a3502110163b50c6`. Compilation, dependency integrity, roadmap equality, Portal syntax, fourteen controller smokes and wheel packaging passed. Fresh hosted exact-source checks remain required.
+
 ## v0.340.56 checked response-observation binding
 
 The explicit one-attempt paper boundary now appends a returned POST response only while the request journal remains at the exact checked marker head and payload. That same transaction returns the committed observation head, and provider-budget completion binds exactly that head instead of a later journal sample. A concurrent original-ID lookup before the append produces one retained uncertain POST and no automatic resend; a lookup after the append cannot replace the successful budget record's request head. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.

@@ -2,11 +2,11 @@
 
 ## Candidate update on 2026-10-30
 
-Current candidate: v0.340.56, based on published v0.340.55 source `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79`. v0.340.56 atomically checks the exact marked request head and payload while appending the returned paper POST response, then binds the exact committed observation head into provider-budget completion. A concurrent lookup cannot be silently composed with the response or substituted as the successful budget request head. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.55 security 41071953019, research/browser/evidence 41071952902 and Windows 41071952842 passed. Fresh exact-source v0.340.56 results and actual authorized paper-account acceptance remain required.
+Current candidate: v0.340.57, based on published v0.340.56 source `8d1dc322f25e9757d51eae197dc14f324c9a2d4e`. v0.340.57 accepts provider-budget response completion only after stable exact cold replay proves its committed token, account, client order, request/payload/observation heads, terminal outcome and one-POST count. A lost local completion acknowledgement cannot repeat the provider request; an uncommitted or malformed completion remains pending and review-blocked. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.56 hosted workflow results were absent at recovery; exact-source v0.340.55 security 41071953019, research/browser/evidence 41071952902 and Windows 41071952842 passed. Fresh exact-source v0.340.57 results and actual authorized paper-account acceptance remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This defensive broker-paper boundary does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-The rough weighted implementation estimate is intentionally unchanged because this defensive local boundary does not integrate a new accepted external gate. Local and hosted v0.340.56 validation must be recorded separately; passing tests cannot substitute for actual-account, sustained-market, independent-review or owner acceptance.
+The rough weighted implementation estimate is intentionally unchanged because this defensive local boundary does not integrate a new accepted external gate. Local and hosted v0.340.57 validation must be recorded separately; passing tests cannot substitute for actual-account, sustained-market, independent-review or owner acceptance.
 
 ## Prior v0.340.48 candidate record
 

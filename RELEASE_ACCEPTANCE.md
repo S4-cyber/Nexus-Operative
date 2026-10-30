@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.57 response-budget completion cold replay
+
+Mandatory injected evidence now requires the successful paper response-budget record to be accepted only after stable exact cold replay binds the reservation token, account, client order, request-before head, payload, committed response-observation head, terminal outcome and one actual POST. A lost-acknowledgement control commits the completion and then raises; it must recover locally with exactly one provider POST. Pre-commit failure and a malformed uncommitted return must expose the fixed sanitized error, retain the pending attempt and block another submit. This is a local durability boundary test, not broker acceptance.
+
+Published v0.340.56 source is `8d1dc322f25e9757d51eae197dc14f324c9a2d4e`; no exact-source hosted workflow runs were present at recovery. Exact-source v0.340.55 `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79` passed security 41071953019, research/browser/evidence 41071952902 and Windows 41071952842. Fresh v0.340.57 workflows remain mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local validation passed 4,648 tests with one expected non-Windows skip and one warning; the final response-budget/release/version/installer focus passed 271. All sixteen offline profiles and saved evidence verified against the current 395-file source fingerprint. These results do not promote any external acceptance gate.
+
 ## v0.340.56 checked response-observation binding
 
 Mandatory injected evidence now requires the paper POST response append to atomically retain the exact request marker head and payload, and requires provider-budget completion to bind the exact committed response-observation head. A negative control advances the request through a valid original-ID lookup between response receipt and append; it must expose the fixed post-response durable-state error, retain exactly one uncertain POST and block resend. A second control advances the request only after observation and proves that the successful budget record still references the observation head. This is a local boundary test, not broker acceptance.

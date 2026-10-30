@@ -89,6 +89,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['request_and_post_budget_file_identities_pinned']
     assert result['post_reservation_durable_heads_rechecked']
     assert result['response_observation_head_bound_to_post_budget']
+    assert result['response_budget_completion_cold_replayed']
     assert result['alpaca_post_budget_scope_required']
     assert result['paper_order_response_observed']
     assert result['source']=='INJECTED_UNATTESTED'
@@ -327,6 +328,53 @@ def test_post_budget_binds_exact_observation_head_not_later_lookup_head(
     assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
     assert history[0]['request_after_head_sha256']==result['journal']['head_sha256']
     assert history[0]['request_after_head_sha256']!=current
+
+
+def test_lost_post_budget_completion_ack_cold_replays_without_second_post(
+        prepared,monkeypatch):
+    original=PaperProviderPostBudget.finish
+    def lose_ack(self,*args,**kwargs):
+        original(self,*args,**kwargs)
+        raise RuntimeError('private lost completion acknowledgement')
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',lose_ack)
+    opener=Opener();result=submit(prepared,opener)
+    history=prepared[2].history()
+    assert result['response_budget_completion_cold_replayed'] is True
+    assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
+    assert result['post_budget_head_sha256']==history[0]['after_head_sha256']
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+def test_uncommitted_post_budget_completion_is_fixed_review_block(
+        prepared,monkeypatch):
+    def fail_before_commit(*_args,**_kwargs):
+        raise RuntimeError('private completion storage detail')
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',fail_before_commit)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+            match='POST_BUDGET_COMPLETION_UNCERTAIN') as error:
+        submit(prepared,opener)
+    assert 'private completion storage detail' not in str(error.value)
+    retained=prepared[0].recovery()['requests'][0]
+    state=prepared[2].inspect()
+    assert retained['snapshot']['status']=='new'
+    assert state['pending_token'] is not None and state['completed_attempts']==0
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+def test_uncommitted_malformed_post_budget_ack_is_not_trusted(
+        prepared,monkeypatch):
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',
+        lambda *_args,**_kwargs:'f'*64)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_BUDGET_COMPLETION_UNCERTAIN'):
+        submit(prepared,opener)
+    assert prepared[2].inspect()['pending_token'] is not None
+    assert prepared[2].history()==()
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
 
 
 @pytest.mark.parametrize('final_account,final_positions',[

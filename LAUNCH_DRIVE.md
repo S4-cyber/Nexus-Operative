@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.59 exact failure-path budget closure replay
+
+The explicit one-attempt paper boundary now accepts an exceptional provider-budget safety closure only after two stable read-only replays prove the exact reservation token, account/client identity, request/payload heads, intended `NOT_SENT` or `OUTCOME_UNKNOWN` outcome and zero-or-one actual POST count. The write-side return is never trusted. A committed closure whose acknowledgement is lost preserves the original sanitized failure without another provider request; an uncommitted, malformed or unstable closure returns fixed uncertainty and retains mandatory review. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.
+
+Published v0.340.58 source is `6165d637f1642e624a6fe728bb6f3b48c35a9e58`; exact-source security 41097269450, research/browser/evidence 41097269551 and Windows EXE/installer/reinstall/uninstall 41097269544 passed. Fresh v0.340.59 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local durability change does not close an external gate or predict profit.
+
+Local validation passed 4,656 tests with one expected non-Windows skip and one warning; the final paper-budget/release/version/installer focus passed 263. All sixteen offline profiles and saved-evidence verification passed against 395 source files / `ece899a7bfe8008509c78149ad98ab43dff63bf7019ba71975a9bf17b637e4cb`. Compilation, dependency integrity, roadmap equality, Portal syntax, fourteen controller checks and wheel packaging passed. Fresh hosted exact-source checks remain required.
+
 ## v0.340.58 exact response-observation cold replay
 
 The explicit one-attempt paper boundary now accepts a returned response only after two stable read-only receipt replays validate the complete current request-journal chain and prove the unique exact `OBSERVE` event immediately following the durable submission marker. Prefix replay binds the canonical response, request payload, client order and normalized observed snapshot to that exact event even if a later valid lookup advances the chain. A lost local observation acknowledgement is recovered without a second provider request. A missing, different or uncommitted event retains one attempted POST as `OUTCOME_UNKNOWN` with a fixed sanitized error. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.58'
+REVISION = '0.340.59'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -167,6 +167,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the internal single-attempt paper POST boundary now requires two identical normalized account and BTC-position admission samples around the asset read, so any late permission, pending-funds/fee, cash/buying-capacity or BTC quantity/availability change fails before its durable reservations and only allowed POST' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every exceptional single-attempt POST-budget closure now ignores its write-side return and requires two stable read-only replays of the exact terminal token, account/client, request/payload heads, outcome and actual-POST count before preserving the original failure; lost acknowledgements recover locally, while missing, malformed or unstable closure state remains pending or review-blocked under a fixed uncertainty diagnostic without another provider request' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 # Product milestones complement the nine technical evidence tracks above.
 # These are implementation/acceptance states, never permissions to move money.
 DELIVERY_STAGES = (
@@ -229,6 +233,10 @@ DELIVERY_STAGES = tuple((dict(stage,
 
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Request response observation now has a read-only exact-event receipt that validates the complete current chain and replays the prefix through the OBSERVE event immediately following the submission marker. Stable cold replay recovers a lost local observation acknowledgement without another provider POST; missing, different or uncommitted events retain OUTCOME_UNKNOWN review. This is local injected durability evidence, not provider acceptance or broker-wide coordination.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Failure-path provider-budget closure now receives the same exact cold-replay treatment as successful response completion: the intended NOT_SENT or OUTCOME_UNKNOWN terminal row must bind the precise reservation and actual POST count before the original failure is preserved. Lost acknowledgements do not repeat provider IO; unproved closure returns fixed uncertainty. This remains local injected durability evidence, not broker or account acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -331,7 +339,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.58 accepts a returned paper response only after stable cold replay proves the exact OBSERVE event immediately following the durable submission marker while validating the complete current request-journal chain and replaying that prefix. A lost local observation acknowledgement cannot cause another provider POST; a missing, different or uncommitted event retains OUTCOME_UNKNOWN review with a fixed error. This is local shared-store durability, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.57 hosted workflow results were absent at recovery; exact-source v0.340.55 security, research/browser/evidence and Windows workflows passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.59 accepts every exceptional paper POST-budget closure only after stable read-only replay proves the exact reservation, account/client, request/payload heads, intended NOT_SENT or OUTCOME_UNKNOWN result and actual POST count. A locally committed closure whose acknowledgement was lost preserves the original sanitized failure without another provider POST; an uncommitted, malformed or unstable closure produces fixed POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN review instead of trusting the write return. This is local shared-store durability, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.58 security 41097269450, research/browser/evidence 41097269551 and Windows 41097269544 passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -979,6 +979,7 @@ def _validate(profile, result):
              'response_observation_head_bound_to_post_budget',
              'response_observation_cold_replayed',
              'response_budget_completion_cold_replayed',
+             'safety_closure_cold_replayed',
              'alpaca_post_budget_scope_required',
              'late_risk_change_blocked_before_reservation',
              'post_reservation_risk_change_blocked_before_post',

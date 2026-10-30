@@ -280,7 +280,7 @@ def test_post_marker_budget_head_disagreement_is_fail_closed(
     monkeypatch.setattr(PaperProviderPostBudget,'inspect',inspect)
     opener=Opener()
     with pytest.raises(module.PaperSubmissionError,
-                       match='POST_RESERVATION_DURABLE_STATE_CHANGED'):
+                       match='POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN'):
         submit(prepared,opener)
     retained=journal.recovery()['requests'][0]
     history=budget.history()
@@ -421,6 +421,69 @@ def test_uncommitted_malformed_post_budget_ack_is_not_trusted(
     assert prepared[2].inspect()['pending_token'] is not None
     assert prepared[2].history()==()
     assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+def test_lost_not_sent_safety_closure_ack_preserves_original_failure(
+        prepared,monkeypatch):
+    original=PaperProviderPostBudget.finish
+    def lose_ack(self,*args,**kwargs):
+        original(self,*args,**kwargs)
+        raise RuntimeError('private lost safety closure acknowledgement')
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',lose_ack)
+    def stop_after_marker():
+        retained=prepared[0].recovery()['requests'][0]
+        return retained['submission_attempt_marked']
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='EMERGENCY_STOP_ACTIVE') as error:
+        submit(prepared,opener,emergency_stop_check=stop_after_marker)
+    assert 'private lost safety closure acknowledgement' not in str(error.value)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+
+
+def test_lost_unknown_safety_closure_ack_preserves_original_failure(
+        prepared,monkeypatch):
+    original=PaperProviderPostBudget.finish
+    def lose_ack(self,*args,**kwargs):
+        original(self,*args,**kwargs)
+        raise RuntimeError('private lost safety closure acknowledgement')
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',lose_ack)
+    opener=Opener([account(),[],asset(),account(),[],account(),[],
+                   URLError('private transport detail')])
+    with pytest.raises(module.PaperSubmissionError,
+                       match='OUTCOME_UNKNOWN_LOOKUP_REQUIRED') as error:
+        submit(prepared,opener)
+    assert 'private lost safety closure acknowledgement' not in str(error.value)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='OUTCOME_UNKNOWN'
+    assert history[0]['actual_posts']==1
+    assert prepared[2].inspect()['review_required'] is True
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+@pytest.mark.parametrize('finish_result',[RuntimeError('private closure detail'),'f'*64])
+def test_uncommitted_safety_closure_is_fixed_pending_review(
+        prepared,monkeypatch,finish_result):
+    def uncommitted(*_args,**_kwargs):
+        if isinstance(finish_result,BaseException):
+            raise finish_result
+        return finish_result
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',uncommitted)
+    def stop_after_marker():
+        retained=prepared[0].recovery()['requests'][0]
+        return retained['submission_attempt_marked']
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+            match='POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN') as error:
+        submit(prepared,opener,emergency_stop_check=stop_after_marker)
+    assert 'private closure detail' not in str(error.value)
+    state=prepared[2].inspect()
+    assert state['pending_token'] is not None and state['completed_attempts']==0
+    assert prepared[2].history()==()
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
 
 
 @pytest.mark.parametrize('final_account,final_positions',[

@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.59 exact failure-path budget closure replay
+
+Exceptional paper POST-budget closure is now accepted only after stable read-only replay proves the exact reservation, identity, request/payload heads, intended conservative outcome and actual POST count. Lost local acknowledgements preserve the original sanitized failure without another provider request. Uncommitted, malformed or unstable closure state yields fixed uncertainty and mandatory review. This adds no Portal or credential authority and changes no OFF default, limit, exit or independent emergency-cut behavior.
+
+Published v0.340.58 source is `6165d637f1642e624a6fe728bb6f3b48c35a9e58`; exact-source security 41097269450, research/browser/evidence 41097269551 and Windows 41097269544 passed. Fresh v0.340.59 workflows remain mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local validation passed 4,656 tests with one expected non-Windows skip and one warning; sixteen offline profiles and saved-evidence verification passed against the exact 395-file source fingerprint. These local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.58 exact response-observation cold replay
 
 Mandatory injected evidence now requires the paper response to be accepted only after a stable read-only receipt validates the full current journal and replays the exact prefix ending at the `OBSERVE` event immediately after the checked submission marker. Positive controls must recover a committed observation whose local acknowledgement was lost with exactly one provider POST and must preserve that observation head after a later lookup. Negative controls must reject a mismatched response, pre-commit observation failure and malformed uncommitted result while retaining one `OUTCOME_UNKNOWN` POST and blocking resend. This is a local durability boundary test, not broker acceptance.

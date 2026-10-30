@@ -242,25 +242,35 @@ def _reservation_state_check(journal, post_budget, *, client_order_id,
         _fail('POST_RESERVATION_DURABLE_STATE_CHANGED')
 
 
-def _response_budget_completion_head(post_budget, store_binding_check, *,
-        token, expected_account_id, client_order_id, expected_request_before_head,
-        expected_payload_sha256, expected_observation_head):
-    """Cold-replay one exact response completion without provider IO."""
+def _post_budget_completion_head(post_budget, *, token, expected_account_id,
+        client_order_id, expected_request_before_head, expected_payload_sha256,
+        expected_request_after_head, expected_outcome, expected_actual_posts,
+        failure_code, store_binding_check=None):
+    """Cold-replay one exact terminal budget row without provider IO.
+
+    The write-side acknowledgement is deliberately ignored.  This proves both
+    normal response completion and the safety closure performed while another
+    exception is active.  The latter cannot require the cross-store binding
+    callback because a binding failure may be the exception being preserved;
+    the exact attempt token still binds the immutable BEGIN row and ownership.
+    """
     try:
-        store_binding_check()
+        if store_binding_check is not None:
+            store_binding_check()
         state = post_budget.inspect()
         history = post_budget.history()
         state_again = post_budget.inspect()
         history_again = post_budget.history()
-        store_binding_check()
+        if store_binding_check is not None:
+            store_binding_check()
         expected_account = hashlib.sha256(expected_account_id.encode()).hexdigest()
         expected_client = hashlib.sha256(client_order_id.encode()).hexdigest()
         stable = (state == state_again and history == history_again and
             len(history) >= 1 and state['pending_token'] is None and
             state['head_sha256'] == history[-1]['after_head_sha256'] and
             state['completed_attempts'] == len(history) and
-            state['last_outcome'] == 'RESPONSE_OBSERVED' and
-            state['review_required'] is False and
+            state['last_outcome'] == expected_outcome and
+            state['review_required'] is (expected_outcome == 'OUTCOME_UNKNOWN') and
             history[-1]['token'] == token and
             history[-1]['account_sha256'] == expected_account and
             history[-1]['client_order_sha256'] == expected_client and
@@ -268,13 +278,13 @@ def _response_budget_completion_head(post_budget, store_binding_check, *,
                 expected_request_before_head and
             history[-1]['payload_sha256'] == expected_payload_sha256 and
             history[-1]['request_after_head_sha256'] ==
-                expected_observation_head and
-            history[-1]['outcome'] == 'RESPONSE_OBSERVED' and
-            history[-1]['actual_posts'] == 1)
-    except Exception:
+                expected_request_after_head and
+            history[-1]['outcome'] == expected_outcome and
+            history[-1]['actual_posts'] == expected_actual_posts)
+    except BaseException:
         stable = False
     if not stable:
-        _fail('POST_BUDGET_COMPLETION_UNCERTAIN')
+        _fail(failure_code)
     return history[-1]['after_head_sha256']
 
 
@@ -549,11 +559,28 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             observation_head = observed['head_sha256']
         except BaseException:
             outcome = 'OUTCOME_UNKNOWN' if session.post_attempted else 'NOT_SENT'
-            bound_budget.finish(token, outcome=outcome,
-                request_after_head_sha256=bound_journal.recovery()['head_sha256'],
-                actual_posts=int(session.post_attempted),
-                admission=lambda: session.previous[0],
-                ownership=owner)
+            request_after_head = None
+            try:
+                request_after_head = bound_journal.recovery()['head_sha256']
+                bound_budget.finish(token, outcome=outcome,
+                    request_after_head_sha256=request_after_head,
+                    actual_posts=int(session.post_attempted),
+                    admission=lambda: session.previous[0],
+                    ownership=owner)
+            except BaseException:
+                # A commit acknowledgement can be lost while preserving the
+                # failure that caused this safety closure.  Trust neither the
+                # return value nor the raised detail; prove the exact row below.
+                pass
+            _post_budget_completion_head(bound_budget, token=token,
+                expected_account_id=expected_account_id,
+                client_order_id=client_order_id,
+                expected_request_before_head=expected_head,
+                expected_payload_sha256=expected_payload_sha256,
+                expected_request_after_head=request_after_head,
+                expected_outcome=outcome,
+                expected_actual_posts=int(session.post_attempted),
+                failure_code='POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN')
             raise
         try:
             bound_budget.finish(token, outcome='RESPONSE_OBSERVED',
@@ -564,13 +591,15 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             # provider POST: accept only an exact cold replay of the completed
             # local result; otherwise leave the pending attempt review-blocked.
             pass
-        post_budget_head = _response_budget_completion_head(bound_budget,
-            store_binding_check, token=token,
+        post_budget_head = _post_budget_completion_head(bound_budget,
+            store_binding_check=store_binding_check, token=token,
             expected_account_id=expected_account_id,
             client_order_id=client_order_id,
             expected_request_before_head=expected_head,
             expected_payload_sha256=expected_payload_sha256,
-            expected_observation_head=observation_head)
+            expected_request_after_head=observation_head,
+            expected_outcome='RESPONSE_OBSERVED', expected_actual_posts=1,
+            failure_code='POST_BUDGET_COMPLETION_UNCERTAIN')
     store_binding_check()
     return dict(mode='EXPLICIT_SINGLE_ATTEMPT_ALPACA_PAPER_SUBMISSION',
         source='INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_WRITE',
@@ -687,6 +716,7 @@ def fixture_report():
         reserved_opener=Opener(reserved_journal,
             final_account=dict(account,cash='998'))
         post_reservation_change_blocked=False
+        safety_closure_cold_replayed=False
         try:submit_once(reserved_journal,'nx_submit_fixture',key,secret,
             **options(reserved_selected,reserved_opener,reserved_budget))
         except PaperSubmissionError as error:
@@ -699,6 +729,22 @@ def fixture_report():
                 and history[0]['actual_posts']==0
                 and not any(request.get_method()=='POST'
                             for request in reserved_opener.requests))
+            if len(history)==1:
+                try:
+                    replayed_head=_post_budget_completion_head(reserved_budget,
+                        token=history[0]['token'],expected_account_id=account_id,
+                        client_order_id='nx_submit_fixture',
+                        expected_request_before_head=reserved_selected['head_sha256'],
+                        expected_payload_sha256=
+                            reserved_selected['plan']['payload_sha256'],
+                        expected_request_after_head=
+                            history[0]['request_after_head_sha256'],
+                        expected_outcome='NOT_SENT',expected_actual_posts=0,
+                        failure_code='POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN')
+                    safety_closure_cold_replayed=(
+                        replayed_head==history[0]['after_head_sha256'])
+                except PaperSubmissionError:
+                    pass
         binding_journal,binding_selected=prepared(root/'binding')
         binding_budget=PaperProviderPostBudget(root/'binding-post-budget.sqlite3')
         binding_request_path=binding_journal.path
@@ -823,6 +869,7 @@ def fixture_report():
             late_risk_change_blocked_before_reservation=late_risk_change_blocked,
             post_reservation_risk_change_blocked_before_post=
                 post_reservation_change_blocked,
+            safety_closure_cold_replayed=safety_closure_cold_replayed,
             response_retained=retained['snapshot']['status']=='new',
             transport_loss_preserved_for_original_id_lookup=loss_preserved,
             local_provider_post_budget_retained=budget.inspect()['completed_attempts']==1 and

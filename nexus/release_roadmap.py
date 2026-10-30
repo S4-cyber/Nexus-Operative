@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.51'
+REVISION = '0.340.52'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -212,7 +212,7 @@ DELIVERY_STAGES = tuple((dict(stage,
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 DELIVERY_STAGES = tuple((dict(stage,
-    progress=stage['progress'] + ' The paper POST preflight now re-samples and requires stable normalized account permissions/funds and BTC position availability immediately before reservation; this remains sequential injected evidence, not an atomic or accepted broker snapshot.')
+    progress=stage['progress'] + ' The paper POST preflight now requires two stable normalized account/position samples before reservation and a third matching sample after durable request/budget reservations immediately before the single POST; a late disagreement sends nothing and leaves the request lookup-only. This remains sequential injected evidence, not an atomic or accepted broker snapshot.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -315,7 +315,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.51 hardens the explicit single-attempt paper POST boundary with two matching account and BTC-position admission samples around the asset read. A late account block, pending-funds or fee change, reduced cash/buying capacity, or changed BTC quantity/availability now stops before either durable reservation or POST. The reads remain sequential and unverified, so this is not an atomic broker snapshot, provider/account acceptance, settled-funds proof or routing permission. No Portal route, saved write credential, automatic retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.50 security, research/browser/evidence and Windows workflows passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.52 adds a third normalized account/BTC-position risk sample after both durable local reservations and immediately before the only explicit paper POST. A disagreement sends nothing, records the provider budget as NOT_SENT and permanently leaves the request on original-client-ID lookup-only recovery. The reads remain sequential and unverified, so this is not an atomic broker snapshot, provider/account acceptance, settled-funds proof or routing permission. No Portal route, saved write credential, automatic retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.51 security, research/browser/evidence and Windows workflows passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

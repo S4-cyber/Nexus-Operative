@@ -2,7 +2,7 @@
 
 ## Candidate update on 2026-10-30
 
-Current candidate: v0.340.51, based on published v0.340.50 source `a4decf46f466990b701f9ad041779406b6ba8abd`. v0.340.51 makes the internal single-attempt paper POST require two matching normalized account/BTC-position risk samples before durable reservation. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.50 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.51 results and actual authorized paper-account acceptance remain required.
+Current candidate: v0.340.52, based on published v0.340.51 source `32112ecb4161093565b27ffe0ba69cd3f042005d`. v0.340.52 makes the internal single-attempt paper POST require a third matching normalized account/BTC-position risk sample after durable reservations. A late disagreement sends nothing and leaves the consumed request lookup-only. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.51 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.52 results and actual authorized paper-account acceptance remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This defensive broker-paper boundary does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 

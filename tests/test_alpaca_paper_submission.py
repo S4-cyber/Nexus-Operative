@@ -44,7 +44,8 @@ class Reply:
 class Opener:
     def __init__(self, values=None):
         positions=[dict(symbol='BTC/USD',asset_class='crypto',side='long',qty='3',qty_available='3')]
-        self.values=list(values or [account(),positions,asset(),account(),positions,response()])
+        self.values=list(values or [account(),positions,asset(),account(),positions,
+                                    account(),positions,response()])
         self.requests=[];self.responses=[]
     def open(self, request, timeout):
         self.requests.append((request,timeout)); value=self.values[len(self.requests)-1]
@@ -82,6 +83,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['durable_unknown_outcome_marker_committed']
     assert result['account_and_position_capacity_resampled']
     assert result['sequential_preflight_stable']
+    assert result['post_reservation_risk_resampled']
     assert result['paper_order_response_observed']
     assert result['source']=='INJECTED_UNATTESTED'
     assert result['journal']['recovery_state']=='OBSERVED_NONTERMINAL_REVIEW_REQUIRED'
@@ -90,9 +92,10 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
         'ledger_applied','live_orders_enabled','money_movement_enabled','release_approved'))
     assert [request.full_url for request,_ in opener.requests]==[
         module.ACCOUNT_URL,module.POSITIONS_URL,module.ASSET_URL,
-        module.ACCOUNT_URL,module.POSITIONS_URL,module.ORDER_URL]
+        module.ACCOUNT_URL,module.POSITIONS_URL,module.ACCOUNT_URL,
+        module.POSITIONS_URL,module.ORDER_URL]
     assert [request.get_method() for request,_ in opener.requests]==[
-        'GET','GET','GET','GET','GET','POST']
+        'GET','GET','GET','GET','GET','GET','GET','POST']
     posted=json.loads(opener.requests[-1][0].data)
     assert posted==plan()['payload']
     assert all(request.get_header('Apca-api-key-id')==KEY and
@@ -172,8 +175,32 @@ def test_stop_after_marker_never_posts_and_never_rearms(prepared,monkeypatch):
         submit(prepared,Opener())
 
 
+@pytest.mark.parametrize('final_account,final_positions',[
+    (account(cash='999'), []),
+    (account(), [dict(symbol='BTC/USD',asset_class='crypto',side='long',
+                      qty='3',qty_available='2')]),
+])
+def test_post_reservation_risk_change_never_posts_and_never_rearms(
+        prepared, final_account, final_positions):
+    initial_positions=[dict(symbol='BTC/USD',asset_class='crypto',side='long',
+                            qty='3',qty_available='3')]
+    opener=Opener([account(),initial_positions,asset(),account(),initial_positions,
+                   final_account,final_positions])
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_RESERVATION_STATE_CHANGED'):
+        submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    assert retained['lookup_by_original_client_id_required']
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+    assert prepared[2].history()[0]['outcome']=='NOT_SENT'
+    assert prepared[2].history()[0]['actual_posts']==0
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
 def test_post_transport_loss_preserves_unknown_and_cannot_retry(prepared):
-    opener=Opener([account(),[],asset(),account(),[],URLError('private transport detail')])
+    opener=Opener([account(),[],asset(),account(),[],account(),[],
+                   URLError('private transport detail')])
     with pytest.raises(module.PaperSubmissionError,match='OUTCOME_UNKNOWN_LOOKUP_REQUIRED') as error:
         submit(prepared,opener)
     assert 'private transport detail' not in str(error.value)
@@ -188,7 +215,8 @@ def test_post_transport_loss_preserves_unknown_and_cannot_retry(prepared):
 
 
 def test_invalid_post_response_preserves_unknown_without_secret_or_body_echo(prepared):
-    opener=Opener([account(),[],asset(),account(),[],Reply({},raw=b'{"secret":"PRIVATE_BODY"}')])
+    opener=Opener([account(),[],asset(),account(),[],account(),[],
+                   Reply({},raw=b'{"secret":"PRIVATE_BODY"}')])
     with pytest.raises(ValueError) as error:submit(prepared,opener)
     assert 'PRIVATE_BODY' not in str(error.value) and KEY not in str(error.value)
     retained=prepared[0].recovery()['requests'][0]

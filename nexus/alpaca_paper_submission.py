@@ -28,7 +28,7 @@ ASSET_URL = inspection.ASSET_URL
 ORDER_URL = contract.PAPER_ORDERS_URL
 REQUEST_TIMEOUT = 4
 TOTAL_SECONDS = 16
-MAX_REQUESTS = 6
+MAX_REQUESTS = 8
 MAX_BODY = inspection.MAX_BODY
 
 
@@ -330,9 +330,17 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 expected_payload_sha256=expected_payload_sha256, admission=session.evaluated_at)
             if marker.get('attempt_marker_commit_observed') is not True:
                 _fail('ATTEMPT_MARKER_UNCONFIRMED')
-            # This checkpoint is intentionally after both durable reservations.
-            # A stop or lost permission cannot re-arm the request.
-            session.checkpoint()
+            # Re-sample after both durable reservations and immediately before
+            # the only POST.  A disagreement consumes the local request marker
+            # as lookup-only; it never re-arms or sends the prepared request.
+            final_account = session.request(ACCOUNT_URL)
+            final_positions = session.request(POSITIONS_URL)
+            final_risk = _risk_snapshot(final_account, final_positions,
+                                        expected_account_id)
+            if final_risk != current_risk:
+                _fail('POST_RESERVATION_STATE_CHANGED')
+            _account_and_funds(final_account, final_positions,
+                               expected_account_id, payload)
             if credential_check() is not True:
                 _fail('CREDENTIALS_CHANGED_AFTER_MARKER')
             raw = session.request(ORDER_URL, payload=payload)
@@ -355,6 +363,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         durable_unknown_outcome_marker_committed=True,
         account_and_position_capacity_resampled=True,
         sequential_preflight_stable=True,
+        post_reservation_risk_resampled=True,
         paper_order_response_observed=True, journal=observed,
         post_budget_head_sha256=post_budget_head,
         local_provider_post_pacing=True, broker_wide_quota_verified=False,
@@ -363,7 +372,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks and two matching account/BTC-position admission samples. Durable request and shared-local-provider budget reservations precede IO; any lost/ambiguous outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential preflight reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Durable request and shared-local-provider budget reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -394,11 +403,14 @@ def fixture_report():
         def geturl(self):return self.url
         def read(self,size):return self.body.read(size)
     class Opener:
-        def __init__(self,journal,fail=False,late_account=None,late_positions=None):
+        def __init__(self,journal,fail=False,late_account=None,late_positions=None,
+                     final_account=None,final_positions=None):
             self.journal=journal;self.fail=fail;self.requests=[]
             self.values=[account,positions,asset,
                 account if late_account is None else late_account,
-                positions if late_positions is None else late_positions,raw]
+                positions if late_positions is None else late_positions,
+                account if final_account is None else final_account,
+                positions if final_positions is None else final_positions,raw]
             self.marker_before_post=False
         def open(self,request,timeout):
             self.requests.append(request)
@@ -448,6 +460,23 @@ def fixture_report():
                 and not changed_journal.recovery()['requests'][0]['submission_attempt_marked']
                 and changed_budget.inspect()['attempts']==0
                 and not any(request.get_method()=='POST' for request in changed_opener.requests))
+        reserved_journal,reserved_selected=prepared(root/'reserved-changed')
+        reserved_budget=PaperProviderPostBudget(root/'reserved-changed-post-budget.sqlite3')
+        reserved_opener=Opener(reserved_journal,
+            final_account=dict(account,cash='998'))
+        post_reservation_change_blocked=False
+        try:submit_once(reserved_journal,'nx_submit_fixture',key,secret,
+            **options(reserved_selected,reserved_opener,reserved_budget))
+        except PaperSubmissionError as error:
+            history=reserved_budget.history()
+            post_reservation_change_blocked=(
+                str(error)=='PAPER_SUBMISSION_POST_RESERVATION_STATE_CHANGED'
+                and reserved_journal.recovery()['requests'][0]
+                    ['lookup_by_original_client_id_required']
+                and len(history)==1 and history[0]['outcome']=='NOT_SENT'
+                and history[0]['actual_posts']==0
+                and not any(request.get_method()=='POST'
+                            for request in reserved_opener.requests))
         repeat_blocked=False
         try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
@@ -457,7 +486,11 @@ def fixture_report():
             account_and_position_capacity_resampled=
                 result['account_and_position_capacity_resampled'] is True and
                 result['sequential_preflight_stable'] is True,
+            post_reservation_risk_resampled=
+                result['post_reservation_risk_resampled'] is True,
             late_risk_change_blocked_before_reservation=late_risk_change_blocked,
+            post_reservation_risk_change_blocked_before_post=
+                post_reservation_change_blocked,
             response_retained=retained['snapshot']['status']=='new',
             transport_loss_preserved_for_original_id_lookup=loss_preserved,
             local_provider_post_budget_retained=budget.inspect()['completed_attempts']==1 and

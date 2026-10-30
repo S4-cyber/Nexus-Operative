@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.52 post-reservation paper risk resampling
+
+The injected release fixture now requires proof that the explicit single-attempt transport takes a third matching normalized account/BTC-position sample after its durable provider-budget and request-marker commits. A changed final sample must produce no POST, retain original-client-ID lookup-only recovery and close the local provider attempt as `NOT_SENT` with zero actual POSTs. This is a fail-closed boundary test, not broker acceptance.
+
+Exact-source v0.340.51 `32112ecb4161093565b27ffe0ba69cd3f042005d` passed security 41040640425, research/browser/evidence 41040640424 and Windows 41040640392. Fresh v0.340.52 workflows remain mandatory. Sequential injected samples do not prove provider source, account ownership, settled funds, broker-wide exclusion, execution/fee/hold reconciliation, routing authority, market realism, profitability or release acceptance.
+
 ## v0.340.51 stable paper pre-submit risk resampling
 
 The internal paper-only POST boundary must perform exactly two account/position admission samples around the asset read and require their normalized risk state to match before either durable reservation. Negative controls must prove that a late account block, reduced buying capacity, balance change or BTC availability change causes no request marker, no provider-budget attempt and no POST. The successful fixed sequence remains one explicitly confirmed paper attempt with permission, emergency-stop, credential and clock fencing at every boundary.

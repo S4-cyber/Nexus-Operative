@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.52 post-reservation paper risk resampling
+
+The explicit paper-only single-attempt boundary now takes one final account and positions sample after durable provider-budget/request reservations and immediately before POST. A normalized risk disagreement sends nothing, closes the local attempt as `NOT_SENT` with zero POSTs and permanently keeps the request on original-client-ID lookup-only recovery. The existing OFF defaults, caps, exits and independent emergency-cut latch are unchanged; no Portal control or saved write credential is added.
+
+Exact-source v0.340.51 `32112ecb4161093565b27ffe0ba69cd3f042005d` passed security 41040640425, research/browser/evidence 41040640424 and Windows 41040640392. Fresh v0.340.52 exact-source workflows and authorized paper-account/private-volume acceptance remain required. The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; this defensive local integration does not close an external gate.
+
 ## v0.340.51 stable paper pre-submit risk resampling
 
 The internal explicitly confirmed single-attempt Alpaca paper POST now requires two matching normalized account/BTC-position admission samples around the asset read. Any late permission, cash/buying-power, pending-transfer/accrued-fee or BTC quantity/availability change stops before the shared-local provider reservation, request attempt marker and POST. The six-request maximum remains one fixed account/positions/asset/account/positions/POST sequence with no loop or retry. No Portal control or modifiable parameter changed, so the seven beginner tabs and black/bright-purple bottom-right hover help are unchanged.

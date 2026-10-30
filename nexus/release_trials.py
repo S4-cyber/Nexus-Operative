@@ -972,7 +972,9 @@ def _validate(profile, result):
             transport['passed'] is True and all(transport[k] is True for k in
             ('marker_committed_before_post','exactly_one_post','response_retained',
              'account_and_position_capacity_resampled',
+             'post_reservation_risk_resampled',
              'late_risk_change_blocked_before_reservation',
+             'post_reservation_risk_change_blocked_before_post',
              'transport_loss_preserved_for_original_id_lookup','repeat_submission_blocked',
              'output_never_sendable')),'SUBMISSION_TRANSPORT_FENCES')
         _require(all(transport[k] is False for k in ('actual_provider_access','actual_vault_access',

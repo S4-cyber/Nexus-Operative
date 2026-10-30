@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.51 (pre-release).** This build fail-closes the internal single-attempt paper POST when two sequential account/BTC-position admission samples disagree. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Sequential samples are not atomic broker evidence or settled-funds proof. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.52 (pre-release).** This build adds a final account/BTC-position risk sample after durable local reservations and before the internal single-attempt paper POST. A disagreement sends nothing and leaves the consumed request lookup-only. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Sequential samples are not atomic broker evidence or settled-funds proof. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.52 post-reservation paper risk resampling
+
+After the shared-local provider budget and durable request marker commit, the transport re-reads the fixed paper account and positions endpoints. The normalized admission state must exactly match the immediately preceding sample before the single POST. Any change closes the local budget as `NOT_SENT`, records zero actual POSTs and permanently retains original-client-ID recovery instead of retrying or re-arming the request.
+
+Exact-source v0.340.51 `32112ecb4161093565b27ffe0ba69cd3f042005d` passed public security run 41040640425, research/browser/evidence run 41040640424 and Windows EXE/installer/reinstall/uninstall run 41040640392. Fresh v0.340.52 workflows and actual authorized paper-account acceptance remain required. Three matching sequential samples are not an atomic snapshot, provider/source attestation, broker-wide ownership, fee/hold/funds reconciliation, routing permission or profitability evidence.
 
 ## v0.340.51 stable paper pre-submit risk resampling
 

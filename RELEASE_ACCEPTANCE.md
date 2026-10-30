@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.43 accepted-history reconciliation identity and store-binding proof
+
+Accepted-history reconciliation must bind the pacing, retained-activity and acceptance journals by pathname identity and bounded fingerprints before constructing the three retained store objects. Both the inner review and four-observation stability guard must recheck the complete set and exact store path/account bindings after every normal or exceptional semantic-reader exit. Same-byte replacement and any store retarget must receive fixed refusals. Mandatory reconciliation evidence must require both guarantees. Runtime authority remains unchanged.
+
+Exact-source v0.340.42 `065233736dbff02adc3ee72aa5085755cd016096` passed public security run 40985178168, research safety/browser/evidence run 40985178253 and Windows EXE/installer/reinstall/uninstall run 40985178164. Fresh exact-source v0.340.43 workflows remain mandatory.
+
+Local pre-publication validation passed 4,556 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the accepted-history reconciliation/release focus passed 148 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `940b767a000d2c0ebc922b59a731b821d1929cc2f8fbfbb95096e53fad6f2d69`; `validation/release_trials_0_340_43.json` SHA-256 is `517593490458f94eae78d7e6e805b2864fe968d364d05d50d0a404fa8378c97f`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks and the v0.340.43 wheel build passed; wheel SHA-256 is `e1892cfe9c51f202a7faa51dbc55c314cfe7acbec3d1feb07ad7b7e51c0673c7`. The 747-path public artifact audit and targeted credential-pattern scan found no findings. Fresh exact-source hosted workflows remain mandatory.
+
 ## v0.340.42 exact response-bundle semantic-reader file-set proof
 
 Exact response-bundle review must bind both journals and every supplied account/activity response or observation file by pathname identity and bounded fingerprints before either store construction, and recheck the complete set after every normal or exceptional semantic-reader exit. Either store retarget and any sampled input mutation must receive fixed outer refusals. Mandatory reconciliation evidence and the installed executable smoke must require both outer recheck claims. Runtime authority remains unchanged.

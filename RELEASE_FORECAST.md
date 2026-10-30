@@ -2,11 +2,11 @@
 
 ## Candidate update on 2026-10-29
 
-Current candidate: v0.340.42, based on published v0.340.41 source `48adf46f132c60a3c43e8f9eaa7f3050c61519ff`. v0.340.42 binds the entire exact account/activity response bundle across both component reviews and every later normal or exceptional semantic-reader exit. No external authority is added. Exact-source v0.340.41 security 40979100181, safety/browser/evidence 40979100211 and Windows 40979100176 passed. Fresh exact-source v0.340.42 results remain required.
+Current candidate: v0.340.43, based on published v0.340.42 source `065233736dbff02adc3ee72aa5085755cd016096`. v0.340.43 binds accepted-history reconciliation's three journals by exact identity, fingerprints and retained store bindings through the inner review and four-observation stability guard. No external authority is added. Exact-source v0.340.42 security 40985178168, safety/browser/evidence 40985178253 and Windows 40985178164 passed. Fresh exact-source v0.340.43 results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Local pre-publication validation is complete: 4,550 tests passed with one expected non-Windows skip and one existing warning, the 231-test focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller-smoke and wheel-build checks passed. The 746-path public artifact audit and targeted credential-pattern scan found no findings. Fresh exact-source hosted checks remain required. The rough weighted implementation estimate is intentionally unchanged because this safety hardening does not integrate a new accepted external gate.
+Local pre-publication validation is complete: 4,556 tests passed with one expected non-Windows skip and one existing warning, the 148-test focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller and wheel-build checks passed. The 747-path public artifact audit and targeted credential-pattern scan found no findings. Fresh exact-source hosted checks remain required. The rough weighted implementation estimate is intentionally unchanged because this safety hardening does not integrate a new accepted external gate.
 
 ## Prior v0.340.17 candidate record
 

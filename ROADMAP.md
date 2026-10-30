@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.42. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.43. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.42 holds the complete ten-or-eleven-file exact account/activity response bundle by pathname identity and bounded fingerprints across both store constructions, pacing history, both component reviews, every body and observation decode, cross-response identity/fill/fee/timing readers, final status repeats and review digest. Every normal or exceptional semantic-reader exit rechecks the complete set; either store retarget or any sampled file change receives the fixed outer refusal. Mandatory reconciliation evidence exercises a late mutation hidden behind a lower semantic failure. No provider call, retry, control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.43 holds the pacing, retained-activity and acceptance journals by pathname identity, bounded fingerprints and exact store binding through accepted-history reconciliation and the four-observation stability guard. Normal and exceptional semantic-reader exits recheck the complete set; same-byte pathname replacement or any pacing, activity or acceptance store retarget receives a fixed refusal. Mandatory reconciliation evidence exercises identity replacement hidden behind a lower semantic failure and store retargeting. No provider call, retry, control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.43 accepted-history reconciliation identity and store-binding proof
+
+The accepted-history reconciliation and four-observation stability tools now hold pacing, retained-activity and acceptance journals by exact pathname identity, bounded fingerprints and retained store bindings across the whole nested replay. Same-byte replacement hidden behind a semantic failure and pacing/activity/acceptance store retargeting receive fixed refusals. Mandatory release evidence requires the new guarantees. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.42 `065233736dbff02adc3ee72aa5085755cd016096` passed public security run 40985178168, research safety/browser/evidence run 40985178253 and Windows EXE/installer/reinstall/uninstall run 40985178164. Fresh exact-source v0.340.43 workflows remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local pre-publication validation passed 4,556 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the accepted-history reconciliation/release focus passed 148 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `940b767a000d2c0ebc922b59a731b821d1929cc2f8fbfbb95096e53fad6f2d69`; `validation/release_trials_0_340_43.json` SHA-256 is `517593490458f94eae78d7e6e805b2864fe968d364d05d50d0a404fa8378c97f`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks and the v0.340.43 wheel build passed; wheel SHA-256 is `e1892cfe9c51f202a7faa51dbc55c314cfe7acbec3d1feb07ad7b7e51c0673c7`. The 747-path public artifact audit and targeted credential-pattern scan found no findings. Fresh exact-source hosted workflows remain mandatory.
+
 ## v0.340.42 exact response-bundle semantic-reader file-set proof
 
 The exact bundle tool now holds both journals and every account/activity response or observation file by pathname identity and bounded fingerprints through the entire combined replay, including every exceptional exit. Eleven maximum-set mutation-plus-failure cases, a late semantic-reader case and both store-retarget cases receive fixed outer refusals. Mandatory reconciliation evidence and the installed executable smoke require the outer guarantees. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

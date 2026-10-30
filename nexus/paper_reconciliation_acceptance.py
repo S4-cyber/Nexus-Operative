@@ -18,13 +18,18 @@ from nexus import alpaca_activity_normalizer as adapter
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 from nexus.paper_activity_acceptance_store import MAX_DATABASE_BYTES as ACCEPTANCE_DATABASE_BYTES
 from nexus.paper_activity_acceptance_probe import status as acceptance_status
+from nexus.paper_read_pacing import PaperReadPacing
 from nexus.paper_read_pacing import MAX_DATABASE_BYTES as PACING_DATABASE_BYTES
 from nexus.sqlite_journal_guard import (
-    capture_file_fingerprints, check_path_set, require_file_fingerprints)
+    capture_file_fingerprints, capture_file_identities, check_path_set,
+    require_file_fingerprints, require_file_identities)
 
 POLICY = 'nexus.paper-reconciliation-acceptance.v2'
 STABILITY_POLICY = 'nexus.paper-reconciliation-stability-guard.v7'
 JOURNAL_FINGERPRINT_PREFIX = 'PAPER_RECONCILIATION_ACCEPTANCE_'
+PACING_STORE_TYPE=PaperReadPacing
+ACTIVITY_STORE_TYPE=BrokerActivityStore
+ACCEPTANCE_STORE_TYPE=PaperActivityAcceptanceStore
 
 
 def _fail(code):
@@ -52,18 +57,41 @@ def _accepted(status):
     )
 
 
-def _journal_fingerprint_scope(pacing_path, activity_store_path, acceptance_store_path):
+def _journal_file_scope(pacing_path, activity_store_path, acceptance_store_path):
     paths = check_path_set((pacing_path, activity_store_path, acceptance_store_path),
         JOURNAL_FINGERPRINT_PREFIX)
     limits = (PACING_DATABASE_BYTES, ACTIVITY_DATABASE_BYTES, ACCEPTANCE_DATABASE_BYTES)
-    return paths, limits, capture_file_fingerprints(paths, limits, JOURNAL_FINGERPRINT_PREFIX)
+    identities=capture_file_identities(paths,JOURNAL_FINGERPRINT_PREFIX)
+    fingerprints=capture_file_fingerprints(paths,limits,JOURNAL_FINGERPRINT_PREFIX)
+    return paths,limits,identities,fingerprints
 
 
-def _stable_reader(paths, limits, fingerprints):
+def _store_binding(stores,paths):
+    if (type(stores) is not tuple or len(stores)!=3 or
+            tuple(type(value) for value in stores)!=(PACING_STORE_TYPE,
+                ACTIVITY_STORE_TYPE,ACCEPTANCE_STORE_TYPE)):
+        _fail('STORE_BINDING_CHANGED')
+    try:
+        binding=tuple((value.path.resolve(),value.account_digest) for value in stores)
+    except (AttributeError,OSError,RuntimeError,TypeError,ValueError):
+        _fail('STORE_BINDING_CHANGED')
+    if (tuple(value[0] for value in binding)!=paths or
+            len({value[1] for value in binding})!=1):
+        _fail('STORE_BINDING_CHANGED')
+    return binding
+
+
+def _require_journals(paths,limits,identities,fingerprints,stores=None,binding=None):
+    require_file_identities(paths,identities,JOURNAL_FINGERPRINT_PREFIX)
+    require_file_fingerprints(paths,limits,fingerprints,JOURNAL_FINGERPRINT_PREFIX)
+    if stores is not None and _store_binding(stores,paths)!=binding:
+        _fail('STORE_BINDING_CHANGED')
+
+
+def _stable_reader(paths,limits,identities,fingerprints,stores=None,binding=None):
     """Recheck the complete journal set after every semantic reader exit."""
     def require_unchanged():
-        require_file_fingerprints(paths, limits, fingerprints,
-            JOURNAL_FINGERPRINT_PREFIX)
+        _require_journals(paths,limits,identities,fingerprints,stores,binding)
     def read(reader):
         try:
             value=reader()
@@ -105,9 +133,17 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
            opening_observation, closing_observation):
     """Read-only composition of accepted collection history and balance review."""
-    journal_paths, journal_limits, journal_fingerprints = _journal_fingerprint_scope(
+    journal_paths,journal_limits,journal_identities,journal_fingerprints=_journal_file_scope(
         pacing_path, activity_store_path, acceptance_store_path)
-    stable_read=_stable_reader(journal_paths,journal_limits,journal_fingerprints)
+    stable_files=_stable_reader(journal_paths,journal_limits,journal_identities,
+        journal_fingerprints)
+    stores=stable_files(lambda:(PaperReadPacing(journal_paths[0],expected_account_id),
+        BrokerActivityStore(journal_paths[1],expected_account_id),
+        PaperActivityAcceptanceStore(journal_paths[2],expected_account_id)))
+    binding=_store_binding(stores,journal_paths)
+    _pacing_store,activity_store,acceptance_store=stores
+    stable_read=_stable_reader(journal_paths,journal_limits,journal_identities,
+        journal_fingerprints,stores,binding)
     before = stable_read(lambda: acceptance_status(expected_account_id=expected_account_id,
         pacing_path=pacing_path, activity_store_path=activity_store_path,
         acceptance_store_path=acceptance_store_path))
@@ -116,17 +152,18 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
     if before['retention_head_sha256'] != expected_activity_head:
         _fail('ACTIVITY_HEAD_DISAGREEMENT')
 
-    first, last = portable.validate(opening_observation), portable.validate(closing_observation)
-    store = BrokerActivityStore(activity_store_path, expected_account_id)
-    retained = stable_read(store.inspect)
-    scopes = stable_read(PaperActivityAcceptanceStore(
-        acceptance_store_path, expected_account_id).replay_scopes)
+    first,last=stable_read(lambda:(portable.validate(opening_observation),
+        portable.validate(closing_observation)))
+    retained=stable_read(activity_store.inspect)
+    scopes=stable_read(acceptance_store.replay_scopes)
     if retained['head_sha256'] != expected_activity_head or len(scopes) != before['accepted_transitions']:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
-    windows = _declared_window_coverage(retained['receipts'], scopes, first, last)
-    window_digest = sha(dict(account_sha256=before['account_sha256'], windows=windows))
+    windows=stable_read(lambda:_declared_window_coverage(
+        retained['receipts'],scopes,first,last))
+    window_digest=stable_read(lambda:sha(dict(
+        account_sha256=before['account_sha256'],windows=windows)))
     component = stable_read(lambda: paper_observation_review.review(
-        store,
+        activity_store,
         expected_account_id=expected_account_id, expected_head=expected_activity_head,
         opening_observation=first, closing_observation=last))
 
@@ -146,9 +183,10 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
         opening_manifest_sha256=component['opening_manifest_sha256'],
         closing_manifest_sha256=component['closing_manifest_sha256'],
         observation_review_sha256=component['input_sha256'])
-    return dict(mode='PAPER_RECONCILIATION_ACCEPTANCE_REVIEW',
+    return stable_read(lambda:dict(mode='PAPER_RECONCILIATION_ACCEPTANCE_REVIEW',
         status='REVIEW_REQUIRED', read_only=True, **scope, input_sha256=sha(scope),
         journals_rechecked_unchanged=True, journal_files_rechecked_unchanged=True,
+        journal_file_identities_rechecked=True,journal_store_bindings_rechecked=True,
         semantic_reader_failures_rechecked=True,
         complete_accepted_history_replayed=True,
         legacy_baseline_absent=True, complete_pacing_sessions_accepted=True,
@@ -172,7 +210,7 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
         ready_for_routing=False, broker_connected=False, live_orders_enabled=False,
         money_movement_enabled=False, automatic_retry=False,
         automatic_continuation=False, release_approved=False,
-        limitations='Complete local accepted-history replay binds this supplied observation pair to one exact retained activity head. The union of declared creation windows covers the full observation envelope geometrically only; it does not prove provider boundary semantics or received/late/corrected activity coverage. It does not attest the provider, prove complete activity/fee coverage, turn sequential reads into atomic balances, verify holds or spendable funds, coordinate other hosts/writers, authorize orders or approve release. Keep all journals, observations and output outside Git; never erase uncertainty to retry.')
+        limitations='Complete local accepted-history replay binds this supplied observation pair to one exact retained activity head. The union of declared creation windows covers the full observation envelope geometrically only; it does not prove provider boundary semantics or received/late/corrected activity coverage. It does not attest the provider, prove complete activity/fee coverage, turn sequential reads into atomic balances, verify holds or spendable funds, coordinate other hosts/writers, authorize orders or approve release. Keep all journals, observations and output outside Git; never erase uncertainty to retry.'))
 
 
 def _guard_windows(pre_opening, opening, closing, post_closing):
@@ -280,15 +318,24 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         acceptance_store_path, expected_activity_head, pre_opening_observation,
         opening_observation, closing_observation, post_closing_observation):
     """Bind four ordered supplied observations without promoting them to quiet instants."""
-    journal_paths, journal_limits, journal_fingerprints = _journal_fingerprint_scope(
+    journal_paths,journal_limits,journal_identities,journal_fingerprints=_journal_file_scope(
         pacing_path, activity_store_path, acceptance_store_path)
-    stable_read=_stable_reader(journal_paths,journal_limits,journal_fingerprints)
+    stable_files=_stable_reader(journal_paths,journal_limits,journal_identities,
+        journal_fingerprints)
+    stores=stable_files(lambda:(PaperReadPacing(journal_paths[0],expected_account_id),
+        BrokerActivityStore(journal_paths[1],expected_account_id),
+        PaperActivityAcceptanceStore(journal_paths[2],expected_account_id)))
+    binding=_store_binding(stores,journal_paths)
+    _pacing_store,activity_store,acceptance_store=stores
+    stable_read=_stable_reader(journal_paths,journal_limits,journal_identities,
+        journal_fingerprints,stores,binding)
     status_options=dict(expected_account_id=expected_account_id,pacing_path=pacing_path,
         activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
     before=stable_read(lambda: acceptance_status(**status_options))
     if not _accepted(before): _fail('ACCEPTED_HISTORY_REQUIRED')
-    observations=[portable.validate(value) for value in (pre_opening_observation,
-        opening_observation,closing_observation,post_closing_observation)]
+    observations=stable_read(lambda:[portable.validate(value) for value in
+        (pre_opening_observation,opening_observation,closing_observation,
+         post_closing_observation)])
     pre_opening,opening,closing,post_closing=observations
     if any(value['account_id']!=expected_account_id for value in observations):
         _fail('GUARD_ACCOUNT_DISAGREEMENT')
@@ -300,7 +347,8 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         _fail('GUARD_OBSERVATION_REQUIRES_REVIEW')
     if any(value['open_order_count']!=0 for value in observations):
         _fail('GUARD_OPEN_ORDERS_UNRECONCILED')
-    windows=_guard_windows(pre_opening,opening,closing,post_closing)
+    windows=stable_read(lambda:_guard_windows(
+        pre_opening,opening,closing,post_closing))
     for guard,inner in ((pre_opening,opening),(closing,post_closing)):
         if (guard['account_fields_sha256']!=inner['account_fields_sha256'] or
             guard['position_count']!=inner['position_count'] or
@@ -313,25 +361,27 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         closing_observation=closing))
     if accepted['observation_review']['arithmetic_evaluated'] is not True:
         _fail('GUARD_INNER_REVIEW_BLOCKED')
-    store=BrokerActivityStore(activity_store_path,expected_account_id)
-    retained=stable_read(store.inspect)
-    scopes=stable_read(PaperActivityAcceptanceStore(
-        acceptance_store_path,expected_account_id).replay_scopes)
+    retained=stable_read(activity_store.inspect)
+    scopes=stable_read(acceptance_store.replay_scopes)
     if retained['head_sha256']!=expected_activity_head or len(scopes)!=before['accepted_transitions']:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
-    if not _guard_declared_sources_agree(retained,scopes,pre_opening['source']):
+    if not stable_read(lambda:_guard_declared_sources_agree(
+            retained,scopes,pre_opening['source'])):
         _fail('GUARD_DECLARED_SOURCE_DISAGREEMENT')
-    declared_windows=_declared_window_coverage(retained['receipts'],scopes,pre_opening,post_closing)
-    fill_events=_guard_fill_events(retained,windows)
+    declared_windows=stable_read(lambda:_declared_window_coverage(
+        retained['receipts'],scopes,pre_opening,post_closing))
+    fill_events=stable_read(lambda:_guard_fill_events(retained,windows))
     if fill_events: _fail('GUARD_RETAINED_FILL_PRESENT')
-    collection_fill_events=_guard_collection_fill_events(retained,scopes,windows)
+    collection_fill_events=stable_read(lambda:_guard_collection_fill_events(
+        retained,scopes,windows))
     if collection_fill_events: _fail('GUARD_COLLECTION_FILL_PRESENT')
-    collection_fee_events=_guard_collection_fee_events(retained,scopes,windows)
+    collection_fee_events=stable_read(lambda:_guard_collection_fee_events(
+        retained,scopes,windows))
     if collection_fee_events: _fail('GUARD_COLLECTION_FEE_PRESENT')
-    fee_date_events=_guard_fee_date_events(retained,windows)
+    fee_date_events=stable_read(lambda:_guard_fee_date_events(retained,windows))
     if fee_date_events: _fail('GUARD_RETAINED_FEE_TIMING_AMBIGUOUS')
     after=stable_read(lambda: acceptance_status(**status_options))
-    final_activity=stable_read(store.inspect)
+    final_activity=stable_read(activity_store.inspect)
     if before!=after or final_activity['head_sha256']!=expected_activity_head:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     scope=dict(policy=STABILITY_POLICY,account_sha256=after['account_sha256'],
@@ -343,7 +393,7 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         post_closing_manifest_sha256=post_closing['manifest_sha256'],
         declared_guard_window_union_sha256=sha(dict(account_sha256=after['account_sha256'],
             windows=declared_windows)))
-    return dict(mode='PAPER_RECONCILIATION_STABILITY_GUARD_REVIEW',status='REVIEW_REQUIRED',
+    return stable_read(lambda:dict(mode='PAPER_RECONCILIATION_STABILITY_GUARD_REVIEW',status='REVIEW_REQUIRED',
         read_only=True,**scope,input_sha256=sha(scope),accepted_reconciliation_review=accepted,
         guard_windows=windows,guard_manifests_distinct=True,guard_windows_ordered=True,
         adjacent_guard_balances_stable=True,guard_declared_sources_agree=True,
@@ -353,6 +403,7 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         guard_retained_fee_date_overlaps=0,
         accepted_declared_windows_cover_guard_envelope=True,journals_rechecked_unchanged=True,
         journal_files_rechecked_unchanged=True,
+        journal_file_identities_rechecked=True,journal_store_bindings_rechecked=True,
         semantic_reader_failures_rechecked=True,
         admission_reserved=False,source_attested=False,source_coverage_verified=False,
         activity_coverage_verified=False,fee_coverage_complete=False,
@@ -362,7 +413,7 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
         ready_for_routing=False,broker_connected=False,live_orders_enabled=False,
         money_movement_enabled=False,automatic_retry=False,automatic_continuation=False,
         release_approved=False,
-        limitations='Four supplied manifests are distinct, ordered and locally balance-stable around the accepted inner comparison. Every accepted activity receipt and all four balance observations carry the same unverified declared source label; equality is not source attestation. Accepted declared creation windows cover the outer envelope, no retained fill appears in either guard band, no accepted receipt containing a retained fill or fee was collected during the outer observation envelope, and no retained fee reported date overlaps any UTC calendar date in that envelope. Collection-time absence is local retained-history evidence only. Fee dates are not posting/execution instants, so an overlap fails closed and absence does not prove quiet or complete fee history. This is not provider/source attestation, received-activity coverage, a quiet or atomic balance instant, fee/hold reconciliation, spendable-funds proof, routing permission or release approval. Missing, late, corrected, fee-only or activity outside retained history remains possible.')
+        limitations='Four supplied manifests are distinct, ordered and locally balance-stable around the accepted inner comparison. Every accepted activity receipt and all four balance observations carry the same unverified declared source label; equality is not source attestation. Accepted declared creation windows cover the outer envelope, no retained fill appears in either guard band, no accepted receipt containing a retained fill or fee was collected during the outer observation envelope, and no retained fee reported date overlaps any UTC calendar date in that envelope. Collection-time absence is local retained-history evidence only. Fee dates are not posting/execution instants, so an overlap fails closed and absence does not prove quiet or complete fee history. This is not provider/source attestation, received-activity coverage, a quiet or atomic balance instant, fee/hold reconciliation, spendable-funds proof, routing permission or release approval. Missing, late, corrected, fee-only or activity outside retained history remains possible.'))
 
 
 def fixture_report():
@@ -519,17 +570,76 @@ def fixture_report():
         semantic_reader_failures_rechecked=(
             result['semantic_reader_failures_rechecked'] is True and
             guarded['semantic_reader_failures_rechecked'] is True)
+        file_identities_rechecked=(result['journal_file_identities_rechecked'] is True and
+            guarded['journal_file_identities_rechecked'] is True)
+        store_bindings_rechecked=(result['journal_store_bindings_rechecked'] is True and
+            guarded['journal_store_bindings_rechecked'] is True)
+        mutation_root=root/'identity-mutation';mutation_root.mkdir()
+        mutation_pacing,mutation_activity,mutation_acceptance,mutation_scope=_scope(
+            mutation_root)
+        mutation_acceptance.append(mutation_scope,admission=lambda:(
+            mutation_pacing.inspect()['head_sha256'],
+            mutation_activity.inspect()['head_sha256']))
+        mutation_paths=dict(expected_account_id=ACCOUNT,
+            pacing_path=mutation_root/'pacing.sqlite3',
+            activity_store_path=mutation_root/'activity.sqlite3',
+            acceptance_store_path=mutation_root/'acceptance.sqlite3',
+            expected_activity_head=mutation_activity.inspect()['head_sha256'],
+            opening_observation=opening,closing_observation=closing)
+        mutation_file=mutation_paths['acceptance_store_path']
+        original_window_coverage=_declared_window_coverage
+        def replace_then_fail(*args,**kwargs):
+            replacement=mutation_file.with_name(mutation_file.name+'.replacement')
+            replacement.write_bytes(mutation_file.read_bytes())
+            replacement.replace(mutation_file)
+            raise RuntimeError('injected lower semantic failure')
+        globals()['_declared_window_coverage']=replace_then_fail
+        identity_replacement_failure_rejected=False
+        try:review(**mutation_paths)
+        except ValueError as error:
+            identity_replacement_failure_rejected=(str(error)==
+                'PAPER_RECONCILIATION_ACCEPTANCE_FILE_IDENTITY_CHANGED')
+        finally:globals()['_declared_window_coverage']=original_window_coverage
+        retarget_root=root/'store-retarget';retarget_root.mkdir()
+        retarget_pacing,retarget_activity,retarget_acceptance,retarget_scope=_scope(
+            retarget_root)
+        retarget_acceptance.append(retarget_scope,admission=lambda:(
+            retarget_pacing.inspect()['head_sha256'],retarget_activity.inspect()['head_sha256']))
+        retarget_paths=dict(expected_account_id=ACCOUNT,
+            pacing_path=retarget_root/'pacing.sqlite3',
+            activity_store_path=retarget_root/'activity.sqlite3',
+            acceptance_store_path=retarget_root/'acceptance.sqlite3',
+            expected_activity_head=retarget_activity.inspect()['head_sha256'],
+            opening_observation=opening,closing_observation=closing)
+        original_activity_store=BrokerActivityStore
+        def retargeted_store(path,account):
+            value=original_activity_store(path,account)
+            value.path=retarget_root/'retargeted.sqlite3'
+            return value
+        globals()['BrokerActivityStore']=retargeted_store
+        store_retarget_rejected=False
+        try:review(**retarget_paths)
+        except ValueError as error:
+            store_retarget_rejected=(str(error)==
+                'PAPER_RECONCILIATION_ACCEPTANCE_STORE_BINDING_CHANGED')
+        finally:globals()['BrokerActivityStore']=original_activity_store
         passed=(result == repeated and guarded == guarded_repeated and before == after and
             unbound_rejected and continuation_rejected and outside_rejected and covered and
             changed_guard_rejected and unordered_guard_rejected and outer_guard_coverage_rejected and
             exact_bound and replayed and complete and cursor_complete and arithmetic and guard_bound and
             declared_source_mismatch_rejected and fee_date_overlap_detected and late_collection_fill_detected and
             late_collection_fee_detected and file_fingerprints_rechecked and
-            semantic_reader_failures_rechecked)
+            semantic_reader_failures_rechecked and file_identities_rechecked and
+            store_bindings_rechecked and identity_replacement_failure_rejected and
+            store_retarget_rejected)
         return dict(passed=passed, repeat_review_matches=result == repeated,
             stability_guard_repeat_matches=guarded == guarded_repeated,
             journal_file_fingerprints_rechecked=file_fingerprints_rechecked,
+            journal_file_identities_rechecked=file_identities_rechecked,
+            journal_store_bindings_rechecked=store_bindings_rechecked,
             semantic_reader_failures_rechecked=semantic_reader_failures_rechecked,
+            identity_replacement_failure_rejected=identity_replacement_failure_rejected,
+            store_retarget_rejected=store_retarget_rejected,
             journals_unchanged=before == after, unbound_history_rejected=unbound_rejected,
             continuation_required_history_rejected=continuation_rejected,
             out_of_window_observations_rejected=outside_rejected,

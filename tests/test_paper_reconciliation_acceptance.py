@@ -69,6 +69,8 @@ def test_complete_accepted_history_binds_exact_observations_and_head_without_wri
     assert len(result['declared_collection_window_union_sha256']) == 64
     assert result['journals_rechecked_unchanged'] is True
     assert result['journal_files_rechecked_unchanged'] is True
+    assert result['journal_file_identities_rechecked'] is True
+    assert result['journal_store_bindings_rechecked'] is True
     assert result['accepted_transitions']==1
     assert result['activity_head_sha256']==options['expected_activity_head']
     assert result['opening_manifest_sha256']==options['opening_observation']['manifest_sha256']
@@ -97,6 +99,8 @@ def test_four_observation_stability_guard_is_exact_bound_read_only_and_non_autho
     assert result['accepted_declared_windows_cover_guard_envelope']
     assert result['journals_rechecked_unchanged']
     assert result['journal_files_rechecked_unchanged']
+    assert result['journal_file_identities_rechecked']
+    assert result['journal_store_bindings_rechecked']
     assert result['accepted_reconciliation_review']['observation_review']['arithmetic_evaluated']
     assert result==subject.review_with_stability_guards(**options)
     assert snapshot(tmp_path)==before
@@ -337,6 +341,41 @@ def test_stability_review_rechecks_journals_when_final_status_reader_fails(
     assert snapshot(tmp_path)==before
 
 
+@pytest.mark.parametrize('field',(
+    'pacing_path','activity_store_path','acceptance_store_path'))
+def test_same_byte_journal_replacement_hidden_by_semantic_failure_is_rejected(
+        tmp_path,monkeypatch,field):
+    options=prepared(tmp_path);before=snapshot(tmp_path)
+    path=options[field]
+    def replaced_then_failed(*args,**kwargs):
+        replacement=path.with_name(path.name+'.replacement')
+        replacement.write_bytes(path.read_bytes())
+        replacement.replace(path)
+        raise RuntimeError('injected lower semantic failure')
+    monkeypatch.setattr(subject,'_declared_window_coverage',replaced_then_failed)
+    with pytest.raises(ValueError,
+            match='PAPER_RECONCILIATION_ACCEPTANCE_FILE_IDENTITY_CHANGED'):
+        subject.review(**options)
+    assert snapshot(tmp_path)==before
+
+
+@pytest.mark.parametrize('constructor',(
+    'PaperReadPacing','BrokerActivityStore','PaperActivityAcceptanceStore'))
+def test_reconciliation_rejects_retargeted_store_objects(
+        tmp_path,monkeypatch,constructor):
+    options=prepared(tmp_path);before=snapshot(tmp_path)
+    original=getattr(subject,constructor)
+    def retargeted(path,account):
+        value=original(path,account)
+        value.path=tmp_path/'retargeted.sqlite3'
+        return value
+    monkeypatch.setattr(subject,constructor,retargeted)
+    with pytest.raises(ValueError,
+            match='PAPER_RECONCILIATION_ACCEPTANCE_STORE_BINDING_CHANGED'):
+        subject.review(**options)
+    assert snapshot(tmp_path)==before
+
+
 def test_reconciliation_refuses_rollback_sidecar_before_arithmetic(tmp_path,monkeypatch):
     options=prepared(tmp_path)
     sidecar=options['activity_store_path'].with_name(
@@ -469,6 +508,10 @@ def test_release_fixture_is_repeatable_vault_and_provider_silent():
     assert result['observation_arithmetic_evaluated'] and 'review' not in result
     assert result['stability_guard_bound'] and result['stability_guard_repeat_matches']
     assert result['journal_file_fingerprints_rechecked']
+    assert result['journal_file_identities_rechecked']
+    assert result['journal_store_bindings_rechecked']
+    assert result['identity_replacement_failure_rejected']
+    assert result['store_retarget_rejected']
     assert result['changed_guard_balance_rejected'] and result['unordered_guard_windows_rejected']
     assert result['outer_guard_window_coverage_rejected']
     assert result['guard_retained_fill_events_absent']

@@ -47,6 +47,12 @@ def test_windows_workflow_retains_outer_timeout_and_always_uploads_diagnostics()
     assert '--artifact-manifest release/artifact-manifest.json' in workflow
     assert '--expected-source-commit $env:NEXUS_SOURCE_COMMIT' in workflow
     assert 'distribution-binding-review.json' in workflow
+    assert 'Copy-Item tools/windows_owner_profile_probe.ps1 release/windows-owner-profile-probe.ps1' in workflow
+    assert 'Copy-Item tools/windows_owner_profile_review.py release/windows-owner-profile-review.py' in workflow
+    assert 'release/windows-owner-profile-probe.ps1 release/windows-owner-profile-review.py' in workflow
+    assert 'Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json' in workflow
+    assert 'release/windows-owner-profile-probe.ps1' in workflow
+    assert 'release/windows-owner-profile-review.py' in workflow
     assert workflow.index('python -m nexus.artifact_manifest verify') < workflow.index('python tools/windows_distribution_binding_review.py')
     assert workflow.index('python tools/windows_distribution_binding_review.py') < workflow.index('name: Upload distribution with source and checksum manifest')
     assert 'name: Preserve installer acceptance evidence\n        if: always()' in workflow

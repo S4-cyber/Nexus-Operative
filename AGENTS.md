@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.49 makes artifact-manifest command output byte-stable across Windows and POSIX by bypassing text-mode newline translation for success, refusal and usage records. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+Current checkpoint: v0.340.50 adds a manifest-bound, owner-operated Windows ordinary-profile/effective-ACL probe and strict privacy-safe offline reviewer. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+
+## v0.340.50 owner Windows profile/ACL evidence boundary
+
+The Windows distribution now carries source-manifest-bound probe and reviewer tools plus the exact installer-distribution binding. The PowerShell probe runs only under a non-elevated token at the default per-user LocalAppData install/data locations, verifies current-user ownership, ACL inheritance, create/read, exclusive lock, replace, rename/delete and cleanup, and retains no username, SID or path. The offline reviewer requires the exact CI-reviewed installer digest, installed executable digest, source/version and both manifest-shipped tool digests. Its allowlisted result keeps native-Windows, broker, live, money-movement and release authority false.
+
+Exact-source v0.340.49 `aadfb47032ebf2aca1e6092b5944acffd6f21112` passed public security run 41025534634, research/browser/evidence run 41025534637 and Windows EXE/installer/reinstall/uninstall run 41025534656. Fresh exact-source v0.340.50 workflows remain mandatory. The probe has not been run on an owner/private Windows profile, so M1 remains PARTIAL and 0/9 major stages are fully accepted. Rough implementation remains about 40% (30–45%, low confidence).
+
+Local pre-publication validation passed 4,627 tests with one expected non-Windows skip and one Starlette/httpx warning; the final Windows-owner/installer/manifest/version/roadmap/evidence focus passed 121. All sixteen bounded offline profiles and saved-evidence verification matched 395 source files / `70fc1411cbe3474007485dce6bb368398c15c50246514f939a74a10600548db2`; `validation/release_trials_0_340_50.json` SHA-256 is `41b10a613433f9fdc3cfcb69f5b7d28dbe7f9d0e8e89feb49a18d25eb9c8edfc`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks, Portal JavaScript syntax and the v0.340.50 wheel build passed; wheel SHA-256 is `e531daa007147c01ed502ab9f6bb4962b1a7b81ed99f16681aad2f51c906a3e2`. Native PowerShell execution remains an exact-source Windows/owner gate, not a local Linux result.
 
 ## v0.340.49 deterministic cross-platform manifest CLI records
 

@@ -2,7 +2,7 @@
 
 ## Candidate update on 2026-10-30
 
-Current candidate: v0.340.49, based on published v0.340.48 source `e6570c29fa9c3d3ed1356ad9f351bf8c3c929dac`. v0.340.49 makes artifact-manifest success, refusal and usage records byte-stable across Windows and POSIX. No application-runtime or external authority is added. Exact-source v0.340.48 security, browser-help and saved-evidence jobs passed; both full regression lanes exposed and stopped on the same four CRLF mismatches. Fresh exact-source v0.340.49 results remain required.
+Current candidate: v0.340.50, based on published v0.340.49 source `aadfb47032ebf2aca1e6092b5944acffd6f21112`. v0.340.50 prepares a manifest-bound owner Windows ordinary-profile/effective-ACL evidence procedure and privacy-safe offline review. No application-runtime or external authority is added. Exact-source v0.340.49 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.50 results and an actual private owner-profile run remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 

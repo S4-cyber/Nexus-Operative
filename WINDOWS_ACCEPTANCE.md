@@ -1,5 +1,11 @@
 # Windows distribution and acceptance evidence
 
+## v0.340.50 owner ordinary-profile/ACL evidence candidate
+
+The Windows distribution now includes `windows-owner-profile-probe.ps1`, `windows-owner-profile-review.py`, `artifact-manifest.json` and `distribution-binding-review.json`. The probe refuses elevation and non-default per-user LocalAppData install/data locations, exercises inherited-ACL create/read, exclusive lock, replace, rename/delete and cleanup behavior, and emits no username, SID or path. The reviewer binds that allowlisted probe to the exact CI-reviewed installer, installed executable, source/version and both manifest-shipped tools.
+
+This is a prepared procedure, not a completed owner/private result. Even a passing receipt keeps `native_windows_acceptance`, broker, live, money-movement and release approval false because one self-reported effective-access session does not establish native-window rendering, clean-machine breadth, power-loss durability or independent acceptance. Exact v0.340.49 passed security 41025534634, research/browser/evidence 41025534637 and Windows 41025534656. Fresh v0.340.50 workflows and actual owner execution remain required.
+
 ## Verified test installer — v0.340.39 (2026-10-29)
 
 [Download installer ZIP](https://github.com/S4-cyber/Nexus-Operative/actions/runs/40965603928/artifacts/12939305842), containing NexusOperative-Setup-0.340.39.exe; artifact expiry 2026-11-05T22:46:16Z. GitHub may require sign-in. The archive downloaded during this handoff matched the GitHub artifact SHA256 `2e3977de385763785eda29d81f98cf297b9c89e17913e5360e43962c679157fa`, passed ZIP integrity checking and contained exactly the expected setup EXE. Extracted setup SHA256: `3377e9d1863713da2874e0e2377ed0bdb9828572650f093a4b41e2c5a8f50e72` (28,687,028 bytes).

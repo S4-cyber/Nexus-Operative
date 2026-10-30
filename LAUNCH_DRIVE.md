@@ -1,5 +1,9 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.50 owner Windows profile/ACL evidence boundary
+
+The Windows distribution now carries a manifest-bound non-elevated ordinary-profile/effective-ACL probe and privacy-safe offline reviewer. This turns the open M1 owner-profile check into a reproducible exact-artifact procedure without retaining usernames, SIDs or paths. It does not run automatically, change application behavior, or promote native, broker, live, funds or release authority. Exact v0.340.49 security 41025534634, research/browser/evidence 41025534637 and Windows 41025534656 passed; v0.340.50 needs fresh exact-source workflows and an actual private owner-profile run. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
 ## v0.340.49 deterministic cross-platform manifest CLI records
 
 Artifact-manifest success, refusal and usage records now bypass text-mode newline translation and use explicit UTF-8/LF bytes on Windows and POSIX. The exact byte contract is tested without relaxing any fail-closed validation. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.

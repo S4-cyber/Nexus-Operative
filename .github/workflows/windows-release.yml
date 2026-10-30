@@ -144,16 +144,19 @@ jobs:
           $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
           $sourceCommit = git rev-parse HEAD
           Copy-Item dist/NexusOperative.exe release/NexusOperative.exe
+          Copy-Item tools/windows_owner_profile_probe.ps1 release/windows-owner-profile-probe.ps1
+          Copy-Item tools/windows_owner_profile_review.py release/windows-owner-profile-review.py
           python -m nexus.release_trials --output release/release-trial-evidence.json
           if ($LASTEXITCODE -ne 0) { throw 'Distribution offline trials failed' }
           python -m nexus.release_evidence release/release-trial-evidence.json
           if ($LASTEXITCODE -ne 0) { throw 'Distribution evidence validation failed' }
-          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe" release/release-trial-evidence.json
+          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe" release/release-trial-evidence.json release/windows-owner-profile-probe.ps1 release/windows-owner-profile-review.py
           if ($LASTEXITCODE -ne 0) { throw 'Manifest creation failed' }
           python -m nexus.artifact_manifest verify release/artifact-manifest.json release
           if ($LASTEXITCODE -ne 0) { throw 'Manifest verification failed' }
           python tools/windows_distribution_binding_review.py --phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json" --artifact-manifest release/artifact-manifest.json --installer "release/NexusOperative-Setup-$version.exe" --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json"
           if ($LASTEXITCODE -ne 0) { throw 'Installer distribution binding validation failed' }
+          Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json
       - name: Upload distribution with source and checksum manifest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -163,6 +166,9 @@ jobs:
             release/NexusOperative-Setup-*.exe
             release/artifact-manifest.json
             release/release-trial-evidence.json
+            release/distribution-binding-review.json
+            release/windows-owner-profile-probe.ps1
+            release/windows-owner-profile-review.py
           if-no-files-found: error
           retention-days: 30
       - name: Preserve installer acceptance evidence

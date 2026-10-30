@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.49 (pre-release).** This build makes artifact-manifest success, refusal and usage records byte-stable across Windows and POSIX. It adds no application-runtime, provider, retry or external authority. This is CI/packaging portability hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.50 (pre-release).** This build adds manifest-bound owner Windows ordinary-profile/effective-ACL evidence collection and privacy-safe offline review. It adds no application-runtime, provider, retry or external authority. Tool availability is not owner execution, native-window, independent, broker, market, profitability or release acceptance. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.50 owner Windows profile/ACL evidence boundary
+
+The Windows distribution now includes `windows-owner-profile-probe.ps1`, `windows-owner-profile-review.py` and the exact installer-distribution binding. The probe refuses elevation and non-default locations, checks current-user ownership, inherited ACLs and effective create/read/exclusive-lock/replace/rename/delete/cleanup behavior, then emits only version/source/artifact digests, a random session, coarse OS metadata and allowlisted booleans. It never emits a username, SID or path. The offline reviewer binds the result to the exact installer, installed executable and manifest-shipped tools and keeps native-Windows, broker, live, funds and release authority false.
+
+Exact-source v0.340.49 `aadfb47032ebf2aca1e6092b5944acffd6f21112` passed security 41025534634, research/browser/evidence 41025534637 and Windows 41025534656. Fresh v0.340.50 workflows and an actual owner/private ordinary-profile run remain required. No private Windows, broker, market, funding, live or cloud result is claimed.
+
+Local validation passed 4,627 tests with one expected non-Windows skip and one existing warning; the final focused set passed 121. Sixteen offline profiles and saved-evidence verification matched 395 source files / `70fc1411cbe3474007485dce6bb368398c15c50246514f939a74a10600548db2`; report SHA-256 is `41b10a613433f9fdc3cfcb69f5b7d28dbe7f9d0e8e89feb49a18d25eb9c8edfc`. Compilation, dependency integrity, generated-roadmap equality, fourteen controller smokes, Portal syntax and a wheel build passed; wheel SHA-256 is `e531daa007147c01ed502ab9f6bb4962b1a7b81ed99f16681aad2f51c906a3e2`. These local Linux checks do not execute the PowerShell probe or close the owner/profile gate.
 
 ## v0.340.49 deterministic cross-platform manifest CLI records
 

@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.50 owner Windows profile/ACL evidence boundary
+
+The distribution now ships source-manifest-bound PowerShell probe and Python reviewer tools and the exact installer-distribution binding. A successful private run must use the default per-user LocalAppData install and data locations with a non-elevated token; it checks current-user probe ownership, ACL inheritance, create/read, exclusive lock, atomic replace, rename/delete and complete cleanup. The output retains no username, SID, path, credential or account value. The offline review additionally binds the installer, installed executable and both tool bytes to the exact source manifest.
+
+The review deliberately reports `native_windows_acceptance: false`: one self-reported effective-access session is not independent attestation, native-window rendering, clean-machine breadth, power-loss behavior or full profile acceptance. No owner/private run occurred during development. Exact v0.340.49 passed security 41025534634, research/browser/evidence 41025534637 and Windows 41025534656; fresh v0.340.50 exact-source workflows remain required. Broker, sustained-market, funding/live/cloud, profitability, independent and owner 1.0 gates remain open.
+
+Final local validation passed 4,627 tests with one expected non-Windows skip and one existing warning; the focused set passed 121. Sixteen bounded offline profiles and saved-evidence verification matched 395 source files / `70fc1411cbe3474007485dce6bb368398c15c50246514f939a74a10600548db2`; report SHA-256 is `41b10a613433f9fdc3cfcb69f5b7d28dbe7f9d0e8e89feb49a18d25eb9c8edfc`. Compilation, dependency integrity, roadmap equality, all fourteen Node controllers, Portal syntax and the wheel build passed; wheel SHA-256 is `e531daa007147c01ed502ab9f6bb4962b1a7b81ed99f16681aad2f51c906a3e2`. The PowerShell probe was not executable on this Linux host; fresh hosted Windows and private owner execution are explicitly unclaimed.
+
 ## v0.340.49 deterministic cross-platform manifest CLI records
 
 Artifact-manifest success, refusal and usage records must be exact UTF-8/LF bytes on Windows and POSIX. The implementation must bypass text-mode newline translation, preserve the fixed public refusal token and keep the usage diagnostic private to stderr. Platform-specific CRLF output must fail the acceptance test rather than weaken the contract.

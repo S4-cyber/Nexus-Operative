@@ -2,11 +2,11 @@
 
 ## Candidate update on 2026-10-30
 
-Current candidate: v0.340.55, based on published v0.340.54 source `155eefbd7063eaf91583de101aeffc2df053290e`. v0.340.55 retains the exact checked request-marker head and pending provider-budget token through every remaining admission and transport checkpoint. A same-file request advance or budget head disagreement sends nothing, closes the retained budget as `NOT_SENT` and preserves lookup-only recovery. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.54 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.55 results and actual authorized paper-account acceptance remain required.
+Current candidate: v0.340.56, based on published v0.340.55 source `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79`. v0.340.56 atomically checks the exact marked request head and payload while appending the returned paper POST response, then binds the exact committed observation head into provider-budget completion. A concurrent lookup cannot be silently composed with the response or substituted as the successful budget request head. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.55 security 41071953019, research/browser/evidence 41071952902 and Windows 41071952842 passed. Fresh exact-source v0.340.56 results and actual authorized paper-account acceptance remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This defensive broker-paper boundary does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Local pre-publication validation passed 4,640 tests with one expected non-Windows skip and one warning; the 243-test broker/release/version/installer focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, fourteen-controller, Portal-syntax and wheel-build checks passed. The rough weighted implementation estimate is intentionally unchanged because this defensive local boundary does not integrate a new accepted external gate.
+The rough weighted implementation estimate is intentionally unchanged because this defensive local boundary does not integrate a new accepted external gate. Local and hosted v0.340.56 validation must be recorded separately; passing tests cannot substitute for actual-account, sustained-market, independent-review or owner acceptance.
 
 ## Prior v0.340.48 candidate record
 

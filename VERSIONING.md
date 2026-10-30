@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.55 (pre-release).** This build replays both exact paper-submission durable heads/state at every post-marker checkpoint. A same-file request advance or provider-budget head disagreement fails closed before POST. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Sampled sequential replay is not multi-file atomicity, broker-wide coordination or provider acceptance. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.56 (pre-release).** This build atomically checks the exact marked request head and payload while appending a returned paper POST response, then binds the exact committed observation head into provider-budget completion. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Local shared-store coordination is not multi-file atomicity, broker-wide coordination or provider acceptance. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.56 checked response-observation binding
+
+After the single permitted paper POST returns, response observation succeeds only if one journal write transaction still sees the exact checked marker head, uncertain request state and payload digest. The committed response head is returned and used directly for provider-budget completion. If an original-client-ID lookup advances the journal first, the response is not composed over it: the boundary reports a fixed post-response durable-state error, preserves one attempted POST as `OUTCOME_UNKNOWN` and permits no automatic retry. If a lookup begins after observation, the successful budget record still references the exact observation head.
+
+Exact-source v0.340.55 `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79` passed public security run 41071953019, research/browser/evidence run 41071952902 and Windows EXE/installer/reinstall/uninstall run 41071952842. Fresh v0.340.56 workflows and actual authorized paper-account acceptance remain required. This does not prove ACLs, other-host exclusion, broker idempotency, provider source, settled funds, fee/hold reconciliation, routing authority, market realism, profitability or release acceptance.
 
 ## v0.340.55 post-reservation durable-head fence
 

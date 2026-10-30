@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.56 checked response-observation binding
+
+The explicit one-attempt paper boundary now appends a returned POST response only while the request journal remains at the exact checked marker head and payload. That same transaction returns the committed observation head, and provider-budget completion binds exactly that head instead of a later journal sample. A concurrent original-ID lookup before the append produces one retained uncertain POST and no automatic resend; a lookup after the append cannot replace the successful budget record's request head. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.
+
+Exact-source v0.340.55 `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79` passed security 41071953019, research/browser/evidence 41071952902 and Windows EXE/installer/reinstall/uninstall 41071952842. Fresh v0.340.56 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local integration does not close an external gate or predict profit.
+
 ## v0.340.55 post-reservation durable-head fence
 
 The paper-only single-attempt boundary now records the checked request-marker head and pending provider-budget token, then replays both stores twice at every remaining admission and transport checkpoint. A same-file request lookup/observation advance, unstable replay or budget head/token disagreement fails before the sole POST, closes the local budget as `NOT_SENT` with zero posts and leaves the original request lookup-only. No retry, route, saved write credential, live endpoint or new authority is introduced.

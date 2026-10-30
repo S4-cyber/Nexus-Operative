@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.55'
+REVISION = '0.340.56'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -219,6 +219,10 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' After both paper POST reservations, every remaining admission and transport checkpoint now replays the exact request and provider-budget tails twice and requires the checked marker head, pending budget token and immutable request state to remain unchanged until the sole POST begins. A same-file head advance fails closed before provider write. This is sampled local replay, not multi-file atomicity or provider acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' A returned paper POST response is appended only by an atomic exact-marker-head and payload check, and provider-budget completion binds the exact committed observation head. Concurrent original-ID lookup cannot be silently composed with the response or substituted as its budget reference. This remains local injected evidence, not broker idempotency, provider acceptance or market evidence.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -319,7 +323,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.55 replays both exact durable paper-submission tails twice at every post-marker admission and transport checkpoint. The request must remain at its checked marker head with no observation or lookup advance, while the provider budget must remain at the exact pending token. A same-file head/state advance fails before the sole POST and closes the retained budget as NOT_SENT with zero posts. This is sampled sequential local replay, not multi-file atomicity, ACL proof, broker-wide coordination or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.54 security, research/browser/evidence and Windows workflows passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.56 atomically appends a paper POST response only while the request journal remains at the exact checked marker head and payload. The exact committed observation head is then bound into provider-budget completion, so a concurrent original-client-ID lookup cannot be silently composed with the response or substituted as the POST-budget request head. A disagreement retains the request as lookup-only and closes the local budget as OUTCOME_UNKNOWN with exactly one attempted POST. This is local shared-store coordination, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.55 security, research/browser/evidence and Windows workflows passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

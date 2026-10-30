@@ -976,6 +976,7 @@ def _validate(profile, result):
              'request_and_post_budget_store_bindings_pinned',
              'request_and_post_budget_file_identities_pinned',
              'post_reservation_durable_heads_rechecked',
+             'response_observation_head_bound_to_post_budget',
              'alpaca_post_budget_scope_required',
              'late_risk_change_blocked_before_reservation',
              'post_reservation_risk_change_blocked_before_post',

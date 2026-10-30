@@ -88,6 +88,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['request_and_post_budget_store_bindings_pinned']
     assert result['request_and_post_budget_file_identities_pinned']
     assert result['post_reservation_durable_heads_rechecked']
+    assert result['response_observation_head_bound_to_post_budget']
     assert result['alpaca_post_budget_scope_required']
     assert result['paper_order_response_observed']
     assert result['source']=='INJECTED_UNATTESTED'
@@ -109,6 +110,8 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert all(reply.closed for reply in opener.responses)
     retained=prepared[0].recovery()['requests'][0]
     assert retained['submission_attempt_marked'] and retained['snapshot']['status']=='new'
+    assert (prepared[2].history()[0]['request_after_head_sha256']==
+            result['journal']['head_sha256'])
     assert KEY not in json.dumps(result) and SECRET not in json.dumps(result)
 
 
@@ -283,6 +286,47 @@ def test_post_marker_budget_head_disagreement_is_fail_closed(
     assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
     assert history[0]['actual_posts']==0
     assert all(request.get_method()!='POST' for request,_ in opener.requests)
+
+
+def test_post_response_pre_observation_head_advance_is_unknown_and_never_reposts(
+        prepared,monkeypatch):
+    journal,_,budget=prepared
+    original=BrokerRequestJournal.observe_checked
+    def advance_then_observe(self,*args,**kwargs):
+        BrokerRequestJournal(self.path,ACCOUNT).begin_lookup(
+            'nx_fixture',evaluated_at=1001)
+        return original(self,*args,**kwargs)
+    monkeypatch.setattr(BrokerRequestJournal,'observe_checked',advance_then_observe)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_RESPONSE_DURABLE_STATE_CHANGED'):
+        submit(prepared,opener)
+    retained=journal.recovery()['requests'][0]
+    history=budget.history()
+    assert retained['lookup']['pending'] is True and retained['snapshot'] is None
+    assert len(history)==1 and history[0]['outcome']=='OUTCOME_UNKNOWN'
+    assert history[0]['actual_posts']==1
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+def test_post_budget_binds_exact_observation_head_not_later_lookup_head(
+        prepared,monkeypatch):
+    journal,_,budget=prepared
+    original=BrokerRequestJournal.observe_checked
+    def observe_then_advance(self,*args,**kwargs):
+        result=original(self,*args,**kwargs)
+        BrokerRequestJournal(self.path,ACCOUNT).begin_lookup(
+            'nx_fixture',evaluated_at=1001)
+        return result
+    monkeypatch.setattr(BrokerRequestJournal,'observe_checked',observe_then_advance)
+    result=submit(prepared,Opener())
+    history=budget.history()
+    current=journal.recovery()['head_sha256']
+    assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
+    assert history[0]['request_after_head_sha256']==result['journal']['head_sha256']
+    assert history[0]['request_after_head_sha256']!=current
 
 
 @pytest.mark.parametrize('final_account,final_positions',[

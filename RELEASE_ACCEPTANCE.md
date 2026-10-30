@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.56 checked response-observation binding
+
+Mandatory injected evidence now requires the paper POST response append to atomically retain the exact request marker head and payload, and requires provider-budget completion to bind the exact committed response-observation head. A negative control advances the request through a valid original-ID lookup between response receipt and append; it must expose the fixed post-response durable-state error, retain exactly one uncertain POST and block resend. A second control advances the request only after observation and proves that the successful budget record still references the observation head. This is a local boundary test, not broker acceptance.
+
+Exact-source v0.340.55 `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79` passed security 41071953019, research/browser/evidence 41071952902 and Windows 41071952842. Fresh v0.340.56 workflows remain mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
 ## v0.340.55 post-reservation durable-head fence
 
 Mandatory injected evidence now proves that the explicit paper-only transport retains the exact checked request-marker head and pending provider-budget token through every remaining admission and transport checkpoint. Negative controls must advance the same request file through a valid lookup event and inject a provider-budget head disagreement after reservation; both must fail before POST, preserve lookup-only recovery and retain `NOT_SENT` with zero actual POSTs. This is a local boundary test, not broker acceptance.

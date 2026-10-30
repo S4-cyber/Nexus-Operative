@@ -1,6 +1,12 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.55 replays both exact paper-submission durable tails at every post-marker admission and transport checkpoint. The request must remain at the checked marker head with no lookup/observation advance, and the provider budget must remain at its exact pending token. A same-file state advance fails before POST, closes the retained attempt as `NOT_SENT` and leaves the request lookup-only. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no Portal control, modifiable parameter, saved write credential, automatic retry, live endpoint or external authority change.
+Current checkpoint: v0.340.56 appends a returned paper POST response only through an atomic exact-head/payload request-journal check, then binds that exact committed observation head into provider-budget completion. A concurrent original-client-ID lookup cannot be silently composed with the response or replace the POST-budget request head. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no Portal control, modifiable parameter, saved write credential, automatic retry, live endpoint or external authority change.
+
+## v0.340.56 checked response-observation binding
+
+After the one allowed paper POST returns, the response append now requires the exact checked marker head and request payload in the same journal transaction. The provider-budget completion records the exact observation head returned by that commit rather than re-sampling a later request head. A concurrent lookup advance fails closed as `PAPER_SUBMISSION_POST_RESPONSE_DURABLE_STATE_CHANGED`, retains the one attempted POST as `OUTCOME_UNKNOWN`, preserves lookup-only recovery and prevents automatic resend. A lookup beginning after the response commit cannot alter which request head the successful budget record references.
+
+Exact-source v0.340.55 `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79` passed security 41071953019, research/browser/evidence 41071952902 and Windows EXE/installer/reinstall/uninstall 41071952842. Fresh v0.340.56 workflows and authorized paper-account/private-volume acceptance remain required. This local shared-store check is not multi-file atomicity, an ACL audit, administrator protection, broker-wide idempotency, provider acceptance, market realism or future-profit evidence. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; release approval and trading permission remain false.
 
 ## v0.340.55 post-reservation durable-head fence
 

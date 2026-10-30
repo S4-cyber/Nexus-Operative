@@ -141,6 +141,7 @@ class BrokerRequestJournal:
         if len(encoded.encode()) > MAX_EVENT_BYTES:raise ValueError('BROKER_JOURNAL_EVENT_BYTE_CAP')
         digest = contract.sha(dict(seq=seq,kind=kind,body=body,previous=previous))
         db.execute('INSERT INTO events VALUES (?,?,?,?,?)', (seq,kind,encoded,previous,digest))
+        return digest
 
     def _load(self, db):
         rows = db.execute('SELECT seq,kind,body,previous,digest FROM events ORDER BY seq LIMIT ?', (MAX_EVENTS+1,)).fetchall()
@@ -293,7 +294,9 @@ class BrokerRequestJournal:
         if now<deadline:raise ValueError('BROKER_SUBMISSION_ACCOUNT_COOLDOWN_ACTIVE')
         return now
 
-    def _write(self, kind, body, *, expected_head=None, expected_payload_sha256=None, admission=None):
+    def _write(self, kind, body, *, expected_head=None,
+               expected_payload_sha256=None, admission=None,
+               return_head=False):
         if kind!='PREPARE' and not self.path.exists():
             raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         with closing(self._connect(write=True)) as db:
@@ -302,10 +305,21 @@ class BrokerRequestJournal:
                 identity=body['payload']['client_order_id'] if kind=='PREPARE' else body['client_order_id']
                 existing=requests.get(identity)
                 if expected_head is not None:
-                    if previous!=expected_head:raise ValueError('BROKER_SUBMISSION_HEAD_CHANGED')
-                    if not existing or existing['plan']['payload_sha256']!=expected_payload_sha256:raise ValueError('BROKER_SUBMISSION_TERMS_CHANGED')
-                    if existing['uncertain']:raise ValueError('BROKER_SUBMISSION_ALREADY_MARKED_LOOKUP_REQUIRED')
-                    if any(r['lookup']['blocked'] for r in requests.values()):raise ValueError('BROKER_SUBMISSION_ACCOUNT_REVIEW_REQUIRED')
+                    prefix = ('BROKER_SUBMISSION_' if kind=='SUBMISSION_UNCERTAIN'
+                              else 'BROKER_OBSERVATION_' if kind=='OBSERVE'
+                              else None)
+                    if prefix is None:
+                        raise ValueError('BROKER_JOURNAL_CHECKED_WRITE_INVALID')
+                    if previous!=expected_head:raise ValueError(prefix+'HEAD_CHANGED')
+                    if not existing or existing['plan']['payload_sha256']!=expected_payload_sha256:
+                        raise ValueError(prefix+'TERMS_CHANGED')
+                    if kind=='SUBMISSION_UNCERTAIN':
+                        if existing['uncertain']:
+                            raise ValueError('BROKER_SUBMISSION_ALREADY_MARKED_LOOKUP_REQUIRED')
+                        if any(r['lookup']['blocked'] for r in requests.values()):
+                            raise ValueError('BROKER_SUBMISSION_ACCOUNT_REVIEW_REQUIRED')
+                    elif not existing['uncertain']:
+                        raise ValueError('BROKER_JOURNAL_NO_ATTEMPT_BOUNDARY')
                 admitted=self._submission_time(requests,admission()) if admission is not None else None
                 if kind=='SUBMISSION_UNCERTAIN' and expected_head is not None:
                     body=dict(body,admission=dict(profile=ADMISSION_PROFILE,clock_scope=ADMISSION_SCOPE,evaluated_at=admitted,
@@ -322,6 +336,7 @@ class BrokerRequestJournal:
                     raw=_observation(body['response'],existing['plan']['payload'])
                     body=dict(client_order_id=identity,response=raw)
                     duplicate=contract.normalize(raw,existing['plan']['payload'])==existing['tracker'].status()['latest']
+                committed_head=previous
                 if not duplicate:
                     if count>=MAX_EVENTS:raise ValueError('BROKER_JOURNAL_EVENT_CAP')
                     reserved_before=self._recovery_reserve(requests)
@@ -330,10 +345,12 @@ class BrokerRequestJournal:
                     # A terminal observation releases its own reserve. Preserve
                     # that cleanup path even when older history has a deficit.
                     if count+1+reserved_after>MAX_EVENTS and reserved_after>=reserved_before:raise ValueError('BROKER_JOURNAL_RECOVERY_RESERVE')
-                    self._insert(db,count+1,kind,body,previous)
+                    committed_head=self._insert(db,count+1,kind,body,previous)
                 if admission is not None and self._submission_time(requests,admission())<admitted:raise ValueError('BROKER_SUBMISSION_CLOCK_REGRESSION')
                 db.commit()  # Never acknowledge a request/observation before its commit returns.
-                return dict(**self._summary(identity,requests[identity]),duplicate=duplicate)
+                result=dict(**self._summary(identity,requests[identity]),duplicate=duplicate)
+                if return_head:result['head_sha256']=committed_head
+                return result
 
     def prepare(self, plan):return self._write('PREPARE',_plan(plan))
 
@@ -401,6 +418,24 @@ class BrokerRequestJournal:
         self._identity(client_order_id)
         # Validation and append share one locked replay; extras are stripped there.
         return self._write('OBSERVE',dict(client_order_id=client_order_id,response=response))
+
+    def observe_checked(self, client_order_id, response, *, expected_head,
+                        expected_payload_sha256):
+        """Append one response only at the exact retained request head.
+
+        This is a local journal race fence, not provider/source acceptance or
+        permission to submit, retry, cancel, reconcile funds, or route orders.
+        """
+        self._identity(client_order_id)
+        for value in (expected_head, expected_payload_sha256):
+            if (type(value) is not str or
+                    re.fullmatch('[0-9a-f]{64}', value) is None):
+                raise ValueError('BROKER_OBSERVATION_REFERENCE_INVALID')
+        return self._write('OBSERVE',
+            dict(client_order_id=client_order_id,response=response),
+            expected_head=expected_head,
+            expected_payload_sha256=expected_payload_sha256,
+            return_head=True)
 
     def _lookup_write(self, identity, now, result=None, admission=None, expected_head=None):
         self._identity(identity);lookup.clock(now)

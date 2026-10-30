@@ -465,9 +465,17 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             session.checkpoint()
             # The POST outcome now has priority over the pre-POST reservation
             # fence.  Stop requiring the pre-response request head before
-            # appending the observed response and completing its budget.
+            # appending the observed response.  The checked append itself still
+            # requires the exact marker head, so a concurrent lookup cannot be
+            # silently composed with this response.
             session.reservation_check = None
-            observed = bound_journal.observe(client_order_id, raw)
+            try:
+                observed = bound_journal.observe_checked(client_order_id, raw,
+                    expected_head=marker_head,
+                    expected_payload_sha256=expected_payload_sha256)
+            except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
+                _fail('POST_RESPONSE_DURABLE_STATE_CHANGED')
+            observation_head = observed['head_sha256']
         except BaseException:
             outcome = 'OUTCOME_UNKNOWN' if session.post_attempted else 'NOT_SENT'
             bound_budget.finish(token, outcome=outcome,
@@ -477,7 +485,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 ownership=owner)
             raise
         post_budget_head = bound_budget.finish(token, outcome='RESPONSE_OBSERVED',
-            request_after_head_sha256=bound_journal.recovery()['head_sha256'], actual_posts=1,
+            request_after_head_sha256=observation_head, actual_posts=1,
             admission=session.evaluated_at, ownership=owner)
     store_binding_check()
     return dict(mode='EXPLICIT_SINGLE_ATTEMPT_ALPACA_PAPER_SUBMISSION',
@@ -490,6 +498,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         request_and_post_budget_store_bindings_pinned=True,
         request_and_post_budget_file_identities_pinned=True,
         post_reservation_durable_heads_rechecked=True,
+        response_observation_head_bound_to_post_budget=True,
         alpaca_post_budget_scope_required=True,
         paper_order_response_observed=True, journal=observed,
         post_budget_head_sha256=post_budget_head,
@@ -499,7 +508,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The response append atomically requires the exact marked request head and payload, and the provider-budget completion records the exact committed observation head. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -712,6 +721,10 @@ def fixture_report():
             post_reservation_durable_heads_rechecked=
                 result['post_reservation_durable_heads_rechecked'] is True and
                 durable_heads_rechecked,
+            response_observation_head_bound_to_post_budget=
+                result['response_observation_head_bound_to_post_budget'] is True and
+                budget.history()[0]['request_after_head_sha256']==
+                    result['journal']['head_sha256'],
             alpaca_post_budget_scope_required=
                 result['alpaca_post_budget_scope_required'] is True,
             late_risk_change_blocked_before_reservation=late_risk_change_blocked,

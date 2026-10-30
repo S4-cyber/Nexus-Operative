@@ -27,6 +27,30 @@ def test_checked_marker_commits_once_and_reopens_uncertain_without_send_permissi
     assert fresh.path.read_bytes()==before and fresh.recovery()['capacity']['recovery_slots_reserved']==2
 
 
+def test_checked_observation_requires_exact_marker_head_and_terms(store):
+    marker=begin(store);head=store.recovery()['head_sha256']
+    payload=store.lookup_request('nx_fixture')['plan']['payload_sha256']
+    result=store.observe_checked('nx_fixture',response(),expected_head=head,
+        expected_payload_sha256=payload)
+    assert result['head_sha256']==store.recovery()['head_sha256']
+    assert result['snapshot']['status']=='new' and not result['duplicate']
+    assert marker['submission_attempt_marked']
+
+
+@pytest.mark.parametrize('field,value,reason',[
+    ('expected_head','0'*64,'OBSERVATION_HEAD_CHANGED'),
+    ('expected_payload_sha256','0'*64,'OBSERVATION_TERMS_CHANGED'),
+])
+def test_checked_observation_disagreement_rolls_back(store,field,value,reason):
+    begin(store);head=store.recovery()['head_sha256']
+    payload=store.lookup_request('nx_fixture')['plan']['payload_sha256']
+    before=store.path.read_bytes();options=dict(expected_head=head,
+        expected_payload_sha256=payload);options[field]=value
+    with pytest.raises(ValueError,match=reason):
+        store.observe_checked('nx_fixture',response(),**options)
+    assert store.path.read_bytes()==before
+
+
 @pytest.mark.parametrize('fault',['head','terms','veto','late-veto','clock'])
 def test_bad_or_revoked_admission_cannot_mark_attempt(store,fault):
     before=store.path.read_bytes();args={}

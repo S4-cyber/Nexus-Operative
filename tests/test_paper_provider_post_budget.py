@@ -65,13 +65,14 @@ def test_pending_receipt_is_read_only_hash_bound_and_requires_active_lease(tmp_p
     assert receipt['token']==receipt['head_sha256']==token
     assert receipt['request_before_head_sha256']==DIGEST
     assert receipt['payload_sha256']=='b'*64
+    assert receipt['admitted_at']==1000
     assert receipt['exact_pending_reservation_replayed'] is True
     assert receipt['read_only'] is True
     assert receipt['automatic_retry'] is receipt['ready_for_routing'] is False
     assert receipt['release_approved'] is False
     confirmation=dict(account_id=ACCOUNT,
         request_before_head_sha256=DIGEST,payload_sha256='b'*64,
-        client_order_id='nx_one',ownership=owner)
+        client_order_id='nx_one',admitted_at=1000,ownership=owner)
     assert budget.confirm_active_pending(token,**confirmation)==token
     budget._active_completion=None
     with pytest.raises(ValueError,match='ORIGINAL_LEASE_REQUIRED'):

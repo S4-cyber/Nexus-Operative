@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.62'
+REVISION = '0.340.63'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -173,6 +173,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the single-attempt POST boundary also discards the provider-budget BEGIN acknowledgement and cold-replays the exact pending token, account/client hashes, request/payload heads and owner identity twice before creating the request marker; only the original in-process ownership lease may continue, while missing, malformed, unstable or replacement-owner state stops before provider IO under fixed reservation uncertainty' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; provider-budget and request-marker cold replay now also binds each durable admission timestamp to the caller-observed permission, emergency-stop and monotonic-clock window, retains the provider reservation admission in its replay receipt/history, and requires the marker admission to follow that reservation before any POST; out-of-window durable state remains pending or closes as NOT_SENT with no provider IO' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -347,7 +351,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.62 repairs the hosted Python 3.11 offline-regression gate after exact-source v0.340.61 reached 75 percent with 3,548 passes and 16 platform skips before the 35-minute job budget cancelled the still-running complete suite. The regression job now has the same bounded 60-minute outer budget as the Windows packaging lane; its exact compile and complete pytest commands, pinned Actions and nonpersistent checkout credentials are unchanged. Exact-source v0.340.61 security run 41122236996 and Windows EXE/installer/reinstall/uninstall run 41122237165 passed; research run 41122237311 passed browser/help and saved-evidence jobs but is not accepted because offline regression was cancelled. This CI repair grants no broker, market, native-owner, funds, live, cloud or release acceptance. No Portal, runtime permission, risk, emergency-stop or trading behavior changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.63 binds both durable single-attempt paper admission records to caller-observed permission, independent emergency-stop and monotonic-clock windows. The provider-budget pending receipt retains its exact admitted time; the request marker must fall inside its own observed window and follow the provider reservation before any POST. Out-of-window provider state remains pending before a request marker, while an out-of-window marker closes the exact reservation as NOT_SENT with zero POSTs. Exact-source v0.340.62 commit d551b212ec7aeb44ea51008df9b10beace3d524f passed security 41129182009, research/browser/evidence 41129181990 and Windows EXE/installer/reinstall/uninstall 41129181986. This local hardening is not authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -91,6 +91,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['response_observation_head_bound_to_post_budget']
     assert result['post_budget_reservation_cold_replayed']
     assert result['request_marker_cold_replayed']
+    assert result['reservation_and_marker_admission_windows_bound']
     assert result['response_observation_cold_replayed']
     assert result['response_budget_completion_cold_replayed']
     assert result['alpaca_post_budget_scope_required']
@@ -215,6 +216,25 @@ def test_committed_post_budget_reservation_ack_is_cold_replayed_before_marker(
     assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
 
 
+def test_out_of_window_post_budget_admission_never_marks_or_posts(
+        prepared,monkeypatch):
+    original=PaperProviderPostBudget.begin
+    def wrong_admission(self,*args,**kwargs):
+        return original(self,*args,**dict(kwargs,admission=lambda:999))
+    monkeypatch.setattr(PaperProviderPostBudget,'begin',wrong_admission)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_BUDGET_RESERVATION_UNCERTAIN'):
+        submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    state=prepared[2].inspect()
+    assert retained['submission_attempt_marked'] is False
+    assert state['pending_token'] is not None
+    assert state['last_evaluated_at']==999
+    assert prepared[2].history()==()
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+
+
 @pytest.mark.parametrize('begin_result',[RuntimeError('private begin detail'),'f'*64])
 def test_uncommitted_post_budget_reservation_stops_before_marker_or_post(
         prepared,monkeypatch,begin_result):
@@ -290,6 +310,26 @@ def test_committed_request_marker_ack_is_cold_replayed_before_post(
     assert retained['snapshot']['status']=='new'
     assert prepared[2].history()[0]['outcome']=='RESPONSE_OBSERVED'
     assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+def test_out_of_window_request_marker_admission_never_posts(
+        prepared,monkeypatch):
+    original=BrokerRequestJournal.begin_submission_checked
+    def wrong_admission(self,*args,**kwargs):
+        return original(self,*args,**dict(kwargs,admission=lambda:1001))
+    monkeypatch.setattr(BrokerRequestJournal,'begin_submission_checked',
+                        wrong_admission)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='REQUEST_MARKER_DURABLE_STATE_CHANGED'):
+        submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    history=prepared[2].history()
+    assert retained['submission_attempt_marked'] is True
+    assert retained['submission_admission']['evaluated_at']==1001
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
 
 
 @pytest.mark.parametrize('begin_result',[

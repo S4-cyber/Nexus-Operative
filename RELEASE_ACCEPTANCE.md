@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.63 durable admission-window binding
+
+The one-attempt paper submission boundary now accepts provider-budget and request-marker durable records only when each retained admission time falls inside the exact caller-observed permission, emergency-stop and monotonic-clock window. The provider reservation time is retained in its read-only receipt/history and must precede the marker time. Out-of-window provider state remains pending before the marker; an out-of-window marker is closed as `NOT_SENT` with zero POSTs. This adds no Portal route, saved write credential, retry or external authority.
+
+Exact-source v0.340.62 commit `d551b212ec7aeb44ea51008df9b10beace3d524f` passed security 41129182009, research/browser/evidence 41129181990 and Windows 41129181986. Fresh v0.340.63 workflows remain mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local validation passed 4,670 tests with one expected non-Windows skip and one warning; 61 focused admission/budget tests and the 306-test broader paper/reconciliation/release set passed. All sixteen offline profiles and saved evidence verified against 395 exact source files; compilation, dependency, roadmap, controller, Portal syntax and wheel checks passed. These local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.62 bounded hosted-regression budget repair
 
 The hosted Python 3.11 complete-regression job now has a 60-minute bounded outer budget after exact-source v0.340.61 reached 75% with 3,548 passes and 16 platform skips before the prior 35-minute budget cancelled it. The exact compile and full pytest commands, pinned Actions, nonpersistent checkout and separate browser/evidence jobs are unchanged. This repairs evidence collection; it does not make an incomplete run successful or alter application authority.

@@ -155,7 +155,8 @@ class PaperProviderPostBudget:
                 for key in ('account_sha256','request_before_head_sha256','payload_sha256',
                             'client_order_sha256','owner_sha256'):
                     _digest(body[key], key.upper() + '_INVALID')
-                state['pending'] = dict(token=digest, **{key: body[key] for key in (
+                state['pending'] = dict(token=digest, admitted_at=now,
+                    **{key: body[key] for key in (
                     'account_sha256','request_before_head_sha256','payload_sha256',
                     'client_order_sha256','owner_sha256')})
                 state['attempts'] += 1; state['last_evaluated_at'] = now
@@ -303,7 +304,7 @@ class PaperProviderPostBudget:
 
     def confirm_active_pending(self, token, *, account_id,
             request_before_head_sha256, payload_sha256, client_order_id,
-            ownership):
+            admitted_at, ownership):
         """Require the original in-process lease for a replayed reservation.
 
         A process restart or a replacement owner may inspect and interrupt a
@@ -322,7 +323,7 @@ class PaperProviderPostBudget:
             with _transaction(db):
                 db.execute('BEGIN'); state = self._load(db)
         pending = state['pending']
-        expected = dict(token=value,
+        expected = dict(token=value, admitted_at=clock(admitted_at),
             account_sha256=hashlib.sha256(account.encode()).hexdigest(),
             request_before_head_sha256=request_head,
             payload_sha256=payload,

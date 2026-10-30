@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.63 durable admission-window binding
+
+The single-attempt paper boundary now proves that both durable pre-POST admission timestamps were actually witnessed by the caller session. Provider-budget cold replay retains and validates its hash-chained `BEGIN` time inside a caller-observed permission/emergency-stop/monotonic-clock window and under the original active ownership lease. Request-marker cold replay separately validates its retained admission inside the marker window and after the provider reservation. A forged or out-of-window provider reservation remains pending without a request marker or POST; an out-of-window marker consumes the exact attempt as `NOT_SENT` with zero POSTs. No automatic retry, re-arm, saved write credential, strategy route or external authority is added.
+
+Exact-source v0.340.62 commit `d551b212ec7aeb44ea51008df9b10beace3d524f` passed security 41129182009, research/browser/evidence 41129181990 and Windows 41129181986. Fresh v0.340.63 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local boundary does not close an external gate or predict profit.
+
+Local validation passed 4,670 tests with one expected non-Windows skip and one warning; 61 focused admission/budget tests and the 306-test broader paper/reconciliation/release set passed. All sixteen offline profiles and saved-evidence verification passed against 395 source files / `fa2413ccfd3f13fd9bd23df20e3e88699759bec7878a4cd65f027f7e6e68b7e4`. Compilation, dependency integrity, roadmap equality, Portal syntax, fourteen controller checks and wheel packaging passed. Evidence SHA-256 is `c9e3c8c54e195e6702ae57090a4ceb2322395ff0f891b6b1fbf2c1be6e72b5c2`; wheel SHA-256 is `8cb7328bf810b281330ef01ee6911f83f871439f7a4ee446148155f1dcf090c1`. Fresh exact-source hosted workflows remain required.
+
 ## v0.340.62 bounded hosted-regression budget repair
 
 The hosted Windows/Python 3.11 complete regression retains its exact compile and full `pytest -q` commands but now has a 60-minute bounded job budget instead of 35 minutes. Exact-source v0.340.61 reached 75% with 3,548 passes and 16 platform skips before the old budget cancelled the run. The independent browser/help and saved-evidence jobs passed; security and Windows distribution workflows passed. No test, application behavior, Portal control, modifiable parameter, credential scope, retry, live endpoint or authority is added or removed.

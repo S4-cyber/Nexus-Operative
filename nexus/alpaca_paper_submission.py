@@ -215,7 +215,7 @@ def _pin_stores(journal, post_budget, expected_account_id):
 
 def _reservation_state_check(journal, post_budget, *, client_order_id,
         expected_request_head, expected_payload_sha256, expected_admission,
-        expected_post_token):
+        expected_post_token, expected_post_admitted_at):
     """Recheck both exact durable reservation tails without mutating them."""
     try:
         request = journal.recovery()
@@ -234,6 +234,8 @@ def _reservation_state_check(journal, post_budget, *, client_order_id,
             selected[0]['submission_admission'] == expected_admission and
             budget['head_sha256'] == expected_post_token and
             budget['pending_token'] == expected_post_token and
+            budget['last_evaluated_at'] == expected_post_admitted_at and
+            expected_post_admitted_at <= expected_admission['evaluated_at'] and
             budget['review_required'] is False)
     except (OSError, RuntimeError, TypeError, ValueError, AttributeError,
             KeyError):
@@ -244,7 +246,8 @@ def _reservation_state_check(journal, post_budget, *, client_order_id,
 
 def _post_budget_reservation_token(post_budget, store_binding_check, *,
         expected_account_id, client_order_id, expected_request_head,
-        expected_payload_sha256, ownership):
+        expected_payload_sha256, expected_admission_floor,
+        expected_admission_ceiling, ownership):
     """Cold-replay one exact pending provider reservation before any marker.
 
     The BEGIN return or raised detail is never durable evidence.  Continuation
@@ -266,6 +269,9 @@ def _post_budget_reservation_token(post_budget, store_binding_check, *,
             receipt['request_before_head_sha256'] == expected_request_head and
             receipt['payload_sha256'] == expected_payload_sha256 and
             receipt['owner_sha256'] == expected_owner and
+            type(receipt['admitted_at']) in (int, float) and
+            expected_admission_floor <= receipt['admitted_at'] <=
+                expected_admission_ceiling and
             receipt['exact_pending_reservation_replayed'] is True and
             receipt['read_only'] is True and
             receipt['automatic_retry'] is False and
@@ -277,17 +283,19 @@ def _post_budget_reservation_token(post_budget, store_binding_check, *,
                 request_before_head_sha256=expected_request_head,
                 payload_sha256=expected_payload_sha256,
                 client_order_id=client_order_id,
+                admitted_at=receipt['admitted_at'],
                 ownership=ownership)
         store_binding_check()
     except BaseException:
         stable = False
     if not stable:
         _fail('POST_BUDGET_RESERVATION_UNCERTAIN')
-    return receipt['token']
+    return receipt
 
 
 def _request_marker_receipt(journal, store_binding_check, *,
-        client_order_id, expected_previous_head, expected_payload_sha256):
+        client_order_id, expected_previous_head, expected_payload_sha256,
+        expected_admission_floor, expected_admission_ceiling):
     """Cold-replay one exact request marker after its write acknowledgement.
 
     The write return or exception is transport only.  Two full-chain reads must
@@ -313,6 +321,9 @@ def _request_marker_receipt(journal, store_binding_check, *,
                 'CALLER_WALL_SECONDS_NOT_SEND_OR_ARRIVAL' and
             admission['expected_head_sha256'] == expected_previous_head and
             admission['payload_sha256'] == expected_payload_sha256 and
+            type(admission['evaluated_at']) in (int, float) and
+            expected_admission_floor <= admission['evaluated_at'] <=
+                expected_admission_ceiling and
             receipt['head_sha256'] != expected_previous_head and
             type(receipt['head_sha256']) is str and
             re.fullmatch(r'[0-9a-f]{64}', receipt['head_sha256']) is not None and
@@ -602,6 +613,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
         _fail('STORE_FILE_IDENTITY_INVALID')
     with bound_budget.ownership() as owner:
+        reservation_admission_floor = session.evaluated_at()
         try:
             bound_budget.begin(account_id=expected_account_id,
                 request_before_head_sha256=expected_head,
@@ -614,13 +626,22 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             # lost.  Never trust the raised detail or repeat the append; the
             # exact pending reservation and original lease are proved below.
             pass
-        token = _post_budget_reservation_token(bound_budget,
+        # The write callback itself advances ``session.previous`` on every
+        # admitted sample.  Reuse that observed ceiling without introducing a
+        # new permission/stop callback between commit and cold replay.
+        reservation_admission_ceiling = session.previous[0]
+        reservation = _post_budget_reservation_token(bound_budget,
             store_binding_check, expected_account_id=expected_account_id,
             client_order_id=client_order_id,
             expected_request_head=expected_head,
             expected_payload_sha256=expected_payload_sha256,
+            expected_admission_floor=reservation_admission_floor,
+            expected_admission_ceiling=reservation_admission_ceiling,
             ownership=owner)
+        token = reservation['token']
+        reservation_admitted_at = reservation['admitted_at']
         try:
+            marker_admission_floor = session.evaluated_at()
             try:
                 bound_journal.begin_submission_checked(client_order_id,
                     expected_head=expected_head,
@@ -631,10 +652,13 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 # neither the return nor raised detail; prove the exact marker
                 # through the pinned read-only journal below.
                 pass
+            marker_admission_ceiling = session.previous[0]
             marker = _request_marker_receipt(bound_journal,
                 store_binding_check, client_order_id=client_order_id,
                 expected_previous_head=expected_head,
-                expected_payload_sha256=expected_payload_sha256)
+                expected_payload_sha256=expected_payload_sha256,
+                expected_admission_floor=marker_admission_floor,
+                expected_admission_ceiling=marker_admission_ceiling)
             marker_head = marker['head_sha256']
             marker_admission = marker['submission_admission']
             session.reservation_check = lambda: _reservation_state_check(
@@ -642,7 +666,8 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 expected_request_head=marker_head,
                 expected_payload_sha256=expected_payload_sha256,
                 expected_admission=marker_admission,
-                expected_post_token=token)
+                expected_post_token=token,
+                expected_post_admitted_at=reservation_admitted_at)
             session.reservation_check()
             # Re-sample after both durable reservations and immediately before
             # the only POST.  A disagreement consumes the local request marker
@@ -736,6 +761,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         response_observation_head_bound_to_post_budget=True,
         post_budget_reservation_cold_replayed=True,
         request_marker_cold_replayed=True,
+        reservation_and_marker_admission_windows_bound=True,
         response_observation_cold_replayed=True,
         response_budget_completion_cold_replayed=True,
         alpaca_post_budget_scope_required=True,
@@ -1001,6 +1027,62 @@ def fixture_report():
             pass
         finally:
             BrokerRequestJournal.begin_submission_checked=original_marker
+        reservation_window_journal,reservation_window_selected=prepared(
+            root/'reservation-window')
+        reservation_window_budget=PaperProviderPostBudget(
+            root/'reservation-window-post-budget.sqlite3')
+        reservation_window_opener=Opener(reservation_window_journal)
+        reservation_admission_window_bound=False
+        def wrong_reservation_admission(self,*args,**kwargs):
+            return original_begin(self,*args,
+                **dict(kwargs,admission=lambda:999))
+        PaperProviderPostBudget.begin=wrong_reservation_admission
+        try:
+            submit_once(reservation_window_journal,'nx_submit_fixture',key,
+                secret,**options(reservation_window_selected,
+                                 reservation_window_opener,
+                                 reservation_window_budget))
+        except PaperSubmissionError as error:
+            retained_window=reservation_window_journal.recovery()['requests'][0]
+            reservation_window_state=reservation_window_budget.inspect()
+            reservation_admission_window_bound=(
+                str(error)=='PAPER_SUBMISSION_POST_BUDGET_RESERVATION_UNCERTAIN'
+                and retained_window['submission_attempt_marked'] is False
+                and reservation_window_state['pending_token'] is not None
+                and reservation_window_state['last_evaluated_at']==999
+                and reservation_window_budget.history()==()
+                and not any(request.get_method()=='POST'
+                            for request in reservation_window_opener.requests))
+        finally:
+            PaperProviderPostBudget.begin=original_begin
+        marker_window_journal,marker_window_selected=prepared(
+            root/'marker-window')
+        marker_window_budget=PaperProviderPostBudget(
+            root/'marker-window-post-budget.sqlite3')
+        marker_window_opener=Opener(marker_window_journal)
+        request_marker_admission_window_bound=False
+        def wrong_marker_admission(self,*args,**kwargs):
+            return original_marker(self,*args,
+                **dict(kwargs,admission=lambda:1001))
+        BrokerRequestJournal.begin_submission_checked=wrong_marker_admission
+        try:
+            submit_once(marker_window_journal,'nx_submit_fixture',key,secret,
+                **options(marker_window_selected,marker_window_opener,
+                          marker_window_budget))
+        except PaperSubmissionError as error:
+            retained_window=marker_window_journal.recovery()['requests'][0]
+            marker_window_history=marker_window_budget.history()
+            request_marker_admission_window_bound=(
+                str(error)=='PAPER_SUBMISSION_REQUEST_MARKER_DURABLE_STATE_CHANGED'
+                and retained_window['submission_attempt_marked'] is True
+                and retained_window['submission_admission']['evaluated_at']==1001
+                and len(marker_window_history)==1
+                and marker_window_history[0]['outcome']=='NOT_SENT'
+                and marker_window_history[0]['actual_posts']==0
+                and not any(request.get_method()=='POST'
+                            for request in marker_window_opener.requests))
+        finally:
+            BrokerRequestJournal.begin_submission_checked=original_marker
         repeat_blocked=False
         try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
@@ -1031,6 +1113,12 @@ def fixture_report():
             request_marker_cold_replayed=
                 result['request_marker_cold_replayed'] is True and
                 request_marker_cold_replayed,
+            reservation_admission_window_bound=
+                result['reservation_and_marker_admission_windows_bound'] is True and
+                reservation_admission_window_bound,
+            request_marker_admission_window_bound=
+                result['reservation_and_marker_admission_windows_bound'] is True and
+                request_marker_admission_window_bound,
             response_observation_cold_replayed=
                 result['response_observation_cold_replayed'] is True and
                 result['journal']['exact_response_observation_replayed'] is True,

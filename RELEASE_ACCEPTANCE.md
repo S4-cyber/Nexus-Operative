@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.45 fail-closed installer phase-evidence review
+
+Successful installer acceptance evidence must contain exactly the ten declared phases, each as one started record immediately followed by one completed record with the fixed timeout. Records must use UTC monotonic timestamps, remain within their timeout plus the 15-second terminal-write allowance and pass bounded no-follow file reading. Any missing, duplicate, reordered, unknown, failed, timed-out, retimed, non-UTC, clock-regressed, overlong, oversized, symlinked or changed input must stop distribution packaging. The summary must retain false native-Windows, broker, live, funds and release authority flags.
+
+Exact-source v0.340.44 `baf7724283f1e5c5f2c5247bb234d057a1cfea3b` passed security run 40997694766; browser-help and saved-evidence jobs in research run 40997694750 passed. Hosted full regression and Windows run 40997694747 remained active and are not accepted as passes. Fresh exact-source v0.340.45 workflows remain mandatory.
+
+Local pre-publication validation passed 4,569 tests with one expected non-Windows skip and one Starlette/httpx warning; the final focused set passed 54 tests. Sixteen bounded offline profiles and saved-evidence verification matched 390 source files / `7cb8aac26cd6c540bf9178095cb00877c3f21d53063cd2884cbc1faf68fb2e65`; report SHA-256 is `661d1f0fc52b116e25878f106861345bb65e25d1fa4aefe459879ab928cf2ad0`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controllers and the wheel build passed. Clean-machine/native-window, ordinary-user profile/ACL, actual-account, sustained-market, independent-review and owner-approval gates remain open.
+
 ## v0.340.44 bounded native-installer phases and diagnostics
 
 Every external installer-acceptance child must run through the fixed-deadline process runner with exact arguments, a timeout no greater than 300 seconds and child-tree termination on timeout. Each phase must retain started plus exactly one completed/failed/timed-out outcome for unconditional artifact upload. The workflow's 60-minute job timeout remains a final backstop. A timeout, start failure or nonzero exit must fail the acceptance lane; no result may grant native-window, broker, funds, live, cloud or release authority.

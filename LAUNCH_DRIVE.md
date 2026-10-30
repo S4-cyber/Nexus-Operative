@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.45 fail-closed installer phase-evidence review
+
+Successful native Windows installer evidence must now pass a bounded one-minute structural review before distribution packaging. The exact ten installer/tool/start/recovery/uninstall phases require one started and one completed record, fixed deadlines, UTC monotonic timestamps and observed durations within the deadline plus a 15-second terminal-write allowance. Missing, duplicate, reordered, malformed, failed, timed-out, retimed or overlong evidence fails closed. The allowlisted review is retained beside the raw evidence. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.44 `baf7724283f1e5c5f2c5247bb234d057a1cfea3b` passed security run 40997694766; browser-help and offline-evidence jobs in run 40997694750 passed. Hosted full regression and Windows run 40997694747 remained active at this checkpoint and are not called passes. Fresh exact-source v0.340.45 checks remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local pre-publication validation passed 4,569 tests with one expected non-Windows skip and one Starlette/httpx warning; the final focused set passed 54 tests. All sixteen bounded offline profiles and saved-evidence verification matched 390 source files / `7cb8aac26cd6c540bf9178095cb00877c3f21d53063cd2884cbc1faf68fb2e65`; report SHA-256 is `661d1f0fc52b116e25878f106861345bb65e25d1fa4aefe459879ab928cf2ad0`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks and the v0.340.45 wheel build passed; wheel SHA-256 is `209c9e5cb658055ea3fb86c8de49e4f531536bb44f6fe85db7390220ca62e2e8`. Synthetic/offline evidence does not predict future profit or establish broker, market, Windows-profile, live, cloud or release acceptance.
+
 ## v0.340.44 bounded native-installer phases and diagnostics
 
 Every external child in the Windows installer/reinstall/recovery/uninstall acceptance script now runs with exact arguments, a fixed 120–300-second deadline and child-tree termination on timeout. Started/completed/failed/timed-out phase records are retained as JSONL and remain inside the existing unconditional evidence upload; the workflow's outer 60-minute timeout is still the final backstop. This changes acceptance infrastructure only. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.

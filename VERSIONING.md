@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.44 (pre-release).** This build gives every external process in the Windows installer acceptance lane a fixed deadline, child-tree termination and retained phase evidence. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.45 (pre-release).** This build validates the exact successful Windows installer phase sequence, deadlines, UTC order and bounded durations before distribution packaging. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.45 fail-closed installer phase-evidence review
+
+A one-minute workflow step now reads the retained installer phase JSONL through a bounded no-follow regular-file boundary and requires exactly ten started/completed pairs in the fixed order and with the fixed timeouts. UTC timestamps must be monotonic and each duration must remain within its timeout plus the bounded terminal-write allowance. Any malformed, missing, duplicate, reordered, failed, timed-out, retimed or overlong evidence stops packaging. The written summary exposes no paths and keeps every authority flag false.
+
+Exact-source v0.340.44 `baf7724283f1e5c5f2c5247bb234d057a1cfea3b` passed security run 40997694766. Browser-help and saved-evidence jobs in run 40997694750 passed, while its full regression and Windows run 40997694747 were still active at the checkpoint. Fresh exact-source v0.340.45 workflows remain mandatory.
+
+Local pre-publication validation passed 4,569 tests with one expected non-Windows skip and one Starlette/httpx warning; the final focused set passed 54 tests. All sixteen bounded offline profiles and saved-evidence verification matched 390 source files / `7cb8aac26cd6c540bf9178095cb00877c3f21d53063cd2884cbc1faf68fb2e65`; report SHA-256 is `661d1f0fc52b116e25878f106861345bb65e25d1fa4aefe459879ab928cf2ad0`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks and the wheel build passed; wheel SHA-256 is `209c9e5cb658055ea3fb86c8de49e4f531536bb44f6fe85db7390220ca62e2e8`. These checks grant no trading, funds, live, cloud, release or owner authority.
 
 ## v0.340.44 bounded native-installer phases and diagnostics
 

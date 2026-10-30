@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.44 bounds every external process in the native Windows installer/reinstall/recovery/uninstall acceptance lane, kills the child tree on timeout and retains phase evidence for unconditional upload. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+Current checkpoint: v0.340.45 fail-closes successful Windows installer evidence unless the exact ten-phase sequence, fixed deadlines, UTC order and bounded durations validate before distribution packaging. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+
+## v0.340.45 fail-closed installer phase-evidence review
+
+The native Windows workflow now runs a one-minute bounded review after installer/reinstall/recovery/uninstall smoke and before distribution packaging. The review accepts only the exact ten started/completed pairs with fixed per-phase deadlines, UTC monotonic timestamps and observed duration no greater than its deadline plus a 15-second terminal-write allowance. It rejects missing, duplicate, reordered, unknown, failed, timed-out, retimed, non-UTC, regressed-clock, overlong, oversized, symlinked or changed evidence and writes an allowlisted authority-false summary beside the raw JSONL for unconditional upload. This is CI evidence-structure validation, not native acceptance.
+
+Exact-source v0.340.44 `baf7724283f1e5c5f2c5247bb234d057a1cfea3b` passed public security run 40997694766. In research run 40997694750, browser-help and saved-evidence jobs passed while hosted full regression remained active at the checkpoint; Windows run 40997694747 remained active in Install and test. No pending workflow is recorded as a pass. Fresh exact-source v0.340.45 workflows remain mandatory.
+
+Local pre-publication validation passed 4,569 tests with one expected non-Windows skip and one Starlette/httpx warning; the final installer-review/workflow/version/roadmap/evidence focus passed 54 tests. All sixteen bounded offline profiles and saved-evidence verification matched 390 source files / `7cb8aac26cd6c540bf9178095cb00877c3f21d53063cd2884cbc1faf68fb2e65`; `validation/release_trials_0_340_45.json` SHA-256 is `661d1f0fc52b116e25878f106861345bb65e25d1fa4aefe459879ab928cf2ad0`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks and the v0.340.45 wheel build passed; wheel SHA-256 is `209c9e5cb658055ea3fb86c8de49e4f531536bb44f6fe85db7390220ca62e2e8`. Fresh exact-source hosted workflows remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
 
 ## v0.340.44 bounded native-installer phases and diagnostics
 

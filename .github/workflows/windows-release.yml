@@ -129,6 +129,12 @@ jobs:
           $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
           $installer = (Resolve-Path "release/NexusOperative-Setup-$version.exe").Path
           ./tools/windows_installer_smoke.ps1 -Installer $installer -Version $version -EvidenceDirectory "$env:RUNNER_TEMP/nexus-installer-evidence" -UpgradeSource "$PWD/.upgrade-source" -UpgradeCommit "09bb7280cd2e654018d491db52e19660b2b8e180"
+      - name: Validate installer phase evidence
+        timeout-minutes: 1
+        shell: pwsh
+        run: |
+          python tools/windows_installer_phase_review.py --input "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phases.jsonl" --output "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json"
+          if ($LASTEXITCODE -ne 0) { throw 'Installer phase evidence validation failed' }
       - name: Create distribution checksum manifest
         shell: pwsh
         run: |

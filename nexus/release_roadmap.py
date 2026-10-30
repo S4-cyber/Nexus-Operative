@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.48'
+REVISION = '0.340.49'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -307,7 +307,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.48 makes the shared distribution-manifest boundary stable, bounded and fail closed. Creation and verification now accept only pre-1.0 versions, exact source commits, exact schemas and false authority flags; artifact and manifest reads require regular single-link files with stable descriptor metadata, while creation refuses an existing output. Duplicate keys, floats, nonfinite values, extra fields, unsafe names, symlinks, hardlinks, mutation during read and oversized inputs fail before upload. This remains CI evidence integrity, not native-window, ordinary-user, broker, market or release acceptance before fresh exact-source workflows. No application runtime, provider, retry, control, permission or authority changes. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.49 makes artifact-manifest command output byte-stable across Windows and POSIX by bypassing text-mode newline translation for success, refusal and usage records. The exact LF-only public token contract is now tested on every platform; hosted v0.340.48 security, browser-help and saved-evidence jobs passed, while both full regression lanes exposed and stopped on the prior CRLF mismatch. This is CI and packaging portability hardening, not native-window, ordinary-user, broker, market or release acceptance before fresh exact-source workflows. No application runtime, provider, retry, control, permission or authority changes. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -2,11 +2,15 @@
 
 ## Candidate update on 2026-10-30
 
-Current candidate: v0.340.48, based on published v0.340.47 source `cc717ab33deeb1938a2f63abe07388eec5fdf92c`. v0.340.48 makes the shared distribution-manifest producer and verifier stable, bounded, exact-schema and no-overwrite. No application-runtime or external authority is added. Exact-source v0.340.47 passed security, research/browser/evidence and Windows workflows. Fresh exact-source v0.340.48 results remain required.
+Current candidate: v0.340.49, based on published v0.340.48 source `e6570c29fa9c3d3ed1356ad9f351bf8c3c929dac`. v0.340.49 makes artifact-manifest success, refusal and usage records byte-stable across Windows and POSIX. No application-runtime or external authority is added. Exact-source v0.340.48 security, browser-help and saved-evidence jobs passed; both full regression lanes exposed and stopped on the same four CRLF mismatches. Fresh exact-source v0.340.49 results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Local pre-publication validation passed 4,607 tests with one expected non-Windows skip and one Starlette/httpx warning; the 198-test artifact/installer/evidence/version/roadmap focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller, Portal-syntax and wheel-build checks passed. The rough weighted implementation estimate is intentionally unchanged because this acceptance-infrastructure hardening does not integrate a new accepted external gate.
+Local pre-publication validation passed 4,608 tests with one expected non-Windows skip and one Starlette/httpx warning; the 68-test portability/installer/version/roadmap focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller, Portal-syntax and wheel-build checks passed. The rough weighted implementation estimate is intentionally unchanged because this portability repair does not integrate a new accepted external gate.
+
+## Prior v0.340.48 candidate record
+
+v0.340.48 made the shared distribution-manifest producer and verifier stable, bounded, exact-schema and no-overwrite. Its exact-source public security workflow passed. Browser-help and saved-evidence jobs passed, while Windows and offline full regression each recorded 4,585 passes, 19 skips and one warning before four exact-output assertions rejected CRLF instead of LF. This is a failed exact-source candidate, not hosted acceptance.
 
 ## Prior v0.340.47 candidate record
 

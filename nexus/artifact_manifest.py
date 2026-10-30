@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import sys
 import tempfile
 
 
@@ -213,7 +214,20 @@ def _write_manifest(path, document):
 
 class _Parser(argparse.ArgumentParser):
     def error(self, message):
-        self.exit(2, "ARTIFACT_MANIFEST_USAGE_ERROR\n")
+        _write_line(sys.stderr, "ARTIFACT_MANIFEST_USAGE_ERROR")
+        self.exit(2)
+
+
+def _write_line(stream, value):
+    """Write one UTF-8/LF record without platform newline translation."""
+    encoded = value.encode("utf-8") + b"\n"
+    buffer = getattr(stream, "buffer", None)
+    if buffer is None:
+        stream.write(encoded.decode("utf-8"))
+        stream.flush()
+        return
+    buffer.write(encoded)
+    buffer.flush()
 
 
 def main():
@@ -234,9 +248,11 @@ def main():
             _write_manifest(args.output, result)
         else:
             result = verify(_read_manifest(args.manifest), args.directory)
-            print(json.dumps(result, sort_keys=True, separators=(",", ":"), allow_nan=False))
+            _write_line(sys.stdout, json.dumps(
+                result, sort_keys=True, separators=(",", ":"), allow_nan=False,
+            ))
     except (ArtifactManifestError, MemoryError, OSError, RecursionError):
-        print("ARTIFACT_MANIFEST_CHECK_FAILED")
+        _write_line(sys.stdout, "ARTIFACT_MANIFEST_CHECK_FAILED")
         return 1
     return 0
 

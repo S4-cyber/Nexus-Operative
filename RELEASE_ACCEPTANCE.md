@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.49 deterministic cross-platform manifest CLI records
+
+Artifact-manifest success, refusal and usage records must be exact UTF-8/LF bytes on Windows and POSIX. The implementation must bypass text-mode newline translation, preserve the fixed public refusal token and keep the usage diagnostic private to stderr. Platform-specific CRLF output must fail the acceptance test rather than weaken the contract.
+
+Exact-source v0.340.48 security passed; browser-help and saved-evidence jobs passed. Both full regression lanes stopped only on four LF-versus-CRLF assertions after 4,585 passes, 19 skips and one warning. Fresh exact-source v0.340.49 workflows remain mandatory.
+
+Local pre-publication validation passed 4,608 tests with one expected non-Windows skip and one Starlette/httpx warning; the focused set passed 68. Sixteen bounded offline profiles and saved-evidence verification matched 392 files / `c37eecd7f6705f7b6b13a51e919e0826241cfa7c5a57bd4a3c8c23856d2d4961`; report SHA-256 is `c4767244696fbdecb300ea8f7e0d3b6b0336acd959d4002a9ef0a7db52890cb6`. Compilation, dependency integrity, deterministic roadmap, fourteen Node controllers, Portal syntax and wheel build passed; wheel SHA-256 is `ef5ec631cf35a8f00bc5bd3a06c45228183b171ee985e0fe54abd31ad2f540a9`. Clean-machine/native-window, ordinary-user profile/ACL, actual-account, sustained-market, independent-review and owner-approval gates remain open.
+
 ## v0.340.48 strict stable distribution manifest
 
 Distribution packaging must hash every listed artifact through a stable bounded regular single-link file descriptor and must read the manifest through the same fail-closed boundary. The exact manifest and entry schemas, pre-1.0 version, 40-character source commit, false signing/release flags, safe unique names, positive bounded sizes and lowercase SHA-256 values are mandatory. Duplicate JSON keys, floats, nonfinite values, symlinks, hardlinks, mutation during read and an existing output must stop packaging.

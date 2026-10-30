@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.48 (pre-release).** This build makes the shared distribution-manifest boundary stable, bounded, exact-schema and no-overwrite before upload. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.49 (pre-release).** This build makes artifact-manifest success, refusal and usage records byte-stable across Windows and POSIX. It adds no application-runtime, provider, retry or external authority. This is CI/packaging portability hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.49 deterministic cross-platform manifest CLI records
+
+The artifact-manifest CLI now writes explicit UTF-8/LF bytes through the binary stream for successful JSON, fixed refusal and private usage records. Windows can no longer translate these outputs to CRLF, and direct subprocess regressions require the exact bytes on every platform.
+
+Exact-source v0.340.48 security run 41020423532 passed. Research run 41020423541 passed browser-help and saved-evidence jobs; its full regression and Windows run 41020423593 each stopped on the same four LF-versus-CRLF assertions after 4,585 passes, 19 skips and one warning. Fresh exact-source v0.340.49 workflows remain mandatory.
+
+Local pre-publication validation passed 4,608 tests with one expected non-Windows skip and one Starlette/httpx warning; the focused set passed 68. Sixteen bounded offline profiles and saved-evidence verification matched 392 files / `c37eecd7f6705f7b6b13a51e919e0826241cfa7c5a57bd4a3c8c23856d2d4961`; report SHA-256 is `c4767244696fbdecb300ea8f7e0d3b6b0336acd959d4002a9ef0a7db52890cb6`. Compilation, dependency integrity, deterministic roadmap, fourteen Node controllers, Portal syntax and the wheel build passed; wheel SHA-256 is `ef5ec631cf35a8f00bc5bd3a06c45228183b171ee985e0fe54abd31ad2f540a9`. These checks grant no trading, funds, live, cloud, release or owner authority.
 
 ## v0.340.48 strict stable distribution manifest
 

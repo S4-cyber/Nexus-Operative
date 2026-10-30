@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.48 hardens the shared artifact-manifest producer and verifier with bounded stable single-link reads, exact pre-1.0/source/schema/authority validation, duplicate-key rejection and no-overwrite publication. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+Current checkpoint: v0.340.49 makes artifact-manifest command output byte-stable across Windows and POSIX by bypassing text-mode newline translation for success, refusal and usage records. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+
+## v0.340.49 deterministic cross-platform manifest CLI records
+
+The artifact-manifest CLI now writes its public JSON, fixed refusal token and private usage token through the binary stream with an explicit UTF-8/LF terminator. This preserves one byte-level contract on Windows and POSIX instead of accepting platform-translated CRLF. Direct subprocess tests cover all three records.
+
+Exact-source v0.340.48 `e6570c29fa9c3d3ed1356ad9f351bf8c3c929dac` passed public security run 41020423532. Research run 41020423541 passed browser-help and saved-evidence jobs, while its offline regression failed only four byte assertions after Windows returned CRLF. Windows run 41020423593 stopped on the same four assertions; both full suites otherwise recorded 4,585 passes, 19 skips and one warning. Fresh exact-source v0.340.49 workflows remain mandatory.
+
+Local pre-publication validation passed 4,608 tests with one expected non-Windows skip and one Starlette/httpx warning; the artifact/installer/version/roadmap focus passed 68. All sixteen bounded offline profiles and saved-evidence verification matched 392 source files / `c37eecd7f6705f7b6b13a51e919e0826241cfa7c5a57bd4a3c8c23856d2d4961`; `validation/release_trials_0_340_49.json` SHA-256 is `c4767244696fbdecb300ea8f7e0d3b6b0336acd959d4002a9ef0a7db52890cb6`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks, Portal JavaScript syntax and the v0.340.49 wheel build passed; wheel SHA-256 is `ef5ec631cf35a8f00bc5bd3a06c45228183b171ee985e0fe54abd31ad2f540a9`. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This portability repair grants no native-Windows, broker, market, funds, live, cloud, release or owner authority.
 
 ## v0.340.48 strict stable distribution manifest
 

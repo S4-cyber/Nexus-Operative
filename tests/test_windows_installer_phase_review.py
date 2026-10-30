@@ -6,7 +6,7 @@ import pytest
 from tools import windows_installer_phase_review as review
 
 
-VERSION = "0.340.48"
+VERSION = "0.340.49"
 SOURCE_COMMIT = "a" * 40
 INSTALLER_SHA256 = "b" * 64
 SESSION_ID = "12345678-1234-4234-8234-123456789abc"

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.49 deterministic cross-platform manifest CLI records
+
+Artifact-manifest success, refusal and usage records now bypass text-mode newline translation and use explicit UTF-8/LF bytes on Windows and POSIX. The exact byte contract is tested without relaxing any fail-closed validation. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.48 security passed. Its browser-help and saved-evidence jobs passed, while the Windows and offline-regression full suites each stopped only on four LF-versus-CRLF byte assertions after recording 4,585 passes, 19 skips and one warning. Fresh exact-source v0.340.49 checks remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local pre-publication validation passed 4,608 tests with one expected non-Windows skip and one Starlette/httpx warning; the portability/installer/version/roadmap focus passed 68. All sixteen bounded offline profiles and saved-evidence verification matched 392 files / `c37eecd7f6705f7b6b13a51e919e0826241cfa7c5a57bd4a3c8c23856d2d4961`; report SHA-256 is `c4767244696fbdecb300ea8f7e0d3b6b0336acd959d4002a9ef0a7db52890cb6`. Compilation, dependency integrity, deterministic roadmap, all fourteen Node controllers, Portal syntax and wheel build passed; wheel SHA-256 is `ef5ec631cf35a8f00bc5bd3a06c45228183b171ee985e0fe54abd31ad2f540a9`. Synthetic/offline evidence does not predict future profit or establish broker, market, Windows-profile, live, cloud or release acceptance.
+
 ## v0.340.48 strict stable distribution manifest
 
 The shared artifact-manifest producer and verifier now use bounded stable descriptor reads for every artifact and the manifest itself, reject symlinks and hardlinks, require exact schemas and pre-1.0/source/false-authority bindings, reject duplicate keys and noninteger JSON numbers, and refuse to overwrite an existing manifest. Changed, malformed, unsafe or oversized distribution inputs fail before upload. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.

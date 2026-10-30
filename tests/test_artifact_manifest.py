@@ -8,7 +8,7 @@ import pytest
 from nexus import artifact_manifest as subject
 
 
-VERSION = "0.340.48"
+VERSION = "0.340.49"
 SOURCE = "a" * 40
 
 
@@ -118,7 +118,10 @@ def test_cli_create_verify_missing_file_and_refuse_overwrite(tmp_path):
     assert json.loads(output.read_text())["source_commit"] == SOURCE
     assert subprocess.run(create, capture_output=True).returncode == 1
     verify = _command() + ["verify", str(output), str(tmp_path)]
-    subprocess.run(verify, check=True, capture_output=True)
+    verified = subprocess.run(verify, check=True, capture_output=True)
+    assert verified.stdout == (b'{"artifact_integrity_ok":true,'
+                               b'"release_approved":false,"signed":false}\n')
+    assert verified.stderr == b""
     artifact.unlink()
     assert subprocess.run(verify, capture_output=True).returncode == 1
 
@@ -145,3 +148,10 @@ def test_cli_rejects_hardlinked_manifest(tmp_path):
     result = subprocess.run(_command() + ["verify", str(path), str(tmp_path)], capture_output=True)
     assert result.returncode == 1
     assert result.stdout == b"ARTIFACT_MANIFEST_CHECK_FAILED\n"
+
+
+def test_cli_usage_error_is_private_and_lf_only():
+    result = subprocess.run(_command(), capture_output=True)
+    assert result.returncode == 2
+    assert result.stdout == b""
+    assert result.stderr == b"ARTIFACT_MANIFEST_USAGE_ERROR\n"

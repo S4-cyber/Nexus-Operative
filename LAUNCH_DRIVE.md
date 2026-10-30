@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.41 activity-response semantic-reader file-set proof
+
+The exact activity-response tool now holds the pacing journal, retained activity journal and all three-or-four private response bodies by pathname identity and bounded fingerprints through the whole replay, including every exceptional exit. Six maximum-set mutation-plus-failure cases, a late normalization case and both store-retarget cases receive fixed outer refusals. Mandatory reconciliation evidence and the installed executable smoke require the new guarantees. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.40 source `f2576494231f3701120fec5ba5e032e19588eafe` passed public security run 40972917357, research safety/browser/evidence run 40972917356 and Windows EXE/installer/reinstall/uninstall run 40972917402. Fresh exact-source v0.340.41 workflows remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Pre-publication local validation passed 4,535 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the activity-response/response-bundle/release focus passed 216 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `69e9afe8aba4dda82a380dc169521c961cf67b7114ad9d04af5944cea113e3d0`; `validation/release_trials_0_340_41.json` SHA-256 is `fed4164ae1f464d9b527838316f4725060ba2945e77109ba3da42127fad52bec`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.41 wheel build passed; wheel SHA-256 is `1a57e8340c030929dc25f5958911197adae7e442a83a9dd8aea0a8475654a0ba`. The 745-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Python Playwright are unavailable. Fresh exact-source hosted workflows remain mandatory.
+
 ## v0.340.40 account-response semantic-reader file-set proof
 
 The exact account-response tool now holds the pacing journal, four retained response bodies and portable observation by pathname identity and bounded fingerprints through the whole replay, including every exceptional exit. Six per-file mutation-plus-failure cases, a late normalization case and a pacing-store-retarget case receive fixed outer refusals. Mandatory reconciliation evidence and the installed executable smoke require the new guarantees. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

@@ -316,6 +316,8 @@ def run(command):
             activity_response_review['collection_observation_replayed'] is True and
             activity_response_review['retained_receipt_replayed'] is True and
             activity_response_review['journals_rechecked_unchanged'] is True and
+            activity_response_review['private_file_set_rechecked_unchanged'] is True and
+            activity_response_review['semantic_reader_failures_rechecked'] is True and
             all(activity_response_review[k] is False for k in ACTIVITY_RESPONSE_FLAGS),'ACTIVITY_RESPONSE_REVIEW')
         response_bundle_args=['--paper-tool','response-bundle-review']
         for flag,key in (('pacing','pacing_path'),('activity-store','activity_store_path'),

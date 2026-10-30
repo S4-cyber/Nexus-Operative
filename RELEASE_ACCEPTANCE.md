@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.41 activity-response semantic-reader file-set proof
+
+Exact activity-response review must bind the pacing journal, retained activity journal and every supplied account/activity body by pathname identity and bounded fingerprints before either store construction, and recheck the complete set after every normal or exceptional semantic-reader exit. Either store retarget and any sampled input mutation must receive fixed outer refusals. Mandatory reconciliation evidence and the installed executable smoke must require both recheck claims. Runtime authority remains unchanged.
+
+Exact-source v0.340.40 source `f2576494231f3701120fec5ba5e032e19588eafe` passed public security run 40972917357, research safety/browser/evidence run 40972917356 and Windows EXE/installer/reinstall/uninstall run 40972917402. Fresh exact-source v0.340.41 workflows remain mandatory.
+
+Pre-publication local validation passed 4,535 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the activity-response/response-bundle/release focus passed 216 tests. All sixteen bounded offline profiles and saved-evidence verification matched 387 source files / `69e9afe8aba4dda82a380dc169521c961cf67b7114ad9d04af5944cea113e3d0`; `validation/release_trials_0_340_41.json` SHA-256 is `fed4164ae1f464d9b527838316f4725060ba2945e77109ba3da42127fad52bec`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller smokes and the v0.340.41 wheel build passed; wheel SHA-256 is `1a57e8340c030929dc25f5958911197adae7e442a83a9dd8aea0a8475654a0ba`. The 745-path public artifact audit and targeted credential-pattern scan found no findings; local Gitleaks and Python Playwright are unavailable. Fresh exact-source hosted workflows remain mandatory.
+
 ## v0.340.40 account-response semantic-reader file-set proof
 
 Exact account-response review must bind the pacing journal, four response bodies and portable observation by pathname identity and bounded fingerprints before reader construction, and recheck the complete set after every normal or exceptional semantic-reader exit. Pacing-store retargeting and any sampled input mutation must receive fixed outer refusals. Mandatory reconciliation evidence and the installed executable smoke must require both recheck claims. Runtime authority remains unchanged.

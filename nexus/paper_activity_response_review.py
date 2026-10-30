@@ -18,11 +18,16 @@ from nexus import alpaca_activity_normalizer as adapter
 from nexus import alpaca_paper_inspection as inspection
 from nexus import activity_collection_evidence as evidence
 from nexus.alpaca_paper_contract import sha
-from nexus.broker_activity_store import BrokerActivityStore, _inputs
+from nexus.broker_activity_store import (
+    MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES,BrokerActivityStore,_inputs)
 from nexus.paper_activity_acceptance_probe import _private_path
 from nexus.paper_provider_result_tool import _read
 from nexus import paper_read_projection as projection
-from nexus.paper_read_pacing import PaperReadPacing, RECEIPT_PROFILE_V3
+from nexus.paper_read_pacing import (
+    MAX_DATABASE_BYTES as PACING_DATABASE_BYTES,PaperReadPacing,RECEIPT_PROFILE_V3)
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints,capture_file_identities,
+    require_file_fingerprints,require_file_identities)
 
 MODE='PAPER_ACTIVITY_RESPONSE_NORMALIZATION_REVIEW'
 FLAGS=('source_attested','source_coverage_verified','activity_coverage_verified',
@@ -30,6 +35,8 @@ FLAGS=('source_attested','source_coverage_verified','activity_coverage_verified'
     'broker_account_reconciled','spendable_funds_verified','ready_for_routing',
     'broker_connected','ledger_applied','live_orders_enabled','money_movement_enabled',
     'automatic_retry','automatic_continuation','release_approved')
+CHECKS=('review_checked','private_file_set_rechecked',
+    'semantic_reader_failures_rechecked','source_files_preserved')
 
 
 def _fail(code):
@@ -41,9 +48,9 @@ def _digest(value):
     return value
 
 
-def _raw(path):
+def _raw(path,raw=None):
     path,_=_private_path(path)
-    raw=_read(path)
+    if raw is None:raw=_read(path)
     if len(raw)>inspection.MAX_BODY:_fail('BODY_CAP')
     try:
         value=json.loads(raw.decode('utf-8'),object_pairs_hook=inspection._pairs,
@@ -51,6 +58,38 @@ def _raw(path):
     except (UnicodeError,ValueError,TypeError,RecursionError,MemoryError):
         _fail('BODY_INVALID')
     return raw,value
+
+
+def _store_binding(gate,store):
+    return gate.path,gate.account_digest,store.path,store.account_digest
+
+
+def _require_files(paths,limits,identities,fingerprints,
+        gate=None,store=None,store_binding=None):
+    if ((gate is None)!=(store is None) or (gate is not None and
+            (type(gate) is not PaperReadPacing or type(store) is not BrokerActivityStore or
+             _store_binding(gate,store)!=store_binding))):
+        _fail('STORE_BINDING_CHANGED')
+    try:
+        require_file_identities(paths,identities,'PAPER_ACTIVITY_RESPONSE_REVIEW_')
+        require_file_fingerprints(paths,limits,fingerprints,
+            'PAPER_ACTIVITY_RESPONSE_REVIEW_')
+    except ValueError:
+        _fail('FILE_SET_CHANGED')
+
+
+def _stable_reader(paths,limits,identities,fingerprints,
+        gate=None,store=None,store_binding=None):
+    def read(reader):
+        try:value=reader()
+        except BaseException:
+            _require_files(paths,limits,identities,fingerprints,
+                gate,store,store_binding)
+            raise
+        _require_files(paths,limits,identities,fingerprints,
+            gate,store,store_binding)
+        return value
+    return read
 
 
 def review(*,pacing_path,activity_store_path,expected_account_id,
@@ -62,15 +101,27 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     session_head=_digest(session_head)
     if type(activity_page_paths) not in (tuple,list) or not 1<=len(activity_page_paths)<=2:
         _fail('PAGE_COUNT_INVALID')
-    paths=[pacing_path,activity_store_path,account_before_path,*activity_page_paths,account_after_path]
-    checked=[_private_path(value)[1] for value in paths]
-    if len(set(checked))!=len(checked):_fail('DISTINCT_PATHS_REQUIRED')
-    gate=PaperReadPacing(pacing_path,expected_account_id)
-    store=BrokerActivityStore(activity_store_path,expected_account_id)
-    pacing_before=gate.inspect();activity_before=store.inspect()
+    supplied=(pacing_path,activity_store_path,account_before_path,
+        *activity_page_paths,account_after_path)
+    paths=tuple(_private_path(value)[1] for value in supplied)
+    if len(set(paths))!=len(paths):_fail('DISTINCT_PATHS_REQUIRED')
+    limits=(PACING_DATABASE_BYTES,ACTIVITY_DATABASE_BYTES,
+        *((inspection.MAX_BODY,)*(len(paths)-2)))
+    identities=capture_file_identities(paths,'PAPER_ACTIVITY_RESPONSE_REVIEW_')
+    fingerprints=capture_file_fingerprints(paths,limits,
+        'PAPER_ACTIVITY_RESPONSE_REVIEW_')
+    stable_files=_stable_reader(paths,limits,identities,fingerprints)
+    gate=stable_files(lambda:PaperReadPacing(paths[0],expected_account_id))
+    store=stable_files(lambda:BrokerActivityStore(paths[1],expected_account_id))
+    store_binding=_store_binding(gate,store)
+    stable_read=_stable_reader(paths,limits,identities,fingerprints,
+        gate,store,store_binding)
+    pacing_before=stable_read(gate.inspect)
+    activity_before=stable_read(store.inspect)
     if pacing_before['head_sha256']!=expected_pacing_head:_fail('PACING_HEAD_CHANGED')
     if activity_before['head_sha256']!=expected_activity_head:_fail('ACTIVITY_HEAD_CHANGED')
-    matches=[row for row in gate.operation_history() if row['after_head_sha256']==session_head]
+    matches=[row for row in stable_read(gate.operation_history)
+        if row['after_head_sha256']==session_head]
     if len(matches)!=1:_fail('SESSION_NOT_FOUND')
     operation=matches[0]
     expected_kinds=('ACCOUNT',*('ACTIVITY_PAGE' for _ in activity_page_paths),'ACCOUNT')
@@ -80,11 +131,15 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
             operation['request_kinds']!=expected_kinds):
         _fail('SESSION_SCOPE_INVALID')
 
-    raw_values=[_raw(account_before_path),*(_raw(path) for path in activity_page_paths),_raw(account_after_path)]
+    raw_values=[]
+    for path in paths[2:]:
+        raw=stable_read(lambda path=path:_read(path))
+        raw_values.append(stable_read(lambda path=path,raw=raw:_raw(path,raw)))
     bodies=[item[0] for item in raw_values];values=[item[1] for item in raw_values]
     body_hashes=tuple(hashlib.sha256(raw).hexdigest() for raw in bodies)
     if body_hashes!=operation['response_sha256']:_fail('RESPONSE_DIGEST_DISAGREEMENT')
-    first=inspection._account(values[0]);last=inspection._account(values[-1])
+    first=stable_read(lambda:inspection._account(values[0]))
+    last=stable_read(lambda:inspection._account(values[-1]))
     if first!=last or first['id']!=gate.account:_fail('ACCOUNT_DISAGREEMENT')
     pages=values[1:-1]
     if any(type(page) is not list or len(page)>evidence.PAGE_SIZE for page in pages):
@@ -98,30 +153,42 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     if len(candidates)!=1:_fail('RETAINED_RECEIPT_NOT_FOUND')
     receipt_id,receipt=candidates[0]
     rows=[row for page in pages for row in page]
-    try:
-        normalized=_inputs(rows,[dict(order,symbol='BTC/USD') for order in receipt['orders']],gate.account)
-        retained={row['activity_id']:row for row in activity_before['normalized_activities']}
-        expected=dict(orders=receipt['orders'],activities=[retained[key] for key in receipt['activity_ids']])
-    except (ValueError,TypeError,KeyError,AttributeError,OverflowError,RecursionError,MemoryError):
-        _fail('NORMALIZATION_INVALID')
+    def normalize():
+        try:
+            normalized=_inputs(rows,[dict(order,symbol='BTC/USD')
+                for order in receipt['orders']],gate.account)
+            retained={row['activity_id']:row
+                for row in activity_before['normalized_activities']}
+            expected=dict(orders=receipt['orders'],
+                activities=[retained[key] for key in receipt['activity_ids']])
+            return normalized,expected
+        except (ValueError,TypeError,KeyError,AttributeError,OverflowError,
+                RecursionError,MemoryError):
+            _fail('NORMALIZATION_INVALID')
+    normalized,expected=stable_read(normalize)
     if normalized!=expected:_fail('NORMALIZED_ACTIVITY_DISAGREEMENT')
 
     observed=receipt.get('collection_observation')
     if type(observed) is not dict or len(observed.get('pages',()))!=len(pages):
         _fail('OBSERVATION_DISAGREEMENT')
-    try:
-        replayed_pages=[]
-        for page,recorded in zip(pages,observed['pages']):
-            replayed_pages.append(evidence.page_observation(page,normalized['activities'],
-                after=receipt['after'],until=receipt['until'],request_cursor=recorded['request_cursor'],
-                requested_at=recorded['requested_at'],received_at=recorded['received_at']))
-        replayed=evidence.validate(dict(schema=evidence.SCHEMA,
-            declared_transport=observed['declared_transport'],
-            read_started_at=observed['read_started_at'],read_completed_at=observed['read_completed_at'],
-            account_fields_sha256=sha(first),pages=replayed_pages),normalized,
-            after=receipt['after'],until=receipt['until'])
-    except (ValueError,TypeError,KeyError,AttributeError,OverflowError,RecursionError,MemoryError):
-        _fail('OBSERVATION_INVALID')
+    def replay_observation():
+        try:
+            replayed_pages=[]
+            for page,recorded in zip(pages,observed['pages']):
+                replayed_pages.append(evidence.page_observation(page,normalized['activities'],
+                    after=receipt['after'],until=receipt['until'],
+                    request_cursor=recorded['request_cursor'],
+                    requested_at=recorded['requested_at'],received_at=recorded['received_at']))
+            return evidence.validate(dict(schema=evidence.SCHEMA,
+                declared_transport=observed['declared_transport'],
+                read_started_at=observed['read_started_at'],
+                read_completed_at=observed['read_completed_at'],
+                account_fields_sha256=sha(first),pages=replayed_pages),normalized,
+                after=receipt['after'],until=receipt['until'])
+        except (ValueError,TypeError,KeyError,AttributeError,OverflowError,
+                RecursionError,MemoryError):
+            _fail('OBSERVATION_INVALID')
+    replayed=stable_read(replay_observation)
     if replayed!=observed:_fail('OBSERVATION_DISAGREEMENT')
     if not (operation['started_at']<=replayed['read_started_at']<=
             replayed['read_completed_at']<=operation['completed_at']):
@@ -129,10 +196,11 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     normalized_receipt=sha(dict(account_sha256=store.account_digest,after=receipt['after'],
         until=receipt['until'],**normalized,collection_observation=replayed))
     if normalized_receipt!=receipt_id:_fail('RETAINED_RECEIPT_DISAGREEMENT')
-    normalized_digest=projection.digest('ACTIVITY_COLLECTION',normalized_receipt)
+    normalized_digest=stable_read(
+        lambda:projection.digest('ACTIVITY_COLLECTION',normalized_receipt))
     if normalized_digest!=operation['result_projection_sha256']:_fail('NORMALIZED_RESULT_DISAGREEMENT')
-    if gate.inspect()!=pacing_before:_fail('PACING_HEAD_CHANGED')
-    if store.inspect()!=activity_before:_fail('ACTIVITY_HEAD_CHANGED')
+    if stable_read(gate.inspect)!=pacing_before:_fail('PACING_HEAD_CHANGED')
+    if stable_read(store.inspect)!=activity_before:_fail('ACTIVITY_HEAD_CHANGED')
     scope=dict(mode=MODE,status='REVIEW_REQUIRED',read_only=True,
         account_sha256=gate.account_digest,pacing_head_sha256=expected_pacing_head,
         activity_head_sha256=expected_activity_head,session_head_sha256=session_head,
@@ -144,7 +212,8 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         account_fields_replayed=True,activity_normalization_replayed=True,
         collection_observation_replayed=True,retained_receipt_replayed=True,
         session_timing_envelope_match=True,
-        journals_rechecked_unchanged=True,admission_reserved=False,
+        journals_rechecked_unchanged=True,private_file_set_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
     scope['review_sha256']=sha(scope)
     scope['limitations']=('Exact private response bytes match one replayed local ACTIVITY_COLLECTION session and '
@@ -153,6 +222,38 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         'spendable funds, another host, broker-wide pacing, routing permission or release acceptance. Keep all '
         'response bodies and output outside Git.')
     return scope
+
+
+def fixture_report():
+    """Bounded private-file-set evidence for release trials; no external IO."""
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix='nexus-activity-response-review-') as directory:
+        root=Path(directory);options=_fixture(root/'base',two_pages=True)
+        files=lambda:{str(path.relative_to(root)):path.read_bytes()
+            for path in root.rglob('*') if path.is_file()}
+        before=files();result=review(**options);preserved=files()==before
+        changed=_fixture(root/'changed')
+        original=globals()['_inputs']
+        def mutate_then_fail(*args,**kwargs):
+            path=changed['activity_page_paths'][0]
+            path.write_bytes(path.read_bytes()+b' ')
+            raise RuntimeError('injected lower-reader failure')
+        globals()['_inputs']=mutate_then_fail
+        try:
+            try:review(**changed)
+            except ValueError as error:
+                failure_rechecked=str(error)==(
+                    'PAPER_ACTIVITY_RESPONSE_REVIEW_FILE_SET_CHANGED')
+            except RuntimeError:failure_rechecked=False
+            else:failure_rechecked=False
+        finally:globals()['_inputs']=original
+        checks=dict(review_checked=result['activity_normalization_replayed'] is True,
+            private_file_set_rechecked=
+                result['private_file_set_rechecked_unchanged'] is True,
+            semantic_reader_failures_rechecked=failure_rechecked,
+            source_files_preserved=preserved)
+        return dict(source='TEMPORARY_INJECTED_ACTIVITY_RESPONSE_REVIEW',
+            passed=all(checks.values()),**checks,**{flag:False for flag in FLAGS})
 
 
 def _fixture(root,two_pages=False,pacing_path=None,account_cash='1000',wall_clock_value=1792368000,

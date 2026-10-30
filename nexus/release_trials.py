@@ -690,6 +690,7 @@ def _execute(profile):
         from nexus.paper_reconciliation_acceptance import fixture_report
         from nexus.paper_account_evidence_review import fixture_report as bundle_fixture
         from nexus.paper_account_response_review import fixture_report as account_response_fixture
+        from nexus.paper_activity_response_review import fixture_report as activity_response_fixture
         from nexus.paper_response_bundle_review import fixture_report as response_fixture
         from nexus.paper_provider_post_reconciliation_review import fixture_report as post_reconciliation_fixture
         from nexus.paper_provider_post_fee_reference_review import fixture_report as post_fee_fixture
@@ -703,6 +704,7 @@ def _execute(profile):
         from nexus.alpaca_activity_sse_reconnect_budget import fixture_report as activity_sse_reconnect_budget_fixture
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_account_response']=account_response_fixture()
+        result['exact_activity_response']=activity_response_fixture()
         result['exact_response_bundle']=response_fixture()
         result['provider_post_reconciliation']=post_reconciliation_fixture()
         result['provider_post_fee_references']=post_fee_fixture()
@@ -1052,6 +1054,8 @@ def _validate(profile, result):
         from nexus.paper_account_evidence_review import FLAGS as BUNDLE_FLAGS
         from nexus.paper_account_response_review import (
             CHECKS as ACCOUNT_RESPONSE_CHECKS,FLAGS as ACCOUNT_RESPONSE_FLAGS)
+        from nexus.paper_activity_response_review import (
+            CHECKS as ACTIVITY_RESPONSE_CHECKS,FLAGS as ACTIVITY_RESPONSE_FLAGS)
         from nexus.paper_provider_post_reconciliation_review import FLAGS as POST_RECONCILIATION_FLAGS
         from nexus.paper_provider_post_fee_reference_review import FLAGS as POST_FEE_FLAGS
         from nexus.paper_provider_post_known_fee_reserve_review import FLAGS as POST_FEE_RESERVE_FLAGS
@@ -1073,6 +1077,14 @@ def _validate(profile, result):
             'EXACT_ACCOUNT_RESPONSE')
         _require(all(account_response[key] is False
             for key in ACCOUNT_RESPONSE_FLAGS),'EXACT_ACCOUNT_RESPONSE_AUTHORITY')
+        activity_response=result['exact_activity_response']
+        _require(activity_response['source']==
+            'TEMPORARY_INJECTED_ACTIVITY_RESPONSE_REVIEW' and
+            activity_response['passed'] is True and
+            all(activity_response[key] is True for key in ACTIVITY_RESPONSE_CHECKS),
+            'EXACT_ACTIVITY_RESPONSE')
+        _require(all(activity_response[key] is False
+            for key in ACTIVITY_RESPONSE_FLAGS),'EXACT_ACTIVITY_RESPONSE_AUTHORITY')
         post_reconciliation=result['provider_post_reconciliation']
         _require(post_reconciliation['source']==
             'SYNTHETIC_LOCAL_PROVIDER_POST_RECONCILIATION_FIXTURE' and

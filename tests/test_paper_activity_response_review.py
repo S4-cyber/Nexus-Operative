@@ -4,6 +4,7 @@ import json
 import pytest
 
 from nexus import paper_activity_response_review as subject
+from nexus.broker_activity_store import BrokerActivityStore
 from nexus.paper_read_pacing import PaperReadPacing
 
 
@@ -19,6 +20,8 @@ def test_exact_response_bytes_replay_activity_receipt_without_writes(tmp_path):
     assert result['activity_normalization_replayed'] and result['collection_observation_replayed']
     assert result['retained_receipt_replayed'] and result['session_timing_envelope_match']
     assert result['journals_rechecked_unchanged']
+    assert result['private_file_set_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert result['admission_reserved'] is False
     assert all(result[flag] is False for flag in subject.FLAGS)
     assert result==subject.review(**options)
@@ -83,3 +86,54 @@ def test_cli_failure_is_fixed_and_does_not_echo_private_paths(tmp_path,capsys):
     output=capsys.readouterr()
     assert output.out.strip()=='PAPER_ACTIVITY_RESPONSE_REVIEW_FAILED' and output.err==''
     assert str(tmp_path) not in output.out
+
+
+@pytest.mark.parametrize('index',range(6))
+def test_every_private_input_is_rechecked_when_semantic_reader_fails(
+        tmp_path,monkeypatch,index):
+    options=subject._fixture(tmp_path,two_pages=True)
+    paths=[options['pacing_path'],options['activity_store_path'],
+        options['account_before_path'],*options['activity_page_paths'],
+        options['account_after_path']]
+    def mutate_then_fail(self):
+        path=paths[index]
+        path.write_bytes(path.read_bytes()+b' ')
+        raise RuntimeError('injected lower-reader failure')
+    monkeypatch.setattr(PaperReadPacing,'inspect',mutate_then_fail)
+    with pytest.raises(ValueError,match='PAPER_ACTIVITY_RESPONSE_REVIEW_FILE_SET_CHANGED'):
+        subject.review(**options)
+
+
+def test_late_normalizer_failure_cannot_hide_page_change(tmp_path,monkeypatch):
+    options=subject._fixture(tmp_path)
+    def mutate_then_fail(*args,**kwargs):
+        path=options['activity_page_paths'][0]
+        path.write_bytes(path.read_bytes()+b' ')
+        raise RuntimeError('injected lower-reader failure')
+    monkeypatch.setattr(subject,'_inputs',mutate_then_fail)
+    with pytest.raises(ValueError,match='PAPER_ACTIVITY_RESPONSE_REVIEW_FILE_SET_CHANGED'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('target',['pacing','activity'])
+def test_store_retarget_is_refused_at_outer_boundary(tmp_path,monkeypatch,target):
+    options=subject._fixture(tmp_path)
+    if target=='pacing':
+        original=PaperReadPacing.inspect
+        def retarget(self):
+            result=original(self);self.path=options['account_before_path'];return result
+        monkeypatch.setattr(PaperReadPacing,'inspect',retarget)
+    else:
+        original=BrokerActivityStore.inspect
+        def retarget(self):
+            result=original(self);self.path=options['account_before_path'];return result
+        monkeypatch.setattr(BrokerActivityStore,'inspect',retarget)
+    with pytest.raises(ValueError,match='PAPER_ACTIVITY_RESPONSE_REVIEW_STORE_BINDING_CHANGED'):
+        subject.review(**options)
+
+
+def test_fixture_report_makes_file_set_guarantee_release_visible():
+    result=subject.fixture_report()
+    assert result['source']=='TEMPORARY_INJECTED_ACTIVITY_RESPONSE_REVIEW'
+    assert result['passed'] and all(result[key] for key in subject.CHECKS)
+    assert all(result[flag] is False for flag in subject.FLAGS)

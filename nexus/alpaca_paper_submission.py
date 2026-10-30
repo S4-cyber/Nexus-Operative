@@ -28,6 +28,7 @@ ASSET_URL = inspection.ASSET_URL
 ORDER_URL = contract.PAPER_ORDERS_URL
 REQUEST_TIMEOUT = 4
 TOTAL_SECONDS = 16
+MAX_REQUESTS = 6
 MAX_BODY = inspection.MAX_BODY
 
 
@@ -123,6 +124,39 @@ def _account_and_funds(account_raw, positions_raw, expected_account_id, payload)
             _fail('OBSERVED_BTC_AVAILABLE_INSUFFICIENT')
 
 
+def _risk_snapshot(account_raw, positions_raw, expected_account_id):
+    """Normalize only fields that can change paper-order admission.
+
+    Exact equality across the two samples is deliberately conservative.  A
+    concurrent balance, permission, transfer/fee, or BTC availability change
+    means the sequential preflight is no longer a stable basis for the one
+    allowed POST.
+    """
+    try:
+        account = inspection._account(account_raw)
+        inspection._collection_rows(positions_raw, expected_account_id)
+        btc = []
+        for row in positions_raw:
+            if row.get('symbol') not in ('BTC/USD', 'BTCUSD'):
+                continue
+            if (row.get('asset_class') != 'crypto' or row.get('side') != 'long' or
+                    row.get('qty_available') is None):
+                _fail('BTC_POSITION_REVIEW_REQUIRED')
+            quantity = contract.number(row.get('qty'), zero=True)
+            available = contract.number(row['qty_available'], zero=True)
+            if available > quantity:
+                _fail('BTC_AVAILABILITY_INVALID')
+            btc.append(dict(quantity=contract.text(quantity),
+                available=contract.text(available)))
+        if len(btc) > 1:
+            _fail('BTC_POSITION_REVIEW_REQUIRED')
+        return dict(account=account, btc_position=btc[0] if btc else None)
+    except PaperSubmissionError:
+        raise
+    except (inspection.PaperInspectionError, TypeError, ValueError, KeyError):
+        _fail('PREFLIGHT_STATE_INVALID')
+
+
 class _Session:
     def __init__(self, key, secret, *, opener, wall_clock, elapsed_clock,
                  permission_check, emergency_stop_check):
@@ -168,7 +202,7 @@ class _Session:
     def request(self, url, *, payload=None):
         if url not in (ACCOUNT_URL, POSITIONS_URL, ASSET_URL, ORDER_URL):
             _fail('PATH_DENIED')
-        if self.requests >= 4:
+        if self.requests >= MAX_REQUESTS:
             _fail('REQUEST_CAP')
         method = 'POST' if payload is not None else 'GET'
         if method == 'POST' and url != ORDER_URL or method == 'GET' and url == ORDER_URL:
@@ -276,6 +310,13 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     asset = session.request(ASSET_URL)
     _account_and_funds(account, positions, expected_account_id, payload)
     _asset(asset, payload)
+    initial_risk = _risk_snapshot(account, positions, expected_account_id)
+    current_account = session.request(ACCOUNT_URL)
+    current_positions = session.request(POSITIONS_URL)
+    _account_and_funds(current_account, current_positions, expected_account_id, payload)
+    current_risk = _risk_snapshot(current_account, current_positions, expected_account_id)
+    if current_risk != initial_risk:
+        _fail('PREFLIGHT_STATE_CHANGED')
     if credential_check() is not True:
         _fail('CREDENTIALS_CHANGED')
     with post_budget.ownership() as owner:
@@ -312,6 +353,8 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         source='INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_WRITE',
         paper_only=True, single_attempt_consumed=True,
         durable_unknown_outcome_marker_committed=True,
+        account_and_position_capacity_resampled=True,
+        sequential_preflight_stable=True,
         paper_order_response_observed=True, journal=observed,
         post_budget_head_sha256=post_budget_head,
         local_provider_post_pacing=True, broker_wide_quota_verified=False,
@@ -320,7 +363,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint account, BTC position and asset checks. Durable request and shared-local-provider budget reservations precede IO; any lost/ambiguous outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Sequential preflight reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks and two matching account/BTC-position admission samples. Durable request and shared-local-provider budget reservations precede IO; any lost/ambiguous outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential preflight reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -351,9 +394,11 @@ def fixture_report():
         def geturl(self):return self.url
         def read(self,size):return self.body.read(size)
     class Opener:
-        def __init__(self,journal,fail=False):
+        def __init__(self,journal,fail=False,late_account=None,late_positions=None):
             self.journal=journal;self.fail=fail;self.requests=[]
-            self.values=[account,positions,asset,raw]
+            self.values=[account,positions,asset,
+                account if late_account is None else late_account,
+                positions if late_positions is None else late_positions,raw]
             self.marker_before_post=False
         def open(self,request,timeout):
             self.requests.append(request)
@@ -391,12 +436,28 @@ def fixture_report():
             loss=loss_journal.recovery()['requests'][0]
             loss_preserved=(str(error)=='PAPER_SUBMISSION_TRANSPORT_OUTCOME_UNKNOWN_LOOKUP_REQUIRED'
                 and loss['lookup_by_original_client_id_required'] and loss['snapshot'] is None)
+        changed_journal,changed_selected=prepared(root/'changed')
+        changed_budget=PaperProviderPostBudget(root/'changed-post-budget.sqlite3')
+        changed_opener=Opener(changed_journal,
+            late_account=dict(account,cash='999'))
+        late_risk_change_blocked=False
+        try:submit_once(changed_journal,'nx_submit_fixture',key,secret,
+            **options(changed_selected,changed_opener,changed_budget))
+        except PaperSubmissionError as error:
+            late_risk_change_blocked=(str(error)=='PAPER_SUBMISSION_PREFLIGHT_STATE_CHANGED'
+                and not changed_journal.recovery()['requests'][0]['submission_attempt_marked']
+                and changed_budget.inspect()['attempts']==0
+                and not any(request.get_method()=='POST' for request in changed_opener.requests))
         repeat_blocked=False
         try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
             repeat_blocked=str(error)=='PAPER_SUBMISSION_LOCAL_REVIEW_BLOCKED'
         checks=dict(marker_committed_before_post=opener.marker_before_post,
             exactly_one_post=sum(request.get_method()=='POST' for request in opener.requests)==1,
+            account_and_position_capacity_resampled=
+                result['account_and_position_capacity_resampled'] is True and
+                result['sequential_preflight_stable'] is True,
+            late_risk_change_blocked_before_reservation=late_risk_change_blocked,
             response_retained=retained['snapshot']['status']=='new',
             transport_loss_preserved_for_original_id_lookup=loss_preserved,
             local_provider_post_budget_retained=budget.inspect()['completed_attempts']==1 and

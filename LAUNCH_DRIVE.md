@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.51 stable paper pre-submit risk resampling
+
+The internal explicitly confirmed single-attempt Alpaca paper POST now requires two matching normalized account/BTC-position admission samples around the asset read. Any late permission, cash/buying-power, pending-transfer/accrued-fee or BTC quantity/availability change stops before the shared-local provider reservation, request attempt marker and POST. The six-request maximum remains one fixed account/positions/asset/account/positions/POST sequence with no loop or retry. No Portal control or modifiable parameter changed, so the seven beginner tabs and black/bright-purple bottom-right hover help are unchanged.
+
+Exact-source v0.340.50 `a4decf46f466990b701f9ad041779406b6ba8abd` passed security 41033171404, research/browser/evidence 41033171425 and Windows 41033171884. Fresh v0.340.51 exact-source workflows and authorized paper-account/private-volume acceptance remain required. The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; this defensive local integration does not close an external gate.
+
+Local validation passed 4,631 tests with one expected non-Windows skip and one warning; the final focused set passed 201. All sixteen offline profiles and saved-evidence verification matched 395 source files / `07cdbc17cd8481e537ccd5e0bbfe848de303e5fc81748a4df5cbc6f371b017a1`; report SHA-256 is `d7b2c880f0b17a95e39538fa1a0fb481b1abae52154b1cae65afafabe93a8b0f`. Compilation, dependency integrity, deterministic roadmap, fourteen controller smokes, Portal syntax, the public path audit and a wheel build passed; wheel SHA-256 is `bcfa7558237af8d348211102c5adcaf0ef3924a546ceb078535589b25c805528`.
+
 ## v0.340.50 owner Windows profile/ACL evidence boundary
 
 The Windows distribution now carries a manifest-bound non-elevated ordinary-profile/effective-ACL probe and privacy-safe offline reviewer. This turns the open M1 owner-profile check into a reproducible exact-artifact procedure without retaining usernames, SIDs or paths. It does not run automatically, change application behavior, or promote native, broker, live, funds or release authority. Exact v0.340.49 security 41025534634, research/browser/evidence 41025534637 and Windows 41025534656 passed; v0.340.50 needs fresh exact-source workflows and an actual private owner-profile run. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.

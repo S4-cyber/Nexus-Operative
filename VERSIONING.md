@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.50 (pre-release).** This build adds manifest-bound owner Windows ordinary-profile/effective-ACL evidence collection and privacy-safe offline review. It adds no application-runtime, provider, retry or external authority. Tool availability is not owner execution, native-window, independent, broker, market, profitability or release acceptance. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.51 (pre-release).** This build fail-closes the internal single-attempt paper POST when two sequential account/BTC-position admission samples disagree. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Sequential samples are not atomic broker evidence or settled-funds proof. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.51 stable paper pre-submit risk resampling
+
+The explicitly confirmed internal paper POST boundary now reads account and BTC positions a second time after the asset check and before either durable reservation. Both samples must normalize to the same account identity/status/permission flags, cash, non-margin buying power, pending transfers, accrued fees and BTC quantity/availability. A late block, fee/transfer change, capacity reduction or concurrent BTC change therefore consumes no provider-budget attempt, writes no request marker and sends no POST. Every read and the eventual one allowed POST retain the existing permission, independent emergency-stop, credential and clock checks.
+
+Exact-source v0.340.50 `a4decf46f466990b701f9ad041779406b6ba8abd` passed public security run 41033171404, research/browser/evidence run 41033171425 and Windows EXE/installer/reinstall/uninstall run 41033171884. Fresh v0.340.51 workflows and actual authorized paper-account acceptance remain required. Matching sequential reads are not an atomic snapshot, provider/source attestation, broker-wide ownership, fee/hold/funds reconciliation, routing permission or profitability evidence.
+
+Local validation passed 4,631 tests with one expected non-Windows skip and one existing warning; the final broker/release/version/installer focus passed 201. Sixteen offline profiles and saved-evidence verification matched 395 source files / `07cdbc17cd8481e537ccd5e0bbfe848de303e5fc81748a4df5cbc6f371b017a1`; report SHA-256 is `d7b2c880f0b17a95e39538fa1a0fb481b1abae52154b1cae65afafabe93a8b0f`. Compilation, dependency integrity, generated-roadmap equality, fourteen controller smokes, Portal syntax and a wheel build passed; wheel SHA-256 is `bcfa7558237af8d348211102c5adcaf0ef3924a546ceb078535589b25c805528`. Public audit checked 762 paths / 54,455,262 bytes with no findings; hosted history/Gitleaks scans remain mandatory.
 
 ## v0.340.50 owner Windows profile/ACL evidence boundary
 

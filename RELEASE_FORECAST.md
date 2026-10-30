@@ -2,11 +2,11 @@
 
 ## Candidate update on 2026-10-30
 
-Current candidate: v0.340.50, based on published v0.340.49 source `aadfb47032ebf2aca1e6092b5944acffd6f21112`. v0.340.50 prepares a manifest-bound owner Windows ordinary-profile/effective-ACL evidence procedure and privacy-safe offline review. No application-runtime or external authority is added. Exact-source v0.340.49 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.50 results and an actual private owner-profile run remain required.
+Current candidate: v0.340.51, based on published v0.340.50 source `a4decf46f466990b701f9ad041779406b6ba8abd`. v0.340.51 makes the internal single-attempt paper POST require two matching normalized account/BTC-position risk samples before durable reservation. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.50 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.51 results and actual authorized paper-account acceptance remain required.
 
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This defensive broker-paper boundary does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Local pre-publication validation passed 4,608 tests with one expected non-Windows skip and one Starlette/httpx warning; the 68-test portability/installer/version/roadmap focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller, Portal-syntax and wheel-build checks passed. The rough weighted implementation estimate is intentionally unchanged because this portability repair does not integrate a new accepted external gate.
+Local pre-publication validation passed 4,631 tests with one expected non-Windows skip and one warning; the 201-test broker/release/version/installer focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, fourteen-controller, Portal-syntax, public-audit and wheel-build checks passed. The rough weighted implementation estimate is intentionally unchanged because this defensive local boundary does not integrate a new accepted external gate.
 
 ## Prior v0.340.48 candidate record
 

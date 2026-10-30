@@ -8,7 +8,7 @@ import pytest
 from nexus import artifact_manifest as subject
 
 
-VERSION = "0.340.50"
+VERSION = "0.340.51"
 SOURCE = "a" * 40
 
 

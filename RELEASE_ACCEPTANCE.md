@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.51 stable paper pre-submit risk resampling
+
+The internal paper-only POST boundary must perform exactly two account/position admission samples around the asset read and require their normalized risk state to match before either durable reservation. Negative controls must prove that a late account block, reduced buying capacity, balance change or BTC availability change causes no request marker, no provider-budget attempt and no POST. The successful fixed sequence remains one explicitly confirmed paper attempt with permission, emergency-stop, credential and clock fencing at every boundary.
+
+Exact-source v0.340.50 `a4decf46f466990b701f9ad041779406b6ba8abd` passed security 41033171404, research/browser/evidence 41033171425 and Windows 41033171884. Fresh v0.340.51 workflows remain mandatory. Sequential samples remain non-atomic and locally interpreted; they do not prove provider source, account ownership, settled funds, broker-wide exclusion, execution/fee/hold reconciliation, routing authority, market realism, profitability or release acceptance.
+
+Final local validation passed 4,631 tests with one expected non-Windows skip and one warning; the focused set passed 201. Sixteen bounded offline profiles and saved-evidence verification matched 395 source files / `07cdbc17cd8481e537ccd5e0bbfe848de303e5fc81748a4df5cbc6f371b017a1`; report SHA-256 is `d7b2c880f0b17a95e39538fa1a0fb481b1abae52154b1cae65afafabe93a8b0f`. Compilation, dependency integrity, roadmap equality, fourteen Node controllers, Portal syntax, public audit and the wheel build passed; wheel SHA-256 is `bcfa7558237af8d348211102c5adcaf0ef3924a546ceb078535589b25c805528`.
+
 ## v0.340.50 owner Windows profile/ACL evidence boundary
 
 The distribution now ships source-manifest-bound PowerShell probe and Python reviewer tools and the exact installer-distribution binding. A successful private run must use the default per-user LocalAppData install and data locations with a non-elevated token; it checks current-user probe ownership, ACL inheritance, create/read, exclusive lock, atomic replace, rename/delete and complete cleanup. The output retains no username, SID, path, credential or account value. The offline review additionally binds the installer, installed executable and both tool bytes to the exact source manifest.

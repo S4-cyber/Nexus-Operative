@@ -1,6 +1,12 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.50 adds a manifest-bound, owner-operated Windows ordinary-profile/effective-ACL probe and strict privacy-safe offline reviewer. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+Current checkpoint: v0.340.51 requires two stable normalized account/BTC-position admission samples before the internal explicitly confirmed single-attempt paper POST. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no Portal control, modifiable parameter, saved write credential, automatic retry, live endpoint or external authority change.
+
+## v0.340.51 stable paper pre-submit risk resampling
+
+The fixed paper preflight sequence is now account, positions, asset, account, positions, then at most one POST. Both account/position samples must agree exactly on the normalized permission, cash/buying-capacity, pending transfer/fee and BTC quantity/availability state. A late disagreement fails before the provider-budget reservation or request marker. Exact-source v0.340.50 `a4decf46f466990b701f9ad041779406b6ba8abd` passed security 41033171404, research/browser/evidence 41033171425 and Windows 41033171884. Fresh exact-source v0.340.51 workflows and authorized paper-account acceptance remain required. Matching sequential reads do not establish an atomic broker snapshot, source/account acceptance, settled funds, broker-wide coordination, routing permission or future profit.
+
+Local validation passed 4,631 tests with one expected non-Windows skip and one warning; the final broker/release/version/installer focus passed 201. All sixteen offline profiles and saved-evidence verification matched 395 source files / `07cdbc17cd8481e537ccd5e0bbfe848de303e5fc81748a4df5cbc6f371b017a1`; `validation/release_trials_0_340_51.json` SHA-256 is `d7b2c880f0b17a95e39538fa1a0fb481b1abae52154b1cae65afafabe93a8b0f`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controller checks, Portal syntax, public path audit and the v0.340.51 wheel build passed; wheel SHA-256 is `bcfa7558237af8d348211102c5adcaf0ef3924a546ceb078535589b25c805528`.
 
 ## v0.340.50 owner Windows profile/ACL evidence boundary
 

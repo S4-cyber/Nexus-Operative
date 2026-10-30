@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.53 single-attempt store-binding fence
+
+Mandatory injected evidence now proves that the explicit paper-only transport retains exact request/account and Alpaca POST-budget path/scope bindings across callbacks. A post-marker caller-object retarget must send no POST, close the actual budget as `NOT_SENT` with zero posts, preserve original-ID lookup-only recovery and leave decoy paths absent. A non-Alpaca provider scope must fail before network or journal mutation. This is a local fail-closed boundary, not broker acceptance.
+
+Exact-source v0.340.52 `55cfac86cc1d7c659ac9419cba08e75f67d73cf1` passed security 41047254313, research/browser/evidence 41047254417 and Windows 41047254490. Fresh v0.340.53 workflows remain mandatory. The fixture does not prove atomic filesystem state, provider source, account ownership, broker-wide exclusion, settled funds, fee/hold reconciliation, routing authority, market realism, profitability or release acceptance.
+
 ## v0.340.52 post-reservation paper risk resampling
 
 The injected release fixture now requires proof that the explicit single-attempt transport takes a third matching normalized account/BTC-position sample after its durable provider-budget and request-marker commits. A changed final sample must produce no POST, retain original-client-ID lookup-only recovery and close the local provider attempt as `NOT_SENT` with zero actual POSTs. This is a fail-closed boundary test, not broker acceptance.

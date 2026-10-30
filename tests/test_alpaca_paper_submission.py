@@ -84,6 +84,8 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['account_and_position_capacity_resampled']
     assert result['sequential_preflight_stable']
     assert result['post_reservation_risk_resampled']
+    assert result['request_and_post_budget_store_bindings_pinned']
+    assert result['alpaca_post_budget_scope_required']
     assert result['paper_order_response_observed']
     assert result['source']=='INJECTED_UNATTESTED'
     assert result['journal']['recovery_state']=='OBSERVED_NONTERMINAL_REVIEW_REQUIRED'
@@ -160,11 +162,11 @@ def test_second_account_and_position_sample_fails_before_reservation_or_post(
 
 def test_stop_after_marker_never_posts_and_never_rearms(prepared,monkeypatch):
     journal=prepared[0];opener=Opener();marked=False
-    original=journal.begin_submission_checked
-    def begin(*args,**kwargs):
+    original=BrokerRequestJournal.begin_submission_checked
+    def begin(self,*args,**kwargs):
         nonlocal marked
-        result=original(*args,**kwargs);marked=True;return result
-    monkeypatch.setattr(journal,'begin_submission_checked',begin)
+        result=original(self,*args,**kwargs);marked=True;return result
+    monkeypatch.setattr(BrokerRequestJournal,'begin_submission_checked',begin)
     with pytest.raises(module.PaperSubmissionError,match='EMERGENCY_STOP_ACTIVE'):
         submit(prepared,opener,emergency_stop_check=lambda:marked)
     assert marked and all(request.get_method()!='POST' for request,_ in opener.requests)
@@ -173,6 +175,41 @@ def test_stop_after_marker_never_posts_and_never_rearms(prepared,monkeypatch):
     assert prepared[2].history()[0]['actual_posts']==0
     with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
         submit(prepared,Opener())
+
+
+def test_wrong_provider_post_scope_is_network_and_journal_silent(prepared,tmp_path):
+    journal,selected,_=prepared
+    wrong=PaperProviderPostBudget(tmp_path/'wrong-scope.sqlite3','OTHER_PROVIDER')
+    opener=Opener();before=journal.path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_BUDGET_SCOPE_DISAGREEMENT'):
+        submit((journal,selected,wrong),opener)
+    assert not opener.requests and journal.path.read_bytes()==before
+    assert not wrong.path.exists()
+
+
+def test_post_marker_caller_store_retarget_is_fail_closed_and_uses_pinned_stores(
+        prepared,tmp_path):
+    journal,selected,budget=prepared
+    request_path=journal.path;budget_path=budget.path
+    decoy_request=tmp_path/'decoy-request.sqlite3'
+    decoy_budget=tmp_path/'decoy-budget.sqlite3'
+    opener=Opener();retargeted=False
+    def stop():
+        nonlocal retargeted
+        state=BrokerRequestJournal(request_path,ACCOUNT).recovery()['requests'][0]
+        if state['submission_attempt_marked'] and not retargeted:
+            journal.path=decoy_request;budget.path=decoy_budget;retargeted=True
+        return False
+    with pytest.raises(module.PaperSubmissionError,match='STORE_BINDING_CHANGED'):
+        submit((journal,selected,budget),opener,emergency_stop_check=stop)
+    retained=BrokerRequestJournal(request_path,ACCOUNT).recovery()['requests'][0]
+    history=PaperProviderPostBudget(budget_path).history()
+    assert retargeted and retained['lookup_by_original_client_id_required']
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+    assert not decoy_request.exists() and not decoy_budget.exists()
 
 
 @pytest.mark.parametrize('final_account,final_positions',[

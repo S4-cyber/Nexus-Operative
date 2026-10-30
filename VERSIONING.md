@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.52 (pre-release).** This build adds a final account/BTC-position risk sample after durable local reservations and before the internal single-attempt paper POST. A disagreement sends nothing and leaves the consumed request lookup-only. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Sequential samples are not atomic broker evidence or settled-funds proof. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.53 (pre-release).** This build pins the exact request/account and Alpaca POST-budget path/scope across every internal single-attempt callback. A retarget fails closed without writing the decoy path. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Local store binding is not broker-wide coordination or provider acceptance. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.53 single-attempt store-binding fence
+
+After validating distinct paths, account identity and the exact `ALPACA_PAPER_ORDERS` scope, the boundary creates private retained journal objects and uses only those instances for every durable read/write. Caller-held objects remain tamper signals at every admission checkpoint. A post-marker retarget closes the real local attempt as `NOT_SENT` with zero POSTs, preserves original-client-ID lookup-only recovery and leaves both decoy paths absent. A foreign provider scope fails before any IO.
+
+Exact-source v0.340.52 `55cfac86cc1d7c659ac9419cba08e75f67d73cf1` passed public security run 41047254313, research/browser/evidence run 41047254417 and Windows EXE/installer/reinstall/uninstall run 41047254490. Fresh v0.340.53 workflows and actual authorized paper-account acceptance remain required. Process-local path pinning is not an atomic OS snapshot, ACL proof, other-host coordination, broker quota, funds reconciliation, routing permission or profitability evidence.
 
 ## v0.340.52 post-reservation paper risk resampling
 

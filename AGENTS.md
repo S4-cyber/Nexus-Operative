@@ -1,6 +1,12 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.52 requires a third matching normalized account/BTC-position sample after both durable local reservations and immediately before the internal explicitly confirmed single-attempt paper POST. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no Portal control, modifiable parameter, saved write credential, automatic retry, live endpoint or external authority change.
+Current checkpoint: v0.340.53 pins exact request/account and Alpaca POST-budget path/scope bindings across every internal single-attempt admission callback. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no Portal control, modifiable parameter, saved write credential, automatic retry, live endpoint or external authority change.
+
+## v0.340.53 single-attempt store-binding fence
+
+The paper-only submission boundary now constructs private retained request-journal and provider-budget objects from the initially validated exact paths, account identity and fixed `ALPACA_PAPER_ORDERS` scope. Every permission, emergency-stop, clock and transport checkpoint also confirms that the caller-held objects still have those bindings. A post-marker retarget sends nothing, closes the real budget as `NOT_SENT`, preserves lookup-only request recovery and never creates or writes the decoy path. A foreign provider scope is rejected before network or journal mutation. Exact-source v0.340.52 `55cfac86cc1d7c659ac9419cba08e75f67d73cf1` passed security 41047254313, research/browser/evidence 41047254417 and Windows 41047254490. Fresh v0.340.53 workflows and authorized paper-account/private-volume acceptance remain required.
+
+Local pre-publication validation passed 4,635 tests with one expected non-Windows skip and one Starlette/httpx warning; the final broker/release/version/installer focus passed 237. All sixteen offline profiles and saved-evidence verification matched 395 source files / `c4aaf933e4ed2acfbe2d561738f62dcac8364d00fbe7d65c7b8d7ec8325d4ba2`; `validation/release_trials_0_340_53.json` SHA-256 is `a010a89038f9ed7d4be60cb6c15f4c74329865e24962f243cccf24a3a25d2745`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controller checks, Portal syntax, the 765-path public artifact audit, targeted high-confidence credential scan and the v0.340.53 wheel build passed; wheel SHA-256 is `6a77be9b7173761f696cf3d0f8f1775cb0014321743db874e37ea6a7bf257752`. Fresh exact-source hosted workflows remain mandatory.
 
 ## v0.340.52 post-reservation paper risk resampling
 

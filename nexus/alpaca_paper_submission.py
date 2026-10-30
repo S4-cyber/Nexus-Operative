@@ -30,6 +30,7 @@ REQUEST_TIMEOUT = 4
 TOTAL_SECONDS = 16
 MAX_REQUESTS = 8
 MAX_BODY = inspection.MAX_BODY
+POST_BUDGET_SCOPE = 'ALPACA_PAPER_ORDERS'
 
 
 class PaperSubmissionError(ValueError):
@@ -157,21 +158,60 @@ def _risk_snapshot(account_raw, positions_raw, expected_account_id):
         _fail('PREFLIGHT_STATE_INVALID')
 
 
+def _pin_stores(journal, post_budget, expected_account_id):
+    """Retain private store objects that callbacks cannot retarget.
+
+    The caller-held objects remain useful as a tamper signal.  All durable
+    reads and writes use new exact-path/account/provider-bound instances.
+    """
+    expected_account_digest = hashlib.sha256(expected_account_id.encode()).hexdigest()
+    expected_provider_digest = hashlib.sha256(POST_BUDGET_SCOPE.encode()).hexdigest()
+    try:
+        paths = check_path_set((journal.path, post_budget.path), 'PAPER_SUBMISSION_')
+        if journal.account_digest != expected_account_digest:
+            _fail('ACCOUNT_SCOPE_DISAGREEMENT')
+        if (post_budget.provider_scope != POST_BUDGET_SCOPE or
+                post_budget.provider_digest != expected_provider_digest):
+            _fail('POST_BUDGET_SCOPE_DISAGREEMENT')
+    except PaperSubmissionError:
+        raise
+    except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
+        _fail('STORE_BINDING_INVALID')
+
+    def check():
+        try:
+            current = check_path_set((journal.path, post_budget.path),
+                                     'PAPER_SUBMISSION_')
+            stable = (current == paths and
+                journal.account_digest == expected_account_digest and
+                post_budget.provider_scope == POST_BUDGET_SCOPE and
+                post_budget.provider_digest == expected_provider_digest)
+        except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
+            stable = False
+        if not stable:
+            _fail('STORE_BINDING_CHANGED')
+
+    return (BrokerRequestJournal(paths[0], expected_account_id),
+            PaperProviderPostBudget(paths[1], POST_BUDGET_SCOPE), check)
+
+
 class _Session:
     def __init__(self, key, secret, *, opener, wall_clock, elapsed_clock,
-                 permission_check, emergency_stop_check):
+                 permission_check, emergency_stop_check, store_binding_check):
         self.key = key; self.secret = secret
         self.reader = opener or build_opener(ProxyHandler({}), inspection._NoRedirect())
         self.injected = opener is not None
         self.wall_clock = wall_clock; self.elapsed_clock = elapsed_clock
         self.permission_check = permission_check
         self.emergency_stop_check = emergency_stop_check
+        self.store_binding_check = store_binding_check
         self.start = self.previous = None
         self.requests = 0
         self.post_attempted = False
 
     def checkpoint(self):
         try:
+            self.store_binding_check()
             if self.permission_check() is not True:
                 _fail('PERMISSION_REVOKED')
             if self.emergency_stop_check() is not False:
@@ -189,6 +229,7 @@ class _Session:
             if current[1]-self.start[1] >= TOTAL_SECONDS:
                 _fail('TIME_BUDGET')
             self.previous = current
+            self.store_binding_check()
             return max(.001, min(REQUEST_TIMEOUT, TOTAL_SECONDS-(current[1]-self.start[1])))
         except PaperSubmissionError:
             raise
@@ -275,16 +316,20 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     if type(post_budget) is not PaperProviderPostBudget:
         _fail('POST_BUDGET_REQUIRED')
     _hash(expected_post_budget_head)
-    try:
-        check_path_set((journal.path, post_budget.path), 'PAPER_SUBMISSION_')
-        post_budget.inspect()
-    except (OSError, ValueError, TypeError):
-        _fail('POST_BUDGET_INVALID')
     _credential(api_key); _credential(api_secret)
     expected_account_id = inspection._uuid(expected_account_id)
     _hash(expected_head); _hash(expected_payload_sha256)
-    selected = journal.lookup_request(client_order_id)
-    passive = journal.submission_review(client_order_id, evaluated_at=wall_clock())
+    bound_journal, bound_budget, store_binding_check = _pin_stores(
+        journal, post_budget, expected_account_id)
+    try:
+        store_binding_check(); bound_budget.inspect(); store_binding_check()
+    except PaperSubmissionError:
+        raise
+    except (OSError, ValueError, TypeError):
+        _fail('POST_BUDGET_INVALID')
+    selected = bound_journal.lookup_request(client_order_id); store_binding_check()
+    passive = bound_journal.submission_review(
+        client_order_id, evaluated_at=wall_clock()); store_binding_check()
     if not passive['local_marker_checks_clear']:
         _fail('LOCAL_REVIEW_BLOCKED')
     if (selected['head_sha256'] != expected_head or
@@ -297,7 +342,8 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     payload = selected['plan']['payload']
     session = _Session(api_key, api_secret, opener=opener, wall_clock=wall_clock,
                        elapsed_clock=elapsed_clock, permission_check=permission_check,
-                       emergency_stop_check=emergency_stop_check)
+                       emergency_stop_check=emergency_stop_check,
+                       store_binding_check=store_binding_check)
     session.checkpoint()
     account = session.request(ACCOUNT_URL)
     try:
@@ -319,14 +365,14 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         _fail('PREFLIGHT_STATE_CHANGED')
     if credential_check() is not True:
         _fail('CREDENTIALS_CHANGED')
-    with post_budget.ownership() as owner:
-        token = post_budget.begin(account_id=expected_account_id,
+    with bound_budget.ownership() as owner:
+        token = bound_budget.begin(account_id=expected_account_id,
             request_before_head_sha256=expected_head,
             payload_sha256=expected_payload_sha256, client_order_id=client_order_id,
             admission=session.evaluated_at, ownership=owner,
             expected_head=expected_post_budget_head)
         try:
-            marker = journal.begin_submission_checked(client_order_id, expected_head=expected_head,
+            marker = bound_journal.begin_submission_checked(client_order_id, expected_head=expected_head,
                 expected_payload_sha256=expected_payload_sha256, admission=session.evaluated_at)
             if marker.get('attempt_marker_commit_observed') is not True:
                 _fail('ATTEMPT_MARKER_UNCONFIRMED')
@@ -345,18 +391,19 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 _fail('CREDENTIALS_CHANGED_AFTER_MARKER')
             raw = session.request(ORDER_URL, payload=payload)
             session.checkpoint()
-            observed = journal.observe(client_order_id, raw)
+            observed = bound_journal.observe(client_order_id, raw)
         except BaseException:
             outcome = 'OUTCOME_UNKNOWN' if session.post_attempted else 'NOT_SENT'
-            post_budget.finish(token, outcome=outcome,
-                request_after_head_sha256=journal.recovery()['head_sha256'],
+            bound_budget.finish(token, outcome=outcome,
+                request_after_head_sha256=bound_journal.recovery()['head_sha256'],
                 actual_posts=int(session.post_attempted),
                 admission=lambda: session.previous[0],
                 ownership=owner)
             raise
-        post_budget_head = post_budget.finish(token, outcome='RESPONSE_OBSERVED',
-            request_after_head_sha256=journal.recovery()['head_sha256'], actual_posts=1,
+        post_budget_head = bound_budget.finish(token, outcome='RESPONSE_OBSERVED',
+            request_after_head_sha256=bound_journal.recovery()['head_sha256'], actual_posts=1,
             admission=session.evaluated_at, ownership=owner)
+    store_binding_check()
     return dict(mode='EXPLICIT_SINGLE_ATTEMPT_ALPACA_PAPER_SUBMISSION',
         source='INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_WRITE',
         paper_only=True, single_attempt_consumed=True,
@@ -364,6 +411,8 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         account_and_position_capacity_resampled=True,
         sequential_preflight_stable=True,
         post_reservation_risk_resampled=True,
+        request_and_post_budget_store_bindings_pinned=True,
+        alpaca_post_budget_scope_required=True,
         paper_order_response_observed=True, journal=observed,
         post_budget_head_sha256=post_budget_head,
         local_provider_post_pacing=True, broker_wide_quota_verified=False,
@@ -372,7 +421,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Durable request and shared-local-provider budget reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -477,6 +526,36 @@ def fixture_report():
                 and history[0]['actual_posts']==0
                 and not any(request.get_method()=='POST'
                             for request in reserved_opener.requests))
+        binding_journal,binding_selected=prepared(root/'binding')
+        binding_budget=PaperProviderPostBudget(root/'binding-post-budget.sqlite3')
+        binding_request_path=binding_journal.path
+        binding_budget_path=binding_budget.path
+        binding_opener=Opener(binding_journal);retargeted=False
+        def binding_stop():
+            nonlocal retargeted
+            binding_retained=BrokerRequestJournal(
+                binding_request_path,account_id).recovery()['requests'][0]
+            if binding_retained['submission_attempt_marked'] and not retargeted:
+                binding_journal.path=root/'decoy-request.sqlite3'
+                binding_budget.path=root/'decoy-budget.sqlite3'
+                retargeted=True
+            return False
+        store_bindings_pinned=False
+        try:submit_once(binding_journal,'nx_submit_fixture',key,secret,
+            **dict(options(binding_selected,binding_opener,binding_budget),
+                   emergency_stop_check=binding_stop))
+        except PaperSubmissionError as error:
+            binding_retained=BrokerRequestJournal(
+                binding_request_path,account_id).recovery()['requests'][0]
+            history=PaperProviderPostBudget(binding_budget_path).history()
+            store_bindings_pinned=(str(error)=='PAPER_SUBMISSION_STORE_BINDING_CHANGED'
+                and retargeted and binding_retained['lookup_by_original_client_id_required']
+                and len(history)==1 and history[0]['outcome']=='NOT_SENT'
+                and history[0]['actual_posts']==0
+                and not (root/'decoy-request.sqlite3').exists()
+                and not (root/'decoy-budget.sqlite3').exists()
+                and not any(request.get_method()=='POST'
+                            for request in binding_opener.requests))
         repeat_blocked=False
         try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
@@ -488,6 +567,11 @@ def fixture_report():
                 result['sequential_preflight_stable'] is True,
             post_reservation_risk_resampled=
                 result['post_reservation_risk_resampled'] is True,
+            request_and_post_budget_store_bindings_pinned=
+                result['request_and_post_budget_store_bindings_pinned'] is True and
+                store_bindings_pinned,
+            alpaca_post_budget_scope_required=
+                result['alpaca_post_budget_scope_required'] is True,
             late_risk_change_blocked_before_reservation=late_risk_change_blocked,
             post_reservation_risk_change_blocked_before_post=
                 post_reservation_change_blocked,

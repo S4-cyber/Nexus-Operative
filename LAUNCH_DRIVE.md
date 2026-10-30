@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.53 single-attempt store-binding fence
+
+The explicit paper-only submission boundary now retains private exact-path/account/provider-bound request and POST-budget objects across all admission callbacks. A caller-object retarget after the durable marker sends nothing, closes the actual budget as `NOT_SENT`, preserves lookup-only recovery and cannot create or write either decoy path. Budgets outside the fixed Alpaca paper-order scope are rejected before IO. The existing OFF defaults, caps, exits and independent emergency-cut latch are unchanged; no Portal control or saved write credential is added.
+
+Exact-source v0.340.52 `55cfac86cc1d7c659ac9419cba08e75f67d73cf1` passed security 41047254313, research/browser/evidence 41047254417 and Windows 41047254490. Fresh v0.340.53 exact-source workflows and authorized paper-account/private-volume acceptance remain required. The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; this local hardening does not close an external gate.
+
 ## v0.340.52 post-reservation paper risk resampling
 
 The explicit paper-only single-attempt boundary now takes one final account and positions sample after durable provider-budget/request reservations and immediately before POST. A normalized risk disagreement sends nothing, closes the local attempt as `NOT_SENT` with zero POSTs and permanently keeps the request on original-client-ID lookup-only recovery. The existing OFF defaults, caps, exits and independent emergency-cut latch are unchanged; no Portal control or saved write credential is added.

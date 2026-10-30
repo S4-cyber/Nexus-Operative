@@ -2,11 +2,11 @@
 
 ## Candidate update on 2026-10-29
 
-Current candidate: v0.340.43, based on published v0.340.42 source `065233736dbff02adc3ee72aa5085755cd016096`. v0.340.43 binds accepted-history reconciliation's three journals by exact identity, fingerprints and retained store bindings through the inner review and four-observation stability guard. No external authority is added. Exact-source v0.340.42 security 40985178168, safety/browser/evidence 40985178253 and Windows 40985178164 passed. Fresh exact-source v0.340.43 results remain required.
+Current candidate: v0.340.44, based on published v0.340.43 source `1324be5fedd6bca103f9ec0df5a7a03b74a52865`. v0.340.44 bounds every external child in the Windows installer acceptance lane, terminates its child tree on timeout and retains phase evidence. No application-runtime or external authority is added. Exact-source v0.340.43 security 40991453299, safety/browser/evidence 40991453288 and Windows 40991453253 passed; the Windows job took 46 minutes 25 seconds and its installer acceptance step passed in 91 seconds. Fresh exact-source v0.340.44 results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Local pre-publication validation is complete: 4,556 tests passed with one expected non-Windows skip and one existing warning, the 148-test focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller and wheel-build checks passed. The 747-path public artifact audit and targeted credential-pattern scan found no findings. Fresh exact-source hosted checks remain required. The rough weighted implementation estimate is intentionally unchanged because this safety hardening does not integrate a new accepted external gate.
+Local pre-publication validation is complete: 4,558 tests passed with one expected non-Windows skip and one warning, the 134-test focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller and wheel-build checks passed. Fresh exact-source hosted checks remain required. The rough weighted implementation estimate is intentionally unchanged because this acceptance-infrastructure hardening does not integrate a new accepted external gate.
 
 ## Prior v0.340.17 candidate record
 

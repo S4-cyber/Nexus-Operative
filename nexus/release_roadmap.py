@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.43'
+REVISION = '0.340.44'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -307,7 +307,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.43 holds the pacing, retained-activity and acceptance journals by pathname identity, bounded fingerprints and exact store binding through accepted-history reconciliation and the four-observation stability guard. Normal and exceptional semantic-reader exits recheck the complete set; same-byte pathname replacement or any pacing, activity or acceptance store retarget receives a fixed refusal. Mandatory reconciliation evidence exercises identity replacement hidden behind a lower semantic failure and store retargeting. No provider call, retry, control, permission or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.44 gives every external process in the native installer/reinstall/recovery/uninstall acceptance lane its own fixed 120-to-300-second deadline, kills the bounded child tree on timeout and records started/completed/failed/timed-out phase evidence for unconditional artifact upload. The outer 60-minute job limit remains a final backstop. Exact-source v0.340.43 Windows verification succeeded; its installer acceptance step took 91 seconds inside a 46-minute 25-second job, so no child failure or hang is claimed. The new phase boundary makes a future slow or failed child attributable and bounded, subject to a fresh exact-source pass. No application runtime, provider, retry, control, permission or authority changes. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

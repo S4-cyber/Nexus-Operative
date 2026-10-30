@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.44 bounded native-installer phases and diagnostics
+
+Every external child in the Windows installer/reinstall/recovery/uninstall acceptance script now runs with exact arguments, a fixed 120–300-second deadline and child-tree termination on timeout. Started/completed/failed/timed-out phase records are retained as JSONL and remain inside the existing unconditional evidence upload; the workflow's outer 60-minute timeout is still the final backstop. This changes acceptance infrastructure only. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.43 `1324be5fedd6bca103f9ec0df5a7a03b74a52865` passed security run 40991453299, safety/browser/evidence run 40991453288 and Windows run 40991453253. The Windows job completed successfully in 46 minutes 25 seconds, including a 91-second successful installer acceptance step. No unobserved failure or hang is claimed. Fresh exact-source v0.340.44 checks remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local pre-publication validation passed 4,558 tests with one expected non-Windows skip and one Starlette/httpx warning; the focused set passed 134 tests. All sixteen bounded offline profiles and saved-evidence verification matched 388 source files / `2a7f1208618bdb00fc26249b2cc0cc3f2017af01cc2dfad32b0c157a1c26936f`; the report SHA-256 is `bce4d65d3d689b457d7b4651ad7ed72d3246d08c0d4400aaf18bd340ef2ce0ff`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks and the v0.340.44 wheel build passed; wheel SHA-256 is `ce42cb84735c1834fbda658a474c7998cec294344b8ad708cb48fffd6501b088`. Synthetic/offline results do not predict future profit or establish broker, market, Windows-profile, live, cloud or release acceptance.
+
 ## v0.340.43 accepted-history reconciliation identity and store-binding proof
 
 The accepted-history reconciliation and four-observation stability tools now hold pacing, retained-activity and acceptance journals by exact pathname identity, bounded fingerprints and retained store bindings across the whole nested replay. Same-byte replacement hidden behind a semantic failure and pacing/activity/acceptance store retargeting receive fixed refusals. Mandatory release evidence requires the new guarantees. No UI, retry, provider, credential, account, order, funds, live, cloud or release authority is added.

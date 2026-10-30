@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.43 (pre-release).** This build holds the three accepted-history reconciliation journals by pathname identity, bounded fingerprints and exact store bindings through both the inner review and outer four-observation stability guard. It adds no provider access, retry or external authority. This is local safety hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.44 (pre-release).** This build gives every external process in the Windows installer acceptance lane a fixed deadline, child-tree termination and retained phase evidence. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.44 bounded native-installer phases and diagnostics
+
+Installer, installed paper-tool, installed-start, recovery and uninstaller children now share one exact-argument process runner with fixed 120–300-second phase deadlines. Timeout terminates the child tree; start failure, timeout and nonzero exit remain fail-closed, while phase JSONL is preserved by unconditional workflow evidence upload. The 60-minute workflow timeout remains a final backstop. No runtime or UI control changed.
+
+Exact-source v0.340.43 `1324be5fedd6bca103f9ec0df5a7a03b74a52865` passed security run 40991453299, safety/browser/evidence run 40991453288 and Windows run 40991453253. The 46-minute 25-second Windows job includes a successful 91-second installer acceptance step; no child failure or hang is inferred. Fresh exact-source v0.340.44 workflows remain mandatory.
+
+Local pre-publication validation passed 4,558 tests with one expected non-Windows skip and one Starlette/httpx warning; the installer/version/roadmap focus passed 134 tests. All sixteen bounded offline profiles and saved-evidence verification matched 388 source files / `2a7f1208618bdb00fc26249b2cc0cc3f2017af01cc2dfad32b0c157a1c26936f`; `validation/release_trials_0_340_44.json` SHA-256 is `bce4d65d3d689b457d7b4651ad7ed72d3246d08c0d4400aaf18bd340ef2ce0ff`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks and the wheel build passed; wheel SHA-256 is `ce42cb84735c1834fbda658a474c7998cec294344b8ad708cb48fffd6501b088`. These are local/offline checks and grant no trading, funds, live, cloud, release or owner authority.
 
 ## v0.340.43 accepted-history reconciliation identity and store-binding proof
 

@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.44 bounded native-installer phases and diagnostics
+
+Every external installer-acceptance child must run through the fixed-deadline process runner with exact arguments, a timeout no greater than 300 seconds and child-tree termination on timeout. Each phase must retain started plus exactly one completed/failed/timed-out outcome for unconditional artifact upload. The workflow's 60-minute job timeout remains a final backstop. A timeout, start failure or nonzero exit must fail the acceptance lane; no result may grant native-window, broker, funds, live, cloud or release authority.
+
+Exact-source v0.340.43 `1324be5fedd6bca103f9ec0df5a7a03b74a52865` passed security run 40991453299, safety/browser/evidence run 40991453288 and Windows run 40991453253. Its Windows job completed in 46 minutes 25 seconds and its installer acceptance step passed in 91 seconds. v0.340.44 therefore records an observability/bounding improvement, not a claimed v0.340.43 child failure. Fresh exact-source v0.340.44 workflows remain mandatory.
+
+Local pre-publication validation passed 4,558 tests with one expected non-Windows skip and one Starlette/httpx warning; the focused set passed 134 tests. Sixteen bounded offline profiles and saved-evidence verification matched 388 source files / `2a7f1208618bdb00fc26249b2cc0cc3f2017af01cc2dfad32b0c157a1c26936f`; report SHA-256 is `bce4d65d3d689b457d7b4651ad7ed72d3246d08c0d4400aaf18bd340ef2ce0ff`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controllers and the wheel build passed. None of this closes clean-machine/native-window, ordinary-profile/ACL, actual-account, sustained-market, independent-review or owner-approval gates.
+
 ## v0.340.43 accepted-history reconciliation identity and store-binding proof
 
 Accepted-history reconciliation must bind the pacing, retained-activity and acceptance journals by pathname identity and bounded fingerprints before constructing the three retained store objects. Both the inner review and four-observation stability guard must recheck the complete set and exact store path/account bindings after every normal or exceptional semantic-reader exit. Same-byte replacement and any store retarget must receive fixed refusals. Mandatory reconciliation evidence must require both guarantees. Runtime authority remains unchanged.

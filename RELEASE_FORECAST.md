@@ -2,11 +2,11 @@
 
 ## Candidate update on 2026-10-29
 
-Current candidate: v0.340.46, based on published v0.340.45 source `502a7641397600ac41103c9df8259b5b2617534f`. v0.340.46 binds every successful native-installer phase record to one session, the exact source commit, version and independently re-read installer digest. No application-runtime or external authority is added. Exact-source v0.340.44 passed all workflows; v0.340.45 security and research passed while Windows remained active in Install and test. Fresh exact-source v0.340.46 results remain required.
+Current candidate: v0.340.47, based on published v0.340.46 source `97cb861dc11aa338b699c9831b3e8b8db1f01f13`. v0.340.47 re-hashes the final installer after manifest creation and requires exact agreement with the phase review and artifact manifest before upload. No application-runtime or external authority is added. Exact-source v0.340.46 passed security, research/browser/evidence and Windows workflows. Fresh exact-source v0.340.47 results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Local pre-publication validation is complete: 4,573 tests passed with one expected non-Windows skip and one warning, the 79-test installer/evidence/packaging focus and 97-test release-trial validator passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller and wheel-build checks passed. Fresh exact-source hosted checks remain required. The rough weighted implementation estimate is intentionally unchanged because this acceptance-infrastructure hardening does not integrate a new accepted external gate.
+Local pre-publication validation is complete: 4,587 tests passed with one expected non-Windows skip and one warning, the 225-test installer/distribution/evidence/roadmap/version focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller, Portal-syntax and wheel-build checks passed. Fresh exact-source hosted checks remain required. The rough weighted implementation estimate is intentionally unchanged because this acceptance-infrastructure hardening does not integrate a new accepted external gate.
 
 ## Prior v0.340.17 candidate record
 

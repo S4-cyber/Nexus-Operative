@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.46 binds every successful Windows installer phase record to one run session, the exact checked-out source commit, the declared version and the independently re-read installer SHA-256 before distribution packaging. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+Current checkpoint: v0.340.47 binds the final uploaded installer to the exact-source phase review and artifact manifest by name, byte count and independently re-read SHA-256 after manifest creation. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+
+## v0.340.47 final installer distribution binding
+
+The Windows lane now performs a second bounded no-follow installer read after artifact-manifest creation. A strict reviewer requires the exact final installer name, size and digest to agree with the earlier successful phase review, the artifact-manifest entry, the triggering source commit and the pre-1.0 version. Stale or promoted summaries, changed installers/manifests, duplicate keys and a pre-existing final summary stop upload. The retained result keeps native-Windows, broker, live, money-movement and release authority false.
+
+Exact-source v0.340.46 `97cb861dc11aa338b699c9831b3e8b8db1f01f13` passed security run 41002415532, research/browser/evidence run 41002415552 and Windows EXE/installer/reinstall/uninstall run 41002415558. Fresh exact-source v0.340.47 workflows remain mandatory.
+
+Local pre-publication validation passed 4,587 tests with one expected non-Windows skip and one Starlette/httpx warning. The installer/distribution/evidence/roadmap/version focus passed 225 tests. All sixteen bounded offline profiles and saved-evidence verification matched 392 source files / `12a5d33306ad4a2075bd2ccd7400446bdf297ef71e0ddba3f0fccacfb95d5c92`; `validation/release_trials_0_340_47.json` SHA-256 is `00d8221fdc967f8f429c3f83e6a7d5dd9e8f078533b937ada4ed235f45374f45`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks, Portal JavaScript syntax and the v0.340.47 wheel build passed; wheel SHA-256 is `4a97f6f0e7bdc986087e3b5f4a014c3a10565d111fb33ddad3f6253f65cc9cac`. Fresh exact-source hosted workflows remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
 
 ## v0.340.46 exact-source installer evidence binding
 

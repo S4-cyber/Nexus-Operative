@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.47 final installer distribution binding
+
+The final uploaded installer must be independently re-read after artifact-manifest creation. Its exact versioned name, byte count and SHA-256 must equal the successful exact-source phase summary and the unique final artifact-manifest entry. Any changed file, stale source/version, malformed or promoted evidence, duplicate manifest entry or pre-existing binding result must stop upload. The summary retains false native-Windows, broker, live, funds and release authority flags.
+
+Exact-source v0.340.46 passed security run 41002415532, research/browser/evidence run 41002415552 and Windows run 41002415558. Fresh exact-source v0.340.47 workflows remain mandatory.
+
+Local pre-publication validation passed 4,587 tests with one expected non-Windows skip and one Starlette/httpx warning; the installer/distribution/evidence/roadmap/version focus passed 225. Sixteen bounded offline profiles and saved-evidence verification matched 392 source files / `12a5d33306ad4a2075bd2ccd7400446bdf297ef71e0ddba3f0fccacfb95d5c92`; report SHA-256 is `00d8221fdc967f8f429c3f83e6a7d5dd9e8f078533b937ada4ed235f45374f45`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controllers, Portal JavaScript syntax and the wheel build passed; wheel SHA-256 is `4a97f6f0e7bdc986087e3b5f4a014c3a10565d111fb33ddad3f6253f65cc9cac`. Clean-machine/native-window, ordinary-user profile/ACL, actual-account, sustained-market, independent-review and owner-approval gates remain open.
+
 ## v0.340.46 exact-source installer evidence binding
 
 Every successful installer phase record must bind to one canonical UUIDv4 session, the exact checked-out source commit, the declared pre-1.0 version and the SHA-256 of the installer that smoke exercised. The reviewer must independently hash the same bounded stable no-follow regular file and require all records to match. A pre-existing phase log, mixed session, stale source/version, different installer, changed file or pre-existing review output must stop distribution packaging. The summary retains false native-Windows, broker, live, funds and release authority flags.

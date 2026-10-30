@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.47 final installer distribution binding
+
+After the distribution manifest is created and verified, the Windows lane now independently re-hashes the final installer and requires its exact name, byte count and SHA-256 to match both the successful installer phase review and artifact manifest at the exact source commit/version. Stale, changed, promoted, malformed or pre-existing evidence fails before upload. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.46 passed security run 41002415532, research/browser/evidence run 41002415552 and Windows run 41002415558. Fresh exact-source v0.340.47 checks remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local pre-publication validation passed 4,587 tests with one expected non-Windows skip and one Starlette/httpx warning; the installer/distribution/evidence/roadmap/version focus passed 225. All sixteen bounded offline profiles and saved-evidence verification matched 392 source files / `12a5d33306ad4a2075bd2ccd7400446bdf297ef71e0ddba3f0fccacfb95d5c92`; report SHA-256 is `00d8221fdc967f8f429c3f83e6a7d5dd9e8f078533b937ada4ed235f45374f45`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controllers, Portal JavaScript syntax and the wheel build passed; wheel SHA-256 is `4a97f6f0e7bdc986087e3b5f4a014c3a10565d111fb33ddad3f6253f65cc9cac`. Synthetic/offline evidence does not predict future profit or establish broker, market, Windows-profile, live, cloud or release acceptance.
+
 ## v0.340.46 exact-source installer evidence binding
 
 Successful native Windows installer evidence now requires one run session, the exact checked-out source commit, the declared pre-1.0 version and the SHA-256 of the installer used by smoke on every record. The reviewer independently re-hashes the bounded stable installer file and rejects a mixed session, stale source/version, digest mismatch or changed file before packaging. Existing logs and review summaries cannot be overwritten. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.

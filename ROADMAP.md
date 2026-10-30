@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.46. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.47. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.46 binds every successful native-installer phase record to one random run session, the exact checked-out source commit, the declared pre-1.0 version and the SHA-256 digest of the installer that the reviewer independently re-reads through a bounded stable-file boundary. A pre-existing phase log, mixed session, stale source/version, different installer or changed installer file fails before distribution packaging; the authority-false summary exposes the verified bindings. This strengthens CI evidence freshness and identity only and does not claim native-window, ordinary-user, broker, market or release acceptance before fresh exact-source workflows. No application runtime, provider, retry, control, permission or authority changes. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.47 re-hashes the final native installer after distribution-manifest creation and requires its name, byte count and SHA-256 to match both the exact-source installer phase review and the final artifact manifest before upload. A stale review, changed installer, changed manifest, version/source disagreement, authority promotion or pre-existing binding summary fails closed. This closes the post-smoke packaging mutation window but remains CI evidence integrity, not native-window, ordinary-user, broker, market or release acceptance before fresh exact-source workflows. No application runtime, provider, retry, control, permission or authority changes. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

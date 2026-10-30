@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.46 (pre-release).** This build binds successful Windows installer phase evidence to one run session, exact source commit, version and independently re-read installer digest before distribution packaging. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.47 (pre-release).** This build binds the final installer after manifest creation to the exact-source phase review and artifact manifest before upload. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.47 final installer distribution binding
+
+The final packaging step re-hashes the installer through a bounded stable no-follow file boundary after the artifact manifest exists. Its exact filename, byte size and SHA-256 must match both the successful installer phase summary and the unique manifest entry at the expected source commit and version. Strict shapes, false authority flags and no-overwrite publication prevent a stale, changed or promoted result from reaching distribution upload.
+
+Exact-source v0.340.46 passed all three hosted workflows: security 41002415532, research/browser/evidence 41002415552 and Windows 41002415558. Fresh exact-source v0.340.47 workflows remain mandatory.
+
+Local pre-publication validation passed 4,587 tests with one expected non-Windows skip and one Starlette/httpx warning; the installer/distribution/evidence/roadmap/version focus passed 225. All sixteen bounded offline profiles and saved-evidence verification matched 392 source files / `12a5d33306ad4a2075bd2ccd7400446bdf297ef71e0ddba3f0fccacfb95d5c92`; report SHA-256 is `00d8221fdc967f8f429c3f83e6a7d5dd9e8f078533b937ada4ed235f45374f45`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controllers, Portal JavaScript syntax and the wheel build passed; wheel SHA-256 is `4a97f6f0e7bdc986087e3b5f4a014c3a10565d111fb33ddad3f6253f65cc9cac`. These checks grant no trading, funds, live, cloud, release or owner authority.
 
 ## v0.340.46 exact-source installer evidence binding
 

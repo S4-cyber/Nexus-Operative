@@ -87,6 +87,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['post_reservation_risk_resampled']
     assert result['request_and_post_budget_store_bindings_pinned']
     assert result['request_and_post_budget_file_identities_pinned']
+    assert result['post_reservation_durable_heads_rechecked']
     assert result['alpaca_post_budget_scope_required']
     assert result['paper_order_response_observed']
     assert result['source']=='INJECTED_UNATTESTED'
@@ -233,6 +234,52 @@ def test_post_marker_same_byte_store_replacement_is_fail_closed(
     retained=BrokerRequestJournal(journal.path,ACCOUNT).recovery()['requests'][0]
     history=PaperProviderPostBudget(budget.path).history()
     assert replaced and retained['lookup_by_original_client_id_required']
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+
+
+def test_post_marker_same_file_request_head_advance_is_fail_closed(prepared):
+    journal,_,budget=prepared
+    opener=Opener();advanced=False
+    def stop():
+        nonlocal advanced
+        state=BrokerRequestJournal(journal.path,ACCOUNT).recovery()['requests'][0]
+        if state['submission_attempt_marked'] and not advanced:
+            BrokerRequestJournal(journal.path,ACCOUNT).begin_lookup(
+                'nx_fixture',evaluated_at=1001)
+            advanced=True
+        return False
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_RESERVATION_DURABLE_STATE_CHANGED'):
+        submit(prepared,opener,emergency_stop_check=stop)
+    retained=journal.recovery()['requests'][0]
+    history=budget.history()
+    assert advanced and retained['lookup_by_original_client_id_required']
+    assert retained['lookup']['pending'] is True
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+
+
+def test_post_marker_budget_head_disagreement_is_fail_closed(
+        prepared,monkeypatch):
+    journal,_,budget=prepared
+    original=PaperProviderPostBudget.inspect
+    def inspect(self):
+        state=original(self)
+        retained=BrokerRequestJournal(journal.path,ACCOUNT).recovery()['requests'][0]
+        if self.path==budget.path and retained['submission_attempt_marked']:
+            return dict(state,head_sha256='f'*64)
+        return state
+    monkeypatch.setattr(PaperProviderPostBudget,'inspect',inspect)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_RESERVATION_DURABLE_STATE_CHANGED'):
+        submit(prepared,opener)
+    retained=journal.recovery()['requests'][0]
+    history=budget.history()
+    assert retained['lookup_by_original_client_id_required']
     assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
     assert history[0]['actual_posts']==0
     assert all(request.get_method()!='POST' for request,_ in opener.requests)

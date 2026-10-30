@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.54 (pre-release).** This build pins both durable paper-submission journal file identities before the attempt reservations. Same-byte pathname replacement fails closed before POST. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Sampled local identity is not descriptor-held atomicity, broker-wide coordination or provider acceptance. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.55 (pre-release).** This build replays both exact paper-submission durable heads/state at every post-marker checkpoint. A same-file request advance or provider-budget head disagreement fails closed before POST. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Sampled sequential replay is not multi-file atomicity, broker-wide coordination or provider acceptance. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.55 post-reservation durable-head fence
+
+After the checked request marker and provider-budget reservation commit, the submission boundary records their exact durable heads. Every later permission, emergency-stop, clock and transport checkpoint replays both stores twice and requires a stable checked-marker request with no snapshot/lookup advance plus the exact pending provider token. A same-file state advance produces zero POSTs, a retained `NOT_SENT`/zero-post result and permanent original-client-ID lookup-only request state.
+
+Exact-source v0.340.54 `155eefbd7063eaf91583de101aeffc2df053290e` passed public security run 41062324960, research/browser/evidence run 41062324911 and Windows EXE/installer/reinstall/uninstall run 41062325051. Fresh v0.340.55 workflows and actual authorized paper-account acceptance remain required. Repeated local replay is not an atomic OS snapshot, ACL proof, other-host coordination, broker quota, funds reconciliation, routing permission or profitability evidence.
+
+Local pre-publication validation passed 4,640 tests with one expected non-Windows skip and one existing warning; the focused release set passed 243. Sixteen offline profiles and saved evidence verified against 395 source files / `bb8ff565ec7416bc0a91bb8c3f3fdec2c2a75829db479e671561603283ef484b`. Evidence SHA-256 is `5a9a096ad28367a6261639717c41ced9b89b4ba7dbedc9436dc37327795e536f`; final rebuilt wheel SHA-256 is `84fe9d4bd844f2d71f1caf9aa800d209c33d1275f0a5383685f8b2faab62cec2`.
 
 ## v0.340.54 single-attempt file-identity fence
 

@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.55 post-reservation durable-head fence
+
+Mandatory injected evidence now proves that the explicit paper-only transport retains the exact checked request-marker head and pending provider-budget token through every remaining admission and transport checkpoint. Negative controls must advance the same request file through a valid lookup event and inject a provider-budget head disagreement after reservation; both must fail before POST, preserve lookup-only recovery and retain `NOT_SENT` with zero actual POSTs. This is a local boundary test, not broker acceptance.
+
+Exact-source v0.340.54 `155eefbd7063eaf91583de101aeffc2df053290e` passed security 41062324960, research/browser/evidence 41062324911 and Windows 41062325051. Fresh v0.340.55 workflows remain mandatory. The fixture does not prove multi-file atomicity, ACLs, provider source, account ownership, broker-wide exclusion, settled funds, fee/hold reconciliation, routing authority, market realism, profitability or release acceptance.
+
+Local validation passed 4,640 tests with one expected non-Windows skip and one warning; the focused release set passed 243. All sixteen offline profiles and saved evidence verified. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted by these results.
+
 ## v0.340.54 single-attempt file-identity fence
 
 Mandatory injected evidence now proves that the explicit paper-only transport creates no provider attempt while initializing an empty budget binding, pins both request and provider-budget regular single-link file identities before durable reservation, and rejects same-byte replacement after the request marker before any POST. The fail-closed result must preserve lookup-only request recovery and retain a `NOT_SENT` budget result with zero actual POSTs. This is a local boundary test, not broker acceptance.

@@ -2,11 +2,11 @@
 
 ## Candidate update on 2026-10-30
 
-Current candidate: v0.340.54, based on published v0.340.53 source `9719e4d7107eeb463382d95ff4c554a92afea160`. v0.340.54 pins the request and Alpaca POST-budget regular single-link file identities before durable reservation. Same-byte post-marker replacement sends nothing, closes the retained budget as `NOT_SENT` and preserves lookup-only recovery. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.53 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.54 results and actual authorized paper-account acceptance remain required.
+Current candidate: v0.340.55, based on published v0.340.54 source `155eefbd7063eaf91583de101aeffc2df053290e`. v0.340.55 retains the exact checked request-marker head and pending provider-budget token through every remaining admission and transport checkpoint. A same-file request advance or budget head disagreement sends nothing, closes the retained budget as `NOT_SENT` and preserves lookup-only recovery. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.54 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.55 results and actual authorized paper-account acceptance remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This defensive broker-paper boundary does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Local pre-publication validation passed 4,631 tests with one expected non-Windows skip and one warning; the 201-test broker/release/version/installer focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, fourteen-controller, Portal-syntax, public-audit and wheel-build checks passed. The rough weighted implementation estimate is intentionally unchanged because this defensive local boundary does not integrate a new accepted external gate.
+Local pre-publication validation passed 4,640 tests with one expected non-Windows skip and one warning; the 243-test broker/release/version/installer focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, fourteen-controller, Portal-syntax and wheel-build checks passed. The rough weighted implementation estimate is intentionally unchanged because this defensive local boundary does not integrate a new accepted external gate.
 
 ## Prior v0.340.48 candidate record
 

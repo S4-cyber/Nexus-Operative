@@ -213,6 +213,35 @@ def _pin_stores(journal, post_budget, expected_account_id):
             pin_file_identities)
 
 
+def _reservation_state_check(journal, post_budget, *, client_order_id,
+        expected_request_head, expected_payload_sha256, expected_admission,
+        expected_post_token):
+    """Recheck both exact durable reservation tails without mutating them."""
+    try:
+        request = journal.recovery()
+        budget = post_budget.inspect()
+        request_again = journal.recovery()
+        budget_again = post_budget.inspect()
+        selected = [row for row in request['requests']
+                    if row['client_order_id'] == client_order_id]
+        stable = (request == request_again and budget == budget_again and
+            request['head_sha256'] == expected_request_head and
+            len(selected) == 1 and
+            selected[0]['payload_sha256'] == expected_payload_sha256 and
+            selected[0]['submission_attempt_marked'] is True and
+            selected[0]['lookup_by_original_client_id_required'] is True and
+            selected[0]['snapshot'] is None and
+            selected[0]['submission_admission'] == expected_admission and
+            budget['head_sha256'] == expected_post_token and
+            budget['pending_token'] == expected_post_token and
+            budget['review_required'] is False)
+    except (OSError, RuntimeError, TypeError, ValueError, AttributeError,
+            KeyError):
+        stable = False
+    if not stable:
+        _fail('POST_RESERVATION_DURABLE_STATE_CHANGED')
+
+
 class _Session:
     def __init__(self, key, secret, *, opener, wall_clock, elapsed_clock,
                  permission_check, emergency_stop_check, store_binding_check):
@@ -223,6 +252,7 @@ class _Session:
         self.permission_check = permission_check
         self.emergency_stop_check = emergency_stop_check
         self.store_binding_check = store_binding_check
+        self.reservation_check = None
         self.start = self.previous = None
         self.requests = 0
         self.post_attempted = False
@@ -230,6 +260,8 @@ class _Session:
     def checkpoint(self):
         try:
             self.store_binding_check()
+            if self.reservation_check is not None:
+                self.reservation_check()
             if self.permission_check() is not True:
                 _fail('PERMISSION_REVOKED')
             if self.emergency_stop_check() is not False:
@@ -248,6 +280,8 @@ class _Session:
                 _fail('TIME_BUDGET')
             self.previous = current
             self.store_binding_check()
+            if self.reservation_check is not None:
+                self.reservation_check()
             return max(.001, min(REQUEST_TIMEOUT, TOTAL_SECONDS-(current[1]-self.start[1])))
         except PaperSubmissionError:
             raise
@@ -405,6 +439,15 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 expected_payload_sha256=expected_payload_sha256, admission=session.evaluated_at)
             if marker.get('attempt_marker_commit_observed') is not True:
                 _fail('ATTEMPT_MARKER_UNCONFIRMED')
+            marker_head = bound_journal.recovery()['head_sha256']
+            marker_admission = marker.get('submission_admission')
+            session.reservation_check = lambda: _reservation_state_check(
+                bound_journal, bound_budget, client_order_id=client_order_id,
+                expected_request_head=marker_head,
+                expected_payload_sha256=expected_payload_sha256,
+                expected_admission=marker_admission,
+                expected_post_token=token)
+            session.reservation_check()
             # Re-sample after both durable reservations and immediately before
             # the only POST.  A disagreement consumes the local request marker
             # as lookup-only; it never re-arms or sends the prepared request.
@@ -420,6 +463,10 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 _fail('CREDENTIALS_CHANGED_AFTER_MARKER')
             raw = session.request(ORDER_URL, payload=payload)
             session.checkpoint()
+            # The POST outcome now has priority over the pre-POST reservation
+            # fence.  Stop requiring the pre-response request head before
+            # appending the observed response and completing its budget.
+            session.reservation_check = None
             observed = bound_journal.observe(client_order_id, raw)
         except BaseException:
             outcome = 'OUTCOME_UNKNOWN' if session.post_attempted else 'NOT_SENT'
@@ -442,6 +489,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         post_reservation_risk_resampled=True,
         request_and_post_budget_store_bindings_pinned=True,
         request_and_post_budget_file_identities_pinned=True,
+        post_reservation_durable_heads_rechecked=True,
         alpaca_post_budget_scope_required=True,
         paper_order_response_observed=True, journal=observed,
         post_budget_head_sha256=post_budget_head,
@@ -451,7 +499,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities are also pinned from immediately before durable reservation through completion. This is not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -616,6 +664,34 @@ def fixture_report():
                 and history[0]['actual_posts']==0
                 and not any(request.get_method()=='POST'
                             for request in identity_opener.requests))
+        durable_journal,durable_selected=prepared(root/'durable-head')
+        durable_budget=PaperProviderPostBudget(
+            root/'durable-head-post-budget.sqlite3')
+        durable_opener=Opener(durable_journal);durable_advanced=False
+        def durable_stop():
+            nonlocal durable_advanced
+            durable_retained=durable_journal.recovery()['requests'][0]
+            if durable_retained['submission_attempt_marked'] and not durable_advanced:
+                durable_journal.begin_lookup('nx_submit_fixture',evaluated_at=1001)
+                durable_advanced=True
+            return False
+        durable_heads_rechecked=False
+        try:submit_once(durable_journal,'nx_submit_fixture',key,secret,
+            **dict(options(durable_selected,durable_opener,durable_budget),
+                   emergency_stop_check=durable_stop))
+        except PaperSubmissionError as error:
+            durable_retained=durable_journal.recovery()['requests'][0]
+            history=durable_budget.history()
+            durable_heads_rechecked=(
+                str(error)==
+                    'PAPER_SUBMISSION_POST_RESERVATION_DURABLE_STATE_CHANGED'
+                and durable_advanced
+                and durable_retained['lookup_by_original_client_id_required']
+                and durable_retained['lookup']['pending'] is True
+                and len(history)==1 and history[0]['outcome']=='NOT_SENT'
+                and history[0]['actual_posts']==0
+                and not any(request.get_method()=='POST'
+                            for request in durable_opener.requests))
         repeat_blocked=False
         try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
@@ -633,6 +709,9 @@ def fixture_report():
             request_and_post_budget_file_identities_pinned=
                 result['request_and_post_budget_file_identities_pinned'] is True and
                 file_identities_pinned,
+            post_reservation_durable_heads_rechecked=
+                result['post_reservation_durable_heads_rechecked'] is True and
+                durable_heads_rechecked,
             alpaca_post_budget_scope_required=
                 result['alpaca_post_budget_scope_required'] is True,
             late_risk_change_blocked_before_reservation=late_risk_change_blocked,

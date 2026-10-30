@@ -977,6 +977,7 @@ def _validate(profile, result):
              'request_and_post_budget_file_identities_pinned',
              'post_reservation_durable_heads_rechecked',
              'response_observation_head_bound_to_post_budget',
+             'post_budget_reservation_cold_replayed',
              'response_observation_cold_replayed',
              'response_budget_completion_cold_replayed',
              'safety_closure_cold_replayed',

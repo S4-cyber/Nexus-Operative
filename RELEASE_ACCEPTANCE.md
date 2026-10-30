@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.60 exact provider-budget reservation cold replay
+
+The one-attempt paper submission boundary now ignores the provider-budget `BEGIN` acknowledgement and accepts the reservation only after two stable read-only full-chain replays prove the exact pending tail, hashed account/client identity, request/payload binding and original active ownership lease. Lost local acknowledgements do not duplicate the append; missing, malformed, changing or replacement-owner state stops before the request marker and provider POST under fixed reservation uncertainty. This adds no Portal route, saved write credential, retry or external authority.
+
+Exact-source v0.340.59 commit `a332839bfc10135316f9e088ee8027d51f1c3d8b` passed security 41106267358, research/browser/evidence 41106267368 and Windows 41106267351. Fresh v0.340.60 workflows remain mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
 ## v0.340.59 exact failure-path budget closure replay
 
 Exceptional paper POST-budget closure is now accepted only after stable read-only replay proves the exact reservation, identity, request/payload heads, intended conservative outcome and actual POST count. Lost local acknowledgements preserve the original sanitized failure without another provider request. Uncommitted, malformed or unstable closure state yields fixed uncertainty and mandatory review. This adds no Portal or credential authority and changes no OFF default, limit, exit or independent emergency-cut behavior.

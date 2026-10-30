@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.59'
+REVISION = '0.340.60'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -169,6 +169,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; every exceptional single-attempt POST-budget closure now ignores its write-side return and requires two stable read-only replays of the exact terminal token, account/client, request/payload heads, outcome and actual-POST count before preserving the original failure; lost acknowledgements recover locally, while missing, malformed or unstable closure state remains pending or review-blocked under a fixed uncertainty diagnostic without another provider request' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the single-attempt POST boundary also discards the provider-budget BEGIN acknowledgement and cold-replays the exact pending token, account/client hashes, request/payload heads and owner identity twice before creating the request marker; only the original in-process ownership lease may continue, while missing, malformed, unstable or replacement-owner state stops before provider IO under fixed reservation uncertainty' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Product milestones complement the nine technical evidence tracks above.
@@ -339,7 +343,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.59 accepts every exceptional paper POST-budget closure only after stable read-only replay proves the exact reservation, account/client, request/payload heads, intended NOT_SENT or OUTCOME_UNKNOWN result and actual POST count. A locally committed closure whose acknowledgement was lost preserves the original sanitized failure without another provider POST; an uncommitted, malformed or unstable closure produces fixed POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN review instead of trusting the write return. This is local shared-store durability, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.58 security 41097269450, research/browser/evidence 41097269551 and Windows 41097269544 passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.60 ignores the paper provider-budget BEGIN acknowledgement and proceeds only after two stable read-only replays prove the exact pending token, account/client hashes, request/payload heads and owner identity under the original in-process lease. A committed reservation whose local acknowledgement was lost continues without a duplicate append; missing, malformed, unstable or replacement-owner state stops before the request marker and provider POST with fixed POST_BUDGET_RESERVATION_UNCERTAIN. A restart may inspect or explicitly interrupt the reservation but cannot silently resume provider IO. This is local shared-store durability, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.59 commit a332839bfc10135316f9e088ee8027d51f1c3d8b passed security 41106267358, research/browser/evidence 41106267368 and Windows 41106267351. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

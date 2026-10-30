@@ -89,6 +89,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['request_and_post_budget_file_identities_pinned']
     assert result['post_reservation_durable_heads_rechecked']
     assert result['response_observation_head_bound_to_post_budget']
+    assert result['post_budget_reservation_cold_replayed']
     assert result['response_observation_cold_replayed']
     assert result['response_budget_completion_cold_replayed']
     assert result['alpaca_post_budget_scope_required']
@@ -194,6 +195,80 @@ def test_wrong_provider_post_scope_is_network_and_journal_silent(prepared,tmp_pa
         submit((journal,selected,wrong),opener)
     assert not opener.requests and journal.path.read_bytes()==before
     assert not wrong.path.exists()
+
+
+@pytest.mark.parametrize('ack_mode',['lost','malformed'])
+def test_committed_post_budget_reservation_ack_is_cold_replayed_before_marker(
+        prepared,monkeypatch,ack_mode):
+    original=PaperProviderPostBudget.begin
+    def begin(self,*args,**kwargs):
+        original(self,*args,**kwargs)
+        if ack_mode=='lost':
+            raise RuntimeError('private lost reservation acknowledgement')
+        return 'f'*64
+    monkeypatch.setattr(PaperProviderPostBudget,'begin',begin)
+    opener=Opener();result=submit(prepared,opener)
+    assert result['post_budget_reservation_cold_replayed'] is True
+    assert prepared[0].recovery()['requests'][0]['snapshot']['status']=='new'
+    assert prepared[2].history()[0]['outcome']=='RESPONSE_OBSERVED'
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+@pytest.mark.parametrize('begin_result',[RuntimeError('private begin detail'),'f'*64])
+def test_uncommitted_post_budget_reservation_stops_before_marker_or_post(
+        prepared,monkeypatch,begin_result):
+    request_before=prepared[0].path.read_bytes()
+    def uncommitted(*_args,**_kwargs):
+        if isinstance(begin_result,BaseException):
+            raise begin_result
+        return begin_result
+    monkeypatch.setattr(PaperProviderPostBudget,'begin',uncommitted)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+            match='POST_BUDGET_RESERVATION_UNCERTAIN') as error:
+        submit(prepared,opener)
+    assert 'private begin detail' not in str(error.value)
+    assert prepared[0].path.read_bytes()==request_before
+    assert prepared[0].recovery()['requests'][0]['submission_attempt_marked'] is False
+    assert prepared[2].inspect()['attempts']==0
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+
+
+def test_unstable_post_budget_reservation_replay_stops_before_marker_or_post(
+        prepared,monkeypatch):
+    request_before=prepared[0].path.read_bytes()
+    original=PaperProviderPostBudget.pending_receipt
+    reads=0
+    def unstable(self):
+        nonlocal reads
+        reads+=1;result=original(self)
+        return dict(result,head_sha256='f'*64) if reads==2 else result
+    monkeypatch.setattr(PaperProviderPostBudget,'pending_receipt',unstable)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_BUDGET_RESERVATION_UNCERTAIN'):
+        submit(prepared,opener)
+    assert reads==2 and prepared[0].path.read_bytes()==request_before
+    assert prepared[2].inspect()['pending_token'] is not None
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+
+
+def test_post_budget_reservation_requires_original_active_lease(
+        prepared,monkeypatch):
+    request_before=prepared[0].path.read_bytes()
+    original=PaperProviderPostBudget.begin
+    def lose_active_lease(self,*args,**kwargs):
+        result=original(self,*args,**kwargs)
+        self._active_completion=None
+        return result
+    monkeypatch.setattr(PaperProviderPostBudget,'begin',lose_active_lease)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_BUDGET_RESERVATION_UNCERTAIN'):
+        submit(prepared,opener)
+    assert prepared[0].path.read_bytes()==request_before
+    assert prepared[2].inspect()['pending_token'] is not None
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
 
 
 def test_post_marker_caller_store_retarget_is_fail_closed_and_uses_pinned_stores(

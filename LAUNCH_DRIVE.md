@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.60 exact provider-budget reservation cold replay
+
+The explicit one-attempt paper boundary now ignores the provider-budget `BEGIN` return or raised acknowledgement and proceeds only after two stable read-only full-chain replays prove the exact pending token, account/client hashes, request/payload heads and owner identity. The token must be the current durable tail and the original in-process ownership lease must remain active. A committed reservation with a lost acknowledgement continues without another append; an uncommitted, malformed, unstable or replacement-owner state stops before the request marker and before any provider POST with fixed uncertainty. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.
+
+Exact-source v0.340.59 commit `a332839bfc10135316f9e088ee8027d51f1c3d8b` passed security 41106267358, research/browser/evidence 41106267368 and Windows EXE/installer/reinstall/uninstall 41106267351. Fresh v0.340.60 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local durability change does not close an external gate or predict profit.
+
+Local validation passed 4,663 tests with one expected non-Windows skip and one warning; the final paper-reservation/release/version/installer focus passed 272. All sixteen offline profiles and saved-evidence verification passed against 395 source files / `058e4179bd4cc1ab9ffc5401b3209d9298204ae77784c68a4bf197a38fc3b7b0`. Compilation, dependency integrity, roadmap equality, Portal syntax, fourteen controller checks, public artifact audit, targeted credential scan and wheel packaging passed. Fresh hosted exact-source checks remain required.
+
 ## v0.340.59 exact failure-path budget closure replay
 
 The explicit one-attempt paper boundary now accepts an exceptional provider-budget safety closure only after two stable read-only replays prove the exact reservation token, account/client identity, request/payload heads, intended `NOT_SENT` or `OUTCOME_UNKNOWN` outcome and zero-or-one actual POST count. The write-side return is never trusted. A committed closure whose acknowledgement is lost preserves the original sanitized failure without another provider request; an uncommitted, malformed or unstable closure returns fixed uncertainty and retains mandatory review. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.

@@ -282,6 +282,58 @@ class PaperProviderPostBudget:
                 db.execute('BEGIN'); state = self._load(db)
         return tuple(dict(row) for row in state['completed'])
 
+    def pending_receipt(self):
+        """Cold-replay the exact pending BEGIN without exposing raw identity.
+
+        The write-side return from :meth:`begin` is transport, not durable
+        evidence.  This receipt is intentionally read-only and contains only
+        the hash-bound fields already retained by the journal.
+        """
+        self._path_check()
+        if not self.path.exists(): _fail('PENDING_MISSING')
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                db.execute('BEGIN'); state = self._load(db)
+        pending = state['pending']
+        if pending is None: _fail('PENDING_MISSING')
+        return dict(pending, head_sha256=state['head_sha256'],
+            exact_pending_reservation_replayed=True, read_only=True,
+            automatic_retry=False, ready_for_routing=False,
+            release_approved=False)
+
+    def confirm_active_pending(self, token, *, account_id,
+            request_before_head_sha256, payload_sha256, client_order_id,
+            ownership):
+        """Require the original in-process lease for a replayed reservation.
+
+        A process restart or a replacement owner may inspect and interrupt a
+        pending attempt, but cannot silently resume it into provider I/O.
+        """
+        value = _digest(token, 'TOKEN_INVALID')
+        account = _uuid(account_id)
+        request_head = _digest(request_before_head_sha256,
+            'REQUEST_HEAD_INVALID')
+        payload = _digest(payload_sha256, 'PAYLOAD_DIGEST_INVALID')
+        if (type(client_order_id) is not str or
+                not 1 <= len(client_order_id.encode()) <= 128):
+            _fail('CLIENT_ORDER_ID_INVALID')
+        self._owned(ownership)
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                db.execute('BEGIN'); state = self._load(db)
+        pending = state['pending']
+        expected = dict(token=value,
+            account_sha256=hashlib.sha256(account.encode()).hexdigest(),
+            request_before_head_sha256=request_head,
+            payload_sha256=payload,
+            client_order_sha256=hashlib.sha256(client_order_id.encode()).hexdigest(),
+            owner_sha256=ownership.identity())
+        if (pending != expected or
+                state['head_sha256'] != value or
+                self._active_completion != (value, ownership, ownership.lease)):
+            _fail('ORIGINAL_LEASE_REQUIRED')
+        return value
+
     def recovery_history(self):
         """Return content-free recovery bindings after full chain replay."""
         self._path_check()

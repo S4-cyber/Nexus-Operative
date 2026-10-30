@@ -242,6 +242,50 @@ def _reservation_state_check(journal, post_budget, *, client_order_id,
         _fail('POST_RESERVATION_DURABLE_STATE_CHANGED')
 
 
+def _post_budget_reservation_token(post_budget, store_binding_check, *,
+        expected_account_id, client_order_id, expected_request_head,
+        expected_payload_sha256, ownership):
+    """Cold-replay one exact pending provider reservation before any marker.
+
+    The BEGIN return or raised detail is never durable evidence.  Continuation
+    requires two identical read-only receipts plus the original in-process
+    ownership lease, so a restart cannot turn an abandoned reservation into
+    provider I/O.
+    """
+    try:
+        store_binding_check()
+        receipt = post_budget.pending_receipt()
+        receipt_again = post_budget.pending_receipt()
+        expected_account = hashlib.sha256(expected_account_id.encode()).hexdigest()
+        expected_client = hashlib.sha256(client_order_id.encode()).hexdigest()
+        expected_owner = ownership.identity()
+        stable = (receipt == receipt_again and
+            receipt['token'] == receipt['head_sha256'] and
+            receipt['account_sha256'] == expected_account and
+            receipt['client_order_sha256'] == expected_client and
+            receipt['request_before_head_sha256'] == expected_request_head and
+            receipt['payload_sha256'] == expected_payload_sha256 and
+            receipt['owner_sha256'] == expected_owner and
+            receipt['exact_pending_reservation_replayed'] is True and
+            receipt['read_only'] is True and
+            receipt['automatic_retry'] is False and
+            receipt['ready_for_routing'] is False and
+            receipt['release_approved'] is False)
+        if stable:
+            post_budget.confirm_active_pending(receipt['token'],
+                account_id=expected_account_id,
+                request_before_head_sha256=expected_request_head,
+                payload_sha256=expected_payload_sha256,
+                client_order_id=client_order_id,
+                ownership=ownership)
+        store_binding_check()
+    except BaseException:
+        stable = False
+    if not stable:
+        _fail('POST_BUDGET_RESERVATION_UNCERTAIN')
+    return receipt['token']
+
+
 def _post_budget_completion_head(post_budget, *, token, expected_account_id,
         client_order_id, expected_request_before_head, expected_payload_sha256,
         expected_request_after_head, expected_outcome, expected_actual_posts,
@@ -503,11 +547,24 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
         _fail('STORE_FILE_IDENTITY_INVALID')
     with bound_budget.ownership() as owner:
-        token = bound_budget.begin(account_id=expected_account_id,
-            request_before_head_sha256=expected_head,
-            payload_sha256=expected_payload_sha256, client_order_id=client_order_id,
-            admission=session.evaluated_at, ownership=owner,
-            expected_head=expected_post_budget_head)
+        try:
+            bound_budget.begin(account_id=expected_account_id,
+                request_before_head_sha256=expected_head,
+                payload_sha256=expected_payload_sha256,
+                client_order_id=client_order_id,
+                admission=session.evaluated_at, ownership=owner,
+                expected_head=expected_post_budget_head)
+        except BaseException:
+            # BEGIN may have committed while its local acknowledgement was
+            # lost.  Never trust the raised detail or repeat the append; the
+            # exact pending reservation and original lease are proved below.
+            pass
+        token = _post_budget_reservation_token(bound_budget,
+            store_binding_check, expected_account_id=expected_account_id,
+            client_order_id=client_order_id,
+            expected_request_head=expected_head,
+            expected_payload_sha256=expected_payload_sha256,
+            ownership=owner)
         try:
             marker = bound_journal.begin_submission_checked(client_order_id, expected_head=expected_head,
                 expected_payload_sha256=expected_payload_sha256, admission=session.evaluated_at)
@@ -612,6 +669,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         request_and_post_budget_file_identities_pinned=True,
         post_reservation_durable_heads_rechecked=True,
         response_observation_head_bound_to_post_budget=True,
+        post_budget_reservation_cold_replayed=True,
         response_observation_cold_replayed=True,
         response_budget_completion_cold_replayed=True,
         alpaca_post_budget_scope_required=True,
@@ -623,7 +681,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The provider-budget BEGIN return is ignored and its exact pending reservation is accepted only after stable read-only replay under the original in-process lease; a restart may inspect or interrupt but cannot silently resume provider IO. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -833,6 +891,28 @@ def fixture_report():
                 and history[0]['actual_posts']==0
                 and not any(request.get_method()=='POST'
                             for request in durable_opener.requests))
+        ack_journal,ack_selected=prepared(root/'reservation-ack')
+        ack_budget=PaperProviderPostBudget(
+            root/'reservation-ack-post-budget.sqlite3')
+        ack_opener=Opener(ack_journal);reservation_ack_cold_replayed=False
+        original_begin=PaperProviderPostBudget.begin
+        def lose_reservation_ack(self,*args,**kwargs):
+            original_begin(self,*args,**kwargs)
+            raise RuntimeError('fixture lost reservation acknowledgement')
+        PaperProviderPostBudget.begin=lose_reservation_ack
+        try:
+            ack_result=submit_once(ack_journal,'nx_submit_fixture',key,secret,
+                **options(ack_selected,ack_opener,ack_budget))
+            reservation_ack_cold_replayed=(
+                ack_result['post_budget_reservation_cold_replayed'] is True
+                and len(ack_budget.history())==1
+                and ack_budget.history()[0]['outcome']=='RESPONSE_OBSERVED'
+                and sum(request.get_method()=='POST'
+                        for request in ack_opener.requests)==1)
+        except PaperSubmissionError:
+            pass
+        finally:
+            PaperProviderPostBudget.begin=original_begin
         repeat_blocked=False
         try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
@@ -857,6 +937,9 @@ def fixture_report():
                 result['response_observation_head_bound_to_post_budget'] is True and
                 budget.history()[0]['request_after_head_sha256']==
                     result['journal']['head_sha256'],
+            post_budget_reservation_cold_replayed=
+                result['post_budget_reservation_cold_replayed'] is True and
+                reservation_ack_cold_replayed,
             response_observation_cold_replayed=
                 result['response_observation_cold_replayed'] is True and
                 result['journal']['exact_response_observation_replayed'] is True,

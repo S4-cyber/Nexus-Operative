@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.61 exact request-marker acknowledgement replay
+
+The one-attempt paper submission boundary now ignores the request-marker write acknowledgement and accepts the marker only after two stable read-only full-chain replays prove its exact current head, prepared-request parent, payload and canonical admission record. Lost local acknowledgements do not duplicate the append; missing, malformed, changing or later-advanced state stops before provider POST and closes the existing provider reservation conservatively. This adds no Portal route, saved write credential, retry or external authority.
+
+Exact-source v0.340.60 commit `0f3b605d8f2ae84e08e033b28f2e2f12e9883ac8` passed security 41117103498 and research/browser/evidence 41117103398. Windows run 41117103355 completed install/test, EXE, installer, reinstall, uninstall and phase-evidence checks but remained in progress at distribution-manifest creation; it is not claimed as passed. Fresh v0.340.61 workflows remain mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local validation passed 4,668 tests with one expected non-Windows skip and one warning; the final request-marker/release/version/installer focus passed 264. All sixteen offline profiles and saved-evidence verification passed against the exact 395-file source fingerprint. These local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.60 exact provider-budget reservation cold replay
 
 The one-attempt paper submission boundary now ignores the provider-budget `BEGIN` acknowledgement and accepts the reservation only after two stable read-only full-chain replays prove the exact pending tail, hashed account/client identity, request/payload binding and original active ownership lease. Lost local acknowledgements do not duplicate the append; missing, malformed, changing or replacement-owner state stops before the request marker and provider POST under fixed reservation uncertainty. This adds no Portal route, saved write credential, retry or external authority.

@@ -286,6 +286,61 @@ def _post_budget_reservation_token(post_budget, store_binding_check, *,
     return receipt['token']
 
 
+def _request_marker_receipt(journal, store_binding_check, *,
+        client_order_id, expected_previous_head, expected_payload_sha256):
+    """Cold-replay one exact request marker after its write acknowledgement.
+
+    The write return or exception is transport only.  Two full-chain reads must
+    agree that the current head is the marker whose retained admission binds
+    the exact previous head and payload.  A later append, fabricated return or
+    pre-commit failure therefore grants no provider request authority.
+    """
+    try:
+        store_binding_check()
+        receipt = journal.recovery()
+        receipt_again = journal.recovery()
+        store_binding_check()
+        selected = [row for row in receipt['requests']
+                    if row['client_order_id'] == client_order_id]
+        admission = selected[0]['submission_admission'] if len(selected) == 1 else None
+        lookup = selected[0]['lookup'] if len(selected) == 1 else None
+        stable = (receipt == receipt_again and len(selected) == 1 and
+            type(admission) is dict and
+            set(admission) == {'profile', 'clock_scope', 'evaluated_at',
+                               'expected_head_sha256', 'payload_sha256'} and
+            admission['profile'] == 'nexus.paper-submission-admission.v1' and
+            admission['clock_scope'] ==
+                'CALLER_WALL_SECONDS_NOT_SEND_OR_ARRIVAL' and
+            admission['expected_head_sha256'] == expected_previous_head and
+            admission['payload_sha256'] == expected_payload_sha256 and
+            receipt['head_sha256'] != expected_previous_head and
+            type(receipt['head_sha256']) is str and
+            re.fullmatch(r'[0-9a-f]{64}', receipt['head_sha256']) is not None and
+            selected[0]['payload_sha256'] == expected_payload_sha256 and
+            selected[0]['submission_attempt_marked'] is True and
+            selected[0]['lookup_by_original_client_id_required'] is True and
+            selected[0]['snapshot'] is None and type(lookup) is dict and
+            lookup['attempts'] == 0 and lookup['pending'] is False and
+            lookup['review_blocked'] is False and lookup['interruptions'] == 0 and
+            lookup['last_outcome'] is None and
+            receipt['automatic_resume'] is False and
+            receipt['automatic_submission'] is False and
+            receipt['broker_connected'] is False and
+            receipt['live_orders_enabled'] is False and
+            receipt['ledger_applied'] is False)
+    except (OSError, RuntimeError, TypeError, ValueError, AttributeError,
+            KeyError, IndexError):
+        stable = False
+    if not stable:
+        _fail('REQUEST_MARKER_DURABLE_STATE_CHANGED')
+    return dict(head_sha256=receipt['head_sha256'],
+                submission_admission=dict(admission),
+                exact_request_marker_replayed=True, read_only=True,
+                sendable=False, routing_authorized=False,
+                automatic_retry=False, live_orders_enabled=False,
+                money_movement_enabled=False, release_approved=False)
+
+
 def _post_budget_completion_head(post_budget, *, token, expected_account_id,
         client_order_id, expected_request_before_head, expected_payload_sha256,
         expected_request_after_head, expected_outcome, expected_actual_posts,
@@ -566,12 +621,22 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             expected_payload_sha256=expected_payload_sha256,
             ownership=owner)
         try:
-            marker = bound_journal.begin_submission_checked(client_order_id, expected_head=expected_head,
-                expected_payload_sha256=expected_payload_sha256, admission=session.evaluated_at)
-            if marker.get('attempt_marker_commit_observed') is not True:
-                _fail('ATTEMPT_MARKER_UNCONFIRMED')
-            marker_head = bound_journal.recovery()['head_sha256']
-            marker_admission = marker.get('submission_admission')
+            try:
+                bound_journal.begin_submission_checked(client_order_id,
+                    expected_head=expected_head,
+                    expected_payload_sha256=expected_payload_sha256,
+                    admission=session.evaluated_at)
+            except Exception:
+                # A request-marker commit acknowledgement can be lost.  Trust
+                # neither the return nor raised detail; prove the exact marker
+                # through the pinned read-only journal below.
+                pass
+            marker = _request_marker_receipt(bound_journal,
+                store_binding_check, client_order_id=client_order_id,
+                expected_previous_head=expected_head,
+                expected_payload_sha256=expected_payload_sha256)
+            marker_head = marker['head_sha256']
+            marker_admission = marker['submission_admission']
             session.reservation_check = lambda: _reservation_state_check(
                 bound_journal, bound_budget, client_order_id=client_order_id,
                 expected_request_head=marker_head,
@@ -670,6 +735,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         post_reservation_durable_heads_rechecked=True,
         response_observation_head_bound_to_post_budget=True,
         post_budget_reservation_cold_replayed=True,
+        request_marker_cold_replayed=True,
         response_observation_cold_replayed=True,
         response_budget_completion_cold_replayed=True,
         alpaca_post_budget_scope_required=True,
@@ -681,7 +747,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The provider-budget BEGIN return is ignored and its exact pending reservation is accepted only after stable read-only replay under the original in-process lease; a restart may inspect or interrupt but cannot silently resume provider IO. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The provider-budget BEGIN and request-marker write returns are ignored; their exact durable records are accepted only after stable read-only replay, with the pending provider reservation additionally requiring the original in-process lease. A restart may inspect or explicitly close retained state but cannot silently resume provider IO. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -913,6 +979,28 @@ def fixture_report():
             pass
         finally:
             PaperProviderPostBudget.begin=original_begin
+        marker_journal,marker_selected=prepared(root/'marker-ack')
+        marker_budget=PaperProviderPostBudget(
+            root/'marker-ack-post-budget.sqlite3')
+        marker_opener=Opener(marker_journal);request_marker_cold_replayed=False
+        original_marker=BrokerRequestJournal.begin_submission_checked
+        def lose_marker_ack(self,*args,**kwargs):
+            original_marker(self,*args,**kwargs)
+            raise RuntimeError('fixture lost request marker acknowledgement')
+        BrokerRequestJournal.begin_submission_checked=lose_marker_ack
+        try:
+            marker_result=submit_once(marker_journal,'nx_submit_fixture',key,
+                secret,**options(marker_selected,marker_opener,marker_budget))
+            request_marker_cold_replayed=(
+                marker_result['request_marker_cold_replayed'] is True
+                and len(marker_budget.history())==1
+                and marker_budget.history()[0]['outcome']=='RESPONSE_OBSERVED'
+                and sum(request.get_method()=='POST'
+                        for request in marker_opener.requests)==1)
+        except PaperSubmissionError:
+            pass
+        finally:
+            BrokerRequestJournal.begin_submission_checked=original_marker
         repeat_blocked=False
         try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
@@ -940,6 +1028,9 @@ def fixture_report():
             post_budget_reservation_cold_replayed=
                 result['post_budget_reservation_cold_replayed'] is True and
                 reservation_ack_cold_replayed,
+            request_marker_cold_replayed=
+                result['request_marker_cold_replayed'] is True and
+                request_marker_cold_replayed,
             response_observation_cold_replayed=
                 result['response_observation_cold_replayed'] is True and
                 result['journal']['exact_response_observation_replayed'] is True,

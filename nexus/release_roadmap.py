@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.60'
+REVISION = '0.340.61'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -243,6 +243,10 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Failure-path provider-budget closure now receives the same exact cold-replay treatment as successful response completion: the intended NOT_SENT or OUTCOME_UNKNOWN terminal row must bind the precise reservation and actual POST count before the original failure is preserved. Lost acknowledgements do not repeat provider IO; unproved closure returns fixed uncertainty. This remains local injected durability evidence, not broker or account acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The paper request-marker write acknowledgement is now ignored. Two stable full-chain reads must prove the marker is the current exact child of the prepared request head, with the expected payload and canonical admission record, before provider IO can continue. A lost committed acknowledgement proceeds once; fabricated, uncommitted, unstable or later-advanced state sends nothing and closes the provider budget conservatively. This remains local injected durability evidence, not broker or account acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -343,7 +347,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.60 ignores the paper provider-budget BEGIN acknowledgement and proceeds only after two stable read-only replays prove the exact pending token, account/client hashes, request/payload heads and owner identity under the original in-process lease. A committed reservation whose local acknowledgement was lost continues without a duplicate append; missing, malformed, unstable or replacement-owner state stops before the request marker and provider POST with fixed POST_BUDGET_RESERVATION_UNCERTAIN. A restart may inspect or explicitly interrupt the reservation but cannot silently resume provider IO. This is local shared-store durability, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.59 commit a332839bfc10135316f9e088ee8027d51f1c3d8b passed security 41106267358, research/browser/evidence 41106267368 and Windows 41106267351. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.61 ignores the paper request-marker write acknowledgement and proceeds only after two stable read-only full-chain replays prove the exact current marker, prepared-request parent, payload and canonical admission record. A committed marker whose local acknowledgement was lost continues without another append; an uncommitted, malformed, unstable or later-advanced state stops before provider POST with fixed REQUEST_MARKER_DURABLE_STATE_CHANGED and closes the already reserved provider budget conservatively. The existing provider-budget reservation still requires its exact pending record and original active in-process lease. This is local shared-store durability, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.60 commit 0f3b605d8f2ae84e08e033b28f2e2f12e9883ac8 passed security 41117103498 and research/browser/evidence 41117103398; its Windows run 41117103355 was still active at recovery and is not claimed as accepted. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

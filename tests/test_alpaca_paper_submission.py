@@ -90,6 +90,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['post_reservation_durable_heads_rechecked']
     assert result['response_observation_head_bound_to_post_budget']
     assert result['post_budget_reservation_cold_replayed']
+    assert result['request_marker_cold_replayed']
     assert result['response_observation_cold_replayed']
     assert result['response_budget_completion_cold_replayed']
     assert result['alpaca_post_budget_scope_required']
@@ -268,6 +269,80 @@ def test_post_budget_reservation_requires_original_active_lease(
         submit(prepared,opener)
     assert prepared[0].path.read_bytes()==request_before
     assert prepared[2].inspect()['pending_token'] is not None
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+
+
+@pytest.mark.parametrize('ack_mode',['lost','malformed'])
+def test_committed_request_marker_ack_is_cold_replayed_before_post(
+        prepared,monkeypatch,ack_mode):
+    original=BrokerRequestJournal.begin_submission_checked
+    def begin(self,*args,**kwargs):
+        original(self,*args,**kwargs)
+        if ack_mode=='lost':
+            raise RuntimeError('private lost marker acknowledgement')
+        return {'attempt_marker_commit_observed':False,
+                'submission_admission':{'private':'forged'}}
+    monkeypatch.setattr(BrokerRequestJournal,'begin_submission_checked',begin)
+    opener=Opener();result=submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    assert result['request_marker_cold_replayed'] is True
+    assert retained['submission_attempt_marked'] is True
+    assert retained['snapshot']['status']=='new'
+    assert prepared[2].history()[0]['outcome']=='RESPONSE_OBSERVED'
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+@pytest.mark.parametrize('begin_result',[
+    RuntimeError('private marker detail'),
+    {'attempt_marker_commit_observed':True,
+     'submission_admission':{'private':'forged'}},
+])
+def test_uncommitted_request_marker_ack_stops_before_post(
+        prepared,monkeypatch,begin_result):
+    def uncommitted(*_args,**_kwargs):
+        if isinstance(begin_result,BaseException):
+            raise begin_result
+        return begin_result
+    monkeypatch.setattr(BrokerRequestJournal,'begin_submission_checked',
+                        uncommitted)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+            match='REQUEST_MARKER_DURABLE_STATE_CHANGED') as error:
+        submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    history=prepared[2].history()
+    assert 'private marker detail' not in str(error.value)
+    assert retained['submission_attempt_marked'] is False
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+
+
+def test_unstable_request_marker_cold_replay_stops_before_post(
+        prepared,monkeypatch):
+    original=BrokerRequestJournal.recovery
+    marker_reads=0
+    def unstable(self):
+        nonlocal marker_reads
+        result=original(self)
+        if (result['requests'] and
+                result['requests'][0]['submission_attempt_marked'] and
+                result['requests'][0]['snapshot'] is None):
+            marker_reads+=1
+            if marker_reads==2:
+                return dict(result,head_sha256='f'*64)
+        return result
+    monkeypatch.setattr(BrokerRequestJournal,'recovery',unstable)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='REQUEST_MARKER_DURABLE_STATE_CHANGED'):
+        submit(prepared,opener)
+    retained=original(prepared[0])['requests'][0]
+    history=prepared[2].history()
+    assert marker_reads>=2 and retained['submission_attempt_marked'] is True
+    assert retained['snapshot'] is None
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
     assert all(request.get_method()!='POST' for request,_ in opener.requests)
 
 

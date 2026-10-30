@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Candidate update on 2026-10-29
+## Candidate update on 2026-10-30
+
+Current candidate: v0.340.48, based on published v0.340.47 source `cc717ab33deeb1938a2f63abe07388eec5fdf92c`. v0.340.48 makes the shared distribution-manifest producer and verifier stable, bounded, exact-schema and no-overwrite. No application-runtime or external authority is added. Exact-source v0.340.47 passed security, research/browser/evidence and Windows workflows. Fresh exact-source v0.340.48 results remain required.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
+
+Local pre-publication validation passed 4,607 tests with one expected non-Windows skip and one Starlette/httpx warning; the 198-test artifact/installer/evidence/version/roadmap focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller, Portal-syntax and wheel-build checks passed. The rough weighted implementation estimate is intentionally unchanged because this acceptance-infrastructure hardening does not integrate a new accepted external gate.
+
+## Prior v0.340.47 candidate record
 
 Current candidate: v0.340.47, based on published v0.340.46 source `97cb861dc11aa338b699c9831b3e8b8db1f01f13`. v0.340.47 re-hashes the final installer after manifest creation and requires exact agreement with the phase review and artifact manifest before upload. No application-runtime or external authority is added. Exact-source v0.340.46 passed security, research/browser/evidence and Windows workflows. Fresh exact-source v0.340.47 results remain required.
 

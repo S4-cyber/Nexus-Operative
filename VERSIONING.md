@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.47 (pre-release).** This build binds the final installer after manifest creation to the exact-source phase review and artifact manifest before upload. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.48 (pre-release).** This build makes the shared distribution-manifest boundary stable, bounded, exact-schema and no-overwrite before upload. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.48 strict stable distribution manifest
+
+Artifact and manifest reads now require bounded regular single-link files, stable descriptor metadata and no symlink following. Verification requires the exact v1 schema, a pre-1.0 version, a lowercase 40-character source commit, false signing/release flags, safe unique names, bounded positive sizes and lowercase SHA-256 digests. Duplicate JSON keys, floats, nonfinite values, extra fields, changed files and pre-existing output fail closed; creation flushes a temporary file before non-overwriting publication.
+
+Exact-source v0.340.47 `cc717ab33deeb1938a2f63abe07388eec5fdf92c` passed all three hosted workflows: security 41008339653, research/browser/evidence 41008340093 and Windows 41008339662. Fresh exact-source v0.340.48 workflows remain mandatory.
+
+Local pre-publication validation passed 4,607 tests with one expected non-Windows skip and one Starlette/httpx warning; the artifact/installer/evidence/version/roadmap focus passed 198. All sixteen bounded offline profiles and saved-evidence verification matched 392 source files / `fe4ada2466e11b35ec34259bc9d1ea88322f2b9aed05097137c4f8acb2342cec`; report SHA-256 is `4a7b783ab7786a313257edf08886a2567f709f50ec202aad8035467c6e998e62`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controllers, Portal JavaScript syntax and the wheel build passed; wheel SHA-256 is `513c64ec02235d1af3e6b568628c62a7b47709ad127eadcdc14d1bf376fdde0a`. These checks grant no trading, funds, live, cloud, release or owner authority.
 
 ## v0.340.47 final installer distribution binding
 

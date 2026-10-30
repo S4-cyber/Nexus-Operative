@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.48 strict stable distribution manifest
+
+The shared artifact-manifest producer and verifier now use bounded stable descriptor reads for every artifact and the manifest itself, reject symlinks and hardlinks, require exact schemas and pre-1.0/source/false-authority bindings, reject duplicate keys and noninteger JSON numbers, and refuse to overwrite an existing manifest. Changed, malformed, unsafe or oversized distribution inputs fail before upload. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.47 `cc717ab33deeb1938a2f63abe07388eec5fdf92c` passed security 41008339653, research/browser/evidence 41008340093 and Windows 41008339662. Fresh exact-source v0.340.48 checks remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local pre-publication validation passed 4,607 tests with one expected non-Windows skip and one Starlette/httpx warning; the artifact/installer/evidence/version/roadmap focus passed 198. All sixteen bounded offline profiles and saved-evidence verification matched 392 source files / `fe4ada2466e11b35ec34259bc9d1ea88322f2b9aed05097137c4f8acb2342cec`; report SHA-256 is `4a7b783ab7786a313257edf08886a2567f709f50ec202aad8035467c6e998e62`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controllers, Portal JavaScript syntax and the wheel build passed; wheel SHA-256 is `513c64ec02235d1af3e6b568628c62a7b47709ad127eadcdc14d1bf376fdde0a`. Synthetic/offline evidence does not predict future profit or establish broker, market, Windows-profile, live, cloud or release acceptance.
+
 ## v0.340.47 final installer distribution binding
 
 After the distribution manifest is created and verified, the Windows lane now independently re-hashes the final installer and requires its exact name, byte count and SHA-256 to match both the successful installer phase review and artifact manifest at the exact source commit/version. Stale, changed, promoted, malformed or pre-existing evidence fails before upload. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.

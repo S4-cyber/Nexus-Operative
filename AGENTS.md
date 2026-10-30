@@ -1,6 +1,14 @@
 # Nexus Operative continuity instructions
 
-Current checkpoint: v0.340.47 binds the final uploaded installer to the exact-source phase review and artifact manifest by name, byte count and independently re-read SHA-256 after manifest creation. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+Current checkpoint: v0.340.48 hardens the shared artifact-manifest producer and verifier with bounded stable single-link reads, exact pre-1.0/source/schema/authority validation, duplicate-key rejection and no-overwrite publication. All engagement permissions remain OFF by default; the independent emergency-cut latch, limits and exits remain unchanged. There is no application-runtime, provider, retry, Portal control, modifiable parameter or external authority change.
+
+## v0.340.48 strict stable distribution manifest
+
+Distribution manifest creation and verification now reject non-regular, symlinked, hardlinked, empty, oversized or read-mutated artifacts and require stable descriptor metadata while hashing. The manifest itself is read through the same bounded no-follow single-link boundary; duplicate keys, floats, nonfinite numbers, extra or missing fields, unsafe names, invalid sizes/digests, promoted versions, malformed source commits and true signing/release flags fail closed. Creation publishes through a flushed temporary file and non-overwriting hardlink.
+
+Exact-source v0.340.47 `cc717ab33deeb1938a2f63abe07388eec5fdf92c` passed security run 41008339653, research/browser/evidence run 41008340093 and Windows EXE/installer/reinstall/uninstall run 41008339662. Fresh exact-source v0.340.48 workflows remain mandatory.
+
+Local pre-publication validation passed 4,607 tests with one expected non-Windows skip and one Starlette/httpx warning; the artifact/installer/evidence/version/roadmap focus passed 198. All sixteen bounded offline profiles and saved-evidence verification matched 392 source files / `fe4ada2466e11b35ec34259bc9d1ea88322f2b9aed05097137c4f8acb2342cec`; `validation/release_trials_0_340_48.json` SHA-256 is `4a7b783ab7786a313257edf08886a2567f709f50ec202aad8035467c6e998e62`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks, Portal JavaScript syntax and the v0.340.48 wheel build passed; wheel SHA-256 is `513c64ec02235d1af3e6b568628c62a7b47709ad127eadcdc14d1bf376fdde0a`. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This manifest boundary grants no native-Windows, broker, market, funds, live, cloud, release or owner authority.
 
 ## v0.340.47 final installer distribution binding
 

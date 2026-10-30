@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.48 strict stable distribution manifest
+
+Distribution packaging must hash every listed artifact through a stable bounded regular single-link file descriptor and must read the manifest through the same fail-closed boundary. The exact manifest and entry schemas, pre-1.0 version, 40-character source commit, false signing/release flags, safe unique names, positive bounded sizes and lowercase SHA-256 values are mandatory. Duplicate JSON keys, floats, nonfinite values, symlinks, hardlinks, mutation during read and an existing output must stop packaging.
+
+Exact-source v0.340.47 `cc717ab33deeb1938a2f63abe07388eec5fdf92c` passed security 41008339653, research/browser/evidence 41008340093 and Windows 41008339662. Fresh exact-source v0.340.48 workflows remain mandatory.
+
+Local pre-publication validation passed 4,607 tests with one expected non-Windows skip and one Starlette/httpx warning; the artifact/installer/evidence/version/roadmap focus passed 198. Sixteen bounded offline profiles and saved-evidence verification matched 392 source files / `fe4ada2466e11b35ec34259bc9d1ea88322f2b9aed05097137c4f8acb2342cec`; report SHA-256 is `4a7b783ab7786a313257edf08886a2567f709f50ec202aad8035467c6e998e62`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controllers, Portal JavaScript syntax and the wheel build passed; wheel SHA-256 is `513c64ec02235d1af3e6b568628c62a7b47709ad127eadcdc14d1bf376fdde0a`. Clean-machine/native-window, ordinary-user profile/ACL, actual-account, sustained-market, independent-review and owner-approval gates remain open.
+
 ## v0.340.47 final installer distribution binding
 
 The final uploaded installer must be independently re-read after artifact-manifest creation. Its exact versioned name, byte count and SHA-256 must equal the successful exact-source phase summary and the unique final artifact-manifest entry. Any changed file, stale source/version, malformed or promoted evidence, duplicate manifest entry or pre-existing binding result must stop upload. The summary retains false native-Windows, broker, live, funds and release authority flags.

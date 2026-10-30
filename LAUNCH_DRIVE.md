@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.54 single-attempt file-identity fence
+
+The explicit paper-only one-attempt boundary now materializes the empty provider POST-budget binding only after permission, asset and two stable risk samples pass. Before either durable attempt record, it samples the request and budget journals as regular single-link files and rechecks both identities at every later permission, emergency-stop, clock and transport checkpoint. A same-byte pathname replacement after the request marker sends nothing, leaves the request permanently lookup-only and closes the retained local provider attempt as `NOT_SENT` with zero actual POSTs. No Portal control, modifiable parameter, credential scope, automatic retry, live endpoint or external authority is added.
+
+Exact-source v0.340.53 `9719e4d7107eeb463382d95ff4c554a92afea160` passed security 41054961069, research/browser/evidence 41054961115 and Windows 41054961066. Fresh v0.340.54 exact-source workflows and authorized paper-account/private-volume acceptance remain required. The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; this local hardening does not close an external gate. Sampled identity is not descriptor-held multi-file atomicity, native ACL/power-loss evidence, broker-wide coordination, provider acceptance or future-profit evidence.
+
 ## v0.340.53 single-attempt store-binding fence
 
 The explicit paper-only submission boundary now retains private exact-path/account/provider-bound request and POST-budget objects across all admission callbacks. A caller-object retarget after the durable marker sends nothing, closes the actual budget as `NOT_SENT`, preserves lookup-only recovery and cannot create or write either decoy path. Budgets outside the fixed Alpaca paper-order scope are rejected before IO. The existing OFF defaults, caps, exits and independent emergency-cut latch are unchanged; no Portal control or saved write credential is added.

@@ -1,6 +1,12 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.53 (pre-release).** This build pins the exact request/account and Alpaca POST-budget path/scope across every internal single-attempt callback. A retarget fails closed without writing the decoy path. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Local store binding is not broker-wide coordination or provider acceptance. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.54 (pre-release).** This build pins both durable paper-submission journal file identities before the attempt reservations. Same-byte pathname replacement fails closed before POST. It adds no Portal route, saved write credential, automatic retry, live endpoint or external authority. Sampled local identity is not descriptor-held atomicity, broker-wide coordination or provider acceptance. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.54 single-attempt file-identity fence
+
+After permission, asset and two stable account/position samples pass, the submission boundary materializes only the provider-budget binding, samples both request and provider-budget files as regular single-link identities and requires those identities at every later checkpoint. Same-byte replacement after the request marker produces zero POSTs, a retained `NOT_SENT`/zero-post budget result and permanent original-client-ID lookup-only request state. The empty binding initialization reserves no attempt and grants no retry or routing authority.
+
+Exact-source v0.340.53 `9719e4d7107eeb463382d95ff4c554a92afea160` passed public security run 41054961069, research/browser/evidence run 41054961115 and Windows EXE/installer/reinstall/uninstall run 41054961066. Fresh v0.340.54 workflows and actual authorized paper-account acceptance remain required. The sampled fence is not an atomic OS snapshot, ACL proof, other-host coordination, broker quota, funds reconciliation, routing permission or profitability evidence.
 
 ## v0.340.53 single-attempt store-binding fence
 

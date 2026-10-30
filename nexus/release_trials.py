@@ -974,6 +974,7 @@ def _validate(profile, result):
              'account_and_position_capacity_resampled',
              'post_reservation_risk_resampled',
              'request_and_post_budget_store_bindings_pinned',
+             'request_and_post_budget_file_identities_pinned',
              'alpaca_post_budget_scope_required',
              'late_risk_change_blocked_before_reservation',
              'post_reservation_risk_change_blocked_before_post',

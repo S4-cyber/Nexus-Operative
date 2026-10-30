@@ -255,6 +255,25 @@ class PaperProviderPostBudget:
             distributed_ownership_verified=False, ready_for_routing=False, release_approved=False,
             limitations='One explicitly shared local POST journal for cooperating callers only; it cannot discover another path, credential, host, process or machine and does not attest broker quotas, account acceptance, fills, fees, holds, funds, routing or release.')
 
+    def ensure_initialized(self, *, expected_head):
+        """Create only the immutable provider binding under local ownership.
+
+        No attempt is reserved and no retry or routing authority is created.
+        Existing journals must still match the caller's exact admitted head.
+        """
+        expected = _digest(expected_head, 'HEAD_INVALID')
+        with self.ownership() as owner:
+            with closing(self._connect(write=True)) as db:
+                with _transaction(db):
+                    state = self._load(db); self._owned(owner)
+                    comparable = (ZERO if state['events'] == 0 and
+                        state['attempts'] == 0 else state['head_sha256'])
+                    if comparable != expected: _fail('HEAD_CHANGED')
+                    self._owned(owner)
+        return dict(head_sha256=comparable, provider_binding_initialized=True,
+            attempt_reserved=False, automatic_retry=False,
+            ready_for_routing=False, release_approved=False)
+
     def history(self):
         self._path_check()
         if not self.path.exists(): return ()

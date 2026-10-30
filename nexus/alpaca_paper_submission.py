@@ -11,6 +11,7 @@ from decimal import Decimal, localcontext
 import hashlib
 import json
 import math
+import os
 import re
 import time
 from urllib.error import HTTPError, URLError
@@ -20,7 +21,8 @@ from nexus import alpaca_paper_contract as contract
 from nexus import alpaca_paper_inspection as inspection
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
-from nexus.sqlite_journal_guard import check_path_set
+from nexus.sqlite_journal_guard import (capture_file_identities, check_path_set,
+    require_file_identities)
 
 ACCOUNT_URL = inspection.ROOT + '/v2/account'
 POSITIONS_URL = inspection.ROOT + '/v2/positions'
@@ -178,6 +180,8 @@ def _pin_stores(journal, post_budget, expected_account_id):
     except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
         _fail('STORE_BINDING_INVALID')
 
+    file_identities = None
+
     def check():
         try:
             current = check_path_set((journal.path, post_budget.path),
@@ -186,13 +190,27 @@ def _pin_stores(journal, post_budget, expected_account_id):
                 journal.account_digest == expected_account_digest and
                 post_budget.provider_scope == POST_BUDGET_SCOPE and
                 post_budget.provider_digest == expected_provider_digest)
+            if stable and file_identities is not None:
+                require_file_identities(paths, file_identities,
+                    'PAPER_SUBMISSION_')
         except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
             stable = False
         if not stable:
             _fail('STORE_BINDING_CHANGED')
 
+    def pin_file_identities():
+        nonlocal file_identities
+        check()
+        try:
+            file_identities = capture_file_identities(paths,
+                'PAPER_SUBMISSION_')
+        except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
+            _fail('STORE_FILE_IDENTITY_INVALID')
+        check()
+
     return (BrokerRequestJournal(paths[0], expected_account_id),
-            PaperProviderPostBudget(paths[1], POST_BUDGET_SCOPE), check)
+            PaperProviderPostBudget(paths[1], POST_BUDGET_SCOPE), check,
+            pin_file_identities)
 
 
 class _Session:
@@ -319,7 +337,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     _credential(api_key); _credential(api_secret)
     expected_account_id = inspection._uuid(expected_account_id)
     _hash(expected_head); _hash(expected_payload_sha256)
-    bound_journal, bound_budget, store_binding_check = _pin_stores(
+    bound_journal, bound_budget, store_binding_check, pin_file_identities = _pin_stores(
         journal, post_budget, expected_account_id)
     try:
         store_binding_check(); bound_budget.inspect(); store_binding_check()
@@ -365,6 +383,17 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         _fail('PREFLIGHT_STATE_CHANGED')
     if credential_check() is not True:
         _fail('CREDENTIALS_CHANGED')
+    # Materialize only the empty provider binding after permission, asset and
+    # two stable risk samples have passed.  This lets the critical reservation
+    # window pin both existing single-link database identities before either
+    # durable attempt record is appended.
+    try:
+        bound_budget.ensure_initialized(expected_head=expected_post_budget_head)
+        pin_file_identities()
+    except PaperSubmissionError:
+        raise
+    except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
+        _fail('STORE_FILE_IDENTITY_INVALID')
     with bound_budget.ownership() as owner:
         token = bound_budget.begin(account_id=expected_account_id,
             request_before_head_sha256=expected_head,
@@ -412,6 +441,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         sequential_preflight_stable=True,
         post_reservation_risk_resampled=True,
         request_and_post_budget_store_bindings_pinned=True,
+        request_and_post_budget_file_identities_pinned=True,
         alpaca_post_budget_scope_required=True,
         paper_order_response_observed=True, journal=observed,
         post_budget_head_sha256=post_budget_head,
@@ -421,7 +451,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities are also pinned from immediately before durable reservation through completion. This is not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -556,6 +586,36 @@ def fixture_report():
                 and not (root/'decoy-budget.sqlite3').exists()
                 and not any(request.get_method()=='POST'
                             for request in binding_opener.requests))
+        identity_journal,identity_selected=prepared(root/'identity')
+        identity_budget=PaperProviderPostBudget(
+            root/'identity-post-budget.sqlite3')
+        identity_opener=Opener(identity_journal);identity_replaced=False
+        def identity_stop():
+            nonlocal identity_replaced
+            identity_retained=BrokerRequestJournal(
+                identity_journal.path,account_id).recovery()['requests'][0]
+            if identity_retained['submission_attempt_marked'] and not identity_replaced:
+                replacement=root/'identity-request-replacement.sqlite3'
+                replacement.write_bytes(identity_journal.path.read_bytes())
+                os.replace(replacement,identity_journal.path)
+                identity_replaced=True
+            return False
+        file_identities_pinned=False
+        try:submit_once(identity_journal,'nx_submit_fixture',key,secret,
+            **dict(options(identity_selected,identity_opener,identity_budget),
+                   emergency_stop_check=identity_stop))
+        except PaperSubmissionError as error:
+            identity_retained=BrokerRequestJournal(
+                identity_journal.path,account_id).recovery()['requests'][0]
+            history=identity_budget.history()
+            file_identities_pinned=(
+                str(error)=='PAPER_SUBMISSION_STORE_BINDING_CHANGED'
+                and identity_replaced
+                and identity_retained['lookup_by_original_client_id_required']
+                and len(history)==1 and history[0]['outcome']=='NOT_SENT'
+                and history[0]['actual_posts']==0
+                and not any(request.get_method()=='POST'
+                            for request in identity_opener.requests))
         repeat_blocked=False
         try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
@@ -570,6 +630,9 @@ def fixture_report():
             request_and_post_budget_store_bindings_pinned=
                 result['request_and_post_budget_store_bindings_pinned'] is True and
                 store_bindings_pinned,
+            request_and_post_budget_file_identities_pinned=
+                result['request_and_post_budget_file_identities_pinned'] is True and
+                file_identities_pinned,
             alpaca_post_budget_scope_required=
                 result['alpaca_post_budget_scope_required'] is True,
             late_risk_change_blocked_before_reservation=late_risk_change_blocked,

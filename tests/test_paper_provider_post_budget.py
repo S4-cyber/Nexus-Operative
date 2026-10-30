@@ -41,6 +41,22 @@ def test_missing_budget_is_read_only_and_first_exact_zero_head_is_accepted(tmp_p
     assert history[0]['request_before_head_sha256']==DIGEST
 
 
+def test_exact_head_initialization_creates_only_provider_binding(tmp_path):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    result=budget.ensure_initialized(expected_head=ZERO)
+    state=budget.inspect()
+    assert result['provider_binding_initialized'] is True
+    assert result['attempt_reserved'] is result['automatic_retry'] is False
+    assert result['ready_for_routing'] is result['release_approved'] is False
+    assert result['head_sha256']==ZERO and state['attempts']==0
+    assert state['head_sha256']!=ZERO
+    assert state['completed_attempts']==0 and budget.history()==()
+    before=budget.path.read_bytes()
+    with pytest.raises(ValueError,match='HEAD_CHANGED'):
+        budget.ensure_initialized(expected_head='f'*64)
+    assert budget.path.read_bytes()==before
+
+
 def test_exact_head_and_cooldown_block_without_appending(tmp_path):
     budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
     owner,token=begin(budget);finish(budget,owner,token)

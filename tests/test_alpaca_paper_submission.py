@@ -1,6 +1,7 @@
 """Injected single-attempt paper submission boundary; never provider IO."""
 import io
 import json
+import os
 from urllib.error import URLError
 
 import pytest
@@ -85,6 +86,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['sequential_preflight_stable']
     assert result['post_reservation_risk_resampled']
     assert result['request_and_post_budget_store_bindings_pinned']
+    assert result['request_and_post_budget_file_identities_pinned']
     assert result['alpaca_post_budget_scope_required']
     assert result['paper_order_response_observed']
     assert result['source']=='INJECTED_UNATTESTED'
@@ -210,6 +212,30 @@ def test_post_marker_caller_store_retarget_is_fail_closed_and_uses_pinned_stores
     assert history[0]['actual_posts']==0
     assert all(request.get_method()!='POST' for request,_ in opener.requests)
     assert not decoy_request.exists() and not decoy_budget.exists()
+
+
+@pytest.mark.parametrize('store_index',['request','budget'])
+def test_post_marker_same_byte_store_replacement_is_fail_closed(
+        prepared,tmp_path,store_index):
+    journal,_,budget=prepared
+    target=journal.path if store_index=='request' else budget.path
+    opener=Opener();replaced=False
+    def stop():
+        nonlocal replaced
+        state=BrokerRequestJournal(journal.path,ACCOUNT).recovery()['requests'][0]
+        if state['submission_attempt_marked'] and not replaced:
+            replacement=tmp_path/f'{store_index}-replacement.sqlite3'
+            replacement.write_bytes(target.read_bytes())
+            os.replace(replacement,target);replaced=True
+        return False
+    with pytest.raises(module.PaperSubmissionError,match='STORE_BINDING_CHANGED'):
+        submit(prepared,opener,emergency_stop_check=stop)
+    retained=BrokerRequestJournal(journal.path,ACCOUNT).recovery()['requests'][0]
+    history=PaperProviderPostBudget(budget.path).history()
+    assert replaced and retained['lookup_by_original_client_id_required']
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
 
 
 @pytest.mark.parametrize('final_account,final_positions',[

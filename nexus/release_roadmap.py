@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.53'
+REVISION = '0.340.54'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -315,7 +315,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.53 pins the exact request-journal path/account and Alpaca provider-budget path/scope in private retained store instances across every single-attempt admission callback. Retargeting either caller-held object after the durable marker sends nothing, closes the real budget as NOT_SENT and never creates or writes the decoy path; a non-Alpaca budget scope is rejected before IO. This is local store-binding hardening, not an OS-atomic path guarantee, broker-wide coordination or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.52 security, research/browser/evidence and Windows workflows passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.54 materializes the empty Alpaca POST-budget binding only after permission, asset and two stable risk samples pass, then pins the request and provider-budget single-link file identities before either durable reservation. Every later admission checkpoint rejects pathname replacement, including same-byte replacement after the request marker, before any POST; the real budget closes as NOT_SENT and the request remains lookup-only. This is a sampled local identity fence, not descriptor-held multi-file atomicity, ACL proof, broker-wide coordination or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.53 security, research/browser/evidence and Windows workflows passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

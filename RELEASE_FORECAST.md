@@ -2,7 +2,7 @@
 
 ## Candidate update on 2026-10-30
 
-Current candidate: v0.340.53, based on published v0.340.52 source `55cfac86cc1d7c659ac9419cba08e75f67d73cf1`. v0.340.53 pins exact request/account and Alpaca POST-budget path/scope bindings across every single-attempt callback. A post-marker retarget sends nothing, closes the real budget as `NOT_SENT`, preserves lookup-only recovery and never writes a decoy path. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.52 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.53 results and actual authorized paper-account acceptance remain required.
+Current candidate: v0.340.54, based on published v0.340.53 source `9719e4d7107eeb463382d95ff4c554a92afea160`. v0.340.54 pins the request and Alpaca POST-budget regular single-link file identities before durable reservation. Same-byte post-marker replacement sends nothing, closes the retained budget as `NOT_SENT` and preserves lookup-only recovery. No Portal route, saved write credential, retry, live endpoint or external authority is added. Exact-source v0.340.53 security, research/browser/evidence and Windows workflows passed. Fresh exact-source v0.340.54 results and actual authorized paper-account acceptance remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This defensive broker-paper boundary does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 

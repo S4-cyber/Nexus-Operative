@@ -1,5 +1,11 @@
 # Nexus Operative release acceptance
 
+## v0.340.54 single-attempt file-identity fence
+
+Mandatory injected evidence now proves that the explicit paper-only transport creates no provider attempt while initializing an empty budget binding, pins both request and provider-budget regular single-link file identities before durable reservation, and rejects same-byte replacement after the request marker before any POST. The fail-closed result must preserve lookup-only request recovery and retain a `NOT_SENT` budget result with zero actual POSTs. This is a local boundary test, not broker acceptance.
+
+Exact-source v0.340.53 `9719e4d7107eeb463382d95ff4c554a92afea160` passed security 41054961069, research/browser/evidence 41054961115 and Windows 41054961066. Fresh v0.340.54 workflows remain mandatory. The fixture does not prove descriptor-held atomicity, ACLs, provider source, account ownership, broker-wide exclusion, settled funds, fee/hold reconciliation, routing authority, market realism, profitability or release acceptance.
+
 ## v0.340.53 single-attempt store-binding fence
 
 Mandatory injected evidence now proves that the explicit paper-only transport retains exact request/account and Alpaca POST-budget path/scope bindings across callbacks. A post-marker caller-object retarget must send no POST, close the actual budget as `NOT_SENT` with zero posts, preserve original-ID lookup-only recovery and leave decoy paths absent. A non-Alpaca provider scope must fail before network or journal mutation. This is a local fail-closed boundary, not broker acceptance.

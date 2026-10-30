@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.46 exact-source installer evidence binding
+
+Successful native Windows installer evidence now requires one run session, the exact checked-out source commit, the declared pre-1.0 version and the SHA-256 of the installer used by smoke on every record. The reviewer independently re-hashes the bounded stable installer file and rejects a mixed session, stale source/version, digest mismatch or changed file before packaging. Existing logs and review summaries cannot be overwritten. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.
+
+Exact-source v0.340.44 passed security, research and Windows workflows. v0.340.45 security 40999372704 and research/browser/evidence 40999372650 passed; Windows 40999372954 remained active in Install and test and is not called a pass. Fresh exact-source v0.340.46 checks remain mandatory. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local pre-publication validation passed 4,573 tests with one expected non-Windows skip and one Starlette/httpx warning. The installer/evidence/packaging focus passed 79 and the release-trial validator passed 97. All sixteen bounded offline profiles and saved-evidence verification matched 390 source files / `70e2f8b0a0d5e2831968c055b82004c7a16045c6d385ec40e7284430bcee8031`; report SHA-256 is `c1536d04ff12cc0686bbcdc64276642f15aada3c9cbce5ac2766be73a46eff44`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks and the v0.340.46 wheel build passed; wheel SHA-256 is `f06337a8e745eaa4d9dad57b241125d03f14eaddd4006661d564707846d67fbf`. Synthetic/offline evidence does not predict future profit or establish broker, market, Windows-profile, live, cloud or release acceptance.
+
 ## v0.340.45 fail-closed installer phase-evidence review
 
 Successful native Windows installer evidence must now pass a bounded one-minute structural review before distribution packaging. The exact ten installer/tool/start/recovery/uninstall phases require one started and one completed record, fixed deadlines, UTC monotonic timestamps and observed durations within the deadline plus a 15-second terminal-write allowance. Missing, duplicate, reordered, malformed, failed, timed-out, retimed or overlong evidence fails closed. The allowlisted review is retained beside the raw evidence. No UI, provider, credential, account, order, funds, live, cloud or release authority is added.

@@ -25,6 +25,11 @@ def test_installer_smoke_bounds_every_external_process_and_records_phases():
     assert "all_external_processes_bounded=$true" in script
     assert "phase_evidence_recorded=$true" in script
     assert "maximum_phase_timeout_seconds=300" in script
+    assert "if (Test-Path $phaseEvidence) { throw 'Installer phase evidence already exists' }" in script
+    assert "[Guid]::NewGuid().ToString('D')" in script
+    assert 'source_commit = $SourceCommit' in script
+    assert 'version = $Version' in script
+    assert 'installer_sha256 = $installerSha256' in script
 
 
 def test_windows_workflow_retains_outer_timeout_and_always_uploads_diagnostics():
@@ -33,6 +38,10 @@ def test_windows_workflow_retains_outer_timeout_and_always_uploads_diagnostics()
     assert './tools/windows_installer_smoke.ps1' in workflow
     assert 'name: Validate installer phase evidence\n        timeout-minutes: 1' in workflow
     assert 'python tools/windows_installer_phase_review.py --input' in workflow
+    assert 'NEXUS_SOURCE_COMMIT=$actual' in workflow
+    assert '-SourceCommit $env:NEXUS_SOURCE_COMMIT' in workflow
+    assert '--installer $installer --expected-version $version' in workflow
+    assert '--expected-source-commit $env:NEXUS_SOURCE_COMMIT' in workflow
     assert 'installer-phase-review.json' in workflow
     assert 'name: Preserve installer acceptance evidence\n        if: always()' in workflow
     assert '${{ runner.temp }}/nexus-installer-evidence' in workflow

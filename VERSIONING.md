@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.45 (pre-release).** This build validates the exact successful Windows installer phase sequence, deadlines, UTC order and bounded durations before distribution packaging. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.46 (pre-release).** This build binds successful Windows installer phase evidence to one run session, exact source commit, version and independently re-read installer digest before distribution packaging. It adds no application-runtime, provider, retry or external authority. This is acceptance-infrastructure hardening, not provider acceptance, native durability, market realism, profitability or release approval. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.46 exact-source installer evidence binding
+
+Every phase record now carries one canonical UUIDv4 session, the checked-out source commit, the declared pre-1.0 version and the SHA-256 of the installer used by smoke. The reviewer independently re-hashes the stable bounded regular installer file and requires every record to match; the producer refuses a pre-existing log and the reviewer will not overwrite a prior summary. Stale, mixed-session or different-installer evidence cannot satisfy the packaging gate.
+
+Exact-source v0.340.44 passed all three workflows. Exact-source v0.340.45 passed security run 40999372704 and research/browser/evidence run 40999372650; Windows run 40999372954 remained active in Install and test. Fresh exact-source v0.340.46 workflows remain mandatory.
+
+Local pre-publication validation passed 4,573 tests with one expected non-Windows skip and one Starlette/httpx warning; the installer/evidence/packaging focus passed 79 and the release-trial validator passed 97. All sixteen bounded offline profiles and saved-evidence verification matched 390 source files / `70e2f8b0a0d5e2831968c055b82004c7a16045c6d385ec40e7284430bcee8031`; report SHA-256 is `c1536d04ff12cc0686bbcdc64276642f15aada3c9cbce5ac2766be73a46eff44`. Compilation, dependency integrity, deterministic roadmap output, all fourteen Node controller checks and the wheel build passed; wheel SHA-256 is `f06337a8e745eaa4d9dad57b241125d03f14eaddd4006661d564707846d67fbf`. These checks grant no trading, funds, live, cloud, release or owner authority.
 
 ## v0.340.45 fail-closed installer phase-evidence review
 

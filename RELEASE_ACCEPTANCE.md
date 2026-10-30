@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.46 exact-source installer evidence binding
+
+Every successful installer phase record must bind to one canonical UUIDv4 session, the exact checked-out source commit, the declared pre-1.0 version and the SHA-256 of the installer that smoke exercised. The reviewer must independently hash the same bounded stable no-follow regular file and require all records to match. A pre-existing phase log, mixed session, stale source/version, different installer, changed file or pre-existing review output must stop distribution packaging. The summary retains false native-Windows, broker, live, funds and release authority flags.
+
+Exact-source v0.340.44 passed all hosted workflows. v0.340.45 security 40999372704 and research/browser/evidence 40999372650 passed; Windows 40999372954 was active in Install and test and remains unaccepted. Fresh exact-source v0.340.46 workflows remain mandatory.
+
+Local pre-publication validation passed 4,573 tests with one expected non-Windows skip and one Starlette/httpx warning. The installer/evidence/packaging focus passed 79 and the release-trial validator passed 97. Sixteen bounded offline profiles and saved-evidence verification matched 390 source files / `70e2f8b0a0d5e2831968c055b82004c7a16045c6d385ec40e7284430bcee8031`; report SHA-256 is `c1536d04ff12cc0686bbcdc64276642f15aada3c9cbce5ac2766be73a46eff44`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controllers and the wheel build passed. Clean-machine/native-window, ordinary-user profile/ACL, actual-account, sustained-market, independent-review and owner-approval gates remain open.
+
 ## v0.340.45 fail-closed installer phase-evidence review
 
 Successful installer acceptance evidence must contain exactly the ten declared phases, each as one started record immediately followed by one completed record with the fixed timeout. Records must use UTC monotonic timestamps, remain within their timeout plus the 15-second terminal-write allowance and pass bounded no-follow file reading. Any missing, duplicate, reordered, unknown, failed, timed-out, retimed, non-UTC, clock-regressed, overlong, oversized, symlinked or changed input must stop distribution packaging. The summary must retain false native-Windows, broker, live, funds and release authority flags.

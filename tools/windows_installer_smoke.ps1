@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory=$true)][string]$Version,
     [Parameter(Mandatory=$true)][string]$EvidenceDirectory,
     [Parameter(Mandatory=$true)][string]$UpgradeSource,
-    [Parameter(Mandatory=$true)][string]$UpgradeCommit
+    [Parameter(Mandatory=$true)][string]$UpgradeCommit,
+    [Parameter(Mandatory=$true)][string]$SourceCommit
 )
 $ErrorActionPreference = 'Stop'
 $installDir = Join-Path $env:RUNNER_TEMP 'nexus-install-smoke'
@@ -11,6 +12,11 @@ $dataDir = Join-Path $env:RUNNER_TEMP 'nexus-install-smoke-data'
 New-Item -ItemType Directory -Force $EvidenceDirectory, $dataDir | Out-Null
 $phaseEvidence = Join-Path $EvidenceDirectory 'installer-phases.jsonl'
 $python = (Get-Command python -ErrorAction Stop).Source
+if ($Version -cnotmatch '^0\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw 'Invalid development version binding' }
+if ($SourceCommit -cnotmatch '^[0-9a-f]{40}$') { throw 'Invalid source commit binding' }
+if (Test-Path $phaseEvidence) { throw 'Installer phase evidence already exists' }
+$installerSha256 = (Get-FileHash $Installer -Algorithm SHA256).Hash.ToLowerInvariant()
+$phaseSessionId = [Guid]::NewGuid().ToString('D')
 
 function Write-Phase([string]$Label, [string]$Status, [int]$TimeoutSeconds) {
     $record = [ordered]@{
@@ -19,6 +25,10 @@ function Write-Phase([string]$Label, [string]$Status, [int]$TimeoutSeconds) {
         status = $Status
         timeout_seconds = $TimeoutSeconds
         timestamp_utc = [DateTime]::UtcNow.ToString('o')
+        session_id = $phaseSessionId
+        source_commit = $SourceCommit
+        version = $Version
+        installer_sha256 = $installerSha256
     }
     Add-Content -Path $phaseEvidence -Value ($record | ConvertTo-Json -Compress) -Encoding UTF8
     Write-Host "Nexus installer smoke phase $Status`: $Label"

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.45'
+REVISION = '0.340.46'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -307,7 +307,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.45 makes successful native installer phase evidence fail-closed: a bounded one-minute review requires the exact ten-phase start/completion sequence, fixed per-phase deadlines, UTC monotonic timestamps and observed durations within each deadline plus a small terminal-write allowance. Missing, duplicate, reordered, malformed, failed, timed-out, retimed or overlong records cannot reach distribution packaging; the allowlisted review summary is retained with the raw evidence. This validates CI evidence structure only and does not claim native-window, ordinary-user, broker, market or release acceptance before fresh exact-source workflows. No application runtime, provider, retry, control, permission or authority changes. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.46 binds every successful native-installer phase record to one random run session, the exact checked-out source commit, the declared pre-1.0 version and the SHA-256 digest of the installer that the reviewer independently re-reads through a bounded stable-file boundary. A pre-existing phase log, mixed session, stale source/version, different installer or changed installer file fails before distribution packaging; the authority-false summary exposes the verified bindings. This strengthens CI evidence freshness and identity only and does not claim native-window, ordinary-user, broker, market or release acceptance before fresh exact-source workflows. No application runtime, provider, retry, control, permission or authority changes. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

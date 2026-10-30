@@ -1,12 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Candidate update on 2026-10-30
+## Candidate update on 2026-10-29
 
-Current candidate: v0.340.45, based on published v0.340.44 source `baf7724283f1e5c5f2c5247bb234d057a1cfea3b`. v0.340.45 fail-closes distribution packaging unless retained native-installer phases have the exact successful sequence, fixed deadlines, UTC order and bounded durations. No application-runtime or external authority is added. Exact-source v0.340.44 security passed; browser-help and saved-evidence jobs passed while hosted regression and Windows packaging remained active at the checkpoint. Fresh exact-source v0.340.45 results remain required.
+Current candidate: v0.340.46, based on published v0.340.45 source `502a7641397600ac41103c9df8259b5b2617534f`. v0.340.46 binds every successful native-installer phase record to one session, the exact source commit, version and independently re-read installer digest. No application-runtime or external authority is added. Exact-source v0.340.44 passed all workflows; v0.340.45 security and research passed while Windows remained active in Install and test. Fresh exact-source v0.340.46 results remain required.
 
 The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 fully accepted major stages. This integrity fix does not change release approval, live-trading permission, money-movement authority or the conditional planning ranges below.
 
-Local pre-publication validation is complete: 4,569 tests passed with one expected non-Windows skip and one warning, the final 54-test focus passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller and wheel-build checks passed. Fresh exact-source hosted checks remain required. The rough weighted implementation estimate is intentionally unchanged because this acceptance-infrastructure hardening does not integrate a new accepted external gate.
+Local pre-publication validation is complete: 4,573 tests passed with one expected non-Windows skip and one warning, the 79-test installer/evidence/packaging focus and 97-test release-trial validator passed, all sixteen release profiles and saved-evidence verification passed, and compilation, dependency, deterministic-roadmap, controller and wheel-build checks passed. Fresh exact-source hosted checks remain required. The rough weighted implementation estimate is intentionally unchanged because this acceptance-infrastructure hardening does not integrate a new accepted external gate.
 
 ## Prior v0.340.17 candidate record
 

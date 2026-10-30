@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.64 terminal completion-window binding
+
+The one-attempt paper boundary now accepts terminal provider-budget state only when its retained completion time is inside the exact caller-witnessed window. `RESPONSE_OBSERVED` is bracketed by live admission checks; `NOT_SENT` and `OUTCOME_UNKNOWN` close at the last trusted sample without weakening revoked permission or the independent emergency stop. Out-of-window state produces fixed uncertainty and no provider retry or routing authority.
+
+Exact-source v0.340.63 commit `ad3ab8444718bb71bfa5876e938824e07a72fcd8` passed security 41138121183, research/browser/evidence 41138121115 and Windows 41138121074. Fresh v0.340.64 workflows remain mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local validation passed 4,673 tests with one expected non-Windows skip and one warning; the final submission/budget/release/version/installer focus passed 152. All sixteen offline profiles and saved evidence verified against 395 exact source files. Compilation, dependency, roadmap, controller, Portal syntax and wheel checks passed. These local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.63 durable admission-window binding
 
 The one-attempt paper submission boundary now accepts provider-budget and request-marker durable records only when each retained admission time falls inside the exact caller-observed permission, emergency-stop and monotonic-clock window. The provider reservation time is retained in its read-only receipt/history and must precede the marker time. Out-of-window provider state remains pending before the marker; an out-of-window marker is closed as `NOT_SENT` with zero POSTs. This adds no Portal route, saved write credential, retry or external authority.

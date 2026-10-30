@@ -94,6 +94,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['reservation_and_marker_admission_windows_bound']
     assert result['response_observation_cold_replayed']
     assert result['response_budget_completion_cold_replayed']
+    assert result['response_and_safety_completion_windows_bound']
     assert result['alpaca_post_budget_scope_required']
     assert result['paper_order_response_observed']
     assert result['source']=='INJECTED_UNATTESTED'
@@ -581,6 +582,24 @@ def test_lost_post_budget_completion_ack_cold_replays_without_second_post(
     assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
 
 
+def test_response_completion_outside_witnessed_window_is_not_trusted(
+        prepared,monkeypatch):
+    original=PaperProviderPostBudget.finish
+    def wrong_admission(self,*args,**kwargs):
+        if kwargs.get('outcome')=='RESPONSE_OBSERVED':
+            kwargs=dict(kwargs,admission=lambda:1001)
+        return original(self,*args,**kwargs)
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',wrong_admission)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_BUDGET_COMPLETION_UNCERTAIN'):
+        submit(prepared,opener)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
+    assert history[0]['actual_posts']==1 and history[0]['completed_at']==1001
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
 def test_uncommitted_post_budget_completion_is_fixed_review_block(
         prepared,monkeypatch):
     def fail_before_commit(*_args,**_kwargs):
@@ -652,6 +671,35 @@ def test_lost_unknown_safety_closure_ack_preserves_original_failure(
     assert history[0]['actual_posts']==1
     assert prepared[2].inspect()['review_required'] is True
     assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+@pytest.mark.parametrize('outcome', ['NOT_SENT','OUTCOME_UNKNOWN'])
+def test_safety_closure_outside_last_trusted_window_is_not_trusted(
+        prepared,monkeypatch,outcome):
+    original=PaperProviderPostBudget.finish
+    def wrong_admission(self,*args,**kwargs):
+        if kwargs.get('outcome')==outcome:
+            kwargs=dict(kwargs,admission=lambda:1001)
+        return original(self,*args,**kwargs)
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',wrong_admission)
+    if outcome=='NOT_SENT':
+        def stop_after_marker():
+            return prepared[0].recovery()['requests'][0][
+                'submission_attempt_marked']
+        opener=Opener(); changes=dict(emergency_stop_check=stop_after_marker)
+    else:
+        opener=Opener([account(),[],asset(),account(),[],account(),[],
+                       URLError('private transport detail')])
+        changes={}
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN'):
+        submit(prepared,opener,**changes)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']==outcome
+    assert history[0]['actual_posts']==(outcome=='OUTCOME_UNKNOWN')
+    assert history[0]['completed_at']==1001
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==(
+        outcome=='OUTCOME_UNKNOWN')
 
 
 @pytest.mark.parametrize('finish_result',[RuntimeError('private closure detail'),'f'*64])

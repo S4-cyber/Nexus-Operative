@@ -355,6 +355,7 @@ def _request_marker_receipt(journal, store_binding_check, *,
 def _post_budget_completion_head(post_budget, *, token, expected_account_id,
         client_order_id, expected_request_before_head, expected_payload_sha256,
         expected_request_after_head, expected_outcome, expected_actual_posts,
+        expected_completed_at_floor, expected_completed_at_ceiling,
         failure_code, store_binding_check=None):
     """Cold-replay one exact terminal budget row without provider IO.
 
@@ -375,7 +376,14 @@ def _post_budget_completion_head(post_budget, *, token, expected_account_id,
             store_binding_check()
         expected_account = hashlib.sha256(expected_account_id.encode()).hexdigest()
         expected_client = hashlib.sha256(client_order_id.encode()).hexdigest()
+        completion_window_valid = (
+            type(expected_completed_at_floor) in (int, float) and
+            type(expected_completed_at_ceiling) in (int, float) and
+            math.isfinite(expected_completed_at_floor) and
+            math.isfinite(expected_completed_at_ceiling) and
+            expected_completed_at_floor <= expected_completed_at_ceiling)
         stable = (state == state_again and history == history_again and
+            completion_window_valid and
             len(history) >= 1 and state['pending_token'] is None and
             state['head_sha256'] == history[-1]['after_head_sha256'] and
             state['completed_attempts'] == len(history) and
@@ -390,7 +398,10 @@ def _post_budget_completion_head(post_budget, *, token, expected_account_id,
             history[-1]['request_after_head_sha256'] ==
                 expected_request_after_head and
             history[-1]['outcome'] == expected_outcome and
-            history[-1]['actual_posts'] == expected_actual_posts)
+            history[-1]['actual_posts'] == expected_actual_posts and
+            type(history[-1]['completed_at']) in (int, float) and
+            expected_completed_at_floor <= history[-1]['completed_at'] <=
+                expected_completed_at_ceiling)
     except BaseException:
         stable = False
     if not stable:
@@ -707,12 +718,17 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         except BaseException:
             outcome = 'OUTCOME_UNKNOWN' if session.post_attempted else 'NOT_SENT'
             request_after_head = None
+            # The active reservation guarantees at least one prior successful
+            # checkpoint.  A safety closure must use that last trusted wall
+            # sample exactly; it must not need to re-grant permission or ignore
+            # an emergency stop merely to retire the local provider budget.
+            closure_admitted_at = session.previous[0]
             try:
                 request_after_head = bound_journal.recovery()['head_sha256']
                 bound_budget.finish(token, outcome=outcome,
                     request_after_head_sha256=request_after_head,
                     actual_posts=int(session.post_attempted),
-                    admission=lambda: session.previous[0],
+                    admission=lambda: closure_admitted_at,
                     ownership=owner)
             except BaseException:
                 # A commit acknowledgement can be lost while preserving the
@@ -727,9 +743,13 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 expected_request_after_head=request_after_head,
                 expected_outcome=outcome,
                 expected_actual_posts=int(session.post_attempted),
+                expected_completed_at_floor=closure_admitted_at,
+                expected_completed_at_ceiling=closure_admitted_at,
                 failure_code='POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN')
             raise
+        completion_admission_floor = session.previous[0]
         try:
+            completion_admission_floor = session.evaluated_at()
             bound_budget.finish(token, outcome='RESPONSE_OBSERVED',
                 request_after_head_sha256=observation_head, actual_posts=1,
                 admission=session.evaluated_at, ownership=owner)
@@ -738,6 +758,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             # provider POST: accept only an exact cold replay of the completed
             # local result; otherwise leave the pending attempt review-blocked.
             pass
+        completion_admission_ceiling = session.previous[0]
         post_budget_head = _post_budget_completion_head(bound_budget,
             store_binding_check=store_binding_check, token=token,
             expected_account_id=expected_account_id,
@@ -746,6 +767,8 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             expected_payload_sha256=expected_payload_sha256,
             expected_request_after_head=observation_head,
             expected_outcome='RESPONSE_OBSERVED', expected_actual_posts=1,
+            expected_completed_at_floor=completion_admission_floor,
+            expected_completed_at_ceiling=completion_admission_ceiling,
             failure_code='POST_BUDGET_COMPLETION_UNCERTAIN')
     store_binding_check()
     return dict(mode='EXPLICIT_SINGLE_ATTEMPT_ALPACA_PAPER_SUBMISSION',
@@ -764,6 +787,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         reservation_and_marker_admission_windows_bound=True,
         response_observation_cold_replayed=True,
         response_budget_completion_cold_replayed=True,
+        response_and_safety_completion_windows_bound=True,
         alpaca_post_budget_scope_required=True,
         paper_order_response_observed=True, journal=observed,
         post_budget_head_sha256=post_budget_head,
@@ -890,6 +914,8 @@ def fixture_report():
                         expected_request_after_head=
                             history[0]['request_after_head_sha256'],
                         expected_outcome='NOT_SENT',expected_actual_posts=0,
+                        expected_completed_at_floor=1000,
+                        expected_completed_at_ceiling=1000,
                         failure_code='POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN')
                     safety_closure_cold_replayed=(
                         replayed_head==history[0]['after_head_sha256'])
@@ -1027,6 +1053,95 @@ def fixture_report():
             pass
         finally:
             BrokerRequestJournal.begin_submission_checked=original_marker
+        completion_window_journal,completion_window_selected=prepared(
+            root/'completion-window')
+        completion_window_budget=PaperProviderPostBudget(
+            root/'completion-window-post-budget.sqlite3')
+        completion_window_opener=Opener(completion_window_journal)
+        response_completion_window_bound=False
+        original_finish=PaperProviderPostBudget.finish
+        def wrong_response_completion_admission(self,*args,**kwargs):
+            if kwargs.get('outcome')=='RESPONSE_OBSERVED':
+                kwargs=dict(kwargs,admission=lambda:1001)
+            return original_finish(self,*args,**kwargs)
+        PaperProviderPostBudget.finish=wrong_response_completion_admission
+        try:
+            submit_once(completion_window_journal,'nx_submit_fixture',key,
+                secret,**options(completion_window_selected,
+                                 completion_window_opener,
+                                 completion_window_budget))
+        except PaperSubmissionError as error:
+            completion_history=completion_window_budget.history()
+            response_completion_window_bound=(
+                str(error)=='PAPER_SUBMISSION_POST_BUDGET_COMPLETION_UNCERTAIN'
+                and len(completion_history)==1
+                and completion_history[0]['outcome']=='RESPONSE_OBSERVED'
+                and completion_history[0]['actual_posts']==1
+                and completion_history[0]['completed_at']==1001
+                and sum(request.get_method()=='POST'
+                        for request in completion_window_opener.requests)==1)
+        finally:
+            PaperProviderPostBudget.finish=original_finish
+        safety_window_journal,safety_window_selected=prepared(
+            root/'safety-completion-window')
+        safety_window_budget=PaperProviderPostBudget(
+            root/'safety-completion-window-post-budget.sqlite3')
+        safety_window_opener=Opener(safety_window_journal)
+        not_sent_completion_window_bound=False
+        def wrong_safety_completion_admission(self,*args,**kwargs):
+            if kwargs.get('outcome')=='NOT_SENT':
+                kwargs=dict(kwargs,admission=lambda:1001)
+            return original_finish(self,*args,**kwargs)
+        def safety_window_stop():
+            retained_safety=safety_window_journal.recovery()['requests'][0]
+            return retained_safety['submission_attempt_marked']
+        PaperProviderPostBudget.finish=wrong_safety_completion_admission
+        try:
+            submit_once(safety_window_journal,'nx_submit_fixture',key,secret,
+                **dict(options(safety_window_selected,safety_window_opener,
+                               safety_window_budget),
+                       emergency_stop_check=safety_window_stop))
+        except PaperSubmissionError as error:
+            safety_window_history=safety_window_budget.history()
+            not_sent_completion_window_bound=(
+                str(error)==
+                    'PAPER_SUBMISSION_POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN'
+                and len(safety_window_history)==1
+                and safety_window_history[0]['outcome']=='NOT_SENT'
+                and safety_window_history[0]['actual_posts']==0
+                and safety_window_history[0]['completed_at']==1001
+                and not any(request.get_method()=='POST'
+                            for request in safety_window_opener.requests))
+        finally:
+            PaperProviderPostBudget.finish=original_finish
+        unknown_window_journal,unknown_window_selected=prepared(
+            root/'unknown-completion-window')
+        unknown_window_budget=PaperProviderPostBudget(
+            root/'unknown-completion-window-post-budget.sqlite3')
+        unknown_window_opener=Opener(unknown_window_journal,fail=True)
+        outcome_unknown_completion_window_bound=False
+        def wrong_unknown_completion_admission(self,*args,**kwargs):
+            if kwargs.get('outcome')=='OUTCOME_UNKNOWN':
+                kwargs=dict(kwargs,admission=lambda:1001)
+            return original_finish(self,*args,**kwargs)
+        PaperProviderPostBudget.finish=wrong_unknown_completion_admission
+        try:
+            submit_once(unknown_window_journal,'nx_submit_fixture',key,secret,
+                **options(unknown_window_selected,unknown_window_opener,
+                          unknown_window_budget))
+        except PaperSubmissionError as error:
+            unknown_window_history=unknown_window_budget.history()
+            outcome_unknown_completion_window_bound=(
+                str(error)==
+                    'PAPER_SUBMISSION_POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN'
+                and len(unknown_window_history)==1
+                and unknown_window_history[0]['outcome']=='OUTCOME_UNKNOWN'
+                and unknown_window_history[0]['actual_posts']==1
+                and unknown_window_history[0]['completed_at']==1001
+                and sum(request.get_method()=='POST'
+                        for request in unknown_window_opener.requests)==1)
+        finally:
+            PaperProviderPostBudget.finish=original_finish
         reservation_window_journal,reservation_window_selected=prepared(
             root/'reservation-window')
         reservation_window_budget=PaperProviderPostBudget(
@@ -1126,6 +1241,15 @@ def fixture_report():
                 result['response_budget_completion_cold_replayed'] is True and
                 budget.history()[0]['after_head_sha256']==
                     result['post_budget_head_sha256'],
+            response_completion_window_bound=
+                result['response_and_safety_completion_windows_bound'] is True and
+                response_completion_window_bound,
+            not_sent_completion_window_bound=
+                result['response_and_safety_completion_windows_bound'] is True and
+                not_sent_completion_window_bound,
+            outcome_unknown_completion_window_bound=
+                result['response_and_safety_completion_windows_bound'] is True and
+                outcome_unknown_completion_window_bound,
             alpaca_post_budget_scope_required=
                 result['alpaca_post_budget_scope_required'] is True,
             late_risk_change_blocked_before_reservation=late_risk_change_blocked,

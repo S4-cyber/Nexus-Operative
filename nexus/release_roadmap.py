@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.63'
+REVISION = '0.340.64'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -179,6 +179,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; provider-budget and request-marker cold replay now also binds each durable admission timestamp to the caller-observed permission, emergency-stop and monotonic-clock window, retains the provider reservation admission in its replay receipt/history, and requires the marker admission to follow that reservation before any POST; out-of-window durable state remains pending or closes as NOT_SENT with no provider IO' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; terminal provider-budget cold replay now also binds RESPONSE_OBSERVED and the zero/one-POST NOT_SENT/OUTCOME_UNKNOWN safety closures to caller-witnessed completion windows; a safety closure uses the exact last trusted admission sample so revoked permission or an active emergency stop never needs to be relaxed merely to retire local state, while an out-of-window terminal row remains fixed uncertainty without another provider request' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 # Product milestones complement the nine technical evidence tracks above.
 # These are implementation/acceptance states, never permissions to move money.
 DELIVERY_STAGES = (
@@ -249,6 +253,10 @@ DELIVERY_STAGES = tuple((dict(stage,
 
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The paper request-marker write acknowledgement is now ignored. Two stable full-chain reads must prove the marker is the current exact child of the prepared request head, with the expected payload and canonical admission record, before provider IO can continue. A lost committed acknowledgement proceeds once; fabricated, uncommitted, unstable or later-advanced state sends nothing and closes the provider budget conservatively. This remains local injected durability evidence, not broker or account acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Successful response completion and both zero/one-POST safety closures now retain and cold-replay completion times inside the exact caller-witnessed window. Safety closure uses the last trusted sample independently of current permission or emergency-stop state; a forged or out-of-window terminal row grants no recovery, resend or routing authority. This remains injected local evidence, not provider/account acceptance or market reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -351,7 +359,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.63 binds both durable single-attempt paper admission records to caller-observed permission, independent emergency-stop and monotonic-clock windows. The provider-budget pending receipt retains its exact admitted time; the request marker must fall inside its own observed window and follow the provider reservation before any POST. Out-of-window provider state remains pending before a request marker, while an out-of-window marker closes the exact reservation as NOT_SENT with zero POSTs. Exact-source v0.340.62 commit d551b212ec7aeb44ea51008df9b10beace3d524f passed security 41129182009, research/browser/evidence 41129181990 and Windows EXE/installer/reinstall/uninstall 41129181986. This local hardening is not authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.64 binds successful response completion and both zero/one-POST safety closures to exact caller-witnessed completion windows. Safety closure uses the last trusted admission sample without re-granting permission or relaxing the independent emergency stop. An out-of-window terminal row remains fixed uncertainty and cannot authorize recovery, resend or routing. Exact-source v0.340.63 commit ad3ab8444718bb71bfa5876e938824e07a72fcd8 passed security 41138121183, research/browser/evidence 41138121115 and Windows EXE/installer/reinstall/uninstall 41138121074. This local hardening is not authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

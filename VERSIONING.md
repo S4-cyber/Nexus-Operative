@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.63 (pre-release).** This build binds both durable single-attempt paper admission records to caller-observed permission, independent emergency-stop and monotonic-clock windows. It retains the provider reservation's exact admitted time and requires the request marker admission to follow it before any provider POST. Out-of-window state grants no send authority. It adds no Portal route, saved credential, retry, live endpoint or external authority. OFF defaults, the independent emergency-cut latch, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.64 (pre-release).** This build binds successful provider-budget completion and both zero/one-POST safety closures to exact caller-witnessed completion windows. Failure closure uses the last trusted sample without re-granting permission or weakening the independent emergency stop. Out-of-window terminal state grants no recovery, resend or routing authority. It adds no Portal route, saved credential, retry, live endpoint or external authority. OFF defaults, limits and exits remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.64 terminal completion-window binding
+
+Provider-budget completion replay now validates the terminal row's retained `completed_at` in addition to its token, account/client hashes, request/payload heads, outcome and actual POST count. Successful response completion is bracketed by caller checkpoints. `NOT_SENT` and `OUTCOME_UNKNOWN` closures use the last trusted timestamp exactly, preserving emergency-stop independence even when the triggering failure is revoked permission, an active stop, clock failure or transport uncertainty. A forged or out-of-window committed row remains fixed completion uncertainty and cannot cause provider IO.
+
+Exact-source v0.340.63 commit `ad3ab8444718bb71bfa5876e938824e07a72fcd8` passed public security run 41138121183, research/browser/evidence run 41138121115 and Windows EXE/installer/reinstall/uninstall run 41138121074. Fresh v0.340.64 workflows and actual authorized paper-account acceptance remain required. This does not prove ACLs, other-host exclusion, broker idempotency, provider source, settled funds, fee/hold reconciliation, routing authority, market realism, profitability or release acceptance.
+
+Local prepublication validation passed 4,673 tests with one expected non-Windows skip and one existing warning; the final submission/budget/release/version/installer focus passed 152. Sixteen offline profiles and saved evidence verified against 395 source files / `d1a6d90ddd19de6e3d3ac615b3e5f9e7db9f230f041c375c182fb1de94c0b31e`. Evidence SHA-256 is `26833719a9ec7ae4cdbcac042088b80f2cc66e4566f3a6cb7e747bac7bb82df2`; wheel SHA-256 is `b58e44b848af7e541c93b44d65c63bdf07d1b986314aa312642808b0d600518d`.
 
 ## v0.340.63 durable admission-window binding
 

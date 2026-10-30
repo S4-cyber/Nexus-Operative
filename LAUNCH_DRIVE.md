@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.64 terminal completion-window binding
+
+Successful provider-budget completion and both zero/one-POST safety closures now retain and cold-replay `completed_at` inside exact caller-witnessed windows. A normal response completion is bracketed by permission, independent emergency-stop, store-binding and monotonic-clock checks. A failure closure uses the last trusted sample exactly, so stopping the system never requires reauthorizing it. Out-of-window terminal state remains fixed uncertainty and cannot create retry, resend, recovery or routing authority.
+
+Exact-source v0.340.63 commit `ad3ab8444718bb71bfa5876e938824e07a72fcd8` passed security 41138121183, research/browser/evidence 41138121115 and Windows 41138121074. Fresh v0.340.64 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local boundary does not close an external gate or predict profit.
+
+Local validation passed 4,673 tests with one expected non-Windows skip and one warning; the final submission/budget/release/version/installer focus passed 152. All sixteen offline profiles and saved evidence verified against 395 source files / `d1a6d90ddd19de6e3d3ac615b3e5f9e7db9f230f041c375c182fb1de94c0b31e`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks and wheel packaging passed. Evidence SHA-256 is `26833719a9ec7ae4cdbcac042088b80f2cc66e4566f3a6cb7e747bac7bb82df2`; wheel SHA-256 is `b58e44b848af7e541c93b44d65c63bdf07d1b986314aa312642808b0d600518d`. Fresh exact-source hosted workflows remain required.
+
 ## v0.340.63 durable admission-window binding
 
 The single-attempt paper boundary now proves that both durable pre-POST admission timestamps were actually witnessed by the caller session. Provider-budget cold replay retains and validates its hash-chained `BEGIN` time inside a caller-observed permission/emergency-stop/monotonic-clock window and under the original active ownership lease. Request-marker cold replay separately validates its retained admission inside the marker window and after the provider reservation. A forged or out-of-window provider reservation remains pending without a request marker or POST; an out-of-window marker consumes the exact attempt as `NOT_SENT` with zero POSTs. No automatic retry, re-arm, saved write credential, strategy route or external authority is added.

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.57'
+REVISION = '0.340.58'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -227,6 +227,10 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Provider-budget response completion is now accepted only after stable exact cold replay of the committed token, account, client order, request/payload/observation heads, outcome and one-POST count. A lost local completion acknowledgement never repeats provider IO; an uncommitted or malformed completion remains pending and review-blocked. This is local injected durability evidence, not provider acceptance or broker-wide coordination.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Request response observation now has a read-only exact-event receipt that validates the complete current chain and replays the prefix through the OBSERVE event immediately following the submission marker. Stable cold replay recovers a lost local observation acknowledgement without another provider POST; missing, different or uncommitted events retain OUTCOME_UNKNOWN review. This is local injected durability evidence, not provider acceptance or broker-wide coordination.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -327,7 +331,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.57 accepts a successful provider-budget response completion only after stable exact cold replay binds the committed token, account, client order, request/payload/observation heads, RESPONSE_OBSERVED outcome and one-POST count. A lost local completion acknowledgement cannot cause a second provider POST; an uncommitted or malformed completion remains pending and review-blocked with a fixed error. This is local shared-store durability, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.56 hosted workflow results were absent at recovery; exact-source v0.340.55 security, research/browser/evidence and Windows workflows passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.58 accepts a returned paper response only after stable cold replay proves the exact OBSERVE event immediately following the durable submission marker while validating the complete current request-journal chain and replaying that prefix. A lost local observation acknowledgement cannot cause another provider POST; a missing, different or uncommitted event retains OUTCOME_UNKNOWN review with a fixed error. This is local shared-store durability, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.57 hosted workflow results were absent at recovery; exact-source v0.340.55 security, research/browser/evidence and Windows workflows passed. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

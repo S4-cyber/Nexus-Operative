@@ -143,8 +143,14 @@ class BrokerRequestJournal:
         db.execute('INSERT INTO events VALUES (?,?,?,?,?)', (seq,kind,encoded,previous,digest))
         return digest
 
-    def _load(self, db):
-        rows = db.execute('SELECT seq,kind,body,previous,digest FROM events ORDER BY seq LIMIT ?', (MAX_EVENTS+1,)).fetchall()
+    def _load(self, db, *, through_seq=None):
+        if through_seq is None:
+            rows = db.execute('SELECT seq,kind,body,previous,digest FROM events ORDER BY seq LIMIT ?', (MAX_EVENTS+1,)).fetchall()
+        else:
+            if type(through_seq) is not int or not 1<=through_seq<=MAX_EVENTS:
+                raise ValueError('BROKER_JOURNAL_PREFIX_INVALID')
+            rows = db.execute('SELECT seq,kind,body,previous,digest FROM events WHERE seq<=? ORDER BY seq', (through_seq,)).fetchall()
+            if len(rows)!=through_seq:raise ValueError('BROKER_JOURNAL_PREFIX_INVALID')
         if not rows:raise ValueError('BROKER_JOURNAL_BINDING_MISSING')
         if len(rows)>MAX_EVENTS:raise ValueError('BROKER_JOURNAL_EVENT_CAP')
         previous=ZERO; requests={}; broker_ids={}
@@ -436,6 +442,63 @@ class BrokerRequestJournal:
             expected_head=expected_head,
             expected_payload_sha256=expected_payload_sha256,
             return_head=True)
+
+    def observation_receipt(self, client_order_id, response, *,
+                            expected_previous_head,
+                            expected_payload_sha256):
+        """Replay one exact committed observation without writing.
+
+        The receipt identifies the OBSERVE event immediately after the supplied
+        prefix head and replays that exact prefix.  Later valid recovery events
+        may exist, but cannot replace the observation head or response.
+        """
+        self._identity(client_order_id)
+        for value in (expected_previous_head, expected_payload_sha256):
+            if (type(value) is not str or
+                    re.fullmatch('[0-9a-f]{64}', value) is None):
+                raise ValueError('BROKER_OBSERVATION_RECEIPT_REFERENCE_INVALID')
+        self._check_path()
+        if not self.path.exists():
+            raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                db.execute('BEGIN')
+                requests,_,_,current_head=self._load(db)
+                request=requests.get(client_order_id)
+                if (not request or
+                        request['plan']['payload_sha256']!=expected_payload_sha256):
+                    raise ValueError('BROKER_OBSERVATION_RECEIPT_TERMS_CHANGED')
+                retained=_observation(response,request['plan']['payload'])
+                expected_body=dict(client_order_id=client_order_id,
+                                   response=retained)
+                rows=db.execute(
+                    'SELECT seq,kind,body,previous,digest FROM events '
+                    'WHERE previous=? ORDER BY seq LIMIT 2',
+                    (expected_previous_head,)).fetchall()
+                if len(rows)!=1:
+                    raise ValueError('BROKER_OBSERVATION_RECEIPT_MISSING')
+                seq,kind,encoded,previous,digest=rows[0]
+                try:body=json.loads(encoded)
+                except (ValueError,TypeError):
+                    raise ValueError('BROKER_OBSERVATION_RECEIPT_INVALID') from None
+                expected_digest=contract.sha(dict(seq=seq,kind='OBSERVE',
+                    body=expected_body,previous=expected_previous_head))
+                if (kind!='OBSERVE' or previous!=expected_previous_head or
+                        body!=expected_body or encoded!=contract.canonical(body) or
+                        digest!=expected_digest):
+                    raise ValueError('BROKER_OBSERVATION_RECEIPT_DISAGREEMENT')
+                prefix,_,count,prefix_head=self._load(db,through_seq=seq)
+                if count!=seq or prefix_head!=digest:
+                    raise ValueError('BROKER_OBSERVATION_RECEIPT_DISAGREEMENT')
+                observed=prefix.get(client_order_id)
+                if (not observed or
+                        observed['tracker'].status()['latest']!=
+                        contract.normalize(response,request['plan']['payload'])):
+                    raise ValueError('BROKER_OBSERVATION_RECEIPT_DISAGREEMENT')
+                return dict(**self._summary(client_order_id,observed),
+                    duplicate=False,head_sha256=digest,
+                    current_head_sha256=current_head,event_sequence=seq,
+                    exact_response_observation_replayed=True,read_only=True)
 
     def _lookup_write(self, identity, now, result=None, admission=None, expected_head=None):
         self._identity(identity);lookup.clock(now)

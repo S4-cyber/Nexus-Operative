@@ -89,6 +89,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['request_and_post_budget_file_identities_pinned']
     assert result['post_reservation_durable_heads_rechecked']
     assert result['response_observation_head_bound_to_post_budget']
+    assert result['response_observation_cold_replayed']
     assert result['response_budget_completion_cold_replayed']
     assert result['alpaca_post_budget_scope_required']
     assert result['paper_order_response_observed']
@@ -328,6 +329,51 @@ def test_post_budget_binds_exact_observation_head_not_later_lookup_head(
     assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
     assert history[0]['request_after_head_sha256']==result['journal']['head_sha256']
     assert history[0]['request_after_head_sha256']!=current
+
+
+def test_lost_response_observation_ack_cold_replays_without_second_post(
+        prepared,monkeypatch):
+    original=BrokerRequestJournal.observe_checked
+    def lose_ack(self,*args,**kwargs):
+        original(self,*args,**kwargs)
+        raise RuntimeError('private lost response acknowledgement')
+    monkeypatch.setattr(BrokerRequestJournal,'observe_checked',lose_ack)
+    opener=Opener();result=submit(prepared,opener)
+    assert result['response_observation_cold_replayed'] is True
+    assert result['journal']['snapshot']['status']=='new'
+    assert prepared[2].history()[0]['outcome']=='RESPONSE_OBSERVED'
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+def test_uncommitted_response_observation_is_fixed_unknown_review(
+        prepared,monkeypatch):
+    def fail_before_commit(*_args,**_kwargs):
+        raise RuntimeError('private observation storage detail')
+    monkeypatch.setattr(BrokerRequestJournal,'observe_checked',fail_before_commit)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+            match='POST_RESPONSE_DURABLE_STATE_CHANGED') as error:
+        submit(prepared,opener)
+    assert 'private observation storage detail' not in str(error.value)
+    retained=prepared[0].recovery()['requests'][0]
+    history=prepared[2].history()
+    assert retained['snapshot'] is None
+    assert len(history)==1 and history[0]['outcome']=='OUTCOME_UNKNOWN'
+    assert history[0]['actual_posts']==1
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+def test_uncommitted_malformed_response_observation_ack_is_not_trusted(
+        prepared,monkeypatch):
+    monkeypatch.setattr(BrokerRequestJournal,'observe_checked',
+        lambda *_args,**_kwargs:{'head_sha256':'f'*64})
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_RESPONSE_DURABLE_STATE_CHANGED'):
+        submit(prepared,opener)
+    assert prepared[0].recovery()['requests'][0]['snapshot'] is None
+    assert prepared[2].history()[0]['outcome']=='OUTCOME_UNKNOWN'
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
 
 
 def test_lost_post_budget_completion_ack_cold_replays_without_second_post(

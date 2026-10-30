@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.58 exact response-observation cold replay
+
+The explicit one-attempt paper boundary now accepts a returned response only after two stable read-only receipt replays validate the complete current request-journal chain and prove the unique exact `OBSERVE` event immediately following the durable submission marker. Prefix replay binds the canonical response, request payload, client order and normalized observed snapshot to that exact event even if a later valid lookup advances the chain. A lost local observation acknowledgement is recovered without a second provider request. A missing, different or uncommitted event retains one attempted POST as `OUTCOME_UNKNOWN` with a fixed sanitized error. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.
+
+Published v0.340.57 source is `74542e5c4b0df99ca551f914ae47eb7e3a7f8d02`; no exact-source hosted workflow runs or status checks were present at recovery. Exact-source v0.340.55 `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79` passed security 41071953019, research/browser/evidence 41071952902 and Windows EXE/installer/reinstall/uninstall 41071952842. Fresh v0.340.58 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local durability change does not close an external gate or predict profit.
+
+Local validation passed 4,652 tests with one expected non-Windows skip and one warning; the final paper-response/release/version/installer focus passed 305. All sixteen offline profiles and saved-evidence verification passed against 395 source files / `cd5eed58edde9e2ee964677c65144cbfef0f92818242f8014606de9a0d930f14`. Compilation, dependency integrity, roadmap equality, Portal syntax, fourteen controller smokes and wheel packaging passed. Fresh hosted exact-source checks remain required.
+
 ## v0.340.57 response-budget completion cold replay
 
 The explicit one-attempt paper boundary now accepts provider-budget response completion only after two stable cold reads prove the exact committed token, account, client order, request-before head, payload, response-observation head, `RESPONSE_OBSERVED` outcome and one-POST count through the pinned store binding. A lost local commit acknowledgement is recovered without a second provider request. A completion that did not commit, or a malformed in-process result, remains pending and review-blocked with a fixed sanitized error. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.

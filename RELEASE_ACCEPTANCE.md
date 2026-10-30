@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.58 exact response-observation cold replay
+
+Mandatory injected evidence now requires the paper response to be accepted only after a stable read-only receipt validates the full current journal and replays the exact prefix ending at the `OBSERVE` event immediately after the checked submission marker. Positive controls must recover a committed observation whose local acknowledgement was lost with exactly one provider POST and must preserve that observation head after a later lookup. Negative controls must reject a mismatched response, pre-commit observation failure and malformed uncommitted result while retaining one `OUTCOME_UNKNOWN` POST and blocking resend. This is a local durability boundary test, not broker acceptance.
+
+Published v0.340.57 source is `74542e5c4b0df99ca551f914ae47eb7e3a7f8d02`; no exact-source hosted workflow runs or status checks were present at recovery. Exact-source v0.340.55 `fc359e50fbb4c2fbe0bb28ebf1e0fc6bfb54ff79` passed security 41071953019, research/browser/evidence 41071952902 and Windows 41071952842. Fresh v0.340.58 workflows remain mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local validation passed 4,652 tests with one expected non-Windows skip and one warning; the final paper-response/release/version/installer focus passed 305. All sixteen offline profiles and saved evidence verified against the current 395-file source fingerprint. These results do not promote any external acceptance gate.
+
 ## v0.340.57 response-budget completion cold replay
 
 Mandatory injected evidence now requires the successful paper response-budget record to be accepted only after stable exact cold replay binds the reservation token, account, client order, request-before head, payload, committed response-observation head, terminal outcome and one actual POST. A lost-acknowledgement control commits the completion and then raises; it must recover locally with exactly one provider POST. Pre-commit failure and a malformed uncommitted return must expose the fixed sanitized error, retain the pending attempt and block another submit. This is a local durability boundary test, not broker acceptance.

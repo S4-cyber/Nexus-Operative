@@ -278,6 +278,34 @@ def _response_budget_completion_head(post_budget, store_binding_check, *,
     return history[-1]['after_head_sha256']
 
 
+def _response_observation_receipt(journal, store_binding_check, *,
+        client_order_id, response, expected_payload, expected_previous_head,
+        expected_payload_sha256):
+    """Cold-replay one exact request response without provider IO."""
+    try:
+        store_binding_check()
+        receipt=journal.observation_receipt(client_order_id,response,
+            expected_previous_head=expected_previous_head,
+            expected_payload_sha256=expected_payload_sha256)
+        receipt_again=journal.observation_receipt(client_order_id,response,
+            expected_previous_head=expected_previous_head,
+            expected_payload_sha256=expected_payload_sha256)
+        store_binding_check()
+        stable=(contract.sha(expected_payload)==expected_payload_sha256 and
+            receipt==receipt_again and
+            receipt['client_order_id']==client_order_id and
+            receipt['payload_sha256']==expected_payload_sha256 and
+            receipt['submission_attempt_marked'] is True and
+            receipt['snapshot']==contract.normalize(response,expected_payload) and
+            receipt['exact_response_observation_replayed'] is True and
+            receipt['read_only'] is True and receipt['duplicate'] is False)
+    except Exception:
+        stable=False
+    if not stable:
+        _fail('POST_RESPONSE_DURABLE_STATE_CHANGED')
+    return receipt
+
+
 class _Session:
     def __init__(self, key, secret, *, opener, wall_clock, elapsed_clock,
                  permission_check, emergency_stop_check, store_binding_check):
@@ -506,11 +534,18 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             # silently composed with this response.
             session.reservation_check = None
             try:
-                observed = bound_journal.observe_checked(client_order_id, raw,
+                bound_journal.observe_checked(client_order_id, raw,
                     expected_head=marker_head,
                     expected_payload_sha256=expected_payload_sha256)
-            except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
-                _fail('POST_RESPONSE_DURABLE_STATE_CHANGED')
+            except Exception:
+                # A local response-commit acknowledgement can be lost.  Never
+                # repeat provider IO; prove the exact committed event below.
+                pass
+            observed = _response_observation_receipt(bound_journal,
+                store_binding_check,client_order_id=client_order_id,response=raw,
+                expected_payload=payload,
+                expected_previous_head=marker_head,
+                expected_payload_sha256=expected_payload_sha256)
             observation_head = observed['head_sha256']
         except BaseException:
             outcome = 'OUTCOME_UNKNOWN' if session.post_attempted else 'NOT_SENT'
@@ -548,6 +583,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         request_and_post_budget_file_identities_pinned=True,
         post_reservation_durable_heads_rechecked=True,
         response_observation_head_bound_to_post_budget=True,
+        response_observation_cold_replayed=True,
         response_budget_completion_cold_replayed=True,
         alpaca_post_budget_scope_required=True,
         paper_order_response_observed=True, journal=observed,
@@ -558,7 +594,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The response append atomically requires the exact marked request head and payload, and the provider-budget completion is accepted only after an exact stable cold replay binds the committed observation head; lost local completion acknowledgement never repeats provider IO, while an uncommitted result remains pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -775,6 +811,9 @@ def fixture_report():
                 result['response_observation_head_bound_to_post_budget'] is True and
                 budget.history()[0]['request_after_head_sha256']==
                     result['journal']['head_sha256'],
+            response_observation_cold_replayed=
+                result['response_observation_cold_replayed'] is True and
+                result['journal']['exact_response_observation_replayed'] is True,
             response_budget_completion_cold_replayed=
                 result['response_budget_completion_cold_replayed'] is True and
                 budget.history()[0]['after_head_sha256']==

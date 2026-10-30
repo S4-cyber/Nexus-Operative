@@ -257,6 +257,31 @@ def test_lost_commit_ack_reopens_authoritative_observation_and_duplicate_is_safe
     assert cold.recovery()['retained_events']==4
 
 
+def test_exact_observation_receipt_replays_prefix_after_later_lookup(store):
+    store.prepare(plan())
+    prepared=store.recovery();payload=plan()['payload']
+    store.begin_submission_checked('nx_fixture',
+        expected_head=prepared['head_sha256'],
+        expected_payload_sha256=plan()['payload_sha256'],admission=lambda:1000)
+    marker=store.recovery()['head_sha256'];raw=response()
+    observed=store.observe_checked('nx_fixture',raw,expected_head=marker,
+        expected_payload_sha256=plan()['payload_sha256'])
+    store.begin_lookup('nx_fixture',evaluated_at=1001)
+    receipt=store.observation_receipt('nx_fixture',raw,
+        expected_previous_head=marker,
+        expected_payload_sha256=plan()['payload_sha256'])
+    assert receipt['exact_response_observation_replayed'] is True
+    assert receipt['read_only'] is True and receipt['duplicate'] is False
+    assert receipt['head_sha256']==observed['head_sha256']
+    assert receipt['current_head_sha256']==store.recovery()['head_sha256']
+    assert receipt['current_head_sha256']!=receipt['head_sha256']
+    assert receipt['snapshot']==contract.normalize(raw,payload)
+    with pytest.raises(ValueError,match='OBSERVATION_RECEIPT_'):
+        store.observation_receipt('nx_fixture',response(status='rejected'),
+            expected_previous_head=marker,
+            expected_payload_sha256=plan()['payload_sha256'])
+
+
 def test_api_fixture_never_creates_application_state_and_errors_are_sanitized(tmp_path,monkeypatch):
     from fastapi.testclient import TestClient
     from nexus import app

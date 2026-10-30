@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.61'
+REVISION = '0.340.62'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -347,7 +347,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.61 ignores the paper request-marker write acknowledgement and proceeds only after two stable read-only full-chain replays prove the exact current marker, prepared-request parent, payload and canonical admission record. A committed marker whose local acknowledgement was lost continues without another append; an uncommitted, malformed, unstable or later-advanced state stops before provider POST with fixed REQUEST_MARKER_DURABLE_STATE_CHANGED and closes the already reserved provider budget conservatively. The existing provider-budget reservation still requires its exact pending record and original active in-process lease. This is local shared-store durability, not multi-file atomicity, ACL proof, broker-wide idempotency or provider/account acceptance. No Portal route, saved write credential, retry, live endpoint or authority is added. OFF defaults, limits, exits and the independent emergency-cut latch remain unchanged. Exact-source v0.340.60 commit 0f3b605d8f2ae84e08e033b28f2e2f12e9883ac8 passed security 41117103498 and research/browser/evidence 41117103398; its Windows run 41117103355 was still active at recovery and is not claimed as accepted. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.62 repairs the hosted Python 3.11 offline-regression gate after exact-source v0.340.61 reached 75 percent with 3,548 passes and 16 platform skips before the 35-minute job budget cancelled the still-running complete suite. The regression job now has the same bounded 60-minute outer budget as the Windows packaging lane; its exact compile and complete pytest commands, pinned Actions and nonpersistent checkout credentials are unchanged. Exact-source v0.340.61 security run 41122236996 and Windows EXE/installer/reinstall/uninstall run 41122237165 passed; research run 41122237311 passed browser/help and saved-evidence jobs but is not accepted because offline regression was cancelled. This CI repair grants no broker, market, native-owner, funds, live, cloud or release acceptance. No Portal, runtime permission, risk, emergency-stop or trading behavior changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

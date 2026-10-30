@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.62 bounded hosted-regression budget repair
+
+The hosted Python 3.11 complete-regression job now has a 60-minute bounded outer budget after exact-source v0.340.61 reached 75% with 3,548 passes and 16 platform skips before the prior 35-minute budget cancelled it. The exact compile and full pytest commands, pinned Actions, nonpersistent checkout and separate browser/evidence jobs are unchanged. This repairs evidence collection; it does not make an incomplete run successful or alter application authority.
+
+Exact-source v0.340.61 commit `aecfa21d3eccf51bd2749944e143f18e344ad69a` passed security 41122236996 and Windows 41122237165. Research 41122237311 passed browser/help and saved evidence but is not accepted because offline regression was cancelled. Fresh v0.340.62 workflows remain mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local validation passed 4,668 tests with one expected non-Windows skip and one warning; the final workflow/version/roadmap/installer focus passed 89. All sixteen offline profiles and saved-evidence verification passed against the exact 395-file source fingerprint. These local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.61 exact request-marker acknowledgement replay
 
 The one-attempt paper submission boundary now ignores the request-marker write acknowledgement and accepts the marker only after two stable read-only full-chain replays prove its exact current head, prepared-request parent, payload and canonical admission record. Lost local acknowledgements do not duplicate the append; missing, malformed, changing or later-advanced state stops before provider POST and closes the existing provider reservation conservatively. This adds no Portal route, saved write credential, retry or external authority.

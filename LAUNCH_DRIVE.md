@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.62 bounded hosted-regression budget repair
+
+The hosted Windows/Python 3.11 complete regression retains its exact compile and full `pytest -q` commands but now has a 60-minute bounded job budget instead of 35 minutes. Exact-source v0.340.61 reached 75% with 3,548 passes and 16 platform skips before the old budget cancelled the run. The independent browser/help and saved-evidence jobs passed; security and Windows distribution workflows passed. No test, application behavior, Portal control, modifiable parameter, credential scope, retry, live endpoint or authority is added or removed.
+
+Exact-source v0.340.61 commit `aecfa21d3eccf51bd2749944e143f18e344ad69a` passed security 41122236996 and Windows 41122237165. Research 41122237311 remains incomplete because offline regression was cancelled, so fresh v0.340.62 exact-source workflows remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This CI repair does not close an external gate or predict profit.
+
+Local validation passed 4,668 tests with one expected non-Windows skip and one warning; the final workflow/version/roadmap/installer focus passed 89. All sixteen offline profiles and saved-evidence verification passed against 395 source files / `0189adb9a0eec2f2e08c703b8ee2a51186d1c45136f9f9ac466a27580b8008ae`. Compilation, dependency integrity, roadmap equality, Portal syntax, fourteen controller checks and wheel packaging passed. Evidence SHA-256 is `d339fff9d528b4c01d21e4bfedd2a733536c4455d36cc2ebfedd78228fa6cf9c`; wheel SHA-256 is `c511612a280b572a0a10df6b714fe1caf287886d46893191e693f4fd303484c6`. Fresh hosted exact-source checks remain required.
+
 ## v0.340.61 exact request-marker acknowledgement replay
 
 The explicit one-attempt paper boundary now ignores the request-marker write return or raised acknowledgement and proceeds only after two stable read-only full-chain replays prove the exact current marker, prepared-request parent, payload and canonical admission record. A committed marker with a lost acknowledgement continues without another append; an uncommitted, malformed, changing or later-advanced marker stops before provider POST and conservatively closes the existing provider reservation. No Portal control, modifiable parameter, credential scope, retry, live endpoint or external authority is added.

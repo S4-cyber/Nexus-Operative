@@ -18,7 +18,7 @@ def test_long_running_safety_gates_have_independent_windows_job_budgets():
     evidence = _job_block(text, "offline-release-evidence", "portal-browser-help")
     browser = _job_block(text, "portal-browser-help", None)
 
-    assert "timeout-minutes: 35" in regression
+    assert "timeout-minutes: 60" in regression
     assert "python -m pytest -q" in regression
     assert "nexus.release_trials" not in regression
     assert "portal_browser_smoke.py" not in regression

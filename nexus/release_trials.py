@@ -1260,6 +1260,8 @@ def _validate(profile, result):
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',
+                'full_private_file_set_rechecked','semantic_reader_failures_rechecked',
+                'semantic_reader_mutation_rejected',
                 'exact_account_response_replayed','exact_activity_response_replayed',
                 'bounded_adjacent_session_start_gap','delayed_adjacent_session_rejected',
                 'component_session_timing_envelopes_match','outside_session_timing_rejected',

@@ -368,6 +368,8 @@ def run(command):
             len(response_bundle['reported_open_order_identity_sha256'])==64 and
             len(response_bundle['activity_order_identity_sha256'])==64 and
             response_bundle['journals_rechecked_unchanged'] is True and
+            response_bundle['private_file_set_rechecked_unchanged'] is True and
+            response_bundle['semantic_reader_failures_rechecked'] is True and
             all(response_bundle[k] is False for k in RESPONSE_BUNDLE_FLAGS),'EXACT_RESPONSE_BUNDLE')
         provider_result=_json_call(command,['--paper-tool','provider-results','--input',str(provider_input)],env)
         _require(provider_result['local_provider_results_consistent'] is True and provider_result['normalized_sessions_matched']==5 and

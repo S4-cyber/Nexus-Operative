@@ -9,6 +9,7 @@ import pytest
 
 from nexus import paper_response_bundle_review as subject
 from nexus.paper_read_pacing import PaperReadPacing
+from nexus.broker_activity_store import BrokerActivityStore
 
 
 def snapshot(root):
@@ -105,6 +106,8 @@ def test_exact_adjacent_response_bundle_replays_without_writes(tmp_path,two_page
     assert len(result['activity_order_identity_sha256'])==64
     assert len(result['adjacent_account_fields_sha256'])==64
     assert result['journals_rechecked_unchanged'] and result['admission_reserved'] is False
+    assert result['private_file_set_rechecked_unchanged']
+    assert result['semantic_reader_failures_rechecked']
     assert all(result[flag] is False for flag in subject.FLAGS)
     assert result==subject.review(**options) and snapshot(tmp_path)==before
 
@@ -564,7 +567,55 @@ def test_bundle_rejects_observation_changed_after_component_review(tmp_path,monk
         path.write_bytes(path.read_bytes()+b'\n')
         return result
     monkeypatch.setattr(subject.account_review,'review',changed_after_review)
-    with pytest.raises(ValueError,match='ACCOUNT_RESPONSE_BYTES_CHANGED'):
+    with pytest.raises(ValueError,match='PAPER_RESPONSE_BUNDLE_REVIEW_FILE_SET_CHANGED'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('target',[
+    'pacing_path','activity_store_path','account_before_path','positions_path',
+    'orders_path','account_after_path','account_observation_path',
+    'activity_account_before_path','activity_page_0','activity_page_1',
+    'activity_account_after_path'])
+def test_bundle_rechecks_maximum_private_set_when_component_reader_mutates_then_fails(
+        tmp_path,monkeypatch,target):
+    options=subject._fixture(tmp_path,two_pages=True)
+    if target.startswith('activity_page_'):
+        path=options['activity_page_paths'][int(target[-1])]
+    else:path=options[target]
+    def mutate_then_fail(**kwargs):
+        path.write_bytes(path.read_bytes()+b'\n')
+        raise ValueError('INNER_FAILURE')
+    monkeypatch.setattr(subject.account_review,'review',mutate_then_fail)
+    with pytest.raises(ValueError,match='PAPER_RESPONSE_BUNDLE_REVIEW_FILE_SET_CHANGED'):
+        subject.review(**options)
+
+
+def test_bundle_rechecks_private_set_when_late_semantic_reader_mutates_then_fails(
+        tmp_path,monkeypatch):
+    options=subject._fixture(tmp_path,two_pages=True)
+    path=options['activity_account_after_path']
+    def mutate_then_fail(*args,**kwargs):
+        path.write_bytes(path.read_bytes()+b'\n')
+        raise ValueError('INNER_FAILURE')
+    monkeypatch.setattr(subject,'_retained_activity_page_capture_scope',mutate_then_fail)
+    with pytest.raises(ValueError,match='PAPER_RESPONSE_BUNDLE_REVIEW_FILE_SET_CHANGED'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('target',['pacing','activity'])
+def test_bundle_store_retarget_is_refused_at_outer_boundary(tmp_path,monkeypatch,target):
+    options=subject._fixture(tmp_path)
+    if target=='pacing':
+        original=PaperReadPacing.inspect
+        def retarget(self):
+            result=original(self);self.path=options['account_before_path'];return result
+        monkeypatch.setattr(PaperReadPacing,'inspect',retarget)
+    else:
+        original=BrokerActivityStore.inspect
+        def retarget(self):
+            result=original(self);self.path=options['account_before_path'];return result
+        monkeypatch.setattr(BrokerActivityStore,'inspect',retarget)
+    with pytest.raises(ValueError,match='PAPER_RESPONSE_BUNDLE_REVIEW_STORE_BINDING_CHANGED'):
         subject.review(**options)
 
 
@@ -675,6 +726,15 @@ def test_component_authority_promotion_is_refused(tmp_path,monkeypatch):
     monkeypatch.setattr(subject.activity_review,'review',promoted)
     with pytest.raises(ValueError,match='COMPONENT_DISAGREEMENT'):
         subject.review(**options)
+
+
+def test_fixture_report_makes_outer_file_set_guarantee_release_visible():
+    result=subject.fixture_report()
+    assert result['passed']
+    assert result['full_private_file_set_rechecked']
+    assert result['semantic_reader_failures_rechecked']
+    assert result['semantic_reader_mutation_rejected']
+    assert all(result[flag] is False for flag in subject.FLAGS)
 
 
 def test_cli_is_network_vault_silent_and_failure_output_is_fixed(tmp_path):

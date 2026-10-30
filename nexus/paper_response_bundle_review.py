@@ -21,11 +21,18 @@ from nexus import alpaca_paper_contract as contract
 from nexus import paper_account_response_review as account_review
 from nexus import paper_activity_response_review as activity_review
 from nexus.paper_activity_acceptance_probe import _private_path
-from nexus.paper_read_pacing import PaperReadPacing
-from nexus.broker_activity_store import BrokerActivityStore
+from nexus.paper_read_pacing import (
+    MAX_DATABASE_BYTES as PACING_DATABASE_BYTES,PaperReadPacing)
+from nexus.broker_activity_store import (
+    MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES,BrokerActivityStore)
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints,capture_file_identities,
+    require_file_fingerprints,require_file_identities)
 
 MODE='PAPER_EXACT_RESPONSE_BUNDLE_REVIEW'
 FLAGS=tuple(dict.fromkeys((*account_review.FLAGS,*activity_review.FLAGS)))
+CHECKS=('review_checked','private_file_set_rechecked',
+    'semantic_reader_failures_rechecked','source_files_preserved')
 MAX_ADJACENT_START_GAP_SECONDS=300
 
 
@@ -37,6 +44,38 @@ def _digest(value):
     if type(value) is not str or re.fullmatch(r'[0-9a-f]{64}',value) is None:
         _fail('HEAD_INVALID')
     return value
+
+
+def _store_binding(gate,store):
+    return gate.path,gate.account_digest,store.path,store.account_digest
+
+
+def _require_files(paths,limits,identities,fingerprints,
+        gate=None,store=None,store_binding=None):
+    if ((gate is None)!=(store is None) or (gate is not None and
+            (type(gate) is not PaperReadPacing or type(store) is not BrokerActivityStore or
+             _store_binding(gate,store)!=store_binding))):
+        _fail('STORE_BINDING_CHANGED')
+    try:
+        require_file_identities(paths,identities,'PAPER_RESPONSE_BUNDLE_REVIEW_')
+        require_file_fingerprints(paths,limits,fingerprints,
+            'PAPER_RESPONSE_BUNDLE_REVIEW_')
+    except ValueError:
+        _fail('FILE_SET_CHANGED')
+
+
+def _stable_reader(paths,limits,identities,fingerprints,
+        gate=None,store=None,store_binding=None):
+    def read(reader):
+        try:value=reader()
+        except BaseException:
+            _require_files(paths,limits,identities,fingerprints,
+                gate,store,store_binding)
+            raise
+        _require_files(paths,limits,identities,fingerprints,
+            gate,store,store_binding)
+        return value
+    return read
 
 
 def _retained_activity_order_fill_semantics(
@@ -514,18 +553,28 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     activity_session_head=_digest(activity_session_head)
     if type(activity_page_paths) not in (tuple,list) or not 1<=len(activity_page_paths)<=2:
         _fail('PAGE_COUNT_INVALID')
-    paths=[pacing_path,activity_store_path,account_before_path,positions_path,
+    supplied=(pacing_path,activity_store_path,account_before_path,positions_path,
         orders_path,account_after_path,account_observation_path,
-        activity_account_before_path,*activity_page_paths,activity_account_after_path]
-    checked=[_private_path(value)[1] for value in paths]
-    if len(set(checked))!=len(checked):_fail('DISTINCT_PATHS_REQUIRED')
-
-    gate=PaperReadPacing(pacing_path,expected_account_id)
-    store=BrokerActivityStore(activity_store_path,expected_account_id)
-    pacing_before=gate.inspect();activity_before=store.inspect()
+        activity_account_before_path,*activity_page_paths,activity_account_after_path)
+    paths=tuple(_private_path(value)[1] for value in supplied)
+    if len(set(paths))!=len(paths):_fail('DISTINCT_PATHS_REQUIRED')
+    limits=(PACING_DATABASE_BYTES,ACTIVITY_DATABASE_BYTES,
+        *((account_review.inspection.MAX_BODY,)*4),account_review.MAX_OBSERVATION_BYTES,
+        *((activity_review.inspection.MAX_BODY,)*(len(paths)-7)))
+    identities=capture_file_identities(paths,'PAPER_RESPONSE_BUNDLE_REVIEW_')
+    fingerprints=capture_file_fingerprints(paths,limits,
+        'PAPER_RESPONSE_BUNDLE_REVIEW_')
+    stable_files=_stable_reader(paths,limits,identities,fingerprints)
+    gate=stable_files(lambda:PaperReadPacing(paths[0],expected_account_id))
+    store=stable_files(lambda:BrokerActivityStore(paths[1],expected_account_id))
+    store_binding=_store_binding(gate,store)
+    stable_read=_stable_reader(paths,limits,identities,fingerprints,
+        gate,store,store_binding)
+    pacing_before=stable_read(gate.inspect)
+    activity_before=stable_read(store.inspect)
     if pacing_before['head_sha256']!=expected_pacing_head:_fail('PACING_HEAD_CHANGED')
     if activity_before['head_sha256']!=expected_activity_head:_fail('ACTIVITY_HEAD_CHANGED')
-    history=gate.operation_history()
+    history=stable_read(gate.operation_history)
     indices={row['after_head_sha256']:index for index,row in enumerate(history)}
     if account_session_head not in indices or activity_session_head not in indices:
         _fail('SESSION_NOT_FOUND')
@@ -540,18 +589,17 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
     if not 0<=adjacent_start_gap<=MAX_ADJACENT_START_GAP_SECONDS:
         _fail('ADJACENT_SESSION_GAP_EXCEEDED')
 
-    account=account_review.review(pacing_path=pacing_path,
+    account=stable_read(lambda:account_review.review(pacing_path=paths[0],
         expected_account_id=expected_account_id,expected_head=expected_pacing_head,
-        session_head=account_session_head,account_before_path=account_before_path,
-        positions_path=positions_path,orders_path=orders_path,
-        account_after_path=account_after_path,observation_path=account_observation_path)
-    activity=activity_review.review(pacing_path=pacing_path,
-        activity_store_path=activity_store_path,expected_account_id=expected_account_id,
+        session_head=account_session_head,account_before_path=paths[2],
+        positions_path=paths[3],orders_path=paths[4],
+        account_after_path=paths[5],observation_path=paths[6]))
+    activity=stable_read(lambda:activity_review.review(pacing_path=paths[0],
+        activity_store_path=paths[1],expected_account_id=expected_account_id,
         expected_pacing_head=expected_pacing_head,
         expected_activity_head=expected_activity_head,session_head=activity_session_head,
-        account_before_path=activity_account_before_path,
-        activity_page_paths=activity_page_paths,
-        account_after_path=activity_account_after_path)
+        account_before_path=paths[7],activity_page_paths=paths[8:-1],
+        account_after_path=paths[-1]))
     if (account['account_sha256']!=activity['account_sha256'] or
             account['pacing_head_sha256']!=activity['pacing_head_sha256'] or
             account['session_timing_envelope_match'] is not True or
@@ -560,50 +608,58 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         _fail('COMPONENT_DISAGREEMENT')
     if account['account_fields_sha256']!=activity['account_fields_sha256']:
         _fail('ADJACENT_ACCOUNT_FIELDS_CHANGED')
-    account_raw_values=[account_review._raw(path) for path in
-        (account_before_path,positions_path,orders_path,account_after_path)]
+    account_raw_values=[]
+    for path in paths[2:6]:
+        raw=stable_read(lambda path=path:account_review._read(path))
+        account_raw_values.append(stable_read(
+            lambda path=path,raw=raw:account_review._raw(path,raw)))
     account_manifest=sha([hashlib.sha256(raw).hexdigest() for raw,_ in account_raw_values])
     if account_manifest!=account['response_manifest_sha256']:
         _fail('ACCOUNT_RESPONSE_BYTES_CHANGED')
-    try:
-        account_observation_file,_=_private_path(account_observation_path)
-        account_observation_raw=account_review._read(account_observation_file)
-        account_observation=account_review.portable.loads(account_observation_raw)
-        account_observation_manifest=account_observation['manifest_sha256']
-        account_read_completed_at=account_observation['read_timing']['completed_at']
-    except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
-        _fail('ACCOUNT_ORDER_TIME_INVALID')
+    account_observation_raw=stable_read(lambda:account_review._read(paths[6]))
+    def load_account_observation():
+        try:
+            observation=account_review.portable.loads(account_observation_raw)
+            return (observation,observation['manifest_sha256'],
+                observation['read_timing']['completed_at'])
+        except (ValueError,TypeError,KeyError,OverflowError,AttributeError):
+            _fail('ACCOUNT_ORDER_TIME_INVALID')
+    (account_observation,account_observation_manifest,
+        account_read_completed_at)=stable_read(load_account_observation)
     if account_observation_manifest!=account['portable_manifest_sha256']:
         _fail('ACCOUNT_RESPONSE_BYTES_CHANGED')
     if (hashlib.sha256(account_observation_raw).hexdigest()!=
             account['portable_observation_file_sha256']):
         _fail('ACCOUNT_RESPONSE_BYTES_CHANGED')
-    reported_account_orders=_reported_account_order_capture_scope(
-        account_raw_values[2][1],account_read_completed_at)
+    reported_account_orders=stable_read(lambda:_reported_account_order_capture_scope(
+        account_raw_values[2][1],account_read_completed_at))
     retained_activity=activity_before['receipts'].get(activity['retained_receipt_sha256'])
     if retained_activity is None:_fail('ACTIVITY_RECEIPT_CHANGED')
     retained_by_id={row['activity_id']:row for row in activity_before['normalized_activities']}
     try:retained_records=[retained_by_id[key] for key in retained_activity['activity_ids']]
     except KeyError:_fail('ACTIVITY_RECEIPT_CHANGED')
-    retained_order_fill_scope=_retained_order_fill_capture_scope(
+    retained_order_fill_scope=stable_read(lambda:_retained_order_fill_capture_scope(
         retained_records,retained_activity['orders'],
         retained_activity['collection_observation']['read_started_at'],
-        retained_activity['collection_observation']['read_completed_at'])
+        retained_activity['collection_observation']['read_completed_at']))
     (open_identities,activity_identities,overlap,order_progress,
         order_fill_deltas,order_fill_delta_activities,order_fill_partitions,
-        order_historical_fill_activities)=_order_identity_maps(
-        account_raw_values[2][1],retained_activity['orders'],retained_records,gate.account)
+        order_historical_fill_activities)=stable_read(lambda:_order_identity_maps(
+        account_raw_values[2][1],retained_activity['orders'],retained_records,gate.account))
     shared_brokers={identity[0] for identity in set(open_identities)&set(activity_identities)}
-    retained_order_fill_semantics=_retained_activity_order_fill_semantics(
-        retained_activity['orders'],retained_records,excluded_brokers=shared_brokers)
+    retained_order_fill_semantics=stable_read(
+        lambda:_retained_activity_order_fill_semantics(
+            retained_activity['orders'],retained_records,excluded_brokers=shared_brokers))
     (reported_fee_links,reported_fee_timestamped_links,
-        reported_fee_date_only_links,retained_fee_scope)=_reported_fee_reference_links(
+        reported_fee_date_only_links,retained_fee_scope)=stable_read(
+        lambda:_reported_fee_reference_links(
         retained_records,retained_activity['orders'],
-        retained_activity['collection_observation']['read_completed_at'])
-    retained_page_capture_scope=_retained_activity_page_capture_scope(
-        retained_records,retained_activity['collection_observation']['pages'])
-    if gate.inspect()!=pacing_before:_fail('PACING_HEAD_CHANGED')
-    if store.inspect()!=activity_before:_fail('ACTIVITY_HEAD_CHANGED')
+        retained_activity['collection_observation']['read_completed_at']))
+    retained_page_capture_scope=stable_read(
+        lambda:_retained_activity_page_capture_scope(
+            retained_records,retained_activity['collection_observation']['pages']))
+    if stable_read(gate.inspect)!=pacing_before:_fail('PACING_HEAD_CHANGED')
+    if stable_read(store.inspect)!=activity_before:_fail('ACTIVITY_HEAD_CHANGED')
 
     scope=dict(mode=MODE,status='REVIEW_REQUIRED',read_only=True,
         account_sha256=account['account_sha256'],
@@ -689,9 +745,10 @@ def review(*,pacing_path,activity_store_path,expected_account_id,
         retained_fill_timestamp_page_receipt_upper_bound_checked=True,
         retained_fee_exact_timestamp_page_receipt_upper_bound_checked=True,
         retained_exact_activity_page_receipt_upper_bound_checked=True,
-        journals_rechecked_unchanged=True,admission_reserved=False,
+        journals_rechecked_unchanged=True,private_file_set_rechecked_unchanged=True,
+        semantic_reader_failures_rechecked=True,admission_reserved=False,
         **{flag:False for flag in FLAGS})
-    scope['review_sha256']=sha(scope)
+    scope['review_sha256']=stable_read(lambda:sha(scope))
     scope['limitations']=('Exact private bytes locally replay one adjacent ACCOUNT_INVENTORY and current-tail '
         'ACTIVITY_COLLECTION pair at shared journal heads, requires their normalized account fields to match, '
         'requires each retained read timing to stay inside its paced session, requires immutable broker/client/side '
@@ -1241,8 +1298,27 @@ def fixture_report():
         try:review(**dict(tail,expected_pacing_head=gate.inspect()['head_sha256']))
         except ValueError as error:
             tail_rejected='SESSION_SEQUENCE_INVALID' in str(error)
+        reader_mutation=_fixture(root/'reader-mutation',two_pages=True)
+        reader_mutation_path=reader_mutation['activity_account_after_path']
+        original_page_scope=_retained_activity_page_capture_scope
+        def mutate_then_fail(*args,**kwargs):
+            reader_mutation_path.write_bytes(reader_mutation_path.read_bytes()+b'\n')
+            raise ValueError('INNER_FAILURE')
+        globals()['_retained_activity_page_capture_scope']=mutate_then_fail
+        semantic_reader_mutation_rejected=False
+        try:review(**reader_mutation)
+        except ValueError as error:
+            semantic_reader_mutation_rejected=(
+                'PAPER_RESPONSE_BUNDLE_REVIEW_FILE_SET_CHANGED' in str(error))
+        finally:
+            globals()['_retained_activity_page_capture_scope']=original_page_scope
         checks=dict(exact_adjacent_sessions_bound=result['sessions_adjacent'] and
                 result['activity_session_is_current_tail'],
+            full_private_file_set_rechecked=
+                result['private_file_set_rechecked_unchanged'],
+            semantic_reader_failures_rechecked=
+                result['semantic_reader_failures_rechecked'],
+            semantic_reader_mutation_rejected=semantic_reader_mutation_rejected,
             exact_account_response_replayed=result['account_normalization_replayed'] and
                 result['account_observation_replayed'],
             exact_activity_response_replayed=result['activity_normalization_replayed'] and

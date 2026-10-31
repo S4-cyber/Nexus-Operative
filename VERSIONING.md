@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.84 (pre-release).** This build requires every account in a multi-account provider/read review to retain all five read purposes independently. A complete peer cannot mask a completed subset or earn partial matched-session credit. It adds no Portal route, saved credential, provider IO, recovery, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.85 (pre-release).** This build pins the provider budget and every selected account pacing journal to one identity and bounded fingerprint set for the complete durable provider/read-review receipt operation. Semantic replay, callbacks, acknowledgement and finalization cannot silently rebase onto a same-head source change. It adds no Portal route, saved credential, provider IO, recovery, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.85 retained-review source pinning
+
+`PaperProviderReadReview.retain_review` now captures the provider-budget and selected account-journal identities and bounded fingerprints before semantic replay. It rechecks the set before and after every semantic review, around the caller precommit callback, after store append acknowledgement, on exception unwind and before final return. Direct parameterized tests and release validation reject evidence that allows either a returning or throwing callback to mutate a selected source without the fixed outer file-set refusal.
+
+Exact-source v0.340.84 commit `6e80e8235a59b6e4133283b0df290046187efa11` passed security/Gitleaks 41229623092, all research regression/browser/evidence jobs in 41229623101 and Windows EXE/installer/reinstall/uninstall/distribution run 41229623084. Fresh v0.340.85 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not atomic writer exclusion, provider source, broker-wide coordination, native-owner Windows acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+Local validation passed 4,729 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 256. Sixteen offline profiles verified 395 source files / `dd2aeccf53e4803e01068f209aace6cb5987b542a0b4f0b648848db8deb0a364`. Evidence SHA-256 is `eec8c98e1fe57c08fbd1ad928f854e59ff66d78982596f93a80b3deab69fb3f2`; wheel SHA-256 is `b2d656f6928a809ca549e1eb6b556a8027e6d87ee23359ae98db9365483c88be`. Compilation, dependencies, roadmap and fourteen controller checks plus Portal syntax passed. Release approval and trading permission remain false.
 
 ## v0.340.84 per-account purpose completeness
 

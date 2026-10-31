@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.85 retained-review source pinning
+
+Durable provider/read-review receipt retention now fixes the provider budget and every selected account pacing journal to one identity and bounded fingerprint set across semantic replay, caller callbacks, receipt-store acknowledgement, exception unwind and final return. A same-head source change cannot be accepted by establishing a new baseline; the operation returns the fixed file-set refusal instead of a successful receipt result.
+
+Exact-source v0.340.84 commit `6e80e8235a59b6e4133283b0df290046187efa11` passed security/Gitleaks 41229623092, all research regression/browser/evidence jobs in 41229623101 and Windows EXE/installer/reinstall/uninstall/distribution run 41229623084. Fresh v0.340.85 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local source-pinning evidence does not close an external gate or predict profit.
+
+Local validation passed 4,729 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 256. Sixteen profiles verified against 395 source files / `dd2aeccf53e4803e01068f209aace6cb5987b542a0b4f0b648848db8deb0a364`. Evidence SHA-256 is `eec8c98e1fe57c08fbd1ad928f854e59ff66d78982596f93a80b3deab69fb3f2`; wheel SHA-256 is `b2d656f6928a809ca549e1eb6b556a8027e6d87ee23359ae98db9365483c88be`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.84 per-account purpose completeness
 
 Exact-head multi-account provider/read reconciliation now requires every selected account independently to retain all five read purposes. A complete peer cannot mask another account with only a completed subset; the whole review remains inconsistent, reports zero matched sessions and preserves every journal byte.

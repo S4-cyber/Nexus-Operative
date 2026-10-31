@@ -1059,6 +1059,7 @@ def _validate(profile, result):
              'pending_account_cannot_hide_behind_complete_peer',
              'incomplete_account_cannot_hide_behind_complete_peer',
              'multi_account_reader_failure_rechecks_peer',
+             'retained_receipt_source_mutation_denied',
              'journal_file_fingerprints_rechecked',
              'semantic_reader_failures_rechecked','output_never_authoritative')),
             'PROVIDER_READ_HISTORY_FENCES')

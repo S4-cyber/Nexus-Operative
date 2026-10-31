@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.84'
+REVISION = '0.340.85'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -298,6 +298,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Multi-account provider/read reconciliation now evaluates five-purpose completeness per selected account instead of across the aggregate. A fully covered peer cannot mask another account with only a completed subset; the whole review remains inconsistent, reports zero matched sessions and changes no journal bytes. This is disposable local fail-closed evidence, not partial account acceptance, provider IO or routing authority.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; durable provider/read review retention now pins the provider budget and every selected account journal to one identity and bounded fingerprint set across all semantic replays, callbacks, commit acknowledgement, exception unwind and final return' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Durable provider/read receipt retention now carries one end-to-end source-file proof across repeated semantic review, caller revocation callbacks, receipt commit acknowledgement, exception unwind and final return. A same-head source mutation receives the fixed outer file-set refusal and cannot create a successful receipt result. This remains sampled local integrity evidence, not atomic writer exclusion, provider identity, broker acceptance or routing authority.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' An explicit one-attempt Activity SSE coordinator now composes the fixed-target transport, private prior segment, strict reconnect review and exact-head cursor journal into one fail-closed local checkpoint; injected tests only.',
     remaining='Accept this exact-head reconnect/checkpoint path on an authorized paper account and native private volume; verify account entitlement, provider source/delivery and replay coverage, slow-consumer recovery and broker-wide/distributed coordination before any automatic reconnect loop. ' + stage['remaining'])
@@ -519,7 +527,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.84 makes five-purpose completeness account-scoped in exact-head multi-account provider/read reconciliation. Every selected account must independently retain all five read purposes; a fully covered peer can no longer mask another account with only a completed subset or yield partial matched-session credit. Exact-source v0.340.83 commit c9ab888dd61a94069eeb7ce4fb1772166750063b passed security/Gitleaks run 41224869463, every regression/browser/evidence job in run 41224869533 and Windows EXE/installer/reinstall/uninstall/distribution run 41224869536. This remains disposable local completeness evidence, not provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, recovery, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.85 pins the provider budget and every selected account journal to one identity and bounded fingerprint set across durable provider/read receipt retention. Repeated semantic reviews, caller callbacks, commit acknowledgement, exception unwind and final return cannot silently rebase onto a same-head source change; the outer fixed file-set refusal wins and no successful receipt result returns. Exact-source v0.340.84 commit 6e80e8235a59b6e4133283b0df290046187efa11 passed security/Gitleaks run 41229623092, research-safety run 41229623101 and Windows install/build run 41229623084. This remains sampled local integrity evidence, not atomic writer exclusion, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, recovery, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

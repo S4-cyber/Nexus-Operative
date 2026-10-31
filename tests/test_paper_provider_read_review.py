@@ -373,6 +373,24 @@ def test_exact_duplicate_is_idempotent_and_revocation_fails_closed(tmp_path):
     assert path.read_bytes()==saved
 
 
+@pytest.mark.parametrize('callback_error',(False,True))
+def test_retained_receipt_pins_sources_across_precommit_callback(
+        tmp_path,callback_error):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    before={source:source.read_bytes() for source in (budget.path,gate.path)}
+    def mutate_source():
+        _mutate_metadata_and_fail(gate.path) if callback_error else os.utime(
+            gate.path,ns=(os.stat(gate.path).st_atime_ns,
+                os.stat(gate.path).st_mtime_ns+1_000_000_000))
+        return True
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_FILE_SET_CHANGED$'):
+        subject.retain_review(path,budget,[gate],precommit_check=mutate_source,
+            **heads(gate,budget))
+    assert not path.exists()
+    assert before=={source:source.read_bytes() for source in before}
+
+
 def test_store_rejects_non_digest_head_with_store_scoped_error(tmp_path):
     with pytest.raises(ValueError,match='PAPER_PROVIDER_READ_REVIEW_STORE_DIGEST_INVALID'):
         store_subject._digest(True)

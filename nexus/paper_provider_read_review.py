@@ -187,9 +187,26 @@ def retain_review(store_path,provider_budget,gates,*,expected_provider_head,expe
     """Retain a content-free digest receipt for one complete local review."""
     from nexus.paper_provider_read_review_store import PaperProviderReadReviewStore
     gates,expected_account_heads=_inputs(provider_budget,gates,expected_account_heads)
+    paths=(provider_budget.path,*(gate.path for gate in gates))
+    store_binding=_store_binding(provider_budget,gates)
+    file_limits=(PROVIDER_DATABASE_BYTES,
+        *((ACCOUNT_DATABASE_BYTES,)*len(gates)))
+    paths,file_limits,absent_paths=_file_scope(paths,file_limits)
+    file_binding=capture_file_identities(paths,'PAPER_PROVIDER_READ_REVIEW_')
+    file_fingerprints=capture_file_fingerprints(paths,file_limits,
+        'PAPER_PROVIDER_READ_REVIEW_')
+    def require_sources():
+        _require_bindings(provider_budget,gates,store_binding,paths,absent_paths,
+            file_binding,file_limits,file_fingerprints)
     def scope():
-        result=review(provider_budget,gates,expected_provider_head=expected_provider_head,
-            expected_account_heads=expected_account_heads)
+        require_sources()
+        try:
+            result=review(provider_budget,gates,
+                expected_provider_head=expected_provider_head,
+                expected_account_heads=expected_account_heads)
+        except BaseException:
+            require_sources();raise
+        require_sources()
         if not result['local_provider_account_history_consistent']:_fail('INCOMPLETE')
         return dict(profile=PROFILE,provider_sha256=result['provider_sha256'],
             provider_head_sha256=result['provider_head_sha256'],account_manifest_sha256=result['account_manifest_sha256'],
@@ -197,10 +214,22 @@ def retain_review(store_path,provider_budget,gates,*,expected_provider_head,expe
             sessions_replayed=result['provider_sessions_replayed'],matched_sessions=result['matched_sessions'],
             operation_counts=result['operation_counts'],all_five_purposes_observed=result['all_five_purposes_observed'],
             local_provider_account_history_consistent=result['local_provider_account_history_consistent'])
-    value=scope();receipt=sha(value)
+    def checked_precommit():
+        require_sources()
+        try:allowed=precommit_check()
+        except BaseException:
+            require_sources();raise
+        require_sources()
+        return allowed
+    value=scope()
     store=PaperProviderReadReviewStore(store_path,provider_budget,gates)
-    return store.append(value,expected_head=expected_store_head,admission=lambda:sha(scope()),
-        precommit_check=precommit_check)
+    try:
+        retained=store.append(value,expected_head=expected_store_head,
+            admission=lambda:sha(scope()),precommit_check=checked_precommit)
+    except BaseException:
+        require_sources();raise
+    require_sources()
+    return retained
 
 
 def fixture_report():
@@ -378,6 +407,26 @@ def fixture_report():
                 'PAPER_PROVIDER_READ_REVIEW_FILE_SET_CHANGED')
         guard_bytes_unchanged=(guard_bytes==
             {path:path.read_bytes() for path in guard_paths})
+        retained_gate,retained_budget=build_pair(root/'retained-source-guard')
+        retained_store=root/'retained-source-guard'/'receipt.sqlite3'
+        retained_bytes={path:path.read_bytes() for path in
+            (retained_budget.path,retained_gate.path)}
+        def mutate_retained_source():
+            state=os.stat(retained_gate.path)
+            os.utime(retained_gate.path,
+                ns=(state.st_atime_ns,state.st_mtime_ns+1_000_000_000))
+            return True
+        retained_source_mutation_denied=False
+        try:retain_review(retained_store,retained_budget,[retained_gate],
+            expected_provider_head=retained_budget.inspect()['head_sha256'],
+            expected_account_heads={retained_gate.account_digest:
+                retained_gate.inspect()['head_sha256']},
+            precommit_check=mutate_retained_source)
+        except ValueError as error:
+            retained_source_mutation_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_FILE_SET_CHANGED')
+        retained_source_bytes_unchanged=(retained_bytes==
+            {path:path.read_bytes() for path in retained_bytes})
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -430,6 +479,10 @@ def fixture_report():
                 incomplete_unchanged),
             multi_account_reader_failure_rechecks_peer=(
                 peer_mutation_denied and guard_bytes_unchanged),
+            retained_receipt_source_mutation_denied=(
+                retained_source_mutation_denied and
+                retained_source_bytes_unchanged and
+                not retained_store.exists()),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

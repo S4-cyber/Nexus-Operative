@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.79 symmetric provider/account split-recovery review
+
+Exact-head provider/account read-history consistency is accepted locally only when neither retained provider-budget state nor retained account pacing state is pending or review-required. The injected two-sided fixture proves a provider-only recovery remains blocked by the account journal and that consistency returns only after explicit recovery of both exact histories. This review performs no provider IO, retry, capacity reset or routing action.
+
+Exact-source v0.340.78 commit `86752a92d50e4bebc44eb7a416f5faa0502740ee` passed security/Gitleaks 41205538751, all research regression/browser/evidence jobs in 41205538735 and Windows EXE/installer/reinstall/uninstall/distribution 41205538753. Fresh v0.340.79 workflows and actual authorized paper-account/private-volume acceptance remain required. This is injected local reconciliation evidence, not broker identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,722 tests with one expected skip and one existing warning; the broader paired-recovery focus passed 61. Sixteen profiles verified against 395 exact source files / `b15943ee2d80eb66b50e3994e87223e337861749d87300506a58b143715ebece`. Evidence SHA-256 is `a6287ee45c5c4ad2ae9c345770b177423734c5e4661a00b4098a828fc639d065`; wheel SHA-256 is `2f2c876f1b37694a23e331dc3c1b7177ef9a94a2d676bda7db4868181f7e3933`. Compilation, dependency, roadmap, controller and Portal checks, the 791-path audit and credential scanning passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.78 account-read recovery acknowledgement replay
 
 Reviewed account-read pacing recovery is accepted locally only after two stable cold receipts prove the exact one-time recovery, account scope, blocked session/outcome, counters and unchanged cooldown while the exact private journal identity and committed fingerprint remain stable through result finalization. A lost acknowledgement cannot cause a second append; replacement, rollback, fabricated return or unreadable state cannot clear uncertainty or reclaim capacity.

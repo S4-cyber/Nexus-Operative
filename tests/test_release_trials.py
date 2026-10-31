@@ -425,7 +425,8 @@ def test_pacing_profile_requires_provider_read_history_review_fences():
     result=trials._pacing_trial();trials._validate('pacing',result)
     for field in ('exact_provider_account_history','every_session_matched',
                   'all_five_purposes_observed','changed_head_denied',
-                  'journals_unchanged','journal_file_fingerprints_rechecked',
+                  'journals_unchanged','split_recovery_requires_both_sides',
+                  'journal_file_fingerprints_rechecked',
                   'semantic_reader_failures_rechecked','output_never_authoritative'):
         changed=copy.deepcopy(result);changed['provider_read_history_review'][field]=False
         with pytest.raises(ValueError,match='PROVIDER_READ_HISTORY_FENCES'):

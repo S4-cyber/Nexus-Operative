@@ -6,7 +6,7 @@ from nexus.artifact_manifest import manifest
 from tools import windows_distribution_binding_review as review
 
 
-VERSION = "0.340.78"
+VERSION = "0.340.79"
 SOURCE = "a" * 40
 
 

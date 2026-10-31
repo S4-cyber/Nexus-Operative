@@ -49,6 +49,49 @@ def test_complete_provider_account_history_matches_without_authority_or_writes(t
     assert all(result[key] is False for key in subject.FLAGS) and files(tmp_path)==before
 
 
+def test_split_recovery_remains_inconsistent_until_both_journals_are_cleared(tmp_path):
+    gate,budget=build(tmp_path);operation='ACCOUNT_INVENTORY'
+    kinds=list(OPERATION_PATTERNS[operation][0])
+    blocked_at=max(gate.inspect()['next_allowed_at'],budget.inspect()['next_allowed_at'])
+    with budget.ownership() as provider_owner:
+        provider_token=budget.begin(account_id=ACCOUNT,
+            account_before_head_sha256=gate.inspect()['head_sha256'],operation=operation,
+            admission=lambda:blocked_at,ownership=provider_owner)
+        with gate.ownership() as account_owner:
+            account_token=gate.begin(admission=lambda:blocked_at,ownership=account_owner,
+                operation=operation)
+            gate.finish(account_token,admission=lambda:blocked_at+1,status_code=401,
+                ownership=account_owner,receipt=dict(operation=operation,
+                    request_kinds=kinds[:1],request_sha256=[sha(dict(request=0))],
+                    response_sha256=[]))
+        budget.finish(provider_token,
+            account_after_head_sha256=gate.inspect()['head_sha256'],actual_gets=1,
+            admission=lambda:blocked_at+1,ownership=provider_owner,status_code=401)
+    blocked=subject.review(budget,[gate],**heads(gate,budget))
+    assert blocked['review_reasons']==[
+        'ACCOUNT_REVIEW_BLOCK','PROVIDER_REVIEW_BLOCK']
+    assert blocked['local_provider_account_history_consistent'] is False
+
+    provider_state=budget.inspect()
+    with budget.ownership() as owner:
+        budget.recover_review_block(expected_head=provider_state['head_sha256'],
+            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+            confirm_uncertainty_preserved=True,admission=lambda:blocked_at+2,ownership=owner)
+    split=subject.review(budget,[gate],**heads(gate,budget))
+    assert split['review_reasons']==['ACCOUNT_REVIEW_BLOCK']
+    assert split['local_provider_account_history_consistent'] is False
+
+    account_state=gate.inspect()
+    with gate.ownership() as owner:
+        gate.recover_review_block(expected_head=account_state['head_sha256'],
+            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+            confirm_uncertainty_preserved=True,admission=lambda:blocked_at+3,ownership=owner)
+    complete=subject.review(budget,[gate],**heads(gate,budget))
+    assert complete['review_reasons']==[]
+    assert complete['local_provider_account_history_consistent'] is True
+    assert complete['matched_sessions']==6
+
+
 def _mutate_metadata_and_fail(path):
     stat=os.stat(path)
     os.utime(path,ns=(stat.st_atime_ns,stat.st_mtime_ns+1_000_000_000))

@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.78 (pre-release).** This build cold-replays exact reviewed account-read pacing recovery after lost acknowledgement and pins the existing private journal identity/fingerprint through result finalization. Replacement, rollback, fabrication or unreadable state cannot append again, reclaim session capacity or perform provider IO. It adds no Portal route, saved credential, live endpoint or external authority. OFF defaults, limits, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.79 (pre-release).** This build prevents provider-only recovery from promoting exact-head provider/account read-history consistency while retained account pacing remains pending or review-required. Both exact histories must recover before consistency returns. It adds no Portal route, saved credential, provider IO, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.79 symmetric provider/account split-recovery review
+
+The provider/account read-history review now derives `PENDING_ACCOUNT_HISTORY` and `ACCOUNT_REVIEW_BLOCK` from the exact retained account pacing journal. Its fixture and direct regression block both sides, recover the provider alone and require consistency to remain false, then recover the account and require the exact pair to become locally consistent. The release profile refuses evidence that omits this split-recovery check.
+
+Exact-source v0.340.78 commit `86752a92d50e4bebc44eb7a416f5faa0502740ee` passed security/Gitleaks 41205538751, all research regression/browser/evidence jobs in 41205538735 and Windows EXE/installer/reinstall/uninstall/distribution 41205538753. Fresh v0.340.79 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not provider source, broker-wide coordination, native-owner Windows acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+Local validation passed 4,722 tests with one expected skip and one existing warning; the broader paired-recovery focus passed 61. Sixteen offline profiles verified 395 source files / `b15943ee2d80eb66b50e3994e87223e337861749d87300506a58b143715ebece`. Evidence SHA-256 is `a6287ee45c5c4ad2ae9c345770b177423734c5e4661a00b4098a828fc639d065`; wheel SHA-256 is `2f2c876f1b37694a23e331dc3c1b7177ef9a94a2d676bda7db4868181f7e3933`. Compilation, dependencies, roadmap, controllers, Portal syntax, the 791-path audit and credential scanning passed. Release approval and trading permission remain false.
 
 ## v0.340.78 account-read recovery acknowledgement replay
 

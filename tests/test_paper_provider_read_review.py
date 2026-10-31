@@ -49,7 +49,10 @@ def test_complete_provider_account_history_matches_without_authority_or_writes(t
     assert all(result[key] is False for key in subject.FLAGS) and files(tmp_path)==before
 
 
-def test_split_recovery_remains_inconsistent_until_both_journals_are_cleared(tmp_path):
+@pytest.mark.parametrize(('first_recovery','remaining_reason'),(
+    ('provider','ACCOUNT_REVIEW_BLOCK'),('account','PROVIDER_REVIEW_BLOCK')))
+def test_split_recovery_remains_inconsistent_until_both_journals_are_cleared(
+        tmp_path,first_recovery,remaining_reason):
     gate,budget=build(tmp_path);operation='ACCOUNT_INVENTORY'
     kinds=list(OPERATION_PATTERNS[operation][0])
     blocked_at=max(gate.inspect()['next_allowed_at'],budget.inspect()['next_allowed_at'])
@@ -72,20 +75,28 @@ def test_split_recovery_remains_inconsistent_until_both_journals_are_cleared(tmp
         'ACCOUNT_REVIEW_BLOCK','PROVIDER_REVIEW_BLOCK']
     assert blocked['local_provider_account_history_consistent'] is False
 
-    provider_state=budget.inspect()
-    with budget.ownership() as owner:
-        budget.recover_review_block(expected_head=provider_state['head_sha256'],
-            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
-            confirm_uncertainty_preserved=True,admission=lambda:blocked_at+2,ownership=owner)
+    def recover_provider(when):
+        provider_state=budget.inspect()
+        with budget.ownership() as owner:
+            budget.recover_review_block(expected_head=provider_state['head_sha256'],
+                expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+                confirm_uncertainty_preserved=True,admission=lambda:when,ownership=owner)
+
+    def recover_account(when):
+        account_state=gate.inspect()
+        with gate.ownership() as owner:
+            gate.recover_review_block(expected_head=account_state['head_sha256'],
+                expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+                confirm_uncertainty_preserved=True,admission=lambda:when,ownership=owner)
+
+    first=recover_provider if first_recovery=='provider' else recover_account
+    second=recover_account if first_recovery=='provider' else recover_provider
+    first(blocked_at+2)
     split=subject.review(budget,[gate],**heads(gate,budget))
-    assert split['review_reasons']==['ACCOUNT_REVIEW_BLOCK']
+    assert split['review_reasons']==[remaining_reason]
     assert split['local_provider_account_history_consistent'] is False
 
-    account_state=gate.inspect()
-    with gate.ownership() as owner:
-        gate.recover_review_block(expected_head=account_state['head_sha256'],
-            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
-            confirm_uncertainty_preserved=True,admission=lambda:blocked_at+3,ownership=owner)
+    second(blocked_at+3)
     complete=subject.review(budget,[gate],**heads(gate,budget))
     assert complete['review_reasons']==[]
     assert complete['local_provider_account_history_consistent'] is True

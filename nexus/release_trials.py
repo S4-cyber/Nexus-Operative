@@ -1054,7 +1054,7 @@ def _validate(profile, result):
             provider_read['passed'] is True and all(provider_read[k] is True for k in
             ('exact_provider_account_history','every_session_matched',
              'all_five_purposes_observed','changed_head_denied','journals_unchanged',
-             'split_recovery_requires_both_sides',
+             'split_recovery_requires_both_sides','split_recovery_order_independent',
              'journal_file_fingerprints_rechecked',
              'semantic_reader_failures_rechecked','output_never_authoritative')),
             'PROVIDER_READ_HISTORY_FENCES')

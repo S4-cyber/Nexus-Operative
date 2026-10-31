@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.80 split-recovery order invariance
+
+Exact-head provider/account split recovery is accepted locally only when both explicit recovery orders preserve the same fail-closed rule. Provider-first must remain blocked by account pacing; account-first must remain blocked by the provider budget. Neither path becomes consistent until the second explicit recovery, and neither performs automatic recovery, provider I/O, retry, capacity reset or routing.
+
+Exact-source v0.340.79 commit `5f3c8fb907507c2a4b6b1a93c23679e94262cc3f` passed security/Gitleaks 41208482178 plus browser-help and saved evidence in 41208482208. Its hosted full regression and Windows run 41208482169 remained in progress and are not claimed as passed. Fresh v0.340.80 workflows and actual authorized paper-account/private-volume acceptance remain required. This is injected local recovery-order evidence, not broker identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,723 tests with one expected skip and one existing warning; the broader provider-read/pacing/reconciliation focus passed 338. Sixteen profiles verified against 395 exact source files / `cfc30f875371433c71005db9168d326a537dc64c71a6eda98801931be4741a6a`. Evidence SHA-256 is `87b631e23da0b82c3d9f0c1f9a6563598f415784facdf96576a983c483889d94`; wheel SHA-256 is `6aa41fe1727b85901a2023d81a099e4fba9cecb6f8c074c74d3addf24b9d1d01`. Compilation, dependency, roadmap, controller and Portal checks, artifact auditing and credential scanning passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.79 symmetric provider/account split-recovery review
 
 Exact-head provider/account read-history consistency is accepted locally only when neither retained provider-budget state nor retained account pacing state is pending or review-required. The injected two-sided fixture proves a provider-only recovery remains blocked by the account journal and that consistency returns only after explicit recovery of both exact histories. This review performs no provider IO, retry, capacity reset or routing action.

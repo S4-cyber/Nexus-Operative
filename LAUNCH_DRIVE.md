@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.80 split-recovery order invariance
+
+Exact-head provider/account read-history reconciliation now carries mandatory evidence for both recovery orders. Provider-first and account-first recovery each leave the untouched journal as the sole blocker and keep local consistency false; only the second explicit recovery may restore the six-session local pair. The fixture performs no automatic recovery, provider read, retry, capacity reset or routing action.
+
+Exact-source v0.340.79 commit `5f3c8fb907507c2a4b6b1a93c23679e94262cc3f` passed security/Gitleaks 41208482178 plus browser-help and saved evidence in 41208482208. Its hosted full regression and Windows install/test run 41208482169 remained in progress and are not claimed as passed. Fresh v0.340.80 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local order-invariance evidence does not close an external gate or predict profit.
+
+Local validation passed 4,723 tests with one expected skip and one existing warning; the broader provider-read/pacing/reconciliation focus passed 338. Sixteen profiles verified against 395 source files / `cfc30f875371433c71005db9168d326a537dc64c71a6eda98801931be4741a6a`. Evidence SHA-256 is `87b631e23da0b82c3d9f0c1f9a6563598f415784facdf96576a983c483889d94`; wheel SHA-256 is `6aa41fe1727b85901a2023d81a099e4fba9cecb6f8c074c74d3addf24b9d1d01`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, proposed-snapshot auditing and targeted credential scanning passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.79 symmetric provider/account split-recovery review
 
 Exact-head provider/account read-history reconciliation now treats retained account pacing pending or review-required state as a first-class blocker, matching retained provider-budget state. The injected fixture blocks both journals, clears only the provider side and proves the pair remains inconsistent with `ACCOUNT_REVIEW_BLOCK`; consistency returns only after explicit account recovery also clears its exact retained state. No provider read, retry, capacity reset or routing authority follows from either review.

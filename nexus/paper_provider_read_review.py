@@ -203,19 +203,58 @@ def fixture_report():
     import tempfile
     from nexus import paper_read_review
     with tempfile.TemporaryDirectory(prefix='nexus-provider-read-review-') as directory:
-        root=Path(directory);gate,_=paper_read_review._fixture(root/'account')
-        budget=PaperProviderReadBudget(root/'provider.sqlite3')
-        for index,record in enumerate(gate.operation_history()):
+        root=Path(directory)
+        def build_pair(path):
+            gate,_=paper_read_review._fixture(path/'account')
+            budget=PaperProviderReadBudget(path/'provider.sqlite3')
+            for index,record in enumerate(gate.operation_history()):
+                with budget.ownership() as owner:
+                    token=budget.begin(account_id=gate.account,
+                        account_before_head_sha256=record['before_head_sha256'],
+                        operation=record['operation'],admission=lambda index=index:1000+index*61,
+                        ownership=owner)
+                    budget.finish(token,
+                        account_after_head_sha256=record['after_head_sha256'],
+                        actual_gets=len(record['request_kinds']),
+                        admission=lambda index=index:1001+index*61,
+                        ownership=owner,status_code=200)
+            return gate,budget
+        def block_pair(gate,budget):
+            operation='ACCOUNT_INVENTORY';pattern=list(OPERATION_PATTERNS[operation][0])
+            blocked_at=max(gate.inspect()['next_allowed_at'],budget.inspect()['next_allowed_at'])
+            with budget.ownership() as provider_owner:
+                provider_token=budget.begin(account_id=gate.account,
+                    account_before_head_sha256=gate.inspect()['head_sha256'],operation=operation,
+                    admission=lambda:blocked_at,ownership=provider_owner)
+                with gate.ownership() as account_owner:
+                    account_token=gate.begin(admission=lambda:blocked_at,
+                        ownership=account_owner,operation=operation)
+                    gate.finish(account_token,admission=lambda:blocked_at+1,status_code=401,
+                        ownership=account_owner,receipt=dict(operation=operation,
+                            request_kinds=pattern[:1],request_sha256=[sha(dict(request=0))],
+                            response_sha256=[]))
+                budget.finish(provider_token,
+                    account_after_head_sha256=gate.inspect()['head_sha256'],actual_gets=1,
+                    admission=lambda:blocked_at+1,ownership=provider_owner,status_code=401)
+            return blocked_at
+        def current(gate,budget):
+            return review(budget,[gate],expected_provider_head=budget.inspect()['head_sha256'],
+                expected_account_heads={gate.account_digest:gate.inspect()['head_sha256']})
+        def recover_provider(gate,budget,blocked_at):
+            state=budget.inspect()
             with budget.ownership() as owner:
-                token=budget.begin(account_id=gate.account,
-                    account_before_head_sha256=record['before_head_sha256'],
-                    operation=record['operation'],admission=lambda index=index:1000+index*61,
+                budget.recover_review_block(expected_head=state['head_sha256'],
+                    expected_account_id=gate.account,confirm_block_reviewed=True,
+                    confirm_uncertainty_preserved=True,admission=lambda:blocked_at+2,
                     ownership=owner)
-                budget.finish(token,
-                    account_after_head_sha256=record['after_head_sha256'],
-                    actual_gets=len(record['request_kinds']),
-                    admission=lambda index=index:1001+index*61,
-                    ownership=owner,status_code=200)
+        def recover_account(gate,blocked_at):
+            state=gate.inspect()
+            with gate.ownership() as owner:
+                gate.recover_review_block(expected_head=state['head_sha256'],
+                    expected_account_id=gate.account,confirm_block_reviewed=True,
+                    confirm_uncertainty_preserved=True,admission=lambda:blocked_at+3,
+                    ownership=owner)
+        gate,budget=build_pair(root/'provider-first')
         options=dict(expected_provider_head=budget.inspect()['head_sha256'],
             expected_account_heads={gate.account_digest:gate.inspect()['head_sha256']})
         files=lambda:{str(path.relative_to(root)):path.read_bytes()
@@ -227,42 +266,16 @@ def fixture_report():
         except ValueError as error:
             changed_head_denied=str(error)=='PAPER_PROVIDER_READ_REVIEW_PROVIDER_HEAD_CHANGED'
         source_same=files()==before
-        operation='ACCOUNT_INVENTORY';pattern=list(OPERATION_PATTERNS[operation][0])
-        blocked_at=max(gate.inspect()['next_allowed_at'],
-            budget.inspect()['next_allowed_at'])
-        account_before=gate.inspect()['head_sha256']
-        with budget.ownership() as provider_owner:
-            provider_token=budget.begin(account_id=gate.account,
-                account_before_head_sha256=account_before,operation=operation,
-                admission=lambda:blocked_at,ownership=provider_owner)
-            with gate.ownership() as account_owner:
-                account_token=gate.begin(admission=lambda:blocked_at,
-                    ownership=account_owner,operation=operation)
-                gate.finish(account_token,admission=lambda:blocked_at+1,status_code=401,
-                    ownership=account_owner,receipt=dict(operation=operation,
-                        request_kinds=pattern[:1],request_sha256=[sha(dict(request=0))],
-                        response_sha256=[]))
-            budget.finish(provider_token,
-                account_after_head_sha256=gate.inspect()['head_sha256'],actual_gets=1,
-                admission=lambda:blocked_at+1,ownership=provider_owner,status_code=401)
-        blocked=review(budget,[gate],expected_provider_head=budget.inspect()['head_sha256'],
-            expected_account_heads={gate.account_digest:gate.inspect()['head_sha256']})
-        provider_blocked=budget.inspect()
-        with budget.ownership() as owner:
-            budget.recover_review_block(expected_head=provider_blocked['head_sha256'],
-                expected_account_id=gate.account,confirm_block_reviewed=True,
-                confirm_uncertainty_preserved=True,admission=lambda:blocked_at+2,
-                ownership=owner)
-        split=review(budget,[gate],expected_provider_head=budget.inspect()['head_sha256'],
-            expected_account_heads={gate.account_digest:gate.inspect()['head_sha256']})
-        account_blocked=gate.inspect()
-        with gate.ownership() as owner:
-            gate.recover_review_block(expected_head=account_blocked['head_sha256'],
-                expected_account_id=gate.account,confirm_block_reviewed=True,
-                confirm_uncertainty_preserved=True,admission=lambda:blocked_at+3,
-                ownership=owner)
-        recovered=review(budget,[gate],expected_provider_head=budget.inspect()['head_sha256'],
-            expected_account_heads={gate.account_digest:gate.inspect()['head_sha256']})
+        blocked_at=block_pair(gate,budget);blocked=current(gate,budget)
+        recover_provider(gate,budget,blocked_at);split=current(gate,budget)
+        recover_account(gate,blocked_at);recovered=current(gate,budget)
+        inverse_gate,inverse_budget=build_pair(root/'account-first')
+        inverse_blocked_at=block_pair(inverse_gate,inverse_budget)
+        inverse_blocked=current(inverse_gate,inverse_budget)
+        recover_account(inverse_gate,inverse_blocked_at)
+        inverse_split=current(inverse_gate,inverse_budget)
+        recover_provider(inverse_gate,inverse_budget,inverse_blocked_at)
+        inverse_recovered=current(inverse_gate,inverse_budget)
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -276,6 +289,15 @@ def fixture_report():
                 split['review_reasons']==['ACCOUNT_REVIEW_BLOCK'] and
                 recovered['local_provider_account_history_consistent'] is True and
                 recovered['review_reasons']==[] and recovered['matched_sessions']==6),
+            split_recovery_order_independent=(
+                inverse_blocked['local_provider_account_history_consistent'] is False and
+                inverse_blocked['review_reasons']==[
+                    'ACCOUNT_REVIEW_BLOCK','PROVIDER_REVIEW_BLOCK'] and
+                inverse_split['local_provider_account_history_consistent'] is False and
+                inverse_split['review_reasons']==['PROVIDER_REVIEW_BLOCK'] and
+                inverse_recovered['local_provider_account_history_consistent'] is True and
+                inverse_recovered['review_reasons']==[] and
+                inverse_recovered['matched_sessions']==6),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

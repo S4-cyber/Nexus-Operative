@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.70'
+REVISION = '0.340.71'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -307,6 +307,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Resolved-unknown recovery now extends request-writer exclusion through both provider-budget cold receipts and then requires the original exact request proof once more. A post-commit request mutation returns fixed uncertainty after the conservative recovery commit; it never re-arms or resubmits the request. This remains sampled local evidence, not multi-file atomicity, ACL/administrator protection, physical durability or provider/account acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the reusable locked request-snapshot guard now rechecks exact identity and bounded content during context exit, including return-expression and exception unwind, so mutation after a caller\'s final replay cannot become a successful cross-journal result' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The reusable locked request-snapshot guard now verifies the exact request file again before releasing writer exclusion, covering caller return and exception-unwind seams. A late same-inode or pathname mutation receives fixed locked-snapshot uncertainty even when lower code failed, while rollback remains local and no request is re-armed. This remains sampled local evidence, not multi-file atomicity, ACL/administrator protection, physical durability or provider/account acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -407,7 +415,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.70 extends resolved-unknown recovery request-writer exclusion through both provider-budget cold receipts and replays the exact locked request proof once more before returning success. Post-commit request content, metadata or head change is fixed uncertainty after the conservative recovery commit; lost acknowledgements still recover without another append, and the original request is never re-armed. Exact-source v0.340.69 commit 0280562c7afd8b6747d85a14e4f38f458cf2299e passed security 41168447591, every research/browser/evidence job in 41168447618 and Windows EXE/installer/reinstall/uninstall 41168447560. This sampled local cross-journal hardening is not multi-file atomicity, ACL/administrator-exclusion, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.71 makes the reusable locked request-snapshot guard recheck the exact request-file identity and bounded content during context exit, including return-expression and exception unwind. A late same-inode or pathname mutation is fixed locked-snapshot uncertainty after the conservative recovery commit; lost acknowledgements still recover without another append, and the original request is never re-armed. Exact-source v0.340.70 commit 2009c2b1263efb4ce672584ab05f24a23766049c passed security 41172432539, every research/browser/evidence job in 41172432527 and Windows EXE/installer/reinstall/uninstall run 41172432515. This sampled local exit fence is not multi-file atomicity, ACL/administrator-exclusion, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

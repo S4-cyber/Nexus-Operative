@@ -60,6 +60,7 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['request_replay_fingerprint_rechecked_after_load']
     assert result['request_proof_final_before_budget_commit']
     assert result['request_proof_rechecked_after_budget_receipts']
+    assert result['request_snapshot_rechecked_on_exit']
     assert result['recovery_acknowledgement_cold_replayed']
     assert result['post_budget_file_identity_rechecked']
     assert result['post_budget_file_fingerprint_rechecked']
@@ -205,6 +206,30 @@ def test_request_mutation_after_budget_receipts_is_fixed_uncertainty(
         recover(journal,budget,request_head)
     state=budget.inspect()
     assert calls==2 and state['review_required'] is False
+    assert state['recoveries']==1 and len(budget.recovery_history())==1
+    assert journal.path.read_bytes()==request_before
+    assert journal.path.stat().st_mtime_ns!=original_mtime
+
+
+def test_request_mutation_during_return_is_rechecked_on_snapshot_exit(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    request_before=journal.path.read_bytes();calls=0;original=subject._proof
+    original_mtime=journal.path.stat().st_mtime_ns
+    def mutate_after_final_proof(*args,**kwargs):
+        nonlocal calls
+        result=original(*args,**kwargs);calls+=1
+        if calls==4:
+            os.utime(journal.path,
+                ns=(journal.path.stat().st_atime_ns,
+                    original_mtime+1_000_000_000))
+        return result
+    monkeypatch.setattr(subject,'_proof',mutate_after_final_proof)
+    with pytest.raises(ValueError,
+            match='BROKER_JOURNAL_LOCKED_SNAPSHOT_FILE_SET_CHANGED'):
+        recover(journal,budget,request_head)
+    state=budget.inspect()
+    assert calls==4 and state['review_required'] is False
     assert state['recoveries']==1 and len(budget.recovery_history())==1
     assert journal.path.read_bytes()==request_before
     assert journal.path.stat().st_mtime_ns!=original_mtime
@@ -406,3 +431,4 @@ def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monke
     assert result['request_replay_fingerprint_rechecked_after_load']
     assert result['request_proof_final_before_budget_commit']
     assert result['request_proof_rechecked_after_budget_receipts']
+    assert result['request_snapshot_rechecked_on_exit']

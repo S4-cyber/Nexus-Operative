@@ -601,6 +601,20 @@ class BrokerRequestJournal:
                 try:
                     yield read
                 finally:
+                    # The guard owns the complete context lifetime, including
+                    # the caller's return expression and exception unwind.
+                    # Recheck the exact pathname identity and bounded content
+                    # before releasing writer exclusion so mutation after a
+                    # caller's last explicit read cannot become a successful
+                    # cross-journal result.
+                    try:
+                        require_unchanged()
+                    except BaseException:
+                        try:
+                            db.rollback()
+                        except BaseException:
+                            pass
+                        raise
                     db.rollback()
 
     def begin_lookup_checked(self, client_order_id, *, admission, expected_head=None):

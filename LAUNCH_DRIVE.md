@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.71 locked-snapshot exit recheck
+
+The locked request-snapshot context now repeats its full identity, fingerprint and head proof before releasing request-writer exclusion. Mutation after a caller's last explicit proof is fixed uncertainty on normal return and during exception unwinding. A conservative provider-budget recovery may remain committed, but no success, re-arm, retry, provider access or routing authority follows.
+
+Exact-source v0.340.70 commit `2009c2b1263efb4ce672584ab05f24a23766049c` passed security 41172432539, research/browser/evidence 41172432527 and Windows EXE/installer/reinstall/uninstall 41172432515. Fresh v0.340.71 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local finalization fence does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,687 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 266. Sixteen offline profiles and saved evidence verified against 395 source files / `9e937337a3c70b3427f320d0f2cbe63276b39bc055b60f2d502d07cee4bdde4d`. Evidence SHA-256 is `8802e6b90f3b52439e7a1754759b77e4566dd9a0fd87e51e78dfb4ca38fab2c5`; wheel SHA-256 is `ad75ae42b99471ddffdabd60e9e92aafe0f3f0d4d73852aabd568806c9aa136f`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.70 post-recovery request-proof bracket
 
 Resolved-unknown paper POST recovery now keeps request-writer exclusion through both provider-budget acknowledgement receipts and performs one final exact locked request replay before returning success. Post-commit request content, metadata or head mutation is fixed uncertainty after the conservative recovery commit and cannot re-arm the original request, grant a retry or perform provider IO.

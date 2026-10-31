@@ -31,6 +31,23 @@ def test_status_missing_is_network_and_storage_silent(tmp_path):
     assert not (tmp_path/'missing').exists()
 
 
+@pytest.mark.parametrize('body_error',(False,True))
+def test_locked_snapshot_rechecks_file_on_context_exit(store,body_error):
+    store.prepare(plan());selected=store.lookup_request('nx_fixture')
+    original_mtime=store.path.stat().st_mtime_ns
+    with pytest.raises(ValueError,
+            match='BROKER_JOURNAL_LOCKED_SNAPSHOT_FILE_SET_CHANGED'):
+        with store.locked_request_snapshot('nx_fixture',
+                expected_head=selected['head_sha256']) as read:
+            assert read()['head_sha256']==selected['head_sha256']
+            os.utime(store.path,
+                ns=(store.path.stat().st_atime_ns,
+                    original_mtime+1_000_000_000))
+            if body_error:
+                raise RuntimeError('private lower context failure')
+    assert store.path.stat().st_mtime_ns!=original_mtime
+
+
 def test_uncertain_request_reopens_without_retry_permission_and_same_id_cannot_change_terms(store):
     first=store.prepare(plan());assert first['recovery_state']=='PREPARED_UNSENT_DIAGNOSTIC'
     assert store.prepare(plan())['duplicate']

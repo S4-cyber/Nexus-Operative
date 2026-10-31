@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.71 locked-snapshot exit recheck
+
+Locked request snapshots are now accepted only after their file identity, bounded fingerprint and journal head pass one final recheck while context exit still owns writer exclusion. Mutation after the caller's final explicit proof returns fixed locked-snapshot uncertainty on ordinary return and masks a lower-priority body error during unwinding. A conservative provider-budget recovery may remain committed, but no successful recovery acknowledgement, re-arm, retry, provider access or routing authority follows.
+
+Exact-source v0.340.70 commit `2009c2b1263efb4ce672584ab05f24a23766049c` passed security 41172432539, research/browser/evidence 41172432527 and Windows EXE/installer/reinstall/uninstall 41172432515. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local prepublication validation passed 4,687 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 266. Sixteen offline profiles and saved evidence verified against 395 exact source files / `9e937337a3c70b3427f320d0f2cbe63276b39bc055b60f2d502d07cee4bdde4d`. Evidence SHA-256 is `8802e6b90f3b52439e7a1754759b77e4566dd9a0fd87e51e78dfb4ca38fab2c5`; wheel SHA-256 is `ad75ae42b99471ddffdabd60e9e92aafe0f3f0d4d73852aabd568806c9aa136f`. Compilation, dependency, roadmap, controller and Portal syntax checks passed. Local Playwright and Gitleaks are unavailable; these local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.70 post-recovery request-proof bracket
 
 Resolved-unknown POST-budget recovery is accepted only when the exact locked request proof still replays after both stable provider-budget recovery receipts. Request-writer exclusion spans the whole cross-journal acknowledgement window. Post-commit request content, metadata or head mutation returns fixed locked-snapshot uncertainty; the conservative recovery may remain committed, but no success, re-arm, retry, provider access or routing authority follows.

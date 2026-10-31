@@ -217,7 +217,8 @@ def test_pending_provider_history_is_preserved_as_review_block(tmp_path):
     gate,budget=build(tmp_path,pending=True);before=files(tmp_path)
     result=subject.review(budget,[gate],**heads(gate,budget))
     assert not result['local_provider_account_history_consistent']
-    assert 'PENDING_PROVIDER_HISTORY' in result['review_reasons'] and files(tmp_path)==before
+    assert result['review_reasons']==['PENDING_PROVIDER_HISTORY']
+    assert result['matched_sessions']==0 and files(tmp_path)==before
 
 
 def test_pending_account_history_is_preserved_as_review_block(tmp_path):
@@ -228,7 +229,29 @@ def test_pending_account_history_is_preserved_as_review_block(tmp_path):
     before=files(tmp_path)
     result=subject.review(budget,[gate],**heads(gate,budget))
     assert not result['local_provider_account_history_consistent']
-    assert 'INCOMPLETE_ACCOUNT_HISTORY' in result['review_reasons'] and files(tmp_path)==before
+    assert result['review_reasons']==[
+        'INCOMPLETE_ACCOUNT_HISTORY','PENDING_ACCOUNT_HISTORY']
+    assert result['matched_sessions']==0 and files(tmp_path)==before
+
+
+def test_aligned_provider_and_account_pending_histories_never_promote(tmp_path):
+    gate,budget=build(tmp_path)
+    at=max(gate.inspect()['next_allowed_at'],budget.inspect()['next_allowed_at'])
+    with budget.ownership() as provider_owner:
+        budget.begin(account_id=ACCOUNT,
+            account_before_head_sha256=gate.inspect()['head_sha256'],
+            operation='ACCOUNT_INVENTORY',admission=lambda:at,
+            ownership=provider_owner)
+    with gate.ownership() as account_owner:
+        gate.begin(admission=lambda:at,ownership=account_owner,
+            operation='ACCOUNT_INVENTORY')
+    before=files(tmp_path)
+    result=subject.review(budget,[gate],**heads(gate,budget))
+    assert result['review_reasons']==[
+        'INCOMPLETE_ACCOUNT_HISTORY','PENDING_ACCOUNT_HISTORY',
+        'PENDING_PROVIDER_HISTORY']
+    assert result['local_provider_account_history_consistent'] is False
+    assert result['matched_sessions']==0 and files(tmp_path)==before
 
 
 def test_legacy_account_history_is_never_promoted_to_typed_match(tmp_path):

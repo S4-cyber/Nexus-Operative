@@ -240,6 +240,19 @@ def fixture_report():
         def current(gate,budget):
             return review(budget,[gate],expected_provider_head=budget.inspect()['head_sha256'],
                 expected_account_heads={gate.account_digest:gate.inspect()['head_sha256']})
+        def leave_pending(gate,budget,mode):
+            pending_at=max(gate.inspect()['next_allowed_at'],
+                budget.inspect()['next_allowed_at'])
+            if mode in ('provider','both'):
+                with budget.ownership() as owner:
+                    budget.begin(account_id=gate.account,
+                        account_before_head_sha256=gate.inspect()['head_sha256'],
+                        operation='ACCOUNT_INVENTORY',admission=lambda:pending_at,
+                        ownership=owner)
+            if mode in ('account','both'):
+                with gate.ownership() as owner:
+                    gate.begin(admission=lambda:pending_at,ownership=owner,
+                        operation='ACCOUNT_INVENTORY')
         def recover_provider(gate,budget,blocked_at):
             state=budget.inspect()
             with budget.ownership() as owner:
@@ -276,6 +289,19 @@ def fixture_report():
         inverse_split=current(inverse_gate,inverse_budget)
         recover_provider(inverse_gate,inverse_budget,inverse_blocked_at)
         inverse_recovered=current(inverse_gate,inverse_budget)
+        pending_expectations={
+            'provider':['PENDING_PROVIDER_HISTORY'],
+            'account':['INCOMPLETE_ACCOUNT_HISTORY','PENDING_ACCOUNT_HISTORY'],
+            'both':['INCOMPLETE_ACCOUNT_HISTORY','PENDING_ACCOUNT_HISTORY',
+                'PENDING_PROVIDER_HISTORY']}
+        pending_results={}
+        pending_unchanged={}
+        for mode in pending_expectations:
+            pending_gate,pending_budget=build_pair(root/f'{mode}-pending')
+            leave_pending(pending_gate,pending_budget,mode)
+            pending_before=files()
+            pending_results[mode]=current(pending_gate,pending_budget)
+            pending_unchanged[mode]=files()==pending_before
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -298,6 +324,12 @@ def fixture_report():
                 inverse_recovered['local_provider_account_history_consistent'] is True and
                 inverse_recovered['review_reasons']==[] and
                 inverse_recovered['matched_sessions']==6),
+            pending_histories_never_promote=all(
+                pending_results[mode]['local_provider_account_history_consistent'] is False and
+                pending_results[mode]['matched_sessions']==0 and
+                pending_results[mode]['review_reasons']==expected and
+                pending_unchanged[mode]
+                for mode,expected in pending_expectations.items()),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

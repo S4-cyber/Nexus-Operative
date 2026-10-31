@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.80'
+REVISION = '0.340.81'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -266,6 +266,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Provider/account read reconciliation now carries mandatory order-invariance evidence: provider-first and account-first recovery each remain inconsistent after one side clears, and only the second explicit exact-head recovery restores local consistency. This is injected local recovery-order evidence, not automatic recovery, broker-wide coordination, provider acceptance or routing authority.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; mandatory exact-head release evidence now proves provider-only, account-only and aligned dual-pending read histories all remain read-only review blockers and can never be promoted to matched completed sessions' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Provider/account read reconciliation now carries mandatory three-way pending-history evidence: provider-only, account-only and aligned dual-pending tails each remain inconsistent, report zero matched sessions and leave every journal byte unchanged. This is disposable local fail-closed evidence, not automatic recovery, provider IO, broker acceptance or routing authority.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' An explicit one-attempt Activity SSE coordinator now composes the fixed-target transport, private prior segment, strict reconnect review and exact-head cursor journal into one fail-closed local checkpoint; injected tests only.',
     remaining='Accept this exact-head reconnect/checkpoint path on an authorized paper account and native private volume; verify account entitlement, provider source/delivery and replay coverage, slow-consumer recovery and broker-wide/distributed coordination before any automatic reconnect loop. ' + stage['remaining'])
@@ -487,7 +495,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.80 makes split-recovery evidence order-independent for exact-head provider/account read-history reconciliation. Provider-first and account-first recovery must each remain inconsistent after only one journal clears, with the untouched journal as the sole blocker; local consistency returns only after the second explicit recovery while complete history, cooldown, uncertainty and consumed capacity remain retained. Exact-source v0.340.79 commit 5f3c8fb907507c2a4b6b1a93c23679e94262cc3f passed security/Gitleaks run 41208482178 and the browser-help job in run 41208482208; its complete hosted regression, saved-evidence job and Windows run 41208482169 were still in progress at recovery and are not claimed as passed. This remains injected local recovery-order evidence, not broker-wide coordination, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.81 makes pending-history non-promotion mandatory release evidence for exact-head provider/account read reconciliation. Provider-only pending, account-only pending and aligned dual-pending tails must each remain inconsistent, expose the exact fail-closed reason set, report zero matched sessions and leave all journal bytes unchanged. Exact-source v0.340.80 commit 0641c508f75f810f20013563da3b4e5b60a4364c passed security/Gitleaks run 41209976091, every regression/browser/evidence job in run 41209976076 and Windows EXE/installer/reinstall/uninstall/distribution run 41209976123. This remains disposable local pending-history evidence, not broker-wide coordination, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, recovery, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

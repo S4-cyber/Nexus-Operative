@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.80 (pre-release).** This build requires exact-head provider/account split recovery to remain fail-closed in both recovery orders. Whichever journal clears first leaves the untouched journal as the sole blocker; consistency returns only after the second explicit recovery. It adds no Portal route, saved credential, provider IO, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.81 (pre-release).** This build requires provider-only, account-only and aligned dual-pending exact-head histories to remain non-promotable, inconsistent and byte-for-byte unchanged. It adds no Portal route, saved credential, provider IO, recovery, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.81 pending-history non-promotion evidence
+
+The provider/account read-history fixture now creates three independent pending pairs. It requires the exact provider-only, account-only and dual-pending reason sets, zero matched sessions, false consistency and unchanged journal files. Direct tests and release validation reject evidence that omits the three-way invariant.
+
+Exact-source v0.340.80 commit `0641c508f75f810f20013563da3b4e5b60a4364c` passed security/Gitleaks 41209976091, all research regression/browser/evidence jobs in 41209976076 and Windows EXE/installer/reinstall/uninstall/distribution 41209976123. Fresh v0.340.81 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not provider source, broker-wide coordination, native-owner Windows acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+Local validation passed 4,724 tests with one expected skip and one existing warning; the pending/release/evidence/version/installer focus passed 251. Sixteen offline profiles verified 395 source files / `beba3a75426d58084b64419f3bc77845d50f6d2ac75bcaae4d95de55ae22c695`. Evidence SHA-256 is `7a5e38cf29792505ac453205c6fd12ee82313a3afc771d7bcf4df27d5f2016c2`; wheel SHA-256 is `d93c3ef64de1e113c2f15ed49d5c0b03e5676d4051a37745d26d5e8cea49d249`. Compilation, dependencies, roadmap, controllers, Portal syntax, the 793-path artifact audit and credential scanning passed. Release approval and trading permission remain false.
 
 ## v0.340.80 split-recovery order invariance
 

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.81 pending-history non-promotion evidence
+
+Exact-head provider/account read reconciliation now carries mandatory evidence for all three pending shapes. Provider-only pending, account-only pending and aligned dual-pending histories each remain inconsistent, report zero matched sessions and preserve every journal byte. The fixture performs no recovery, provider read, retry, capacity reset or routing action.
+
+Exact-source v0.340.80 commit `0641c508f75f810f20013563da3b4e5b60a4364c` passed security/Gitleaks 41209976091, all research regression/browser/evidence jobs in 41209976076 and Windows EXE/installer/reinstall/uninstall/distribution 41209976123. Fresh v0.340.81 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local pending-history evidence does not close an external gate or predict profit.
+
+Local validation passed 4,724 tests with one expected skip and one existing warning; the pending/release/evidence/version/installer focus passed 251. Sixteen profiles verified against 395 source files / `beba3a75426d58084b64419f3bc77845d50f6d2ac75bcaae4d95de55ae22c695`. Evidence SHA-256 is `7a5e38cf29792505ac453205c6fd12ee82313a3afc771d7bcf4df27d5f2016c2`; wheel SHA-256 is `d93c3ef64de1e113c2f15ed49d5c0b03e5676d4051a37745d26d5e8cea49d249`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 793-path proposed-snapshot audit and targeted credential scanning passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.80 split-recovery order invariance
 
 Exact-head provider/account read-history reconciliation now carries mandatory evidence for both recovery orders. Provider-first and account-first recovery each leave the untouched journal as the sole blocker and keep local consistency false; only the second explicit recovery may restore the six-session local pair. The fixture performs no automatic recovery, provider read, retry, capacity reset or routing action.

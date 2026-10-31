@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.81 pending-history non-promotion evidence
+
+Exact-head provider/account read reconciliation is accepted locally only when every pending shape remains fail-closed. Provider-only pending, account-only pending and aligned dual-pending histories must each report their exact review reasons, zero matched sessions, false consistency and unchanged journal bytes. No path performs recovery, provider I/O, retry, capacity reset or routing.
+
+Exact-source v0.340.80 commit `0641c508f75f810f20013563da3b4e5b60a4364c` passed security/Gitleaks 41209976091, all research regression/browser/evidence jobs in 41209976076 and Windows EXE/installer/reinstall/uninstall/distribution 41209976123. Fresh v0.340.81 workflows and actual authorized paper-account/private-volume acceptance remain required. This is disposable local pending-history evidence, not broker identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,724 tests with one expected skip and one existing warning; the pending/release/evidence/version/installer focus passed 251. Sixteen profiles verified against 395 exact source files / `beba3a75426d58084b64419f3bc77845d50f6d2ac75bcaae4d95de55ae22c695`. Evidence SHA-256 is `7a5e38cf29792505ac453205c6fd12ee82313a3afc771d7bcf4df27d5f2016c2`; wheel SHA-256 is `d93c3ef64de1e113c2f15ed49d5c0b03e5676d4051a37745d26d5e8cea49d249`. Compilation, dependency, roadmap, controller and Portal checks, the 793-path artifact audit and credential scanning passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.80 split-recovery order invariance
 
 Exact-head provider/account split recovery is accepted locally only when both explicit recovery orders preserve the same fail-closed rule. Provider-first must remain blocked by account pacing; account-first must remain blocked by the provider budget. Neither path becomes consistent until the second explicit recovery, and neither performs automatic recovery, provider I/O, retry, capacity reset or routing.

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.72 provider POST ownership exit recheck
+
+The provider POST ownership guard now rechecks that its lock pathname still names the exact opened regular single-link file before releasing the descriptor. Replacement after the final recovery proof is fixed uncertainty on normal return and during exception unwinding. A conservative provider-budget recovery may remain committed, but no success, re-arm, retry, provider access or routing authority follows.
+
+Exact-source v0.340.71 commit `4273b13f609633647b5d36670e5f5da43d7925ab` passed security 41176180968, research/browser/evidence 41176181157 and Windows EXE/installer/reinstall/uninstall 41176180939. Fresh v0.340.72 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This cooperating-process local ownership fence does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,690 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 247. Sixteen offline profiles and saved evidence verified against 395 source files / `051a853c90045aa8a5f09bfa22611c83c4089b179ebedb2831eaa2173a9e5f79`. Evidence SHA-256 is `06536256d04fd2bd0d299f3f74849bd964a72fe698293ce19fc59d2a6a349a07`; wheel SHA-256 is `f600833ea063d9ef71c47af148d073c10776e61d64d8368d105046c4836a5814`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.71 locked-snapshot exit recheck
 
 The locked request-snapshot context now repeats its full identity, fingerprint and head proof before releasing request-writer exclusion. Mutation after a caller's last explicit proof is fixed uncertainty on normal return and during exception unwinding. A conservative provider-budget recovery may remain committed, but no success, re-arm, retry, provider access or routing authority follows.

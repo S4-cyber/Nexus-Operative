@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.72 provider POST ownership exit recheck
+
+Provider POST ownership is now accepted only when its lock pathname still names the exact opened regular single-link file as context exit begins. Replacement after the final recovery proof returns fixed ownership uncertainty on ordinary return and masks a lower-priority body error during unwinding. A conservative provider-budget recovery may remain committed, but no successful recovery acknowledgement, re-arm, retry, provider access or routing authority follows.
+
+Exact-source v0.340.71 commit `4273b13f609633647b5d36670e5f5da43d7925ab` passed security 41176180968, research/browser/evidence 41176181157 and Windows EXE/installer/reinstall/uninstall 41176180939. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local prepublication validation passed 4,690 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 247. Sixteen offline profiles and saved evidence verified against 395 exact source files / `051a853c90045aa8a5f09bfa22611c83c4089b179ebedb2831eaa2173a9e5f79`. Evidence SHA-256 is `06536256d04fd2bd0d299f3f74849bd964a72fe698293ce19fc59d2a6a349a07`; wheel SHA-256 is `f600833ea063d9ef71c47af148d073c10776e61d64d8368d105046c4836a5814`. Compilation, dependency, roadmap, controller and Portal syntax checks passed. Local Playwright and Gitleaks are unavailable; these local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.71 locked-snapshot exit recheck
 
 Locked request snapshots are now accepted only after their file identity, bounded fingerprint and journal head pass one final recheck while context exit still owns writer exclusion. Mutation after the caller's final explicit proof returns fixed locked-snapshot uncertainty on ordinary return and masks a lower-priority body error during unwinding. A conservative provider-budget recovery may remain committed, but no successful recovery acknowledgement, re-arm, retry, provider access or routing authority follows.

@@ -194,7 +194,8 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
                 request_replay_fingerprint_rechecked_after_load=True,
                 request_proof_final_before_budget_commit=True,
                 request_proof_rechecked_after_budget_receipts=True,
-                request_snapshot_rechecked_on_exit=True)
+                request_snapshot_rechecked_on_exit=True,
+                post_budget_ownership_rechecked_on_exit=True)
 
 
 def fixture_report():
@@ -271,6 +272,8 @@ def fixture_report():
                 result['request_proof_rechecked_after_budget_receipts'] is True,
             request_snapshot_rechecked_on_exit=
                 result['request_snapshot_rechecked_on_exit'] is True,
+            post_budget_ownership_rechecked_on_exit=
+                result['post_budget_ownership_rechecked_on_exit'] is True,
             recovery_acknowledgement_cold_replayed=
                 result['recovery_acknowledgement_cold_replayed'] is True and
                 lost_acknowledgements == 1 and after['recoveries'] == 1,

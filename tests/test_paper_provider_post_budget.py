@@ -1,4 +1,5 @@
 """Durable shared-local provider POST pacing and recovery fences."""
+import os
 import sqlite3
 
 import pytest
@@ -78,6 +79,23 @@ def test_pending_receipt_is_read_only_hash_bound_and_requires_active_lease(tmp_p
     with pytest.raises(ValueError,match='ORIGINAL_LEASE_REQUIRED'):
         budget.confirm_active_pending(token,**confirmation)
     owner.__exit__()
+
+
+@pytest.mark.parametrize('body_error',(False,True))
+def test_ownership_rechecks_lock_path_on_context_exit(tmp_path,body_error):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    lock_path=budget.path.resolve().with_name(budget.path.name+'.owner.lock')
+    displaced=tmp_path/'displaced-owner.lock'
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_BUDGET_OWNER_FILE_CHANGED'):
+        with budget.ownership() as owner:
+            assert owner.identity()
+            lock_path.rename(displaced)
+            fd=os.open(lock_path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+            os.write(fd,b'0');os.close(fd)
+            if body_error:
+                raise RuntimeError('private lower context failure')
+    assert displaced.is_file() and lock_path.is_file()
 
 
 def test_exact_head_and_cooldown_block_without_appending(tmp_path):

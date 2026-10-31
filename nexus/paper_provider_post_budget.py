@@ -570,5 +570,24 @@ class _PostOwnership:
             raise
 
     def __exit__(self, *args):
-        fd, self.fd = self.fd, None
-        if fd is not None: os.close(fd)
+        fd = self.fd
+        if fd is None:
+            return
+        exit_error = None
+        try:
+            # Keep the opened ownership lease authoritative through the
+            # complete context lifetime. A replacement lock pathname could
+            # otherwise admit a second cooperating writer after the caller's
+            # final durable proof but before this descriptor is released.
+            self.validate()
+        except BaseException as error:
+            exit_error = error
+        finally:
+            self.fd = None
+            try:
+                os.close(fd)
+            except BaseException:
+                if exit_error is None:
+                    raise
+        if exit_error is not None:
+            raise exit_error

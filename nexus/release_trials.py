@@ -1009,6 +1009,7 @@ def _validate(profile, result):
              'request_proof_final_before_budget_commit',
              'request_proof_rechecked_after_budget_receipts',
              'request_snapshot_rechecked_on_exit',
+             'post_budget_ownership_rechecked_on_exit',
              'recovery_acknowledgement_cold_replayed',
              'post_budget_file_identity_rechecked',
              'post_budget_file_fingerprint_rechecked',

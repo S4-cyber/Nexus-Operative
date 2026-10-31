@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.71'
+REVISION = '0.340.72'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -315,6 +315,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The reusable locked request-snapshot guard now verifies the exact request file again before releasing writer exclusion, covering caller return and exception-unwind seams. A late same-inode or pathname mutation receives fixed locked-snapshot uncertainty even when lower code failed, while rollback remains local and no request is re-armed. This remains sampled local evidence, not multi-file atomicity, ACL/administrator protection, physical durability or provider/account acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; provider POST ownership now rechecks that its lock pathname still names the opened regular single-link file before releasing the descriptor, so a late replacement cannot become a successful recovery return' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Provider POST ownership now validates the exact opened lock-file identity during context exit, including normal return and exception unwind. A late pathname replacement produces fixed ownership uncertainty after any conservative recovery commit and cannot grant retry or request authority. This remains a cooperating-process local fence, not broker-wide/distributed ownership, ACL/administrator protection, physical durability or provider/account acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -415,7 +423,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.71 makes the reusable locked request-snapshot guard recheck the exact request-file identity and bounded content during context exit, including return-expression and exception unwind. A late same-inode or pathname mutation is fixed locked-snapshot uncertainty after the conservative recovery commit; lost acknowledgements still recover without another append, and the original request is never re-armed. Exact-source v0.340.70 commit 2009c2b1263efb4ce672584ab05f24a23766049c passed security 41172432539, every research/browser/evidence job in 41172432527 and Windows EXE/installer/reinstall/uninstall run 41172432515. This sampled local exit fence is not multi-file atomicity, ACL/administrator-exclusion, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.72 makes the provider POST ownership guard recheck that its lock pathname still names the opened regular single-link file before releasing the descriptor, including normal return and exception unwind. A late replacement is fixed ownership uncertainty after any conservative recovery commit; it cannot re-arm the request, authorize retry or grant provider access. Exact-source v0.340.71 commit 4273b13f609633647b5d36670e5f5da43d7925ab passed security 41176180968, every research/browser/evidence job in 41176181157 and Windows EXE/installer/reinstall/uninstall run 41176180939. This cooperating-process local exit fence is not broker-wide/distributed ownership, ACL/administrator-exclusion, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.69 recovery store-fingerprint bracket
+
+The resolved-unknown POST-budget recovery is accepted only while the bounded provider-budget bytes and metadata remain stable throughout source replay and immediately before the guarded write, and while the newly committed fingerprint remains stable across both acknowledgement receipts. Same-inode mutation yields fixed file-set uncertainty; no mutated content is treated as the just-committed recovery. Request non-resubmission, full cooldown and zero provider access remain unchanged.
+
+Exact-source v0.340.68 commit `62ef743ce2d2fe4bf7bce8dbd4f8f779ab5ed21f` passed security 41164351591, research/browser/evidence 41164351606 and Windows EXE/installer/reinstall/uninstall 41164351609. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local prepublication validation passed 4,683 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 224 and two research-workflow contract tests passed. Sixteen offline profiles and saved evidence verified against 395 exact source files / `367b286cbceb47100184b67c0cab6165add2fa0461a2e681bdabae2055ab1bb3`. Evidence SHA-256 is `0b2ec81e06f528f1438fa681f4e63295c1f0f06caeda8300166d1ca353cebe84`; wheel SHA-256 is `d0776cbe03773b12990fcc6762ed4fb5bd7aa85714ea1a993919ba1f41964ea1`. Compilation, dependency, roadmap, controller, Portal syntax, the 781-path / 56,228,579-byte proposed-snapshot artifact audit and targeted credential checks passed. Local Playwright and Gitleaks are unavailable; these local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.68 recovery store-identity fence
 
 The resolved-unknown POST-budget recovery is accepted only while the provider-budget path continues to name the exact sampled regular single-link SQLite file through source replay, recovery write and both acknowledgement receipts. Replacement yields fixed file-identity uncertainty; no replacement content is treated as the just-committed recovery. Request non-resubmission, full cooldown and zero provider access remain unchanged.

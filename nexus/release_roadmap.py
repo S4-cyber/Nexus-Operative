@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.68'
+REVISION = '0.340.69'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -291,6 +291,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The reviewed recovery command now pins the exact provider-budget file identity before reading source history and rechecks it before and after the recovery transaction and each cold receipt. A same-path replacement is rejected even if its retained bytes are otherwise valid. This is sampled local identity evidence, not an ACL, administrator-exclusion, physical durability or provider/account acceptance proof.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the same recovery now fingerprints the bounded provider-budget bytes before mutation and pins the newly committed fingerprint across both cold receipts, rejecting same-file content or metadata change as fixed uncertainty' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The reviewed recovery command now requires a stable bounded provider-budget file fingerprint throughout source replay and immediately before its guarded write, then captures the committed fingerprint and requires it to remain unchanged across both cold receipts. Same-inode content or metadata mutation is fixed uncertainty. This remains sampled local evidence, not an atomic descriptor transaction, ACL/administrator protection, physical durability or provider/account acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -391,7 +399,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.68 pins and rechecks the exact provider-budget SQLite file identity across resolved-unknown recovery source replay, the guarded write and both post-commit cold receipts. Same-path replacement is fixed uncertainty even when replacement bytes are otherwise valid; lost acknowledgements still recover without another append, and the original request is never re-armed. Exact-source v0.340.67 commit 363179be4e45aeadb46346d5988ef5ac5605b886 passed security 41159882501, every research/browser/evidence job in 41159882472 and Windows EXE/installer/reinstall/uninstall 41159882453. This sampled local identity hardening is not an ACL, administrator-exclusion, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.69 brackets resolved-unknown recovery with a stable bounded provider-budget fingerprint before the guarded write and pins the newly committed fingerprint across both cold receipts. Same-inode content or metadata mutation is fixed uncertainty; pathname replacement remains fenced, lost acknowledgements still recover without another append, and the original request is never re-armed. Exact-source v0.340.68 commit 62ef743ce2d2fe4bf7bce8dbd4f8f779ab5ed21f passed security 41164351591, every research/browser/evidence job in 41164351606 and Windows EXE/installer/reinstall/uninstall 41164351609. This sampled local fingerprint hardening is not an atomic descriptor transaction, ACL/administrator-exclusion, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

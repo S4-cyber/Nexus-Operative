@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.69 recovery store-fingerprint bracket
+
+Resolved-unknown paper POST recovery now requires a stable bounded provider-budget fingerprint across source replay and immediately before recovery mutation, then requires the newly committed fingerprint to remain unchanged through both durable receipt reads. Same-inode byte or metadata mutation is fixed uncertainty and cannot re-arm the original request, grant a retry or perform provider IO.
+
+Exact-source v0.340.68 commit `62ef743ce2d2fe4bf7bce8dbd4f8f779ab5ed21f` passed security 41164351591, research/browser/evidence 41164351606 and Windows EXE/installer/reinstall/uninstall 41164351609. Fresh v0.340.69 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local fingerprint bracket does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,683 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 224 and two research-workflow contract tests passed. Sixteen offline profiles and saved evidence verified against 395 source files / `367b286cbceb47100184b67c0cab6165add2fa0461a2e681bdabae2055ab1bb3`. Evidence SHA-256 is `0b2ec81e06f528f1438fa681f4e63295c1f0f06caeda8300166d1ca353cebe84`; wheel SHA-256 is `d0776cbe03773b12990fcc6762ed4fb5bd7aa85714ea1a993919ba1f41964ea1`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 781-path / 56,228,579-byte proposed-snapshot artifact audit and targeted credential scanning passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.68 recovery store-identity fence
 
 Resolved-unknown paper POST recovery now pins the provider-budget SQLite pathname to one sampled regular single-link file identity before source replay and rechecks it across the recovery transaction and both durable receipt reads. A same-path replacement is fixed uncertainty even when it contains a valid older database; it cannot re-arm the original request, grant a retry or perform provider IO.

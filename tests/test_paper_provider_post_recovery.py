@@ -61,6 +61,7 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['request_proof_final_before_budget_commit']
     assert result['recovery_acknowledgement_cold_replayed']
     assert result['post_budget_file_identity_rechecked']
+    assert result['post_budget_file_fingerprint_rechecked']
     assert result['cooldown_shortened'] is False and result['uncertainty_preserved']
     assert state['recoveries']==1 and state['review_required'] is False
     recovery=budget.recovery_history()
@@ -157,6 +158,29 @@ def test_post_budget_path_replacement_after_commit_is_fixed_uncertainty(
     state=budget.inspect()
     assert state['review_required'] is True and state['recoveries']==0
     assert len(budget.history())==1
+
+
+def test_post_budget_same_file_mutation_after_commit_is_fixed_uncertainty(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    prior=budget.path.read_bytes();original=PaperProviderPostBudget.recovery_receipt
+    calls=0
+    def read_then_mutate_same_file(self):
+        nonlocal calls
+        receipt=original(self);calls+=1
+        if calls==1:
+            with self.path.open('r+b') as stream:
+                stream.seek(0);stream.write(prior);stream.truncate()
+                stream.flush();os.fsync(stream.fileno())
+        return receipt
+    monkeypatch.setattr(PaperProviderPostBudget,'recovery_receipt',
+                        read_then_mutate_same_file)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_RECOVERY_FILE_SET_CHANGED'):
+        recover(journal,budget,request_head)
+    state=budget.inspect()
+    assert calls==1 and state['review_required'] is True
+    assert state['recoveries']==0 and len(budget.history())==1
 
 
 def test_recovery_clock_is_retained_without_shortening_existing_cooldown(tmp_path):

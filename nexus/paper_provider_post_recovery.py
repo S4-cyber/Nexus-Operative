@@ -13,9 +13,11 @@ import time
 
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_activity_acceptance_probe import _private_path
-from nexus.paper_provider_post_budget import PaperProviderPostBudget
+from nexus.paper_provider_post_budget import (
+    MAX_DATABASE_BYTES, PaperProviderPostBudget)
 from nexus.sqlite_journal_guard import (
-    capture_file_identities, check_path_set, require_file_identities)
+    capture_file_fingerprints, capture_file_identities, check_path_set,
+    require_file_fingerprints, require_file_identities)
 
 
 class _Parser(argparse.ArgumentParser):
@@ -48,15 +50,21 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
     journal = BrokerRequestJournal(request_path, expected_account_id)
     post_identity = capture_file_identities((post_resolved,),
         'PAPER_PROVIDER_POST_RECOVERY_')
+    post_fingerprint = capture_file_fingerprints((post_resolved,),
+        (MAX_DATABASE_BYTES,), 'PAPER_PROVIDER_POST_RECOVERY_')
     def check_post_identity():
         require_file_identities((post_resolved,), post_identity,
             'PAPER_PROVIDER_POST_RECOVERY_')
+    def check_post_source():
+        check_post_identity()
+        require_file_fingerprints((post_resolved,), (MAX_DATABASE_BYTES,),
+            post_fingerprint, 'PAPER_PROVIDER_POST_RECOVERY_')
     before = budget.inspect()
-    check_post_identity()
+    check_post_source()
     if before['events'] == 0 or before['head_sha256'] != expected_post_budget_head:
         raise ValueError('PAPER_PROVIDER_POST_RECOVERY_SOURCE_REQUIRED')
     completed = budget.history()
-    check_post_identity()
+    check_post_source()
     if (not before['review_required'] or before['pending_token'] is not None or
             not completed or completed[-1]['outcome'] != 'OUTCOME_UNKNOWN'):
         raise ValueError('PAPER_PROVIDER_POST_RECOVERY_SOURCE_REQUIRED')
@@ -73,7 +81,7 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
             def check():
                 return _proof(read_request(), client_order_id,
                     expected_request_head)
-            check_post_identity()
+            check_post_source()
             write_error = None
             try:
                 budget.recover_resolved_unknown(
@@ -95,10 +103,19 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
             receipt_error = None
             try:
                 check_post_identity()
+                committed_fingerprint = capture_file_fingerprints(
+                    (post_resolved,), (MAX_DATABASE_BYTES,),
+                    'PAPER_PROVIDER_POST_RECOVERY_')
                 receipt = budget.recovery_receipt()
                 check_post_identity()
+                require_file_fingerprints((post_resolved,),
+                    (MAX_DATABASE_BYTES,), committed_fingerprint,
+                    'PAPER_PROVIDER_POST_RECOVERY_')
                 receipt_again = budget.recovery_receipt()
                 check_post_identity()
+                require_file_fingerprints((post_resolved,),
+                    (MAX_DATABASE_BYTES,), committed_fingerprint,
+                    'PAPER_PROVIDER_POST_RECOVERY_')
                 account_digest = hashlib.sha256(
                     expected_account_id.encode()).hexdigest()
                 client_digest = hashlib.sha256(
@@ -130,8 +147,10 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
                 stable = False
             if not stable:
                 if (type(receipt_error) is ValueError and
-                        str(receipt_error).startswith(
-                            'PAPER_PROVIDER_POST_RECOVERY_FILE_IDENTITY_')):
+                        str(receipt_error).startswith((
+                            'PAPER_PROVIDER_POST_RECOVERY_FILE_IDENTITY_',
+                            'PAPER_PROVIDER_POST_RECOVERY_FILE_SET_',
+                            'PAPER_PROVIDER_POST_RECOVERY_SQLITE_SIDECAR_'))):
                     raise receipt_error
                 if (type(write_error) is ValueError and
                         str(write_error).startswith((
@@ -158,7 +177,8 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
                 live_orders_enabled=False, money_movement_enabled=False,
                 release_approved=False,
                 recovery_acknowledgement_cold_replayed=True,
-                post_budget_file_identity_rechecked=True)
+                post_budget_file_identity_rechecked=True,
+                post_budget_file_fingerprint_rechecked=True)
             return dict(result, request_writer_exclusion_held=True,
                 request_path_identity_rechecked=True,
                 request_file_fingerprint_rechecked=True,
@@ -241,6 +261,8 @@ def fixture_report():
                 lost_acknowledgements == 1 and after['recoveries'] == 1,
             post_budget_file_identity_rechecked=
                 result['post_budget_file_identity_rechecked'] is True,
+            post_budget_file_fingerprint_rechecked=
+                result['post_budget_file_fingerprint_rechecked'] is True,
             original_request_not_rearmed=result['original_request_rearmed'] is False and
                 retained['submission_attempt_marked'],
             unknown_history_preserved=budget.history()==history,

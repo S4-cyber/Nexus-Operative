@@ -1,5 +1,7 @@
 """Operator entry point for reviewed provider-budget recovery."""
 import json
+import os
+import shutil
 import sys
 
 import pytest
@@ -30,6 +32,8 @@ def test_recover_entry_point_is_exact_and_retains_false_authority(tmp_path):
     assert result['next_allowed_at']==before['next_allowed_at']==after['next_allowed_at']
     assert after['recoveries']==1 and not after['review_required']
     assert result['recovery_acknowledgement_cold_replayed']
+    assert result['provider_budget_file_identity_rechecked']
+    assert result['provider_budget_file_fingerprint_rechecked']
     assert result['provider_budget_ownership_rechecked_on_exit']
     assert all(result[key] is False for key in ('admission_reserved','automatic_retry',
         'automatic_continuation','broker_wide_quota_verified','distributed_ownership_verified',
@@ -102,11 +106,61 @@ def test_post_commit_recovery_reader_failure_is_fixed_uncertainty(
     assert budget.inspect()['review_required'] is False
 
 
+def test_provider_budget_path_replacement_after_commit_is_fixed_uncertainty(
+        tmp_path,monkeypatch):
+    budget=blocked(tmp_path/'provider.sqlite3');before=budget.inspect()
+    replacement=tmp_path/'provider-replacement.sqlite3'
+    shutil.copyfile(budget.path,replacement)
+    original=PaperProviderReadBudget.recover_review_block
+    def commit_then_replace(self,*args,**kwargs):
+        result=original(self,*args,**kwargs)
+        os.replace(replacement,self.path)
+        return result
+    monkeypatch.setattr(PaperProviderReadBudget,'recover_review_block',
+                        commit_then_replace)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_BUDGET_RECOVERY_FILE_IDENTITY_CHANGED'):
+        subject.recover(budget.path,expected_head=before['head_sha256'],
+            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+            confirm_uncertainty_preserved=True,admission=lambda:1002)
+    state=budget.inspect()
+    assert state['review_required'] is True and state['recoveries']==0
+    assert len(budget.history())==1
+
+
+def test_provider_budget_same_file_mutation_after_commit_is_fixed_uncertainty(
+        tmp_path,monkeypatch):
+    budget=blocked(tmp_path/'provider.sqlite3');before=budget.inspect()
+    prior=budget.path.read_bytes()
+    original=PaperProviderReadBudget.recovery_receipt
+    calls=0
+    def read_then_mutate_same_file(self):
+        nonlocal calls
+        receipt=original(self);calls+=1
+        if calls==1:
+            with self.path.open('r+b') as stream:
+                stream.seek(0);stream.write(prior);stream.truncate()
+                stream.flush();os.fsync(stream.fileno())
+        return receipt
+    monkeypatch.setattr(PaperProviderReadBudget,'recovery_receipt',
+                        read_then_mutate_same_file)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_BUDGET_RECOVERY_FILE_SET_CHANGED'):
+        subject.recover(budget.path,expected_head=before['head_sha256'],
+            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+            confirm_uncertainty_preserved=True,admission=lambda:1002)
+    state=budget.inspect()
+    assert calls==1 and state['review_required'] is True
+    assert state['recoveries']==0 and len(budget.history())==1
+
+
 def test_fixture_proves_lost_ack_without_authority():
     result=subject.fixture_report()
     assert result['passed']
     assert all(result[key] is True for key in (
         'exact_review_block_bound','recovery_acknowledgement_cold_replayed',
+        'provider_budget_file_identity_rechecked',
+        'provider_budget_file_fingerprint_rechecked',
         'provider_budget_ownership_rechecked_on_exit',
         'blocked_history_preserved','cooldown_preserved',
         'session_capacity_not_reclaimed'))

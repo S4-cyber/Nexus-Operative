@@ -11,7 +11,11 @@ import sqlite3
 import time
 
 from nexus.paper_activity_acceptance_probe import _private_path
-from nexus.paper_provider_read_budget import PaperProviderReadBudget
+from nexus.paper_provider_read_budget import (
+    MAX_DATABASE_BYTES, PaperProviderReadBudget)
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints, capture_file_identities,
+    require_file_fingerprints, require_file_identities)
 
 
 class _Parser(argparse.ArgumentParser):
@@ -23,19 +27,34 @@ def recover(path, *, expected_head, expected_account_id,
         confirm_block_reviewed=False, confirm_uncertainty_preserved=False,
         admission=time.time):
     """Recover one exact blocked tail while preserving its retained uncertainty."""
-    private_path, _ = _private_path(path)
+    private_path, private_resolved = _private_path(path)
     budget = PaperProviderReadBudget(private_path)
+    budget_identity = capture_file_identities((private_resolved,),
+        'PAPER_PROVIDER_BUDGET_RECOVERY_')
+    budget_fingerprint = capture_file_fingerprints((private_resolved,),
+        (MAX_DATABASE_BYTES,), 'PAPER_PROVIDER_BUDGET_RECOVERY_')
+    def check_budget_identity():
+        require_file_identities((private_resolved,), budget_identity,
+            'PAPER_PROVIDER_BUDGET_RECOVERY_')
+    def check_budget_source():
+        check_budget_identity()
+        require_file_fingerprints((private_resolved,),
+            (MAX_DATABASE_BYTES,), budget_fingerprint,
+            'PAPER_PROVIDER_BUDGET_RECOVERY_')
     # A recovery command never creates a provider journal.  This read-only
     # sample is repeated under the owned write transaction by the budget.
     before = budget.inspect()
+    check_budget_source()
     if before['events'] == 0 or before['head_sha256'] != expected_head:
         raise ValueError('PAPER_PROVIDER_BUDGET_RECOVERY_SOURCE_REQUIRED')
     completed = budget.history()
+    check_budget_source()
     if (not before['review_required'] or before['pending_token'] is not None or
             not completed or completed[-1]['outcome'] not in
             ('AUTH_DENIED', 'REVIEW_REQUIRED', 'INTERRUPTED_UNKNOWN')):
         raise ValueError('PAPER_PROVIDER_BUDGET_RECOVERY_SOURCE_REQUIRED')
     with budget.ownership() as owner:
+        check_budget_source()
         write_error = None
         try:
             budget.recover_review_block(expected_head=expected_head,
@@ -48,9 +67,22 @@ def recover(path, *, expected_head, expected_account_id,
             # was lost.  Trust neither the return nor raised detail; only an
             # exact cold replay can acknowledge the durable recovery.
             write_error = error
+        receipt_error = None
         try:
+            check_budget_identity()
+            committed_fingerprint = capture_file_fingerprints(
+                (private_resolved,), (MAX_DATABASE_BYTES,),
+                'PAPER_PROVIDER_BUDGET_RECOVERY_')
             receipt = budget.recovery_receipt()
+            check_budget_identity()
+            require_file_fingerprints((private_resolved,),
+                (MAX_DATABASE_BYTES,), committed_fingerprint,
+                'PAPER_PROVIDER_BUDGET_RECOVERY_')
             receipt_again = budget.recovery_receipt()
+            check_budget_identity()
+            require_file_fingerprints((private_resolved,),
+                (MAX_DATABASE_BYTES,), committed_fingerprint,
+                'PAPER_PROVIDER_BUDGET_RECOVERY_')
             account_digest = hashlib.sha256(
                 expected_account_id.encode()).hexdigest()
             stable = (receipt == receipt_again and
@@ -75,9 +107,16 @@ def recover(path, *, expected_head, expected_account_id,
                     'distributed_ownership_verified', 'ready_for_routing',
                     'live_orders_enabled', 'money_movement_enabled',
                     'release_approved')))
-        except BaseException:
+        except BaseException as error:
+            receipt_error = error
             stable = False
         if not stable:
+            if (type(receipt_error) is ValueError and
+                    str(receipt_error).startswith((
+                        'PAPER_PROVIDER_BUDGET_RECOVERY_FILE_IDENTITY_',
+                        'PAPER_PROVIDER_BUDGET_RECOVERY_FILE_SET_',
+                        'PAPER_PROVIDER_BUDGET_RECOVERY_SQLITE_SIDECAR_'))):
+                raise receipt_error
             if (type(write_error) is ValueError and
                     str(write_error).startswith(
                         'PAPER_PROVIDER_READ_BUDGET_')):
@@ -98,6 +137,8 @@ def recover(path, *, expected_head, expected_account_id,
             live_orders_enabled=False, money_movement_enabled=False,
             release_approved=False,
             recovery_acknowledgement_cold_replayed=True,
+            provider_budget_file_identity_rechecked=True,
+            provider_budget_file_fingerprint_rechecked=True,
             provider_budget_ownership_rechecked_on_exit=True)
 
 
@@ -140,6 +181,10 @@ def fixture_report():
             recovery_acknowledgement_cold_replayed=(
                 result['recovery_acknowledgement_cold_replayed'] is True and
                 lost_acknowledgements == 1 and after['recoveries'] == 1),
+            provider_budget_file_identity_rechecked=
+                result['provider_budget_file_identity_rechecked'] is True,
+            provider_budget_file_fingerprint_rechecked=
+                result['provider_budget_file_fingerprint_rechecked'] is True,
             provider_budget_ownership_rechecked_on_exit=
                 result['provider_budget_ownership_rechecked_on_exit'] is True,
             blocked_history_preserved=budget.history() == history,

@@ -366,6 +366,8 @@ def test_pacing_profile_requires_provider_read_recovery_fences():
     result=trials._pacing_trial();trials._validate('pacing',result)
     for field in ('exact_review_block_bound',
                   'recovery_acknowledgement_cold_replayed',
+                  'provider_budget_file_identity_rechecked',
+                  'provider_budget_file_fingerprint_rechecked',
                   'provider_budget_ownership_rechecked_on_exit',
                   'blocked_history_preserved','cooldown_preserved',
                   'session_capacity_not_reclaimed'):

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.76 provider-read recovery store bracket
+
+Explicit reviewed provider-read recovery now pins the existing SQLite pathname identity and bounded fingerprint across source replay and the guarded write, then pins the newly committed fingerprint through both cold acknowledgement receipts while the same provider ownership remains held. Same-path replacement and same-inode byte or metadata rollback are fixed uncertainty. The conservative replacement or rollback remains review-blocked and cannot reclaim consumed session capacity, authorize another provider read or trigger provider IO.
+
+Exact-source v0.340.75 commit `d8c65708b8b6e476e0066698dafdadbb296f0fb9` passed security/Gitleaks 41192943128 and research regression/browser/evidence 41192943022. Windows run 41192943024 remains in progress in install-and-test and is not claimed as passed. Fresh v0.340.76 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local store hardening does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,709 tests with one expected non-Windows skip and one existing warning; the provider-read recovery/release/evidence/version/installer focus passed 195. Sixteen offline profiles and saved evidence verified against 395 source files / `8dcd4a8a3c42292ed77b094794cc211930c1b1d1193b873db07cd551bf34d453`. Evidence SHA-256 is `d3b650d74b5551bc36a5e3b5123e76b31f6f0ffc6a6677517dc70dfc69cc8386`; wheel SHA-256 is `9741fab3b5afc21b1d6df89998b7a09f0dd6add49ebb733b8f1935a0e4a71964`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 788-path proposed-snapshot artifact audit and targeted credential scanning passed. No UI or modifiable parameter changed, so beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.75 provider-read recovery acknowledgement replay
 
 Explicit reviewed provider-read budget recovery now ignores the append acknowledgement and requires two identical cold read-only receipts while the same provider ownership is held. The receipts bind the exact recovery head, blocked session/outcome, account digest, recovery count, unchanged cooldown and unreclaimed session capacity. A committed recovery whose local acknowledgement is lost completes once; uncommitted, fabricated, changed or unreadable state remains fixed uncertainty without provider access, retry or capacity reset.

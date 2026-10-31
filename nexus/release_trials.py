@@ -1026,6 +1026,8 @@ def _validate(profile, result):
             'TEMPORARY_PROVIDER_READ_BUDGET_RECOVERY_FIXTURE' and
             read_recovery['passed'] is True and all(read_recovery[k] is True for k in
             ('exact_review_block_bound','recovery_acknowledgement_cold_replayed',
+             'provider_budget_file_identity_rechecked',
+             'provider_budget_file_fingerprint_rechecked',
              'provider_budget_ownership_rechecked_on_exit',
              'blocked_history_preserved','cooldown_preserved',
              'session_capacity_not_reclaimed')),

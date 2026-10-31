@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import shutil
 import sqlite3
+import stat
 from types import SimpleNamespace
 
 import pytest
@@ -534,6 +535,74 @@ def test_fresh_receipt_initialization_close_uncertainty_retains_path(
             '^PAPER_PROVIDER_READ_REVIEW_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN$'):
         subject.retain_review(path,budget,[gate],**options)
     assert path.exists() and path.stat().st_size==0
+
+
+def test_receipt_commit_flushes_main_file_and_new_posix_directory(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    original=store_subject.os.fsync;calls=[]
+    def fsync(descriptor):
+        mode=os.fstat(descriptor).st_mode
+        calls.append('directory' if stat.S_ISDIR(mode) else 'file')
+        return original(descriptor)
+    monkeypatch.setattr(store_subject.os,'fsync',fsync)
+    first=subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    assert calls==(['file'] if os.name=='nt' else ['file','directory'])
+    calls.clear()
+    duplicate=subject.retain_review(path,budget,[gate],
+        expected_store_head=first['head_sha256'],**heads(gate,budget))
+    assert duplicate['duplicate'] is True and calls==['file']
+    assert PaperProviderReadReviewStore(
+        path,budget,[gate]).inspect()['retained_receipts']==1
+
+
+def test_receipt_main_file_flush_uncertainty_retains_exact_commit_for_retry(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';failed=False
+    original=store_subject.os.fsync
+    def fsync(descriptor):
+        nonlocal failed
+        if not failed and stat.S_ISREG(os.fstat(descriptor).st_mode):
+            failed=True
+            raise OSError('private main-file flush failure')
+        return original(descriptor)
+    monkeypatch.setattr(store_subject.os,'fsync',fsync)
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN$'):
+        subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    replay=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert failed and replay['retained_receipts']==1
+    monkeypatch.setattr(store_subject.os,'fsync',original)
+    retry=subject.retain_review(path,budget,[gate],
+        expected_store_head=replay['head_sha256'],**heads(gate,budget))
+    final=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert retry['duplicate'] is True and final['retained_receipts']==1
+    assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
+
+
+@pytest.mark.skipif(os.name=='nt',reason='Python exposes no portable Windows directory fsync')
+def test_receipt_parent_flush_uncertainty_retains_exact_commit_for_retry(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';failed=False
+    original=store_subject.os.fsync
+    def fsync(descriptor):
+        nonlocal failed
+        if not failed and stat.S_ISDIR(os.fstat(descriptor).st_mode):
+            failed=True
+            raise OSError('private directory flush failure')
+        return original(descriptor)
+    monkeypatch.setattr(store_subject.os,'fsync',fsync)
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN$'):
+        subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    replay=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert failed and replay['retained_receipts']==1
+    monkeypatch.setattr(store_subject.os,'fsync',original)
+    retry=subject.retain_review(path,budget,[gate],
+        expected_store_head=replay['head_sha256'],**heads(gate,budget))
+    final=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert retry['duplicate'] is True and final['retained_receipts']==1
+    assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
 
 
 @pytest.mark.parametrize('callback_error',(False,True))

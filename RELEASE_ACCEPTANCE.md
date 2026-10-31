@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.89 retained receipt post-commit durability barrier
+
+A committed provider/read-review receipt is locally returnable only after the exact regular, single-link, bounded main file is opened writable, flushed and revalidated. A newly created POSIX store must also flush its parent directory. Any open, flush, close or identity uncertainty must preserve the committed receipt, emit the fixed durability refusal and require an explicit exact-head retry that returns one duplicate rather than appending again. Python has no portable Windows directory-fsync API; native Windows pathname persistence and physical power-loss behavior remain unaccepted.
+
+Exact-source v0.340.88 commit `0bcccf2540d075657635a6b7c3235542025c8abf` passed security/history/Gitleaks 41245920047 and every research regression/browser/evidence job in 41245920058. Windows distribution run 41245920036 remained active in `Install and test` and is not claimed as passed. Fresh v0.340.89 workflows and actual authorized paper-account/private-volume acceptance remain required. This is sampled local flush evidence, not physical durability acceptance, provider identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,751 tests with one expected skip and one existing warning; the receipt/release/evidence focus passed 191. Sixteen profiles verified against 395 exact source files / `b025bda4d8d177d63308c6583dc89ea35385a8e90e923442437af096d30387bd`. Evidence SHA-256 is `0fce5af381df10b7ade7f85a96815c1805be96c41ac7ab095781ccf5a7e4ddaa`; wheel SHA-256 is `655005a757f294639467562f00467128da26bdcad6da2ece9893cd7f81caff3b`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks and the 800-path artifact audit passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.88 fresh receipt-store initialization rollback
 
 A failed first provider/read-review receipt initialization is locally acceptable only when the exact exclusively created identity returns to absent state or cleanup remains fixed uncertainty. Connection and every SQLite setup boundary must close the handle before removal; only a regular, single-link, zero-byte main file with no journal/WAL/shared-memory sidecar may be deleted. Mandatory evidence requires the connection-failure refusal, restored absence and one explicit successful retry. There is no automatic retry.

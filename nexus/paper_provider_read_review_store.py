@@ -130,6 +130,60 @@ def _discard_uncommitted_new(path,identity):
         _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
 
 
+def _sync_committed_store(path,identity,*,new):
+    """Explicitly flush one committed main file and its new POSIX entry.
+
+    SQLite ``synchronous=FULL`` remains the transaction durability policy.
+    This additional descriptor boundary makes the caller observe a failed
+    file flush instead of accepting a merely replayable commit.  A new POSIX
+    pathname also receives the available parent-directory fsync.  Python has
+    no portable Windows directory-fsync API, so Windows retains the explicit
+    writable main-file flush and the existing installer/native acceptance
+    gate.  Any uncertainty preserves the committed store and fails closed.
+    """
+    try:
+        if (type(new) is not bool or type(identity) is not tuple or
+                len(identity)!=1 or type(identity[0]) is not tuple or
+                len(identity[0])!=3):
+            raise RuntimeError
+        path=Path(path);resolved=path.resolve()
+        expected_path,expected_device,expected_inode=identity[0]
+        if str(resolved)!=expected_path:raise RuntimeError
+        flags=(os.O_RDWR|getattr(os,'O_BINARY',0)|
+            getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
+        descriptor=os.open(resolved,flags)
+        try:
+            before=os.fstat(descriptor)
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or
+                    not 1<=before.st_size<=MAX_DATABASE_BYTES or
+                    (before.st_dev,before.st_ino)!=(expected_device,
+                        expected_inode)):
+                raise RuntimeError
+            os.fsync(descriptor)
+            after=os.fstat(descriptor)
+            if (_active_fingerprint_boundary(before)!=
+                    _active_fingerprint_boundary(after)):
+                raise RuntimeError
+        finally:
+            os.close(descriptor)
+        require_file_identities((path,),identity,
+            'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        if new and os.name!='nt':
+            directory_flags=(os.O_RDONLY|getattr(os,'O_DIRECTORY',0)|
+                getattr(os,'O_CLOEXEC',0))
+            directory_descriptor=os.open(resolved.parent,directory_flags)
+            try:
+                if not stat.S_ISDIR(os.fstat(directory_descriptor).st_mode):
+                    raise RuntimeError
+                os.fsync(directory_descriptor)
+            finally:
+                os.close(directory_descriptor)
+            require_file_identities((path,),identity,
+                'PAPER_PROVIDER_READ_REVIEW_STORE_')
+    except BaseException:
+        _fail('COMMIT_DURABILITY_UNCERTAIN')
+
+
 class PaperProviderReadReviewStore:
     def __init__(self,path,provider_budget,gates):
         from nexus.paper_provider_read_budget import PaperProviderReadBudget
@@ -315,6 +369,7 @@ class PaperProviderReadReviewStore:
                 committed=True
                 committed_identity=capture_file_identities((self.path,),
                     'PAPER_PROVIDER_READ_REVIEW_STORE_')
+                _sync_committed_store(self.path,committed_identity,new=new)
                 committed_fingerprint=capture_file_fingerprints((self.path,),
                     (MAX_DATABASE_BYTES,),'PAPER_PROVIDER_READ_REVIEW_STORE_')
                 with guard_file_set_finalization((self.path,),

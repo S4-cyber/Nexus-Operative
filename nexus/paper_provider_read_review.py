@@ -573,6 +573,39 @@ def fixture_report():
         initialization_replay=PaperProviderReadReviewStore(
             initialization_store,initialization_budget,
             [initialization_gate]).inspect()
+        durability_gate,durability_budget=build_pair(
+            root/'retained-commit-durability')
+        durability_store=(root/'retained-commit-durability'/'receipt.sqlite3')
+        original_fsync=store_module.os.fsync;durability_failures=0
+        def fail_first_commit_flush(descriptor):
+            nonlocal durability_failures
+            if durability_failures==0:
+                durability_failures+=1
+                raise OSError('fixture private commit flush failure')
+            return original_fsync(descriptor)
+        durability_failure_denied=False
+        store_module.os.fsync=fail_first_commit_flush
+        try:
+            retain_review(durability_store,durability_budget,
+                [durability_gate],expected_provider_head=
+                    durability_budget.inspect()['head_sha256'],
+                expected_account_heads={durability_gate.account_digest:
+                    durability_gate.inspect()['head_sha256']})
+        except ValueError as error:
+            durability_failure_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN')
+        finally:
+            store_module.os.fsync=original_fsync
+        durability_replay=PaperProviderReadReviewStore(
+            durability_store,durability_budget,[durability_gate]).inspect()
+        durability_receipt=retain_review(durability_store,durability_budget,
+            [durability_gate],expected_provider_head=
+                durability_budget.inspect()['head_sha256'],
+            expected_account_heads={durability_gate.account_digest:
+                durability_gate.inspect()['head_sha256']},
+            expected_store_head=durability_replay['head_sha256'])
+        durability_final=PaperProviderReadReviewStore(
+            durability_store,durability_budget,[durability_gate]).inspect()
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -652,6 +685,14 @@ def fixture_report():
                     initialization_replay['head_sha256'] and
                 initialization_receipt['receipt_sha256']==
                     initialization_replay['receipts'][0]['receipt_sha256']),
+            retained_receipt_commit_flush_failure_recoverable=(
+                durability_failures==1 and durability_failure_denied and
+                durability_replay['retained_receipts']==1 and
+                durability_receipt['duplicate'] is True and
+                durability_final['retained_receipts']==1 and
+                durability_receipt['head_sha256']==
+                    durability_replay['head_sha256']==
+                    durability_final['head_sha256']),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

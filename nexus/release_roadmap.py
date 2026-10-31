@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.88'
+REVISION = '0.340.89'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -459,6 +459,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Fresh receipt-store initialization now applies the same narrow rollback cleanup to failures before append receives a database connection. The exclusive file identity is captured from its open descriptor; connection, pragma, transaction-begin and schema failures close SQLite first and remove only that exact empty sidecar-free pathname. Ambiguity remains retained and blocked. This is sampled local initialization recovery, not physical durability, automatic retry or broker/account acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; committed provider/read receipt stores now cross an explicit writable main-file fsync boundary on every accepted commit, plus parent-directory fsync for a newly created POSIX pathname; flush uncertainty retains the exact committed receipt for inspection and explicit duplicate replay' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Every committed provider/read receipt now receives an explicit writable main-file flush before its cold acknowledgement proof. A newly created POSIX pathname also receives parent-directory fsync; Python exposes no portable Windows directory fsync, so Windows retains the main-file barrier and native acceptance gate. Flush uncertainty preserves the committed receipt, fails closed and permits only an exact duplicate replay after inspection. This narrows local durability uncertainty but is not physical power-loss, broker/account or native-owner acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -559,7 +567,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.88 closes the earlier fresh-store cleanup gap before append obtains a SQLite connection. The exact exclusively created pathname identity is captured from the open descriptor, and failures during SQLite connection, pragma setup, transaction begin or initial schema creation close the connection before removing only that same regular, single-link, empty file with no sidecars. Replacement or cleanup ambiguity remains blocked. Exact-source v0.340.87 commit c9247a451c2976c8617705c16a978c796035ffa3 passed public security/Gitleaks run 41244399828 plus browser-help and saved-evidence jobs in research run 41244399820; its complete regression and Windows packaging run 41244399876 were still active at the checkpoint and are not claimed as passed. This remains sampled local initialization recovery, not atomic writer exclusion, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.89 adds an explicit post-commit durability barrier to provider/read review receipts. Every accepted commit flushes the exact writable main file and rechecks its identity; a new POSIX pathname also flushes its parent directory. Flush uncertainty retains the committed receipt, returns a fixed refusal and allows only an exact inspected duplicate replay. Python exposes no portable Windows directory fsync, so Windows keeps the explicit main-file flush plus its independent native acceptance gate. Exact-source v0.340.88 commit 0bcccf2540d075657635a6b7c3235542025c8abf passed public security/Gitleaks run 41245920047 plus browser-help and saved-evidence jobs in research run 41245920058; its complete regression and Windows packaging run 41245920036 were still active at the checkpoint and are not claimed as passed. This narrows sampled local durability uncertainty but is not physical power-loss proof, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

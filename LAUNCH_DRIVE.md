@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.89 retained receipt post-commit durability barrier
+
+Provider/read-review receipt retention now adds an explicit observation boundary after SQLite `synchronous=FULL` commits. The exact writable main file is flushed and revalidated; new POSIX stores also flush the parent directory. A flush uncertainty preserves the already committed receipt, fails closed with a fixed code and allows only an operator-directed exact-head duplicate replay. Python exposes no portable Windows directory-fsync API, so native Windows persistence and physical power-loss testing remain independent gates.
+
+Exact-source v0.340.88 commit `0bcccf2540d075657635a6b7c3235542025c8abf` passed security/history/Gitleaks 41245920047 plus every browser-help, saved-evidence and complete-regression job in 41245920058. Windows distribution run 41245920036 remained active in `Install and test` and is not claimed as passed. Fresh v0.340.89 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local durability evidence does not close an external gate or predict profit.
+
+Local validation passed 4,751 tests with one expected skip and one existing warning; the receipt/release/evidence focus passed 191. Sixteen profiles verified against 395 source files / `b025bda4d8d177d63308c6583dc89ea35385a8e90e923442437af096d30387bd`. Evidence SHA-256 is `0fce5af381df10b7ade7f85a96815c1805be96c41ac7ab095781ccf5a7e4ddaa`; wheel SHA-256 is `655005a757f294639467562f00467128da26bdcad6da2ece9893cd7f81caff3b`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks and the 800-path artifact audit passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.88 fresh receipt-store initialization rollback
 
 Fresh provider/read-review receipt initialization now captures its exclusive pathname identity before SQLite opens. A connection or setup failure closes SQLite and restores absent state only for that exact empty, regular, single-link, sidecar-free file. Eight direct failure phases and mandatory connection-failure release evidence require one explicit exact retry; no retry happens automatically and ambiguity remains blocked.

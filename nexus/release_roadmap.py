@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.86'
+REVISION = '0.340.87'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -435,6 +435,22 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Provider-read budget recovery now rejects same-path replacement and same-inode byte or metadata mutation across source replay, its guarded recovery write and both cold receipts. The committed recovery may remain conservative, but mutated or rolled-back state cannot become success or reclaim capacity. This is sampled local storage evidence, not atomic descriptor binding, ACL/administrator protection, physical durability or provider/account acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; a failed first provider/read receipt transaction now removes only its exact newly created empty SQLite pathname after rollback, rejects replacement or sidecar ambiguity and restores absent state for one explicit exact retry' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' A failed first durable provider/read receipt transaction no longer leaves a schema-less SQLite pathname that poisons an exact operator retry. Cleanup is limited to the captured new identity after rollback and only when the main file is regular, single-link and empty with no SQLite sidecars; any replacement or uncertain state remains retained and blocked. This is sampled local cleanup and retry evidence, not physical durability, broker/account acceptance or automatic retry authority.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; active provider/read receipt-store fingerprint sampling now uses the same Windows-portable pathname/open-handle boundary as the quiescent guard, excluding nonportable Windows ctime while retaining identity, size, mtime, link and bounded-byte checks' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Active receipt-store transaction sampling now compares the portable Windows intersection of pathname and open-handle metadata rather than treating their different ctime precision as mutation. Identity, size, mtime, link count and bounded bytes remain checked. This repairs a five-test native Windows regression; fresh exact-source packaging is still required and not inferred from the fix.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -535,7 +551,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.86 makes durable provider/read receipt retention distrust the write-side acknowledgement. Two stable cold receipts must prove the exact expected transition; a committed lost acknowledgement recovers once, while a fabricated return remains fixed durable-state uncertainty. The committed receipt-store identity and bounded fingerprint are held through postcommit callbacks, exception unwind and final return. Exact-source v0.340.85 commit 7a580e47c8e540528eaab500a0cb58dba061531b passed security/Gitleaks run 41234102000, research-safety run 41234102010 and Windows install/build run 41234102004. This remains sampled local durability evidence, not atomic writer exclusion, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, recovery, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.87 makes a failed first provider/read receipt transaction restore a genuinely absent store instead of leaving a schema-less SQLite pathname that poisons an exact retry. Cleanup runs only after rollback and only for the captured newly created regular, single-link, zero-byte file with no SQLite sidecars; replacement or cleanup ambiguity remains blocked. Active transaction sampling also uses the Windows-portable metadata intersection, excluding nonportable ctime precision while retaining identity, size, mtime, link and bounded-byte checks. Exact-source v0.340.86 commit 155f06513afd0a57580e8d22226f5ce099900341 passed security/Gitleaks run 41240243791 and every research regression/browser/evidence job in run 41240243772. Windows run 41240243822 failed five receipt-store tests before packaging because its pathname/open-handle ctime values differed; v0.340.87 contains the targeted fix, but fresh Windows execution remains required. This remains sampled local rollback cleanup, not atomic writer exclusion, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

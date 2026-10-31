@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.87 fresh receipt-store rollback cleanup
+
+A failed first provider/read-review receipt append now returns the new SQLite pathname to absent state after rollback, allowing the same exact operator-directed review to be retried. Cleanup is deliberately narrow: only the captured new regular, single-link, zero-byte file with no rollback/WAL/shared-memory sidecar can be removed. Any replacement, bytes, link, sidecar or identity uncertainty remains blocked and retained. Active sampling also uses the portable Windows pathname/open-handle metadata intersection instead of treating ctime precision differences as mutation.
+
+Exact-source v0.340.86 commit `155f06513afd0a57580e8d22226f5ce099900341` passed security/Gitleaks 41240243791 and all research regression/browser/evidence jobs in 41240243772. Windows run 41240243822 failed five receipt-store tests before packaging due to pathname/open-handle ctime differences; v0.340.87 targets that failure, but fresh Windows execution remains required. Fresh v0.340.87 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local cleanup evidence does not close an external gate or predict profit.
+
+Local validation passed 4,739 tests with one expected skip and one existing warning; the receipt/release/evidence/version/installer focus passed 264. Sixteen profiles verified against 395 source files / `e6b6dc02c23d9c7f4a056b37736f3f7c6ba36e9f074f07ff70d6289dc97e1931`. Evidence SHA-256 is `331a21c44d56314dbda00b90b3ee1665f5a6f75b3415c6cfacaf37ddd3e620a8`; wheel SHA-256 is `cdc9b7ec8273ee19c941048a4b3cd3551f8eb97fd598ba0c34637e5c7fbe15ce`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, artifact auditing and targeted credential scanning passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.86 retained-review receipt acknowledgement replay
 
 Provider/read-review receipt retention now ignores the write-side acknowledgement and accepts success only after two identical cold reads prove the exact expected durable transition. A committed write whose acknowledgement is lost is recovered without a duplicate append; fabricated success, store replacement, rollback or late mutation remains fixed uncertainty. The receipt-store identity and bounded fingerprint stay pinned through callbacks, exception unwind and final return.

@@ -1,7 +1,9 @@
 """Provider/account read-history composition and durable receipt tests."""
 import os
+from pathlib import Path
 import shutil
 import sqlite3
+from types import SimpleNamespace
 
 import pytest
 
@@ -38,6 +40,16 @@ def heads(gate,budget):
 
 
 def files(root):return {str(path.relative_to(root)):path.read_bytes() for path in root.rglob('*') if path.is_file()}
+
+
+def test_active_fingerprint_boundary_uses_windows_portable_fields():
+    common=dict(st_dev=1,st_ino=2,st_size=3,st_mtime_ns=4,st_nlink=1)
+    path_view=SimpleNamespace(**common,st_ctime_ns=5)
+    handle_view=SimpleNamespace(**common,st_ctime_ns=6)
+    assert (store_subject._active_fingerprint_boundary(path_view,host='nt')==
+        store_subject._active_fingerprint_boundary(handle_view,host='nt'))
+    assert (store_subject._active_fingerprint_boundary(path_view,host='posix')!=
+        store_subject._active_fingerprint_boundary(handle_view,host='posix'))
 
 
 def add_complete_peer(tmp_path,budget):
@@ -420,6 +432,44 @@ def test_retained_receipt_rejects_fabricated_write_return(tmp_path,monkeypatch):
             '^PAPER_PROVIDER_READ_REVIEW_DURABLE_STATE_CHANGED$'):
         subject.retain_review(path,budget,[gate],**heads(gate,budget))
     assert not path.exists()
+
+
+@pytest.mark.parametrize('callback_error',(False,True))
+def test_failed_first_receipt_append_restores_absence_and_exact_retry(
+        tmp_path,callback_error):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';calls=0
+    options=heads(gate,budget)
+    def revoke_inside_transaction():
+        nonlocal calls
+        calls+=1
+        if calls==2:
+            if callback_error:raise RuntimeError('private callback failure')
+            return False
+        return True
+    expected=('PAPER_PROVIDER_READ_REVIEW_DURABLE_STATE_CHANGED' if
+        callback_error else 'PAPER_PROVIDER_READ_REVIEW_STORE_INPUT_REVOKED')
+    with pytest.raises(ValueError,match=f'^{expected}$'):
+        subject.retain_review(path,budget,[gate],
+            precommit_check=revoke_inside_transaction,**options)
+    assert calls==2 and not path.exists()
+    assert all(not Path(str(path)+suffix).exists() for suffix in
+        ('-journal','-wal','-shm'))
+    receipt=subject.retain_review(path,budget,[gate],**options)
+    replay=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert replay['retained_receipts']==1
+    assert receipt['head_sha256']==replay['head_sha256']
+
+
+def test_uncommitted_cleanup_never_deletes_replacement(tmp_path):
+    path=tmp_path/'review.sqlite3';path.touch(mode=0o600)
+    identity=guard_subject.capture_file_identities((path,),
+        'PAPER_PROVIDER_READ_REVIEW_STORE_')
+    replacement=tmp_path/'replacement.sqlite3';replacement.touch(mode=0o600)
+    os.replace(replacement,path)
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN$'):
+        store_subject._discard_uncommitted_new(path,identity)
+    assert path.exists() and path.stat().st_size==0
 
 
 @pytest.mark.parametrize('callback_error',(False,True))

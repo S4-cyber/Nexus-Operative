@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.87 fresh receipt-store rollback cleanup
+
+A failed first provider/read-review receipt transaction is accepted locally only when rollback leaves either the exact previously absent state or fixed cleanup uncertainty. Removal is restricted to the captured newly created regular, single-link, empty pathname with no SQLite sidecars. A replacement path must be preserved and rejected. Active Windows transaction sampling must normalize only pathname/open-handle ctime precision while retaining all portable metadata and byte checks. Mandatory evidence requires restored absence followed by one exact successful retry receipt; no automatic retry is performed.
+
+Exact-source v0.340.86 commit `155f06513afd0a57580e8d22226f5ce099900341` passed security/Gitleaks 41240243791 and every research regression/browser/evidence job in run 41240243772. Windows run 41240243822 failed five receipt-store tests before packaging due to pathname/open-handle ctime differences; v0.340.87 contains the targeted fix, but fresh Windows execution remains mandatory. Fresh v0.340.87 workflows and actual authorized paper-account/private-volume acceptance remain required. This is sampled local rollback cleanup, not physical durability, atomic writer exclusion, provider identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,739 tests with one expected skip and one existing warning; the receipt/release/evidence/version/installer focus passed 264. Sixteen profiles verified against 395 exact source files / `e6b6dc02c23d9c7f4a056b37736f3f7c6ba36e9f074f07ff70d6289dc97e1931`. Evidence SHA-256 is `331a21c44d56314dbda00b90b3ee1665f5a6f75b3415c6cfacaf37ddd3e620a8`; wheel SHA-256 is `cdc9b7ec8273ee19c941048a4b3cd3551f8eb97fd598ba0c34637e5c7fbe15ce`. Compilation, dependencies, roadmap, Portal syntax, controller checks, the 798-path artifact audit and targeted credential scan passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.86 retained-review receipt acknowledgement replay
 
 Durable provider/read-review receipt retention is accepted locally only when two identical cold store receipts prove the exact expected scope, retained receipt, predecessor, sequence and resulting head. The write return is never authoritative. An exact committed lost acknowledgement may be replayed once; fabricated success or any receipt-store identity/fingerprint change during callbacks, exception unwind or return finalization must produce fixed durable-state or file uncertainty.

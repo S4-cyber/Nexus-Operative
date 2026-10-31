@@ -507,6 +507,32 @@ def fixture_report():
                 'PAPER_PROVIDER_READ_REVIEW_DURABLE_STATE_CHANGED')
         finally:
             PaperProviderReadReviewStore.append=original_append
+        fresh_gate,fresh_budget=build_pair(root/'fresh-retained-retry')
+        fresh_store=root/'fresh-retained-retry'/'receipt.sqlite3'
+        fresh_calls=0
+        def revoke_fresh_transaction():
+            nonlocal fresh_calls
+            fresh_calls+=1
+            return fresh_calls!=2
+        fresh_failure_denied=False
+        try:
+            retain_review(fresh_store,fresh_budget,[fresh_gate],
+                expected_provider_head=fresh_budget.inspect()['head_sha256'],
+                expected_account_heads={fresh_gate.account_digest:
+                    fresh_gate.inspect()['head_sha256']},
+                precommit_check=revoke_fresh_transaction)
+        except ValueError as error:
+            fresh_failure_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_INPUT_REVOKED')
+        fresh_absence_restored=(not fresh_store.exists() and all(
+            not Path(str(fresh_store)+suffix).exists() for suffix in
+            ('-journal','-wal','-shm')))
+        fresh_receipt=retain_review(fresh_store,fresh_budget,[fresh_gate],
+            expected_provider_head=fresh_budget.inspect()['head_sha256'],
+            expected_account_heads={fresh_gate.account_digest:
+                fresh_gate.inspect()['head_sha256']})
+        fresh_replay=PaperProviderReadReviewStore(
+            fresh_store,fresh_budget,[fresh_gate]).inspect()
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -570,6 +596,13 @@ def fixture_report():
                 ack_receipt['receipt_sha256']==
                     ack_replay['receipts'][0]['receipt_sha256'] and
                 fabricated_denied and not fabricated_store.exists()),
+            retained_receipt_fresh_failure_recoverable=(
+                fresh_calls==2 and fresh_failure_denied and
+                fresh_absence_restored and
+                fresh_replay['retained_receipts']==1 and
+                fresh_receipt['head_sha256']==fresh_replay['head_sha256'] and
+                fresh_receipt['receipt_sha256']==
+                    fresh_replay['receipts'][0]['receipt_sha256']),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

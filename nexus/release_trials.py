@@ -1007,6 +1007,7 @@ def _validate(profile, result):
              'request_file_fingerprint_rechecked',
              'request_replay_fingerprint_rechecked_after_load',
              'request_proof_final_before_budget_commit',
+             'request_proof_rechecked_after_budget_receipts',
              'recovery_acknowledgement_cold_replayed',
              'post_budget_file_identity_rechecked',
              'post_budget_file_fingerprint_rechecked',

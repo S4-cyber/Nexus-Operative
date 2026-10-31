@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.70 post-recovery request-proof bracket
+
+Resolved-unknown POST-budget recovery is accepted only when the exact locked request proof still replays after both stable provider-budget recovery receipts. Request-writer exclusion spans the whole cross-journal acknowledgement window. Post-commit request content, metadata or head mutation returns fixed locked-snapshot uncertainty; the conservative recovery may remain committed, but no success, re-arm, retry, provider access or routing authority follows.
+
+Exact-source v0.340.69 commit `0280562c7afd8b6747d85a14e4f38f458cf2299e` passed security 41168447591, research/browser/evidence 41168447618 and Windows EXE/installer/reinstall/uninstall 41168447560. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local prepublication validation passed 4,684 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 232. Sixteen offline profiles and saved evidence verified against 395 exact source files / `e2817f2b4e95640fcde4a6b83e37945e9de26dd6d05ffaa77286b7d57b424bbe`. Evidence SHA-256 is `55ee1ee10f62ada38d2d4d270fbaca588c3b491018783ca668e508e652be6414`; wheel SHA-256 is `bb1026e55afbb8f600540ce94553050e21cec340887fe68fc98b38701910c7de`. Compilation, dependency, roadmap, controller and Portal syntax checks passed. Local Playwright and Gitleaks are unavailable; these local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.69 recovery store-fingerprint bracket
 
 The resolved-unknown POST-budget recovery is accepted only while the bounded provider-budget bytes and metadata remain stable throughout source replay and immediately before the guarded write, and while the newly committed fingerprint remains stable across both acknowledgement receipts. Same-inode mutation yields fixed file-set uncertainty; no mutated content is treated as the just-committed recovery. Request non-resubmission, full cooldown and zero provider access remain unchanged.

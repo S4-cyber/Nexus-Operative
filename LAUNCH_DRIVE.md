@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.70 post-recovery request-proof bracket
+
+Resolved-unknown paper POST recovery now keeps request-writer exclusion through both provider-budget acknowledgement receipts and performs one final exact locked request replay before returning success. Post-commit request content, metadata or head mutation is fixed uncertainty after the conservative recovery commit and cannot re-arm the original request, grant a retry or perform provider IO.
+
+Exact-source v0.340.69 commit `0280562c7afd8b6747d85a14e4f38f458cf2299e` passed security 41168447591, research/browser/evidence 41168447618 and Windows EXE/installer/reinstall/uninstall 41168447560. Fresh v0.340.70 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local cross-journal bracket does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,684 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 232. Sixteen offline profiles and saved evidence verified against 395 source files / `e2817f2b4e95640fcde4a6b83e37945e9de26dd6d05ffaa77286b7d57b424bbe`. Evidence SHA-256 is `55ee1ee10f62ada38d2d4d270fbaca588c3b491018783ca668e508e652be6414`; wheel SHA-256 is `bb1026e55afbb8f600540ce94553050e21cec340887fe68fc98b38701910c7de`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.69 recovery store-fingerprint bracket
 
 Resolved-unknown paper POST recovery now requires a stable bounded provider-budget fingerprint across source replay and immediately before recovery mutation, then requires the newly committed fingerprint to remain unchanged through both durable receipt reads. Same-inode byte or metadata mutation is fixed uncertainty and cannot re-arm the original request, grant a retry or perform provider IO.

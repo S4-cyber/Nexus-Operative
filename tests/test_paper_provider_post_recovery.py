@@ -59,6 +59,7 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['request_file_fingerprint_rechecked']
     assert result['request_replay_fingerprint_rechecked_after_load']
     assert result['request_proof_final_before_budget_commit']
+    assert result['request_proof_rechecked_after_budget_receipts']
     assert result['recovery_acknowledgement_cold_replayed']
     assert result['post_budget_file_identity_rechecked']
     assert result['post_budget_file_fingerprint_rechecked']
@@ -181,6 +182,32 @@ def test_post_budget_same_file_mutation_after_commit_is_fixed_uncertainty(
     state=budget.inspect()
     assert calls==1 and state['review_required'] is True
     assert state['recoveries']==0 and len(budget.history())==1
+
+
+def test_request_mutation_after_budget_receipts_is_fixed_uncertainty(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    request_before=journal.path.read_bytes()
+    original=PaperProviderPostBudget.recovery_receipt;calls=0
+    original_mtime=journal.path.stat().st_mtime_ns
+    def read_then_mutate_request(self):
+        nonlocal calls
+        receipt=original(self);calls+=1
+        if calls==2:
+            os.utime(journal.path,
+                ns=(journal.path.stat().st_atime_ns,
+                    original_mtime+1_000_000_000))
+        return receipt
+    monkeypatch.setattr(PaperProviderPostBudget,'recovery_receipt',
+                        read_then_mutate_request)
+    with pytest.raises(ValueError,
+            match='BROKER_JOURNAL_LOCKED_SNAPSHOT_FILE_SET_CHANGED'):
+        recover(journal,budget,request_head)
+    state=budget.inspect()
+    assert calls==2 and state['review_required'] is False
+    assert state['recoveries']==1 and len(budget.recovery_history())==1
+    assert journal.path.read_bytes()==request_before
+    assert journal.path.stat().st_mtime_ns!=original_mtime
 
 
 def test_recovery_clock_is_retained_without_shortening_existing_cooldown(tmp_path):
@@ -378,3 +405,4 @@ def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monke
     assert result['request_file_fingerprint_rechecked']
     assert result['request_replay_fingerprint_rechecked_after_load']
     assert result['request_proof_final_before_budget_commit']
+    assert result['request_proof_rechecked_after_budget_receipts']

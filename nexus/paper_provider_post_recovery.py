@@ -116,11 +116,19 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
                 require_file_fingerprints((post_resolved,),
                     (MAX_DATABASE_BYTES,), committed_fingerprint,
                     'PAPER_PROVIDER_POST_RECOVERY_')
+                # The budget recovery and both of its cold acknowledgements
+                # are one cross-journal proof window.  Re-read the exact
+                # request proof after the acknowledgements so a non-
+                # cooperating same-inode writer cannot alter the request
+                # journal after the transaction's final resolution check and
+                # still receive a successful command result.
+                final_request_proof = check()
                 account_digest = hashlib.sha256(
                     expected_account_id.encode()).hexdigest()
                 client_digest = hashlib.sha256(
                     client_order_id.encode()).hexdigest()
-                stable = (receipt == receipt_again and
+                stable = (final_request_proof == expected and
+                    receipt == receipt_again and
                     receipt['head_sha256'] ==
                         receipt['recovery_head_sha256'] and
                     receipt['recoveries'] == before['recoveries'] + 1 and
@@ -150,7 +158,8 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
                         str(receipt_error).startswith((
                             'PAPER_PROVIDER_POST_RECOVERY_FILE_IDENTITY_',
                             'PAPER_PROVIDER_POST_RECOVERY_FILE_SET_',
-                            'PAPER_PROVIDER_POST_RECOVERY_SQLITE_SIDECAR_'))):
+                            'PAPER_PROVIDER_POST_RECOVERY_SQLITE_SIDECAR_',
+                            'BROKER_JOURNAL_LOCKED_SNAPSHOT_'))):
                     raise receipt_error
                 if (type(write_error) is ValueError and
                         str(write_error).startswith((
@@ -183,7 +192,8 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
                 request_path_identity_rechecked=True,
                 request_file_fingerprint_rechecked=True,
                 request_replay_fingerprint_rechecked_after_load=True,
-                request_proof_final_before_budget_commit=True)
+                request_proof_final_before_budget_commit=True,
+                request_proof_rechecked_after_budget_receipts=True)
 
 
 def fixture_report():
@@ -256,6 +266,8 @@ def fixture_report():
                 result['request_replay_fingerprint_rechecked_after_load'] is True,
             request_proof_final_before_budget_commit=
                 result['request_proof_final_before_budget_commit'] is True,
+            request_proof_rechecked_after_budget_receipts=
+                result['request_proof_rechecked_after_budget_receipts'] is True,
             recovery_acknowledgement_cold_replayed=
                 result['recovery_acknowledgement_cold_replayed'] is True and
                 lost_acknowledgements == 1 and after['recoveries'] == 1,

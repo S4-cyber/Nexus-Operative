@@ -130,16 +130,19 @@ def _discard_uncommitted_new(path,identity):
         _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
 
 
-def _sync_committed_store(path,identity,*,new):
+def _sync_committed_store(path,identity,fingerprint,*,new):
     """Explicitly flush one committed main file and its new POSIX entry.
 
     SQLite ``synchronous=FULL`` remains the transaction durability policy.
     This additional descriptor boundary makes the caller observe a failed
-    file flush instead of accepting a merely replayable commit.  A new POSIX
-    pathname also receives the available parent-directory fsync.  Python has
-    no portable Windows directory-fsync API, so Windows retains the explicit
-    writable main-file flush and the existing installer/native acceptance
-    gate.  Any uncertainty preserves the committed store and fails closed.
+    file flush instead of accepting a merely replayable commit.  The exact
+    post-commit bounded fingerprint is fixed before the flush and rechecked
+    around both the file and directory boundaries, so a same-identity change
+    cannot become the new accepted baseline.  A new POSIX pathname also
+    receives the available parent-directory fsync.  Python has no portable
+    Windows directory-fsync API, so Windows retains the explicit writable
+    main-file flush and the existing installer/native acceptance gate.  Any
+    uncertainty preserves the committed store and fails closed.
     """
     try:
         if (type(new) is not bool or type(identity) is not tuple or
@@ -149,6 +152,10 @@ def _sync_committed_store(path,identity,*,new):
         path=Path(path);resolved=path.resolve()
         expected_path,expected_device,expected_inode=identity[0]
         if str(resolved)!=expected_path:raise RuntimeError
+        require_file_identities((path,),identity,
+            'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,
+            'PAPER_PROVIDER_READ_REVIEW_STORE_')
         flags=(os.O_RDWR|getattr(os,'O_BINARY',0)|
             getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
         descriptor=os.open(resolved,flags)
@@ -168,6 +175,8 @@ def _sync_committed_store(path,identity,*,new):
             os.close(descriptor)
         require_file_identities((path,),identity,
             'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,
+            'PAPER_PROVIDER_READ_REVIEW_STORE_')
         if new and os.name!='nt':
             directory_flags=(os.O_RDONLY|getattr(os,'O_DIRECTORY',0)|
                 getattr(os,'O_CLOEXEC',0))
@@ -179,6 +188,8 @@ def _sync_committed_store(path,identity,*,new):
             finally:
                 os.close(directory_descriptor)
             require_file_identities((path,),identity,
+                'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,
                 'PAPER_PROVIDER_READ_REVIEW_STORE_')
     except BaseException:
         _fail('COMMIT_DURABILITY_UNCERTAIN')
@@ -369,9 +380,10 @@ class PaperProviderReadReviewStore:
                 committed=True
                 committed_identity=capture_file_identities((self.path,),
                     'PAPER_PROVIDER_READ_REVIEW_STORE_')
-                _sync_committed_store(self.path,committed_identity,new=new)
                 committed_fingerprint=capture_file_fingerprints((self.path,),
                     (MAX_DATABASE_BYTES,),'PAPER_PROVIDER_READ_REVIEW_STORE_')
+                _sync_committed_store(self.path,committed_identity,
+                    committed_fingerprint,new=new)
                 with guard_file_set_finalization((self.path,),
                         (MAX_DATABASE_BYTES,),committed_identity,
                         committed_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_'):

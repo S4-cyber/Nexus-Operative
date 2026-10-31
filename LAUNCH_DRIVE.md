@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.90 retained receipt committed-fingerprint barrier
+
+Provider/read-review receipt retention now fixes the exact bounded committed-store fingerprint before explicit file sync and requires that same fingerprint before and after the main-file barrier plus any new POSIX parent-directory barrier. A same-identity byte or metadata change preserves the already committed receipt, fails closed with a fixed code and allows only an operator-directed exact-head duplicate replay. Python exposes no portable Windows directory-fsync API, so native Windows path persistence and physical power-loss testing remain independent gates.
+
+Exact-source v0.340.89 commit `08708804b75189830296f9665ebe884dbd61bc02` passed security/history/Gitleaks 41248749103, all research evidence/browser/regression jobs in 41248749109, and complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41248749150. Fresh v0.340.90 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local integrity evidence does not close an external gate or predict profit.
+
+Local validation passed 4,752 tests with one expected skip and one existing warning; the affected receipt/release modules passed 160. Sixteen profiles verified against 395 source files / `a95d88feecd288b3eae3b2dd316962a32f8ff36cfa5f9dd99e7a07bc1cb23392`. Evidence SHA-256 is `397bb5587ab3666b74565589bd9bfa24aa87a7c43a7a6e087c792c22ff829243`; wheel SHA-256 is `0654fc79d0a80c73fcb283b54e719d8f799da77e800c76e3ec55ea8a456e842e`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks and the 802-path proposed-snapshot artifact audit passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.89 retained receipt post-commit durability barrier
 
 Provider/read-review receipt retention now adds an explicit observation boundary after SQLite `synchronous=FULL` commits. The exact writable main file is flushed and revalidated; new POSIX stores also flush the parent directory. A flush uncertainty preserves the already committed receipt, fails closed with a fixed code and allows only an operator-directed exact-head duplicate replay. Python exposes no portable Windows directory-fsync API, so native Windows persistence and physical power-loss testing remain independent gates.

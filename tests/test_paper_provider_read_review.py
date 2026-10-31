@@ -605,6 +605,40 @@ def test_receipt_parent_flush_uncertainty_retains_exact_commit_for_retry(
     assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
 
 
+def test_receipt_flush_rejects_same_identity_change_before_fingerprint_recheck(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';fsynced=False
+    changed=False;original_fsync=store_subject.os.fsync
+    original_require=store_subject.require_file_identities
+    def fsync(descriptor):
+        nonlocal fsynced
+        result=original_fsync(descriptor)
+        if stat.S_ISREG(os.fstat(descriptor).st_mode):fsynced=True
+        return result
+    def require(*args,**kwargs):
+        nonlocal changed
+        result=original_require(*args,**kwargs)
+        if fsynced and not changed:
+            changed=True;state=path.stat()
+            os.utime(path,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+        return result
+    monkeypatch.setattr(store_subject.os,'fsync',fsync)
+    monkeypatch.setattr(store_subject,'require_file_identities',require)
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN$'):
+        subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    replay=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert changed and replay['retained_receipts']==1
+    monkeypatch.setattr(store_subject.os,'fsync',original_fsync)
+    monkeypatch.setattr(store_subject,'require_file_identities',original_require)
+    retry=subject.retain_review(path,budget,[gate],
+        expected_store_head=replay['head_sha256'],**heads(gate,budget))
+    final=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert retry['duplicate'] is True and final['retained_receipts']==1
+    assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
+
+
 @pytest.mark.parametrize('callback_error',(False,True))
 def test_receipt_store_fingerprint_is_rechecked_after_commit(
         tmp_path,callback_error):

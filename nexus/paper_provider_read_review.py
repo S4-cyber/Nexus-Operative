@@ -8,6 +8,7 @@ from collections import Counter
 import os
 from pathlib import Path
 import re
+import stat
 
 from nexus.alpaca_paper_contract import sha
 from nexus.paper_provider_read_budget import (
@@ -606,6 +607,50 @@ def fixture_report():
             expected_store_head=durability_replay['head_sha256'])
         durability_final=PaperProviderReadReviewStore(
             durability_store,durability_budget,[durability_gate]).inspect()
+        fingerprint_gate,fingerprint_budget=build_pair(
+            root/'retained-commit-fingerprint')
+        fingerprint_store=(root/'retained-commit-fingerprint'/'receipt.sqlite3')
+        original_require=store_module.require_file_identities
+        fingerprint_fsynced=False;fingerprint_changes=0
+        def observe_fingerprint_flush(descriptor):
+            nonlocal fingerprint_fsynced
+            result=original_fsync(descriptor)
+            if stat.S_ISREG(os.fstat(descriptor).st_mode):
+                fingerprint_fsynced=True
+            return result
+        def change_after_identity(*args,**kwargs):
+            nonlocal fingerprint_changes
+            result=original_require(*args,**kwargs)
+            if fingerprint_fsynced and fingerprint_changes==0:
+                fingerprint_changes+=1;state=fingerprint_store.stat()
+                os.utime(fingerprint_store,ns=(state.st_atime_ns,
+                    state.st_mtime_ns+1_000_000_000))
+            return result
+        fingerprint_failure_denied=False
+        store_module.os.fsync=observe_fingerprint_flush
+        store_module.require_file_identities=change_after_identity
+        try:
+            retain_review(fingerprint_store,fingerprint_budget,
+                [fingerprint_gate],expected_provider_head=
+                    fingerprint_budget.inspect()['head_sha256'],
+                expected_account_heads={fingerprint_gate.account_digest:
+                    fingerprint_gate.inspect()['head_sha256']})
+        except ValueError as error:
+            fingerprint_failure_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN')
+        finally:
+            store_module.os.fsync=original_fsync
+            store_module.require_file_identities=original_require
+        fingerprint_replay=PaperProviderReadReviewStore(
+            fingerprint_store,fingerprint_budget,[fingerprint_gate]).inspect()
+        fingerprint_receipt=retain_review(fingerprint_store,
+            fingerprint_budget,[fingerprint_gate],expected_provider_head=
+                fingerprint_budget.inspect()['head_sha256'],
+            expected_account_heads={fingerprint_gate.account_digest:
+                fingerprint_gate.inspect()['head_sha256']},
+            expected_store_head=fingerprint_replay['head_sha256'])
+        fingerprint_final=PaperProviderReadReviewStore(
+            fingerprint_store,fingerprint_budget,[fingerprint_gate]).inspect()
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -693,6 +738,14 @@ def fixture_report():
                 durability_receipt['head_sha256']==
                     durability_replay['head_sha256']==
                     durability_final['head_sha256']),
+            retained_receipt_commit_fingerprint_change_recoverable=(
+                fingerprint_changes==1 and fingerprint_failure_denied and
+                fingerprint_replay['retained_receipts']==1 and
+                fingerprint_receipt['duplicate'] is True and
+                fingerprint_final['retained_receipts']==1 and
+                fingerprint_receipt['head_sha256']==
+                    fingerprint_replay['head_sha256']==
+                    fingerprint_final['head_sha256']),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

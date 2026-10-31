@@ -533,6 +533,46 @@ def fixture_report():
                 fresh_gate.inspect()['head_sha256']})
         fresh_replay=PaperProviderReadReviewStore(
             fresh_store,fresh_budget,[fresh_gate]).inspect()
+        initialization_gate,initialization_budget=build_pair(
+            root/'fresh-retained-initialization')
+        initialization_store=(root/'fresh-retained-initialization'/
+            'receipt.sqlite3')
+        from nexus import paper_provider_read_review_store as store_module
+        original_connect=store_module.sqlite3.connect
+        initialization_target=initialization_store.resolve().as_uri()
+        initialization_failures=0
+        def fail_initialization_connect(*args,**kwargs):
+            nonlocal initialization_failures
+            if (str(args[0]).startswith(initialization_target) and
+                    initialization_failures==0):
+                initialization_failures+=1
+                raise RuntimeError('fixture private initialization failure')
+            return original_connect(*args,**kwargs)
+        initialization_failure_denied=False
+        store_module.sqlite3.connect=fail_initialization_connect
+        try:
+            retain_review(initialization_store,initialization_budget,
+                [initialization_gate],expected_provider_head=
+                    initialization_budget.inspect()['head_sha256'],
+                expected_account_heads={initialization_gate.account_digest:
+                    initialization_gate.inspect()['head_sha256']})
+        except ValueError as error:
+            initialization_failure_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_DURABLE_STATE_CHANGED')
+        finally:
+            store_module.sqlite3.connect=original_connect
+        initialization_absence_restored=(not initialization_store.exists() and
+            all(not Path(str(initialization_store)+suffix).exists() for suffix
+                in ('-journal','-wal','-shm')))
+        initialization_receipt=retain_review(initialization_store,
+            initialization_budget,[initialization_gate],
+            expected_provider_head=
+                initialization_budget.inspect()['head_sha256'],
+            expected_account_heads={initialization_gate.account_digest:
+                initialization_gate.inspect()['head_sha256']})
+        initialization_replay=PaperProviderReadReviewStore(
+            initialization_store,initialization_budget,
+            [initialization_gate]).inspect()
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -603,6 +643,15 @@ def fixture_report():
                 fresh_receipt['head_sha256']==fresh_replay['head_sha256'] and
                 fresh_receipt['receipt_sha256']==
                     fresh_replay['receipts'][0]['receipt_sha256']),
+            retained_receipt_initialization_failure_recoverable=(
+                initialization_failures==1 and
+                initialization_failure_denied and
+                initialization_absence_restored and
+                initialization_replay['retained_receipts']==1 and
+                initialization_receipt['head_sha256']==
+                    initialization_replay['head_sha256'] and
+                initialization_receipt['receipt_sha256']==
+                    initialization_replay['receipts'][0]['receipt_sha256']),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.88 fresh receipt-store initialization rollback
+
+Fresh provider/read-review receipt initialization now captures its exclusive pathname identity before SQLite opens. A connection or setup failure closes SQLite and restores absent state only for that exact empty, regular, single-link, sidecar-free file. Eight direct failure phases and mandatory connection-failure release evidence require one explicit exact retry; no retry happens automatically and ambiguity remains blocked.
+
+Exact-source v0.340.87 commit `c9247a451c2976c8617705c16a978c796035ffa3` passed security/Gitleaks 41244399828 plus browser-help and saved-evidence jobs in research run 41244399820. Complete regression and Windows run 41244399876 remained active at the checkpoint and are not claimed as passed. Fresh v0.340.88 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local initialization recovery does not close an external gate or predict profit.
+
+Local validation passed 4,748 tests with one expected skip and one existing warning; the receipt/release/evidence/version/installer focus passed 258. Sixteen profiles verified against 395 source files / `880913eaf1ca70b9e69b5dd0187f85a2ed2b7e724e026e65803ce451b0050fc7`. Evidence SHA-256 is `bca0de3f546b6dac92ac1e79eac46dc59ea21e7864fc451fddd6b4f286f6cbfa`; wheel SHA-256 is `d6ffacba4e88d8af19e0d580c794be12b56aacefe274941122b5bd50699dee48`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.87 fresh receipt-store rollback cleanup
 
 A failed first provider/read-review receipt append now returns the new SQLite pathname to absent state after rollback, allowing the same exact operator-directed review to be retried. Cleanup is deliberately narrow: only the captured new regular, single-link, zero-byte file with no rollback/WAL/shared-memory sidecar can be removed. Any replacement, bytes, link, sidecar or identity uncertainty remains blocked and retained. Active sampling also uses the portable Windows pathname/open-handle metadata intersection instead of treating ctime precision differences as mutation.

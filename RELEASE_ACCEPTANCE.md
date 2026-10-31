@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.88 fresh receipt-store initialization rollback
+
+A failed first provider/read-review receipt initialization is locally acceptable only when the exact exclusively created identity returns to absent state or cleanup remains fixed uncertainty. Connection and every SQLite setup boundary must close the handle before removal; only a regular, single-link, zero-byte main file with no journal/WAL/shared-memory sidecar may be deleted. Mandatory evidence requires the connection-failure refusal, restored absence and one explicit successful retry. There is no automatic retry.
+
+Exact-source v0.340.87 commit `c9247a451c2976c8617705c16a978c796035ffa3` passed security/Gitleaks 41244399828 plus browser-help and saved-evidence jobs in research run 41244399820. Complete regression and Windows run 41244399876 remained active at the checkpoint and are not claimed as passed. Fresh v0.340.88 workflows and actual authorized paper-account/private-volume acceptance remain required. This is sampled local initialization cleanup, not physical durability, atomic writer exclusion, provider identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,748 tests with one expected skip and one existing warning; the receipt/release/evidence/version/installer focus passed 258. Sixteen profiles verified against 395 exact source files / `880913eaf1ca70b9e69b5dd0187f85a2ed2b7e724e026e65803ce451b0050fc7`. Evidence SHA-256 is `bca0de3f546b6dac92ac1e79eac46dc59ea21e7864fc451fddd6b4f286f6cbfa`; wheel SHA-256 is `d6ffacba4e88d8af19e0d580c794be12b56aacefe274941122b5bd50699dee48`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.87 fresh receipt-store rollback cleanup
 
 A failed first provider/read-review receipt transaction is accepted locally only when rollback leaves either the exact previously absent state or fixed cleanup uncertainty. Removal is restricted to the captured newly created regular, single-link, empty pathname with no SQLite sidecars. A replacement path must be preserved and rejected. Active Windows transaction sampling must normalize only pathname/open-handle ctime precision while retaining all portable metadata and byte checks. Mandatory evidence requires restored absence followed by one exact successful retry receipt; no automatic retry is performed.

@@ -146,16 +146,24 @@ class PaperProviderReadReviewStore:
         check_existing(self.path,MAX_DATABASE_BYTES,'PAPER_PROVIDER_READ_REVIEW_STORE_')
 
     def _connect(self,write=False):
-        self._check();new=False
-        if write and not self.path.exists():
-            self.path.parent.mkdir(parents=True,exist_ok=True)
-            try:
-                fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(fd);new=True
-            except FileExistsError:pass
-            self._check()
-        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),
-            uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
+        self._check();new=False;created_identity=None;db=None
         try:
+            if write and not self.path.exists():
+                self.path.parent.mkdir(parents=True,exist_ok=True)
+                try:
+                    fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+                except FileExistsError:pass
+                else:
+                    new=True
+                    try:
+                        opened=os.fstat(fd)
+                        created_identity=((str(self.path.resolve()),
+                            opened.st_dev,opened.st_ino),)
+                    finally:os.close(fd)
+                self._check()
+            db=sqlite3.connect(self.path.resolve().as_uri()+
+                ('?mode=rw' if write else '?mode=ro'),uri=True,
+                timeout=DB_BUSY_TIMEOUT_MS/1000)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')
@@ -164,10 +172,22 @@ class PaperProviderReadReviewStore:
                 if new:db.execute('CREATE TABLE records (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
             return db,new
         except sqlite3.OperationalError as error:
-            db.close()
+            if db is not None:
+                try:db.close()
+                except BaseException:
+                    if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new:_discard_uncommitted_new(self.path,created_identity)
             if _database_busy(error):_fail('DATABASE_BUSY')
             raise
-        except BaseException:db.close();raise
+        except BaseException:
+            if db is not None:
+                try:db.close()
+                except BaseException:
+                    if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new:_discard_uncommitted_new(self.path,created_identity)
+            raise
 
     @staticmethod
     def _insert(db,seq,body,previous):

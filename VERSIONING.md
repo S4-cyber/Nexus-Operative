@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.83 (pre-release).** This build requires a multi-account provider/read review to detect peer-journal mutation even when the account reader that triggered it raises its own exception. The outer file-set refusal takes precedence, no partial consistency returns and journal bytes remain unchanged. It adds no Portal route, saved credential, provider IO, recovery, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.84 (pre-release).** This build requires every account in a multi-account provider/read review to retain all five read purposes independently. A complete peer cannot mask a completed subset or earn partial matched-session credit. It adds no Portal route, saved credential, provider IO, recovery, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.84 per-account purpose completeness
+
+The provider/account read-history fixture now composes one five-purpose account with a peer that retains only a completed inventory session. Although aggregate coverage still contains all five purposes and every retained row matches, the review must report `FIVE_PURPOSE_HISTORY_INCOMPLETE`, remain inconsistent and return zero matched sessions. Direct tests and release validation reject evidence that omits this account-scoped invariant.
+
+Exact-source v0.340.83 commit `c9ab888dd61a94069eeb7ce4fb1772166750063b` passed security/Gitleaks 41224869463, all research regression/browser/evidence jobs in 41224869533 and Windows EXE/installer/reinstall/uninstall/distribution 41224869536. Fresh v0.340.84 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not provider source, broker-wide coordination, native-owner Windows acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+Local validation passed 4,727 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 254. Sixteen offline profiles verified 395 source files / `654d8c5529463a1bbe087c41798cc7e53e8d7e776cb5fa608cb91f68f157455a`. Evidence SHA-256 is `169aaeb130c40fc23489d091649452ce3275e0a1bf7ef25f6297efda5d3693ed`; wheel SHA-256 is `583b7b1184c87fc6eb51c8345331e4d6da60ccb93951c400411ca38fbfaaedbf`. Compilation, dependencies, roadmap and fourteen controller checks plus Portal syntax passed. Release approval and trading permission remain false.
 
 ## v0.340.83 cross-account exceptional-exit integrity
 

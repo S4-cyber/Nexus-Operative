@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.84 per-account purpose completeness
+
+Exact-head multi-account provider/read reconciliation now requires every selected account independently to retain all five read purposes. A complete peer cannot mask another account with only a completed subset; the whole review remains inconsistent, reports zero matched sessions and preserves every journal byte.
+
+Exact-source v0.340.83 commit `c9ab888dd61a94069eeb7ce4fb1772166750063b` passed security/Gitleaks 41224869463, all research regression/browser/evidence jobs in 41224869533 and Windows EXE/installer/reinstall/uninstall/distribution 41224869536. Fresh v0.340.84 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local account-completeness evidence does not close an external gate or predict profit.
+
+Local validation passed 4,727 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 254. Sixteen profiles verified against 395 source files / `654d8c5529463a1bbe087c41798cc7e53e8d7e776cb5fa608cb91f68f157455a`. Evidence SHA-256 is `169aaeb130c40fc23489d091649452ce3275e0a1bf7ef25f6297efda5d3693ed`; wheel SHA-256 is `583b7b1184c87fc6eb51c8345331e4d6da60ccb93951c400411ca38fbfaaedbf`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.83 cross-account exceptional-exit integrity
 
 Exact-head multi-account provider/read reconciliation now carries mandatory evidence that an account semantic reader cannot change a selected peer journal and hide the mutation behind its own exception. The outer composition rechecks the complete file set, reports the fixed file-set refusal, returns no partial consistency and preserves every journal byte.

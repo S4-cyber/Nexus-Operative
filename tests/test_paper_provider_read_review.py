@@ -38,6 +38,34 @@ def heads(gate,budget):
 def files(root):return {str(path.relative_to(root)):path.read_bytes() for path in root.rglob('*') if path.is_file()}
 
 
+def add_complete_peer(tmp_path,budget):
+    gate,_=paper_read_review._fixture(tmp_path/'other',provider_budget=budget,
+        account_id=OTHER,epoch=1792370000)
+    return gate
+
+
+def add_inventory_peer(tmp_path,budget):
+    other=PaperReadPacing(tmp_path/'other.sqlite3',OTHER)
+    kinds=list(OPERATION_PATTERNS['ACCOUNT_INVENTORY'][0])
+    receipt=dict(operation='ACCOUNT_INVENTORY',request_kinds=kinds,
+        request_sha256=[sha(dict(request=i)) for i in range(len(kinds))],
+        response_sha256=[sha(dict(response=i)) for i in range(len(kinds))])
+    with other.ownership() as owner:
+        token=other.begin(admission=lambda:2000,ownership=owner,
+            operation='ACCOUNT_INVENTORY')
+        other.finish(token,admission=lambda:2001,status_code=200,
+            ownership=owner,receipt=receipt)
+    record=other.operation_history()[0]
+    with budget.ownership() as owner:
+        token=budget.begin(account_id=OTHER,
+            account_before_head_sha256=record['before_head_sha256'],
+            operation=record['operation'],admission=lambda:1400,ownership=owner)
+        budget.finish(token,account_after_head_sha256=record['after_head_sha256'],
+            actual_gets=len(kinds),admission=lambda:1401,ownership=owner,
+            status_code=200)
+    return other
+
+
 def test_complete_provider_account_history_matches_without_authority_or_writes(tmp_path):
     gate,budget=build(tmp_path);before=files(tmp_path)
     result=subject.review(budget,[gate],**heads(gate,budget))
@@ -186,45 +214,16 @@ def test_store_objects_cannot_retarget_during_provider_history(
 
 
 def test_one_provider_history_can_exactly_compose_multiple_account_journals(tmp_path):
-    gate,budget=build(tmp_path);other=PaperReadPacing(tmp_path/'other.sqlite3',OTHER)
-    kinds=list(OPERATION_PATTERNS['ACCOUNT_INVENTORY'][0])
-    receipt=dict(operation='ACCOUNT_INVENTORY',request_kinds=kinds,
-        request_sha256=[sha(dict(request=i)) for i in range(len(kinds))],
-        response_sha256=[sha(dict(response=i)) for i in range(len(kinds))])
-    with other.ownership() as owner:
-        token=other.begin(admission=lambda:2000,ownership=owner,operation='ACCOUNT_INVENTORY')
-        other.finish(token,admission=lambda:2001,status_code=200,ownership=owner,receipt=receipt)
-    record=other.operation_history()[0]
-    with budget.ownership() as owner:
-        token=budget.begin(account_id=OTHER,account_before_head_sha256=record['before_head_sha256'],
-            operation=record['operation'],admission=lambda:1400,ownership=owner)
-        budget.finish(token,account_after_head_sha256=record['after_head_sha256'],actual_gets=len(kinds),
-            admission=lambda:1401,ownership=owner,status_code=200)
+    gate,budget=build(tmp_path);other=add_complete_peer(tmp_path,budget)
     result=subject.review(budget,[gate,other],expected_provider_head=budget.inspect()['head_sha256'],
         expected_account_heads={gate.account_digest:gate.inspect()['head_sha256'],other.account_digest:other.inspect()['head_sha256']})
     assert result['local_provider_account_history_consistent'] and result['account_journals']==2
-    assert result['matched_sessions']==6 and result['operation_counts']['ACCOUNT_INVENTORY']==2
+    assert result['matched_sessions']==10
+    assert all(result['operation_counts'][operation]==2 for operation in OPERATION_PATTERNS)
 
 
 def test_pending_account_cannot_hide_behind_complete_peer_history(tmp_path):
-    gate,budget=build(tmp_path);other=PaperReadPacing(tmp_path/'other.sqlite3',OTHER)
-    kinds=list(OPERATION_PATTERNS['ACCOUNT_INVENTORY'][0])
-    receipt=dict(operation='ACCOUNT_INVENTORY',request_kinds=kinds,
-        request_sha256=[sha(dict(request=i)) for i in range(len(kinds))],
-        response_sha256=[sha(dict(response=i)) for i in range(len(kinds))])
-    with other.ownership() as owner:
-        token=other.begin(admission=lambda:2000,ownership=owner,
-            operation='ACCOUNT_INVENTORY')
-        other.finish(token,admission=lambda:2001,status_code=200,
-            ownership=owner,receipt=receipt)
-    record=other.operation_history()[0]
-    with budget.ownership() as owner:
-        token=budget.begin(account_id=OTHER,
-            account_before_head_sha256=record['before_head_sha256'],
-            operation=record['operation'],admission=lambda:1400,ownership=owner)
-        budget.finish(token,account_after_head_sha256=record['after_head_sha256'],
-            actual_gets=len(kinds),admission=lambda:1401,ownership=owner,
-            status_code=200)
+    gate,budget=build(tmp_path);other=add_complete_peer(tmp_path,budget)
     pending_at=max(gate.inspect()['next_allowed_at'],budget.inspect()['next_allowed_at'])
     with gate.ownership() as owner:
         gate.begin(admission=lambda:pending_at,ownership=owner,
@@ -237,32 +236,29 @@ def test_pending_account_cannot_hide_behind_complete_peer_history(tmp_path):
     assert result['review_reasons']==[
         'INCOMPLETE_ACCOUNT_HISTORY','PENDING_ACCOUNT_HISTORY']
     assert result['account_journals']==2
-    assert result['provider_sessions_replayed']==result['account_sessions_replayed']==6
+    assert result['provider_sessions_replayed']==result['account_sessions_replayed']==10
     assert result['operation_counts']['ACCOUNT_INVENTORY']==2
+    assert result['local_provider_account_history_consistent'] is False
+    assert result['matched_sessions']==0 and files(tmp_path)==before
+
+
+def test_incomplete_account_cannot_hide_behind_complete_peer_history(tmp_path):
+    gate,budget=build(tmp_path);other=add_inventory_peer(tmp_path,budget)
+    before=files(tmp_path)
+    result=subject.review(budget,[gate,other],
+        expected_provider_head=budget.inspect()['head_sha256'],
+        expected_account_heads={gate.account_digest:gate.inspect()['head_sha256'],
+            other.account_digest:other.inspect()['head_sha256']})
+    assert result['review_reasons']==['FIVE_PURPOSE_HISTORY_INCOMPLETE']
+    assert result['provider_sessions_replayed']==result['account_sessions_replayed']==6
+    assert result['all_five_purposes_observed'] is False
     assert result['local_provider_account_history_consistent'] is False
     assert result['matched_sessions']==0 and files(tmp_path)==before
 
 
 def test_account_reader_failure_rechecks_every_peer_journal(
         tmp_path,monkeypatch):
-    gate,budget=build(tmp_path);other=PaperReadPacing(tmp_path/'other.sqlite3',OTHER)
-    kinds=list(OPERATION_PATTERNS['ACCOUNT_INVENTORY'][0])
-    receipt=dict(operation='ACCOUNT_INVENTORY',request_kinds=kinds,
-        request_sha256=[sha(dict(request=i)) for i in range(len(kinds))],
-        response_sha256=[sha(dict(response=i)) for i in range(len(kinds))])
-    with other.ownership() as owner:
-        token=other.begin(admission=lambda:2000,ownership=owner,
-            operation='ACCOUNT_INVENTORY')
-        other.finish(token,admission=lambda:2001,status_code=200,
-            ownership=owner,receipt=receipt)
-    record=other.operation_history()[0]
-    with budget.ownership() as owner:
-        token=budget.begin(account_id=OTHER,
-            account_before_head_sha256=record['before_head_sha256'],
-            operation=record['operation'],admission=lambda:1400,ownership=owner)
-        budget.finish(token,account_after_head_sha256=record['after_head_sha256'],
-            actual_gets=len(kinds),admission=lambda:1401,ownership=owner,
-            status_code=200)
+    gate,budget=build(tmp_path);other=add_complete_peer(tmp_path,budget)
     options=dict(expected_provider_head=budget.inspect()['head_sha256'],
         expected_account_heads={gate.account_digest:gate.inspect()['head_sha256'],
             other.account_digest:other.inspect()['head_sha256']})

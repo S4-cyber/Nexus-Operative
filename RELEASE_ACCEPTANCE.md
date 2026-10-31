@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.84 per-account purpose completeness
+
+Exact-head multi-account provider/read reconciliation is accepted locally only when every selected account independently retains all five read purposes. One complete account cannot mask another account with only a completed subset, even when all retained provider/account rows match. The whole review must remain inconsistent, report the fixed incomplete-purpose reason, return zero matched sessions and leave every journal byte unchanged.
+
+Exact-source v0.340.83 commit `c9ab888dd61a94069eeb7ce4fb1772166750063b` passed security/Gitleaks 41224869463, all research regression/browser/evidence jobs in 41224869533 and Windows EXE/installer/reinstall/uninstall/distribution 41224869536. Fresh v0.340.84 workflows and actual authorized paper-account/private-volume acceptance remain required. This is disposable local completeness evidence, not provider identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,727 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 254. Sixteen profiles verified against 395 exact source files / `654d8c5529463a1bbe087c41798cc7e53e8d7e776cb5fa608cb91f68f157455a`. Evidence SHA-256 is `169aaeb130c40fc23489d091649452ce3275e0a1bf7ef25f6297efda5d3693ed`; wheel SHA-256 is `583b7b1184c87fc6eb51c8345331e4d6da60ccb93951c400411ca38fbfaaedbf`. Compilation, dependency, roadmap, controller and Portal checks passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.83 cross-account exceptional-exit integrity
 
 Exact-head multi-account provider/read reconciliation is accepted locally only if every selected peer journal remains inside the outer exceptional-exit proof. If one account reader changes a peer journal and raises, the outer composition must report the fixed file-set refusal, return no partial consistency and preserve every journal byte.

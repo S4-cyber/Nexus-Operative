@@ -158,8 +158,12 @@ def review(provider_budget,gates,*,expected_provider_head,expected_account_heads
     provider_history=stable_read(provider_budget.history)
     account_rows=_account_rows(gates,reasons,stable_read);provider_rows=_provider_rows(provider_history,reasons)
     if Counter(account_rows)!=Counter(provider_rows):reasons.add('PROVIDER_ACCOUNT_SESSION_MISMATCH')
-    purposes={row[3] for row in provider_rows}
-    if not set(OPERATIONS)<=purposes:reasons.add('FIVE_PURPOSE_HISTORY_INCOMPLETE')
+    purposes={account:set() for account in expected_account_heads}
+    for account,_,_,operation,_,_ in provider_rows:
+        if account in purposes:purposes[account].add(operation)
+    every_account_complete=all(set(OPERATIONS)<=account_purposes
+        for account_purposes in purposes.values())
+    if not every_account_complete:reasons.add('FIVE_PURPOSE_HISTORY_INCOMPLETE')
     provider_after=stable_read(provider_budget.inspect)
     account_after={gate.account_digest:stable_read(gate.inspect) for gate in gates}
     if provider_after!=provider_before:_fail('PROVIDER_HEAD_CHANGED')
@@ -171,7 +175,7 @@ def review(provider_budget,gates,*,expected_provider_head,expected_account_heads
         account_manifest_sha256=sha(manifest),account_journals=len(gates),provider_sessions_replayed=len(provider_history),
         account_sessions_replayed=len(account_rows),matched_sessions=len(provider_rows) if consistent else 0,
         operation_counts={operation:sum(row[3]==operation for row in provider_rows) for operation in OPERATIONS},
-        all_five_purposes_observed=set(OPERATIONS)<=purposes,local_provider_account_history_consistent=consistent,
+        all_five_purposes_observed=every_account_complete,local_provider_account_history_consistent=consistent,
         review_reasons=sorted(reasons),admission_reserved=False,
         journal_files_rechecked_unchanged=True,
         semantic_reader_failures_rechecked=True,**{flag:False for flag in FLAGS},
@@ -246,7 +250,7 @@ def fixture_report():
                 expected_provider_head=budget.inspect()['head_sha256'],
                 expected_account_heads={gate.account_digest:
                     gate.inspect()['head_sha256'] for gate in gates})
-        def add_complete_account(path,budget,account):
+        def add_inventory_account(path,budget,account):
             gate=PaperReadPacing(path/'pacing.sqlite3',account)
             operation='ACCOUNT_INVENTORY'
             request_kinds=list(OPERATION_PATTERNS[operation][0])
@@ -271,6 +275,10 @@ def fixture_report():
                     account_after_head_sha256=record['after_head_sha256'],
                     actual_gets=len(request_kinds),admission=lambda:completed_at+1,
                     ownership=owner,status_code=200)
+            return gate
+        def add_complete_account(path,budget,account,epoch):
+            gate,_=paper_read_review._fixture(path,provider_budget=budget,
+                account_id=account,epoch=epoch)
             return gate
         def leave_pending(gate,budget,mode):
             pending_at=max(gate.inspect()['next_allowed_at'],
@@ -336,14 +344,23 @@ def fixture_report():
             pending_unchanged[mode]=files()==pending_before
         multi_gate,multi_budget=build_pair(root/'multi-account-pending')
         other_gate=add_complete_account(root/'multi-account-pending'/'other',
-            multi_budget,'21234567-89ab-cdef-0123-456789abcdef')
+            multi_budget,'21234567-89ab-cdef-0123-456789abcdef',1792370000)
         leave_pending(multi_gate,multi_budget,'account')
         multi_before=files()
         multi_result=current_many([multi_gate,other_gate],multi_budget)
         multi_unchanged=files()==multi_before
+        incomplete_gate,incomplete_budget=build_pair(
+            root/'multi-account-incomplete')
+        incomplete_peer=add_inventory_account(
+            root/'multi-account-incomplete'/'other',incomplete_budget,
+            '41234567-89ab-cdef-0123-456789abcdef')
+        incomplete_before=files()
+        incomplete_result=current_many(
+            [incomplete_gate,incomplete_peer],incomplete_budget)
+        incomplete_unchanged=files()==incomplete_before
         guard_gate,guard_budget=build_pair(root/'multi-account-reader-guard')
         guard_peer=add_complete_account(root/'multi-account-reader-guard'/'other',
-            guard_budget,'31234567-89ab-cdef-0123-456789abcdef')
+            guard_budget,'31234567-89ab-cdef-0123-456789abcdef',1792380000)
         guard_paths=(guard_budget.path,guard_gate.path,guard_peer.path)
         guard_bytes={path:path.read_bytes() for path in guard_paths}
         guard_reader=guard_gate.operation_history
@@ -394,12 +411,23 @@ def fixture_report():
                 multi_result['review_reasons']==[
                     'INCOMPLETE_ACCOUNT_HISTORY','PENDING_ACCOUNT_HISTORY'] and
                 multi_result['account_journals']==2 and
-                multi_result['provider_sessions_replayed']==6 and
-                multi_result['account_sessions_replayed']==6 and
+                multi_result['provider_sessions_replayed']==10 and
+                multi_result['account_sessions_replayed']==10 and
                 multi_result['operation_counts']['ACCOUNT_INVENTORY']==2 and
                 multi_result['matched_sessions']==0 and
                 other_gate.inspect()['pending_token'] is None and
                 multi_unchanged),
+            incomplete_account_cannot_hide_behind_complete_peer=(
+                incomplete_result['local_provider_account_history_consistent']
+                    is False and
+                incomplete_result['review_reasons']==[
+                    'FIVE_PURPOSE_HISTORY_INCOMPLETE'] and
+                incomplete_result['account_journals']==2 and
+                incomplete_result['provider_sessions_replayed']==6 and
+                incomplete_result['account_sessions_replayed']==6 and
+                incomplete_result['all_five_purposes_observed'] is False and
+                incomplete_result['matched_sessions']==0 and
+                incomplete_unchanged),
             multi_account_reader_failure_rechecks_peer=(
                 peer_mutation_denied and guard_bytes_unchanged),
             journals_unchanged=source_same,

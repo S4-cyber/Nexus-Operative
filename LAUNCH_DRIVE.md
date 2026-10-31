@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.83 cross-account exceptional-exit integrity
+
+Exact-head multi-account provider/read reconciliation now carries mandatory evidence that an account semantic reader cannot change a selected peer journal and hide the mutation behind its own exception. The outer composition rechecks the complete file set, reports the fixed file-set refusal, returns no partial consistency and preserves every journal byte.
+
+Exact-source v0.340.82 commit `45a731f682992532f3eb697de11d9598a5fa8f94` passed security/Gitleaks 41219843725, all research regression/browser/evidence jobs in 41219843731 and Windows EXE/installer/reinstall/uninstall/distribution 41219843682. Fresh v0.340.83 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local cross-account integrity evidence does not close an external gate or predict profit.
+
+Local validation passed 4,726 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 253. Sixteen profiles verified against 395 source files / `27ad82fd751d2c7f32bb7c8c6562ac6e3161d33fbb240a99188eb93d8aa79b75`. Evidence SHA-256 is `39931d62523389b76dc90c875ca90da492e5cf5fe6f95efa623ce7f0d252ae9c`; wheel SHA-256 is `44ec0593ba8097d48d6c80241d09e577c9d47df0c4c850d2360d6549e8740ce2`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.82 multi-account pending-history non-masking
 
 Exact-head provider/account read reconciliation now carries mandatory two-account evidence. One pending account alongside a fully matched peer keeps the combined review inconsistent, retains both complete six-session histories for diagnosis, reports zero promoted matched sessions and preserves every journal byte. The fixture performs no recovery, provider read, retry, capacity reset or routing action.

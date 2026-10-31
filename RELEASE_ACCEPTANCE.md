@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.83 cross-account exceptional-exit integrity
+
+Exact-head multi-account provider/read reconciliation is accepted locally only if every selected peer journal remains inside the outer exceptional-exit proof. If one account reader changes a peer journal and raises, the outer composition must report the fixed file-set refusal, return no partial consistency and preserve every journal byte.
+
+Exact-source v0.340.82 commit `45a731f682992532f3eb697de11d9598a5fa8f94` passed security/Gitleaks 41219843725, all research regression/browser/evidence jobs in 41219843731 and Windows EXE/installer/reinstall/uninstall/distribution 41219843682. Fresh v0.340.83 workflows and actual authorized paper-account/private-volume acceptance remain required. This is disposable local integrity evidence, not provider identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,726 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 253. Sixteen profiles verified against 395 exact source files / `27ad82fd751d2c7f32bb7c8c6562ac6e3161d33fbb240a99188eb93d8aa79b75`. Evidence SHA-256 is `39931d62523389b76dc90c875ca90da492e5cf5fe6f95efa623ce7f0d252ae9c`; wheel SHA-256 is `44ec0593ba8097d48d6c80241d09e577c9d47df0c4c850d2360d6549e8740ce2`. Compilation, dependency, roadmap, controller and Portal checks passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.82 multi-account pending-history non-masking
 
 Exact-head provider/account read reconciliation is accepted locally only when a complete peer cannot mask another account's pending history. The two-account fixture must preserve both complete six-session diagnostic counts, keep the whole review inconsistent, report the exact account-pending reasons and zero matched sessions, and leave every journal byte unchanged. It performs no recovery, provider I/O, retry, capacity reset or routing.

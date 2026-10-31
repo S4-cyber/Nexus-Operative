@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.82 (pre-release).** This build requires one pending account beside a fully matched peer to keep the complete exact-head provider/account review inconsistent, diagnostic-only, zero-promoted and byte-for-byte unchanged. It adds no Portal route, saved credential, provider IO, recovery, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.83 (pre-release).** This build requires a multi-account provider/read review to detect peer-journal mutation even when the account reader that triggered it raises its own exception. The outer file-set refusal takes precedence, no partial consistency returns and journal bytes remain unchanged. It adds no Portal route, saved credential, provider IO, recovery, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.83 cross-account exceptional-exit integrity
+
+The provider/account read-history fixture now composes two account journals and injects a peer metadata mutation from the other account's semantic reader immediately before that reader raises. The complete selected file set is rechecked on the exceptional exit, so the fixed outer file-set refusal cannot be replaced by the nested error. Direct tests and release validation reject evidence that omits this invariant.
+
+Exact-source v0.340.82 commit `45a731f682992532f3eb697de11d9598a5fa8f94` passed security/Gitleaks 41219843725, all research regression/browser/evidence jobs in 41219843731 and Windows EXE/installer/reinstall/uninstall/distribution 41219843682. Fresh v0.340.83 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not provider source, broker-wide coordination, native-owner Windows acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+Local validation passed 4,726 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 253. Sixteen offline profiles verified 395 source files / `27ad82fd751d2c7f32bb7c8c6562ac6e3161d33fbb240a99188eb93d8aa79b75`. Evidence SHA-256 is `39931d62523389b76dc90c875ca90da492e5cf5fe6f95efa623ce7f0d252ae9c`; wheel SHA-256 is `44ec0593ba8097d48d6c80241d09e577c9d47df0c4c850d2360d6549e8740ce2`. Compilation, dependencies, roadmap and fourteen controller checks plus Portal syntax passed. Release approval and trading permission remain false.
 
 ## v0.340.82 multi-account pending-history non-masking
 

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.82'
+REVISION = '0.340.83'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -282,6 +282,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Multi-account provider/read reconciliation now carries mandatory non-masking evidence: one pending account alongside a fully matched peer keeps the whole exact-head review inconsistent, retains both complete six-session histories for diagnosis, reports zero promoted matched sessions and changes no journal bytes. This is disposable local fail-closed evidence, not partial account acceptance, provider IO or routing authority.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; mandatory multi-account reader-failure evidence now proves that one account semantic reader cannot mutate a peer journal and hide that change behind its own exception' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Exact-head multi-account provider/read review now carries a mandatory cross-account exceptional-exit proof: if one account reader changes a selected peer journal and then raises, the outer composition reports the fixed file-set refusal and never returns partial consistency. Journal bytes remain unchanged. This is disposable local integrity evidence, not provider identity, broker acceptance or routing authority.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' An explicit one-attempt Activity SSE coordinator now composes the fixed-target transport, private prior segment, strict reconnect review and exact-head cursor journal into one fail-closed local checkpoint; injected tests only.',
     remaining='Accept this exact-head reconnect/checkpoint path on an authorized paper account and native private volume; verify account entitlement, provider source/delivery and replay coverage, slow-consumer recovery and broker-wide/distributed coordination before any automatic reconnect loop. ' + stage['remaining'])
@@ -503,7 +511,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.82 makes multi-account pending-history non-masking mandatory release evidence for exact-head provider/account read reconciliation. One pending account beside a fully matched peer must keep the whole review inconsistent, preserve both complete six-session histories for diagnosis, report zero promoted matched sessions and leave all journal bytes unchanged. Exact-source v0.340.81 commit 8124d18b399b6454c8fd2f302fd737e5bdcd96fa passed security/Gitleaks run 41214792477, every regression/browser/evidence job in run 41214792588 and Windows EXE/installer/reinstall/uninstall/distribution run 41214792548. This remains disposable local multi-account evidence, not partial account acceptance, broker-wide coordination, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, recovery, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.83 makes cross-account exceptional-exit integrity mandatory release evidence for exact-head provider/account read reconciliation. If one selected account semantic reader changes a peer journal and then raises, the outer multi-account review must report the fixed file-set refusal before the nested exception can escape; it returns no partial consistency and changes no journal bytes. Exact-source v0.340.82 commit 45a731f682992532f3eb697de11d9598a5fa8f94 passed security/Gitleaks run 41219843725, every regression/browser/evidence job in run 41219843731 and Windows EXE/installer/reinstall/uninstall/distribution run 41219843682. This remains disposable local integrity evidence, not provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, recovery, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -5,6 +5,7 @@ vault, calls a provider, repairs history, reserves admission or grants broker,
 routing, funding, live-trading or release authority.
 """
 from collections import Counter
+import os
 from pathlib import Path
 import re
 
@@ -340,6 +341,26 @@ def fixture_report():
         multi_before=files()
         multi_result=current_many([multi_gate,other_gate],multi_budget)
         multi_unchanged=files()==multi_before
+        guard_gate,guard_budget=build_pair(root/'multi-account-reader-guard')
+        guard_peer=add_complete_account(root/'multi-account-reader-guard'/'other',
+            guard_budget,'31234567-89ab-cdef-0123-456789abcdef')
+        guard_paths=(guard_budget.path,guard_gate.path,guard_peer.path)
+        guard_bytes={path:path.read_bytes() for path in guard_paths}
+        guard_reader=guard_gate.operation_history
+        def mutate_peer_then_fail():
+            guard_reader()
+            state=os.stat(guard_peer.path)
+            os.utime(guard_peer.path,
+                ns=(state.st_atime_ns,state.st_mtime_ns+1_000_000_000))
+            raise RuntimeError('injected cross-account reader failure')
+        guard_gate.operation_history=mutate_peer_then_fail
+        peer_mutation_denied=False
+        try:current_many([guard_gate,guard_peer],guard_budget)
+        except ValueError as error:
+            peer_mutation_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_FILE_SET_CHANGED')
+        guard_bytes_unchanged=(guard_bytes==
+            {path:path.read_bytes() for path in guard_paths})
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -379,6 +400,8 @@ def fixture_report():
                 multi_result['matched_sessions']==0 and
                 other_gate.inspect()['pending_token'] is None and
                 multi_unchanged),
+            multi_account_reader_failure_rechecks_peer=(
+                peer_mutation_denied and guard_bytes_unchanged),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

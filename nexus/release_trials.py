@@ -1008,6 +1008,7 @@ def _validate(profile, result):
              'request_replay_fingerprint_rechecked_after_load',
              'request_proof_final_before_budget_commit',
              'recovery_acknowledgement_cold_replayed',
+             'post_budget_file_identity_rechecked',
              'original_request_not_rearmed','unknown_history_preserved','cooldown_preserved')),
             'POST_RECOVERY_FENCES')
         _require(all(post_recovery[k] is False for k in ('actual_provider_access',

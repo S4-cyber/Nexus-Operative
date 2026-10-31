@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.68 recovery store-identity fence
+
+The resolved-unknown POST-budget recovery is accepted only while the provider-budget path continues to name the exact sampled regular single-link SQLite file through source replay, recovery write and both acknowledgement receipts. Replacement yields fixed file-identity uncertainty; no replacement content is treated as the just-committed recovery. Request non-resubmission, full cooldown and zero provider access remain unchanged.
+
+Exact-source v0.340.67 commit `363179be4e45aeadb46346d5988ef5ac5605b886` passed security 41159882501, research/browser/evidence 41159882472 and Windows EXE/installer/reinstall/uninstall 41159882453. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local prepublication validation passed 4,682 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 211 and two research-workflow contract tests passed. Sixteen offline profiles and saved evidence verified against 395 exact source files / `675919f5bf35e54f7d2458d57a93c69b646f7292175759a5d56d9ab03fa32e33`. Evidence SHA-256 is `721c88449b2b68c272b23071cb73ebeecb0af2799034db00b788d4e392a7b5ee`; wheel SHA-256 is `65ffc59b06b4340a50cb1f948e6930d139cadffaf3ad2e4287b5e2d87c07cd70`. Compilation, dependency, roadmap, controller, Portal syntax, the 780-path proposed-snapshot artifact audit and targeted credential checks passed. Local Playwright and Gitleaks are unavailable; these local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.67 resolved-unknown recovery acknowledgement replay
 
 The resolved-unknown POST-budget review latch is now accepted as cleared only after two identical read-only receipts prove the exact newly committed recovery event and current head under retained request-writer exclusion and budget ownership. Lost local acknowledgement is recovered without a duplicate append; absent, fabricated or unreadable state remains fixed uncertainty. The request remains non-resubmittable, and no provider access or routing authority is added.

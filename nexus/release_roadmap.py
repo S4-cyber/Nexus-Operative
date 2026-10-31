@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.67'
+REVISION = '0.340.68'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -283,6 +283,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Resolved-unknown provider POST recovery now cold-replays the exact committed recovery receipt after the write while request-writer and budget ownership remain held. Lost acknowledgements recover without a second recovery append; missing, fabricated or unreadable durable state remains fixed uncertainty. This remains injected local evidence, not provider/account acceptance or completed fee/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; resolved-unknown POST recovery now samples and rechecks the exact provider-budget SQLite file identity across source replay, the guarded recovery write and both post-commit cold receipts, rejecting pathname replacement as fixed uncertainty' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The reviewed recovery command now pins the exact provider-budget file identity before reading source history and rechecks it before and after the recovery transaction and each cold receipt. A same-path replacement is rejected even if its retained bytes are otherwise valid. This is sampled local identity evidence, not an ACL, administrator-exclusion, physical durability or provider/account acceptance proof.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -383,7 +391,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.67 cold-replays the exact durable receipt after resolved-unknown provider POST-budget recovery, while request-writer and budget ownership remain held. A committed recovery with a lost acknowledgement succeeds without a duplicate append; absent, fabricated or unreadable state remains fixed uncertainty, and the original request is never re-armed. Exact-source v0.340.66 commit 36c9d6067df15c30fe4854950b5ad28cc3499402 passed security 41155618652, every research/browser/evidence job in 41155618641 and Windows EXE/installer/reinstall/uninstall 41155618754. This local hardening is not authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.68 pins and rechecks the exact provider-budget SQLite file identity across resolved-unknown recovery source replay, the guarded write and both post-commit cold receipts. Same-path replacement is fixed uncertainty even when replacement bytes are otherwise valid; lost acknowledgements still recover without another append, and the original request is never re-armed. Exact-source v0.340.67 commit 363179be4e45aeadb46346d5988ef5ac5605b886 passed security 41159882501, every research/browser/evidence job in 41159882472 and Windows EXE/installer/reinstall/uninstall 41159882453. This sampled local identity hardening is not an ACL, administrator-exclusion, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

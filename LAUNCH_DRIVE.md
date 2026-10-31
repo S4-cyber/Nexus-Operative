@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.68 recovery store-identity fence
+
+Resolved-unknown paper POST recovery now pins the provider-budget SQLite pathname to one sampled regular single-link file identity before source replay and rechecks it across the recovery transaction and both durable receipt reads. A same-path replacement is fixed uncertainty even when it contains a valid older database; it cannot re-arm the original request, grant a retry or perform provider IO.
+
+Exact-source v0.340.67 commit `363179be4e45aeadb46346d5988ef5ac5605b886` passed security 41159882501, research/browser/evidence 41159882472 and Windows EXE/installer/reinstall/uninstall 41159882453. Fresh v0.340.68 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local identity fence does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,682 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 211 and two research-workflow contract tests passed. Sixteen offline profiles and saved evidence verified against 395 source files / `675919f5bf35e54f7d2458d57a93c69b646f7292175759a5d56d9ab03fa32e33`. Evidence SHA-256 is `721c88449b2b68c272b23071cb73ebeecb0af2799034db00b788d4e392a7b5ee`; wheel SHA-256 is `65ffc59b06b4340a50cb1f948e6930d139cadffaf3ad2e4287b5e2d87c07cd70`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 780-path proposed-snapshot artifact audit and targeted credential scanning passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.67 resolved-unknown recovery acknowledgement replay
 
 Reviewed provider POST recovery now ignores the recovery write acknowledgement and cold-replays the exact durable recovery receipt twice while both journal protections remain held. A commit whose local acknowledgement is lost completes without another append. Missing, fabricated, changed or unreadable durable recovery remains fixed uncertainty; the original request stays permanently non-resubmittable and no provider IO is performed.

@@ -60,6 +60,7 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['request_replay_fingerprint_rechecked_after_load']
     assert result['request_proof_final_before_budget_commit']
     assert result['recovery_acknowledgement_cold_replayed']
+    assert result['post_budget_file_identity_rechecked']
     assert result['cooldown_shortened'] is False and result['uncertainty_preserved']
     assert state['recoveries']==1 and state['review_required'] is False
     recovery=budget.recovery_history()
@@ -136,6 +137,26 @@ def test_post_commit_recovery_reader_failure_is_fixed_uncertainty(
     assert 'private recovery reader detail' not in str(error.value)
     assert budget.inspect()['recoveries']==1
     assert budget.inspect()['review_required'] is False
+
+
+def test_post_budget_path_replacement_after_commit_is_fixed_uncertainty(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    replacement=tmp_path/'post-budget-replacement.sqlite3'
+    shutil.copyfile(budget.path,replacement)
+    original=PaperProviderPostBudget.recover_resolved_unknown
+    def commit_then_replace(self,*args,**kwargs):
+        result=original(self,*args,**kwargs)
+        os.replace(replacement,self.path)
+        return result
+    monkeypatch.setattr(PaperProviderPostBudget,'recover_resolved_unknown',
+                        commit_then_replace)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_RECOVERY_FILE_IDENTITY_CHANGED'):
+        recover(journal,budget,request_head)
+    state=budget.inspect()
+    assert state['review_required'] is True and state['recoveries']==0
+    assert len(budget.history())==1
 
 
 def test_recovery_clock_is_retained_without_shortening_existing_cooldown(tmp_path):

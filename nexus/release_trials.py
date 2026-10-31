@@ -983,6 +983,7 @@ def _validate(profile, result):
              'request_marker_admission_window_bound',
              'response_observation_cold_replayed',
              'response_budget_completion_cold_replayed',
+             'response_observation_completion_bracketed',
              'response_completion_window_bound',
              'not_sent_completion_window_bound',
              'outcome_unknown_completion_window_bound',

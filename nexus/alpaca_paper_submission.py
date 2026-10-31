@@ -453,7 +453,8 @@ def _safety_closure_request_receipt(journal, *, expected_account_id,
 
 def _response_observation_receipt(journal, store_binding_check, *,
         client_order_id, response, expected_payload, expected_previous_head,
-        expected_payload_sha256):
+        expected_payload_sha256,
+        failure_code='POST_RESPONSE_DURABLE_STATE_CHANGED'):
     """Cold-replay one exact request response without provider IO."""
     try:
         store_binding_check()
@@ -475,7 +476,7 @@ def _response_observation_receipt(journal, store_binding_check, *,
     except Exception:
         stable=False
     if not stable:
-        _fail('POST_RESPONSE_DURABLE_STATE_CHANGED')
+        _fail(failure_code)
     return receipt
 
 
@@ -823,6 +824,30 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             expected_completed_at_floor=completion_admission_floor,
             expected_completed_at_ceiling=completion_admission_ceiling,
             failure_code='POST_BUDGET_COMPLETION_UNCERTAIN')
+        # The successful cross-journal transition is not complete merely
+        # because each side was proved independently before the budget write.
+        # Replay the exact observation again after the terminal budget row so
+        # a semantic-reader failure or an invalidated request prefix cannot be
+        # hidden by the already committed provider-budget result.  A later
+        # valid original-ID lookup remains permitted because the receipt binds
+        # the immutable OBSERVE prefix rather than requiring it to be the
+        # current request head.
+        observed_after_completion = _response_observation_receipt(
+            bound_journal, store_binding_check,
+            client_order_id=client_order_id, response=raw,
+            expected_payload=payload, expected_previous_head=marker_head,
+            expected_payload_sha256=expected_payload_sha256,
+            failure_code='POST_BUDGET_COMPLETION_UNCERTAIN')
+        # ``current_head_sha256`` may legitimately advance through a later
+        # original-ID lookup.  Every field describing the exact immutable
+        # OBSERVE prefix must still match.
+        observation_binding = {key:value for key,value in observed.items()
+                               if key != 'current_head_sha256'}
+        observation_binding_after = {
+            key:value for key,value in observed_after_completion.items()
+            if key != 'current_head_sha256'}
+        if observation_binding_after != observation_binding:
+            _fail('POST_BUDGET_COMPLETION_UNCERTAIN')
     store_binding_check()
     return dict(mode='EXPLICIT_SINGLE_ATTEMPT_ALPACA_PAPER_SUBMISSION',
         source='INJECTED_UNATTESTED' if session.injected else 'PAPER_HTTPS_WRITE',
@@ -840,6 +865,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         reservation_and_marker_admission_windows_bound=True,
         response_observation_cold_replayed=True,
         response_budget_completion_cold_replayed=True,
+        response_observation_completion_bracketed=True,
         response_and_safety_completion_windows_bound=True,
         safety_closure_request_head_bracketed=True,
         alpaca_post_budget_scope_required=True,
@@ -851,7 +877,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The provider-budget BEGIN and request-marker write returns are ignored; their exact durable records are accepted only after stable read-only replay, with the pending provider reservation additionally requiring the original in-process lease. A restart may inspect or explicitly close retained state but cannot silently resume provider IO. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The provider-budget BEGIN and request-marker write returns are ignored; their exact durable records are accepted only after stable read-only replay, with the pending provider reservation additionally requiring the original in-process lease. A restart may inspect or explicitly close retained state but cannot silently resume provider IO. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay, and the immutable response observation is replayed again after the terminal budget write. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -1136,6 +1162,44 @@ def fixture_report():
                         for request in completion_window_opener.requests)==1)
         finally:
             PaperProviderPostBudget.finish=original_finish
+        response_bracket_journal,response_bracket_selected=prepared(
+            root/'response-observation-completion-bracket')
+        response_bracket_budget=PaperProviderPostBudget(
+            root/'response-observation-completion-bracket-post-budget.sqlite3')
+        response_bracket_opener=Opener(response_bracket_journal)
+        response_observation_completion_bracketed=False
+        response_completion_written=False
+        original_observation_receipt=BrokerRequestJournal.observation_receipt
+        def close_response_reader_after_finish(self,*args,**kwargs):
+            nonlocal response_completion_written
+            result=original_finish(self,*args,**kwargs)
+            if kwargs.get('outcome')=='RESPONSE_OBSERVED':
+                response_completion_written=True
+            return result
+        def fail_response_reader_after_finish(self,*args,**kwargs):
+            if response_completion_written:
+                raise RuntimeError('fixture private response reader detail')
+            return original_observation_receipt(self,*args,**kwargs)
+        PaperProviderPostBudget.finish=close_response_reader_after_finish
+        BrokerRequestJournal.observation_receipt=fail_response_reader_after_finish
+        try:
+            submit_once(response_bracket_journal,'nx_submit_fixture',key,
+                secret,**options(response_bracket_selected,
+                                 response_bracket_opener,
+                                 response_bracket_budget))
+        except PaperSubmissionError as error:
+            response_bracket_history=response_bracket_budget.history()
+            response_observation_completion_bracketed=(
+                str(error)=='PAPER_SUBMISSION_POST_BUDGET_COMPLETION_UNCERTAIN'
+                and response_completion_written
+                and len(response_bracket_history)==1
+                and response_bracket_history[0]['outcome']=='RESPONSE_OBSERVED'
+                and response_bracket_history[0]['actual_posts']==1
+                and sum(request.get_method()=='POST'
+                        for request in response_bracket_opener.requests)==1)
+        finally:
+            BrokerRequestJournal.observation_receipt=original_observation_receipt
+            PaperProviderPostBudget.finish=original_finish
         safety_window_journal,safety_window_selected=prepared(
             root/'safety-completion-window')
         safety_window_budget=PaperProviderPostBudget(
@@ -1334,6 +1398,9 @@ def fixture_report():
                 result['response_budget_completion_cold_replayed'] is True and
                 budget.history()[0]['after_head_sha256']==
                     result['post_budget_head_sha256'],
+            response_observation_completion_bracketed=
+                result['response_observation_completion_bracketed'] is True and
+                response_observation_completion_bracketed,
             response_completion_window_bound=
                 result['response_and_safety_completion_windows_bound'] is True and
                 response_completion_window_bound,

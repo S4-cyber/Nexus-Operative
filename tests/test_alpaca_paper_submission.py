@@ -94,6 +94,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['reservation_and_marker_admission_windows_bound']
     assert result['response_observation_cold_replayed']
     assert result['response_budget_completion_cold_replayed']
+    assert result['response_observation_completion_bracketed']
     assert result['response_and_safety_completion_windows_bound']
     assert result['alpaca_post_budget_scope_required']
     assert result['paper_order_response_observed']
@@ -579,6 +580,59 @@ def test_lost_post_budget_completion_ack_cold_replays_without_second_post(
     assert result['response_budget_completion_cold_replayed'] is True
     assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
     assert result['post_budget_head_sha256']==history[0]['after_head_sha256']
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+def test_response_observation_is_replayed_after_budget_completion(
+        prepared,monkeypatch):
+    original_finish=PaperProviderPostBudget.finish
+    original_receipt=BrokerRequestJournal.observation_receipt
+    completion_written=False
+    def finish_then_close_reader(self,*args,**kwargs):
+        nonlocal completion_written
+        result=original_finish(self,*args,**kwargs)
+        if kwargs.get('outcome')=='RESPONSE_OBSERVED':
+            completion_written=True
+        return result
+    def fail_after_completion(self,*args,**kwargs):
+        if completion_written:
+            raise RuntimeError('private post-completion request reader detail')
+        return original_receipt(self,*args,**kwargs)
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',finish_then_close_reader)
+    monkeypatch.setattr(BrokerRequestJournal,'observation_receipt',
+                        fail_after_completion)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+            match='POST_BUDGET_COMPLETION_UNCERTAIN') as error:
+        submit(prepared,opener)
+    assert 'private post-completion request reader detail' not in str(error.value)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
+    assert history[0]['actual_posts']==1
+    assert prepared[0].recovery()['requests'][0]['snapshot']['status']=='new'
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
+
+
+def test_valid_lookup_during_response_budget_completion_keeps_exact_observation(
+        prepared,monkeypatch):
+    journal,_,budget=prepared
+    original=PaperProviderPostBudget.finish
+    advanced=False
+    def finish_then_advance(self,*args,**kwargs):
+        nonlocal advanced
+        result=original(self,*args,**kwargs)
+        if kwargs.get('outcome')=='RESPONSE_OBSERVED' and not advanced:
+            BrokerRequestJournal(journal.path,ACCOUNT).begin_lookup(
+                'nx_fixture',evaluated_at=1001)
+            advanced=True
+        return result
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',finish_then_advance)
+    opener=Opener();result=submit(prepared,opener)
+    history=budget.history()
+    assert advanced and result['response_observation_completion_bracketed'] is True
+    assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
+    assert history[0]['request_after_head_sha256']==result['journal']['head_sha256']
+    assert journal.recovery()['head_sha256']!=result['journal']['head_sha256']
     assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
 
 

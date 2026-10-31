@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.65 (pre-release).** This build brackets each zero/one-POST paper safety closure with stable complete request-journal replays before and after the provider-budget terminal write. Concurrent original-ID lookup advance grants only fixed uncertainty and no retry. It adds no Portal route, saved credential, live endpoint or external authority. OFF defaults, limits, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.66 (pre-release).** This build brackets successful paper response-budget completion with exact cold replay of the immutable request observation before and after the provider-budget terminal write. Failed post-write replay grants only fixed uncertainty and no retry; later valid original-ID lookup remains allowed. It adds no Portal route, saved credential, live endpoint or external authority. OFF defaults, limits, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.66 response-observation completion bracket
+
+Successful `RESPONSE_OBSERVED` completion now replays the exact immutable request observation again after the provider-budget terminal row is cold-replayed. All event-binding fields must match the pre-write receipt; only the independently reported current request head may advance through later valid original-ID lookup history. A missing, invalidated or unreadable post-write observation yields `POST_BUDGET_COMPLETION_UNCERTAIN`, consumes no additional provider IO and never re-arms the request.
+
+Exact-source v0.340.65 commit `8829c6b141d9b79f30a5c0cc733d7a759ea28e6b` passed public security run 41151118170, research/browser/evidence run 41151118165 and Windows EXE/installer/reinstall/uninstall run 41151118418. Fresh v0.340.66 workflows and actual authorized paper-account acceptance remain required. This does not prove ACLs, other-host exclusion, broker idempotency, provider source, settled funds, fee/hold reconciliation, routing authority, market realism, profitability or release acceptance.
+
+Local prepublication validation passed 4,677 tests with one expected non-Windows skip and one existing warning; the final submission/release/evidence/version/installer focus passed 243. Sixteen offline profiles and saved evidence verified against 395 source files / `8458b62a0219f6f39144f33b91ae7851e61c5b14e132c2ef466ee62962a11125`. Evidence SHA-256 is `499da8ebbb34874284099ea81e1e635b66be3a48334b7a0c6474dad5b113f486`; wheel SHA-256 is `e51b98472d294a14247de911dce25c2044c5db0f2534c0f1395b90f887350bb5`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controller checks, Portal syntax, the 778-path proposed-snapshot artifact audit and targeted credential scanning passed. Local Playwright and Gitleaks are unavailable. Fresh exact-source hosted workflows remain mandatory.
 
 ## v0.340.65 safety-closure request-head bracket
 

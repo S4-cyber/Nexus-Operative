@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.66 response-observation completion bracket
+
+Successful paper response completion now proves the exact immutable request `OBSERVE` prefix both before and after the provider-budget terminal write. A failed post-write semantic replay yields fixed completion uncertainty after the one consumed POST and cannot create retry, resend or routing authority. A later valid original-ID lookup remains allowed because the proof binds the observation event rather than requiring it to remain the current request head.
+
+Exact-source v0.340.65 commit `8829c6b141d9b79f30a5c0cc733d7a759ea28e6b` passed security 41151118170, research/browser/evidence 41151118165 and Windows EXE/installer/reinstall/uninstall 41151118418. Fresh v0.340.66 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local boundary does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,677 tests with one expected non-Windows skip and one existing warning; the final submission/release/evidence/version/installer focus passed 243. Sixteen offline profiles and saved evidence verified against 395 source files / `8458b62a0219f6f39144f33b91ae7851e61c5b14e132c2ef466ee62962a11125`. Evidence SHA-256 is `499da8ebbb34874284099ea81e1e635b66be3a48334b7a0c6474dad5b113f486`; wheel SHA-256 is `e51b98472d294a14247de911dce25c2044c5db0f2534c0f1395b90f887350bb5`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 778-path proposed-snapshot artifact audit and targeted credential scanning passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.65 safety-closure request-head bracket
 
 Zero/one-POST paper safety closure now reads the complete pinned request journal twice before the provider-budget terminal write and twice afterward, requiring an identical exact head, account and payload. A concurrent original-ID lookup advance produces fixed closure uncertainty without retrying provider IO or re-arming the request. Pre-marker `NOT_SENT` closure remains valid, and the independent emergency stop still needs no permission relaxation.

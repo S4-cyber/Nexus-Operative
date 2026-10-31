@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.65'
+REVISION = '0.340.66'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -187,6 +187,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; zero/one-POST safety closure now brackets its provider-budget terminal write with stable full-chain request-journal receipts, requiring the identical exact request head/account/payload afterward so a concurrent original-ID lookup advance yields only fixed uncertainty and never another provider request' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; successful response completion now also brackets the provider-budget terminal write with exact cold replay of the immutable OBSERVE prefix, so an invalidated response event or post-write semantic-reader failure yields fixed completion uncertainty without another provider request, while a later valid original-ID lookup remains permitted' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 # Product milestones complement the nine technical evidence tracks above.
 # These are implementation/acceptance states, never permissions to move money.
 DELIVERY_STAGES = (
@@ -265,6 +269,10 @@ DELIVERY_STAGES = tuple((dict(stage,
 
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Every zero/one-POST safety closure now requires stable request-journal receipts before its provider-budget terminal write and the identical receipt afterward. A concurrent original-ID lookup advance makes the cross-journal closure uncertain without retrying provider IO. This remains injected local evidence, not provider/account acceptance or market reconciliation.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Successful response completion now replays the exact immutable OBSERVE prefix both before and after the provider-budget terminal write. An invalidated response event or failed post-write semantic replay yields fixed completion uncertainty without retry; later valid original-ID lookup history remains allowed. This remains injected local evidence, not provider/account acceptance or market reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -367,7 +375,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.65 brackets every zero/one-POST paper safety closure with stable complete request-journal replays before and after the provider-budget terminal write. The exact request head, account and payload must remain identical; a concurrent original-ID lookup advance produces fixed closure uncertainty and never another provider request. Exact-source v0.340.64 commit 059d101588794a228c6ab64f98f9d85c4f189a6a passed security 41144482629, research/browser/evidence 41144482522 and Windows EXE/installer/reinstall/uninstall 41144482628. This local hardening is not authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.66 brackets successful paper response-budget completion with exact cold replay of the immutable request OBSERVE prefix before and after the provider-budget terminal write. A failed post-write semantic replay produces fixed completion uncertainty without another provider request; a later valid original-ID lookup may still advance the current request head. Exact-source v0.340.65 commit 8829c6b141d9b79f30a5c0cc733d7a759ea28e6b passed security 41151118170, research/browser/evidence 41151118165 and Windows EXE/installer/reinstall/uninstall 41151118418. This local hardening is not authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

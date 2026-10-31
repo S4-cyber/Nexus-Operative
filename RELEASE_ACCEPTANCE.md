@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.66 response-observation completion bracket
+
+The one-attempt paper boundary now accepts successful response-budget completion only when the exact immutable response-observation receipt can be replayed both before and after the provider-budget terminal write. A post-write semantic-reader failure or invalidated observation produces fixed completion uncertainty with the single POST still consumed. Later valid original-ID lookup history is permitted and cannot replace the exact observation event.
+
+Exact-source v0.340.65 commit `8829c6b141d9b79f30a5c0cc733d7a759ea28e6b` passed security 41151118170, research/browser/evidence 41151118165 and Windows EXE/installer/reinstall/uninstall 41151118418. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local prepublication validation passed 4,677 tests with one expected non-Windows skip and one existing warning; the final submission/release/evidence/version/installer focus passed 243. Sixteen offline profiles and saved evidence verified against 395 exact source files / `8458b62a0219f6f39144f33b91ae7851e61c5b14e132c2ef466ee62962a11125`. Evidence SHA-256 is `499da8ebbb34874284099ea81e1e635b66be3a48334b7a0c6474dad5b113f486`; wheel SHA-256 is `e51b98472d294a14247de911dce25c2044c5db0f2534c0f1395b90f887350bb5`. Compilation, dependency, roadmap, controller, Portal syntax, the 778-path proposed-snapshot artifact audit and targeted credential checks passed. Local Playwright and Gitleaks are unavailable; these local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.65 safety-closure request-head bracket
 
 The one-attempt paper boundary now accepts a zero/one-POST safety closure only when two stable complete request replays before its provider-budget terminal write exactly match two stable replays afterward. The exact request head, account and payload remain bound; a concurrent original-ID lookup advance leaves fixed uncertainty without provider retry, resend or routing authority.

@@ -387,6 +387,21 @@ def test_pacing_profile_requires_provider_read_recovery_fences():
             trials._validate('pacing',changed)
 
 
+def test_pacing_profile_requires_account_read_recovery_fences():
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    from nexus.paper_read_pacing_recovery import RECOVERY_CHECKS,RECOVERY_FLAGS
+    for field in RECOVERY_CHECKS:
+        changed=copy.deepcopy(result)
+        changed['account_read_pacing_recovery'][field]=False
+        with pytest.raises(ValueError,match='ACCOUNT_READ_RECOVERY_FENCES'):
+            trials._validate('pacing',changed)
+    for field in RECOVERY_FLAGS:
+        changed=copy.deepcopy(result)
+        changed['account_read_pacing_recovery'][field]=True
+        with pytest.raises(ValueError,match='ACCOUNT_READ_RECOVERY_AUTHORITY'):
+            trials._validate('pacing',changed)
+
+
 def test_pacing_profile_requires_provider_post_history_review_fences():
     from nexus.paper_provider_post_review import FLAGS
     result=trials._pacing_trial();trials._validate('pacing',result)

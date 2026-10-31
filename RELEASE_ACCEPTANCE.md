@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.78 account-read recovery acknowledgement replay
+
+Reviewed account-read pacing recovery is accepted locally only after two stable cold receipts prove the exact one-time recovery, account scope, blocked session/outcome, counters and unchanged cooldown while the exact private journal identity and committed fingerprint remain stable through result finalization. A lost acknowledgement cannot cause a second append; replacement, rollback, fabricated return or unreadable state cannot clear uncertainty or reclaim capacity.
+
+Exact-source v0.340.77 commit `dcf6d2290abf6b6169b8fd83b229fc9b9fd6fc8e` passed security/Gitleaks 41201770052, all research regression/browser/evidence jobs in 41201769946 and Windows EXE/installer/reinstall/uninstall/distribution 41201770014. Fresh v0.340.78 workflows and actual authorized paper-account/private-volume acceptance remain required. This is local injected/sampled durability evidence, not broker identity, provider/account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,721 tests with one expected skip and one existing warning; the account-recovery focus passed 66 and saved-evidence verification passed 32. Sixteen profiles verified against 395 exact source files / `04a8c34e17e38de99772902897fcacca23eb5d6cd0ee860f062cdde4bbce9f65`. Evidence SHA-256 is `490a5109ca570cce0199fb7e586ff14c8605744c0f479cd661b0745b578197b6`; wheel SHA-256 is `8310a1028e125adf3cb9a7582defadd3fbf56198b123ee07f3a47d8d51021d53`. Compilation, dependency, roadmap, controller and Portal checks, the 789-path audit and credential scanning passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.77 recovery store finalization recheck
 
 Reviewed provider POST and provider-read recovery is accepted locally only if the exact committed budget SQLite pathname identity and bounded fingerprint remain unchanged through return-expression and exception finalization while outer ownership is still held. Late replacement or rollback overrides a lower-priority success/body error with the existing fixed file diagnostic. A conservative append may remain retained, but neither command can report successful recovery from changed state or grant retry, capacity, provider or routing authority.

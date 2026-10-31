@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.78 account-read recovery acknowledgement replay
+
+Reviewed account-read pacing recovery now accepts a lost local write acknowledgement only after two exact cold receipts prove one committed recovery, unchanged history/cooldown and unreclaimed capacity. The existing private account journal identity and committed bounded fingerprint remain pinned through return finalization. Replacement, rollback, fabricated returns and unreadable state fail closed without another append, provider IO or routing authority.
+
+Exact-source v0.340.77 commit `dcf6d2290abf6b6169b8fd83b229fc9b9fd6fc8e` passed security/Gitleaks 41201770052, research regression/browser/evidence 41201769946 and Windows EXE/installer/reinstall/uninstall/distribution 41201770014. Fresh v0.340.78 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local durability hardening does not close an external gate or predict profit.
+
+Local validation passed 4,721 tests with one expected skip and one existing warning; the account-recovery focus passed 66 and saved-evidence verification passed 32. Sixteen profiles verified against 395 source files / `04a8c34e17e38de99772902897fcacca23eb5d6cd0ee860f062cdde4bbce9f65`. Evidence SHA-256 is `490a5109ca570cce0199fb7e586ff14c8605744c0f479cd661b0745b578197b6`; wheel SHA-256 is `8310a1028e125adf3cb9a7582defadd3fbf56198b123ee07f3a47d8d51021d53`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 789-path proposed-snapshot audit and targeted credential scanning passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.77 recovery store finalization recheck
 
 Reviewed provider POST and provider-read recovery now retain their committed SQLite identity/fingerprint proof through return-expression and exception finalization while outer ownership remains held. A late path replacement or same-inode rollback overrides a lower-priority result with fixed file uncertainty. Conservative history remains durable, but neither command can report success, re-arm a request, reclaim capacity, retry or perform provider IO from changed state.

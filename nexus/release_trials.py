@@ -503,6 +503,8 @@ def _pacing_trial():
         post_recovery=post_recovery_fixture()
         from nexus.paper_provider_budget_recovery import fixture_report as read_recovery_fixture
         read_recovery=read_recovery_fixture()
+        from nexus.paper_read_pacing_recovery import fixture_report as account_recovery_fixture
+        account_recovery=account_recovery_fixture()
         from nexus.paper_provider_post_review import fixture_report as post_review_fixture
         post_review=post_review_fixture()
         from nexus.paper_provider_read_review import fixture_report as provider_read_review_fixture
@@ -516,7 +518,7 @@ def _pacing_trial():
         from nexus.sqlite_journal_guard import path_fixture_report
         from nexus.alpaca_paper_contract import timestamp_fixture_report
         from nexus.paper_read_pacing import completion_fixture_report
-        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_budget_recovery=read_recovery,provider_read_history_review=provider_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_budget_recovery=read_recovery,account_read_pacing_recovery=account_recovery,provider_read_history_review=provider_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -956,6 +958,14 @@ def _validate(profile, result):
         completion=result['read_completion']
         _require(completion['source']=='TEMPORARY_ORIGINAL_READ_LEASE_FIXTURE' and completion['passed'] is True and all(completion[k] is True for k in COMPLETION_CHECKS),'READ_COMPLETION_LEASE')
         _require(all(completion[k] is False for k in OPERATION_FLAGS),'READ_COMPLETION_AUTHORITY')
+        from nexus.paper_read_pacing_recovery import RECOVERY_CHECKS,RECOVERY_FLAGS as ACCOUNT_RECOVERY_FLAGS
+        account_recovery=result['account_read_pacing_recovery']
+        _require(account_recovery['source']=='TEMPORARY_ACCOUNT_READ_RECOVERY_FIXTURE' and
+            account_recovery['passed'] is True and
+            all(account_recovery[k] is True for k in RECOVERY_CHECKS),
+            'ACCOUNT_READ_RECOVERY_FENCES')
+        _require(all(account_recovery[k] is False for k in ACCOUNT_RECOVERY_FLAGS),
+            'ACCOUNT_READ_RECOVERY_AUTHORITY')
         from nexus.paper_recovery_drill import PHASES as CRASH_PHASES,CHECKS as CRASH_CHECKS
         from nexus.paper_recovery_step import FLAGS as RECOVERY_FLAGS
         crash=result['bounded_recovery_crash_drill']

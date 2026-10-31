@@ -341,6 +341,36 @@ class PaperReadPacing:
             with _transaction(db): state=self._load(db)
         return tuple(dict(item) for item in state['operation_sessions'])
 
+    def recovery_receipt(self):
+        """Cold-replay the latest exact recovery without granting authority.
+
+        The write-side return from :meth:`recover_review_block` is not durable
+        evidence.  This read-only receipt exposes only retained digests and
+        conservative state needed to prove one exact account recovery.
+        """
+        self._path_check()
+        if not self.path.exists(): _fail('RECOVERY_MISSING')
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                db.execute('BEGIN'); state=self._load(db)
+        recovery=state['last_recovery']
+        if recovery is None: _fail('RECOVERY_MISSING')
+        return dict(recovery,head_sha256=state['head_sha256'],
+            account_sha256=self.account_digest,
+            recoveries=state['recoveries'],sessions=state['sessions'],
+            last_evaluated_at=state['last_evaluated_at'],
+            next_allowed_at=state['next_allowed_at'],
+            review_required=state['review_required'],
+            pending_token=state['pending_token'],
+            exact_recovery_replayed=True,read_only=True,
+            uncertainty_preserved=True,history_rewritten=False,
+            session_capacity_reclaimed=False,admission_reserved=False,
+            automatic_retry=False,automatic_continuation=False,
+            broker_wide_quota_verified=False,
+            distributed_ownership_verified=False,ready_for_routing=False,
+            live_orders_enabled=False,money_movement_enabled=False,
+            release_approved=False)
+
     def ownership(self):
         """Local OS lease; runtime readers hold it through all IO and cleanup."""
         return _ReadOwnership(self)

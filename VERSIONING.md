@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.77 (pre-release).** This build extends reviewed provider POST and provider-read recovery SQLite identity/fingerprint guards through return and exception finalization while outer ownership remains held. Late replacement or rollback remains fixed uncertainty and cannot re-arm a request, reclaim capacity, authorize another read or perform provider IO. It adds no Portal route, saved credential, live endpoint or external authority. OFF defaults, limits, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.78 (pre-release).** This build cold-replays exact reviewed account-read pacing recovery after lost acknowledgement and pins the existing private journal identity/fingerprint through result finalization. Replacement, rollback, fabrication or unreadable state cannot append again, reclaim session capacity or perform provider IO. It adds no Portal route, saved credential, live endpoint or external authority. OFF defaults, limits, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.78 account-read recovery acknowledgement replay
+
+The account pacing recovery command now distrusts its write-side return and accepts success only after two identical cold receipts bind the exact recovery head, account digest, blocked session/outcome, incremented recovery count, unchanged session count and cooldown. The journal identity and committed fingerprint are rechecked through return/exception finalization while account ownership remains held. Lost acknowledgement cannot duplicate the append; replacement or rollback receives fixed file uncertainty.
+
+Exact-source v0.340.77 commit `dcf6d2290abf6b6169b8fd83b229fc9b9fd6fc8e` passed security/Gitleaks 41201770052, all research regression/browser/evidence jobs in 41201769946 and Windows EXE/installer/reinstall/uninstall/distribution 41201770014. Fresh v0.340.78 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not provider source, broker-wide coordination, native-owner Windows acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+Local validation passed 4,721 tests with one expected skip and one existing warning; the account-recovery focus passed 66 and saved-evidence verification passed 32. Sixteen offline profiles verified 395 source files / `04a8c34e17e38de99772902897fcacca23eb5d6cd0ee860f062cdde4bbce9f65`. Evidence SHA-256 is `490a5109ca570cce0199fb7e586ff14c8605744c0f479cd661b0745b578197b6`; wheel SHA-256 is `8310a1028e125adf3cb9a7582defadd3fbf56198b123ee07f3a47d8d51021d53`. Compilation, dependencies, roadmap, controllers, Portal syntax, the 789-path audit and credential scanning passed. Release approval and trading permission remain false.
 
 ## v0.340.77 recovery store finalization recheck
 

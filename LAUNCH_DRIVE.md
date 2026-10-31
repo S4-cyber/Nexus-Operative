@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.73 Windows-portable ownership-exit controls
+
+The provider POST ownership-exit negative controls now respect native filesystem semantics without changing production behavior. POSIX retains real lock-path replacement. Windows exercises the equivalent late identity failure deterministically because the native mandatory-share lock correctly rejects renaming the open lock file. Both paths preserve fixed ownership uncertainty, error priority, a conservatively committed recovery, and denial of success, re-arm, retry, provider access or routing authority.
+
+Exact-source v0.340.72 commit `e03c1c73bb7aa1358052f1af56f11c39328ee7ac` passed security run 41180421277 plus the browser and saved-evidence jobs in research run 41180421238. The full research regression and Windows run 41180421240 failed only in three POSIX-only rename controls with expected `PermissionError: [WinError 32]` on Windows; research still recorded 4,669 passes and 19 platform skips. Fresh v0.340.73 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This test-portability repair does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,690 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 247. Sixteen offline profiles and saved evidence verified against 395 source files / `7cb0919d77645affa839721435b000629e0e9295412aa2655a2d7b55de8e44ff`. Evidence SHA-256 is `b5ecf1bc604b26f23d79caba7d0d770af2bf9e29220ca46d0c1b3b376e90bcbe`; wheel SHA-256 is `b424a6b7ad9bd58c210b51aecb33e3fd08d41c43cea4e1e76f4b21a858061b2f`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 785-path proposed-snapshot artifact audit and targeted credential scanning passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.72 provider POST ownership exit recheck
 
 The provider POST ownership guard now rechecks that its lock pathname still names the exact opened regular single-link file before releasing the descriptor. Replacement after the final recovery proof is fixed uncertainty on normal return and during exception unwinding. A conservative provider-budget recovery may remain committed, but no success, re-arm, retry, provider access or routing authority follows.

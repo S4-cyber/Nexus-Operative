@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.72'
+REVISION = '0.340.73'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -323,6 +323,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Provider POST ownership now validates the exact opened lock-file identity during context exit, including normal return and exception unwind. A late pathname replacement produces fixed ownership uncertainty after any conservative recovery commit and cannot grant retry or request authority. This remains a cooperating-process local fence, not broker-wide/distributed ownership, ACL/administrator protection, physical durability or provider/account acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; provider-ownership exit negative controls now use actual lock-path replacement where the operating system permits it and deterministic late identity failure on Windows, whose mandatory-share lock correctly rejects renaming an open file' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Provider-ownership exit negative controls now preserve the same error-priority assertions across POSIX and Windows: POSIX exercises real pathname replacement, while Windows injects the equivalent late identity failure because the kernel denies renaming the open locked file. This is test portability for the local guard, not native owner-profile, broker or independent acceptance.')
+    if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -423,7 +431,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.72 makes the provider POST ownership guard recheck that its lock pathname still names the opened regular single-link file before releasing the descriptor, including normal return and exception unwind. A late replacement is fixed ownership uncertainty after any conservative recovery commit; it cannot re-arm the request, authorize retry or grant provider access. Exact-source v0.340.71 commit 4273b13f609633647b5d36670e5f5da43d7925ab passed security 41176180968, every research/browser/evidence job in 41176181157 and Windows EXE/installer/reinstall/uninstall run 41176180939. This cooperating-process local exit fence is not broker-wide/distributed ownership, ACL/administrator-exclusion, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.73 makes the provider-ownership exit negative controls portable without weakening the production fence. POSIX retains real lock-path replacement; Windows injects the equivalent late identity failure because WinError 32 correctly prevents renaming the open locked file. Exact-source v0.340.72 commit e03c1c73bb7aa1358052f1af56f11c39328ee7ac passed security 41180421277 plus browser and saved-evidence jobs in 41180421238, but its full Windows/Python 3.11 regression and Windows packaging run 41180421240 failed only in the three POSIX-only rename controls (4,669 passes/19 platform skips in research; the same three failures in Windows packaging). This repair does not claim those workflows passed; fresh exact-source v0.340.73 CI is required. No production runtime, Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

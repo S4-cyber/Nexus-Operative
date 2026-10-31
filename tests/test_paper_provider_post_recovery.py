@@ -8,6 +8,7 @@ import sys
 import pytest
 
 from nexus import paper_provider_post_recovery as subject
+from nexus import paper_provider_post_budget as budget_subject
 from nexus import broker_request_journal as request_journal_module
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_provider_post_budget import PaperProviderPostBudget, ZERO
@@ -241,15 +242,27 @@ def test_owner_replacement_during_return_is_rechecked_on_ownership_exit(
         tmp_path,monkeypatch):
     journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
     original=BrokerRequestJournal.locked_request_snapshot
+    original_validate=budget_subject._PostOwnership.validate
     lock_path=budget.path.resolve().with_name(budget.path.name+'.owner.lock')
     displaced=tmp_path/'displaced-post-owner.lock'
+    late={'changed':False}
+    def validate_owner(self):
+        if late['changed']:
+            budget_subject._fail('OWNER_FILE_CHANGED')
+        return original_validate(self)
+    if os.name=='nt':
+        monkeypatch.setattr(budget_subject._PostOwnership,'validate',
+            validate_owner)
     @contextmanager
     def replace_owner_after_request_exit(self,*args,**kwargs):
         with original(self,*args,**kwargs) as read:
             yield read
-        lock_path.rename(displaced)
-        fd=os.open(lock_path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
-        os.write(fd,b'0');os.close(fd)
+        if os.name=='nt':
+            late['changed']=True
+        else:
+            lock_path.rename(displaced)
+            fd=os.open(lock_path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+            os.write(fd,b'0');os.close(fd)
     monkeypatch.setattr(BrokerRequestJournal,'locked_request_snapshot',
         replace_owner_after_request_exit)
     with pytest.raises(ValueError,
@@ -258,7 +271,8 @@ def test_owner_replacement_during_return_is_rechecked_on_ownership_exit(
     state=budget.inspect()
     assert state['review_required'] is False and state['recoveries']==1
     assert len(budget.recovery_history())==1
-    assert displaced.is_file() and lock_path.is_file()
+    assert lock_path.is_file()
+    assert displaced.is_file() is (os.name!='nt')
 
 
 def test_recovery_clock_is_retained_without_shortening_existing_cooldown(tmp_path):

@@ -362,6 +362,27 @@ def test_pacing_profile_requires_resolved_unknown_post_recovery_fences():
             trials._validate('pacing',changed)
 
 
+def test_pacing_profile_requires_provider_read_recovery_fences():
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    for field in ('exact_review_block_bound',
+                  'recovery_acknowledgement_cold_replayed',
+                  'provider_budget_ownership_rechecked_on_exit',
+                  'blocked_history_preserved','cooldown_preserved',
+                  'session_capacity_not_reclaimed'):
+        changed=copy.deepcopy(result)
+        changed['provider_read_budget_recovery'][field]=False
+        with pytest.raises(ValueError,match='PROVIDER_READ_RECOVERY_FENCES'):
+            trials._validate('pacing',changed)
+    for field in ('actual_provider_access','actual_vault_access',
+                  'broker_account_reconciled','spendable_funds_verified',
+                  'ready_for_routing','live_orders_enabled',
+                  'money_movement_enabled','release_approved'):
+        changed=copy.deepcopy(result)
+        changed['provider_read_budget_recovery'][field]=True
+        with pytest.raises(ValueError,match='PROVIDER_READ_RECOVERY_AUTHORITY'):
+            trials._validate('pacing',changed)
+
+
 def test_pacing_profile_requires_provider_post_history_review_fences():
     from nexus.paper_provider_post_review import FLAGS
     result=trials._pacing_trial();trials._validate('pacing',result)

@@ -125,6 +125,29 @@ def test_exact_reviewed_recovery_clears_only_the_block_and_preserves_cooldown(
     assert budget.preflight(admission=lambda:before_next)==recovered['head_sha256']
 
 
+def test_recovery_receipt_cold_replays_exact_conservative_state(tmp_path):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3')
+    complete(budget,status_code=401)
+    blocked=budget.inspect();history=budget.history()
+    with budget.ownership() as owner:
+        result=budget.recover_review_block(expected_head=blocked['head_sha256'],
+            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+            confirm_uncertainty_preserved=True,admission=lambda:1002,
+            ownership=owner)
+        receipt=budget.recovery_receipt()
+    assert receipt['head_sha256']==receipt['recovery_head_sha256']==result['head_sha256']
+    assert receipt['blocked_session_head_sha256']==history[-1]['after_head_sha256']
+    assert receipt['blocked_outcome']=='AUTH_DENIED'
+    assert receipt['recoveries']==1 and receipt['sessions']==1
+    assert receipt['review_required'] is False and receipt['pending_token'] is None
+    assert receipt['next_allowed_at']==blocked['next_allowed_at']
+    assert receipt['exact_recovery_replayed'] and receipt['read_only']
+    assert all(receipt[key] is False for key in ('history_rewritten',
+        'session_capacity_reclaimed','admission_reserved','automatic_retry',
+        'automatic_continuation','ready_for_routing','live_orders_enabled',
+        'money_movement_enabled','release_approved'))
+
+
 def test_interrupted_unknown_requires_explicit_review_even_after_full_cooldown(tmp_path):
     budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3')
     with budget.ownership() as owner:

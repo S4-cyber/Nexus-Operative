@@ -223,6 +223,7 @@ class PaperProviderReadBudget:
                     state['review_required'] = False
                     state['recoveries'] += 1
                     state['last_recovery'] = dict(recovered_at=now,
+                        account_sha256=body['account_sha256'],
                         blocked_session_head_sha256=last['after_head_sha256'],
                         blocked_outcome=last['outcome'], recovery_head_sha256=digest)
                 else:
@@ -268,6 +269,36 @@ class PaperProviderReadBudget:
         now = clock(admission()); self._admit(state, now)
         if expected_head is not None and state['head_sha256'] != expected_head: _fail('HEAD_CHANGED')
         return state['head_sha256']
+
+    def recovery_receipt(self):
+        """Cold-replay the latest exact recovery without granting authority.
+
+        The write-side return from :meth:`recover_review_block` is transport,
+        not durable evidence.  This read-only receipt exposes only retained
+        digests and conservative state needed to prove one exact unblock.
+        """
+        self._path_check()
+        if not self.path.exists(): _fail('RECOVERY_MISSING')
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                db.execute('BEGIN'); state = self._load(db)
+        recovery = state['last_recovery']
+        if recovery is None: _fail('RECOVERY_MISSING')
+        pending = state['pending']
+        return dict(recovery, head_sha256=state['head_sha256'],
+            recoveries=state['recoveries'], sessions=state['sessions'],
+            last_evaluated_at=state['last_evaluated_at'],
+            next_allowed_at=state['next_allowed_at'],
+            review_required=state['review_required'],
+            pending_token=None if pending is None else pending['token'],
+            exact_recovery_replayed=True, read_only=True,
+            uncertainty_preserved=True, history_rewritten=False,
+            session_capacity_reclaimed=False, admission_reserved=False,
+            automatic_retry=False, automatic_continuation=False,
+            broker_wide_quota_verified=False,
+            distributed_ownership_verified=False, ready_for_routing=False,
+            live_orders_enabled=False, money_movement_enabled=False,
+            release_approved=False)
 
     def ownership(self):
         return _ProviderOwnership(self)

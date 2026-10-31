@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.75 provider-read recovery acknowledgement replay
+
+The explicit provider-read budget recovery command no longer treats its append return as durable evidence. While provider ownership remains held, it requires two identical cold receipts binding the exact recovery head, blocked session/outcome, account digest, incremented recovery count, unchanged cooldown and unreclaimed session capacity. A committed write with a lost acknowledgement is accepted exactly once. An uncommitted or fabricated append, missing receipt, changed receipt or unreadable journal yields fixed recovery uncertainty and cannot authorize another read.
+
+Exact-source v0.340.74 commit `1d8fb9aa77655fa3b7b20c295e5c8d57169d0496` passed security/Gitleaks 41188385670, all research regression/browser/evidence jobs in 41188385637 and Windows EXE/installer/reinstall/uninstall 41188385616. Fresh v0.340.75 workflows and actual authorized paper-account/private-volume acceptance remain required. This is injected local acknowledgement recovery, not provider identity, account acceptance, source/delivery coverage, broker-wide coordination, native-owner acceptance, fee/hold/funds reconciliation, market realism, profitability, cloud readiness, independent approval or owner release approval.
+
+Local prepublication validation passed 4,707 tests with one expected non-Windows skip and one existing warning; the provider-read recovery/release/evidence/version/installer focus passed 250. Sixteen offline profiles and saved evidence verified against 395 exact source files / `e7e13c612a6d5999c0b1c9c2111f8a39cd7642b2382b34ae2f8544e65689f3e5`. Evidence SHA-256 is `4cba3afeb308dbc7bc48d3ec6445305664f343f9dbc2dec9519aada2ad651546`; wheel SHA-256 is `b2e1da09a8c4809b7849789c309c0c6e8dcd34458e2192fc044724563799105d`. Compilation, dependency, roadmap, controller and Portal syntax checks passed. Local Playwright and Gitleaks are unavailable. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.74 read-ownership exit rechecks
 
 Account-read and provider-read work is now accepted locally only if the ownership pathname still names the exact opened regular single-link lock file as context exit begins. Replacement, disappearance or inaccessible-path sampling returns fixed ownership uncertainty and masks a lower-priority body error while still closing the descriptor. Provider POST ownership applies the same fixed-path-failure normalization. These guards coordinate only cooperating callers using the same local private paths.

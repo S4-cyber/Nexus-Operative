@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.75 provider-read recovery acknowledgement replay
+
+Explicit reviewed provider-read budget recovery now ignores the append acknowledgement and requires two identical cold read-only receipts while the same provider ownership is held. The receipts bind the exact recovery head, blocked session/outcome, account digest, recovery count, unchanged cooldown and unreclaimed session capacity. A committed recovery whose local acknowledgement is lost completes once; uncommitted, fabricated, changed or unreadable state remains fixed uncertainty without provider access, retry or capacity reset.
+
+Exact-source v0.340.74 commit `1d8fb9aa77655fa3b7b20c295e5c8d57169d0496` passed security/Gitleaks 41188385670, research regression/browser/evidence 41188385637 and Windows EXE/installer/reinstall/uninstall 41188385616. Fresh v0.340.75 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This injected local durability hardening does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,707 tests with one expected non-Windows skip and one existing warning; the provider-read recovery/release/evidence/version/installer focus passed 250. Sixteen offline profiles and saved evidence verified against 395 source files / `e7e13c612a6d5999c0b1c9c2111f8a39cd7642b2382b34ae2f8544e65689f3e5`. Evidence SHA-256 is `4cba3afeb308dbc7bc48d3ec6445305664f343f9dbc2dec9519aada2ad651546`; wheel SHA-256 is `b2e1da09a8c4809b7849789c309c0c6e8dcd34458e2192fc044724563799105d`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. No UI or modifiable parameter changed, so beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.74 read-ownership exit rechecks
 
 Account-read and shared provider-read ownership now revalidate their exact opened regular single-link lock file as context finalization begins, matching provider POST ownership. A late replacement, disappearance or inaccessible path becomes fixed ownership uncertainty on normal return and exception unwind while the descriptor still closes. The controls remain portable: POSIX performs actual replacement and Windows injects the equivalent late identity failure because the native lock prevents renaming the open file.

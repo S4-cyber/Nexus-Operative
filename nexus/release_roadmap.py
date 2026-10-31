@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.74'
+REVISION = '0.340.75'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -339,6 +339,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Account-read and shared provider-read ownership now retain their local lock proof through context finalization, matching the POST guard. Late replacement, disappearance or inaccessible-path sampling yields fixed ownership uncertainty on normal return and exception unwind; all descriptors are still closed. This is cooperating-process local hardening, not broker-wide/distributed ownership, native ACL acceptance or provider/account acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; explicit reviewed provider-read budget recovery now ignores its append acknowledgement and requires two identical read-only receipts binding the exact recovery head, account digest, blocked session/outcome, recovery count, unchanged cooldown and unreclaimed capacity while ownership remains held' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Reviewed provider-read budget recovery now accepts a lost local append acknowledgement only after two identical cold receipts prove the exact committed recovery and conservative state while provider ownership remains held. Uncommitted, fabricated, changed or unreadable state stays blocked; history, cooldown, uncertainty and consumed session capacity are preserved. This is injected local durability evidence, not provider/account acceptance, broker-wide coordination, fee/hold/funds reconciliation or market evidence.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -439,7 +447,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.74 extends exit-time ownership revalidation to account-read and shared provider-read locks and normalizes an unavailable ownership path to fixed local uncertainty across read and POST guards. A late replacement, disappearance or inaccessible path cannot become a successful return, including while a lower-priority body error unwinds; the opened descriptor is still closed. Exact-source v0.340.73 commit 0802b4cab5a8b801906fb1bdc0cad4f4a390511e passed public security/Gitleaks run 41184134622, every regression/browser/evidence job in 41184134611 and Windows EXE/installer/reinstall/uninstall run 41184134580. This remains cooperating-process local hardening, not broker-wide/distributed ownership, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.75 hardens the explicit provider-read budget recovery acknowledgement. The command ignores the append return and requires two identical cold read-only receipts while the same provider ownership is held, binding the exact recovery head, blocked session/outcome, account digest, recovery count, unchanged cooldown and unreclaimed session capacity. A committed write with a lost local acknowledgement succeeds once; uncommitted, fabricated, changed or unreadable state remains fixed uncertainty with no provider IO or authority. Exact-source v0.340.74 commit 1d8fb9aa77655fa3b7b20c295e5c8d57169d0496 passed security/Gitleaks run 41188385670, every regression/browser/evidence job in 41188385637 and Windows EXE/installer/reinstall/uninstall run 41188385616. This remains injected local durability evidence, not broker-wide coordination, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

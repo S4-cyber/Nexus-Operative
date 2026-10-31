@@ -29,9 +29,91 @@ def test_recover_entry_point_is_exact_and_retains_false_authority(tmp_path):
     assert result['status']=='REVIEW_REQUIRED' and result['review_block_cleared']
     assert result['next_allowed_at']==before['next_allowed_at']==after['next_allowed_at']
     assert after['recoveries']==1 and not after['review_required']
+    assert result['recovery_acknowledgement_cold_replayed']
+    assert result['provider_budget_ownership_rechecked_on_exit']
     assert all(result[key] is False for key in ('admission_reserved','automatic_retry',
         'automatic_continuation','broker_wide_quota_verified','distributed_ownership_verified',
         'ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved'))
+
+
+def test_lost_recovery_acknowledgement_cold_replays_exact_commit(
+        tmp_path,monkeypatch):
+    budget=blocked(tmp_path/'provider.sqlite3');before=budget.inspect()
+    original=PaperProviderReadBudget.recover_review_block
+    calls=0
+    def commit_then_lose_ack(self,*args,**kwargs):
+        nonlocal calls
+        calls+=1
+        original(self,*args,**kwargs)
+        raise RuntimeError('private lost recovery acknowledgement')
+    monkeypatch.setattr(PaperProviderReadBudget,'recover_review_block',
+                        commit_then_lose_ack)
+    result=subject.recover(budget.path,expected_head=before['head_sha256'],
+        expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+        confirm_uncertainty_preserved=True,admission=lambda:1002)
+    receipt=budget.recovery_receipt();after=budget.inspect()
+    assert calls==1 and result['recovery_acknowledgement_cold_replayed']
+    assert result['head_sha256']==receipt['recovery_head_sha256']
+    assert after['recoveries']==1 and after['review_required'] is False
+
+
+@pytest.mark.parametrize('replacement',('raise','fabricate'))
+def test_uncommitted_or_fabricated_recovery_ack_is_not_trusted(
+        tmp_path,monkeypatch,replacement):
+    budget=blocked(tmp_path/'provider.sqlite3');before=budget.inspect()
+    original=budget.path.read_bytes()
+    def fail_before_commit(*_args,**_kwargs):
+        if replacement=='raise':
+            raise RuntimeError('private recovery storage detail')
+        return dict(head_sha256='f'*64,review_block_cleared=True)
+    monkeypatch.setattr(PaperProviderReadBudget,'recover_review_block',
+                        fail_before_commit)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_BUDGET_RECOVERY_DURABLE_STATE_CHANGED') as error:
+        subject.recover(budget.path,expected_head=before['head_sha256'],
+            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+            confirm_uncertainty_preserved=True,admission=lambda:1002)
+    assert 'private recovery storage detail' not in str(error.value)
+    assert budget.path.read_bytes()==original
+    assert budget.inspect()['review_required'] is True
+
+
+def test_post_commit_recovery_reader_failure_is_fixed_uncertainty(
+        tmp_path,monkeypatch):
+    budget=blocked(tmp_path/'provider.sqlite3');before=budget.inspect()
+    original_recover=PaperProviderReadBudget.recover_review_block
+    committed=False
+    def commit(self,*args,**kwargs):
+        nonlocal committed
+        result=original_recover(self,*args,**kwargs);committed=True
+        return result
+    def fail_after_commit(self):
+        if committed:raise RuntimeError('private recovery reader detail')
+        raise AssertionError('receipt called before commit')
+    monkeypatch.setattr(PaperProviderReadBudget,'recover_review_block',commit)
+    monkeypatch.setattr(PaperProviderReadBudget,'recovery_receipt',fail_after_commit)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_BUDGET_RECOVERY_DURABLE_STATE_CHANGED') as error:
+        subject.recover(budget.path,expected_head=before['head_sha256'],
+            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+            confirm_uncertainty_preserved=True,admission=lambda:1002)
+    assert 'private recovery reader detail' not in str(error.value)
+    assert budget.inspect()['recoveries']==1
+    assert budget.inspect()['review_required'] is False
+
+
+def test_fixture_proves_lost_ack_without_authority():
+    result=subject.fixture_report()
+    assert result['passed']
+    assert all(result[key] is True for key in (
+        'exact_review_block_bound','recovery_acknowledgement_cold_replayed',
+        'provider_budget_ownership_rechecked_on_exit',
+        'blocked_history_preserved','cooldown_preserved',
+        'session_capacity_not_reclaimed'))
+    assert all(result[key] is False for key in ('actual_provider_access',
+        'actual_vault_access','broker_account_reconciled',
+        'spendable_funds_verified','ready_for_routing','live_orders_enabled',
+        'money_movement_enabled','release_approved'))
 
 
 def test_cli_requires_both_confirmations_and_suppresses_private_failure(

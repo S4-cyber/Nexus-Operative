@@ -702,6 +702,42 @@ def test_safety_closure_outside_last_trusted_window_is_not_trusted(
         outcome=='OUTCOME_UNKNOWN')
 
 
+@pytest.mark.parametrize('outcome', ['NOT_SENT','OUTCOME_UNKNOWN'])
+def test_safety_closure_request_head_advance_during_budget_finish_is_uncertain(
+        prepared,monkeypatch,outcome):
+    journal,_,budget=prepared
+    original=PaperProviderPostBudget.finish
+    advanced=False
+    def finish_then_advance(self,*args,**kwargs):
+        nonlocal advanced
+        result=original(self,*args,**kwargs)
+        if kwargs.get('outcome')==outcome and not advanced:
+            BrokerRequestJournal(journal.path,ACCOUNT).begin_lookup(
+                'nx_fixture',evaluated_at=1001)
+            advanced=True
+        return result
+    monkeypatch.setattr(PaperProviderPostBudget,'finish',finish_then_advance)
+    if outcome=='NOT_SENT':
+        def stop_after_marker():
+            return journal.recovery()['requests'][0][
+                'submission_attempt_marked']
+        opener=Opener(); changes=dict(emergency_stop_check=stop_after_marker)
+    else:
+        opener=Opener([account(),[],asset(),account(),[],account(),[],
+                       URLError('private transport detail')])
+        changes={}
+    with pytest.raises(module.PaperSubmissionError,
+                       match='POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN'):
+        submit(prepared,opener,**changes)
+    retained=journal.recovery()['requests'][0]
+    history=budget.history()
+    assert advanced and retained['lookup']['pending'] is True
+    assert len(history)==1 and history[0]['outcome']==outcome
+    assert history[0]['actual_posts']==(outcome=='OUTCOME_UNKNOWN')
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==(
+        outcome=='OUTCOME_UNKNOWN')
+
+
 @pytest.mark.parametrize('finish_result',[RuntimeError('private closure detail'),'f'*64])
 def test_uncommitted_safety_closure_is_fixed_pending_review(
         prepared,monkeypatch,finish_result):

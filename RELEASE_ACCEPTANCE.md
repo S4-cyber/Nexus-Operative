@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.65 safety-closure request-head bracket
+
+The one-attempt paper boundary now accepts a zero/one-POST safety closure only when two stable complete request replays before its provider-budget terminal write exactly match two stable replays afterward. The exact request head, account and payload remain bound; a concurrent original-ID lookup advance leaves fixed uncertainty without provider retry, resend or routing authority.
+
+Exact-source v0.340.64 commit `059d101588794a228c6ab64f98f9d85c4f189a6a` passed security 41144482629, research/browser/evidence 41144482522 and Windows EXE/installer/reinstall/uninstall 41144482628. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local prepublication validation passed 4,675 tests with one expected non-Windows skip and one existing warning; the final submission/release/evidence/version/installer focus passed 266. Sixteen offline profiles and saved evidence verified against 395 exact source files / `c06d1c3b950fc1417a6d69a64503be453e2b126e6af771aec33a39c40291ea12`. Evidence SHA-256 is `c583985cb58c47a31eb4d1a5a3e21479a3a41bd5d1017a64c996930e847bef38`; wheel SHA-256 is `e7a130eab2c7944e2093eb2829610cd5ee64377a96f3afd74d8262851e742164`. Compilation, dependency, roadmap, controller, Portal syntax, artifact and targeted credential checks passed. Local Playwright and Gitleaks are unavailable; these local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.64 terminal completion-window binding
 
 The one-attempt paper boundary now accepts terminal provider-budget state only when its retained completion time is inside the exact caller-witnessed window. `RESPONSE_OBSERVED` is bracketed by live admission checks; `NOT_SENT` and `OUTCOME_UNKNOWN` close at the last trusted sample without weakening revoked permission or the independent emergency stop. Out-of-window state produces fixed uncertainty and no provider retry or routing authority.

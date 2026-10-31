@@ -409,6 +409,48 @@ def _post_budget_completion_head(post_budget, *, token, expected_account_id,
     return history[-1]['after_head_sha256']
 
 
+def _safety_closure_request_receipt(journal, *, expected_account_id,
+        client_order_id, expected_payload_sha256, expected_actual_posts):
+    """Cold-replay the exact request head used by a safety closure.
+
+    A safety closure can be preserving a store-binding failure, so this reader
+    deliberately uses the already pinned journal object without requiring the
+    cross-store callback.  Two complete replays must nevertheless agree and
+    retain the exact marked request/account/payload.  The caller repeats this
+    receipt after the provider-budget terminal write to reject a torn
+    cross-journal closure without repeating provider IO.
+    """
+    try:
+        receipt = journal.recovery()
+        receipt_again = journal.recovery()
+        selected = [row for row in receipt['requests']
+                    if row['client_order_id'] == client_order_id]
+        expected_account = hashlib.sha256(expected_account_id.encode()).hexdigest()
+        stable = (receipt == receipt_again and
+            receipt['mode'] == 'DISCONNECTED_DURABLE_BROKER_REQUEST_DIAGNOSTIC' and
+            receipt['head_sha256'] != '0' * 64 and
+            type(receipt['head_sha256']) is str and
+            re.fullmatch(r'[0-9a-f]{64}', receipt['head_sha256']) is not None and
+            journal.account_digest == expected_account and
+            len(selected) == 1 and
+            selected[0]['payload_sha256'] == expected_payload_sha256 and
+            type(selected[0]['submission_attempt_marked']) is bool and
+            selected[0]['lookup_by_original_client_id_required'] is
+                selected[0]['submission_attempt_marked'] and
+            (expected_actual_posts == 0 or
+                selected[0]['submission_attempt_marked'] is True) and
+            receipt['automatic_resume'] is False and
+            receipt['automatic_submission'] is False and
+            receipt['broker_connected'] is False and
+            receipt['live_orders_enabled'] is False and
+            receipt['ledger_applied'] is False)
+    except BaseException:
+        stable = False
+    if not stable:
+        _fail('POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN')
+    return receipt
+
+
 def _response_observation_receipt(journal, store_binding_check, *,
         client_order_id, response, expected_payload, expected_previous_head,
         expected_payload_sha256):
@@ -717,14 +759,18 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             observation_head = observed['head_sha256']
         except BaseException:
             outcome = 'OUTCOME_UNKNOWN' if session.post_attempted else 'NOT_SENT'
-            request_after_head = None
             # The active reservation guarantees at least one prior successful
             # checkpoint.  A safety closure must use that last trusted wall
             # sample exactly; it must not need to re-grant permission or ignore
             # an emergency stop merely to retire the local provider budget.
             closure_admitted_at = session.previous[0]
+            closure_request = _safety_closure_request_receipt(bound_journal,
+                expected_account_id=expected_account_id,
+                client_order_id=client_order_id,
+                expected_payload_sha256=expected_payload_sha256,
+                expected_actual_posts=int(session.post_attempted))
+            request_after_head = closure_request['head_sha256']
             try:
-                request_after_head = bound_journal.recovery()['head_sha256']
                 bound_budget.finish(token, outcome=outcome,
                     request_after_head_sha256=request_after_head,
                     actual_posts=int(session.post_attempted),
@@ -746,6 +792,13 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 expected_completed_at_floor=closure_admitted_at,
                 expected_completed_at_ceiling=closure_admitted_at,
                 failure_code='POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN')
+            closure_request_after = _safety_closure_request_receipt(
+                bound_journal, expected_account_id=expected_account_id,
+                client_order_id=client_order_id,
+                expected_payload_sha256=expected_payload_sha256,
+                expected_actual_posts=int(session.post_attempted))
+            if closure_request_after != closure_request:
+                _fail('POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN')
             raise
         completion_admission_floor = session.previous[0]
         try:
@@ -788,6 +841,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         response_observation_cold_replayed=True,
         response_budget_completion_cold_replayed=True,
         response_and_safety_completion_windows_bound=True,
+        safety_closure_request_head_bracketed=True,
         alpaca_post_budget_scope_required=True,
         paper_order_response_observed=True, journal=observed,
         post_budget_head_sha256=post_budget_head,
@@ -1142,6 +1196,45 @@ def fixture_report():
                         for request in unknown_window_opener.requests)==1)
         finally:
             PaperProviderPostBudget.finish=original_finish
+        closure_head_journal,closure_head_selected=prepared(
+            root/'closure-request-head')
+        closure_head_budget=PaperProviderPostBudget(
+            root/'closure-request-head-post-budget.sqlite3')
+        closure_head_opener=Opener(closure_head_journal)
+        safety_closure_request_head_bracketed=False
+        closure_head_advanced=False
+        def advance_request_after_safety_finish(self,*args,**kwargs):
+            nonlocal closure_head_advanced
+            result=original_finish(self,*args,**kwargs)
+            if kwargs.get('outcome')=='NOT_SENT' and not closure_head_advanced:
+                closure_head_journal.begin_lookup('nx_submit_fixture',
+                    evaluated_at=1001)
+                closure_head_advanced=True
+            return result
+        def closure_head_stop():
+            return closure_head_journal.recovery()['requests'][0][
+                'submission_attempt_marked']
+        PaperProviderPostBudget.finish=advance_request_after_safety_finish
+        try:
+            submit_once(closure_head_journal,'nx_submit_fixture',key,secret,
+                **dict(options(closure_head_selected,closure_head_opener,
+                               closure_head_budget),
+                       emergency_stop_check=closure_head_stop))
+        except PaperSubmissionError as error:
+            closure_head_history=closure_head_budget.history()
+            closure_head_retained=closure_head_journal.recovery()['requests'][0]
+            safety_closure_request_head_bracketed=(
+                str(error)==
+                    'PAPER_SUBMISSION_POST_BUDGET_SAFETY_CLOSURE_UNCERTAIN'
+                and closure_head_advanced
+                and closure_head_retained['lookup']['pending'] is True
+                and len(closure_head_history)==1
+                and closure_head_history[0]['outcome']=='NOT_SENT'
+                and closure_head_history[0]['actual_posts']==0
+                and not any(request.get_method()=='POST'
+                            for request in closure_head_opener.requests))
+        finally:
+            PaperProviderPostBudget.finish=original_finish
         reservation_window_journal,reservation_window_selected=prepared(
             root/'reservation-window')
         reservation_window_budget=PaperProviderPostBudget(
@@ -1250,6 +1343,9 @@ def fixture_report():
             outcome_unknown_completion_window_bound=
                 result['response_and_safety_completion_windows_bound'] is True and
                 outcome_unknown_completion_window_bound,
+            safety_closure_request_head_bracketed=
+                result['safety_closure_request_head_bracketed'] is True and
+                safety_closure_request_head_bracketed,
             alpaca_post_budget_scope_required=
                 result['alpaca_post_budget_scope_required'] is True,
             late_risk_change_blocked_before_reservation=late_risk_change_blocked,

@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.65 safety-closure request-head bracket
+
+Zero/one-POST paper safety closure now reads the complete pinned request journal twice before the provider-budget terminal write and twice afterward, requiring an identical exact head, account and payload. A concurrent original-ID lookup advance produces fixed closure uncertainty without retrying provider IO or re-arming the request. Pre-marker `NOT_SENT` closure remains valid, and the independent emergency stop still needs no permission relaxation.
+
+Exact-source v0.340.64 commit `059d101588794a228c6ab64f98f9d85c4f189a6a` passed security 41144482629, research/browser/evidence 41144482522 and Windows EXE/installer/reinstall/uninstall 41144482628. Fresh v0.340.65 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local boundary does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,675 tests with one expected non-Windows skip and one existing warning; the final submission/release/evidence/version/installer focus passed 266. Sixteen offline profiles and saved evidence verified against 395 source files / `c06d1c3b950fc1417a6d69a64503be453e2b126e6af771aec33a39c40291ea12`. Evidence SHA-256 is `c583985cb58c47a31eb4d1a5a3e21479a3a41bd5d1017a64c996930e847bef38`; wheel SHA-256 is `e7a130eab2c7944e2093eb2829610cd5ee64377a96f3afd74d8262851e742164`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, proposed-snapshot artifact audit and targeted credential scanning passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.64 terminal completion-window binding
 
 Successful provider-budget completion and both zero/one-POST safety closures now retain and cold-replay `completed_at` inside exact caller-witnessed windows. A normal response completion is bracketed by permission, independent emergency-stop, store-binding and monotonic-clock checks. A failure closure uses the last trusted sample exactly, so stopping the system never requires reauthorizing it. Out-of-window terminal state remains fixed uncertainty and cannot create retry, resend, recovery or routing authority.

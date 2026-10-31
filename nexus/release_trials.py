@@ -986,6 +986,7 @@ def _validate(profile, result):
              'response_completion_window_bound',
              'not_sent_completion_window_bound',
              'outcome_unknown_completion_window_bound',
+             'safety_closure_request_head_bracketed',
              'safety_closure_cold_replayed',
              'alpaca_post_budget_scope_required',
              'late_risk_change_blocked_before_reservation',

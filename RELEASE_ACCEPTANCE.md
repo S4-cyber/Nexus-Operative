@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.82 multi-account pending-history non-masking
+
+Exact-head provider/account read reconciliation is accepted locally only when a complete peer cannot mask another account's pending history. The two-account fixture must preserve both complete six-session diagnostic counts, keep the whole review inconsistent, report the exact account-pending reasons and zero matched sessions, and leave every journal byte unchanged. It performs no recovery, provider I/O, retry, capacity reset or routing.
+
+Exact-source v0.340.81 commit `8124d18b399b6454c8fd2f302fd737e5bdcd96fa` passed security/Gitleaks 41214792477, all research regression/browser/evidence jobs in 41214792588 and Windows EXE/installer/reinstall/uninstall/distribution 41214792548. Fresh v0.340.82 workflows and actual authorized paper-account/private-volume acceptance remain required. This is disposable local multi-account evidence, not partial broker/account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,725 tests with one expected skip and one existing warning; the pending/release/evidence/version/installer focus passed 252. Sixteen profiles verified against 395 exact source files / `f6334fa7a49d572dc9e8a25acf535f4728458885a0ba721a2bdab3c7c395af2e`. Evidence SHA-256 is `6132548dcf89e87e682768ec47f6d5f5893bb40558a564c242ebff37f2b208a3`; wheel SHA-256 is `f3e30e750c762a60fc2e6afad40f4ab267d9bca07cd1b7461bcb650a416825bf`. Compilation, dependency, roadmap, controller and Portal checks, the 794-path artifact audit and credential scanning passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.81 pending-history non-promotion evidence
 
 Exact-head provider/account read reconciliation is accepted locally only when every pending shape remains fail-closed. Provider-only pending, account-only pending and aligned dual-pending histories must each report their exact review reasons, zero matched sessions, false consistency and unchanged journal bytes. No path performs recovery, provider I/O, retry, capacity reset or routing.

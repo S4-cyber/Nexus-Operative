@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.82 multi-account pending-history non-masking
+
+Exact-head provider/account read reconciliation now carries mandatory two-account evidence. One pending account alongside a fully matched peer keeps the combined review inconsistent, retains both complete six-session histories for diagnosis, reports zero promoted matched sessions and preserves every journal byte. The fixture performs no recovery, provider read, retry, capacity reset or routing action.
+
+Exact-source v0.340.81 commit `8124d18b399b6454c8fd2f302fd737e5bdcd96fa` passed security/Gitleaks 41214792477, all research regression/browser/evidence jobs in 41214792588 and Windows EXE/installer/reinstall/uninstall/distribution 41214792548. Fresh v0.340.82 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local multi-account evidence does not close an external gate or predict profit.
+
+Local validation passed 4,725 tests with one expected skip and one existing warning; the pending/release/evidence/version/installer focus passed 252. Sixteen profiles verified against 395 source files / `f6334fa7a49d572dc9e8a25acf535f4728458885a0ba721a2bdab3c7c395af2e`. Evidence SHA-256 is `6132548dcf89e87e682768ec47f6d5f5893bb40558a564c242ebff37f2b208a3`; wheel SHA-256 is `f3e30e750c762a60fc2e6afad40f4ab267d9bca07cd1b7461bcb650a416825bf`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 794-path proposed-snapshot audit and targeted credential scanning passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.81 pending-history non-promotion evidence
 
 Exact-head provider/account read reconciliation now carries mandatory evidence for all three pending shapes. Provider-only pending, account-only pending and aligned dual-pending histories each remain inconsistent, report zero matched sessions and preserve every journal byte. The fixture performs no recovery, provider read, retry, capacity reset or routing action.

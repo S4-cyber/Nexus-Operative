@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.81 (pre-release).** This build requires provider-only, account-only and aligned dual-pending exact-head histories to remain non-promotable, inconsistent and byte-for-byte unchanged. It adds no Portal route, saved credential, provider IO, recovery, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.82 (pre-release).** This build requires one pending account beside a fully matched peer to keep the complete exact-head provider/account review inconsistent, diagnostic-only, zero-promoted and byte-for-byte unchanged. It adds no Portal route, saved credential, provider IO, recovery, retry, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.82 multi-account pending-history non-masking
+
+The provider/account read-history fixture now composes a five-purpose account and a complete peer inventory session under one provider budget, then leaves only the first account pending. The complete peer cannot mask the pending tail or earn partial matched-session credit. Direct tests and release validation require both six-session history counts, the exact pending reason set, zero matched sessions and unchanged files.
+
+Exact-source v0.340.81 commit `8124d18b399b6454c8fd2f302fd737e5bdcd96fa` passed security/Gitleaks 41214792477, all research regression/browser/evidence jobs in 41214792588 and Windows EXE/installer/reinstall/uninstall/distribution 41214792548. Fresh v0.340.82 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not partial account acceptance, provider source, broker-wide coordination, native-owner Windows acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+Local validation passed 4,725 tests with one expected skip and one existing warning; the pending/release/evidence/version/installer focus passed 252. Sixteen offline profiles verified 395 source files / `f6334fa7a49d572dc9e8a25acf535f4728458885a0ba721a2bdab3c7c395af2e`. Evidence SHA-256 is `6132548dcf89e87e682768ec47f6d5f5893bb40558a564c242ebff37f2b208a3`; wheel SHA-256 is `f3e30e750c762a60fc2e6afad40f4ab267d9bca07cd1b7461bcb650a416825bf`. Compilation, dependencies, roadmap, controllers, Portal syntax, the 794-path artifact audit and credential scanning passed. Release approval and trading permission remain false.
 
 ## v0.340.81 pending-history non-promotion evidence
 

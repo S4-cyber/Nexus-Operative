@@ -240,6 +240,37 @@ def fixture_report():
         def current(gate,budget):
             return review(budget,[gate],expected_provider_head=budget.inspect()['head_sha256'],
                 expected_account_heads={gate.account_digest:gate.inspect()['head_sha256']})
+        def current_many(gates,budget):
+            return review(budget,gates,
+                expected_provider_head=budget.inspect()['head_sha256'],
+                expected_account_heads={gate.account_digest:
+                    gate.inspect()['head_sha256'] for gate in gates})
+        def add_complete_account(path,budget,account):
+            gate=PaperReadPacing(path/'pacing.sqlite3',account)
+            operation='ACCOUNT_INVENTORY'
+            request_kinds=list(OPERATION_PATTERNS[operation][0])
+            completed_at=max(2000,budget.inspect()['next_allowed_at'])
+            receipt=dict(operation=operation,request_kinds=request_kinds,
+                request_sha256=[sha(dict(request=index))
+                    for index in range(len(request_kinds))],
+                response_sha256=[sha(dict(response=index))
+                    for index in range(len(request_kinds))])
+            with gate.ownership() as owner:
+                token=gate.begin(admission=lambda:completed_at,ownership=owner,
+                    operation=operation)
+                gate.finish(token,admission=lambda:completed_at+1,status_code=200,
+                    ownership=owner,receipt=receipt)
+            record=gate.operation_history()[0]
+            with budget.ownership() as owner:
+                token=budget.begin(account_id=account,
+                    account_before_head_sha256=record['before_head_sha256'],
+                    operation=operation,admission=lambda:completed_at,
+                    ownership=owner)
+                budget.finish(token,
+                    account_after_head_sha256=record['after_head_sha256'],
+                    actual_gets=len(request_kinds),admission=lambda:completed_at+1,
+                    ownership=owner,status_code=200)
+            return gate
         def leave_pending(gate,budget,mode):
             pending_at=max(gate.inspect()['next_allowed_at'],
                 budget.inspect()['next_allowed_at'])
@@ -302,6 +333,13 @@ def fixture_report():
             pending_before=files()
             pending_results[mode]=current(pending_gate,pending_budget)
             pending_unchanged[mode]=files()==pending_before
+        multi_gate,multi_budget=build_pair(root/'multi-account-pending')
+        other_gate=add_complete_account(root/'multi-account-pending'/'other',
+            multi_budget,'21234567-89ab-cdef-0123-456789abcdef')
+        leave_pending(multi_gate,multi_budget,'account')
+        multi_before=files()
+        multi_result=current_many([multi_gate,other_gate],multi_budget)
+        multi_unchanged=files()==multi_before
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -330,6 +368,17 @@ def fixture_report():
                 pending_results[mode]['review_reasons']==expected and
                 pending_unchanged[mode]
                 for mode,expected in pending_expectations.items()),
+            pending_account_cannot_hide_behind_complete_peer=(
+                multi_result['local_provider_account_history_consistent'] is False and
+                multi_result['review_reasons']==[
+                    'INCOMPLETE_ACCOUNT_HISTORY','PENDING_ACCOUNT_HISTORY'] and
+                multi_result['account_journals']==2 and
+                multi_result['provider_sessions_replayed']==6 and
+                multi_result['account_sessions_replayed']==6 and
+                multi_result['operation_counts']['ACCOUNT_INVENTORY']==2 and
+                multi_result['matched_sessions']==0 and
+                other_gate.inspect()['pending_token'] is None and
+                multi_unchanged),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

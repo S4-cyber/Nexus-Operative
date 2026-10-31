@@ -428,6 +428,7 @@ def test_pacing_profile_requires_provider_read_history_review_fences():
                   'journals_unchanged','split_recovery_requires_both_sides',
                   'split_recovery_order_independent',
                   'pending_histories_never_promote',
+                  'pending_account_cannot_hide_behind_complete_peer',
                   'journal_file_fingerprints_rechecked',
                   'semantic_reader_failures_rechecked','output_never_authoritative'):
         changed=copy.deepcopy(result);changed['provider_read_history_review'][field]=False

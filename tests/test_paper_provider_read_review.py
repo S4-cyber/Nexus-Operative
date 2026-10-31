@@ -206,6 +206,43 @@ def test_one_provider_history_can_exactly_compose_multiple_account_journals(tmp_
     assert result['matched_sessions']==6 and result['operation_counts']['ACCOUNT_INVENTORY']==2
 
 
+def test_pending_account_cannot_hide_behind_complete_peer_history(tmp_path):
+    gate,budget=build(tmp_path);other=PaperReadPacing(tmp_path/'other.sqlite3',OTHER)
+    kinds=list(OPERATION_PATTERNS['ACCOUNT_INVENTORY'][0])
+    receipt=dict(operation='ACCOUNT_INVENTORY',request_kinds=kinds,
+        request_sha256=[sha(dict(request=i)) for i in range(len(kinds))],
+        response_sha256=[sha(dict(response=i)) for i in range(len(kinds))])
+    with other.ownership() as owner:
+        token=other.begin(admission=lambda:2000,ownership=owner,
+            operation='ACCOUNT_INVENTORY')
+        other.finish(token,admission=lambda:2001,status_code=200,
+            ownership=owner,receipt=receipt)
+    record=other.operation_history()[0]
+    with budget.ownership() as owner:
+        token=budget.begin(account_id=OTHER,
+            account_before_head_sha256=record['before_head_sha256'],
+            operation=record['operation'],admission=lambda:1400,ownership=owner)
+        budget.finish(token,account_after_head_sha256=record['after_head_sha256'],
+            actual_gets=len(kinds),admission=lambda:1401,ownership=owner,
+            status_code=200)
+    pending_at=max(gate.inspect()['next_allowed_at'],budget.inspect()['next_allowed_at'])
+    with gate.ownership() as owner:
+        gate.begin(admission=lambda:pending_at,ownership=owner,
+            operation='ACCOUNT_INVENTORY')
+    before=files(tmp_path)
+    result=subject.review(budget,[gate,other],
+        expected_provider_head=budget.inspect()['head_sha256'],
+        expected_account_heads={gate.account_digest:gate.inspect()['head_sha256'],
+            other.account_digest:other.inspect()['head_sha256']})
+    assert result['review_reasons']==[
+        'INCOMPLETE_ACCOUNT_HISTORY','PENDING_ACCOUNT_HISTORY']
+    assert result['account_journals']==2
+    assert result['provider_sessions_replayed']==result['account_sessions_replayed']==6
+    assert result['operation_counts']['ACCOUNT_INVENTORY']==2
+    assert result['local_provider_account_history_consistent'] is False
+    assert result['matched_sessions']==0 and files(tmp_path)==before
+
+
 @pytest.mark.parametrize('count,reason',[(4,'PROVIDER_ACCOUNT_SESSION_MISMATCH'),(0,'FIVE_PURPOSE_HISTORY_INCOMPLETE')])
 def test_missing_provider_history_never_matches_account_history(tmp_path,count,reason):
     gate,budget=build(tmp_path,count=count)

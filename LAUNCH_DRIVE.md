@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.74 read-ownership exit rechecks
+
+Account-read and shared provider-read ownership now revalidate their exact opened regular single-link lock file as context finalization begins, matching provider POST ownership. A late replacement, disappearance or inaccessible path becomes fixed ownership uncertainty on normal return and exception unwind while the descriptor still closes. The controls remain portable: POSIX performs actual replacement and Windows injects the equivalent late identity failure because the native lock prevents renaming the open file.
+
+Exact-source v0.340.73 commit `0802b4cab5a8b801906fb1bdc0cad4f4a390511e` passed security/Gitleaks 41184134622, research regression/browser/evidence 41184134611 and Windows EXE/installer/reinstall/uninstall 41184134580. Fresh v0.340.74 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This cooperating-process local ownership hardening does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,700 tests with one expected non-Windows skip and one existing warning; the ownership/recovery/release/evidence/version/installer focus passed 450. Sixteen offline profiles and saved evidence verified against 395 source files / `0361ed29186c6c0dbc5f4ad73d9b98bf422b016219056f8604f5df2fb25bf806`. Evidence SHA-256 is `cb04926f8f45b367fb960190a3b9907f1b128ff43841124344b823db38eda77a`; wheel SHA-256 is `68d77c4b24dde53e4518d5cace4431a5ed05c5f79241d3ebc77cc065434cdc3c`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 786-path proposed-snapshot artifact audit and targeted credential scanning passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.73 Windows-portable ownership-exit controls
 
 The provider POST ownership-exit negative controls now respect native filesystem semantics without changing production behavior. POSIX retains real lock-path replacement. Windows exercises the equivalent late identity failure deterministically because the native mandatory-share lock correctly rejects renaming the open lock file. Both paths preserve fixed ownership uncertainty, error priority, a conservatively committed recovery, and denial of success, re-arm, retry, provider access or routing authority.

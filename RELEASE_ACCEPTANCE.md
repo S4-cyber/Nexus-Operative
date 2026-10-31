@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.74 read-ownership exit rechecks
+
+Account-read and provider-read work is now accepted locally only if the ownership pathname still names the exact opened regular single-link lock file as context exit begins. Replacement, disappearance or inaccessible-path sampling returns fixed ownership uncertainty and masks a lower-priority body error while still closing the descriptor. Provider POST ownership applies the same fixed-path-failure normalization. These guards coordinate only cooperating callers using the same local private paths.
+
+Exact-source v0.340.73 commit `0802b4cab5a8b801906fb1bdc0cad4f4a390511e` passed security/Gitleaks run 41184134622, all research regression/browser/evidence jobs in run 41184134611 and Windows packaging/installer/reinstall/uninstall run 41184134580. Fresh v0.340.74 exact-source hosted workflows are mandatory. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local prepublication validation passed 4,700 tests with one expected non-Windows skip and one existing warning; the ownership/recovery/release/evidence/version/installer focus passed 450. Sixteen offline profiles and saved evidence verified against 395 exact source files / `0361ed29186c6c0dbc5f4ad73d9b98bf422b016219056f8604f5df2fb25bf806`. Evidence SHA-256 is `cb04926f8f45b367fb960190a3b9907f1b128ff43841124344b823db38eda77a`; wheel SHA-256 is `68d77c4b24dde53e4518d5cace4431a5ed05c5f79241d3ebc77cc065434cdc3c`. Compilation, dependency, roadmap, controller and Portal syntax checks, the 786-path proposed-snapshot artifact audit and targeted credential scanning passed. Local Playwright and Gitleaks are unavailable; these local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.73 Windows-portable ownership-exit controls
 
 The provider POST ownership-exit controls now test the same fixed late-identity failure according to native filesystem behavior. POSIX performs the actual same-path replacement. Windows deterministically injects the late validation failure because its open mandatory-share lock correctly prevents replacement with WinError 32. Production ownership validation remains unchanged, and a conservatively committed recovery still grants no successful acknowledgement, re-arm, retry, provider access or routing authority.

@@ -107,6 +107,23 @@ def test_ownership_rechecks_lock_path_on_context_exit(
     assert displaced.is_file() is (os.name!='nt')
 
 
+@pytest.mark.parametrize('body_error',(False,True))
+def test_ownership_normalizes_missing_path_on_context_exit(
+        tmp_path,body_error,monkeypatch):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    original=subject.Path.stat
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_BUDGET_OWNER_FILE_CHANGED'):
+        with budget.ownership() as owner:
+            def missing(path,*args,**kwargs):
+                if path==owner.path:
+                    raise FileNotFoundError('private lock path')
+                return original(path,*args,**kwargs)
+            monkeypatch.setattr(subject.Path,'stat',missing)
+            if body_error:
+                raise RuntimeError('private lower context failure')
+
+
 def test_exact_head_and_cooldown_block_without_appending(tmp_path):
     budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
     owner,token=begin(budget);finish(budget,owner,token)

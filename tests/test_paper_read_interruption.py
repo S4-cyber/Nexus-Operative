@@ -241,9 +241,46 @@ def test_owner_rejects_wrong_instance_closed_lease_and_replaced_file(gate, tmp_p
     with pytest.raises(ValueError, match='OWNER_REQUIRED'): other.begin(admission=lambda:1000,ownership=owner)
     if os.name != 'nt':
         # Windows denies unlinking the held file; POSIX replacement must be detected.
+        with pytest.raises(ValueError, match='OWNER_FILE_CHANGED'):
+            with gate.ownership() as owner:
+                owner.path.unlink(); owner.path.write_bytes(b'0')
+                with pytest.raises(ValueError, match='OWNER_FILE_CHANGED'):
+                    owner.validate()
+
+
+@pytest.mark.parametrize('body_error',(False,True))
+def test_owner_rechecks_lock_path_on_context_exit(
+        gate,tmp_path,body_error,monkeypatch):
+    lock_path=gate.path.resolve().with_name(gate.path.name+'.owner.lock')
+    displaced=tmp_path/'displaced-read-owner.lock'
+    with pytest.raises(ValueError,match='PAPER_READ_PACING_OWNER_FILE_CHANGED'):
         with gate.ownership() as owner:
-            owner.path.unlink(); owner.path.write_bytes(b'0')
-            with pytest.raises(ValueError, match='OWNER_FILE_CHANGED'): owner.validate()
+            assert owner.identity()
+            if os.name=='nt':
+                monkeypatch.setattr(owner,'validate',
+                    lambda:policy._fail('OWNER_FILE_CHANGED'))
+            else:
+                lock_path.rename(displaced)
+                lock_path.write_bytes(b'0')
+            if body_error:
+                raise RuntimeError('private lower context failure')
+    assert lock_path.is_file()
+    assert displaced.is_file() is (os.name!='nt')
+
+
+@pytest.mark.parametrize('body_error',(False,True))
+def test_owner_normalizes_missing_path_on_context_exit(
+        gate,body_error,monkeypatch):
+    original=policy.Path.stat
+    with pytest.raises(ValueError,match='PAPER_READ_PACING_OWNER_FILE_CHANGED'):
+        with gate.ownership() as owner:
+            def missing(path,*args,**kwargs):
+                if path==owner.path:
+                    raise FileNotFoundError('private lock path')
+                return original(path,*args,**kwargs)
+            monkeypatch.setattr(policy.Path,'stat',missing)
+            if body_error:
+                raise RuntimeError('private lower context failure')
 
 
 def test_owner_symlink_rejected_before_open(gate, tmp_path):

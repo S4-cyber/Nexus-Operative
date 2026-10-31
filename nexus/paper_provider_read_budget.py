@@ -388,8 +388,12 @@ class _ProviderOwnership:
         self.fd = None; self.lease = None
 
     def validate(self):
-        if self.fd is None or self.path.is_symlink(): _fail('OWNER_REQUIRED')
-        current, opened = self.path.stat(), os.fstat(self.fd)
+        if self.fd is None: _fail('OWNER_REQUIRED')
+        try:
+            if self.path.is_symlink(): _fail('OWNER_FILE_CHANGED')
+            current, opened = self.path.stat(), os.fstat(self.fd)
+        except OSError:
+            _fail('OWNER_FILE_CHANGED')
         if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or opened.st_size != 1 or
                 (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino)):
             _fail('OWNER_FILE_CHANGED')
@@ -421,5 +425,22 @@ class _ProviderOwnership:
             raise
 
     def __exit__(self, *args):
-        fd, self.fd = self.fd, None
-        if fd is not None: os.close(fd)
+        fd = self.fd
+        if fd is None:
+            return
+        exit_error = None
+        try:
+            # Retain the opened ownership proof through caller finalization;
+            # a replaced pathname must not turn a completed read into success.
+            self.validate()
+        except BaseException as error:
+            exit_error = error
+        finally:
+            self.fd = None
+            try:
+                os.close(fd)
+            except BaseException:
+                if exit_error is None:
+                    raise
+        if exit_error is not None:
+            raise exit_error

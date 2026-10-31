@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.73'
+REVISION = '0.340.74'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -331,6 +331,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Provider-ownership exit negative controls now preserve the same error-priority assertions across POSIX and Windows: POSIX exercises real pathname replacement, while Windows injects the equivalent late identity failure because the kernel denies renaming the open locked file. This is test portability for the local guard, not native owner-profile, broker or independent acceptance.')
     if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; account-read and provider-read ownership now recheck their exact opened regular single-link lock file during context exit, while all three read/POST guards normalize an unavailable lock path to fixed ownership uncertainty' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Account-read and shared provider-read ownership now retain their local lock proof through context finalization, matching the POST guard. Late replacement, disappearance or inaccessible-path sampling yields fixed ownership uncertainty on normal return and exception unwind; all descriptors are still closed. This is cooperating-process local hardening, not broker-wide/distributed ownership, native ACL acceptance or provider/account acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -431,7 +439,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.73 makes the provider-ownership exit negative controls portable without weakening the production fence. POSIX retains real lock-path replacement; Windows injects the equivalent late identity failure because WinError 32 correctly prevents renaming the open locked file. Exact-source v0.340.72 commit e03c1c73bb7aa1358052f1af56f11c39328ee7ac passed security 41180421277 plus browser and saved-evidence jobs in 41180421238, but its full Windows/Python 3.11 regression and Windows packaging run 41180421240 failed only in the three POSIX-only rename controls (4,669 passes/19 platform skips in research; the same three failures in Windows packaging). This repair does not claim those workflows passed; fresh exact-source v0.340.73 CI is required. No production runtime, Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.74 extends exit-time ownership revalidation to account-read and shared provider-read locks and normalizes an unavailable ownership path to fixed local uncertainty across read and POST guards. A late replacement, disappearance or inaccessible path cannot become a successful return, including while a lower-priority body error unwinds; the opened descriptor is still closed. Exact-source v0.340.73 commit 0802b4cab5a8b801906fb1bdc0cad4f4a390511e passed public security/Gitleaks run 41184134622, every regression/browser/evidence job in 41184134611 and Windows EXE/installer/reinstall/uninstall run 41184134580. This remains cooperating-process local hardening, not broker-wide/distributed ownership, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

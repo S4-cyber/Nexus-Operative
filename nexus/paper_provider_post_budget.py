@@ -536,8 +536,12 @@ class _PostOwnership:
         self.fd = None; self.lease = None
 
     def validate(self):
-        if self.fd is None or self.path.is_symlink(): _fail('OWNER_REQUIRED')
-        current, opened = self.path.stat(), os.fstat(self.fd)
+        if self.fd is None: _fail('OWNER_REQUIRED')
+        try:
+            if self.path.is_symlink(): _fail('OWNER_FILE_CHANGED')
+            current, opened = self.path.stat(), os.fstat(self.fd)
+        except OSError:
+            _fail('OWNER_FILE_CHANGED')
         if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or opened.st_size != 1 or
                 (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino)):
             _fail('OWNER_FILE_CHANGED')

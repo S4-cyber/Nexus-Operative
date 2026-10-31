@@ -1,4 +1,5 @@
 """Local provider-scope paper-read budget and conservative composition."""
+import os
 import sqlite3
 
 import pytest
@@ -25,6 +26,45 @@ def test_missing_inspection_is_read_only_and_authority_false(tmp_path):
     assert state['head_sha256']==ZERO and state['sessions']==0
     assert not budget.path.parent.exists()
     assert not state['broker_wide_quota_verified'] and not state['ready_for_routing']
+
+
+@pytest.mark.parametrize('body_error',(False,True))
+def test_provider_ownership_rechecks_lock_path_on_context_exit(
+        tmp_path,body_error,monkeypatch):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3')
+    lock_path=budget.path.resolve().with_name(budget.path.name+'.owner.lock')
+    displaced=tmp_path/'displaced-provider-owner.lock'
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_READ_BUDGET_OWNER_FILE_CHANGED'):
+        with budget.ownership() as owner:
+            assert owner.identity()
+            if os.name=='nt':
+                monkeypatch.setattr(owner,'validate',
+                    lambda:subject._fail('OWNER_FILE_CHANGED'))
+            else:
+                lock_path.rename(displaced)
+                lock_path.write_bytes(b'0')
+            if body_error:
+                raise RuntimeError('private lower context failure')
+    assert lock_path.is_file()
+    assert displaced.is_file() is (os.name!='nt')
+
+
+@pytest.mark.parametrize('body_error',(False,True))
+def test_provider_ownership_normalizes_missing_path_on_context_exit(
+        tmp_path,body_error,monkeypatch):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3')
+    original=subject.Path.stat
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_READ_BUDGET_OWNER_FILE_CHANGED'):
+        with budget.ownership() as owner:
+            def missing(path,*args,**kwargs):
+                if path==owner.path:
+                    raise FileNotFoundError('private lock path')
+                return original(path,*args,**kwargs)
+            monkeypatch.setattr(subject.Path,'stat',missing)
+            if body_error:
+                raise RuntimeError('private lower context failure')
 
 
 def test_completed_sessions_bind_two_accounts_without_plain_identifiers(tmp_path):

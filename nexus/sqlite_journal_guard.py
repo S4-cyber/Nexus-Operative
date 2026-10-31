@@ -3,6 +3,7 @@
 Sampled local file checks only; not an atomic descriptor binding, OS ACL audit,
 encryption, database replay or protection against an administrator racing paths.
 """
+from contextlib import contextmanager
 import hashlib
 import os
 from pathlib import Path
@@ -160,6 +161,25 @@ def require_file_fingerprints(paths, maximum_bytes, expected, prefix):
         raise ValueError(prefix + 'FILE_SET_CHANGED') from None
     if current != expected:
         raise ValueError(prefix + 'FILE_SET_CHANGED') from None
+
+
+@contextmanager
+def guard_file_set_finalization(paths, maximum_bytes, identities,
+        fingerprints, prefix):
+    """Repeat a sampled file-set proof after caller finalization.
+
+    A return expression or exception handler inside the context can execute
+    arbitrary Python after its last explicit proof.  Recheck the pathname
+    identities and bounded fingerprints while the caller's outer ownership
+    guards are still held, and let a late file-set failure take precedence
+    over a lower-level body error.  This remains sampled local evidence, not
+    a descriptor-held transaction, writer lock or ACL boundary.
+    """
+    try:
+        yield
+    finally:
+        require_file_identities(paths, identities, prefix)
+        require_file_fingerprints(paths, maximum_bytes, fingerprints, prefix)
 
 
 PATH_CHECKS=('recovery_companions_rejected','ancestors_rejected','normalized_aliases_rejected','unrelated_paths_unchanged')

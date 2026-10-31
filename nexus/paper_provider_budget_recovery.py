@@ -15,7 +15,8 @@ from nexus.paper_provider_read_budget import (
     MAX_DATABASE_BYTES, PaperProviderReadBudget)
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities,
-    require_file_fingerprints, require_file_identities)
+    guard_file_set_finalization, require_file_fingerprints,
+    require_file_identities)
 
 
 class _Parser(argparse.ArgumentParser):
@@ -73,40 +74,65 @@ def recover(path, *, expected_head, expected_account_id,
             committed_fingerprint = capture_file_fingerprints(
                 (private_resolved,), (MAX_DATABASE_BYTES,),
                 'PAPER_PROVIDER_BUDGET_RECOVERY_')
-            receipt = budget.recovery_receipt()
-            check_budget_identity()
-            require_file_fingerprints((private_resolved,),
-                (MAX_DATABASE_BYTES,), committed_fingerprint,
-                'PAPER_PROVIDER_BUDGET_RECOVERY_')
-            receipt_again = budget.recovery_receipt()
-            check_budget_identity()
-            require_file_fingerprints((private_resolved,),
-                (MAX_DATABASE_BYTES,), committed_fingerprint,
-                'PAPER_PROVIDER_BUDGET_RECOVERY_')
-            account_digest = hashlib.sha256(
-                expected_account_id.encode()).hexdigest()
-            stable = (receipt == receipt_again and
-                receipt['head_sha256'] == receipt['recovery_head_sha256'] and
-                receipt['recoveries'] == before['recoveries'] + 1 and
-                receipt['sessions'] == before['sessions'] and
-                receipt['review_required'] is False and
-                receipt['pending_token'] is None and
-                receipt['last_evaluated_at'] == receipt['recovered_at'] and
-                receipt['next_allowed_at'] == before['next_allowed_at'] and
-                receipt['account_sha256'] == account_digest and
-                receipt['blocked_session_head_sha256'] ==
-                    completed[-1]['after_head_sha256'] and
-                receipt['blocked_outcome'] == completed[-1]['outcome'] and
-                receipt['exact_recovery_replayed'] is True and
-                receipt['read_only'] is True and
-                receipt['uncertainty_preserved'] is True and
-                all(receipt[key] is False for key in (
-                    'history_rewritten', 'session_capacity_reclaimed',
-                    'admission_reserved', 'automatic_retry',
-                    'automatic_continuation', 'broker_wide_quota_verified',
-                    'distributed_ownership_verified', 'ready_for_routing',
-                    'live_orders_enabled', 'money_movement_enabled',
-                    'release_approved')))
+            with guard_file_set_finalization((private_resolved,),
+                    (MAX_DATABASE_BYTES,), budget_identity,
+                    committed_fingerprint,
+                    'PAPER_PROVIDER_BUDGET_RECOVERY_'):
+                receipt = budget.recovery_receipt()
+                check_budget_identity()
+                require_file_fingerprints((private_resolved,),
+                    (MAX_DATABASE_BYTES,), committed_fingerprint,
+                    'PAPER_PROVIDER_BUDGET_RECOVERY_')
+                receipt_again = budget.recovery_receipt()
+                check_budget_identity()
+                require_file_fingerprints((private_resolved,),
+                    (MAX_DATABASE_BYTES,), committed_fingerprint,
+                    'PAPER_PROVIDER_BUDGET_RECOVERY_')
+                account_digest = hashlib.sha256(
+                    expected_account_id.encode()).hexdigest()
+                stable = (receipt == receipt_again and
+                    receipt['head_sha256'] == receipt['recovery_head_sha256'] and
+                    receipt['recoveries'] == before['recoveries'] + 1 and
+                    receipt['sessions'] == before['sessions'] and
+                    receipt['review_required'] is False and
+                    receipt['pending_token'] is None and
+                    receipt['last_evaluated_at'] == receipt['recovered_at'] and
+                    receipt['next_allowed_at'] == before['next_allowed_at'] and
+                    receipt['account_sha256'] == account_digest and
+                    receipt['blocked_session_head_sha256'] ==
+                        completed[-1]['after_head_sha256'] and
+                    receipt['blocked_outcome'] == completed[-1]['outcome'] and
+                    receipt['exact_recovery_replayed'] is True and
+                    receipt['read_only'] is True and
+                    receipt['uncertainty_preserved'] is True and
+                    all(receipt[key] is False for key in (
+                        'history_rewritten', 'session_capacity_reclaimed',
+                        'admission_reserved', 'automatic_retry',
+                        'automatic_continuation', 'broker_wide_quota_verified',
+                        'distributed_ownership_verified', 'ready_for_routing',
+                        'live_orders_enabled', 'money_movement_enabled',
+                        'release_approved')))
+                if not stable:
+                    raise ValueError(
+                        'PAPER_PROVIDER_BUDGET_RECOVERY_DURABLE_STATE_CHANGED')
+                return dict(mode='PAPER_PROVIDER_READ_BUDGET_REVIEWED_RECOVERY',
+                    status='REVIEW_REQUIRED',
+                    head_sha256=receipt['recovery_head_sha256'],
+                    blocked_outcome=receipt['blocked_outcome'],
+                    review_block_cleared=True,
+                    next_allowed_at=receipt['next_allowed_at'],
+                    cooldown_shortened=False, uncertainty_preserved=True,
+                    history_rewritten=False, session_capacity_reclaimed=False,
+                    admission_reserved=False, automatic_retry=False,
+                    automatic_continuation=False, broker_wide_quota_verified=False,
+                    distributed_ownership_verified=False, ready_for_routing=False,
+                    live_orders_enabled=False, money_movement_enabled=False,
+                    release_approved=False,
+                    recovery_acknowledgement_cold_replayed=True,
+                    provider_budget_file_identity_rechecked=True,
+                    provider_budget_file_fingerprint_rechecked=True,
+                    provider_budget_file_set_rechecked_on_return=True,
+                    provider_budget_ownership_rechecked_on_exit=True)
         except BaseException as error:
             receipt_error = error
             stable = False
@@ -123,23 +149,6 @@ def recover(path, *, expected_head, expected_account_id,
                 raise write_error
             raise ValueError(
                 'PAPER_PROVIDER_BUDGET_RECOVERY_DURABLE_STATE_CHANGED')
-        return dict(mode='PAPER_PROVIDER_READ_BUDGET_REVIEWED_RECOVERY',
-            status='REVIEW_REQUIRED',
-            head_sha256=receipt['recovery_head_sha256'],
-            blocked_outcome=receipt['blocked_outcome'],
-            review_block_cleared=True,
-            next_allowed_at=receipt['next_allowed_at'],
-            cooldown_shortened=False, uncertainty_preserved=True,
-            history_rewritten=False, session_capacity_reclaimed=False,
-            admission_reserved=False, automatic_retry=False,
-            automatic_continuation=False, broker_wide_quota_verified=False,
-            distributed_ownership_verified=False, ready_for_routing=False,
-            live_orders_enabled=False, money_movement_enabled=False,
-            release_approved=False,
-            recovery_acknowledgement_cold_replayed=True,
-            provider_budget_file_identity_rechecked=True,
-            provider_budget_file_fingerprint_rechecked=True,
-            provider_budget_ownership_rechecked_on_exit=True)
 
 
 def fixture_report():
@@ -185,6 +194,8 @@ def fixture_report():
                 result['provider_budget_file_identity_rechecked'] is True,
             provider_budget_file_fingerprint_rechecked=
                 result['provider_budget_file_fingerprint_rechecked'] is True,
+            provider_budget_file_set_rechecked_on_return=
+                result['provider_budget_file_set_rechecked_on_return'] is True,
             provider_budget_ownership_rechecked_on_exit=
                 result['provider_budget_ownership_rechecked_on_exit'] is True,
             blocked_history_preserved=budget.history() == history,

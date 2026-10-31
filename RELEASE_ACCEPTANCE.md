@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.77 recovery store finalization recheck
+
+Reviewed provider POST and provider-read recovery is accepted locally only if the exact committed budget SQLite pathname identity and bounded fingerprint remain unchanged through return-expression and exception finalization while outer ownership is still held. Late replacement or rollback overrides a lower-priority success/body error with the existing fixed file diagnostic. A conservative append may remain retained, but neither command can report successful recovery from changed state or grant retry, capacity, provider or routing authority.
+
+Exact-source v0.340.76 commit `aea687ee558406c1e37c58104c2113be88b89d68` passed security/Gitleaks 41196707596, all research regression/browser/evidence jobs in 41196707597 and Windows EXE/installer/reinstall/uninstall 41196707637. Fresh v0.340.77 workflows and actual authorized paper-account/private-volume acceptance remain required. This is a sampled local file finalization guard, not an atomic descriptor transaction, ACL or administrator protection, broker identity, account acceptance, source/delivery coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, profitability, cloud readiness, independent approval or owner release approval.
+
+Local prepublication validation passed 4,711 tests with one expected non-Windows skip and one existing warning; the recovery/release focus passed 130. Sixteen offline profiles and saved evidence verified against 395 exact source files / `46e91c900efc93828a004346c704e8c12b44d7e72d5ea22a64c90228bacece1f`. Evidence SHA-256 is `0c1c03e83dc8e8a4bbd0e9605d35bdf7dc2f3133256b087f34e40436306ce638`; wheel SHA-256 is `668cf466f566146ca450b65aa0c1da7d1b44bd390a921505b1edcd84176b6694`. Compilation, dependency, roadmap, controller and Portal syntax checks, the 788-path proposed-snapshot artifact audit and targeted credential scanning passed. Local Playwright and Gitleaks are unavailable. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.76 provider-read recovery store bracket
 
 Explicit provider-read budget recovery is accepted locally only while its existing regular single-link SQLite pathname identity and bounded bytes/metadata remain stable across source replay and immediately before the guarded write, and while the newly committed fingerprint remains stable across both cold acknowledgement receipts. Same-path replacement returns fixed `PAPER_PROVIDER_BUDGET_RECOVERY_FILE_IDENTITY_CHANGED`; same-inode rollback returns fixed `PAPER_PROVIDER_BUDGET_RECOVERY_FILE_SET_CHANGED`. Neither result reclaims capacity, grants a retry, authorizes a provider read or performs provider IO.

@@ -17,7 +17,8 @@ from nexus.paper_provider_post_budget import (
     MAX_DATABASE_BYTES, PaperProviderPostBudget)
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_path_set,
-    require_file_fingerprints, require_file_identities)
+    guard_file_set_finalization, require_file_fingerprints,
+    require_file_identities)
 
 
 class _Parser(argparse.ArgumentParser):
@@ -106,50 +107,90 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
                 committed_fingerprint = capture_file_fingerprints(
                     (post_resolved,), (MAX_DATABASE_BYTES,),
                     'PAPER_PROVIDER_POST_RECOVERY_')
-                receipt = budget.recovery_receipt()
-                check_post_identity()
-                require_file_fingerprints((post_resolved,),
-                    (MAX_DATABASE_BYTES,), committed_fingerprint,
-                    'PAPER_PROVIDER_POST_RECOVERY_')
-                receipt_again = budget.recovery_receipt()
-                check_post_identity()
-                require_file_fingerprints((post_resolved,),
-                    (MAX_DATABASE_BYTES,), committed_fingerprint,
-                    'PAPER_PROVIDER_POST_RECOVERY_')
-                # The budget recovery and both of its cold acknowledgements
-                # are one cross-journal proof window.  Re-read the exact
-                # request proof after the acknowledgements so a non-
-                # cooperating same-inode writer cannot alter the request
-                # journal after the transaction's final resolution check and
-                # still receive a successful command result.
-                final_request_proof = check()
-                account_digest = hashlib.sha256(
-                    expected_account_id.encode()).hexdigest()
-                client_digest = hashlib.sha256(
-                    client_order_id.encode()).hexdigest()
-                stable = (final_request_proof == expected and
-                    receipt == receipt_again and
-                    receipt['head_sha256'] ==
-                        receipt['recovery_head_sha256'] and
-                    receipt['recoveries'] == before['recoveries'] + 1 and
-                    receipt['review_required'] is False and
-                    receipt['pending_token'] is None and
-                    receipt['last_evaluated_at'] == receipt['recovered_at'] and
-                    receipt['next_allowed_at'] == before['next_allowed_at'] and
-                    receipt['account_sha256'] == account_digest and
-                    receipt['payload_sha256'] == expected['payload_sha256'] and
-                    receipt['client_order_sha256'] == client_digest and
-                    receipt['blocked_attempt_head_sha256'] ==
-                        completed[-1]['after_head_sha256'] and
-                    receipt['request_resolution_head_sha256'] ==
-                        expected_request_head and
-                    receipt['exact_recovery_replayed'] is True and
-                    receipt['read_only'] is True and
-                    all(receipt[key] is False for key in (
-                        'original_request_rearmed', 'automatic_retry',
-                        'automatic_continuation', 'broker_account_reconciled',
-                        'ready_for_routing', 'live_orders_enabled',
-                        'money_movement_enabled', 'release_approved')))
+                with guard_file_set_finalization((post_resolved,),
+                        (MAX_DATABASE_BYTES,), post_identity,
+                        committed_fingerprint,
+                        'PAPER_PROVIDER_POST_RECOVERY_'):
+                    receipt = budget.recovery_receipt()
+                    check_post_identity()
+                    require_file_fingerprints((post_resolved,),
+                        (MAX_DATABASE_BYTES,), committed_fingerprint,
+                        'PAPER_PROVIDER_POST_RECOVERY_')
+                    receipt_again = budget.recovery_receipt()
+                    check_post_identity()
+                    require_file_fingerprints((post_resolved,),
+                        (MAX_DATABASE_BYTES,), committed_fingerprint,
+                        'PAPER_PROVIDER_POST_RECOVERY_')
+                    # The budget recovery and both of its cold
+                    # acknowledgements are one cross-journal proof window.
+                    # Re-read the exact request proof after the
+                    # acknowledgements so a non-cooperating same-inode writer
+                    # cannot alter the request journal after the transaction's
+                    # final resolution check and still receive success.
+                    final_request_proof = check()
+                    account_digest = hashlib.sha256(
+                        expected_account_id.encode()).hexdigest()
+                    client_digest = hashlib.sha256(
+                        client_order_id.encode()).hexdigest()
+                    stable = (final_request_proof == expected and
+                        receipt == receipt_again and
+                        receipt['head_sha256'] ==
+                            receipt['recovery_head_sha256'] and
+                        receipt['recoveries'] == before['recoveries'] + 1 and
+                        receipt['review_required'] is False and
+                        receipt['pending_token'] is None and
+                        receipt['last_evaluated_at'] ==
+                            receipt['recovered_at'] and
+                        receipt['next_allowed_at'] ==
+                            before['next_allowed_at'] and
+                        receipt['account_sha256'] == account_digest and
+                        receipt['payload_sha256'] ==
+                            expected['payload_sha256'] and
+                        receipt['client_order_sha256'] == client_digest and
+                        receipt['blocked_attempt_head_sha256'] ==
+                            completed[-1]['after_head_sha256'] and
+                        receipt['request_resolution_head_sha256'] ==
+                            expected_request_head and
+                        receipt['exact_recovery_replayed'] is True and
+                        receipt['read_only'] is True and
+                        all(receipt[key] is False for key in (
+                            'original_request_rearmed', 'automatic_retry',
+                            'automatic_continuation',
+                            'broker_account_reconciled', 'ready_for_routing',
+                            'live_orders_enabled',
+                            'money_movement_enabled', 'release_approved')))
+                    if not stable:
+                        raise ValueError(
+                            'PAPER_PROVIDER_POST_RECOVERY_DURABLE_STATE_CHANGED')
+                    result = dict(
+                        mode='PAPER_PROVIDER_POST_BUDGET_RESOLVED_UNKNOWN_RECOVERY',
+                        status='REVIEW_REQUIRED',
+                        head_sha256=receipt['recovery_head_sha256'],
+                        request_resolution_head_sha256=expected_request_head,
+                        blocked_outcome='OUTCOME_UNKNOWN',
+                        review_block_cleared=True,
+                        next_allowed_at=receipt['next_allowed_at'],
+                        cooldown_shortened=False, uncertainty_preserved=True,
+                        original_request_rearmed=False, history_rewritten=False,
+                        attempt_capacity_reclaimed=False, admission_reserved=False,
+                        automatic_retry=False, automatic_continuation=False,
+                        broker_wide_quota_verified=False,
+                        distributed_ownership_verified=False,
+                        broker_account_reconciled=False, ready_for_routing=False,
+                        live_orders_enabled=False, money_movement_enabled=False,
+                        release_approved=False,
+                        recovery_acknowledgement_cold_replayed=True,
+                        post_budget_file_identity_rechecked=True,
+                        post_budget_file_fingerprint_rechecked=True,
+                        post_budget_file_set_rechecked_on_return=True)
+                    return dict(result, request_writer_exclusion_held=True,
+                        request_path_identity_rechecked=True,
+                        request_file_fingerprint_rechecked=True,
+                        request_replay_fingerprint_rechecked_after_load=True,
+                        request_proof_final_before_budget_commit=True,
+                        request_proof_rechecked_after_budget_receipts=True,
+                        request_snapshot_rechecked_on_exit=True,
+                        post_budget_ownership_rechecked_on_exit=True)
             except BaseException as error:
                 receipt_error = error
                 stable = False
@@ -168,34 +209,6 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
                     raise write_error
                 raise ValueError(
                     'PAPER_PROVIDER_POST_RECOVERY_DURABLE_STATE_CHANGED')
-            result = dict(
-                mode='PAPER_PROVIDER_POST_BUDGET_RESOLVED_UNKNOWN_RECOVERY',
-                status='REVIEW_REQUIRED',
-                head_sha256=receipt['recovery_head_sha256'],
-                request_resolution_head_sha256=expected_request_head,
-                blocked_outcome='OUTCOME_UNKNOWN',
-                review_block_cleared=True,
-                next_allowed_at=receipt['next_allowed_at'],
-                cooldown_shortened=False, uncertainty_preserved=True,
-                original_request_rearmed=False, history_rewritten=False,
-                attempt_capacity_reclaimed=False, admission_reserved=False,
-                automatic_retry=False, automatic_continuation=False,
-                broker_wide_quota_verified=False,
-                distributed_ownership_verified=False,
-                broker_account_reconciled=False, ready_for_routing=False,
-                live_orders_enabled=False, money_movement_enabled=False,
-                release_approved=False,
-                recovery_acknowledgement_cold_replayed=True,
-                post_budget_file_identity_rechecked=True,
-                post_budget_file_fingerprint_rechecked=True)
-            return dict(result, request_writer_exclusion_held=True,
-                request_path_identity_rechecked=True,
-                request_file_fingerprint_rechecked=True,
-                request_replay_fingerprint_rechecked_after_load=True,
-                request_proof_final_before_budget_commit=True,
-                request_proof_rechecked_after_budget_receipts=True,
-                request_snapshot_rechecked_on_exit=True,
-                post_budget_ownership_rechecked_on_exit=True)
 
 
 def fixture_report():
@@ -281,6 +294,8 @@ def fixture_report():
                 result['post_budget_file_identity_rechecked'] is True,
             post_budget_file_fingerprint_rechecked=
                 result['post_budget_file_fingerprint_rechecked'] is True,
+            post_budget_file_set_rechecked_on_return=
+                result['post_budget_file_set_rechecked_on_return'] is True,
             original_request_not_rearmed=result['original_request_rearmed'] is False and
                 retained['submission_attempt_marked'],
             unknown_history_preserved=budget.history()==history,

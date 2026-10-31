@@ -349,6 +349,7 @@ def test_pacing_profile_requires_resolved_unknown_post_recovery_fences():
                   'recovery_acknowledgement_cold_replayed',
                   'post_budget_file_identity_rechecked',
                   'post_budget_file_fingerprint_rechecked',
+                  'post_budget_file_set_rechecked_on_return',
                   'original_request_not_rearmed',
                   'unknown_history_preserved','cooldown_preserved'):
         changed=copy.deepcopy(result);changed['resolved_unknown_post_recovery'][field]=False
@@ -368,6 +369,7 @@ def test_pacing_profile_requires_provider_read_recovery_fences():
                   'recovery_acknowledgement_cold_replayed',
                   'provider_budget_file_identity_rechecked',
                   'provider_budget_file_fingerprint_rechecked',
+                  'provider_budget_file_set_rechecked_on_return',
                   'provider_budget_ownership_rechecked_on_exit',
                   'blocked_history_preserved','cooldown_preserved',
                   'session_capacity_not_reclaimed'):

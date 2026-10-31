@@ -67,6 +67,7 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['recovery_acknowledgement_cold_replayed']
     assert result['post_budget_file_identity_rechecked']
     assert result['post_budget_file_fingerprint_rechecked']
+    assert result['post_budget_file_set_rechecked_on_return']
     assert result['cooldown_shortened'] is False and result['uncertainty_preserved']
     assert state['recoveries']==1 and state['review_required'] is False
     recovery=budget.recovery_history()
@@ -186,6 +187,37 @@ def test_post_budget_same_file_mutation_after_commit_is_fixed_uncertainty(
     state=budget.inspect()
     assert calls==1 and state['review_required'] is True
     assert state['recoveries']==0 and len(budget.history())==1
+
+
+def test_post_budget_replacement_during_return_is_rechecked_on_exit(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    replacement=tmp_path/'post-budget-return-replacement.sqlite3'
+    shutil.copyfile(budget.path,replacement)
+    original=PaperProviderPostBudget.recovery_receipt
+    reads=0;head_reads=0
+    class LateReplacementReceipt(dict):
+        def __getitem__(self,key):
+            nonlocal head_reads
+            value=super().__getitem__(key)
+            if key=='recovery_head_sha256':
+                head_reads+=1
+                if head_reads==2:
+                    os.replace(replacement,budget.path)
+            return value
+    def receipt_then_late_replacement(self):
+        nonlocal reads
+        reads+=1;value=original(self)
+        return LateReplacementReceipt(value) if reads==1 else value
+    monkeypatch.setattr(PaperProviderPostBudget,'recovery_receipt',
+                        receipt_then_late_replacement)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_RECOVERY_FILE_IDENTITY_CHANGED'):
+        recover(journal,budget,request_head)
+    state=budget.inspect()
+    assert reads==2 and head_reads==2
+    assert state['review_required'] is True and state['recoveries']==0
+    assert len(budget.history())==1
 
 
 def test_request_mutation_after_budget_receipts_is_fixed_uncertainty(
@@ -473,3 +505,4 @@ def test_cli_suppresses_private_inputs_and_requires_confirmations(tmp_path,monke
     assert result['request_proof_rechecked_after_budget_receipts']
     assert result['request_snapshot_rechecked_on_exit']
     assert result['post_budget_ownership_rechecked_on_exit']
+    assert result['post_budget_file_set_rechecked_on_return']

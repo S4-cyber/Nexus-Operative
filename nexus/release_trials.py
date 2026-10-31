@@ -1015,6 +1015,7 @@ def _validate(profile, result):
              'recovery_acknowledgement_cold_replayed',
              'post_budget_file_identity_rechecked',
              'post_budget_file_fingerprint_rechecked',
+             'post_budget_file_set_rechecked_on_return',
              'original_request_not_rearmed','unknown_history_preserved','cooldown_preserved')),
             'POST_RECOVERY_FENCES')
         _require(all(post_recovery[k] is False for k in ('actual_provider_access',
@@ -1028,6 +1029,7 @@ def _validate(profile, result):
             ('exact_review_block_bound','recovery_acknowledgement_cold_replayed',
              'provider_budget_file_identity_rechecked',
              'provider_budget_file_fingerprint_rechecked',
+             'provider_budget_file_set_rechecked_on_return',
              'provider_budget_ownership_rechecked_on_exit',
              'blocked_history_preserved','cooldown_preserved',
              'session_capacity_not_reclaimed')),

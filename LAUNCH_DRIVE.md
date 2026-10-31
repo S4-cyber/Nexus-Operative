@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.77 recovery store finalization recheck
+
+Reviewed provider POST and provider-read recovery now retain their committed SQLite identity/fingerprint proof through return-expression and exception finalization while outer ownership remains held. A late path replacement or same-inode rollback overrides a lower-priority result with fixed file uncertainty. Conservative history remains durable, but neither command can report success, re-arm a request, reclaim capacity, retry or perform provider IO from changed state.
+
+Exact-source v0.340.76 commit `aea687ee558406c1e37c58104c2113be88b89d68` passed security/Gitleaks 41196707596, research regression/browser/evidence 41196707597 and Windows EXE/installer/reinstall/uninstall 41196707637. Fresh v0.340.77 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local storage hardening does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,711 tests with one expected non-Windows skip and one existing warning; the recovery/release focus passed 130. Sixteen offline profiles and saved evidence verified against 395 source files / `46e91c900efc93828a004346c704e8c12b44d7e72d5ea22a64c90228bacece1f`. Evidence SHA-256 is `0c1c03e83dc8e8a4bbd0e9605d35bdf7dc2f3133256b087f34e40436306ce638`; wheel SHA-256 is `668cf466f566146ca450b65aa0c1da7d1b44bd390a921505b1edcd84176b6694`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 788-path proposed-snapshot artifact audit and targeted credential scanning passed. No UI or modifiable parameter changed, so beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.76 provider-read recovery store bracket
 
 Explicit reviewed provider-read recovery now pins the existing SQLite pathname identity and bounded fingerprint across source replay and the guarded write, then pins the newly committed fingerprint through both cold acknowledgement receipts while the same provider ownership remains held. Same-path replacement and same-inode byte or metadata rollback are fixed uncertainty. The conservative replacement or rollback remains review-blocked and cannot reclaim consumed session capacity, authorize another provider read or trigger provider IO.

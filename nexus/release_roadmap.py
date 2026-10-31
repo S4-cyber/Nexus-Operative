@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.76'
+REVISION = '0.340.77'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -234,6 +234,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; both reviewed provider POST and provider-read recovery commands now repeat their exact budget SQLite identity and committed fingerprint proof during return-expression and exception finalization while outer ownership remains held' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Both reviewed provider POST and provider-read recovery paths now recheck the exact budget SQLite identity and committed fingerprint as return finalization exits, before outer ownership releases. A late replacement or rollback overrides a lower-priority result and cannot become successful recovery, retry or reclaimed capacity. This remains sampled local storage evidence, not atomic descriptor binding, ACL/administrator protection, physical durability or provider/account acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' An explicit one-attempt Activity SSE coordinator now composes the fixed-target transport, private prior segment, strict reconnect review and exact-head cursor journal into one fail-closed local checkpoint; injected tests only.',
     remaining='Accept this exact-head reconnect/checkpoint path on an authorized paper account and native private volume; verify account entitlement, provider source/delivery and replay coverage, slow-consumer recovery and broker-wide/distributed coordination before any automatic reconnect loop. ' + stage['remaining'])
@@ -455,7 +463,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.76 pins the existing provider-read budget SQLite pathname identity and bounded fingerprint before source replay, rechecks both before the recovery write, then captures the committed fingerprint and requires it around both cold acknowledgement receipts. Same-path replacement and same-inode byte or metadata rollback remain fixed uncertainty; no recovery is repeated and no session capacity is reclaimed. Exact-source v0.340.75 commit d8c65708b8b6e476e0066698dafdadbb296f0fb9 passed security/Gitleaks run 41192943128 and every regression/browser/evidence job in 41192943022; Windows run 41192943024 was still in progress at the sprint boundary and is not claimed successful. This remains sampled local storage evidence, not atomic descriptor binding, broker-wide coordination, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.77 extends the reviewed provider POST and provider-read recovery SQLite identity/fingerprint brackets through return-expression and exception finalization while their outer ownership guards remain held. A replacement or rollback after the last explicit receipt proof is fixed file uncertainty; no recovery is repeated, request is re-armed, session capacity is reclaimed or provider IO is performed. Exact-source v0.340.76 commit aea687ee558406c1e37c58104c2113be88b89d68 passed security/Gitleaks run 41196707596, every regression/browser/evidence job in run 41196707597 and Windows EXE/installer/reinstall/uninstall run 41196707637. This remains sampled local storage evidence, not atomic descriptor binding, broker-wide coordination, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

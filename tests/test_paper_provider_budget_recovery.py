@@ -34,6 +34,7 @@ def test_recover_entry_point_is_exact_and_retains_false_authority(tmp_path):
     assert result['recovery_acknowledgement_cold_replayed']
     assert result['provider_budget_file_identity_rechecked']
     assert result['provider_budget_file_fingerprint_rechecked']
+    assert result['provider_budget_file_set_rechecked_on_return']
     assert result['provider_budget_ownership_rechecked_on_exit']
     assert all(result[key] is False for key in ('admission_reserved','automatic_retry',
         'automatic_continuation','broker_wide_quota_verified','distributed_ownership_verified',
@@ -154,6 +155,40 @@ def test_provider_budget_same_file_mutation_after_commit_is_fixed_uncertainty(
     assert state['recoveries']==0 and len(budget.history())==1
 
 
+def test_provider_budget_mutation_during_return_is_rechecked_on_exit(
+        tmp_path, monkeypatch):
+    budget=blocked(tmp_path/'provider.sqlite3');before=budget.inspect()
+    prior=budget.path.read_bytes()
+    original=PaperProviderReadBudget.recovery_receipt
+    reads=0;head_reads=0
+    class LateMutationReceipt(dict):
+        def __getitem__(self,key):
+            nonlocal head_reads
+            value=super().__getitem__(key)
+            if key=='recovery_head_sha256':
+                head_reads+=1
+                if head_reads==2:
+                    with budget.path.open('r+b') as stream:
+                        stream.seek(0);stream.write(prior);stream.truncate()
+                        stream.flush();os.fsync(stream.fileno())
+            return value
+    def receipt_then_late_mutation(self):
+        nonlocal reads
+        reads+=1;value=original(self)
+        return LateMutationReceipt(value) if reads==1 else value
+    monkeypatch.setattr(PaperProviderReadBudget,'recovery_receipt',
+                        receipt_then_late_mutation)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_BUDGET_RECOVERY_FILE_SET_CHANGED'):
+        subject.recover(budget.path,expected_head=before['head_sha256'],
+            expected_account_id=ACCOUNT,confirm_block_reviewed=True,
+            confirm_uncertainty_preserved=True,admission=lambda:1002)
+    state=budget.inspect()
+    assert reads==2 and head_reads==2
+    assert state['review_required'] is True and state['recoveries']==0
+    assert len(budget.history())==1
+
+
 def test_fixture_proves_lost_ack_without_authority():
     result=subject.fixture_report()
     assert result['passed']
@@ -161,6 +196,7 @@ def test_fixture_proves_lost_ack_without_authority():
         'exact_review_block_bound','recovery_acknowledgement_cold_replayed',
         'provider_budget_file_identity_rechecked',
         'provider_budget_file_fingerprint_rechecked',
+        'provider_budget_file_set_rechecked_on_return',
         'provider_budget_ownership_rechecked_on_exit',
         'blocked_history_preserved','cooldown_preserved',
         'session_capacity_not_reclaimed'))

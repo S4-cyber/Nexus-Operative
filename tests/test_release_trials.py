@@ -432,6 +432,7 @@ def test_pacing_profile_requires_provider_read_history_review_fences():
                   'incomplete_account_cannot_hide_behind_complete_peer',
                   'multi_account_reader_failure_rechecks_peer',
                   'retained_receipt_source_mutation_denied',
+                  'retained_receipt_acknowledgement_replayed',
                   'journal_file_fingerprints_rechecked',
                   'semantic_reader_failures_rechecked','output_never_authoritative'):
         changed=copy.deepcopy(result);changed['provider_read_history_review'][field]=False

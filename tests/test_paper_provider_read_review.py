@@ -5,7 +5,9 @@ import sqlite3
 
 import pytest
 
-from nexus import paper_provider_read_review as subject,paper_provider_read_review_store as store_subject,paper_read_review
+from nexus import (paper_provider_read_review as subject,
+    paper_provider_read_review_store as store_subject,paper_read_review,
+    sqlite_journal_guard as guard_subject)
 from nexus.alpaca_paper_contract import sha
 from nexus.paper_provider_read_budget import PaperProviderReadBudget,ZERO
 from nexus.paper_provider_read_review_store import PaperProviderReadReviewStore
@@ -389,6 +391,96 @@ def test_retained_receipt_pins_sources_across_precommit_callback(
             **heads(gate,budget))
     assert not path.exists()
     assert before=={source:source.read_bytes() for source in before}
+
+
+def test_retained_receipt_recovers_exact_lost_acknowledgement(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';calls=0
+    original=PaperProviderReadReviewStore.append
+    def lost_ack(store,*args,**kwargs):
+        nonlocal calls
+        result=original(store,*args,**kwargs);calls+=1
+        raise RuntimeError('private lost receipt acknowledgement')
+    monkeypatch.setattr(PaperProviderReadReviewStore,'append',lost_ack)
+    receipt=subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    replay=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert calls==1 and not receipt['duplicate']
+    assert replay['retained_receipts']==1
+    assert receipt['head_sha256']==replay['head_sha256']
+    assert receipt['receipt_sha256']==replay['receipts'][0]['receipt_sha256']
+
+
+def test_retained_receipt_rejects_fabricated_write_return(tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    monkeypatch.setattr(PaperProviderReadReviewStore,'append',lambda *args,**kwargs:
+        dict(mode='LOCAL_PROVIDER_READ_REVIEW_RECEIPT',head_sha256='f'*64,
+            receipt_sha256='e'*64,duplicate=False,read_only=True,
+            ready_for_routing=False,release_approved=False))
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_DURABLE_STATE_CHANGED$'):
+        subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    assert not path.exists()
+
+
+@pytest.mark.parametrize('callback_error',(False,True))
+def test_receipt_store_fingerprint_is_rechecked_after_commit(
+        tmp_path,callback_error):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';calls=0
+    def mutate_store():
+        nonlocal calls
+        calls+=1
+        if calls==3:
+            state=os.stat(path)
+            os.utime(path,ns=(state.st_atime_ns,state.st_mtime_ns+1_000_000_000))
+            if callback_error:raise RuntimeError('private postcommit callback failure')
+        return True
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED$'):
+        subject.retain_review(path,budget,[gate],precommit_check=mutate_store,
+            **heads(gate,budget))
+    assert calls==3 and PaperProviderReadReviewStore(
+        path,budget,[gate]).inspect()['retained_receipts']==1
+
+
+def test_receipt_store_fingerprint_is_rechecked_inside_transaction(tmp_path):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';calls=0
+    first=subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    def mutate_store():
+        nonlocal calls
+        calls+=1
+        if calls==2:
+            state=os.stat(path)
+            os.utime(path,ns=(state.st_atime_ns,state.st_mtime_ns+1_000_000_000))
+        return True
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED$'):
+        subject.retain_review(path,budget,[gate],
+            expected_store_head=first['head_sha256'],
+            precommit_check=mutate_store,**heads(gate,budget))
+    assert calls==2 and PaperProviderReadReviewStore(
+        path,budget,[gate]).inspect()['retained_receipts']==1
+
+
+def test_receipt_store_identity_failure_wins_during_return_finalization(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';calls=0;late=False
+    original=guard_subject.require_file_identities
+    def require(*args,**kwargs):
+        if late:
+            raise ValueError(
+                'PAPER_PROVIDER_READ_REVIEW_STORE_FILE_IDENTITY_CHANGED')
+        return original(*args,**kwargs)
+    def late_failure():
+        nonlocal calls,late
+        calls+=1
+        if calls==3:late=True
+        return True
+    monkeypatch.setattr(guard_subject,'require_file_identities',require)
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_FILE_IDENTITY_CHANGED$'):
+        subject.retain_review(path,budget,[gate],precommit_check=late_failure,
+            **heads(gate,budget))
+    assert calls==3
 
 
 def test_store_rejects_non_digest_head_with_store_scoped_error(tmp_path):

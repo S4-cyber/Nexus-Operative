@@ -1060,6 +1060,7 @@ def _validate(profile, result):
              'incomplete_account_cannot_hide_behind_complete_peer',
              'multi_account_reader_failure_rechecks_peer',
              'retained_receipt_source_mutation_denied',
+             'retained_receipt_acknowledgement_replayed',
              'journal_file_fingerprints_rechecked',
              'semantic_reader_failures_rechecked','output_never_authoritative')),
             'PROVIDER_READ_HISTORY_FENCES')

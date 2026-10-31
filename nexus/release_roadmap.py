@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.85'
+REVISION = '0.340.86'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -306,6 +306,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Durable provider/read receipt retention now carries one end-to-end source-file proof across repeated semantic review, caller revocation callbacks, receipt commit acknowledgement, exception unwind and final return. A same-head source mutation receives the fixed outer file-set refusal and cannot create a successful receipt result. This remains sampled local integrity evidence, not atomic writer exclusion, provider identity, broker acceptance or routing authority.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; durable provider/read review receipt retention now ignores its write-side acknowledgement, accepts an exact lost acknowledgement only after two stable cold receipts and pins the committed receipt-store identity and bounded fingerprint through postcommit callbacks and final return' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Durable provider/read receipt retention now derives its result from two stable exact store replays instead of trusting the write return. A lost acknowledgement recovers one committed receipt; a fabricated return remains fixed durable-state uncertainty. The committed store identity and bounded fingerprint are rechecked through callbacks, exception unwind and return finalization. This is sampled local durability evidence, not physical durability, provider identity, broker acceptance or routing authority.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' An explicit one-attempt Activity SSE coordinator now composes the fixed-target transport, private prior segment, strict reconnect review and exact-head cursor journal into one fail-closed local checkpoint; injected tests only.',
     remaining='Accept this exact-head reconnect/checkpoint path on an authorized paper account and native private volume; verify account entitlement, provider source/delivery and replay coverage, slow-consumer recovery and broker-wide/distributed coordination before any automatic reconnect loop. ' + stage['remaining'])
@@ -527,7 +535,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.85 pins the provider budget and every selected account journal to one identity and bounded fingerprint set across durable provider/read receipt retention. Repeated semantic reviews, caller callbacks, commit acknowledgement, exception unwind and final return cannot silently rebase onto a same-head source change; the outer fixed file-set refusal wins and no successful receipt result returns. Exact-source v0.340.84 commit 6e80e8235a59b6e4133283b0df290046187efa11 passed security/Gitleaks run 41229623092, research-safety run 41229623101 and Windows install/build run 41229623084. This remains sampled local integrity evidence, not atomic writer exclusion, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, recovery, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.86 makes durable provider/read receipt retention distrust the write-side acknowledgement. Two stable cold receipts must prove the exact expected transition; a committed lost acknowledgement recovers once, while a fabricated return remains fixed durable-state uncertainty. The committed receipt-store identity and bounded fingerprint are held through postcommit callbacks, exception unwind and final return. Exact-source v0.340.85 commit 7a580e47c8e540528eaab500a0cb58dba061531b passed security/Gitleaks run 41234102000, research-safety run 41234102010 and Windows install/build run 41234102004. This remains sampled local durability evidence, not atomic writer exclusion, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, recovery, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

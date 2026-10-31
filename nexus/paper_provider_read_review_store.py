@@ -1,14 +1,19 @@
 """Content-free durable receipts for local provider/account read review."""
 from contextlib import closing,contextmanager
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 
 from nexus.alpaca_paper_contract import canonical,sha
 from nexus.paper_provider_read_review import MAX_ACCOUNTS,PROFILE,ZERO
-from nexus.sqlite_journal_guard import check_existing,check_path_set
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints,capture_file_identities,check_existing,
+    check_path_set,guard_file_set_finalization,require_file_fingerprints,
+    require_file_identities)
 
 SCHEMA='nexus.paper-provider-read-review-history.v1'
 RESULT_PROFILE='nexus.paper-provider-result-review-receipt.v1'
@@ -40,6 +45,46 @@ def _transaction(db):
 def _digest(value):
     if type(value) is not str or re.fullmatch(r'[0-9a-f]{64}',value) is None:_fail('DIGEST_INVALID')
     return value
+
+
+def _active_file_fingerprint(path):
+    """Bounded same-file sample while this writer owns an active transaction.
+
+    DELETE-mode SQLite legitimately has a rollback sidecar at this boundary,
+    so the ordinary quiescent file-set sampler cannot be used.  This samples
+    only the already-open writer's main file around an untrusted callback; the
+    quiescent complete file-set proof still runs before and after the write.
+    """
+    try:
+        observed=path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink!=1 or
+                not 0<=observed.st_size<=MAX_DATABASE_BYTES):
+            _fail('FILE_SET_CHANGED')
+        flags=(os.O_RDONLY|getattr(os,'O_BINARY',0)|
+            getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
+        digest=hashlib.sha256()
+        with os.fdopen(os.open(path.resolve(),flags),'rb',buffering=0) as stream:
+            before=os.fstat(stream.fileno());remaining=MAX_DATABASE_BYTES+1
+            while remaining:
+                block=stream.read(min(1024*1024,remaining))
+                if not block:break
+                digest.update(block);remaining-=len(block)
+            after=os.fstat(stream.fileno())
+        final=path.lstat()
+        boundary=lambda item:(item.st_dev,item.st_ino,item.st_size,
+            item.st_mtime_ns,item.st_ctime_ns,item.st_nlink)
+        if (remaining==0 or boundary(observed)!=boundary(before) or
+                boundary(before)!=boundary(after) or
+                boundary(after)!=boundary(final) or
+                not stat.S_ISREG(final.st_mode)):
+            _fail('FILE_SET_CHANGED')
+        return (*boundary(final),digest.hexdigest())
+    except ValueError:
+        raise
+    except (OSError,RuntimeError,TypeError):
+        _fail('FILE_SET_CHANGED')
 
 
 class PaperProviderReadReviewStore:
@@ -74,7 +119,7 @@ class PaperProviderReadReviewStore:
                 size=db.execute('PRAGMA page_size').fetchone()[0]
                 db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES//size}');db.execute('BEGIN IMMEDIATE')
                 if new:db.execute('CREATE TABLE records (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
-            return db
+            return db,new
         except sqlite3.OperationalError as error:
             db.close()
             if _database_busy(error):_fail('DATABASE_BUSY')
@@ -139,7 +184,8 @@ class PaperProviderReadReviewStore:
         if not self.path.exists():return dict(mode='LOCAL_PROVIDER_READ_REVIEW_HISTORY',initialized=False,
             provider_sha256=self.provider,head_sha256=ZERO,retained_receipts=0,receipts=[],read_only=True,
             ready_for_routing=False,release_approved=False)
-        with closing(self._connect()) as db:
+        db,_=self._connect()
+        with closing(db):
             with _transaction(db):head,receipts=self._load(db)
         return dict(mode='LOCAL_PROVIDER_READ_REVIEW_HISTORY',initialized=True,provider_sha256=self.provider,
             head_sha256=head,retained_receipts=len(receipts),receipts=receipts,read_only=True,
@@ -149,9 +195,45 @@ class PaperProviderReadReviewStore:
         scope=self._scope(scope);expected_head=_digest(expected_head);receipt=sha(scope)
         current=self.inspect()
         if current['head_sha256']!=expected_head:_fail('HEAD_CHANGED')
-        if admission()!=receipt:_fail('ADMISSION_CHANGED')
-        if precommit_check() is not True:_fail('INPUT_REVOKED')
-        with closing(self._connect(write=True)) as db:
+        existed=current['initialized']
+        if existed:
+            initial_identity=capture_file_identities((self.path,),
+                'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            initial_fingerprint=capture_file_fingerprints((self.path,),
+                (MAX_DATABASE_BYTES,),'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        else:
+            initial_identity=initial_fingerprint=None
+        def require_initial():
+            if not existed:
+                if self.path.exists():_fail('FILE_IDENTITY_CHANGED')
+                return
+            require_file_identities((self.path,),initial_identity,
+                'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            require_file_fingerprints((self.path,),(MAX_DATABASE_BYTES,),
+                initial_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        def initial_check(callback):
+            try:value=callback()
+            finally:require_initial()
+            return value
+        if initial_check(admission)!=receipt:_fail('ADMISSION_CHANGED')
+        if initial_check(precommit_check) is not True:_fail('INPUT_REVOKED')
+        require_initial()
+        db,new=self._connect(write=True)
+        with closing(db):
+            if new==existed:_fail('FILE_IDENTITY_CHANGED')
+            transaction_identity=capture_file_identities((self.path,),
+                'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            if existed and transaction_identity!=initial_identity:
+                _fail('FILE_IDENTITY_CHANGED')
+            def transaction_check(callback):
+                transaction_fingerprint=_active_file_fingerprint(self.path)
+                try:value=callback()
+                finally:
+                    require_file_identities((self.path,),transaction_identity,
+                        'PAPER_PROVIDER_READ_REVIEW_STORE_')
+                    if _active_file_fingerprint(self.path)!=transaction_fingerprint:
+                        _fail('FILE_SET_CHANGED')
+                return value
             with _transaction(db):
                 count=db.execute('SELECT count(*) FROM records').fetchone()[0]
                 if count==0:
@@ -162,9 +244,22 @@ class PaperProviderReadReviewStore:
                 if not duplicate:
                     if len(receipts)>=MAX_RECORDS:_fail('RECORD_CAP')
                     head=self._insert(db,len(receipts)+1,dict(scope=scope,receipt_sha256=receipt),head);self._load(db)
-                if admission()!=receipt:_fail('ADMISSION_CHANGED')
-                if precommit_check() is not True:_fail('INPUT_REVOKED')
-            if admission()!=receipt:_fail('ADMISSION_CHANGED_AFTER_COMMIT')
-            if precommit_check() is not True:_fail('INPUT_REVOKED_AFTER_COMMIT')
-            return dict(mode='LOCAL_PROVIDER_READ_REVIEW_RECEIPT',head_sha256=head,receipt_sha256=receipt,
-                duplicate=duplicate,read_only=True,ready_for_routing=False,release_approved=False)
+                if transaction_check(admission)!=receipt:
+                    _fail('ADMISSION_CHANGED')
+                if transaction_check(precommit_check) is not True:
+                    _fail('INPUT_REVOKED')
+            committed_identity=capture_file_identities((self.path,),
+                'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            committed_fingerprint=capture_file_fingerprints((self.path,),
+                (MAX_DATABASE_BYTES,),'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            with guard_file_set_finalization((self.path,),
+                    (MAX_DATABASE_BYTES,),committed_identity,
+                    committed_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_'):
+                if admission()!=receipt:
+                    _fail('ADMISSION_CHANGED_AFTER_COMMIT')
+                if precommit_check() is not True:
+                    _fail('INPUT_REVOKED_AFTER_COMMIT')
+                return dict(mode='LOCAL_PROVIDER_READ_REVIEW_RECEIPT',
+                    head_sha256=head,receipt_sha256=receipt,
+                    duplicate=duplicate,read_only=True,
+                    ready_for_routing=False,release_approved=False)

@@ -17,7 +17,8 @@ from nexus.paper_read_pacing import (
     OPERATIONS, OPERATION_PATTERNS, PaperReadPacing)
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_path_set,
-    require_file_fingerprints, require_file_identities)
+    guard_file_set_finalization,require_file_fingerprints,
+    require_file_identities)
 
 MAX_ACCOUNTS=6
 ZERO='0'*64
@@ -185,7 +186,9 @@ def review(provider_budget,gates,*,expected_provider_head,expected_account_heads
 def retain_review(store_path,provider_budget,gates,*,expected_provider_head,expected_account_heads,
                   expected_store_head=ZERO,precommit_check=lambda:True):
     """Retain a content-free digest receipt for one complete local review."""
-    from nexus.paper_provider_read_review_store import PaperProviderReadReviewStore
+    from nexus.paper_provider_read_review_store import (
+        MAX_DATABASE_BYTES as STORE_DATABASE_BYTES,
+        SCHEMA as STORE_SCHEMA,PaperProviderReadReviewStore)
     gates,expected_account_heads=_inputs(provider_budget,gates,expected_account_heads)
     paths=(provider_budget.path,*(gate.path for gate in gates))
     store_binding=_store_binding(provider_budget,gates)
@@ -221,15 +224,54 @@ def retain_review(store_path,provider_budget,gates,*,expected_provider_head,expe
             require_sources();raise
         require_sources()
         return allowed
-    value=scope()
+    value=scope();receipt=sha(value)
     store=PaperProviderReadReviewStore(store_path,provider_budget,gates)
+    write_error=None
     try:
-        retained=store.append(value,expected_head=expected_store_head,
+        store.append(value,expected_head=expected_store_head,
             admission=lambda:sha(scope()),precommit_check=checked_precommit)
-    except BaseException:
-        require_sources();raise
+    except BaseException as error:
+        write_error=error
     require_sources()
-    return retained
+    if type(write_error) is ValueError:raise write_error
+    if not store.path.exists():_fail('DURABLE_STATE_CHANGED')
+    try:
+        store_identity=capture_file_identities((store.path,),
+            'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        store_fingerprint=capture_file_fingerprints((store.path,),
+            (STORE_DATABASE_BYTES,),'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        with guard_file_set_finalization((store.path,),
+                (STORE_DATABASE_BYTES,),store_identity,store_fingerprint,
+                'PAPER_PROVIDER_READ_REVIEW_STORE_'):
+            first=store.inspect();require_sources()
+            require_file_identities((store.path,),store_identity,
+                'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            require_file_fingerprints((store.path,),(STORE_DATABASE_BYTES,),
+                store_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            second=store.inspect();require_sources()
+            if first!=second or not first['initialized'] or not first['receipts']:
+                _fail('DURABLE_STATE_CHANGED')
+            latest=first['receipts'][-1]
+            schema_head=sha(dict(seq=0,body=dict(schema=STORE_SCHEMA,
+                provider_sha256=provider_budget.provider_digest),previous=ZERO))
+            previous=(schema_head if expected_store_head==ZERO else
+                expected_store_head)
+            expected_after=sha(dict(seq=first['retained_receipts'],
+                body=dict(scope=value,receipt_sha256=receipt),
+                previous=previous))
+            duplicate=first['head_sha256']==expected_store_head
+            if (latest['scope']!=value or latest['receipt_sha256']!=receipt or
+                    latest['after_head_sha256']!=first['head_sha256'] or
+                    not (duplicate or first['head_sha256']==expected_after)):
+                _fail('DURABLE_STATE_CHANGED')
+            return dict(mode='LOCAL_PROVIDER_READ_REVIEW_RECEIPT',
+                head_sha256=first['head_sha256'],receipt_sha256=receipt,
+                duplicate=duplicate,read_only=True,ready_for_routing=False,
+                release_approved=False)
+    except ValueError:
+        raise
+    except BaseException:
+        require_sources();_fail('DURABLE_STATE_CHANGED')
 
 
 def fixture_report():
@@ -427,6 +469,44 @@ def fixture_report():
                 'PAPER_PROVIDER_READ_REVIEW_FILE_SET_CHANGED')
         retained_source_bytes_unchanged=(retained_bytes==
             {path:path.read_bytes() for path in retained_bytes})
+        from nexus.paper_provider_read_review_store import \
+            PaperProviderReadReviewStore
+        ack_gate,ack_budget=build_pair(root/'retained-ack-replay')
+        ack_store=root/'retained-ack-replay'/'receipt.sqlite3'
+        original_append=PaperProviderReadReviewStore.append
+        lost_acknowledgements=0
+        def lose_acknowledgement(store,*args,**kwargs):
+            nonlocal lost_acknowledgements
+            original_append(store,*args,**kwargs)
+            lost_acknowledgements+=1
+            raise RuntimeError('fixture private lost receipt acknowledgement')
+        PaperProviderReadReviewStore.append=lose_acknowledgement
+        try:
+            ack_receipt=retain_review(ack_store,ack_budget,[ack_gate],
+                expected_provider_head=ack_budget.inspect()['head_sha256'],
+                expected_account_heads={ack_gate.account_digest:
+                    ack_gate.inspect()['head_sha256']})
+        finally:
+            PaperProviderReadReviewStore.append=original_append
+        ack_replay=PaperProviderReadReviewStore(
+            ack_store,ack_budget,[ack_gate]).inspect()
+        fabricated_gate,fabricated_budget=build_pair(
+            root/'fabricated-retained-ack')
+        fabricated_store=root/'fabricated-retained-ack'/'receipt.sqlite3'
+        fabricated_denied=False
+        PaperProviderReadReviewStore.append=lambda *args,**kwargs:dict(
+            head_sha256='f'*64,receipt_sha256='e'*64)
+        try:
+            retain_review(fabricated_store,fabricated_budget,[fabricated_gate],
+                expected_provider_head=
+                    fabricated_budget.inspect()['head_sha256'],
+                expected_account_heads={fabricated_gate.account_digest:
+                    fabricated_gate.inspect()['head_sha256']})
+        except ValueError as error:
+            fabricated_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_DURABLE_STATE_CHANGED')
+        finally:
+            PaperProviderReadReviewStore.append=original_append
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -483,6 +563,13 @@ def fixture_report():
                 retained_source_mutation_denied and
                 retained_source_bytes_unchanged and
                 not retained_store.exists()),
+            retained_receipt_acknowledgement_replayed=(
+                lost_acknowledgements==1 and
+                ack_replay['retained_receipts']==1 and
+                ack_receipt['head_sha256']==ack_replay['head_sha256'] and
+                ack_receipt['receipt_sha256']==
+                    ack_replay['receipts'][0]['receipt_sha256'] and
+                fabricated_denied and not fabricated_store.exists()),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

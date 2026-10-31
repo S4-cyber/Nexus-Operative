@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.86 retained-review receipt acknowledgement replay
+
+Provider/read-review receipt retention now ignores the write-side acknowledgement and accepts success only after two identical cold reads prove the exact expected durable transition. A committed write whose acknowledgement is lost is recovered without a duplicate append; fabricated success, store replacement, rollback or late mutation remains fixed uncertainty. The receipt-store identity and bounded fingerprint stay pinned through callbacks, exception unwind and final return.
+
+Exact-source v0.340.85 commit `7a580e47c8e540528eaab500a0cb58dba061531b` passed security/Gitleaks 41234102000, all research regression/browser/evidence jobs in 41234102010 and Windows EXE/installer/reinstall/uninstall/distribution run 41234102004. Fresh v0.340.86 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local durability evidence does not close an external gate or predict profit.
+
+Local validation passed 4,735 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 230 and saved-evidence verification passed 32. Sixteen profiles verified against 395 source files / `a722745e71276822eee8f591681df78717e2c27d045fbc2d76907a38e356ac80`. Evidence SHA-256 is `c07e8b3dcb1300a25e7cf52278b76b561147ab8cf2a9782e8a9d4656e574ee00`; wheel SHA-256 is `98d908087aa8e3c5539659408a1cba52d1554ea447efcc8e74b622cb79b34f53`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.85 retained-review source pinning
 
 Durable provider/read-review receipt retention now fixes the provider budget and every selected account pacing journal to one identity and bounded fingerprint set across semantic replay, caller callbacks, receipt-store acknowledgement, exception unwind and final return. A same-head source change cannot be accepted by establishing a new baseline; the operation returns the fixed file-set refusal instead of a successful receipt result.

@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.86 retained-review receipt acknowledgement replay
+
+Durable provider/read-review receipt retention is accepted locally only when two identical cold store receipts prove the exact expected scope, retained receipt, predecessor, sequence and resulting head. The write return is never authoritative. An exact committed lost acknowledgement may be replayed once; fabricated success or any receipt-store identity/fingerprint change during callbacks, exception unwind or return finalization must produce fixed durable-state or file uncertainty.
+
+Exact-source v0.340.85 commit `7a580e47c8e540528eaab500a0cb58dba061531b` passed security/Gitleaks 41234102000, all research regression/browser/evidence jobs in 41234102010 and Windows EXE/installer/reinstall/uninstall/distribution run 41234102004. Fresh v0.340.86 workflows and actual authorized paper-account/private-volume acceptance remain required. This is sampled local durability evidence, not physical durability, atomic writer exclusion, provider identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,735 tests with one expected skip and one existing warning; the release/evidence/version/installer focus passed 230 and saved-evidence verification passed 32. Sixteen profiles verified against 395 exact source files / `a722745e71276822eee8f591681df78717e2c27d045fbc2d76907a38e356ac80`. Evidence SHA-256 is `c07e8b3dcb1300a25e7cf52278b76b561147ab8cf2a9782e8a9d4656e574ee00`; wheel SHA-256 is `98d908087aa8e3c5539659408a1cba52d1554ea447efcc8e74b622cb79b34f53`. Compilation, dependency, roadmap, controller and Portal checks passed. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.85 retained-review source pinning
 
 Durable provider/read-review receipt retention is accepted locally only when the provider budget and every selected account pacing journal remain the exact captured source set through semantic replay, caller callbacks, receipt-store acknowledgement, exception unwind and final return. A selected-journal mutation from a returning or throwing callback must produce fixed `PAPER_PROVIDER_READ_REVIEW_FILE_SET_CHANGED` uncertainty and no successful retained-receipt result.

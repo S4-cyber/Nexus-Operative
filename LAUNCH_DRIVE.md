@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.67 resolved-unknown recovery acknowledgement replay
+
+Reviewed provider POST recovery now ignores the recovery write acknowledgement and cold-replays the exact durable recovery receipt twice while both journal protections remain held. A commit whose local acknowledgement is lost completes without another append. Missing, fabricated, changed or unreadable durable recovery remains fixed uncertainty; the original request stays permanently non-resubmittable and no provider IO is performed.
+
+Exact-source v0.340.66 commit `36c9d6067df15c30fe4854950b5ad28cc3499402` passed security 41155618652, research/browser/evidence 41155618641 and Windows EXE/installer/reinstall/uninstall 41155618754. Fresh v0.340.67 exact-source workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This defensive local reconciliation boundary does not close an external gate or predict profit.
+
+Local prepublication validation passed 4,681 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 212. Sixteen offline profiles and saved evidence verified against 395 source files / `332e39da89b27f7d404c2b76e41b84ff087cc8d2d7b6c32cec28824315780671`. Evidence SHA-256 is `3b054e00579dcb1abf0cac01333ff46292159e09b13af303e72871a7655f1323`; wheel SHA-256 is `f95bff996cf97f08f77126b89f013c1f5670921ea84971879a9fd8857893c82b`. Compilation, dependencies, roadmap equality, Portal syntax, fourteen controller checks, the 779-path proposed-snapshot artifact audit and targeted credential scanning passed. Local Gitleaks and Playwright are unavailable; fresh exact-source hosted workflows remain required.
+
 ## v0.340.66 response-observation completion bracket
 
 Successful paper response completion now proves the exact immutable request `OBSERVE` prefix both before and after the provider-budget terminal write. A failed post-write semantic replay yields fixed completion uncertainty after the one consumed POST and cannot create retry, resend or routing authority. A later valid original-ID lookup remains allowed because the proof binds the observation event rather than requiring it to remain the current request head.

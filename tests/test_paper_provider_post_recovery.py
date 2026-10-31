@@ -59,6 +59,7 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
     assert result['request_file_fingerprint_rechecked']
     assert result['request_replay_fingerprint_rechecked_after_load']
     assert result['request_proof_final_before_budget_commit']
+    assert result['recovery_acknowledgement_cold_replayed']
     assert result['cooldown_shortened'] is False and result['uncertainty_preserved']
     assert state['recoveries']==1 and state['review_required'] is False
     recovery=budget.recovery_history()
@@ -72,6 +73,69 @@ def test_terminal_original_id_resolution_clears_only_shared_budget_review(tmp_pa
         'automatic_continuation','broker_wide_quota_verified','distributed_ownership_verified',
         'broker_account_reconciled','ready_for_routing','live_orders_enabled',
         'money_movement_enabled','release_approved'))
+
+
+def test_lost_recovery_acknowledgement_cold_replays_exact_commit(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    original=PaperProviderPostBudget.recover_resolved_unknown
+    calls=0
+    def commit_then_lose_ack(self,*args,**kwargs):
+        nonlocal calls
+        calls+=1
+        original(self,*args,**kwargs)
+        raise RuntimeError('private lost recovery acknowledgement')
+    monkeypatch.setattr(PaperProviderPostBudget,'recover_resolved_unknown',
+                        commit_then_lose_ack)
+    result=recover(journal,budget,request_head)
+    state=budget.inspect();receipt=budget.recovery_receipt()
+    assert calls==1 and result['recovery_acknowledgement_cold_replayed']
+    assert result['head_sha256']==receipt['recovery_head_sha256']
+    assert state['recoveries']==1 and state['review_required'] is False
+    assert len(budget.recovery_history())==1
+
+
+@pytest.mark.parametrize('replacement',('raise','fabricate'))
+def test_uncommitted_or_fabricated_recovery_ack_is_not_trusted(
+        tmp_path, monkeypatch, replacement):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    before=budget.path.read_bytes()
+    def fail_before_commit(*_args,**_kwargs):
+        if replacement=='raise':
+            raise RuntimeError('private recovery storage detail')
+        return dict(head_sha256='f'*64,review_block_cleared=True)
+    monkeypatch.setattr(PaperProviderPostBudget,'recover_resolved_unknown',
+                        fail_before_commit)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_RECOVERY_DURABLE_STATE_CHANGED') as error:
+        recover(journal,budget,request_head)
+    assert 'private recovery storage detail' not in str(error.value)
+    assert budget.path.read_bytes()==before
+    assert budget.inspect()['review_required'] is True
+
+
+def test_post_commit_recovery_reader_failure_is_fixed_uncertainty(
+        tmp_path, monkeypatch):
+    journal,budget=ambiguous(tmp_path);request_head=resolve(journal)
+    original_recover=PaperProviderPostBudget.recover_resolved_unknown
+    original_receipt=PaperProviderPostBudget.recovery_receipt
+    committed=False
+    def commit(self,*args,**kwargs):
+        nonlocal committed
+        result=original_recover(self,*args,**kwargs);committed=True
+        return result
+    def fail_after_commit(self):
+        if committed: raise RuntimeError('private recovery reader detail')
+        return original_receipt(self)
+    monkeypatch.setattr(PaperProviderPostBudget,'recover_resolved_unknown',commit)
+    monkeypatch.setattr(PaperProviderPostBudget,'recovery_receipt',
+                        fail_after_commit)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_RECOVERY_DURABLE_STATE_CHANGED') as error:
+        recover(journal,budget,request_head)
+    assert 'private recovery reader detail' not in str(error.value)
+    assert budget.inspect()['recoveries']==1
+    assert budget.inspect()['review_required'] is False
 
 
 def test_recovery_clock_is_retained_without_shortening_existing_cooldown(tmp_path):

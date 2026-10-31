@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.67 resolved-unknown recovery acknowledgement replay
+
+The resolved-unknown POST-budget review latch is now accepted as cleared only after two identical read-only receipts prove the exact newly committed recovery event and current head under retained request-writer exclusion and budget ownership. Lost local acknowledgement is recovered without a duplicate append; absent, fabricated or unreadable state remains fixed uncertainty. The request remains non-resubmittable, and no provider access or routing authority is added.
+
+Exact-source v0.340.66 commit `36c9d6067df15c30fe4854950b5ad28cc3499402` passed security 41155618652, research/browser/evidence 41155618641 and Windows EXE/installer/reinstall/uninstall 41155618754. No broker, market, native-owner Windows, live, funding, cloud, independent or owner gate is promoted; rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages.
+
+Local prepublication validation passed 4,681 tests with one expected non-Windows skip and one existing warning; the recovery/release/evidence/version/installer focus passed 212. Sixteen offline profiles and saved evidence verified against 395 exact source files / `332e39da89b27f7d404c2b76e41b84ff087cc8d2d7b6c32cec28824315780671`. Evidence SHA-256 is `3b054e00579dcb1abf0cac01333ff46292159e09b13af303e72871a7655f1323`; wheel SHA-256 is `f95bff996cf97f08f77126b89f013c1f5670921ea84971879a9fd8857893c82b`. Compilation, dependency, roadmap, controller, Portal syntax, the 779-path proposed-snapshot artifact audit and targeted credential checks passed. Local Playwright and Gitleaks are unavailable; these local results do not substitute for fresh exact-source hosted, broker, market, Windows-owner, independent or owner acceptance.
+
 ## v0.340.66 response-observation completion bracket
 
 The one-attempt paper boundary now accepts successful response-budget completion only when the exact immutable response-observation receipt can be replayed both before and after the provider-budget terminal write. A post-write semantic-reader failure or invalidated observation produces fixed completion uncertainty with the single POST still consumed. Later valid original-ID lookup history is permitted and cannot replace the exact observation event.

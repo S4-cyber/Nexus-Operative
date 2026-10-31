@@ -344,6 +344,34 @@ class PaperProviderPostBudget:
                 db.execute('BEGIN'); state = self._load(db)
         return tuple(dict(row) for row in state['recovery_history'])
 
+    def recovery_receipt(self):
+        """Cold-replay the latest exact recovery without granting authority.
+
+        The write-side return from :meth:`recover_resolved_unknown` is not
+        durable evidence.  This read-only receipt binds the latest recovery to
+        the current hash-chain head and exposes only retained digests and
+        conservative state needed by the recovery command.
+        """
+        self._path_check()
+        if not self.path.exists(): _fail('RECOVERY_MISSING')
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                db.execute('BEGIN'); state = self._load(db)
+        recovery = state['last_recovery']
+        if recovery is None: _fail('RECOVERY_MISSING')
+        pending = state['pending']
+        return dict(recovery, head_sha256=state['head_sha256'],
+            recoveries=state['recoveries'],
+            last_evaluated_at=state['last_evaluated_at'],
+            next_allowed_at=state['next_allowed_at'],
+            review_required=state['review_required'],
+            pending_token=None if pending is None else pending['token'],
+            exact_recovery_replayed=True, read_only=True,
+            original_request_rearmed=False, automatic_retry=False,
+            automatic_continuation=False, broker_account_reconciled=False,
+            ready_for_routing=False, live_orders_enabled=False,
+            money_movement_enabled=False, release_approved=False)
+
     def ownership(self):
         return _PostOwnership(self)
 

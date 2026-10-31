@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.66'
+REVISION = '0.340.67'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -191,6 +191,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; successful response completion now also brackets the provider-budget terminal write with exact cold replay of the immutable OBSERVE prefix, so an invalidated response event or post-write semantic-reader failure yields fixed completion uncertainty without another provider request, while a later valid original-ID lookup remains permitted' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; resolved-unknown POST-budget recovery now ignores its write acknowledgement and requires two identical read-only receipts for the exact recovery head, blocked attempt, terminal request-resolution head and unchanged cooldown, so a lost acknowledgement is recovered without re-arming the original request while absent or fabricated durable state remains blocked' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 # Product milestones complement the nine technical evidence tracks above.
 # These are implementation/acceptance states, never permissions to move money.
 DELIVERY_STAGES = (
@@ -273,6 +277,10 @@ DELIVERY_STAGES = tuple((dict(stage,
 
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Successful response completion now replays the exact immutable OBSERVE prefix both before and after the provider-budget terminal write. An invalidated response event or failed post-write semantic replay yields fixed completion uncertainty without retry; later valid original-ID lookup history remains allowed. This remains injected local evidence, not provider/account acceptance or market reconciliation.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Resolved-unknown provider POST recovery now cold-replays the exact committed recovery receipt after the write while request-writer and budget ownership remain held. Lost acknowledgements recover without a second recovery append; missing, fabricated or unreadable durable state remains fixed uncertainty. This remains injected local evidence, not provider/account acceptance or completed fee/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -375,7 +383,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.66 brackets successful paper response-budget completion with exact cold replay of the immutable request OBSERVE prefix before and after the provider-budget terminal write. A failed post-write semantic replay produces fixed completion uncertainty without another provider request; a later valid original-ID lookup may still advance the current request head. Exact-source v0.340.65 commit 8829c6b141d9b79f30a5c0cc733d7a759ea28e6b passed security 41151118170, research/browser/evidence 41151118165 and Windows EXE/installer/reinstall/uninstall 41151118418. This local hardening is not authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.67 cold-replays the exact durable receipt after resolved-unknown provider POST-budget recovery, while request-writer and budget ownership remain held. A committed recovery with a lost acknowledgement succeeds without a duplicate append; absent, fabricated or unreadable state remains fixed uncertainty, and the original request is never re-armed. Exact-source v0.340.66 commit 36c9d6067df15c30fe4854950b5ad28cc3499402 passed security 41155618652, every research/browser/evidence job in 41155618641 and Windows EXE/installer/reinstall/uninstall 41155618754. This local hardening is not authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

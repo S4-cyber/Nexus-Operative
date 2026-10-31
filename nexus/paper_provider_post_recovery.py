@@ -48,6 +48,10 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
     before = budget.inspect()
     if before['events'] == 0 or before['head_sha256'] != expected_post_budget_head:
         raise ValueError('PAPER_PROVIDER_POST_RECOVERY_SOURCE_REQUIRED')
+    completed = budget.history()
+    if (not before['review_required'] or before['pending_token'] is not None or
+            not completed or completed[-1]['outcome'] != 'OUTCOME_UNKNOWN'):
+        raise ValueError('PAPER_PROVIDER_POST_RECOVERY_SOURCE_REQUIRED')
     with budget.ownership() as owner:
         with journal.locked_request_snapshot(client_order_id,
                 expected_head=expected_request_head) as read_request:
@@ -61,16 +65,81 @@ def recover(post_budget_path, request_journal_path, *, expected_account_id,
             def check():
                 return _proof(read_request(), client_order_id,
                     expected_request_head)
-            result = budget.recover_resolved_unknown(
-                expected_head=expected_post_budget_head,
-                expected_account_id=expected_account_id,
-                expected_payload_sha256=expected['payload_sha256'],
-                expected_client_order_id=client_order_id,
-                expected_request_resolution_head=expected_request_head,
-                resolution_check=check,
-                confirm_original_id_resolved=confirm_original_id_resolved,
-                confirm_no_resubmission=confirm_no_resubmission,
-                admission=admission, ownership=owner)
+            write_error = None
+            try:
+                budget.recover_resolved_unknown(
+                    expected_head=expected_post_budget_head,
+                    expected_account_id=expected_account_id,
+                    expected_payload_sha256=expected['payload_sha256'],
+                    expected_client_order_id=client_order_id,
+                    expected_request_resolution_head=expected_request_head,
+                    resolution_check=check,
+                    confirm_original_id_resolved=confirm_original_id_resolved,
+                    confirm_no_resubmission=confirm_no_resubmission,
+                    admission=admission, ownership=owner)
+            except BaseException as error:
+                # The recovery commit acknowledgement may be lost.  Trust
+                # neither the return value nor raised detail; the exact
+                # durable recovery is proved below while request-writer and
+                # provider-budget ownership are still held.
+                write_error = error
+            try:
+                receipt = budget.recovery_receipt()
+                receipt_again = budget.recovery_receipt()
+                account_digest = hashlib.sha256(
+                    expected_account_id.encode()).hexdigest()
+                client_digest = hashlib.sha256(
+                    client_order_id.encode()).hexdigest()
+                stable = (receipt == receipt_again and
+                    receipt['head_sha256'] ==
+                        receipt['recovery_head_sha256'] and
+                    receipt['recoveries'] == before['recoveries'] + 1 and
+                    receipt['review_required'] is False and
+                    receipt['pending_token'] is None and
+                    receipt['last_evaluated_at'] == receipt['recovered_at'] and
+                    receipt['next_allowed_at'] == before['next_allowed_at'] and
+                    receipt['account_sha256'] == account_digest and
+                    receipt['payload_sha256'] == expected['payload_sha256'] and
+                    receipt['client_order_sha256'] == client_digest and
+                    receipt['blocked_attempt_head_sha256'] ==
+                        completed[-1]['after_head_sha256'] and
+                    receipt['request_resolution_head_sha256'] ==
+                        expected_request_head and
+                    receipt['exact_recovery_replayed'] is True and
+                    receipt['read_only'] is True and
+                    all(receipt[key] is False for key in (
+                        'original_request_rearmed', 'automatic_retry',
+                        'automatic_continuation', 'broker_account_reconciled',
+                        'ready_for_routing', 'live_orders_enabled',
+                        'money_movement_enabled', 'release_approved')))
+            except BaseException:
+                stable = False
+            if not stable:
+                if (type(write_error) is ValueError and
+                        str(write_error).startswith((
+                            'PAPER_PROVIDER_POST_BUDGET_',
+                            'BROKER_JOURNAL_'))):
+                    raise write_error
+                raise ValueError(
+                    'PAPER_PROVIDER_POST_RECOVERY_DURABLE_STATE_CHANGED')
+            result = dict(
+                mode='PAPER_PROVIDER_POST_BUDGET_RESOLVED_UNKNOWN_RECOVERY',
+                status='REVIEW_REQUIRED',
+                head_sha256=receipt['recovery_head_sha256'],
+                request_resolution_head_sha256=expected_request_head,
+                blocked_outcome='OUTCOME_UNKNOWN',
+                review_block_cleared=True,
+                next_allowed_at=receipt['next_allowed_at'],
+                cooldown_shortened=False, uncertainty_preserved=True,
+                original_request_rearmed=False, history_rewritten=False,
+                attempt_capacity_reclaimed=False, admission_reserved=False,
+                automatic_retry=False, automatic_continuation=False,
+                broker_wide_quota_verified=False,
+                distributed_ownership_verified=False,
+                broker_account_reconciled=False, ready_for_routing=False,
+                live_orders_enabled=False, money_movement_enabled=False,
+                release_approved=False,
+                recovery_acknowledgement_cold_replayed=True)
             return dict(result, request_writer_exclusion_held=True,
                 request_path_identity_rechecked=True,
                 request_file_fingerprint_rechecked=True,
@@ -118,12 +187,23 @@ def fixture_report():
         except ValueError:
             unresolved_denied=budget.inspect()==blocked
         journal.observe('nx_post_recovery_fixture',raw)
-        result=recover(budget.path,journal.path,expected_account_id=account,
-            client_order_id='nx_post_recovery_fixture',
-            expected_post_budget_head=blocked['head_sha256'],
-            expected_request_head=journal.recovery()['head_sha256'],
-            confirm_original_id_resolved=True,confirm_no_resubmission=True,
-            admission=lambda:1002)
+        original_recover = PaperProviderPostBudget.recover_resolved_unknown
+        lost_acknowledgements = 0
+        def commit_then_lose_ack(self,*args,**kwargs):
+            nonlocal lost_acknowledgements
+            lost_acknowledgements += 1
+            original_recover(self,*args,**kwargs)
+            raise RuntimeError('fixture private lost recovery acknowledgement')
+        PaperProviderPostBudget.recover_resolved_unknown = commit_then_lose_ack
+        try:
+            result=recover(budget.path,journal.path,expected_account_id=account,
+                client_order_id='nx_post_recovery_fixture',
+                expected_post_budget_head=blocked['head_sha256'],
+                expected_request_head=journal.recovery()['head_sha256'],
+                confirm_original_id_resolved=True,confirm_no_resubmission=True,
+                admission=lambda:1002)
+        finally:
+            PaperProviderPostBudget.recover_resolved_unknown = original_recover
         retained=journal.recovery()['requests'][0];after=budget.inspect()
         checks=dict(unresolved_request_denied=unresolved_denied,
             exact_terminal_resolution_bound=result['review_block_cleared'] is True,
@@ -137,6 +217,9 @@ def fixture_report():
                 result['request_replay_fingerprint_rechecked_after_load'] is True,
             request_proof_final_before_budget_commit=
                 result['request_proof_final_before_budget_commit'] is True,
+            recovery_acknowledgement_cold_replayed=
+                result['recovery_acknowledgement_cold_replayed'] is True and
+                lost_acknowledgements == 1 and after['recoveries'] == 1,
             original_request_not_rearmed=result['original_request_rearmed'] is False and
                 retained['submission_attempt_marked'],
             unknown_history_preserved=budget.history()==history,

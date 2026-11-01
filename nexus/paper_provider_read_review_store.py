@@ -335,9 +335,13 @@ class PaperProviderReadReviewStore:
                             opened.st_dev,opened.st_ino),)
                     finally:os.close(fd)
                 self._check()
-            db=sqlite3.connect(self.path.resolve().as_uri()+
+            bound_path=self.path.resolve()
+            db=sqlite3.connect(bound_path.as_uri()+
                 ('?mode=rw' if write else '?mode=ro'),uri=True,
                 timeout=DB_BUSY_TIMEOUT_MS/1000)
+            _require_main_connection(db,bound_path)
+            if write and not new:
+                _require_main_connection_content(db,bound_path)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')

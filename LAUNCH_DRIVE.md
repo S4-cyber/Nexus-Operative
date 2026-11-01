@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.108 provider-read receipt connection setup binding
+
+Private provider-read receipt connections now prove their SQLite `main` path before connection configuration. Existing writers additionally match exact bounded pathname bytes before write PRAGMAs or transaction start; a substituted fresh connection fails before schema creation and its exact empty target is narrowly removed. Direct and mandatory disposable evidence prove refusal, preservation and explicit retry without provider access or automatic retry.
+
+Exact-source v0.340.107 commit `c500f6a58e1c7197901f9bb1dd1d229810be2300` exposed no connector-visible workflow run or commit status at the pre-sprint check. Fresh v0.340.108 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local connection-setup evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local prepublication validation passed 4,811 tests with one expected skip and one existing warning; the provider-read/release/Windows focus passed 290 and the direct provider-read file passed 74. Sixteen profiles and saved-evidence verification matched 395 source files / `dc9430843da841f047492197992e95369ddcdd65f8914aa7f880257ae7d9f427`; evidence SHA-256 is `4840ab9ddf1e42bb3b9f23aa0c95d1b657f23c1019c2198722af164e664bc6ca`. The wheel SHA-256 is `4c570b9aaaedf0758a12998835f740261a385c1c746918daa985a550e66eba44`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 820-path / 63,499,479-byte proposed-snapshot audit and introduced-line high-confidence credential scan found nothing. Local Gitleaks and Playwright are unavailable. Fresh exact-source v0.340.108 hosted workflows remain mandatory.
+
 ## v0.340.107 provider-read receipt write connection binding
 
 Private provider-read receipt writes now prove their writable SQLite `main` connection targets the captured store and matches the exact bounded pathname bytes before mutation. Path and content are re-proved after commit before durability acknowledgement. Foreign, spoofed and serialization-time divergent connections fail closed; direct and mandatory disposable evidence prove both databases remain unchanged without provider access or automatic retry.

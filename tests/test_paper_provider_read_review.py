@@ -554,6 +554,67 @@ def test_receipt_writer_rechecks_path_content_after_connection_serialization(
     assert store.inspect()['retained_receipts']==1
 
 
+def test_fresh_receipt_connection_binding_precedes_schema_mutation(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path/'source')
+    foreign=tmp_path/'foreign.sqlite3'
+    subject.retain_review(foreign,budget,[gate],**heads(gate,budget))
+    path=tmp_path/'target'/'review.sqlite3';options=heads(gate,budget)
+    original_connect=store_subject.sqlite3.connect
+    target_uri=path.resolve().as_uri()+'?mode=rw'
+    def substitute(*args,**kwargs):
+        if args and args[0]==target_uri:
+            return original_connect(
+                foreign.resolve().as_uri()+'?mode=rw',uri=True,timeout=10)
+        return original_connect(*args,**kwargs)
+    before=foreign.read_bytes()
+    monkeypatch.setattr(store_subject.sqlite3,'connect',substitute)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_BINDING_CHANGED$')):
+        subject.retain_review(path,budget,[gate],**options)
+    monkeypatch.setattr(store_subject.sqlite3,'connect',original_connect)
+    assert not path.exists() and foreign.read_bytes()==before
+    receipt=subject.retain_review(path,budget,[gate],**options)
+    replay=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert replay['retained_receipts']==1
+    assert receipt['head_sha256']==replay['head_sha256']
+
+
+def test_existing_receipt_content_is_pinned_before_write_setup(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    state=store.inspect();scope=state['receipts'][-1]['scope']
+    receipt=state['receipts'][-1]['receipt_sha256']
+    foreign=tmp_path/'foreign.sqlite3';shutil.copyfile(path,foreign)
+    foreign_db=sqlite3.connect(foreign)
+    try:foreign_db.execute('PRAGMA user_version=1');foreign_db.commit()
+    finally:foreign_db.close()
+    original_connect=store_subject.sqlite3.connect
+    target_uri=path.resolve().as_uri()+'?mode=rw'
+    class SpoofedConnection(sqlite3.Connection):
+        def execute(self,statement,*args,**kwargs):
+            if statement=='PRAGMA database_list':
+                return SimpleNamespace(fetchall=lambda:[
+                    (0,'main',str(path.resolve()))])
+            return super().execute(statement,*args,**kwargs)
+    def substitute(*args,**kwargs):
+        if args and args[0]==target_uri:
+            return original_connect(foreign.resolve().as_uri()+'?mode=rw',
+                uri=True,timeout=10,factory=SpoofedConnection)
+        return original_connect(*args,**kwargs)
+    before=(path.read_bytes(),foreign.read_bytes())
+    monkeypatch.setattr(store_subject.sqlite3,'connect',substitute)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED$')):
+        store.append(scope,expected_head=state['head_sha256'],
+            admission=lambda:receipt)
+    monkeypatch.setattr(store_subject.sqlite3,'connect',original_connect)
+    assert (path.read_bytes(),foreign.read_bytes())==before
+    assert store.inspect()['retained_receipts']==1
+
+
 def test_exact_duplicate_is_idempotent_and_revocation_fails_closed(tmp_path):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';options=heads(gate,budget)
     first=subject.retain_review(path,budget,[gate],**options);saved=path.read_bytes()

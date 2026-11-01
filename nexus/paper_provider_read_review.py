@@ -874,6 +874,62 @@ def fixture_report():
             inspection_write_serialized and inspection_bytes==
                 {path:path.read_bytes() for path in inspection_bytes} and
             inspection_reader.inspect()['retained_receipts']==1)
+        setup_gate,setup_budget=build_pair(
+            root/'retained-connection-setup')
+        setup_store=(root/'retained-connection-setup'/'receipt.sqlite3')
+        setup_target=setup_store.resolve().as_uri()+'?mode=rw'
+        original_sqlite_connect=store_module.sqlite3.connect
+        setup_foreign_before=foreign_inspection_store.read_bytes()
+        def substitute_initialization(*args,**kwargs):
+            if args and args[0]==setup_target:
+                return original_sqlite_connect(
+                    foreign_inspection_store.resolve().as_uri()+'?mode=rw',
+                    uri=True,timeout=10)
+            return original_sqlite_connect(*args,**kwargs)
+        setup_connection_denied=False
+        store_module.sqlite3.connect=substitute_initialization
+        try:
+            retain_review(setup_store,setup_budget,[setup_gate],
+                expected_provider_head=
+                    setup_budget.inspect()['head_sha256'],
+                expected_account_heads={setup_gate.account_digest:
+                    setup_gate.inspect()['head_sha256']})
+        except ValueError as error:
+            setup_connection_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_BINDING_CHANGED')
+        finally:store_module.sqlite3.connect=original_sqlite_connect
+        setup_connection_denied=(setup_connection_denied and
+            not setup_store.exists() and
+            foreign_inspection_store.read_bytes()==setup_foreign_before)
+        setup_receipt=retain_review(setup_store,setup_budget,[setup_gate],
+            expected_provider_head=setup_budget.inspect()['head_sha256'],
+            expected_account_heads={setup_gate.account_digest:
+                setup_gate.inspect()['head_sha256']})
+        setup_replay=PaperProviderReadReviewStore(setup_store,setup_budget,
+            [setup_gate]).inspect()
+        setup_connection_denied=(setup_connection_denied and
+            setup_replay['retained_receipts']==1 and
+            setup_receipt['head_sha256']==setup_replay['head_sha256'])
+        inspection_target=inspection_store.resolve().as_uri()+'?mode=rw'
+        def substitute_setup_content(*args,**kwargs):
+            if args and args[0]==inspection_target:
+                return original_sqlite_connect(
+                    foreign_inspection_store.resolve().as_uri()+'?mode=rw',
+                    uri=True,timeout=10,factory=SpoofedInspectionConnection)
+            return original_sqlite_connect(*args,**kwargs)
+        setup_content_denied=False
+        store_module.sqlite3.connect=substitute_setup_content
+        try:
+            inspection_reader.append(inspection_scope,
+                expected_head=inspection_state['head_sha256'],
+                admission=lambda:inspection_receipt)
+        except ValueError as error:
+            setup_content_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED')
+        finally:store_module.sqlite3.connect=original_sqlite_connect
+        setup_content_denied=(setup_content_denied and inspection_bytes==
+            {path:path.read_bytes() for path in inspection_bytes} and
+            inspection_reader.inspect()['retained_receipts']==1)
         def retarget_inspection(*args,**kwargs):
             inspection_reader.path=foreign_inspection_store
             return inspection_connect(*args,**kwargs)
@@ -1081,6 +1137,10 @@ def fixture_report():
             retained_receipt_write_connection_content_continuity_pinned=(
                 inspection_write_boundary_bound and
                 inspection_write_continuity_denied),
+            retained_receipt_initialization_connection_pinned=(
+                setup_connection_denied),
+            retained_receipt_write_setup_content_pinned=(
+                setup_content_denied),
             retained_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_bound),
             journals_unchanged=source_same,

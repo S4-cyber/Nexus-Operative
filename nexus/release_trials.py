@@ -1073,6 +1073,8 @@ def _validate(profile, result):
              'retained_receipt_write_connection_pinned',
              'retained_receipt_write_connection_content_pinned',
              'retained_receipt_write_connection_content_continuity_pinned',
+             'retained_receipt_initialization_connection_pinned',
+             'retained_receipt_write_setup_content_pinned',
              'retained_receipt_parent_descriptor_boundary_respected',
              'journal_file_fingerprints_rechecked',
              'semantic_reader_failures_rechecked','output_never_authoritative')),

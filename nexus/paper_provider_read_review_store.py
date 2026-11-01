@@ -396,12 +396,27 @@ class PaperProviderReadReviewStore:
                 'PAPER_PROVIDER_READ_REVIEW_STORE_')
             require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
                 fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        def require_connection(db):
+            try:
+                rows=db.execute('PRAGMA database_list').fetchall()
+                if (len(rows)!=1 or len(rows[0])!=3 or
+                        type(rows[0][0]) is not int or rows[0][1]!='main' or
+                        type(rows[0][2]) is not str or not rows[0][2]):
+                    _fail('CONNECTION_BINDING_CHANGED')
+                connected=Path(rows[0][2]).resolve()
+            except ValueError:
+                raise
+            except (OSError,RuntimeError,sqlite3.Error,TypeError):
+                _fail('CONNECTION_BINDING_CHANGED')
+            if connected!=bound_path:_fail('CONNECTION_BINDING_CHANGED')
         try:
             db,_=self._connect()
             with closing(db):
-                require_store()
+                require_store();require_connection(db)
                 with _transaction(db):
-                    require_store();head,receipts=self._load(db);require_store()
+                    require_store();require_connection(db)
+                    head,receipts=self._load(db)
+                    require_connection(db);require_store()
         finally:require_store()
         return dict(mode='LOCAL_PROVIDER_READ_REVIEW_HISTORY',initialized=True,provider_sha256=self.provider,
             head_sha256=head,retained_receipts=len(receipts),receipts=receipts,read_only=True,

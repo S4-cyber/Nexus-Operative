@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.93'
+REVISION = '0.340.94'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -232,6 +232,14 @@ DELIVERY_STAGES = tuple((dict(stage,
         'injected tests do not attest an account and no external order adapter is connected.',
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; retained provider/read receipt inspection now also proves that the opened SQLite connection has exactly one main database bound to the captured resolved store path, rejecting a valid foreign connection before replay' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Retained provider/read receipt inspection now binds the SQLite connection itself to exactly one main database at the captured resolved store path before and after complete replay. A substituted valid foreign connection is rejected with a fixed diagnostic while both stores remain unchanged. Disposable release evidence covers the connection seam. This is local read-only integrity evidence, not provider identity, authorized broker acceptance, native durability, sustained-market evidence or release approval.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -599,7 +607,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.93 pins public provider/read receipt inspection to one exact resolved store path, regular-file identity and bounded fingerprint across SQLite connection, complete replay, close and exceptional unwind. Mutable-store retargeting and same-path mutation fail closed before any history can return; disposable saved evidence requires both refusals without retaining account content. Exact-source v0.340.92 commit d80ff74b5e7752135bfb9e4a4412af77bec966cd passed public security/history/Gitleaks run 41260973584, every research offline-evidence, browser-help and regression job in run 41260973797, and the complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41260973765. Fresh exact-source v0.340.93 workflows remain mandatory. This narrows sampled local read-only integrity uncertainty but is not provider identity, authorized broker acceptance, sustained market evidence, native-owner/durability acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.94 requires retained provider/read receipt inspection to prove that the opened SQLite connection exposes exactly one main database bound to the captured resolved store path before and after complete replay. A valid foreign database connection is rejected before its history can be accepted; disposable saved evidence preserves both stores and then replays the exact original receipt. Exact-source v0.340.93 commit 2d2eae90356a2a284fb8f75be4ba876b785a3840 passed public security/history/Gitleaks run 41265385379, every research offline-evidence, browser-help and regression job in run 41265385380, and the complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41265385398. Fresh exact-source v0.340.94 workflows remain mandatory. This narrows sampled local read-only integrity uncertainty but is not provider identity, authorized broker acceptance, sustained market evidence, native-owner/durability acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

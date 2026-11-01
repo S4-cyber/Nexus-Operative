@@ -380,7 +380,8 @@ def test_durable_receipt_binds_both_heads_without_private_content(tmp_path):
 
 @pytest.mark.parametrize(('seam','expected'),(
     ('connect','STORE_BINDING_CHANGED'),('load','STORE_BINDING_CHANGED'),
-    ('fingerprint','FILE_SET_CHANGED')))
+    ('fingerprint','FILE_SET_CHANGED'),
+    ('connection','CONNECTION_BINDING_CHANGED')))
 def test_receipt_inspection_pins_store_binding_and_fingerprint(
         tmp_path,monkeypatch,seam,expected):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
@@ -389,7 +390,13 @@ def test_receipt_inspection_pins_store_binding_and_fingerprint(
     store=PaperProviderReadReviewStore(path,budget,[gate])
     original_path=store.path;original_connect=store._connect
     original_load=store._load
-    if seam=='connect':
+    if seam=='connection':
+        def substitute_connection(*args,**kwargs):
+            db=sqlite3.connect(foreign.resolve().as_uri()+'?mode=ro',
+                uri=True,timeout=10)
+            return db,False
+        monkeypatch.setattr(store,'_connect',substitute_connection)
+    elif seam=='connect':
         def retarget_connect(*args,**kwargs):
             store.path=foreign
             return original_connect(*args,**kwargs)

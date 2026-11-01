@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.94 receipt SQLite connection binding
+
+Retained provider/read receipt inspection now requires the opened SQLite connection to expose exactly one `main` database at the captured resolved store path. The proof brackets complete chain replay, so substituting a valid foreign read-only connection while leaving the public store path unchanged returns a fixed refusal before foreign history can be accepted. Direct and mandatory disposable evidence preserve both stores and then replay the exact original receipt.
+
+Exact-source v0.340.93 commit `2d2eae90356a2a284fb8f75be4ba876b785a3840` passed security/history/Gitleaks run 41265385379, every research evidence/browser/regression job in run 41265385380, and complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41265385398. Fresh v0.340.94 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local read-only integrity evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local validation passed 4,758 tests with one expected skip and one existing warning; the receipt/release/evidence/version/installer focus passed 253. Sixteen profiles and saved-evidence verification matched 395 source files / `348836aefbda42b1e88e84272efe8befb52f57a5581b65ff0d04dc5a333999ad`; evidence SHA-256 is `ba4be4ae651de5a45e1805fa062793ef411ddea569055f31c41c49fe43df0dcd`. The final wheel SHA-256 is `adad0dcbc41f0bd87143fa7a5aeb4d34aa2ecb9c59f2da1db5f25c9c60edea57`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 806-path candidate audit and introduced-line credential scan reported zero findings. Fresh v0.340.94 hosted workflows remain required.
+
 ## v0.340.93 receipt-history inspection binding
 
 Public provider/read receipt history now fixes one resolved store pathname, regular-file identity and bounded fingerprint before opening SQLite. It rechecks that exact boundary after connection, around complete chain replay, after close and during exceptional unwind. Mutable-store retargeting and same-path metadata/content mutation return fixed fail-closed diagnostics before a mixed-scope or changed receipt history can be accepted. Disposable release evidence exercises both faults and retains no account or market content.

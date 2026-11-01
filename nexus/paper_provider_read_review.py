@@ -716,6 +716,15 @@ def fixture_report():
         inspection_bytes={path:path.read_bytes() for path in
             (inspection_store,foreign_inspection_store)}
         inspection_connect=inspection_reader._connect
+        foreign_inspection_reader=PaperProviderReadReviewStore(
+            foreign_inspection_store,inspection_budget,[inspection_gate])
+        inspection_reader._connect=foreign_inspection_reader._connect
+        inspection_connection_denied=False
+        try:inspection_reader.inspect()
+        except ValueError as error:
+            inspection_connection_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_BINDING_CHANGED')
+        finally:inspection_reader._connect=inspection_connect
         def retarget_inspection(*args,**kwargs):
             inspection_reader.path=foreign_inspection_store
             return inspection_connect(*args,**kwargs)
@@ -742,7 +751,8 @@ def fixture_report():
                 'PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED')
         finally:inspection_reader._load=inspection_load
         inspection_replay=inspection_reader.inspect()
-        inspection_boundary_bound=(inspection_binding_denied and
+        inspection_boundary_bound=(inspection_connection_denied and
+            inspection_binding_denied and
             inspection_fingerprint_denied and inspection_bytes==
                 {path:path.read_bytes() for path in inspection_bytes} and
             inspection_replay['retained_receipts']==1)
@@ -906,6 +916,8 @@ def fixture_report():
                     descriptor_final['head_sha256']),
             retained_receipt_inspection_binding_pinned=(
                 inspection_boundary_bound),
+            retained_receipt_connection_binding_pinned=(
+                inspection_connection_denied),
             retained_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_bound),
             journals_unchanged=source_same,

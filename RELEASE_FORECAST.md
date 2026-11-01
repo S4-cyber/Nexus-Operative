@@ -1,6 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.111
+## Current candidate: v0.340.112
+
+The provider-read receipt writer now reasserts the exact committed file identity and bounded fingerprint after SQLite connection close before acknowledging success. Close-time disagreement remains a fixed fail-closed condition with exactly-once retention and explicit duplicate recovery. The separately selected v0.340.111 history-only preparation mode remains available and non-authoritative.
+
+This closes a local acknowledgement boundary without accepting an actual account or external gate. The rough implementation estimate therefore remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. Release approval, trading permission, funding/live/cloud authority and launch date remain false or unset.
+
+## Previous candidate: v0.340.111
 
 The packaged provider-results operator tool now offers an explicitly selected history-only preparation mode with its own strict manifest. It checks retained provider/account pacing agreement without requiring normalized response bindings, performs no provider/vault IO or writes, and cannot authorize routing or funds. Default normalized-result review remains separate. See PROVIDER_RESULT_REVIEW.md for the command and manifest.
 

@@ -930,6 +930,46 @@ def fixture_report():
         setup_content_denied=(setup_content_denied and inspection_bytes==
             {path:path.read_bytes() for path in inspection_bytes} and
             inspection_reader.inspect()['retained_receipts']==1)
+        close_mutated=False
+        class CloseMutationConnection(sqlite3.Connection):
+            def close(self):
+                nonlocal close_mutated
+                super().close()
+                if not close_mutated:
+                    current=inspection_store.stat()
+                    os.utime(inspection_store,ns=(current.st_atime_ns,
+                        current.st_mtime_ns+1_000_000_000))
+                    close_mutated=True
+        def mutate_on_write_close(write=False):
+            if not write:return inspection_connect(write=write)
+            db=sqlite3.connect(
+                inspection_store.resolve().as_uri()+'?mode=rw',uri=True,
+                timeout=10,factory=CloseMutationConnection)
+            db.execute('PRAGMA journal_mode=DELETE')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            return db,False
+        close_change_denied=False
+        inspection_reader._connect=mutate_on_write_close
+        try:
+            inspection_reader.append(inspection_scope,
+                expected_head=inspection_state['head_sha256'],
+                admission=lambda:inspection_receipt)
+        except ValueError as error:
+            close_change_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED')
+        finally:inspection_reader._connect=inspection_connect
+        close_replay=inspection_reader.inspect()
+        close_retry=inspection_reader.append(inspection_scope,
+            expected_head=close_replay['head_sha256'],
+            admission=lambda:inspection_receipt)
+        close_final=inspection_reader.inspect()
+        close_boundary_bound=(close_mutated and close_change_denied and
+            close_replay['retained_receipts']==1 and
+            close_retry['duplicate'] is True and
+            close_final['retained_receipts']==1 and
+            close_retry['head_sha256']==close_replay['head_sha256']==
+                close_final['head_sha256'])
         def retarget_inspection(*args,**kwargs):
             inspection_reader.path=foreign_inspection_store
             return inspection_connect(*args,**kwargs)
@@ -1141,6 +1181,8 @@ def fixture_report():
                 setup_connection_denied),
             retained_receipt_write_setup_content_pinned=(
                 setup_content_denied),
+            retained_receipt_connection_close_content_pinned=(
+                close_boundary_bound),
             retained_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_bound),
             journals_unchanged=source_same,

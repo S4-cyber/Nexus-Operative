@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.111 (pre-release).**
+**Current development build: 0.340.112 (pre-release).**
+
+## v0.340.112 provider-read receipt connection-close continuity
+
+The durable provider-read receipt writer now carries its acknowledgement proof through SQLite connection close. After a committed write connection closes, the exact bounded pathname identity and fingerprint must still match before success is returned. A close-time metadata or content disagreement fails closed with the fixed store error; the committed receipt remains exactly once and may be recovered only by an explicit exact-head duplicate replay. No automatic retry is introduced.
+
+This extends the v0.340.111 packaged provider/account history-only preparation mode without changing its separate strict manifest, read-only behavior or false authority flags. No provider request, credential read, UI control, editable parameter, order route, money movement, live/cloud authority or release approval is added. The seven beginner tabs, black/bright-purple bottom-right hover help, OFF engagement defaults, limits, account checks, exits and independent emergency stop remain unchanged.
+
+Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local exactly-once acknowledgement boundary does not establish actual broker-paper acceptance, sustained market realism, fee/hold/funds reconciliation, native-owner acceptance, funding/live/cloud readiness, independent review, owner approval or future profitability. Fresh exact-source hosted workflows remain required.
+
+Integrated local validation passed 4,828 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider/history/release/roadmap/version/Windows-contract focus passed 278. All sixteen offline release profiles and saved-evidence verification matched 395 source files / `f56ba9a7f402f6889f83ee6a64ffa9dc0c8741da9c0f4c2919fe26bf7b86fce3`; `validation/release_trials_0_340_112.json` SHA-256 is `c7d4eb4e00aca8fbb902f8916121ef3e6ac34ce23bb4a2fdb502ba489ae90c98`. All fourteen Portal controllers and intercepted browser acceptance at 1280×900, 390×844 and 320×568 passed against unchanged HTML SHA-256 `e441dd5fb7f3a5db5983c3a5a08e3f249c85451b942e220c3d6e06afaaf94f30`. Compilation, dependency integrity and deterministic roadmap checks passed. The wheel SHA-256 is `6e481383d45cdcb7dc323503545fac1a09e76ee4ab815f40544da0225db7c920`. Fresh exact-source hosted/native checks remain required; local synthetic evidence grants no broker, sustained-market, funds, live/cloud, independent or owner acceptance.
+
+**Previous development build: 0.340.111 (pre-release).**
 
 ## v0.340.111 packaged provider/account history review
 

@@ -615,6 +615,47 @@ def test_existing_receipt_content_is_pinned_before_write_setup(
     assert store.inspect()['retained_receipts']==1
 
 
+def test_receipt_writer_rechecks_committed_file_after_connection_close(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    state=store.inspect();scope=state['receipts'][-1]['scope']
+    receipt=state['receipts'][-1]['receipt_sha256'];before=path.read_bytes()
+    original_connect=store._connect;close_mutated=False
+    class CloseMutationConnection(sqlite3.Connection):
+        def close(self):
+            nonlocal close_mutated
+            super().close()
+            if not close_mutated:
+                current=path.stat()
+                os.utime(path,ns=(current.st_atime_ns,
+                    current.st_mtime_ns+1_000_000_000))
+                close_mutated=True
+    def observed_connection(write=False):
+        if not write:return original_connect(write=write)
+        db=sqlite3.connect(path.resolve().as_uri()+'?mode=rw',uri=True,
+            timeout=10,factory=CloseMutationConnection)
+        db.execute('PRAGMA journal_mode=DELETE')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('BEGIN IMMEDIATE')
+        return db,False
+    monkeypatch.setattr(store,'_connect',observed_connection)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED$')):
+        store.append(scope,expected_head=state['head_sha256'],
+            admission=lambda:receipt)
+    monkeypatch.setattr(store,'_connect',original_connect)
+    replay=store.inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    final=store.inspect()
+    assert close_mutated and path.read_bytes()==before
+    assert replay['retained_receipts']==final['retained_receipts']==1
+    assert retry['duplicate'] is True
+    assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
+
+
 def test_exact_duplicate_is_idempotent_and_revocation_fails_closed(tmp_path):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';options=heads(gate,budget)
     first=subject.retain_review(path,budget,[gate],**options);saved=path.read_bytes()

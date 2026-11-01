@@ -513,6 +513,7 @@ class PaperProviderReadReviewStore:
         if initial_check(precommit_check) is not True:_fail('INPUT_REVOKED')
         require_initial()
         db,new=self._connect(write=True);committed=False;transaction_identity=None
+        committed_identity=committed_fingerprint=result=None
         try:
             with closing(db):
                 _require_main_connection(db,bound_path)
@@ -563,10 +564,15 @@ class PaperProviderReadReviewStore:
                         _fail('ADMISSION_CHANGED_AFTER_COMMIT')
                     if precommit_check() is not True:
                         _fail('INPUT_REVOKED_AFTER_COMMIT')
-                    return dict(mode='LOCAL_PROVIDER_READ_REVIEW_RECEIPT',
+                    result=dict(mode='LOCAL_PROVIDER_READ_REVIEW_RECEIPT',
                         head_sha256=head,receipt_sha256=receipt,
                         duplicate=duplicate,read_only=True,
                         ready_for_routing=False,release_approved=False)
+            require_file_identities((bound_path,),committed_identity,
+                'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
+                committed_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            return result
         except BaseException:
             if new and not committed:
                 _discard_uncommitted_new(bound_path,transaction_identity)

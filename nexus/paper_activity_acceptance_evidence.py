@@ -7,6 +7,7 @@ import json
 import hashlib
 from pathlib import Path
 import subprocess
+import sqlite3
 import sys
 import tempfile
 
@@ -176,6 +177,59 @@ def fixture_report():
             after['latest_content_replayed'] and after['all_content_replayed'] and
             after['all_operations_typed'] and after['all_receipts_bound'] and after['all_request_targets_bound'] and after['all_normalized_results_bound'] and
             after['replayed_records']==after['records']==2)
+        foreign_root=base/'inspection-foreign';foreign_root.mkdir()
+        fp,fa,foreign_acceptance,foreign_scope=_scope(foreign_root)
+        foreign_acceptance.append(foreign_scope,admission=lambda:(
+            fp.inspect()['head_sha256'],fa.inspect()['head_sha256']))
+        acceptance_connect=after_acceptance._connect
+        acceptance_path=after_acceptance.path
+        inspection_bytes={path:path.read_bytes() for path in
+            (acceptance_path,foreign_acceptance.path)}
+        after_acceptance._connect=foreign_acceptance._connect
+        acceptance_connection_denied=False
+        try:after_acceptance.inspect()
+        except ValueError as error:
+            acceptance_connection_denied=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_BINDING_CHANGED')
+        finally:after_acceptance._connect=acceptance_connect
+        class SpoofedAcceptanceConnection(sqlite3.Connection):
+            def execute(self,statement,*args,**kwargs):
+                if statement=='PRAGMA database_list':
+                    class StaticRows:
+                        def fetchall(self):return [
+                            (0,'main',str(acceptance_path.resolve()))]
+                    return StaticRows()
+                return super().execute(statement,*args,**kwargs)
+        def substitute_acceptance_content(*args,**kwargs):
+            db=sqlite3.connect(
+                foreign_acceptance.path.resolve().as_uri()+'?mode=ro',
+                uri=True,timeout=10,factory=SpoofedAcceptanceConnection)
+            return db,False
+        acceptance_content_denied=False
+        after_acceptance._connect=substitute_acceptance_content
+        try:after_acceptance.replay_scopes()
+        except ValueError as error:
+            acceptance_content_denied=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_CONTENT_CHANGED')
+        finally:after_acceptance._connect=acceptance_connect
+        def retarget_acceptance(*args,**kwargs):
+            after_acceptance.path=foreign_acceptance.path
+            return acceptance_connect(*args,**kwargs)
+        acceptance_binding_denied=False
+        after_acceptance._connect=retarget_acceptance
+        try:after_acceptance.inspect()
+        except ValueError as error:
+            acceptance_binding_denied=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_STORE_BINDING_CHANGED')
+        finally:
+            after_acceptance.path=acceptance_path
+            after_acceptance._connect=acceptance_connect
+        acceptance_inspection_bound=(acceptance_connection_denied and
+            acceptance_content_denied and acceptance_binding_denied and
+            inspection_bytes=={path:path.read_bytes() for path in
+                inspection_bytes} and
+            after_acceptance.inspect()['records']==2 and
+            len(after_acceptance.replay_scopes())==2)
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
         rollback_observed=before['rollback_journal_observed'] is True
@@ -199,7 +253,8 @@ def fixture_report():
         legacy_refused=(legacy['recovery']=='ACCEPTED_NORMALIZED_RESULT_UNVERIFIED_REVIEW_REQUIRED' and
             not legacy['all_normalized_results_bound'] and legacy['all_request_targets_bound'])
         legacy_preserved=legacy['unchanged'] and legacy_before==_sqlite_files_snapshot(legacy_root)
-        passed=(missing_created_nothing and before_unbound and after_bound and silent and unchanged and
+        passed=(missing_created_nothing and before_unbound and after_bound and
+            acceptance_inspection_bound and silent and unchanged and
             rollback_observed and all(scope_checks) and scope_unchanged and legacy_refused and legacy_preserved)
         return dict(mode='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY',passed=passed,
             source='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE',missing_status_created_nothing=missing_created_nothing,
@@ -213,6 +268,9 @@ def fixture_report():
             postcommit_all_pacing_result_receipts_bound=after['all_receipts_bound'],
             postcommit_all_pacing_request_targets_bound=after['all_request_targets_bound'],
             postcommit_all_normalized_results_bound=after['all_normalized_results_bound'],
+            acceptance_store_binding_pinned=acceptance_binding_denied,
+            acceptance_connection_binding_pinned=acceptance_connection_denied,
+            acceptance_connection_content_pinned=acceptance_content_denied,
             legacy_normalized_result_not_invented=legacy_refused,legacy_normalized_history_preserved=legacy_preserved,
             changed_creation_window_targets_refused=scope_checks[0],
             changed_cursor_target_refused=scope_checks[1],

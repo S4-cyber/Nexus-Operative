@@ -1116,7 +1116,9 @@ def _validate(profile, result):
             'fresh_process_vault_silent','postcommit_latest_content_replayed',
             'postcommit_all_content_replayed','postcommit_all_pacing_operations_typed',
             'postcommit_all_pacing_result_receipts_bound','postcommit_all_pacing_request_targets_bound',
-            'postcommit_all_normalized_results_bound','legacy_normalized_result_not_invented','legacy_normalized_history_preserved',
+            'postcommit_all_normalized_results_bound','acceptance_store_binding_pinned',
+            'acceptance_connection_binding_pinned','acceptance_connection_content_pinned',
+            'legacy_normalized_result_not_invented','legacy_normalized_history_preserved',
             'changed_creation_window_targets_refused','changed_cursor_target_refused',
             'request_target_disagreement_history_preserved')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
         _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access','source_attested',

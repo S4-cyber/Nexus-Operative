@@ -11,10 +11,12 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.alpaca_paper_inspection import _uuid
-from nexus.sqlite_journal_guard import check_existing
+from nexus.sqlite_journal_guard import (
+    capture_file_identities,check_existing,require_file_identities)
 
 SCHEMA = 'nexus.paper-activity-acceptance-history.v1'
 PROFILE = 'nexus.paper-activity-acceptance-record.v2'
@@ -39,6 +41,45 @@ def _database_busy(error):
     code = getattr(error, 'sqlite_errorcode', None)
     return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
         any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+def _main_fingerprint(path):
+    """Hash one bounded main file while retaining any rollback evidence."""
+    try:
+        path=Path(path);observed=path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink!=1 or
+                not 1<=observed.st_size<=MAX_DATABASE_BYTES):
+            _fail('FILE_SET_CHANGED')
+        flags=(os.O_RDONLY|getattr(os,'O_BINARY',0)|
+            getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
+        digest=hashlib.sha256();remaining=MAX_DATABASE_BYTES+1
+        with os.fdopen(os.open(path.resolve(),flags),'rb',buffering=0) as stream:
+            before=os.fstat(stream.fileno())
+            while remaining:
+                block=stream.read(min(1024*1024,remaining))
+                if not block:break
+                digest.update(block);remaining-=len(block)
+            after=os.fstat(stream.fileno())
+        final=path.lstat()
+        boundary=lambda item:(item.st_dev,item.st_ino,item.st_size,
+            item.st_mtime_ns,item.st_ctime_ns if os.name!='nt' else None,
+            item.st_nlink)
+        if (remaining==0 or boundary(observed)!=boundary(before) or
+                boundary(before)!=boundary(after) or
+                boundary(after)!=boundary(final) or
+                before.st_ctime_ns!=after.st_ctime_ns or
+                not stat.S_ISREG(final.st_mode)):
+            _fail('FILE_SET_CHANGED')
+        return (str(path.resolve()),after.st_dev,after.st_ino,after.st_size,
+            after.st_mtime_ns,final.st_ctime_ns if os.name!='nt' else 0,
+            after.st_nlink,
+            digest.hexdigest())
+    except ValueError:
+        raise
+    except (OSError,RuntimeError,TypeError):
+        _fail('FILE_SET_CHANGED')
 
 
 @contextmanager
@@ -143,6 +184,60 @@ class PaperActivityAcceptanceStore:
             previous=digest
         return state
 
+    def _read_state(self):
+        """Replay one exact bounded store through the connection that opened it."""
+        bound_path=Path(self.path).resolve()
+        def require_binding():
+            try:current=Path(self.path).resolve()
+            except (OSError,RuntimeError,TypeError,ValueError):
+                _fail('STORE_BINDING_CHANGED')
+            if current!=bound_path:_fail('STORE_BINDING_CHANGED')
+        self._check();require_binding()
+        identity=capture_file_identities((bound_path,),
+            'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+        fingerprint=_main_fingerprint(bound_path)
+        def require_store():
+            require_binding()
+            require_file_identities((bound_path,),identity,
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+            if _main_fingerprint(bound_path)!=fingerprint:
+                _fail('FILE_SET_CHANGED')
+        def require_connection(db,*,content=True):
+            try:
+                rows=db.execute('PRAGMA database_list').fetchall()
+                if (len(rows)!=1 or len(rows[0])!=3 or
+                        type(rows[0][0]) is not int or rows[0][1]!='main' or
+                        type(rows[0][2]) is not str or not rows[0][2]):
+                    _fail('CONNECTION_BINDING_CHANGED')
+                connected=Path(rows[0][2]).resolve()
+                if connected!=bound_path:_fail('CONNECTION_BINDING_CHANGED')
+                if not content:return
+                serialized=db.serialize(name='main');expected=fingerprint
+                if (type(serialized) is not bytes or
+                        len(serialized)!=expected[3] or
+                        hashlib.sha256(serialized).hexdigest()!=expected[7]):
+                    _fail('CONNECTION_CONTENT_CHANGED')
+            except ValueError:
+                raise
+            except sqlite3.OperationalError as error:
+                if _database_busy(error):_fail('DATABASE_BUSY')
+                _fail('CONNECTION_BINDING_CHANGED')
+            except (MemoryError,OSError,OverflowError,RuntimeError,
+                    sqlite3.Error,TypeError):
+                _fail('CONNECTION_BINDING_CHANGED')
+        try:
+            db,_=self._connect()
+            with closing(db):
+                require_store();require_connection(db,content=False)
+                with _transaction(db):
+                    db.execute('BEGIN')
+                    db.execute('SELECT count(*) FROM sqlite_master').fetchone()
+                    require_store();require_connection(db)
+                    state=self._load(db)
+                    require_connection(db);require_store()
+        finally:require_store()
+        return state
+
     def inspect(self):
         self._check()
         if not self.path.exists():
@@ -151,8 +246,7 @@ class PaperActivityAcceptanceStore:
                 baseline_pacing_sessions=0,baseline_retained_batches=0,preexisting_history_unverified=False,last_record_sha256=None,
                 last_record_scope=None,
                 automatic_retry=False,ready_for_routing=False)
-        with closing(self._connect()[0]) as db:
-            with _transaction(db):state=self._load(db)
+        state=self._read_state()
         public=dict(state);public.pop('record_scopes')
         return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=True,account_sha256=self.account_digest,**public,
             automatic_retry=False,ready_for_routing=False)
@@ -161,8 +255,7 @@ class PaperActivityAcceptanceStore:
         """Return validated aggregate scopes in retained order for local replay."""
         self._check()
         if not self.path.exists(): return ()
-        with closing(self._connect()[0]) as db:
-            with _transaction(db):state=self._load(db)
+        state=self._read_state()
         return tuple(dict(scope) for scope in state['record_scopes'])
 
     def bind(self,*,pacing_head,retention_head,pacing_sessions,retained_batches):

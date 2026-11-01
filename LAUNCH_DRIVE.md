@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.96 activity-acceptance read binding
+
+Private activity-acceptance inspection and ordered scope replay now share one immutable read boundary: resolved path, regular single-link identity, bounded main-file hash, exact connection-local `main` path and exact serialized SQLite content. Valid foreign, path-spoofed, retargeted or same-path-mutated stores return fixed fail-closed diagnostics before foreign or mixed history can be accepted. A retained rollback journal remains available to SQLite for conservative crash recovery; committed WAL/SHM sidecars remain rejected. Direct and mandatory disposable evidence preserve both stores and then replay the exact original two-transition history.
+
+Exact-source v0.340.95 commit `80b2dac751eb83420a18295e6b100103acea7c0f` passed security/history/Gitleaks run 41272950305, every research evidence/browser/regression job in run 41272950343, and complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41272950269. Fresh v0.340.96 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local read-only integrity evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local validation passed 4,769 tests with one expected skip and one existing warning; the activity-acceptance/reconciliation/release/evidence/version/installer focus passed 326. Sixteen profiles and saved-evidence verification matched 395 source files / `8ada067b7d256780869dec5e559ab4b222e5940d057203bb072075265e7f4c47`; evidence SHA-256 is `3d20655a014adc1639b91d5f83344252f2b1287b85019f999951711f6080df8d`. The final wheel SHA-256 is `83e9b3041d24014da91d814a451b4ad9fc25943526df0379f485d7cc8cb31df4`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 808-path candidate audit and introduced-line credential scan reported zero findings. Fresh v0.340.96 hosted workflows remain required.
+
 ## v0.340.95 receipt SQLite content binding
 
 Retained provider/read receipt inspection now hashes the bounded serialized image of the already-open SQLite `main` database before and after complete chain replay. A valid foreign connection that spoofs the expected connection-local pathname returns a fixed content-binding refusal before its history can be accepted. Direct and mandatory disposable evidence preserve both stores and then replay the exact original receipt; existing bounded database-contention behavior remains intact.

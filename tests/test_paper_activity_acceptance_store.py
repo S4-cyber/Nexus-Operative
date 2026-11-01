@@ -2,6 +2,7 @@
 import os
 import sqlite3
 import hashlib
+from types import SimpleNamespace
 
 import pytest
 
@@ -95,6 +96,57 @@ def test_distinct_second_transition_requires_exact_previous_heads(tmp_path):
     assert report['last_record_scope']==second
     assert store.replay_scopes()==(first,second)
     assert 'record_scopes' not in report
+
+
+@pytest.mark.parametrize('reader',('inspect','replay_scopes'))
+@pytest.mark.parametrize(('seam','expected'),(
+    ('connect','STORE_BINDING_CHANGED'),('load','STORE_BINDING_CHANGED'),
+    ('fingerprint','FILE_SET_CHANGED'),
+    ('connection','CONNECTION_BINDING_CHANGED'),
+    ('connection-content','CONNECTION_CONTENT_CHANGED')))
+def test_readers_pin_store_connection_and_exact_content(
+        tmp_path,monkeypatch,reader,seam,expected):
+    store=bound(tmp_path,scope('source'))
+    foreign=bound(tmp_path/'foreign',scope('foreign'))
+    original_path=store.path;original_connect=store._connect
+    original_load=store._load
+    before={path:path.read_bytes() for path in (store.path,foreign.path)}
+    if seam=='connect':
+        def retarget_connect(*args,**kwargs):
+            store.path=foreign.path
+            return original_connect(*args,**kwargs)
+        monkeypatch.setattr(store,'_connect',retarget_connect)
+    elif seam=='load':
+        def retarget_load(db):
+            result=original_load(db);store.path=foreign.path;return result
+        monkeypatch.setattr(store,'_load',retarget_load)
+    elif seam=='fingerprint':
+        def mutate_fingerprint(db):
+            result=original_load(db);state=store.path.stat()
+            os.utime(store.path,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+            return result
+        monkeypatch.setattr(store,'_load',mutate_fingerprint)
+    elif seam=='connection':
+        monkeypatch.setattr(store,'_connect',foreign._connect)
+    else:
+        class SpoofedConnection(sqlite3.Connection):
+            def execute(self,statement,*args,**kwargs):
+                if statement=='PRAGMA database_list':
+                    return SimpleNamespace(fetchall=lambda:[
+                        (0,'main',str(original_path.resolve()))])
+                return super().execute(statement,*args,**kwargs)
+        def substitute_content_connection(*args,**kwargs):
+            db=sqlite3.connect(foreign.path.resolve().as_uri()+'?mode=ro',
+                uri=True,timeout=10,factory=SpoofedConnection)
+            return db,False
+        monkeypatch.setattr(store,'_connect',substitute_content_connection)
+    try:
+        with pytest.raises(ValueError,match=(
+                '^PAPER_ACTIVITY_ACCEPTANCE_STORE_'+expected+'$')):
+            getattr(store,reader)()
+    finally:store.path=original_path
+    assert before=={path:path.read_bytes() for path in before}
 
 
 @pytest.mark.parametrize('verdict',[False,1])

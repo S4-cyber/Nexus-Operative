@@ -9,7 +9,7 @@ from tools import windows_owner_profile_review as review
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.340.101"
+VERSION = "0.340.102"
 SOURCE = "a" * 40
 SESSION = "12345678-1234-4234-8234-123456789abc"
 

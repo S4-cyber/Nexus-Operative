@@ -22,6 +22,7 @@ from nexus import paper_activity_acceptance_store as acceptance_storage
 from nexus.paper_activity_acceptance_probe import status
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore, PROFILE
 from nexus.paper_read_pacing import PaperReadPacing
+from nexus import sqlite_journal_guard as journal_guard
 
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
 AFTER = '2026-10-17T00:00:00Z'
@@ -304,6 +305,38 @@ def fixture_report():
             acceptance_write_connection_content_pinned and
             connection_before==(connection_acceptance.path.read_bytes(),
                 connection_foreign.path.read_bytes()))
+        identity_root=base/'write-identity';identity_root.mkdir()
+        ip,ia,identity_acceptance,identity_scope=_scope(identity_root)
+        identity_before=identity_acceptance.path.read_bytes()
+        identity_capture=journal_guard.capture_file_identities
+        identity_insert=identity_acceptance._insert
+        identity_changed=False
+        def changed_identity_capture(paths,prefix):
+            result=identity_capture(paths,prefix)
+            if identity_changed:
+                path,device,inode=result[0]
+                return ((path,device,inode+1),)
+            return result
+        def change_identity_after_insert(db,seq,body,previous):
+            nonlocal identity_changed
+            result=identity_insert(db,seq,body,previous)
+            identity_changed=True;return result
+        acceptance_write_file_identity_pinned=False
+        journal_guard.capture_file_identities=changed_identity_capture
+        identity_acceptance._insert=change_identity_after_insert
+        try:
+            try:identity_acceptance.append(identity_scope,admission=lambda:(
+                ip.inspect()['head_sha256'],ia.inspect()['head_sha256']))
+            except ValueError as error:
+                acceptance_write_file_identity_pinned=(str(error)==
+                    'PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_IDENTITY_CHANGED')
+        finally:
+            journal_guard.capture_file_identities=identity_capture
+            identity_acceptance._insert=identity_insert
+        acceptance_write_file_identity_pinned=(
+            acceptance_write_file_identity_pinned and
+            identity_acceptance.path.read_bytes()==identity_before and
+            identity_acceptance.inspect()['records']==0)
         durability_root=base/'write-durability';durability_root.mkdir()
         dp,da,durability_acceptance,durability_scope=_scope(durability_root)
         original_fsync=acceptance_storage.os.fsync
@@ -385,6 +418,7 @@ def fixture_report():
             acceptance_inspection_bound and acceptance_write_binding_pinned and
             acceptance_write_ack_replayed and acceptance_write_connection_pinned and
             acceptance_write_connection_content_pinned and
+            acceptance_write_file_identity_pinned and
             acceptance_commit_durability_replayed and
             acceptance_uncommitted_initialization_replayed and
             acceptance_rebind_boundary_pinned and silent and unchanged and
@@ -409,6 +443,8 @@ def fixture_report():
             acceptance_write_connection_pinned=acceptance_write_connection_pinned,
             acceptance_write_connection_content_pinned=
                 acceptance_write_connection_content_pinned,
+            acceptance_write_file_identity_pinned=
+                acceptance_write_file_identity_pinned,
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
             acceptance_uncommitted_initialization_replayed=
                 acceptance_uncommitted_initialization_replayed,

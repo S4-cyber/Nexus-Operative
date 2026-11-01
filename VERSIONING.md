@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.101 (pre-release).** This build pins every existing writable private activity-acceptance SQLite connection to the exact captured journal content before bind or append mutation. A foreign database that reports the target path is preserved and blocked. It adds no Portal route, saved credential, provider IO, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.102 (pre-release).** This build pins every private activity-acceptance writer to the captured SQLite main-file identity through mutation, commit, durability synchronization and cold acknowledgement. A changed pathname identity is blocked without acknowledging the candidate record. It adds no Portal route, saved credential, provider IO, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.102 activity-acceptance writer identity continuity
+
+`bind` and `append` now require the captured main-file identity before mutation, immediately before and after transaction finalization, around committed-file synchronization, and around both cold acknowledgement replays. Append callback boundaries use the same proof. Any same-path identity disagreement receives fixed `FILE_IDENTITY_CHANGED`; an uncommitted insert is rolled back and exact prior bytes remain.
+
+Direct controls inject identity disagreement after bind replay and append insertion. Mandatory disposable evidence independently forces the append seam and requires rollback plus unchanged retained history. These are sampled local identity checks, not a descriptor-held OS ownership or ACL proof. No automatic retry, private account data or retained market evidence is added.
+
+Exact-source v0.340.101 commit `bd6474c7d9c50438b050ccb4a3154c92768daf16` exposed no connector-visible workflow run or commit status at the pre-sprint check. Fresh v0.340.102 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not physical durability, provider identity, transport/source coverage, broker-wide coordination, native-owner acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+No UI control or modifiable parameter changed; all seven beginner tabs and black/bright-purple bottom-right help behavior remain unchanged. Engagement remains OFF by default, with limits, account checks, exits and the independent emergency stop preserved. No credential, network request, order route, automatic retry, money movement, live/cloud authority or release approval was added.
+
+Local prepublication validation passed 4,799 tests with one expected skip and one existing warning; the activity-acceptance/reconciliation/release/Windows focus passed 358 and the direct store file passed 51. Sixteen profiles and saved-evidence verification matched 395 source files / `e2d09c0b39d1d11e16c0305a5a51232584c4ad46220a91f30fbbb8634427c9b0`; evidence SHA-256 is `934c23a1e266531f4f4c0f445f127c074fa952fc9b2c8ae5d398be833249d89e`. The wheel SHA-256 is `d475373bcece190001968f77e9ed7792f09a8239967906e44816ddb34dea286a`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 814-path / 62,399,889-byte proposed-snapshot artifact audit and introduced-line high-confidence credential scan found nothing. Local Gitleaks and Playwright are unavailable. Fresh exact-source v0.340.102 hosted workflows remain mandatory.
 
 ## v0.340.101 activity-acceptance writable connection content binding
 

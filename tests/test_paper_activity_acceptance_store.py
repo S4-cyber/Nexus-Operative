@@ -9,6 +9,7 @@ import pytest
 
 from nexus.alpaca_paper_contract import sha
 from nexus import paper_activity_acceptance_store as storage
+from nexus import sqlite_journal_guard as journal_guard
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore, PROFILE, ZERO
 from test_alpaca_paper_inspection import ACCOUNT, OTHER
 
@@ -329,6 +330,47 @@ def test_writers_pin_spoofed_connection_content_before_mutation(
                 target_value['pacing_after_head_sha256'],
                 target_value['retention_after_head_sha256']))
     assert (target.path.read_bytes(),foreign.path.read_bytes())==before
+
+
+@pytest.mark.parametrize('operation',('bind','append'))
+def test_writers_pin_file_identity_through_commit_and_acknowledgement(
+        tmp_path,monkeypatch,operation):
+    value=scope();target=bound(tmp_path,value);before=target.path.read_bytes()
+    original_capture=journal_guard.capture_file_identities
+    identity_changed=False
+    def changed_capture(paths,prefix):
+        result=original_capture(paths,prefix)
+        if identity_changed:
+            path,device,inode=result[0]
+            return ((path,device,inode+1),)
+        return result
+    monkeypatch.setattr(journal_guard,'capture_file_identities',changed_capture)
+    if operation=='bind':
+        original=target._load
+        def change_after_load(db):
+            nonlocal identity_changed
+            result=original(db);identity_changed=True;return result
+        monkeypatch.setattr(target,'_load',change_after_load)
+        invoke=lambda:target.bind(
+            pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    else:
+        original=target._insert
+        def change_after_insert(db,seq,body,previous):
+            nonlocal identity_changed
+            result=original(db,seq,body,previous)
+            identity_changed=True;return result
+        monkeypatch.setattr(target,'_insert',change_after_insert)
+        invoke=lambda:target.append(value,admission=lambda:(
+            value['pacing_after_head_sha256'],
+            value['retention_after_head_sha256']))
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_IDENTITY_CHANGED$')):
+        invoke()
+    monkeypatch.setattr(journal_guard,'capture_file_identities',original_capture)
+    assert target.path.read_bytes()==before
+    assert target.inspect()['records']==0
 
 
 def test_bind_fsync_uncertainty_retains_baseline_for_explicit_replay(

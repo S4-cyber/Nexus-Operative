@@ -433,35 +433,49 @@ class PaperActivityAcceptanceStore:
                 _fail('STORE_BINDING_CHANGED')
         self._check();require_binding();db,new=self._connect(write=True)
         committed=False;transaction_identity=None
+        def require_identity():
+            if transaction_identity is None:_fail('FILE_IDENTITY_CHANGED')
+            require_file_identities((bound_path,),transaction_identity,
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
         try:
             try:
                 with closing(db):
                     require_binding();_require_main_connection(db,bound_path)
                     transaction_identity=capture_file_identities((bound_path,),
                         'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+                    require_identity()
                     if not new:
                         _require_main_connection_content(db,bound_path)
-                    with _transaction(db):
-                        count=db.execute('SELECT count(*) FROM records').fetchone()[0]
-                        if count==0:
-                            self._insert(db,0,baseline,ZERO)
-                        expected=self._load(db)
-                        if count:
-                            if (pacing_head!=expected['pacing_bound_head_sha256'] or
-                                retention_head!=expected['retention_bound_head_sha256'] or
-                                pacing_sessions!=expected['baseline_pacing_sessions']+expected['records'] or
-                                retained_batches!=expected['baseline_retained_batches']+expected['records']):
-                                _fail('REBIND_DISAGREEMENT')
+                    try:
+                        with _transaction(db):
+                            require_identity()
+                            count=db.execute('SELECT count(*) FROM records').fetchone()[0]
+                            if count==0:
+                                self._insert(db,0,baseline,ZERO)
+                            expected=self._load(db)
+                            if count:
+                                if (pacing_head!=expected['pacing_bound_head_sha256'] or
+                                    retention_head!=expected['retention_bound_head_sha256'] or
+                                    pacing_sessions!=expected['baseline_pacing_sessions']+expected['records'] or
+                                    retained_batches!=expected['baseline_retained_batches']+expected['records']):
+                                    _fail('REBIND_DISAGREEMENT')
+                            require_identity()
+                    finally:require_identity()
                     committed=True
                     require_binding();_require_main_connection(db,bound_path)
+                    require_identity()
                     fingerprint=_main_fingerprint(bound_path)
                     _sync_committed_store(bound_path,fingerprint,new=new)
-            finally:require_binding()
+                    require_identity()
+            finally:
+                require_binding()
+                if transaction_identity is not None:require_identity()
         except BaseException:
             if new and not committed:
                 _discard_uncommitted_new(bound_path,transaction_identity)
             raise
-        first=self._read_state();second=self._read_state()
+        require_identity();first=self._read_state();require_identity()
+        second=self._read_state();require_identity()
         if first!=second or second!=expected:_fail('ACKNOWLEDGEMENT_UNCERTAIN')
         return second
 
@@ -476,57 +490,74 @@ class PaperActivityAcceptanceStore:
                     self.account_digest!=bound_account):
                 _fail('STORE_BINDING_CHANGED')
         self._check();require_binding()
+        transaction_identity=None
+        def require_identity():
+            if transaction_identity is None:_fail('FILE_IDENTITY_CHANGED')
+            require_file_identities((bound_path,),transaction_identity,
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
         def checked(callback):
+            require_identity()
             before=_main_fingerprint(bound_path)
             try:value=callback()
             finally:
                 require_binding()
+                require_identity()
                 if _main_fingerprint(bound_path)!=before:
                     _fail('FILE_SET_CHANGED')
             return value
         db,new=self._connect(write=True);committed=False
-        transaction_identity=None
         try:
             try:
                 with closing(db):
                     require_binding();_require_main_connection(db,bound_path)
                     transaction_identity=capture_file_identities((bound_path,),
                         'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+                    require_identity()
                     if not new:
                         _require_main_connection_content(db,bound_path)
-                    with _transaction(db):
-                        state=self._load(db);current=checked(admission)
-                        if current!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
-                        duplicate=state['last_record_sha256']==record_sha
-                        if duplicate:
-                            expected_head=state['head_sha256']
-                        else:
-                            if state['records']>=MAX_RECORDS:_fail('RECORD_CAP')
-                            if (state['pacing_bound_head_sha256']!=scope['pacing_before_head_sha256'] or
-                                state['retention_bound_head_sha256']!=scope['retention_before_head_sha256']):_fail('CONTINUITY_DISAGREEMENT')
-                            body=dict(scope=scope,record_sha256=record_sha)
-                            expected_head=sha(dict(seq=state['records']+1,
-                                body=body,previous=state['head_sha256']))
-                            self._insert(db,state['records']+1,body,
-                                state['head_sha256'])
-                            loaded=self._load(db)
-                            if (loaded['head_sha256']!=expected_head or
-                                    loaded['last_record_sha256']!=record_sha):
-                                _fail('ACKNOWLEDGEMENT_UNCERTAIN')
-                        if checked(precommit_check) is not True:_fail('INPUT_REVOKED')
+                    try:
+                        with _transaction(db):
+                            require_identity()
+                            state=self._load(db);current=checked(admission)
+                            if current!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
+                            duplicate=state['last_record_sha256']==record_sha
+                            if duplicate:
+                                expected_head=state['head_sha256']
+                            else:
+                                if state['records']>=MAX_RECORDS:_fail('RECORD_CAP')
+                                if (state['pacing_bound_head_sha256']!=scope['pacing_before_head_sha256'] or
+                                    state['retention_bound_head_sha256']!=scope['retention_before_head_sha256']):_fail('CONTINUITY_DISAGREEMENT')
+                                body=dict(scope=scope,record_sha256=record_sha)
+                                expected_head=sha(dict(seq=state['records']+1,
+                                    body=body,previous=state['head_sha256']))
+                                self._insert(db,state['records']+1,body,
+                                    state['head_sha256'])
+                                loaded=self._load(db)
+                                if (loaded['head_sha256']!=expected_head or
+                                        loaded['last_record_sha256']!=record_sha):
+                                    _fail('ACKNOWLEDGEMENT_UNCERTAIN')
+                            require_identity()
+                            if checked(precommit_check) is not True:_fail('INPUT_REVOKED')
+                            require_identity()
+                    finally:require_identity()
                     committed=True
                     require_binding();_require_main_connection(db,bound_path)
+                    require_identity()
                     fingerprint=_main_fingerprint(bound_path)
                     _sync_committed_store(bound_path,fingerprint,new=new)
+                    require_identity()
                     # A changed post-commit sample loses the acknowledgment but
                     # retains the record for explicit cold-read recovery.
                     if checked(admission)!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
-            finally:require_binding()
+            finally:
+                require_binding()
+                if transaction_identity is not None:require_identity()
         except BaseException:
             if new and not committed:
                 _discard_uncommitted_new(bound_path,transaction_identity)
             raise
-        first=self._read_state();second=self._read_state()
+        require_identity();first=self._read_state();require_identity()
+        second=self._read_state();require_identity()
         if (first!=second or second['head_sha256']!=expected_head or
                 second['last_record_sha256']!=record_sha or
                 second['last_record_scope']!=scope):

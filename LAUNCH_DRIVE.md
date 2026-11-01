@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.102 activity-acceptance writer identity continuity
+
+Private activity-acceptance writers now reassert their captured SQLite main-file identity before mutation, across transaction finalization, around durability synchronization and around both cold acknowledgement reads. A same-path identity replacement fails closed under fixed `FILE_IDENTITY_CHANGED`; direct and mandatory disposable evidence prove an uncommitted record is rolled back without provider access.
+
+Exact-source v0.340.101 commit `bd6474c7d9c50438b050ccb4a3154c92768daf16` exposed no connector-visible workflow run or commit status at the pre-sprint check. Fresh v0.340.102 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local identity evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local prepublication validation passed 4,799 tests with one expected skip and one existing warning; the activity-acceptance/reconciliation/release/Windows focus passed 358 and the direct store file passed 51. Sixteen profiles and saved-evidence verification matched 395 source files / `e2d09c0b39d1d11e16c0305a5a51232584c4ad46220a91f30fbbb8634427c9b0`; evidence SHA-256 is `934c23a1e266531f4f4c0f445f127c074fa952fc9b2c8ae5d398be833249d89e`. The wheel SHA-256 is `d475373bcece190001968f77e9ed7792f09a8239967906e44816ddb34dea286a`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 814-path / 62,399,889-byte proposed-snapshot audit and introduced-line high-confidence credential scan found nothing. Local Gitleaks and Playwright are unavailable. Fresh exact-source v0.340.102 hosted workflows remain mandatory.
+
 ## v0.340.101 activity-acceptance writable connection content binding
 
 Existing private activity-acceptance writers now serialize their connection-local SQLite `main` database and match its exact size/hash to the captured on-disk store before bind or append mutation. A substituted writable database that merely reports the target pathname is rejected under fixed `CONNECTION_CONTENT_CHANGED`; direct and mandatory disposable evidence prove both databases remain byte-identical without provider access.

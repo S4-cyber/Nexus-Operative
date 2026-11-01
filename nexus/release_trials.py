@@ -1121,6 +1121,7 @@ def _validate(profile, result):
             'acceptance_write_binding_pinned','acceptance_write_ack_replayed',
             'acceptance_write_connection_pinned',
             'acceptance_write_connection_content_pinned',
+            'acceptance_write_file_identity_pinned',
             'acceptance_commit_durability_replayed',
             'acceptance_uncommitted_initialization_replayed',
             'acceptance_rebind_boundary_pinned',

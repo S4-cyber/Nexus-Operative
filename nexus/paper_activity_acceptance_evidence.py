@@ -337,6 +337,42 @@ def fixture_report():
             acceptance_write_file_identity_pinned and
             identity_acceptance.path.read_bytes()==identity_before and
             identity_acceptance.inspect()['records']==0)
+        content_root=base/'write-committed-content';content_root.mkdir()
+        ctp,cta,content_acceptance,content_scope=_scope(content_root)
+        content_fingerprint=acceptance_storage._main_fingerprint
+        content_sync=acceptance_storage._sync_committed_store
+        content_changed=False
+        def changed_content_fingerprint(path):
+            result=content_fingerprint(path)
+            if content_changed:
+                replacement=('f'*64 if result[-1]!='f'*64 else 'e'*64)
+                return (*result[:-1],replacement)
+            return result
+        def change_content_after_sync(*args,**kwargs):
+            nonlocal content_changed
+            result=content_sync(*args,**kwargs)
+            content_changed=True
+            return result
+        acceptance_write_committed_content_pinned=False
+        acceptance_storage._main_fingerprint=changed_content_fingerprint
+        acceptance_storage._sync_committed_store=change_content_after_sync
+        try:
+            try:content_acceptance.append(content_scope,admission=lambda:(
+                ctp.inspect()['head_sha256'],cta.inspect()['head_sha256']))
+            except ValueError as error:
+                acceptance_write_committed_content_pinned=(str(error)==
+                    'PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_SET_CHANGED')
+        finally:
+            acceptance_storage._main_fingerprint=content_fingerprint
+            acceptance_storage._sync_committed_store=content_sync
+        retained_content=content_acceptance.inspect()
+        recovered_content=content_acceptance.append(content_scope,
+            admission=lambda:(ctp.inspect()['head_sha256'],cta.inspect()['head_sha256']))
+        acceptance_write_committed_content_pinned=(
+            acceptance_write_committed_content_pinned and
+            retained_content['records']==1 and
+            recovered_content['duplicate'] is True and
+            recovered_content['head_sha256']==retained_content['head_sha256'])
         durability_root=base/'write-durability';durability_root.mkdir()
         dp,da,durability_acceptance,durability_scope=_scope(durability_root)
         original_fsync=acceptance_storage.os.fsync
@@ -419,6 +455,7 @@ def fixture_report():
             acceptance_write_ack_replayed and acceptance_write_connection_pinned and
             acceptance_write_connection_content_pinned and
             acceptance_write_file_identity_pinned and
+            acceptance_write_committed_content_pinned and
             acceptance_commit_durability_replayed and
             acceptance_uncommitted_initialization_replayed and
             acceptance_rebind_boundary_pinned and silent and unchanged and
@@ -445,6 +482,8 @@ def fixture_report():
                 acceptance_write_connection_content_pinned,
             acceptance_write_file_identity_pinned=
                 acceptance_write_file_identity_pinned,
+            acceptance_write_committed_content_pinned=
+                acceptance_write_committed_content_pinned,
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
             acceptance_uncommitted_initialization_replayed=
                 acceptance_uncommitted_initialization_replayed,

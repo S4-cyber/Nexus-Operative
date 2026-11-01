@@ -432,11 +432,15 @@ class PaperActivityAcceptanceStore:
             if current!=bound_path or self.account_digest!=bound_account:
                 _fail('STORE_BINDING_CHANGED')
         self._check();require_binding();db,new=self._connect(write=True)
-        committed=False;transaction_identity=None
+        committed=False;transaction_identity=None;committed_fingerprint=None
         def require_identity():
             if transaction_identity is None:_fail('FILE_IDENTITY_CHANGED')
             require_file_identities((bound_path,),transaction_identity,
                 'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+        def require_committed_content():
+            if (committed_fingerprint is None or
+                    _main_fingerprint(bound_path)!=committed_fingerprint):
+                _fail('FILE_SET_CHANGED')
         try:
             try:
                 with closing(db):
@@ -464,18 +468,21 @@ class PaperActivityAcceptanceStore:
                     committed=True
                     require_binding();_require_main_connection(db,bound_path)
                     require_identity()
-                    fingerprint=_main_fingerprint(bound_path)
-                    _sync_committed_store(bound_path,fingerprint,new=new)
-                    require_identity()
+                    _require_main_connection_content(db,bound_path)
+                    committed_fingerprint=_main_fingerprint(bound_path)
+                    _sync_committed_store(bound_path,committed_fingerprint,new=new)
+                    require_identity();require_committed_content()
             finally:
                 require_binding()
                 if transaction_identity is not None:require_identity()
+                if committed_fingerprint is not None:require_committed_content()
         except BaseException:
             if new and not committed:
                 _discard_uncommitted_new(bound_path,transaction_identity)
             raise
-        require_identity();first=self._read_state();require_identity()
-        second=self._read_state();require_identity()
+        require_identity();require_committed_content()
+        first=self._read_state();require_identity();require_committed_content()
+        second=self._read_state();require_identity();require_committed_content()
         if first!=second or second!=expected:_fail('ACKNOWLEDGEMENT_UNCERTAIN')
         return second
 
@@ -490,18 +497,24 @@ class PaperActivityAcceptanceStore:
                     self.account_digest!=bound_account):
                 _fail('STORE_BINDING_CHANGED')
         self._check();require_binding()
-        transaction_identity=None
+        transaction_identity=None;committed_fingerprint=None
         def require_identity():
             if transaction_identity is None:_fail('FILE_IDENTITY_CHANGED')
             require_file_identities((bound_path,),transaction_identity,
                 'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+        def require_committed_content():
+            if (committed_fingerprint is None or
+                    _main_fingerprint(bound_path)!=committed_fingerprint):
+                _fail('FILE_SET_CHANGED')
         def checked(callback):
             require_identity()
+            if committed_fingerprint is not None:require_committed_content()
             before=_main_fingerprint(bound_path)
             try:value=callback()
             finally:
                 require_binding()
                 require_identity()
+                if committed_fingerprint is not None:require_committed_content()
                 if _main_fingerprint(bound_path)!=before:
                     _fail('FILE_SET_CHANGED')
             return value
@@ -543,21 +556,24 @@ class PaperActivityAcceptanceStore:
                     committed=True
                     require_binding();_require_main_connection(db,bound_path)
                     require_identity()
-                    fingerprint=_main_fingerprint(bound_path)
-                    _sync_committed_store(bound_path,fingerprint,new=new)
-                    require_identity()
+                    _require_main_connection_content(db,bound_path)
+                    committed_fingerprint=_main_fingerprint(bound_path)
+                    _sync_committed_store(bound_path,committed_fingerprint,new=new)
+                    require_identity();require_committed_content()
                     # A changed post-commit sample loses the acknowledgment but
                     # retains the record for explicit cold-read recovery.
                     if checked(admission)!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
             finally:
                 require_binding()
                 if transaction_identity is not None:require_identity()
+                if committed_fingerprint is not None:require_committed_content()
         except BaseException:
             if new and not committed:
                 _discard_uncommitted_new(bound_path,transaction_identity)
             raise
-        require_identity();first=self._read_state();require_identity()
-        second=self._read_state();require_identity()
+        require_identity();require_committed_content()
+        first=self._read_state();require_identity();require_committed_content()
+        second=self._read_state();require_identity();require_committed_content()
         if (first!=second or second['head_sha256']!=expected_head or
                 second['last_record_sha256']!=record_sha or
                 second['last_record_scope']!=scope):

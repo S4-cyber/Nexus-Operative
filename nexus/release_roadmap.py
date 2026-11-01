@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.102'
+REVISION = '0.340.103'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -647,7 +647,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.102 reasserts the captured private activity-acceptance SQLite file identity throughout bind and append: before mutation, on both sides of commit, around durability synchronization and around both cold acknowledgement reads. A same-path file replacement now fails closed under fixed FILE_IDENTITY_CHANGED without acknowledging the candidate write. Exact-source v0.340.101 commit bd6474c7d9c50438b050ccb4a3154c92768daf16 exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.102 workflows remain mandatory. This closes one sampled local pathname-replacement boundary but is not atomic descriptor ownership, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.103 pins the exact committed private activity-acceptance SQLite main-file bytes throughout bind and append: after commit, across durability synchronization and callbacks, after connection close, and around both cold acknowledgement reads. A same-identity content divergence now fails closed under fixed FILE_SET_CHANGED; a committed append remains available for explicit idempotent recovery without an automatic retry. Exact-source v0.340.102 commit 657e59d5bc544c535ea3cb7bb667e3a3efd044e1 exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.103 workflows remain mandatory. This closes one synthetic local committed-content continuity boundary but is not atomic descriptor ownership, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

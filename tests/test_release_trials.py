@@ -487,6 +487,7 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
                   'acceptance_write_connection_pinned',
                   'acceptance_write_connection_content_pinned',
                   'acceptance_write_file_identity_pinned',
+                  'acceptance_write_committed_content_pinned',
                   'acceptance_commit_durability_replayed',
                   'acceptance_uncommitted_initialization_replayed',
                   'acceptance_rebind_boundary_pinned',

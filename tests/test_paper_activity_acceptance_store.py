@@ -373,6 +373,53 @@ def test_writers_pin_file_identity_through_commit_and_acknowledgement(
     assert target.inspect()['records']==0
 
 
+@pytest.mark.parametrize('operation',('bind','append'))
+def test_writers_pin_committed_content_through_sync_and_acknowledgement(
+        tmp_path,monkeypatch,operation):
+    value=scope();target=bound(tmp_path,value);before=target.path.read_bytes()
+    original_fingerprint=storage._main_fingerprint
+    original_sync=storage._sync_committed_store
+    content_changed=False
+    def changed_fingerprint(path):
+        result=original_fingerprint(path)
+        if content_changed:
+            replacement=('f'*64 if result[-1]!='f'*64 else 'e'*64)
+            return (*result[:-1],replacement)
+        return result
+    def change_after_sync(*args,**kwargs):
+        nonlocal content_changed
+        result=original_sync(*args,**kwargs)
+        content_changed=True
+        return result
+    monkeypatch.setattr(storage,'_main_fingerprint',changed_fingerprint)
+    monkeypatch.setattr(storage,'_sync_committed_store',change_after_sync)
+    if operation=='bind':
+        invoke=lambda:target.bind(
+            pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    else:
+        invoke=lambda:target.append(value,admission=lambda:(
+            value['pacing_after_head_sha256'],
+            value['retention_after_head_sha256']))
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_SET_CHANGED$')):
+        invoke()
+    monkeypatch.setattr(storage,'_main_fingerprint',original_fingerprint)
+    monkeypatch.setattr(storage,'_sync_committed_store',original_sync)
+    report=target.inspect()
+    if operation=='bind':
+        assert target.path.read_bytes()==before
+        assert report['records']==0
+    else:
+        assert report['records']==1
+        recovered=target.append(value,admission=lambda:(
+            value['pacing_after_head_sha256'],
+            value['retention_after_head_sha256']))
+        assert recovered['duplicate'] is True
+        assert recovered['head_sha256']==report['head_sha256']
+
+
 def test_bind_fsync_uncertainty_retains_baseline_for_explicit_replay(
         tmp_path,monkeypatch):
     value=scope();store=storage.PaperActivityAcceptanceStore(

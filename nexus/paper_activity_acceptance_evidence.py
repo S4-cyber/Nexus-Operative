@@ -18,6 +18,7 @@ from nexus.activity_collection_evidence import SCHEMA, page_observation, validat
 from nexus.alpaca_activity_collection import PAGE_SIZE, activity_url
 from nexus.alpaca_paper_inspection import URLS
 from nexus.broker_activity_store import BrokerActivityStore
+from nexus import paper_activity_acceptance_store as acceptance_storage
 from nexus.paper_activity_acceptance_probe import status
 from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore, PROFILE
 from nexus.paper_read_pacing import PaperReadPacing
@@ -254,6 +255,45 @@ def fixture_report():
             committed_write['records']==1 and recovered_write['duplicate'] is True and
             recovered_write['head_sha256']==committed_write['head_sha256'] and
             foreign_acceptance.path.read_bytes()==foreign_before)
+        connection_root=base/'write-connection';connection_root.mkdir()
+        cp,ca,connection_acceptance,connection_scope=_scope(connection_root)
+        connection_foreign_root=base/'write-connection-foreign';connection_foreign_root.mkdir()
+        _cfp,_cfa,connection_foreign,_cfs=_scope(connection_foreign_root)
+        connection_before=(connection_acceptance.path.read_bytes(),
+            connection_foreign.path.read_bytes())
+        connection_open=connection_acceptance._connect
+        connection_acceptance._connect=connection_foreign._connect
+        acceptance_write_connection_pinned=False
+        try:connection_acceptance.append(connection_scope,admission=lambda:(
+            cp.inspect()['head_sha256'],ca.inspect()['head_sha256']))
+        except ValueError as error:
+            acceptance_write_connection_pinned=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_BINDING_CHANGED')
+        finally:connection_acceptance._connect=connection_open
+        acceptance_write_connection_pinned=(acceptance_write_connection_pinned and
+            connection_before==(connection_acceptance.path.read_bytes(),
+                connection_foreign.path.read_bytes()))
+        durability_root=base/'write-durability';durability_root.mkdir()
+        dp,da,durability_acceptance,durability_scope=_scope(durability_root)
+        original_fsync=acceptance_storage.os.fsync
+        acceptance_commit_durability_replayed=False
+        def fail_fsync(_descriptor):raise OSError('injected')
+        acceptance_storage.os.fsync=fail_fsync
+        try:
+            try:durability_acceptance.append(durability_scope,admission=lambda:(
+                dp.inspect()['head_sha256'],da.inspect()['head_sha256']))
+            except ValueError as error:
+                acceptance_commit_durability_replayed=(str(error)==
+                    'PAPER_ACTIVITY_ACCEPTANCE_STORE_COMMIT_DURABILITY_UNCERTAIN')
+        finally:acceptance_storage.os.fsync=original_fsync
+        retained_durability=durability_acceptance.inspect()
+        recovered_durability=durability_acceptance.append(durability_scope,
+            admission=lambda:(dp.inspect()['head_sha256'],da.inspect()['head_sha256']))
+        acceptance_commit_durability_replayed=(
+            acceptance_commit_durability_replayed and
+            retained_durability['records']==1 and
+            recovered_durability['duplicate'] is True and
+            recovered_durability['head_sha256']==retained_durability['head_sha256'])
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
         rollback_observed=before['rollback_journal_observed'] is True
@@ -279,7 +319,8 @@ def fixture_report():
         legacy_preserved=legacy['unchanged'] and legacy_before==_sqlite_files_snapshot(legacy_root)
         passed=(missing_created_nothing and before_unbound and after_bound and
             acceptance_inspection_bound and acceptance_write_binding_pinned and
-            acceptance_write_ack_replayed and silent and unchanged and
+            acceptance_write_ack_replayed and acceptance_write_connection_pinned and
+            acceptance_commit_durability_replayed and silent and unchanged and
             rollback_observed and all(scope_checks) and scope_unchanged and legacy_refused and legacy_preserved)
         return dict(mode='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY',passed=passed,
             source='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE',missing_status_created_nothing=missing_created_nothing,
@@ -298,6 +339,8 @@ def fixture_report():
             acceptance_connection_content_pinned=acceptance_content_denied,
             acceptance_write_binding_pinned=acceptance_write_binding_pinned,
             acceptance_write_ack_replayed=acceptance_write_ack_replayed,
+            acceptance_write_connection_pinned=acceptance_write_connection_pinned,
+            acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
             legacy_normalized_result_not_invented=legacy_refused,legacy_normalized_history_preserved=legacy_preserved,
             changed_creation_window_targets_refused=scope_checks[0],
             changed_cursor_target_refused=scope_checks[1],

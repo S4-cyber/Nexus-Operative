@@ -484,6 +484,7 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
                   'postcommit_all_normalized_results_bound','acceptance_store_binding_pinned',
                   'acceptance_connection_binding_pinned','acceptance_connection_content_pinned',
                   'acceptance_write_binding_pinned','acceptance_write_ack_replayed',
+                  'acceptance_write_connection_pinned','acceptance_commit_durability_replayed',
                   'legacy_normalized_result_not_invented','legacy_normalized_history_preserved',
                   'changed_creation_window_targets_refused','changed_cursor_target_refused',
                   'request_target_disagreement_history_preserved'):

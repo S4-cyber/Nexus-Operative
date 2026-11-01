@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.98 activity-acceptance commit durability
+
+Private activity-acceptance baseline and append writes now reject a substituted writable SQLite connection before mutation, hash the exact committed writable descriptor across `fsync`, require it to match the bounded pathname fingerprint and flush a newly created POSIX directory entry. Flush uncertainty retains the committed baseline or record and recovers only through explicit cold replay; no retry is automatic. Direct and mandatory disposable evidence exercise foreign-write rejection and lost-durability acknowledgement without provider access.
+
+Exact-source v0.340.97 commit `40fc74032eb9e12685fc6e4e6927f194048acc40` passed security/history/Gitleaks run 41280894126, every research evidence/browser/regression job in run 41280894088, and complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41280894183. Fresh v0.340.98 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local durability evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local validation passed 4,778 tests with one expected skip and one existing warning; the activity-acceptance/reconciliation/release/version/installer focus passed 339. Sixteen profiles and saved-evidence verification matched 395 source files / `f1ad8e8bf9e0251c3231ba8fc8ef97382488a60109ec1acf1765c6371f400953`; evidence SHA-256 is `7dcb04b71c9775982c6e067066ce56cb6c4f882be5b095fbe95d28e40cfd1f16`. The wheel SHA-256 is `0d6618cdcbba1a57575897543ac2845048f23703efb47044c8f3e3fc30decfb2`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 810-path / 61,653,111-byte proposed-snapshot audit and introduced-line high-confidence credential scan found nothing. Fresh exact-source v0.340.98 hosted workflows remain required.
+
 ## v0.340.97 activity-acceptance write acknowledgement
 
 Private activity-acceptance append now pins the exact resolved store and main-file content around every untrusted admission/input callback, derives the expected chain head independently of the write return and requires two stable cold reads of the exact committed record before acknowledging it. A post-commit retarget loses the acknowledgement, retains one record and recovers only through an explicit duplicate replay. Direct and mandatory disposable evidence exercise the complete boundary without automatic retry.

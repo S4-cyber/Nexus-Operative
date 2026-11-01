@@ -82,6 +82,94 @@ def _main_fingerprint(path):
         _fail('FILE_SET_CHANGED')
 
 
+def _descriptor_fingerprint(descriptor,resolved):
+    """Hash bounded bytes through the exact writable main-file descriptor."""
+    before=os.fstat(descriptor)
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or
+            not 1<=before.st_size<=MAX_DATABASE_BYTES):
+        raise RuntimeError
+    original=os.lseek(descriptor,0,os.SEEK_CUR)
+    digest=hashlib.sha256();remaining=MAX_DATABASE_BYTES+1
+    try:
+        os.lseek(descriptor,0,os.SEEK_SET)
+        while remaining:
+            block=os.read(descriptor,min(1024*1024,remaining))
+            if not block:break
+            digest.update(block);remaining-=len(block)
+    finally:os.lseek(descriptor,original,os.SEEK_SET)
+    after=os.fstat(descriptor)
+    boundary=lambda item:(item.st_dev,item.st_ino,item.st_size,
+        item.st_mtime_ns,item.st_ctime_ns if os.name!='nt' else 0,
+        item.st_nlink)
+    if remaining==0 or boundary(before)!=boundary(after):raise RuntimeError
+    return (str(resolved),*boundary(after),digest.hexdigest())
+
+
+def _sync_parent_directory(resolved):
+    """Flush only the exact POSIX parent directory identity."""
+    parent=resolved.parent;before=parent.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+        raise RuntimeError
+    expected=(before.st_dev,before.st_ino)
+    flags=(os.O_RDONLY|getattr(os,'O_DIRECTORY',0)|
+        getattr(os,'O_CLOEXEC',0)|getattr(os,'O_NOFOLLOW',0))
+    descriptor=os.open(parent,flags)
+    try:
+        opened=os.fstat(descriptor)
+        if (not stat.S_ISDIR(opened.st_mode) or
+                (opened.st_dev,opened.st_ino)!=expected):raise RuntimeError
+        os.fsync(descriptor)
+        final=os.fstat(descriptor);observed=parent.lstat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (final.st_dev,final.st_ino)!=expected or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISDIR(observed.st_mode) or
+                (observed.st_dev,observed.st_ino)!=expected):
+            raise RuntimeError
+    finally:os.close(descriptor)
+
+
+def _sync_committed_store(path,fingerprint,*,new):
+    """Explicitly flush the exact committed main file before acknowledgement."""
+    try:
+        if (type(new) is not bool or type(fingerprint) is not tuple or
+                len(fingerprint)!=8):raise RuntimeError
+        path=Path(path);resolved=path.resolve()
+        if fingerprint[0]!=str(resolved):raise RuntimeError
+        flags=(os.O_RDWR|getattr(os,'O_BINARY',0)|
+            getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
+        descriptor=os.open(resolved,flags)
+        try:
+            if _descriptor_fingerprint(descriptor,resolved)!=fingerprint:
+                raise RuntimeError
+            os.fsync(descriptor)
+            if _descriptor_fingerprint(descriptor,resolved)!=fingerprint:
+                raise RuntimeError
+        finally:os.close(descriptor)
+        if _main_fingerprint(path)!=fingerprint:raise RuntimeError
+        if new and os.name!='nt':
+            _sync_parent_directory(resolved)
+            if _main_fingerprint(path)!=fingerprint:raise RuntimeError
+    except BaseException:_fail('COMMIT_DURABILITY_UNCERTAIN')
+
+
+def _require_main_connection(db,bound_path):
+    """Require a writer to target exactly the captured SQLite main path."""
+    try:
+        rows=db.execute('PRAGMA database_list').fetchall()
+        if (len(rows)!=1 or len(rows[0])!=3 or
+                type(rows[0][0]) is not int or rows[0][1]!='main' or
+                type(rows[0][2]) is not str or not rows[0][2] or
+                Path(rows[0][2]).resolve()!=bound_path):
+            _fail('CONNECTION_BINDING_CHANGED')
+    except ValueError:raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_fail('DATABASE_BUSY')
+        _fail('CONNECTION_BINDING_CHANGED')
+    except (OSError,RuntimeError,sqlite3.Error,TypeError):
+        _fail('CONNECTION_BINDING_CHANGED')
+
+
 @contextmanager
 def _transaction(db):
     """Normalize bounded SQLite statement/commit contention without retry."""
@@ -261,17 +349,33 @@ class PaperActivityAcceptanceStore:
     def bind(self,*,pacing_head,retention_head,pacing_sessions,retained_batches):
         pacing_head=_head(pacing_head);retention_head=_head(retention_head)
         if any(type(v) is not int or v<0 for v in (pacing_sessions,retained_batches)):_fail('BASELINE_INVALID')
-        with closing(self._connect(write=True)[0]) as db:
-            with _transaction(db):
-                count=db.execute('SELECT count(*) FROM records').fetchone()[0]
-                if count==0:
-                    body=dict(schema=SCHEMA,account_sha256=self.account_digest,
-                        baseline_pacing_head_sha256=pacing_head,baseline_retention_head_sha256=retention_head,
-                        baseline_pacing_sessions=pacing_sessions,baseline_retained_batches=retained_batches,
-                        preexisting_history_unverified=bool(pacing_sessions or retained_batches or pacing_head!=ZERO or retention_head!=ZERO))
-                    self._insert(db,0,body,ZERO)
-                state=self._load(db)
-            return state
+        bound_path=Path(self.path).resolve();bound_account=self.account_digest
+        def require_binding():
+            try:current=Path(self.path).resolve()
+            except (OSError,RuntimeError,TypeError,ValueError):
+                _fail('STORE_BINDING_CHANGED')
+            if current!=bound_path or self.account_digest!=bound_account:
+                _fail('STORE_BINDING_CHANGED')
+        self._check();require_binding();db,new=self._connect(write=True)
+        try:
+            with closing(db):
+                require_binding();_require_main_connection(db,bound_path)
+                with _transaction(db):
+                    count=db.execute('SELECT count(*) FROM records').fetchone()[0]
+                    if count==0:
+                        body=dict(schema=SCHEMA,account_sha256=self.account_digest,
+                            baseline_pacing_head_sha256=pacing_head,baseline_retention_head_sha256=retention_head,
+                            baseline_pacing_sessions=pacing_sessions,baseline_retained_batches=retained_batches,
+                            preexisting_history_unverified=bool(pacing_sessions or retained_batches or pacing_head!=ZERO or retention_head!=ZERO))
+                        self._insert(db,0,body,ZERO)
+                    expected=self._load(db)
+                require_binding();_require_main_connection(db,bound_path)
+                fingerprint=_main_fingerprint(bound_path)
+                _sync_committed_store(bound_path,fingerprint,new=new)
+        finally:require_binding()
+        first=self._read_state();second=self._read_state()
+        if first!=second or second!=expected:_fail('ACKNOWLEDGEMENT_UNCERTAIN')
+        return second
 
     def append(self,scope,*,admission,precommit_check=lambda:True):
         scope=self._scope(scope);record_sha=sha(scope)
@@ -293,7 +397,9 @@ class PaperActivityAcceptanceStore:
                     _fail('FILE_SET_CHANGED')
             return value
         try:
-            with closing(self._connect(write=True)[0]) as db:
+            db,new=self._connect(write=True)
+            with closing(db):
+                require_binding();_require_main_connection(db,bound_path)
                 with _transaction(db):
                     state=self._load(db);current=checked(admission)
                     if current!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
@@ -314,6 +420,9 @@ class PaperActivityAcceptanceStore:
                                 loaded['last_record_sha256']!=record_sha):
                             _fail('ACKNOWLEDGEMENT_UNCERTAIN')
                     if checked(precommit_check) is not True:_fail('INPUT_REVOKED')
+                require_binding();_require_main_connection(db,bound_path)
+                fingerprint=_main_fingerprint(bound_path)
+                _sync_committed_store(bound_path,fingerprint,new=new)
                 # A changed post-commit sample loses the acknowledgment but
                 # retains the record for explicit cold-read recovery.
                 if checked(admission)!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')

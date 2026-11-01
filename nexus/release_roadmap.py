@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.97'
+REVISION = '0.340.98'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -232,6 +232,14 @@ DELIVERY_STAGES = tuple((dict(stage,
         'injected tests do not attest an account and no external order adapter is connected.',
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; activity-acceptance baseline and append writers now reject a substituted SQLite main connection before mutation, explicitly fsync the exact committed writable descriptor, recheck its bounded bytes and flush a new POSIX directory entry before cold acknowledgement replay' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Private activity-acceptance baseline and append writes now prove the writable SQLite main path before mutation, explicitly flush the exact committed main-file descriptor, require unchanged bounded descriptor/path content across that barrier and flush a newly created POSIX directory entry. Flush uncertainty retains the committed baseline or record and recovers only through explicit cold replay; no retry is automatic. This is sampled local durability evidence, not physical power-loss, portable Windows directory persistence, provider identity, authorized broker acceptance, sustained-market evidence or release approval.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -631,7 +639,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.97 requires private activity-acceptance append to pin one resolved store and exact bounded main-file content around every untrusted admission/input callback, derive the expected chain head independently of the write return, and prove the exact committed record through two stable cold reads before acknowledgement. A post-commit retarget loses the acknowledgement, retains one record and recovers only through explicit duplicate replay. Exact-source v0.340.96 commit a0b387dea125e4887f19ca087c44921acc1b6536 passed public security/history/Gitleaks run 41277363061, every research offline-evidence, browser-help and regression job in run 41277363152, and the complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41277363160. Fresh exact-source v0.340.97 workflows remain mandatory. This narrows sampled local reconciliation acknowledgement uncertainty but is not provider identity, authorized broker acceptance, sustained market evidence, native-owner/durability acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.98 requires private activity-acceptance baseline and append writes to prove the exact writable SQLite main path before mutation, explicitly flush the committed main-file descriptor, recheck exact bounded descriptor/path content and flush a newly created POSIX directory entry before two stable cold acknowledgement reads. Flush uncertainty retains the committed state and recovers only through explicit replay; no retry is automatic. Exact-source v0.340.97 commit 40fc74032eb9e12685fc6e4e6927f194048acc40 passed public security/history/Gitleaks run 41280894126, every research offline-evidence, browser-help and regression job in run 41280894088, and the complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41280894183. Fresh exact-source v0.340.98 workflows remain mandatory. This narrows sampled local reconciliation durability uncertainty but is not physical power-loss, portable Windows directory persistence, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -224,6 +224,97 @@ def test_append_requires_two_stable_cold_acknowledgement_reads(
     assert recovered['head_sha256']==report['head_sha256']
 
 
+def test_bind_refuses_foreign_write_connection_before_mutation(
+        tmp_path,monkeypatch):
+    value=scope();foreign=bound(tmp_path/'foreign',value)
+    target=storage.PaperActivityAcceptanceStore(
+        tmp_path/'target'/'acceptance.sqlite3',ACCOUNT)
+    before=foreign.path.read_bytes()
+    monkeypatch.setattr(target,'_connect',foreign._connect)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_BINDING_CHANGED$')):
+        target.bind(pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    assert foreign.path.read_bytes()==before
+    assert not target.path.exists()
+
+
+def test_append_refuses_foreign_write_connection_before_mutation(
+        tmp_path,monkeypatch):
+    value=scope();target=bound(tmp_path/'target',value)
+    foreign=bound(tmp_path/'foreign',value)
+    before=(target.path.read_bytes(),foreign.path.read_bytes())
+    monkeypatch.setattr(target,'_connect',foreign._connect)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_BINDING_CHANGED$')):
+        target.append(value,admission=lambda:admitted)
+    assert (target.path.read_bytes(),foreign.path.read_bytes())==before
+
+
+def test_bind_fsync_uncertainty_retains_baseline_for_explicit_replay(
+        tmp_path,monkeypatch):
+    value=scope();store=storage.PaperActivityAcceptanceStore(
+        tmp_path/'acceptance.sqlite3',ACCOUNT)
+    original=storage.os.fsync
+    monkeypatch.setattr(storage.os,'fsync',lambda _descriptor:(
+        (_ for _ in ()).throw(OSError('injected'))))
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_COMMIT_DURABILITY_UNCERTAIN$')):
+        store.bind(pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    monkeypatch.setattr(storage.os,'fsync',original)
+    retained=store.inspect();assert retained['initialized']
+    replayed=store.bind(pacing_head=value['pacing_before_head_sha256'],
+        retention_head=value['retention_before_head_sha256'],
+        pacing_sessions=0,retained_batches=0)
+    assert replayed['head_sha256']==retained['head_sha256']
+    assert replayed['records']==0
+
+
+def test_append_fsync_uncertainty_retains_one_for_explicit_duplicate(
+        tmp_path,monkeypatch):
+    value=scope();store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    original=storage.os.fsync
+    monkeypatch.setattr(storage.os,'fsync',lambda _descriptor:(
+        (_ for _ in ()).throw(OSError('injected'))))
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_COMMIT_DURABILITY_UNCERTAIN$')):
+        store.append(value,admission=lambda:admitted)
+    monkeypatch.setattr(storage.os,'fsync',original)
+    retained=store.inspect();assert retained['records']==1
+    replayed=store.append(value,admission=lambda:admitted)
+    assert replayed['duplicate'] is True
+    assert replayed['head_sha256']==retained['head_sha256']
+
+
+def test_append_requires_stable_descriptor_bytes_across_fsync(
+        tmp_path,monkeypatch):
+    value=scope();store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    original=storage._descriptor_fingerprint;calls=0
+    def unstable(descriptor,resolved):
+        nonlocal calls
+        calls+=1;result=original(descriptor,resolved)
+        if calls==2:return (*result[:-1],'f'*64)
+        return result
+    monkeypatch.setattr(storage,'_descriptor_fingerprint',unstable)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_COMMIT_DURABILITY_UNCERTAIN$')):
+        store.append(value,admission=lambda:admitted)
+    monkeypatch.setattr(storage,'_descriptor_fingerprint',original)
+    retained=store.inspect();assert retained['records']==1
+    replayed=store.append(value,admission=lambda:admitted)
+    assert replayed['duplicate'] is True
+    assert replayed['head_sha256']==retained['head_sha256']
+
+
 def test_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
     value=scope();store=bound(tmp_path,value);before=store.path.read_bytes()
     admitted=(value['pacing_after_head_sha256'],value['retention_after_head_sha256'])

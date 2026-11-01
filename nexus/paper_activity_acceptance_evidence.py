@@ -294,6 +294,27 @@ def fixture_report():
             retained_durability['records']==1 and
             recovered_durability['duplicate'] is True and
             recovered_durability['head_sha256']==retained_durability['head_sha256'])
+        cleanup_root=base/'write-initialization-cleanup';cleanup_root.mkdir()
+        cleanup_acceptance=PaperActivityAcceptanceStore(
+            cleanup_root/'acceptance.sqlite3',ACCOUNT)
+        cleanup_insert=cleanup_acceptance._insert
+        cleanup_failed=False
+        cleanup_acceptance._insert=lambda *args,**kwargs:(_ for _ in ()).throw(
+            RuntimeError('injected initialization failure'))
+        try:
+            try:cleanup_acceptance.bind(pacing_head='0'*64,
+                retention_head='0'*64,pacing_sessions=0,
+                retained_batches=0)
+            except RuntimeError as error:
+                cleanup_failed=(str(error)=='injected initialization failure')
+        finally:cleanup_acceptance._insert=cleanup_insert
+        cleanup_absent=(not cleanup_acceptance.path.exists() and
+            not tuple(cleanup_root.iterdir()))
+        cleanup_replayed=cleanup_acceptance.bind(pacing_head='0'*64,
+            retention_head='0'*64,pacing_sessions=0,retained_batches=0)
+        acceptance_uncommitted_initialization_replayed=(cleanup_failed and
+            cleanup_absent and cleanup_replayed['records']==0 and
+            cleanup_acceptance.inspect()['initialized'] is True)
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
         rollback_observed=before['rollback_journal_observed'] is True
@@ -320,7 +341,8 @@ def fixture_report():
         passed=(missing_created_nothing and before_unbound and after_bound and
             acceptance_inspection_bound and acceptance_write_binding_pinned and
             acceptance_write_ack_replayed and acceptance_write_connection_pinned and
-            acceptance_commit_durability_replayed and silent and unchanged and
+            acceptance_commit_durability_replayed and
+            acceptance_uncommitted_initialization_replayed and silent and unchanged and
             rollback_observed and all(scope_checks) and scope_unchanged and legacy_refused and legacy_preserved)
         return dict(mode='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY',passed=passed,
             source='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE',missing_status_created_nothing=missing_created_nothing,
@@ -341,6 +363,8 @@ def fixture_report():
             acceptance_write_ack_replayed=acceptance_write_ack_replayed,
             acceptance_write_connection_pinned=acceptance_write_connection_pinned,
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
+            acceptance_uncommitted_initialization_replayed=
+                acceptance_uncommitted_initialization_replayed,
             legacy_normalized_result_not_invented=legacy_refused,legacy_normalized_history_preserved=legacy_preserved,
             changed_creation_window_targets_refused=scope_checks[0],
             changed_cursor_target_refused=scope_checks[1],

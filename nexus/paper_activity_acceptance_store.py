@@ -170,6 +170,38 @@ def _require_main_connection(db,bound_path):
         _fail('CONNECTION_BINDING_CHANGED')
 
 
+def _discard_uncommitted_new(path,identity):
+    """Remove only the exact empty file from an aborted first write.
+
+    A failed first SQLite transaction is not an initialized acceptance store.
+    Cleanup is deliberately narrower than ordinary recovery: replacement,
+    links, bytes or any SQLite sidecar retain the path and fail closed.
+    """
+    path=Path(path);sidecars=tuple(Path(str(path)+suffix) for suffix in
+        ('-journal','-wal','-shm'))
+    try:
+        if (type(identity) is not tuple or len(identity)!=1 or
+                type(identity[0]) is not tuple or len(identity[0])!=3):
+            raise RuntimeError
+        observed=path.lstat();resolved=path.resolve()
+        if ((str(resolved),observed.st_dev,observed.st_ino)!=identity[0] or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink!=1 or observed.st_size!=0):
+            raise RuntimeError
+        for sidecar in sidecars:
+            try:sidecar.lstat()
+            except FileNotFoundError:continue
+            raise RuntimeError
+        path.unlink()
+        for candidate in (path,*sidecars):
+            try:candidate.lstat()
+            except FileNotFoundError:continue
+            raise RuntimeError
+    except (OSError,RuntimeError,TypeError,ValueError):
+        _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+
+
 @contextmanager
 def _transaction(db):
     """Normalize bounded SQLite statement/commit contention without retry."""
@@ -195,16 +227,25 @@ class PaperActivityAcceptanceStore:
     def _check(self):check_existing(self.path,MAX_DATABASE_BYTES,'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
 
     def _connect(self,write=False):
-        self._check();new=False
-        if write and not self.path.exists():
-            self.path.parent.mkdir(parents=True,exist_ok=True)
-            try:
-                fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(fd);new=True
-            except FileExistsError:pass
-            self._check()
-        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),
-            uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
+        self._check();new=False;created_identity=None;db=None
         try:
+            if write and not self.path.exists():
+                self.path.parent.mkdir(parents=True,exist_ok=True)
+                try:
+                    descriptor=os.open(self.path,os.O_CREAT|os.O_EXCL|
+                        os.O_WRONLY,0o600)
+                except FileExistsError:pass
+                else:
+                    new=True
+                    try:
+                        opened=os.fstat(descriptor)
+                        created_identity=((str(self.path.resolve()),
+                            opened.st_dev,opened.st_ino),)
+                    finally:os.close(descriptor)
+                self._check()
+            db=sqlite3.connect(self.path.resolve().as_uri()+
+                ('?mode=rw' if write else '?mode=ro'),uri=True,
+                timeout=DB_BUSY_TIMEOUT_MS/1000)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')
@@ -213,10 +254,22 @@ class PaperActivityAcceptanceStore:
                 if new:db.execute('CREATE TABLE records (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
             return db,new
         except sqlite3.OperationalError as error:
-            db.close()
+            if db is not None:
+                try:db.close()
+                except BaseException:
+                    if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new:_discard_uncommitted_new(self.path,created_identity)
             if _database_busy(error):_fail('DATABASE_BUSY')
             raise
-        except BaseException:db.close();raise
+        except BaseException:
+            if db is not None:
+                try:db.close()
+                except BaseException:
+                    if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new:_discard_uncommitted_new(self.path,created_identity)
+            raise
 
     @staticmethod
     def _insert(db,seq,body,previous):
@@ -357,22 +410,31 @@ class PaperActivityAcceptanceStore:
             if current!=bound_path or self.account_digest!=bound_account:
                 _fail('STORE_BINDING_CHANGED')
         self._check();require_binding();db,new=self._connect(write=True)
+        committed=False;transaction_identity=None
         try:
-            with closing(db):
-                require_binding();_require_main_connection(db,bound_path)
-                with _transaction(db):
-                    count=db.execute('SELECT count(*) FROM records').fetchone()[0]
-                    if count==0:
-                        body=dict(schema=SCHEMA,account_sha256=self.account_digest,
-                            baseline_pacing_head_sha256=pacing_head,baseline_retention_head_sha256=retention_head,
-                            baseline_pacing_sessions=pacing_sessions,baseline_retained_batches=retained_batches,
-                            preexisting_history_unverified=bool(pacing_sessions or retained_batches or pacing_head!=ZERO or retention_head!=ZERO))
-                        self._insert(db,0,body,ZERO)
-                    expected=self._load(db)
-                require_binding();_require_main_connection(db,bound_path)
-                fingerprint=_main_fingerprint(bound_path)
-                _sync_committed_store(bound_path,fingerprint,new=new)
-        finally:require_binding()
+            try:
+                with closing(db):
+                    require_binding();_require_main_connection(db,bound_path)
+                    transaction_identity=capture_file_identities((bound_path,),
+                        'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+                    with _transaction(db):
+                        count=db.execute('SELECT count(*) FROM records').fetchone()[0]
+                        if count==0:
+                            body=dict(schema=SCHEMA,account_sha256=self.account_digest,
+                                baseline_pacing_head_sha256=pacing_head,baseline_retention_head_sha256=retention_head,
+                                baseline_pacing_sessions=pacing_sessions,baseline_retained_batches=retained_batches,
+                                preexisting_history_unverified=bool(pacing_sessions or retained_batches or pacing_head!=ZERO or retention_head!=ZERO))
+                            self._insert(db,0,body,ZERO)
+                        expected=self._load(db)
+                    committed=True
+                    require_binding();_require_main_connection(db,bound_path)
+                    fingerprint=_main_fingerprint(bound_path)
+                    _sync_committed_store(bound_path,fingerprint,new=new)
+            finally:require_binding()
+        except BaseException:
+            if new and not committed:
+                _discard_uncommitted_new(bound_path,transaction_identity)
+            raise
         first=self._read_state();second=self._read_state()
         if first!=second or second!=expected:_fail('ACKNOWLEDGEMENT_UNCERTAIN')
         return second
@@ -396,37 +458,46 @@ class PaperActivityAcceptanceStore:
                 if _main_fingerprint(bound_path)!=before:
                     _fail('FILE_SET_CHANGED')
             return value
+        db,new=self._connect(write=True);committed=False
+        transaction_identity=None
         try:
-            db,new=self._connect(write=True)
-            with closing(db):
-                require_binding();_require_main_connection(db,bound_path)
-                with _transaction(db):
-                    state=self._load(db);current=checked(admission)
-                    if current!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
-                    duplicate=state['last_record_sha256']==record_sha
-                    if duplicate:
-                        expected_head=state['head_sha256']
-                    else:
-                        if state['records']>=MAX_RECORDS:_fail('RECORD_CAP')
-                        if (state['pacing_bound_head_sha256']!=scope['pacing_before_head_sha256'] or
-                            state['retention_bound_head_sha256']!=scope['retention_before_head_sha256']):_fail('CONTINUITY_DISAGREEMENT')
-                        body=dict(scope=scope,record_sha256=record_sha)
-                        expected_head=sha(dict(seq=state['records']+1,
-                            body=body,previous=state['head_sha256']))
-                        self._insert(db,state['records']+1,body,
-                            state['head_sha256'])
-                        loaded=self._load(db)
-                        if (loaded['head_sha256']!=expected_head or
-                                loaded['last_record_sha256']!=record_sha):
-                            _fail('ACKNOWLEDGEMENT_UNCERTAIN')
-                    if checked(precommit_check) is not True:_fail('INPUT_REVOKED')
-                require_binding();_require_main_connection(db,bound_path)
-                fingerprint=_main_fingerprint(bound_path)
-                _sync_committed_store(bound_path,fingerprint,new=new)
-                # A changed post-commit sample loses the acknowledgment but
-                # retains the record for explicit cold-read recovery.
-                if checked(admission)!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
-        finally:require_binding()
+            try:
+                with closing(db):
+                    require_binding();_require_main_connection(db,bound_path)
+                    transaction_identity=capture_file_identities((bound_path,),
+                        'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+                    with _transaction(db):
+                        state=self._load(db);current=checked(admission)
+                        if current!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
+                        duplicate=state['last_record_sha256']==record_sha
+                        if duplicate:
+                            expected_head=state['head_sha256']
+                        else:
+                            if state['records']>=MAX_RECORDS:_fail('RECORD_CAP')
+                            if (state['pacing_bound_head_sha256']!=scope['pacing_before_head_sha256'] or
+                                state['retention_bound_head_sha256']!=scope['retention_before_head_sha256']):_fail('CONTINUITY_DISAGREEMENT')
+                            body=dict(scope=scope,record_sha256=record_sha)
+                            expected_head=sha(dict(seq=state['records']+1,
+                                body=body,previous=state['head_sha256']))
+                            self._insert(db,state['records']+1,body,
+                                state['head_sha256'])
+                            loaded=self._load(db)
+                            if (loaded['head_sha256']!=expected_head or
+                                    loaded['last_record_sha256']!=record_sha):
+                                _fail('ACKNOWLEDGEMENT_UNCERTAIN')
+                        if checked(precommit_check) is not True:_fail('INPUT_REVOKED')
+                    committed=True
+                    require_binding();_require_main_connection(db,bound_path)
+                    fingerprint=_main_fingerprint(bound_path)
+                    _sync_committed_store(bound_path,fingerprint,new=new)
+                    # A changed post-commit sample loses the acknowledgment but
+                    # retains the record for explicit cold-read recovery.
+                    if checked(admission)!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
+            finally:require_binding()
+        except BaseException:
+            if new and not committed:
+                _discard_uncommitted_new(bound_path,transaction_identity)
+            raise
         first=self._read_state();second=self._read_state()
         if (first!=second or second['head_sha256']!=expected_head or
                 second['last_record_sha256']!=record_sha or

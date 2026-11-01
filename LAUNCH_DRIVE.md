@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.99 activity-acceptance initialization recovery
+
+Fresh private activity-acceptance initialization now captures the exact exclusively created SQLite identity before opening it and restores absence after connection, pragma, transaction, schema, baseline-write or unbound-append failure only when that exact file is empty, regular, single-link and sidecar-free. Replacement, content, link, sidecar or close uncertainty remains retained and blocked; retry is explicit and never automatic. Direct and mandatory disposable evidence exercise the complete boundary without provider access.
+
+Exact-source v0.340.98 commit `1be62efc5d345f242cab31a2979dfe8c66a5387c` exposed no connector-visible workflow run or commit status at the pre-sprint and prepublication checks. Fresh v0.340.99 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local cleanup evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local validation passed 4,790 tests with one expected skip and one existing warning; the activity-acceptance/reconciliation/release/version/installer focus passed 327 and the direct store file passed 42. Sixteen profiles and saved-evidence verification matched 395 source files / `eb07d2608a235a495c4459f59442ad1f45624fa152048fed24e8b5ff398ee36c`; evidence SHA-256 is `108a8833dff3db3bef7eca2faaeef7adb026a51fb9be8a24cce548f85cc08bc8`. The wheel SHA-256 is `f60c2f4379b8bf25157eb31ed294c8e8b3ee6a81adafb92acf9b34c8d1f3cc8e`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 811-path / 61,845,341-byte proposed-snapshot audit and introduced-line high-confidence credential scan found nothing. Fresh exact-source v0.340.99 hosted workflows remain required.
+
 ## v0.340.98 activity-acceptance commit durability
 
 Private activity-acceptance baseline and append writes now reject a substituted writable SQLite connection before mutation, hash the exact committed writable descriptor across `fsync`, require it to match the bounded pathname fingerprint and flush a newly created POSIX directory entry. Flush uncertainty retains the committed baseline or record and recovers only through explicit cold replay; no retry is automatic. Direct and mandatory disposable evidence exercise foreign-write rejection and lost-durability acknowledgement without provider access.

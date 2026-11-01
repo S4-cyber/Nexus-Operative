@@ -2,6 +2,7 @@
 import os
 import sqlite3
 import hashlib
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -313,6 +314,122 @@ def test_append_requires_stable_descriptor_bytes_across_fsync(
     replayed=store.append(value,admission=lambda:admitted)
     assert replayed['duplicate'] is True
     assert replayed['head_sha256']==retained['head_sha256']
+
+
+def test_uncommitted_cleanup_never_deletes_replacement(tmp_path):
+    path=tmp_path/'acceptance.sqlite3';path.touch(mode=0o600)
+    identity=storage.capture_file_identities((path,),
+        'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+    replacement=tmp_path/'replacement.sqlite3';replacement.touch(mode=0o600)
+    os.replace(replacement,path)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN$')):
+        storage._discard_uncommitted_new(path,identity)
+    assert path.exists() and path.stat().st_size==0
+
+
+@pytest.mark.parametrize('failure_sql',(None,'PRAGMA busy_timeout',
+    'PRAGMA journal_mode','PRAGMA synchronous','PRAGMA page_size',
+    'PRAGMA max_page_count','BEGIN IMMEDIATE','CREATE TABLE'))
+def test_fresh_initialization_failure_restores_absence_and_exact_bind_retry(
+        tmp_path,monkeypatch,failure_sql):
+    value=scope();path=tmp_path/'acceptance.sqlite3'
+    store=PaperActivityAcceptanceStore(path,ACCOUNT)
+    target=path.resolve().as_uri();original=storage.sqlite3.connect;failed=False
+    class Connection:
+        def __init__(self,db):self.db=db
+        def execute(self,sql,*args,**kwargs):
+            nonlocal failed
+            if not failed and sql.startswith(failure_sql):
+                failed=True
+                raise RuntimeError('private initialization failure')
+            return self.db.execute(sql,*args,**kwargs)
+        def close(self):return self.db.close()
+        def __getattr__(self,name):return getattr(self.db,name)
+    def connect(*args,**kwargs):
+        nonlocal failed
+        if not str(args[0]).startswith(target):
+            return original(*args,**kwargs)
+        if failure_sql is None and not failed:
+            failed=True
+            raise RuntimeError('private initialization failure')
+        db=original(*args,**kwargs)
+        return Connection(db) if not failed else db
+    monkeypatch.setattr(storage.sqlite3,'connect',connect)
+    with pytest.raises(RuntimeError,match='^private initialization failure$'):
+        store.bind(pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    assert failed and not path.exists()
+    assert all(not Path(str(path)+suffix).exists() for suffix in
+        ('-journal','-wal','-shm'))
+    report=store.bind(pacing_head=value['pacing_before_head_sha256'],
+        retention_head=value['retention_before_head_sha256'],
+        pacing_sessions=0,retained_batches=0)
+    assert report['records']==0 and store.inspect()['initialized']
+
+
+def test_fresh_transaction_failure_restores_absence_for_explicit_retry(
+        tmp_path,monkeypatch):
+    value=scope();path=tmp_path/'acceptance.sqlite3'
+    store=PaperActivityAcceptanceStore(path,ACCOUNT);original=store._insert
+    monkeypatch.setattr(store,'_insert',lambda *args,**kwargs:(
+        (_ for _ in ()).throw(RuntimeError('private insert failure'))))
+    with pytest.raises(RuntimeError,match='^private insert failure$'):
+        store.bind(pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    assert not path.exists()
+    assert all(not Path(str(path)+suffix).exists() for suffix in
+        ('-journal','-wal','-shm'))
+    monkeypatch.setattr(store,'_insert',original)
+    report=store.bind(pacing_head=value['pacing_before_head_sha256'],
+        retention_head=value['retention_before_head_sha256'],
+        pacing_sessions=0,retained_batches=0)
+    assert report['records']==0 and store.inspect()['initialized']
+
+
+def test_unbound_append_failure_restores_absence_for_explicit_bind(tmp_path):
+    value=scope();path=tmp_path/'acceptance.sqlite3'
+    store=PaperActivityAcceptanceStore(path,ACCOUNT)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_BINDING_MISSING$')):
+        store.append(value,admission=lambda:admitted)
+    assert not path.exists()
+    assert all(not Path(str(path)+suffix).exists() for suffix in
+        ('-journal','-wal','-shm'))
+    report=store.bind(pacing_head=value['pacing_before_head_sha256'],
+        retention_head=value['retention_before_head_sha256'],
+        pacing_sessions=0,retained_batches=0)
+    assert report['records']==0 and store.inspect()['initialized']
+
+
+def test_fresh_initialization_close_uncertainty_retains_path(
+        tmp_path,monkeypatch):
+    value=scope();path=tmp_path/'acceptance.sqlite3'
+    store=PaperActivityAcceptanceStore(path,ACCOUNT)
+    target=path.resolve().as_uri();original=storage.sqlite3.connect
+    class Connection:
+        def __init__(self,db):self.db=db
+        def execute(self,sql,*args,**kwargs):
+            if sql.startswith('PRAGMA busy_timeout'):
+                raise RuntimeError('private initialization failure')
+            return self.db.execute(sql,*args,**kwargs)
+        def close(self):
+            self.db.close()
+            raise RuntimeError('private close acknowledgement failure')
+    def connect(*args,**kwargs):
+        db=original(*args,**kwargs)
+        return Connection(db) if str(args[0]).startswith(target) else db
+    monkeypatch.setattr(storage.sqlite3,'connect',connect)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN$')):
+        store.bind(pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    assert path.exists() and path.stat().st_size==0
 
 
 def test_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):

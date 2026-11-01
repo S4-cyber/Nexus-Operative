@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.98'
+REVISION = '0.340.99'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -232,6 +232,14 @@ DELIVERY_STAGES = tuple((dict(stage,
         'injected tests do not attest an account and no external order adapter is connected.',
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; failed fresh activity-acceptance connection, pragma, transaction, schema and baseline writes now remove only their exact newly created empty sidecar-free pathname so one explicit bind retry can initialize cleanly, while replacement or close uncertainty remains retained and blocked' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Fresh private activity-acceptance initialization now captures the exclusive main-file identity before SQLite opens and restores absence after failed connection, pragma, transaction, schema or baseline writes only when the exact file is empty, regular, single-link and sidecar-free. Replacement, content, sidecar or close uncertainty retains the path and fails closed; retry is explicit, never automatic. This is sampled local initialization recovery, not provider identity, broker acceptance, sustained-market evidence, physical durability or release approval.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -639,7 +647,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.98 requires private activity-acceptance baseline and append writes to prove the exact writable SQLite main path before mutation, explicitly flush the committed main-file descriptor, recheck exact bounded descriptor/path content and flush a newly created POSIX directory entry before two stable cold acknowledgement reads. Flush uncertainty retains the committed state and recovers only through explicit replay; no retry is automatic. Exact-source v0.340.97 commit 40fc74032eb9e12685fc6e4e6927f194048acc40 passed public security/history/Gitleaks run 41280894126, every research offline-evidence, browser-help and regression job in run 41280894088, and the complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41280894183. Fresh exact-source v0.340.98 workflows remain mandatory. This narrows sampled local reconciliation durability uncertainty but is not physical power-loss, portable Windows directory persistence, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.99 requires failed fresh private activity-acceptance connection, pragma, transaction, schema and baseline writes to remove only the exact newly created empty sidecar-free pathname before one explicit retry. Replacement, content, link, sidecar or close uncertainty retains the path and fails closed; retry is never automatic. Exact-source v0.340.98 commit 1be62efc5d345f242cab31a2979dfe8c66a5387c retained no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.99 workflows remain mandatory. This prevents a schema-less pathname from poisoning an exact operator retry but is not physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

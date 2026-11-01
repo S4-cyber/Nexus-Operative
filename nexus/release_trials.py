@@ -1120,6 +1120,7 @@ def _validate(profile, result):
             'acceptance_connection_binding_pinned','acceptance_connection_content_pinned',
             'acceptance_write_binding_pinned','acceptance_write_ack_replayed',
             'acceptance_write_connection_pinned','acceptance_commit_durability_replayed',
+            'acceptance_uncommitted_initialization_replayed',
             'legacy_normalized_result_not_invented','legacy_normalized_history_preserved',
             'changed_creation_window_targets_refused','changed_cursor_target_refused',
             'request_target_disagreement_history_preserved')), 'ACTIVITY_ACCEPTANCE_RECOVERY')

@@ -402,6 +402,10 @@ class PaperActivityAcceptanceStore:
     def bind(self,*,pacing_head,retention_head,pacing_sessions,retained_batches):
         pacing_head=_head(pacing_head);retention_head=_head(retention_head)
         if any(type(v) is not int or v<0 for v in (pacing_sessions,retained_batches)):_fail('BASELINE_INVALID')
+        baseline=dict(schema=SCHEMA,account_sha256=self.account_digest,
+            baseline_pacing_head_sha256=pacing_head,baseline_retention_head_sha256=retention_head,
+            baseline_pacing_sessions=pacing_sessions,baseline_retained_batches=retained_batches,
+            preexisting_history_unverified=bool(pacing_sessions or retained_batches or pacing_head!=ZERO or retention_head!=ZERO))
         bound_path=Path(self.path).resolve();bound_account=self.account_digest
         def require_binding():
             try:current=Path(self.path).resolve()
@@ -420,12 +424,14 @@ class PaperActivityAcceptanceStore:
                     with _transaction(db):
                         count=db.execute('SELECT count(*) FROM records').fetchone()[0]
                         if count==0:
-                            body=dict(schema=SCHEMA,account_sha256=self.account_digest,
-                                baseline_pacing_head_sha256=pacing_head,baseline_retention_head_sha256=retention_head,
-                                baseline_pacing_sessions=pacing_sessions,baseline_retained_batches=retained_batches,
-                                preexisting_history_unverified=bool(pacing_sessions or retained_batches or pacing_head!=ZERO or retention_head!=ZERO))
-                            self._insert(db,0,body,ZERO)
+                            self._insert(db,0,baseline,ZERO)
                         expected=self._load(db)
+                        if count:
+                            if (pacing_head!=expected['pacing_bound_head_sha256'] or
+                                retention_head!=expected['retention_bound_head_sha256'] or
+                                pacing_sessions!=expected['baseline_pacing_sessions']+expected['records'] or
+                                retained_batches!=expected['baseline_retained_batches']+expected['records']):
+                                _fail('REBIND_DISAGREEMENT')
                     committed=True
                     require_binding();_require_main_connection(db,bound_path)
                     fingerprint=_main_fingerprint(bound_path)

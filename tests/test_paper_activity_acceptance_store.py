@@ -58,6 +58,46 @@ def test_record_replay_binds_both_head_transitions_and_duplicate_is_idempotent(t
     assert report['pacing_bound_head_sha256']==admitted[0] and report['retention_bound_head_sha256']==admitted[1]
 
 
+@pytest.mark.parametrize('changed',(
+    'pacing_head','retention_head','pacing_sessions','retained_batches'))
+def test_existing_binding_rejects_changed_state_without_mutation(
+        tmp_path,changed):
+    value=scope();store=PaperActivityAcceptanceStore(
+        tmp_path/'acceptance.sqlite3',ACCOUNT)
+    baseline=dict(pacing_head=value['pacing_before_head_sha256'],
+        retention_head=value['retention_before_head_sha256'],
+        pacing_sessions=2,retained_batches=3)
+    store.bind(**baseline);before=store.path.read_bytes()
+    changed_baseline=dict(baseline)
+    changed_baseline[changed]=(sha(dict(changed=changed))
+        if changed.endswith('_head') else baseline[changed]+1)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_REBIND_DISAGREEMENT$')):
+        store.bind(**changed_baseline)
+    assert store.path.read_bytes()==before
+    report=store.inspect()
+    assert report['baseline_pacing_sessions']==2
+    assert report['baseline_retained_batches']==3
+
+
+def test_exact_current_state_rebind_returns_appended_state(tmp_path):
+    value=scope();store=PaperActivityAcceptanceStore(
+        tmp_path/'acceptance.sqlite3',ACCOUNT)
+    baseline=dict(pacing_head=value['pacing_before_head_sha256'],
+        retention_head=value['retention_before_head_sha256'],
+        pacing_sessions=0,retained_batches=0)
+    store.bind(**baseline)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    store.append(value,admission=lambda:admitted)
+    replayed=store.bind(pacing_head=admitted[0],retention_head=admitted[1],
+        pacing_sessions=1,retained_batches=1)
+    assert replayed['records']==1
+    assert replayed['last_record_sha256']==sha(value)
+    assert replayed['pacing_bound_head_sha256']==admitted[0]
+    assert replayed['retention_bound_head_sha256']==admitted[1]
+
+
 def test_continuity_account_and_sampled_admission_fail_closed(tmp_path):
     value=scope();store=bound(tmp_path,value);admitted=(value['pacing_after_head_sha256'],value['retention_after_head_sha256'])
     bad=dict(value,pacing_before_head_sha256=sha(dict(wrong='pace')))

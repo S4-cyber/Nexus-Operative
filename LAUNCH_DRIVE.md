@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.100 activity-acceptance rebind validation
+
+Existing private activity-acceptance binds now prove the caller is describing the replayed current cross-journal boundary: both exact heads and the retained baseline session/batch totals plus accepted transitions. A different head or count is retained and blocked under fixed `REBIND_DISAGREEMENT`; exact current-state replay remains idempotent. Direct and mandatory disposable evidence exercise disagreement, byte preservation and exact recovery without provider access.
+
+Exact-source v0.340.99 commit `eda6717e80c577466c9e9d9cb8b1caa4ac367d65` exposed no connector-visible workflow run or commit status at the pre-sprint check. Fresh v0.340.100 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local rebind evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local prepublication validation passed 4,795 tests with one expected skip and one existing warning; the release/acceptance/Windows-contract focus passed 442. Sixteen profiles and saved-evidence verification matched 395 source files / `a9da2ce741a91405133063e96c4e2ab791574f9f7ad2737f6c1ee106934cdd46`; evidence SHA-256 is `58bb8add5e2444bca0eb2cda7e11e223a747c28389a953c7295bafc6378f5394`. The wheel SHA-256 is `defe18d72ec4c1ad54dddd6532cad57ecb31d3128a7a6af56e370a50bfd93758`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 812-path / 62,028,702-byte proposed-snapshot artifact audit and introduced-line high-confidence credential scan found nothing. Local Gitleaks and Playwright are unavailable. Fresh exact-source v0.340.100 hosted workflows remain mandatory.
+
 ## v0.340.99 activity-acceptance initialization recovery
 
 Fresh private activity-acceptance initialization now captures the exact exclusively created SQLite identity before opening it and restores absence after connection, pragma, transaction, schema, baseline-write or unbound-append failure only when that exact file is empty, regular, single-link and sidecar-free. Replacement, content, link, sidecar or close uncertainty remains retained and blocked; retry is explicit and never automatic. Direct and mandatory disposable evidence exercise the complete boundary without provider access.

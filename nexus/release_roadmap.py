@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.99'
+REVISION = '0.340.100'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -647,7 +647,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.99 requires failed fresh private activity-acceptance connection, pragma, transaction, schema and baseline writes to remove only the exact newly created empty sidecar-free pathname before one explicit retry. Replacement, content, link, sidecar or close uncertainty retains the path and fails closed; retry is never automatic. Exact-source v0.340.98 commit 1be62efc5d345f242cab31a2979dfe8c66a5387c retained no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.99 workflows remain mandatory. This prevents a schema-less pathname from poisoning an exact operator retry but is not physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.100 makes every existing private activity-acceptance bind prove the supplied pacing and retention heads plus session and batch counts exactly match the replayed current cross-journal boundary. A changed head or count fails closed before acknowledgement and preserves the retained store; exact current-state replay remains idempotent. Exact-source v0.340.99 commit eda6717e80c577466c9e9d9cb8b1caa4ac367d65 exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.100 workflows remain mandatory. This prevents a caller from silently treating a different journal boundary as an existing binding but is not physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

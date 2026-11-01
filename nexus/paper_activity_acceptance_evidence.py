@@ -315,6 +315,18 @@ def fixture_report():
         acceptance_uncommitted_initialization_replayed=(cleanup_failed and
             cleanup_absent and cleanup_replayed['records']==0 and
             cleanup_acceptance.inspect()['initialized'] is True)
+        baseline_bytes=cleanup_acceptance.path.read_bytes()
+        rebind_disagreement=False
+        try:cleanup_acceptance.bind(pacing_head='0'*64,
+            retention_head='0'*64,pacing_sessions=1,retained_batches=0)
+        except ValueError as error:
+            rebind_disagreement=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_REBIND_DISAGREEMENT')
+        baseline_replayed=cleanup_acceptance.bind(pacing_head='0'*64,
+            retention_head='0'*64,pacing_sessions=0,retained_batches=0)
+        acceptance_rebind_boundary_pinned=(rebind_disagreement and
+            cleanup_acceptance.path.read_bytes()==baseline_bytes and
+            baseline_replayed['records']==0)
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
         rollback_observed=before['rollback_journal_observed'] is True
@@ -342,7 +354,8 @@ def fixture_report():
             acceptance_inspection_bound and acceptance_write_binding_pinned and
             acceptance_write_ack_replayed and acceptance_write_connection_pinned and
             acceptance_commit_durability_replayed and
-            acceptance_uncommitted_initialization_replayed and silent and unchanged and
+            acceptance_uncommitted_initialization_replayed and
+            acceptance_rebind_boundary_pinned and silent and unchanged and
             rollback_observed and all(scope_checks) and scope_unchanged and legacy_refused and legacy_preserved)
         return dict(mode='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY',passed=passed,
             source='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE',missing_status_created_nothing=missing_created_nothing,
@@ -365,6 +378,7 @@ def fixture_report():
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
             acceptance_uncommitted_initialization_replayed=
                 acceptance_uncommitted_initialization_replayed,
+            acceptance_rebind_boundary_pinned=acceptance_rebind_boundary_pinned,
             legacy_normalized_result_not_invented=legacy_refused,legacy_normalized_history_preserved=legacy_preserved,
             changed_creation_window_targets_refused=scope_checks[0],
             changed_cursor_target_refused=scope_checks[1],

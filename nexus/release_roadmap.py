@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.92'
+REVISION = '0.340.93'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -232,6 +232,14 @@ DELIVERY_STAGES = tuple((dict(stage,
         'injected tests do not attest an account and no external order adapter is connected.',
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; provider/read receipt inspection now pins one exact resolved store path, regular-file identity and bounded fingerprint across connection, complete replay, close and exceptional unwind, rejecting mutable-store retargeting and same-path mutation before returning any public receipt history' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Public provider/read receipt inspection now fixes one resolved store binding plus bounded identity/content sample before opening SQLite and rechecks it around connection, full replay, close and exceptional unwind. Retargeting or same-path mutation returns a fixed refusal without accepting a mixed-scope view. Disposable release evidence covers both faults. This is local read-only integrity evidence, not provider identity, authorized broker acceptance, native durability, sustained-market evidence or release approval.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -591,7 +599,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.92 pins the exact resolved parent-directory identity for every new POSIX provider/read receipt store, opens it with no-follow semantics and requires both the fsync descriptor and post-flush pathname to retain that device/inode. Wrong-directory substitution is rejected before directory sync with fixed durability uncertainty; the committed receipt remains retained and recovery is limited to explicit exact-head duplicate replay after inspection. Exact-source v0.340.91 commit ea7d8bcadf5840933515067e32026dcccb660738 passed public security/history/Gitleaks run 41256686760, all three offline-release-evidence, browser-help and regression jobs in research run 41256686779, and the complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41256686845. Windows has no portable Python directory-fsync API and retains its independent native acceptance gate. This narrows sampled local directory-identity uncertainty but is not physical power-loss proof, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.93 pins public provider/read receipt inspection to one exact resolved store path, regular-file identity and bounded fingerprint across SQLite connection, complete replay, close and exceptional unwind. Mutable-store retargeting and same-path mutation fail closed before any history can return; disposable saved evidence requires both refusals without retaining account content. Exact-source v0.340.92 commit d80ff74b5e7752135bfb9e4a4412af77bec966cd passed public security/history/Gitleaks run 41260973584, every research offline-evidence, browser-help and regression job in run 41260973797, and the complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41260973765. Fresh exact-source v0.340.93 workflows remain mandatory. This narrows sampled local read-only integrity uncertainty but is not provider identity, authorized broker acceptance, sustained market evidence, native-owner/durability acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

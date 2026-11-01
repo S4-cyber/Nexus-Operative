@@ -378,6 +378,40 @@ def test_durable_receipt_binds_both_heads_without_private_content(tmp_path):
     assert not replay['ready_for_routing'] and not replay['release_approved']
 
 
+@pytest.mark.parametrize(('seam','expected'),(
+    ('connect','STORE_BINDING_CHANGED'),('load','STORE_BINDING_CHANGED'),
+    ('fingerprint','FILE_SET_CHANGED')))
+def test_receipt_inspection_pins_store_binding_and_fingerprint(
+        tmp_path,monkeypatch,seam,expected):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    foreign=tmp_path/'foreign.sqlite3';shutil.copyfile(path,foreign)
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    original_path=store.path;original_connect=store._connect
+    original_load=store._load
+    if seam=='connect':
+        def retarget_connect(*args,**kwargs):
+            store.path=foreign
+            return original_connect(*args,**kwargs)
+        monkeypatch.setattr(store,'_connect',retarget_connect)
+    else:
+        def changed_load(db):
+            result=original_load(db)
+            if seam=='load':store.path=foreign
+            else:
+                state=path.stat()
+                os.utime(path,ns=(state.st_atime_ns,
+                    state.st_mtime_ns+1_000_000_000))
+            return result
+        monkeypatch.setattr(store,'_load',changed_load)
+    before={candidate:candidate.read_bytes() for candidate in (path,foreign)}
+    with pytest.raises(ValueError,match=(
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_'+expected+'$')):
+        store.inspect()
+    store.path=original_path
+    assert before=={candidate:candidate.read_bytes() for candidate in before}
+
+
 def test_exact_duplicate_is_idempotent_and_revocation_fails_closed(tmp_path):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';options=heads(gate,budget)
     first=subject.retain_review(path,budget,[gate],**options);saved=path.read_bytes()

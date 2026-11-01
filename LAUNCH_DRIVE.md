@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.93 receipt-history inspection binding
+
+Public provider/read receipt history now fixes one resolved store pathname, regular-file identity and bounded fingerprint before opening SQLite. It rechecks that exact boundary after connection, around complete chain replay, after close and during exceptional unwind. Mutable-store retargeting and same-path metadata/content mutation return fixed fail-closed diagnostics before a mixed-scope or changed receipt history can be accepted. Disposable release evidence exercises both faults and retains no account or market content.
+
+Exact-source v0.340.92 commit `d80ff74b5e7752135bfb9e4a4412af77bec966cd` passed security/history/Gitleaks run 41260973584, every research evidence/browser/regression job in run 41260973797, and complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41260973765. Fresh v0.340.93 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local read-only integrity evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local validation passed 4,757 tests with one expected skip and one existing warning; the receipt/release/evidence/version/installer focus passed 284. Sixteen profiles and saved-evidence verification matched 395 source files / `2da575a08c83536c999fea6b1acf36cc67ec092b02aca982cb4d90a5bcf86fdc`; evidence SHA-256 is `c3749560211eb6e8ebff91c9e7740eb5193533e512d378ee81d35e65c0c0d695`. The final wheel SHA-256 is `f5fe291f51f92345bdbd648b37f6f1fe1e97e000fbbf17676cee3a92ebf3b480`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 805-path artifact audit and introduced-line high-confidence secret scan reported zero findings. Fresh v0.340.93 hosted workflows remain required.
+
 ## v0.340.92 exact POSIX parent-directory descriptor binding
 
 New POSIX provider/read-review receipt stores now capture the resolved parent-directory identity, open it with no-follow semantics and require the descriptor plus post-flush pathname to retain that exact device/inode. A valid foreign-directory descriptor is rejected before directory sync, preserving the already committed receipt and allowing only an operator-directed exact-head duplicate replay after inspection. Python exposes no portable Windows directory-fsync API, so native Windows path persistence and physical power-loss testing remain independent gates.

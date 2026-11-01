@@ -699,6 +699,53 @@ def fixture_report():
             expected_store_head=descriptor_replay['head_sha256'])
         descriptor_final=PaperProviderReadReviewStore(
             descriptor_store,descriptor_budget,[descriptor_gate]).inspect()
+        inspection_gate,inspection_budget=build_pair(
+            root/'retained-inspection-binding')
+        inspection_store=(root/'retained-inspection-binding'/
+            'receipt.sqlite3')
+        retain_review(inspection_store,inspection_budget,[inspection_gate],
+            expected_provider_head=
+                inspection_budget.inspect()['head_sha256'],
+            expected_account_heads={inspection_gate.account_digest:
+                inspection_gate.inspect()['head_sha256']})
+        foreign_inspection_store=(root/'retained-inspection-binding'/
+            'foreign.sqlite3')
+        foreign_inspection_store.write_bytes(inspection_store.read_bytes())
+        inspection_reader=PaperProviderReadReviewStore(
+            inspection_store,inspection_budget,[inspection_gate])
+        inspection_bytes={path:path.read_bytes() for path in
+            (inspection_store,foreign_inspection_store)}
+        inspection_connect=inspection_reader._connect
+        def retarget_inspection(*args,**kwargs):
+            inspection_reader.path=foreign_inspection_store
+            return inspection_connect(*args,**kwargs)
+        inspection_binding_denied=False
+        inspection_reader._connect=retarget_inspection
+        try:inspection_reader.inspect()
+        except ValueError as error:
+            inspection_binding_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_STORE_BINDING_CHANGED')
+        finally:
+            inspection_reader.path=inspection_store
+            inspection_reader._connect=inspection_connect
+        inspection_load=inspection_reader._load
+        def mutate_inspection_fingerprint(db):
+            result=inspection_load(db);state=inspection_store.stat()
+            os.utime(inspection_store,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+            return result
+        inspection_fingerprint_denied=False
+        inspection_reader._load=mutate_inspection_fingerprint
+        try:inspection_reader.inspect()
+        except ValueError as error:
+            inspection_fingerprint_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED')
+        finally:inspection_reader._load=inspection_load
+        inspection_replay=inspection_reader.inspect()
+        inspection_boundary_bound=(inspection_binding_denied and
+            inspection_fingerprint_denied and inspection_bytes==
+                {path:path.read_bytes() for path in inspection_bytes} and
+            inspection_replay['retained_receipts']==1)
         parent_descriptor_bound=True
         if os.name!='nt':
             parent_gate,parent_budget=build_pair(
@@ -857,6 +904,8 @@ def fixture_report():
                 descriptor_receipt['head_sha256']==
                     descriptor_replay['head_sha256']==
                     descriptor_final['head_sha256']),
+            retained_receipt_inspection_binding_pinned=(
+                inspection_boundary_bound),
             retained_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_bound),
             journals_unchanged=source_same,

@@ -373,13 +373,36 @@ class PaperProviderReadReviewStore:
         return previous,receipts
 
     def inspect(self):
-        self._check()
-        if not self.path.exists():return dict(mode='LOCAL_PROVIDER_READ_REVIEW_HISTORY',initialized=False,
+        bound_path=Path(self.path).resolve()
+        def require_binding():
+            try:current=Path(self.path).resolve()
+            except (OSError,RuntimeError,TypeError,ValueError):
+                _fail('STORE_BINDING_CHANGED')
+            if current!=bound_path:_fail('STORE_BINDING_CHANGED')
+        self._check();require_binding()
+        if not bound_path.exists():
+            require_binding()
+            if bound_path.exists():_fail('FILE_IDENTITY_CHANGED')
+            return dict(mode='LOCAL_PROVIDER_READ_REVIEW_HISTORY',initialized=False,
             provider_sha256=self.provider,head_sha256=ZERO,retained_receipts=0,receipts=[],read_only=True,
             ready_for_routing=False,release_approved=False)
-        db,_=self._connect()
-        with closing(db):
-            with _transaction(db):head,receipts=self._load(db)
+        identity=capture_file_identities((bound_path,),
+            'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        fingerprint=capture_file_fingerprints((bound_path,),
+            (MAX_DATABASE_BYTES,),'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        def require_store():
+            require_binding()
+            require_file_identities((bound_path,),identity,
+                'PAPER_PROVIDER_READ_REVIEW_STORE_')
+            require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
+                fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
+        try:
+            db,_=self._connect()
+            with closing(db):
+                require_store()
+                with _transaction(db):
+                    require_store();head,receipts=self._load(db);require_store()
+        finally:require_store()
         return dict(mode='LOCAL_PROVIDER_READ_REVIEW_HISTORY',initialized=True,provider_sha256=self.provider,
             head_sha256=head,retained_receipts=len(receipts),receipts=receipts,read_only=True,
             ready_for_routing=False,release_approved=False)

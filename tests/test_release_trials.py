@@ -483,6 +483,7 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
                   'postcommit_all_content_replayed','postcommit_all_pacing_request_targets_bound',
                   'postcommit_all_normalized_results_bound','acceptance_store_binding_pinned',
                   'acceptance_connection_binding_pinned','acceptance_connection_content_pinned',
+                  'acceptance_connection_content_continuity_pinned',
                   'acceptance_write_binding_pinned','acceptance_write_ack_replayed',
                   'acceptance_write_connection_pinned',
                   'acceptance_write_connection_content_pinned',

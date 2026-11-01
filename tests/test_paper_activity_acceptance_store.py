@@ -191,6 +191,42 @@ def test_readers_pin_store_connection_and_exact_content(
     assert before=={path:path.read_bytes() for path in before}
 
 
+@pytest.mark.parametrize('reader',('inspect','replay_scopes'))
+def test_readers_recheck_path_content_after_connection_serialization(
+        tmp_path,monkeypatch,reader):
+    value=scope('serialization-continuity');store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    store.append(value,admission=lambda:admitted)
+    before=store.path.read_bytes();original_connect=store._connect
+    original_fingerprint=storage._main_fingerprint;content_changed=False
+    class SerializationRaceConnection(sqlite3.Connection):
+        def serialize(self,*args,**kwargs):
+            nonlocal content_changed
+            result=super().serialize(*args,**kwargs)
+            content_changed=True
+            return result
+    def read_connection(*args,**kwargs):
+        assert not args and not kwargs
+        return (sqlite3.connect(store.path.resolve().as_uri()+'?mode=ro',
+            uri=True,timeout=10,factory=SerializationRaceConnection),False)
+    def changed_fingerprint(path):
+        result=original_fingerprint(path)
+        if content_changed and Path(path).resolve()==store.path.resolve():
+            result=(*result[:7],('0'*64 if result[7]!='0'*64 else '1'*64))
+        return result
+    monkeypatch.setattr(store,'_connect',read_connection)
+    monkeypatch.setattr(storage,'_main_fingerprint',changed_fingerprint)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_SET_CHANGED$')):
+        getattr(store,reader)()
+    monkeypatch.setattr(store,'_connect',original_connect)
+    monkeypatch.setattr(storage,'_main_fingerprint',original_fingerprint)
+    assert store.path.read_bytes()==before
+    assert store.inspect()['records']==1
+    assert store.replay_scopes()==(value,)
+
+
 @pytest.mark.parametrize('verdict',[False,1])
 def test_optional_input_guard_rolls_back_new_record_before_commit(tmp_path,verdict):
     value=scope();store=bound(tmp_path,value);before=store.path.read_bytes()

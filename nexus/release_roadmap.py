@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.104'
+REVISION = '0.340.105'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -647,7 +647,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.104 closes a writable connection-content sampling race in private activity acceptance. Both pre-mutation and post-commit checks now require the bounded pathname fingerprint to remain identical across SQLite main serialization, in addition to requiring the serialized bytes to match it. Serialization-time disagreement fails closed under fixed CONNECTION_CONTENT_CHANGED; a post-commit append remains available for explicit idempotent recovery without an automatic retry. Exact-source v0.340.103 commit 21b3e9323483af25380115112c7d3ef95c18516e exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.104 workflows remain mandatory. This closes one synthetic local serialization-time continuity boundary but is not atomic descriptor ownership, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.105 closes the read-side activity-acceptance connection-content sampling race. Both inspect and replay now recheck the exact bounded pathname identity and fingerprint immediately after SQLite main serialization, before accepting its bytes or returning replayed state. Serialization-time pathname disagreement fails closed under fixed FILE_SET_CHANGED. Exact-source v0.340.104 commit 41716be50180d089a1d23e96228d48a105cd0ec8 exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.105 workflows remain mandatory. This closes one synthetic local read-serialization continuity boundary but is not atomic descriptor ownership, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

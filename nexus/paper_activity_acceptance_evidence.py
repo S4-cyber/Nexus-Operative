@@ -232,6 +232,42 @@ def fixture_report():
                 inspection_bytes} and
             after_acceptance.inspect()['records']==2 and
             len(after_acceptance.replay_scopes())==2)
+        continuity_before=acceptance_path.read_bytes()
+        continuity_fingerprint=acceptance_storage._main_fingerprint
+        continuity_changed=False
+        class SerializationRaceConnection(sqlite3.Connection):
+            def serialize(self,*args,**kwargs):
+                nonlocal continuity_changed
+                result=super().serialize(*args,**kwargs)
+                continuity_changed=True
+                return result
+        def serialization_race_connection(*args,**kwargs):
+            if args or kwargs:raise AssertionError('unexpected connection arguments')
+            return (sqlite3.connect(
+                acceptance_path.resolve().as_uri()+'?mode=ro',uri=True,
+                timeout=10,factory=SerializationRaceConnection),False)
+        def serialization_race_fingerprint(path):
+            result=continuity_fingerprint(path)
+            if (continuity_changed and
+                    Path(path).resolve()==acceptance_path.resolve()):
+                result=(*result[:7],
+                    ('0'*64 if result[7]!='0'*64 else '1'*64))
+            return result
+        acceptance_connection_content_continuity_pinned=False
+        after_acceptance._connect=serialization_race_connection
+        acceptance_storage._main_fingerprint=serialization_race_fingerprint
+        try:after_acceptance.inspect()
+        except ValueError as error:
+            acceptance_connection_content_continuity_pinned=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_SET_CHANGED')
+        finally:
+            after_acceptance._connect=acceptance_connect
+            acceptance_storage._main_fingerprint=continuity_fingerprint
+        acceptance_connection_content_continuity_pinned=(
+            acceptance_connection_content_continuity_pinned and
+            acceptance_path.read_bytes()==continuity_before and
+            after_acceptance.inspect()['records']==2 and
+            len(after_acceptance.replay_scopes())==2)
         write_root=base/'write-ack';write_root.mkdir()
         wp,wa,write_acceptance,write_scope=_scope(write_root)
         write_path=write_acceptance.path;foreign_before=foreign_acceptance.path.read_bytes()
@@ -503,7 +539,9 @@ def fixture_report():
             not legacy['all_normalized_results_bound'] and legacy['all_request_targets_bound'])
         legacy_preserved=legacy['unchanged'] and legacy_before==_sqlite_files_snapshot(legacy_root)
         passed=(missing_created_nothing and before_unbound and after_bound and
-            acceptance_inspection_bound and acceptance_write_binding_pinned and
+            acceptance_inspection_bound and
+            acceptance_connection_content_continuity_pinned and
+            acceptance_write_binding_pinned and
             acceptance_write_ack_replayed and acceptance_write_connection_pinned and
             acceptance_write_connection_content_pinned and
             acceptance_write_connection_content_continuity_pinned and
@@ -528,6 +566,8 @@ def fixture_report():
             acceptance_store_binding_pinned=acceptance_binding_denied,
             acceptance_connection_binding_pinned=acceptance_connection_denied,
             acceptance_connection_content_pinned=acceptance_content_denied,
+            acceptance_connection_content_continuity_pinned=
+                acceptance_connection_content_continuity_pinned,
             acceptance_write_binding_pinned=acceptance_write_binding_pinned,
             acceptance_write_ack_replayed=acceptance_write_ack_replayed,
             acceptance_write_connection_pinned=acceptance_write_connection_pinned,

@@ -372,7 +372,8 @@ class PaperActivityAcceptanceStore:
                 connected=Path(rows[0][2]).resolve()
                 if connected!=bound_path:_fail('CONNECTION_BINDING_CHANGED')
                 if not content:return
-                serialized=db.serialize(name='main');expected=fingerprint
+                serialized=db.serialize(name='main')
+                require_store();expected=fingerprint
                 if (type(serialized) is not bytes or
                         len(serialized)!=expected[3] or
                         hashlib.sha256(serialized).hexdigest()!=expected[7]):

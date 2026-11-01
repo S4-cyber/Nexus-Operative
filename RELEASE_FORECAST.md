@@ -1,5 +1,11 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.111
+
+The packaged provider-results operator tool now offers an explicitly selected history-only preparation mode with its own strict manifest. It checks retained provider/account pacing agreement without requiring normalized response bindings, performs no provider/vault IO or writes, and cannot authorize routing or funds. Default normalized-result review remains separate. See PROVIDER_RESULT_REVIEW.md for the command and manifest.
+
+This removes one operator-preparation gap, without closing the authorized broker-paper or sustained-market acceptance gates. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. No launch date or new permission is established; exact-source hosted and native-owner acceptance remain required.
+
 ## Candidate update on 2026-11-01
 
 v0.340.110 connects the source-controlled 28-step acceptance plan to the existing Portal roadmap view, with bounded validation, exact prerequisite/status checks, literal text rendering and stale-result clearing. Narrow-window testing also prompted shorter broker-recovery and pacing-review help. Source v0.340.108 passed all three hosted workflows; v0.340.109 security and browser jobs passed at the initial check while its remaining jobs were still running. Fresh exact-source v0.340.110 hosted checks remain required.

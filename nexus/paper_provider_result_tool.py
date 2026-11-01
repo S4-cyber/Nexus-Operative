@@ -11,6 +11,7 @@ import sqlite3
 import stat
 
 from nexus import paper_provider_result_review as review_module
+from nexus import paper_provider_read_review as history_review_module
 from nexus import paper_read_review
 from nexus.paper_activity_acceptance_probe import _private_path
 from nexus.paper_provider_read_budget import PaperProviderReadBudget
@@ -19,6 +20,7 @@ from nexus.sqlite_journal_guard import (
     capture_file_identities,check_path_set,require_file_identities)
 
 PROFILE='nexus.paper-provider-result-input.v1'
+HISTORY_PROFILE='nexus.paper-provider-history-input.v1'
 MAX_BYTES=3*1024*1024
 CHECKS=('review_checked','manifest_identity_rechecked',
     'semantic_reader_failures_rechecked','source_files_preserved')
@@ -55,7 +57,8 @@ def _read(path):
     return raw
 
 
-def _decode(raw):
+def _decode(raw,*,history_only=False):
+    if type(history_only) is not bool:_fail()
     def pairs(items):
         value={}
         for key,item in items:
@@ -64,10 +67,12 @@ def _decode(raw):
         return value
     value=json.loads(raw.decode('utf-8'),object_pairs_hook=pairs,parse_constant=lambda _: _fail())
     paper_read_review._structure(value)
-    if type(value) is not dict or set(value)!={'profile','provider_budget','expected_provider_head','accounts'} or value['profile']!=PROFILE:_fail()
+    profile=HISTORY_PROFILE if history_only else PROFILE
+    if type(value) is not dict or set(value)!={'profile','provider_budget','expected_provider_head','accounts'} or value['profile']!=profile:_fail()
     if type(value['accounts']) is not list or not 1<=len(value['accounts'])<=6:_fail()
     for account in value['accounts']:
-        if type(account) is not dict or set(account)!={'account_id','pacing','expected_head','bindings'}:_fail()
+        keys={'account_id','pacing','expected_head'} if history_only else {'account_id','pacing','expected_head','bindings'}
+        if type(account) is not dict or set(account)!=keys:_fail()
     return value
 
 
@@ -98,24 +103,29 @@ def _stable_manifest_reader(path,binding,reader):
     return value
 
 
-def review_file(input_path):
+def review_file(input_path,*,history_only=False):
     """Hold one sampled manifest binding across the pinned, read-only review.
 
     Relative journal paths resolve beside the manifest, never against defaults.
     This is not persistent descriptor ownership, an ACL audit or external anchor.
     """
+    if type(history_only) is not bool:_fail()
     path=_path(str(input_path),Path.cwd());raw=_read(path)
     manifest_binding=_manifest_binding(path,raw)
     def read():
-        value=_decode(raw)
+        value=_decode(raw,history_only=history_only)
         provider=PaperProviderReadBudget(_path(value['provider_budget'],path.parent))
         gates=[];heads={};bindings={}
         for account in value['accounts']:
             gate=PaperReadPacing(_path(account['pacing'],path.parent),account['account_id'])
             if gate.account_digest in heads:_fail()
-            gates.append(gate);heads[gate.account_digest]=account['expected_head'];bindings[gate.account_digest]=account['bindings']
+            gates.append(gate);heads[gate.account_digest]=account['expected_head']
+            if not history_only:bindings[gate.account_digest]=account['bindings']
         check_path_set((path,provider.path,*(gate.path for gate in gates)),'PAPER_PROVIDER_RESULT_INPUT_')
-        result=review_module.review(provider,gates,bindings,expected_provider_head=value['expected_provider_head'],expected_account_heads=heads)
+        if history_only:
+            result=history_review_module.review(provider,gates,expected_provider_head=value['expected_provider_head'],expected_account_heads=heads)
+        else:
+            result=review_module.review(provider,gates,bindings,expected_provider_head=value['expected_provider_head'],expected_account_heads=heads)
         if _read(path)!=raw:_fail()
         return result
     return _stable_manifest_reader(path,manifest_binding,read)
@@ -174,9 +184,10 @@ class _Parser(argparse.ArgumentParser):
 
 def main():
     parser=_Parser(description=__doc__)
-    parser.add_argument('--input',required=True,help='Private bounded JSON evidence manifest with exact provider/account heads, journal paths and normalized result bindings. Relative paths resolve beside this file. Read-only local consistency only; no connection, credential, receipt write or trade.')
+    parser.add_argument('--input',required=True,help='Private bounded JSON manifest with exact provider/account heads and journal paths. Default review requires normalized result bindings; --history-only requires its separate profile without bindings. Relative paths resolve beside this file. Read-only local consistency only; no connection, credential, receipt write or trade.')
+    parser.add_argument('--history-only',action='store_true',help='Review only retained provider/account pacing history using the separate history-input profile, without normalized observations. This cannot verify provider responses, fees, balances, funds or trading permission. No writes or connections.')
     args=parser.parse_args()
-    try:result=review_file(args.input)
+    try:result=review_file(args.input,history_only=args.history_only)
     except (OSError,ValueError,TypeError,KeyError,sqlite3.Error,UnicodeError,OverflowError,MemoryError,RecursionError,RuntimeError,KeyboardInterrupt):
         print('PAPER_PROVIDER_RESULT_TOOL_FAILED');return 2
     print(json.dumps(result,sort_keys=True,indent=2));return 0

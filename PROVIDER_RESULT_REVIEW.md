@@ -34,3 +34,35 @@ The input is bounded to 3 MiB serialized, with structural limits, at most six ac
 Exit code `0` means the review completed. Always inspect `local_provider_results_consistent` and `review_reasons`: an ordinary completed review can report disagreement. Even a consistent review remains `REVIEW_REQUIRED`, with every authority flag false. Exit code `2` means malformed/unavailable/changed input or another review failure; output uses a fixed error without echoing private paths or exception text. `--help` explains the single input argument.
 
 The packaging smoke constructs disposable injected five-reader evidence and executes both matching and altered-result inputs through the exact source, standalone or installed command prefix. Those fixtures do not access a broker or satisfy broker-paper, native-profile, source/clock/fee/funds, sustained-market or release acceptance.
+
+
+## History-only preparation (v0.340.111+)
+
+Use this separate read-only mode to compare retained provider/account pacing sessions before preparing normalized response bindings:
+
+```powershell
+NexusOperative.exe --paper-tool provider-results --history-only --input "C:\NexusPrivate\history.json"
+```
+
+The history manifest has the same four top-level fields, but `profile` must be exactly `nexus.paper-provider-history-input.v1`. Each account has exactly `account_id`, `pacing` and `expected_head`; **omit `bindings`**. The operator still supplies the exact provider head, account heads and explicit private paths. The same account cap, private-path, bounded JSON, duplicate-key, file-stability and journal guards apply. Neither profile can be passed to the other mode; unexpected fields are refused rather than silently ignored.
+
+This mode checks retained session agreement and whether all five read purposes are present. It does not compare normalized responses. Inspect `local_provider_account_history_consistent`, `all_five_purposes_observed` and `review_reasons`; a completed command can report mismatches or incomplete history. Its successful exit is not permission to read again, unblock a journal, route an order or spend funds. It makes no default directory, vault read, provider request, receipt, reservation, retry or repair. Every output remains `REVIEW_REQUIRED` with authority flags false. Keep output private: it includes journal digests and aggregate counts.
+
+A minimal shape (replace every placeholder with your independently reviewed private values; these strings are not valid heads):
+
+```json
+{
+  "profile": "nexus.paper-provider-history-input.v1",
+  "provider_budget": "provider.sqlite3",
+  "expected_provider_head": "EXACT_PROVIDER_SHA256",
+  "accounts": [
+    {
+      "account_id": "YOUR_PAPER_ACCOUNT_UUID",
+      "pacing": "account-pacing.sqlite3",
+      "expected_head": "EXACT_ACCOUNT_SHA256"
+    }
+  ]
+}
+```
+
+The installed/standalone smoke requires both a completed five-purpose injected history review and rejection of a full-result manifest in this mode. These synthetic checks do not establish actual account, provider quota, fee/hold/funds, native-owner or release acceptance.

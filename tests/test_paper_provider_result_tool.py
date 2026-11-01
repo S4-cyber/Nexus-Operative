@@ -31,6 +31,66 @@ def test_fixture_requires_manifest_identity_and_exceptional_exit_fences():
     assert all(result[key] is False for key in reviewer.FLAGS)
 
 
+def history_manifest(path):
+    value=json.loads(path.read_text())
+    value['profile']=subject.HISTORY_PROFILE
+    for account in value['accounts']:account.pop('bindings')
+    path.write_text(canonical(value))
+    return path
+
+
+def test_history_only_reviews_retained_sessions_without_normalized_observations(manifest,tmp_path):
+    history_manifest(manifest);before=files(tmp_path)
+    result=subject.review_file(manifest,history_only=True)
+    assert result['mode']=='READ_ONLY_LOCAL_PROVIDER_PAPER_READ_REVIEW'
+    assert result['local_provider_account_history_consistent'] and result['matched_sessions']==5
+    assert result['all_five_purposes_observed'] and not result['admission_reserved']
+    assert result['status']=='REVIEW_REQUIRED'
+    assert all(result[key] is False for key in subject.history_review_module.FLAGS)
+    assert files(tmp_path)==before and 'normalized_sessions_matched' not in result
+
+
+@pytest.mark.parametrize('history_only',[False,True])
+def test_result_and_history_profiles_cannot_be_confused(manifest,history_only,tmp_path):
+    if not history_only:history_manifest(manifest)
+    before=files(tmp_path)
+    with pytest.raises(ValueError,match='PAPER_PROVIDER_RESULT_INPUT_INVALID'):
+        subject.review_file(manifest,history_only=history_only)
+    assert files(tmp_path)==before
+
+
+@pytest.mark.parametrize('change',['bindings','provider_head','account_head','extra_account','missing_provider'])
+def test_history_only_rejects_extra_inputs_stale_heads_and_missing_journals(manifest,tmp_path,change):
+    history_manifest(manifest);value=json.loads(manifest.read_text())
+    if change=='bindings':value['accounts'][0]['bindings']=[]
+    if change=='provider_head':value['expected_provider_head']='0'*64
+    if change=='account_head':value['accounts'][0]['expected_head']='0'*64
+    if change=='extra_account':value['accounts'][0]['private_extension']='PRIVATE'
+    if change=='missing_provider':value['provider_budget']='missing/provider.sqlite3'
+    manifest.write_text(canonical(value));before=files(tmp_path)
+    with pytest.raises(ValueError):subject.review_file(manifest,history_only=True)
+    assert files(tmp_path)==before and not (tmp_path/'missing').exists()
+
+
+@pytest.mark.parametrize('fail',[False,True])
+def test_history_only_rechecks_manifest_on_normal_and_exceptional_exit(manifest,tmp_path,monkeypatch,fail):
+    history_manifest(manifest);original=subject.history_review_module.review
+    def changed(*args,**kwargs):
+        result=original(*args,**kwargs)
+        manifest.write_bytes(manifest.read_bytes()+b' ')
+        if fail:raise RuntimeError('PRIVATE_FAILURE')
+        return result
+    monkeypatch.setattr(subject.history_review_module,'review',changed)
+    with pytest.raises(ValueError,match='PAPER_PROVIDER_RESULT_INPUT_INVALID'):
+        subject.review_file(manifest,history_only=True)
+
+
+@pytest.mark.parametrize('value',[1,None,'true'])
+def test_history_mode_requires_an_explicit_boolean(manifest,value):
+    with pytest.raises(ValueError,match='PAPER_PROVIDER_RESULT_INPUT_INVALID'):
+        subject.review_file(manifest,history_only=value)
+
+
 def test_path_descriptor_ctime_disagreement_is_not_treated_as_identity_change(manifest,monkeypatch):
     original=Path.lstat
     class StatProxy:
@@ -154,7 +214,9 @@ def test_source_and_frozen_installation_paths_are_refused(tmp_path,monkeypatch):
     with pytest.raises(ValueError):subject.review_file(app/'private.json')
 
 
-def test_dispatch_real_command_with_vault_network_and_desktop_denied(manifest,tmp_path):
+@pytest.mark.parametrize('history_only',[False,True])
+def test_dispatch_real_command_with_vault_network_and_desktop_denied(manifest,tmp_path,history_only):
+    if history_only:history_manifest(manifest)
     before=files(tmp_path)
     script='''
 import sys
@@ -167,9 +229,10 @@ paper_credentials._vault=denied;paper_credentials._capture=denied
 desktop.configure=denied;sys.addaudithook(audit)
 raise SystemExit(desktop.main(sys.argv[1:]))
 '''
-    result=subprocess.run([sys.executable,'-c',script,'--paper-tool','provider-results','--input',str(manifest)],
+    result=subprocess.run([sys.executable,'-c',script,'--paper-tool','provider-results',*(['--history-only'] if history_only else []),'--input',str(manifest)],
         capture_output=True,text=True,timeout=30,env=dict(os.environ,NEXUS_PORTABLE_DATA=str(tmp_path/'unexpected')))
-    assert result.returncode==0 and not result.stderr and json.loads(result.stdout)['local_provider_results_consistent']
+    key='local_provider_account_history_consistent' if history_only else 'local_provider_results_consistent'
+    assert result.returncode==0 and not result.stderr and json.loads(result.stdout)[key]
     assert files(tmp_path)==before and not (tmp_path/'unexpected').exists()
 
 

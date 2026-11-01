@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.105 (pre-release).** This build requires the private activity-acceptance pathname identity and fingerprint to remain exact across read-only SQLite `main` serialization. Serialization-time disagreement is blocked before inspect or replay can return state. It adds no Portal route, saved credential, provider IO, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.106 (pre-release).** This build requires the private provider-read receipt pathname identity and fingerprint to remain exact across read-only SQLite `main` serialization. Serialization-time disagreement is blocked before receipt replay can begin. It adds no Portal route, saved credential, provider IO, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.106 provider-read receipt serialization continuity
+
+`PaperProviderReadReviewStore.inspect` now rechecks the bounded main-file identity and fingerprint immediately after connection serialization, before accepting its bytes or loading a receipt. Any serialization-time pathname disagreement receives fixed `PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED`.
+
+A direct control injects serialization-time pathname disagreement over a retained receipt, requires zero replay loads, fixed refusal, unchanged bytes and exact later inspection. Mandatory disposable evidence independently forces the same seam and makes the continuity proof a required release-profile field. These are sampled local content checks, not a descriptor-held OS ownership or ACL proof. No automatic retry, private account data or retained market evidence is added.
+
+Exact-source v0.340.105 commit `0db7a6f5cb2f4bbe8bbf8bf7c8796994f1f741c4` exposed no connector-visible workflow run or commit status at the pre-sprint check. Fresh v0.340.106 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not physical durability, provider identity, transport/source coverage, broker-wide coordination, native-owner acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+No UI control or modifiable parameter changed; all seven beginner tabs and black/bright-purple bottom-right help behavior remain unchanged. Engagement remains OFF by default, with limits, account checks, exits and the independent emergency stop preserved. No credential, network request, order route, automatic retry, money movement, live/cloud authority or release approval was added.
+
+Local prepublication validation passed 4,806 tests with one expected skip and one existing warning; the provider-read/release/Windows focus passed 285 and the direct provider-read file passed 69. Sixteen profiles and saved-evidence verification matched 395 source files / `293fb0e9da70699cb1972ac3a0bac1fc63bbdc3d9793ea3ddc36ee17c8cdaffb`; evidence SHA-256 is `e6d46e26739e88ff8f1747a71a087ef7529057ddfbf3a6f9647907d602329593`. The wheel SHA-256 is `7612e0400f3b0b73e27aa3db3152a9c6f21af03fd4d9446655343f00553d3251`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 818-path / 63,118,433-byte proposed-snapshot audit and introduced-line high-confidence credential scan found nothing. Local Gitleaks and Playwright are unavailable. Fresh exact-source v0.340.106 hosted workflows remain mandatory.
 
 ## v0.340.105 activity-acceptance read serialization continuity
 

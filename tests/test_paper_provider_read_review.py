@@ -435,6 +435,44 @@ def test_receipt_inspection_pins_store_binding_and_fingerprint(
     assert before=={candidate:candidate.read_bytes() for candidate in before}
 
 
+def test_receipt_inspection_rechecks_path_content_after_serialization(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    before=path.read_bytes();original_connect=store._connect
+    original_require=store_subject.require_file_fingerprints
+    original_load=store._load;content_changed=False;load_calls=0
+    class SerializationRaceConnection(sqlite3.Connection):
+        def serialize(self,*args,**kwargs):
+            nonlocal content_changed
+            result=super().serialize(*args,**kwargs)
+            content_changed=True
+            return result
+    def read_connection(*args,**kwargs):
+        assert not args and not kwargs
+        return (sqlite3.connect(path.resolve().as_uri()+'?mode=ro',
+            uri=True,timeout=10,factory=SerializationRaceConnection),False)
+    def changed_require(*args,**kwargs):
+        if content_changed:store_subject._fail('FILE_SET_CHANGED')
+        return original_require(*args,**kwargs)
+    def counted_load(db):
+        nonlocal load_calls
+        load_calls+=1
+        return original_load(db)
+    monkeypatch.setattr(store,'_connect',read_connection)
+    monkeypatch.setattr(store,'_load',counted_load)
+    monkeypatch.setattr(store_subject,'require_file_fingerprints',changed_require)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED$')):
+        store.inspect()
+    monkeypatch.setattr(store,'_connect',original_connect)
+    monkeypatch.setattr(store,'_load',original_load)
+    monkeypatch.setattr(store_subject,'require_file_fingerprints',original_require)
+    assert load_calls==0 and path.read_bytes()==before
+    assert store.inspect()['retained_receipts']==1
+
+
 def test_exact_duplicate_is_idempotent_and_revocation_fails_closed(tmp_path):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';options=heads(gate,budget)
     first=subject.retain_review(path,budget,[gate],**options);saved=path.read_bytes()

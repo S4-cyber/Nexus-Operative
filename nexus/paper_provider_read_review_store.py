@@ -407,6 +407,7 @@ class PaperProviderReadReviewStore:
                 if connected!=bound_path:_fail('CONNECTION_BINDING_CHANGED')
                 if not content:return
                 serialized=db.serialize(name='main')
+                require_store()
                 expected=fingerprint[0]
                 if (type(serialized) is not bytes or
                         len(serialized)!=expected[3] or

@@ -751,6 +751,44 @@ def fixture_report():
             inspection_content_denied=(str(error)==
                 'PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED')
         finally:inspection_reader._connect=inspection_connect
+        inspection_continuity_before=inspection_store.read_bytes()
+        inspection_require=store_module.require_file_fingerprints
+        inspection_load_calls=0;inspection_serialized=False
+        class SerializationRaceConnection(sqlite3.Connection):
+            def serialize(self,*args,**kwargs):
+                nonlocal inspection_serialized
+                result=super().serialize(*args,**kwargs)
+                inspection_serialized=True
+                return result
+        def serialization_race_connection(*args,**kwargs):
+            if args or kwargs:raise AssertionError('unexpected connection arguments')
+            return (sqlite3.connect(
+                inspection_store.resolve().as_uri()+'?mode=ro',uri=True,
+                timeout=10,factory=SerializationRaceConnection),False)
+        def serialization_race_require(*args,**kwargs):
+            if inspection_serialized:store_module._fail('FILE_SET_CHANGED')
+            return inspection_require(*args,**kwargs)
+        inspection_load=inspection_reader._load
+        def count_inspection_load(db):
+            nonlocal inspection_load_calls
+            inspection_load_calls+=1
+            return inspection_load(db)
+        inspection_continuity_denied=False
+        inspection_reader._connect=serialization_race_connection
+        inspection_reader._load=count_inspection_load
+        store_module.require_file_fingerprints=serialization_race_require
+        try:inspection_reader.inspect()
+        except ValueError as error:
+            inspection_continuity_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED')
+        finally:
+            inspection_reader._connect=inspection_connect
+            inspection_reader._load=inspection_load
+            store_module.require_file_fingerprints=inspection_require
+        inspection_continuity_denied=(inspection_continuity_denied and
+            inspection_load_calls==0 and
+            inspection_store.read_bytes()==inspection_continuity_before and
+            inspection_reader.inspect()['retained_receipts']==1)
         def retarget_inspection(*args,**kwargs):
             inspection_reader.path=foreign_inspection_store
             return inspection_connect(*args,**kwargs)
@@ -947,6 +985,8 @@ def fixture_report():
                 inspection_connection_denied),
             retained_receipt_connection_content_pinned=(
                 inspection_content_denied),
+            retained_receipt_connection_content_continuity_pinned=(
+                inspection_continuity_denied),
             retained_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_bound),
             journals_unchanged=source_same,

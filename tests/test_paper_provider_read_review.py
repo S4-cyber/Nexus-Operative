@@ -381,16 +381,32 @@ def test_durable_receipt_binds_both_heads_without_private_content(tmp_path):
 @pytest.mark.parametrize(('seam','expected'),(
     ('connect','STORE_BINDING_CHANGED'),('load','STORE_BINDING_CHANGED'),
     ('fingerprint','FILE_SET_CHANGED'),
-    ('connection','CONNECTION_BINDING_CHANGED')))
+    ('connection','CONNECTION_BINDING_CHANGED'),
+    ('connection-content','CONNECTION_CONTENT_CHANGED')))
 def test_receipt_inspection_pins_store_binding_and_fingerprint(
         tmp_path,monkeypatch,seam,expected):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
     subject.retain_review(path,budget,[gate],**heads(gate,budget))
     foreign=tmp_path/'foreign.sqlite3';shutil.copyfile(path,foreign)
+    foreign_db=sqlite3.connect(foreign)
+    try:foreign_db.execute('PRAGMA user_version=1');foreign_db.commit()
+    finally:foreign_db.close()
     store=PaperProviderReadReviewStore(path,budget,[gate])
     original_path=store.path;original_connect=store._connect
     original_load=store._load
-    if seam=='connection':
+    if seam=='connection-content':
+        class SpoofedConnection(sqlite3.Connection):
+            def execute(self,statement,*args,**kwargs):
+                if statement=='PRAGMA database_list':
+                    return SimpleNamespace(fetchall=lambda:[
+                        (0,'main',str(path.resolve()))])
+                return super().execute(statement,*args,**kwargs)
+        def substitute_content_connection(*args,**kwargs):
+            db=sqlite3.connect(foreign.resolve().as_uri()+'?mode=ro',
+                uri=True,timeout=10,factory=SpoofedConnection)
+            return db,False
+        monkeypatch.setattr(store,'_connect',substitute_content_connection)
+    elif seam=='connection':
         def substitute_connection(*args,**kwargs):
             db=sqlite3.connect(foreign.resolve().as_uri()+'?mode=ro',
                 uri=True,timeout=10)

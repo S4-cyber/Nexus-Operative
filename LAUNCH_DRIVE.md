@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.95 receipt SQLite content binding
+
+Retained provider/read receipt inspection now hashes the bounded serialized image of the already-open SQLite `main` database before and after complete chain replay. A valid foreign connection that spoofs the expected connection-local pathname returns a fixed content-binding refusal before its history can be accepted. Direct and mandatory disposable evidence preserve both stores and then replay the exact original receipt; existing bounded database-contention behavior remains intact.
+
+Exact-source v0.340.94 commit `7a395aabc7bf518262c2e8ecbaab838d64f7c384` passed security/history/Gitleaks run 41269068741, every research evidence/browser/regression job in run 41269068683, and complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41269068670. Fresh v0.340.95 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local read-only integrity evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local validation passed 4,759 tests with one expected skip and one existing warning; the receipt/release/evidence/version/installer focus passed 284. Sixteen profiles and saved-evidence verification matched 395 source files / `571ce37c4f42948c5162a6e1b121389e8e2a0918446e47c2271a7b56d9eaed8f`; evidence SHA-256 is `269274140df2e0a9ffe43af3188f164c8c5cb1b8d4ecd4e8f3a0cfc925c7a00c`. The final wheel SHA-256 is `d220addd11f32d11dad28c9c91df5d324326053519960ebcb001b1c97bc88598`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 806-path candidate audit and introduced-line credential scan reported zero findings. Fresh v0.340.95 hosted workflows remain required.
+
 ## v0.340.94 receipt SQLite connection binding
 
 Retained provider/read receipt inspection now requires the opened SQLite connection to expose exactly one `main` database at the captured resolved store path. The proof brackets complete chain replay, so substituting a valid foreign read-only connection while leaving the public store path unchanged returns a fixed refusal before foreign history can be accepted. Direct and mandatory disposable evidence preserve both stores and then replay the exact original receipt.

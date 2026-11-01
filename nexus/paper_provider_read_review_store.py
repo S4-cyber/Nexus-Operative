@@ -396,7 +396,7 @@ class PaperProviderReadReviewStore:
                 'PAPER_PROVIDER_READ_REVIEW_STORE_')
             require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
                 fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
-        def require_connection(db):
+        def require_connection(db,*,content=True):
             try:
                 rows=db.execute('PRAGMA database_list').fetchall()
                 if (len(rows)!=1 or len(rows[0])!=3 or
@@ -404,16 +404,29 @@ class PaperProviderReadReviewStore:
                         type(rows[0][2]) is not str or not rows[0][2]):
                     _fail('CONNECTION_BINDING_CHANGED')
                 connected=Path(rows[0][2]).resolve()
+                if connected!=bound_path:_fail('CONNECTION_BINDING_CHANGED')
+                if not content:return
+                serialized=db.serialize(name='main')
+                expected=fingerprint[0]
+                if (type(serialized) is not bytes or
+                        len(serialized)!=expected[3] or
+                        hashlib.sha256(serialized).hexdigest()!=expected[7]):
+                    _fail('CONNECTION_CONTENT_CHANGED')
             except ValueError:
                 raise
-            except (OSError,RuntimeError,sqlite3.Error,TypeError):
+            except sqlite3.OperationalError as error:
+                if _database_busy(error):_fail('DATABASE_BUSY')
                 _fail('CONNECTION_BINDING_CHANGED')
-            if connected!=bound_path:_fail('CONNECTION_BINDING_CHANGED')
+            except (MemoryError,OSError,OverflowError,RuntimeError,
+                    sqlite3.Error,TypeError):
+                _fail('CONNECTION_BINDING_CHANGED')
         try:
             db,_=self._connect()
             with closing(db):
-                require_store();require_connection(db)
+                require_store();require_connection(db,content=False)
                 with _transaction(db):
+                    db.execute('BEGIN')
+                    db.execute('SELECT count(*) FROM sqlite_master').fetchone()
                     require_store();require_connection(db)
                     head,receipts=self._load(db)
                     require_connection(db);require_store()

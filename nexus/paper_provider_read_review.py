@@ -8,6 +8,7 @@ from collections import Counter
 import os
 from pathlib import Path
 import re
+import sqlite3
 import stat
 
 from nexus.alpaca_paper_contract import sha
@@ -711,6 +712,11 @@ def fixture_report():
         foreign_inspection_store=(root/'retained-inspection-binding'/
             'foreign.sqlite3')
         foreign_inspection_store.write_bytes(inspection_store.read_bytes())
+        foreign_db=sqlite3.connect(foreign_inspection_store)
+        try:
+            foreign_db.execute('PRAGMA user_version=1')
+            foreign_db.commit()
+        finally:foreign_db.close()
         inspection_reader=PaperProviderReadReviewStore(
             inspection_store,inspection_budget,[inspection_gate])
         inspection_bytes={path:path.read_bytes() for path in
@@ -724,6 +730,26 @@ def fixture_report():
         except ValueError as error:
             inspection_connection_denied=(str(error)==
                 'PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_BINDING_CHANGED')
+        finally:inspection_reader._connect=inspection_connect
+        class SpoofedInspectionConnection(sqlite3.Connection):
+            def execute(self,statement,*args,**kwargs):
+                if statement=='PRAGMA database_list':
+                    class StaticRows:
+                        def fetchall(self):return [
+                            (0,'main',str(inspection_store.resolve()))]
+                    return StaticRows()
+                return super().execute(statement,*args,**kwargs)
+        def substitute_inspection_content(*args,**kwargs):
+            db=sqlite3.connect(
+                foreign_inspection_store.resolve().as_uri()+'?mode=ro',
+                uri=True,timeout=10,factory=SpoofedInspectionConnection)
+            return db,False
+        inspection_content_denied=False
+        inspection_reader._connect=substitute_inspection_content
+        try:inspection_reader.inspect()
+        except ValueError as error:
+            inspection_content_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED')
         finally:inspection_reader._connect=inspection_connect
         def retarget_inspection(*args,**kwargs):
             inspection_reader.path=foreign_inspection_store
@@ -752,6 +778,7 @@ def fixture_report():
         finally:inspection_reader._load=inspection_load
         inspection_replay=inspection_reader.inspect()
         inspection_boundary_bound=(inspection_connection_denied and
+            inspection_content_denied and
             inspection_binding_denied and
             inspection_fingerprint_denied and inspection_bytes==
                 {path:path.read_bytes() for path in inspection_bytes} and
@@ -918,6 +945,8 @@ def fixture_report():
                 inspection_boundary_bound),
             retained_receipt_connection_binding_pinned=(
                 inspection_connection_denied),
+            retained_receipt_connection_content_pinned=(
+                inspection_content_denied),
             retained_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_bound),
             journals_unchanged=source_same,

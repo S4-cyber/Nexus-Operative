@@ -96,6 +96,48 @@ def _active_file_fingerprint(path):
         _fail('FILE_SET_CHANGED')
 
 
+def _committed_fingerprint_boundary(fingerprint,host=None):
+    """Normalize a one-file pathname fingerprint for descriptor comparison."""
+    host=os.name if host is None else host
+    if (type(fingerprint) is not tuple or len(fingerprint)!=1 or
+            type(fingerprint[0]) is not tuple or len(fingerprint[0])!=8):
+        raise RuntimeError
+    path,device,inode,size,mtime,ctime,links,digest=fingerprint[0]
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device,inode,size,mtime,ctime,links)) or
+            re.fullmatch(r'[0-9a-f]{64}',digest) is None):
+        raise RuntimeError
+    return (path,device,inode,size,mtime,ctime if host!='nt' else None,
+        links,digest)
+
+
+def _descriptor_file_fingerprint(descriptor,resolved):
+    """Hash bounded bytes through the exact writable committed descriptor."""
+    before=os.fstat(descriptor)
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or
+            not 1<=before.st_size<=MAX_DATABASE_BYTES):
+        raise RuntimeError
+    original_offset=os.lseek(descriptor,0,os.SEEK_CUR)
+    digest=hashlib.sha256();remaining=MAX_DATABASE_BYTES+1
+    try:
+        os.lseek(descriptor,0,os.SEEK_SET)
+        while remaining:
+            block=os.read(descriptor,min(1024*1024,remaining))
+            if not block:break
+            digest.update(block);remaining-=len(block)
+    finally:
+        os.lseek(descriptor,original_offset,os.SEEK_SET)
+    after=os.fstat(descriptor)
+    if (remaining==0 or
+            _active_fingerprint_boundary(before)!=
+                _active_fingerprint_boundary(after) or
+            before.st_ctime_ns!=after.st_ctime_ns):
+        raise RuntimeError
+    return (str(resolved),after.st_dev,after.st_ino,after.st_size,
+        after.st_mtime_ns,after.st_ctime_ns if os.name!='nt' else None,
+        after.st_nlink,digest.hexdigest())
+
+
 def _discard_uncommitted_new(path,identity):
     """Remove only the exact empty file created for an aborted first write.
 
@@ -137,8 +179,9 @@ def _sync_committed_store(path,identity,fingerprint,*,new):
     This additional descriptor boundary makes the caller observe a failed
     file flush instead of accepting a merely replayable commit.  The exact
     post-commit bounded fingerprint is fixed before the flush and rechecked
-    around both the file and directory boundaries, so a same-identity change
-    cannot become the new accepted baseline.  A new POSIX pathname also
+    around both the file and directory boundaries.  The exact writable
+    descriptor is independently hashed before and after its flush, so a
+    pathname sample cannot hide different descriptor bytes.  A new POSIX pathname also
     receives the available parent-directory fsync.  Python has no portable
     Windows directory-fsync API, so Windows retains the explicit writable
     main-file flush and the existing installer/native acceptance gate.  Any
@@ -152,6 +195,7 @@ def _sync_committed_store(path,identity,fingerprint,*,new):
         path=Path(path);resolved=path.resolve()
         expected_path,expected_device,expected_inode=identity[0]
         if str(resolved)!=expected_path:raise RuntimeError
+        expected_descriptor=_committed_fingerprint_boundary(fingerprint)
         require_file_identities((path,),identity,
             'PAPER_PROVIDER_READ_REVIEW_STORE_')
         require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,
@@ -166,10 +210,10 @@ def _sync_committed_store(path,identity,fingerprint,*,new):
                     (before.st_dev,before.st_ino)!=(expected_device,
                         expected_inode)):
                 raise RuntimeError
+            if _descriptor_file_fingerprint(descriptor,resolved)!=expected_descriptor:
+                raise RuntimeError
             os.fsync(descriptor)
-            after=os.fstat(descriptor)
-            if (_active_fingerprint_boundary(before)!=
-                    _active_fingerprint_boundary(after)):
+            if _descriptor_file_fingerprint(descriptor,resolved)!=expected_descriptor:
                 raise RuntimeError
         finally:
             os.close(descriptor)

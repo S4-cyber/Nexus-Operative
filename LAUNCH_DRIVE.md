@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.91 exact writable receipt-descriptor binding
+
+Provider/read-review receipt retention now hashes bounded bytes through the exact writable descriptor before and after explicit file sync and requires both samples to match the committed pathname fingerprint. Descriptor/path divergence preserves the already committed receipt, fails closed before acknowledgement and allows only an operator-directed exact-head duplicate replay after inspection. Python exposes no portable Windows directory-fsync API, so native Windows path persistence and physical power-loss testing remain independent gates.
+
+Exact-source v0.340.90 commit `f7e971227c9724f20a447e1a4dda208e11afcfbd` passed security/history/Gitleaks 41252669894, all research evidence/browser/regression jobs in 41252669909, and complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41252669888. Fresh v0.340.91 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local descriptor/path integrity evidence does not close an external gate or predict profit.
+
+Local validation passed 4,753 tests with one expected skip and one existing warning; the affected receipt/release modules passed 161. Sixteen profiles verified against 395 source files / `848f0a51bbd25dc92b500658a17b536b242628e1b6cee140fe6d8ed28c10721f`. Evidence SHA-256 is `0424bf1f524918c7ad145af9a0f9846e8509cf9605bd48cda4ec979eb8c71171`; wheel SHA-256 is `d0a9d48cf9da98c1fd8de0284a1262faf75910d478f1db9c2d87ffd5e119f395`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed; the 803-path / 60,331,708-byte proposed-snapshot artifact audit passed with zero findings. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.90 retained receipt committed-fingerprint barrier
 
 Provider/read-review receipt retention now fixes the exact bounded committed-store fingerprint before explicit file sync and requires that same fingerprint before and after the main-file barrier plus any new POSIX parent-directory barrier. A same-identity byte or metadata change preserves the already committed receipt, fails closed with a fixed code and allows only an operator-directed exact-head duplicate replay. Python exposes no portable Windows directory-fsync API, so native Windows path persistence and physical power-loss testing remain independent gates.

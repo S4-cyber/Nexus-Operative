@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.90'
+REVISION = '0.340.91'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -475,6 +475,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The exact bounded committed receipt-store fingerprint is now captured before explicit file sync and required before and after the main-file barrier and after any new POSIX directory barrier. Same-inode byte or metadata change returns fixed durability uncertainty, retains the committed receipt and permits only explicit exact-head duplicate replay after inspection. This is sampled local integrity evidence, not physical power-loss, provider/account, native-owner or broker acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the exact writable provider/read receipt descriptor is now bounded-byte hashed before and after its explicit file sync and must match the already committed pathname fingerprint, so descriptor/path divergence cannot pass as a durable acknowledgement' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The exact O_RDWR receipt-store descriptor is now independently bounded-byte hashed before and after fsync and required to match the committed pathname fingerprint. Descriptor tampering is rejected before sync, the committed receipt remains retained and only explicit exact-head duplicate replay can recover after inspection. This is sampled local descriptor/path integrity evidence, not physical durability, broker acceptance or native-owner acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -575,7 +583,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.90 fixes the committed provider/read receipt fingerprint before its explicit main-file flush and rechecks that exact bounded fingerprint before and after the file barrier plus any new POSIX parent-directory barrier. Same-identity byte or metadata change therefore returns fixed durability uncertainty, retains the committed receipt and permits only explicit exact-head duplicate replay after inspection. Python exposes no portable Windows directory fsync, so Windows keeps the explicit main-file flush plus its independent native acceptance gate. Exact-source v0.340.89 commit 08708804b75189830296f9665ebe884dbd61bc02 passed public security/Gitleaks run 41248749103, all three offline-release-evidence, browser-help and regression jobs in research run 41248749109, and the complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41248749150. This narrows sampled local integrity uncertainty but is not physical power-loss proof, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.91 independently bounded-byte hashes the exact writable provider/read receipt descriptor before and after its explicit file sync and requires both samples to match the already committed pathname fingerprint. Descriptor tampering is therefore rejected before sync with fixed durability uncertainty; the committed receipt remains retained and recovery is limited to explicit exact-head duplicate replay after inspection. Exact-source v0.340.90 commit f7e971227c9724f20a447e1a4dda208e11afcfbd passed public security/history/Gitleaks run 41252669894, all three offline-release-evidence, browser-help and regression jobs in research run 41252669909, and the complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41252669888. This narrows sampled local descriptor/path integrity uncertainty but is not physical power-loss proof, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

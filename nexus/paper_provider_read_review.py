@@ -651,6 +651,54 @@ def fixture_report():
             expected_store_head=fingerprint_replay['head_sha256'])
         fingerprint_final=PaperProviderReadReviewStore(
             fingerprint_store,fingerprint_budget,[fingerprint_gate]).inspect()
+        descriptor_gate,descriptor_budget=build_pair(
+            root/'retained-commit-descriptor')
+        descriptor_store=(root/'retained-commit-descriptor'/'receipt.sqlite3')
+        original_open=store_module.os.open;descriptor_saved=None
+        descriptor_tampered=False;descriptor_syncs=0
+        def tamper_committed_descriptor(value,flags,*args,**kwargs):
+            nonlocal descriptor_saved,descriptor_tampered
+            descriptor=original_open(value,flags,*args,**kwargs)
+            if (not descriptor_tampered and flags&os.O_RDWR and
+                    Path(value).resolve()==descriptor_store.resolve()):
+                size=os.fstat(descriptor).st_size
+                os.lseek(descriptor,0,os.SEEK_SET)
+                descriptor_saved=os.read(descriptor,size)
+                offset=min(100,size-1);os.lseek(descriptor,offset,os.SEEK_SET)
+                os.write(descriptor,bytes((descriptor_saved[offset]^1,)))
+                descriptor_tampered=True;os.lseek(descriptor,0,os.SEEK_SET)
+            return descriptor
+        def count_descriptor_sync(descriptor):
+            nonlocal descriptor_syncs
+            descriptor_syncs+=1
+            return original_fsync(descriptor)
+        descriptor_failure_denied=False
+        store_module.os.open=tamper_committed_descriptor
+        store_module.os.fsync=count_descriptor_sync
+        try:
+            retain_review(descriptor_store,descriptor_budget,
+                [descriptor_gate],expected_provider_head=
+                    descriptor_budget.inspect()['head_sha256'],
+                expected_account_heads={descriptor_gate.account_digest:
+                    descriptor_gate.inspect()['head_sha256']})
+        except ValueError as error:
+            descriptor_failure_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN')
+        finally:
+            store_module.os.open=original_open
+            store_module.os.fsync=original_fsync
+        if descriptor_saved is not None:
+            descriptor_store.write_bytes(descriptor_saved)
+        descriptor_replay=PaperProviderReadReviewStore(
+            descriptor_store,descriptor_budget,[descriptor_gate]).inspect()
+        descriptor_receipt=retain_review(descriptor_store,
+            descriptor_budget,[descriptor_gate],expected_provider_head=
+                descriptor_budget.inspect()['head_sha256'],
+            expected_account_heads={descriptor_gate.account_digest:
+                descriptor_gate.inspect()['head_sha256']},
+            expected_store_head=descriptor_replay['head_sha256'])
+        descriptor_final=PaperProviderReadReviewStore(
+            descriptor_store,descriptor_budget,[descriptor_gate]).inspect()
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -746,6 +794,15 @@ def fixture_report():
                 fingerprint_receipt['head_sha256']==
                     fingerprint_replay['head_sha256']==
                     fingerprint_final['head_sha256']),
+            retained_receipt_commit_descriptor_tamper_recoverable=(
+                descriptor_tampered and descriptor_syncs==0 and
+                descriptor_failure_denied and
+                descriptor_replay['retained_receipts']==1 and
+                descriptor_receipt['duplicate'] is True and
+                descriptor_final['retained_receipts']==1 and
+                descriptor_receipt['head_sha256']==
+                    descriptor_replay['head_sha256']==
+                    descriptor_final['head_sha256']),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

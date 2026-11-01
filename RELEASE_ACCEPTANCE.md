@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.91 exact writable receipt-descriptor binding
+
+A committed provider/read-review receipt is locally returnable only when bounded bytes read through the exact writable descriptor before and after explicit sync equal the already committed pathname fingerprint. Descriptor/path divergence must preserve the committed receipt, emit the fixed durability refusal before sync and require an explicit exact-head retry that returns one duplicate instead of appending again. Python has no portable Windows directory-fsync API; native Windows pathname persistence and physical power-loss behavior remain unaccepted.
+
+Exact-source v0.340.90 commit `f7e971227c9724f20a447e1a4dda208e11afcfbd` passed security/history/Gitleaks 41252669894, every research evidence/browser/regression job in 41252669909, and complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41252669888. Fresh v0.340.91 workflows and actual authorized paper-account/private-volume acceptance remain required. This is sampled local descriptor/path integrity evidence, not physical durability acceptance, provider identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,753 tests with one expected skip and one existing warning; the affected receipt/release modules passed 161. Sixteen profiles verified against 395 exact source files / `848f0a51bbd25dc92b500658a17b536b242628e1b6cee140fe6d8ed28c10721f`. Evidence SHA-256 is `0424bf1f524918c7ad145af9a0f9846e8509cf9605bd48cda4ec979eb8c71171`; wheel SHA-256 is `d0a9d48cf9da98c1fd8de0284a1262faf75910d478f1db9c2d87ffd5e119f395`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed; the 803-path / 60,331,708-byte proposed-snapshot artifact audit passed with zero findings. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.90 retained receipt committed-fingerprint barrier
 
 A committed provider/read-review receipt is locally returnable only when the exact bounded store fingerprint captured before explicit sync remains unchanged before and after the writable main-file barrier and after any new POSIX parent-directory barrier. Same-identity byte or metadata mutation must preserve the committed receipt, emit the fixed durability refusal and require an explicit exact-head retry that returns one duplicate instead of appending again. Python has no portable Windows directory-fsync API; native Windows pathname persistence and physical power-loss behavior remain unaccepted.

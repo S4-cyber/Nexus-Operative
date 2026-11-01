@@ -639,6 +639,44 @@ def test_receipt_flush_rejects_same_identity_change_before_fingerprint_recheck(
     assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
 
 
+def test_receipt_flush_hashes_exact_writable_descriptor_before_sync(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    original_open=store_subject.os.open;original_fsync=store_subject.os.fsync
+    saved=None;tampered=False;sync_calls=0
+    def open_file(value,flags,*args,**kwargs):
+        nonlocal saved,tampered
+        descriptor=original_open(value,flags,*args,**kwargs)
+        if (not tampered and flags&os.O_RDWR and
+                Path(value).resolve()==path.resolve()):
+            size=os.fstat(descriptor).st_size
+            os.lseek(descriptor,0,os.SEEK_SET);saved=os.read(descriptor,size)
+            offset=min(100,size-1);os.lseek(descriptor,offset,os.SEEK_SET)
+            os.write(descriptor,bytes((saved[offset]^1,)));tampered=True
+            os.lseek(descriptor,0,os.SEEK_SET)
+        return descriptor
+    def fsync(descriptor):
+        nonlocal sync_calls
+        sync_calls+=1
+        return original_fsync(descriptor)
+    monkeypatch.setattr(store_subject.os,'open',open_file)
+    monkeypatch.setattr(store_subject.os,'fsync',fsync)
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN$'):
+        subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    assert tampered and saved and sync_calls==0
+    monkeypatch.setattr(store_subject.os,'open',original_open)
+    monkeypatch.setattr(store_subject.os,'fsync',original_fsync)
+    path.write_bytes(saved)
+    replay=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert replay['retained_receipts']==1
+    retry=subject.retain_review(path,budget,[gate],
+        expected_store_head=replay['head_sha256'],**heads(gate,budget))
+    final=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert retry['duplicate'] is True and final['retained_receipts']==1
+    assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
+
+
 @pytest.mark.parametrize('callback_error',(False,True))
 def test_receipt_store_fingerprint_is_rechecked_after_commit(
         tmp_path,callback_error):

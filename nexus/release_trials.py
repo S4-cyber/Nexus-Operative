@@ -1065,6 +1065,7 @@ def _validate(profile, result):
              'retained_receipt_initialization_failure_recoverable',
              'retained_receipt_commit_flush_failure_recoverable',
              'retained_receipt_commit_fingerprint_change_recoverable',
+             'retained_receipt_commit_descriptor_tamper_recoverable',
              'journal_file_fingerprints_rechecked',
              'semantic_reader_failures_rechecked','output_never_authoritative')),
             'PROVIDER_READ_HISTORY_FENCES')

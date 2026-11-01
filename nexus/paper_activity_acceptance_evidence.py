@@ -230,6 +230,30 @@ def fixture_report():
                 inspection_bytes} and
             after_acceptance.inspect()['records']==2 and
             len(after_acceptance.replay_scopes())==2)
+        write_root=base/'write-ack';write_root.mkdir()
+        wp,wa,write_acceptance,write_scope=_scope(write_root)
+        write_path=write_acceptance.path;foreign_before=foreign_acceptance.path.read_bytes()
+        write_calls=0
+        def lose_write_acknowledgement():
+            nonlocal write_calls
+            write_calls+=1
+            if write_calls==2:
+                write_acceptance.path=foreign_acceptance.path
+            return wp.inspect()['head_sha256'],wa.inspect()['head_sha256']
+        acceptance_write_binding_pinned=False
+        try:write_acceptance.append(write_scope,
+            admission=lose_write_acknowledgement)
+        except ValueError as error:
+            acceptance_write_binding_pinned=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_STORE_BINDING_CHANGED')
+        finally:write_acceptance.path=write_path
+        committed_write=write_acceptance.inspect()
+        recovered_write=write_acceptance.append(write_scope,admission=lambda:(
+            wp.inspect()['head_sha256'],wa.inspect()['head_sha256']))
+        acceptance_write_ack_replayed=(write_calls==2 and
+            committed_write['records']==1 and recovered_write['duplicate'] is True and
+            recovered_write['head_sha256']==committed_write['head_sha256'] and
+            foreign_acceptance.path.read_bytes()==foreign_before)
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
         rollback_observed=before['rollback_journal_observed'] is True
@@ -254,7 +278,8 @@ def fixture_report():
             not legacy['all_normalized_results_bound'] and legacy['all_request_targets_bound'])
         legacy_preserved=legacy['unchanged'] and legacy_before==_sqlite_files_snapshot(legacy_root)
         passed=(missing_created_nothing and before_unbound and after_bound and
-            acceptance_inspection_bound and silent and unchanged and
+            acceptance_inspection_bound and acceptance_write_binding_pinned and
+            acceptance_write_ack_replayed and silent and unchanged and
             rollback_observed and all(scope_checks) and scope_unchanged and legacy_refused and legacy_preserved)
         return dict(mode='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY',passed=passed,
             source='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE',missing_status_created_nothing=missing_created_nothing,
@@ -271,6 +296,8 @@ def fixture_report():
             acceptance_store_binding_pinned=acceptance_binding_denied,
             acceptance_connection_binding_pinned=acceptance_connection_denied,
             acceptance_connection_content_pinned=acceptance_content_denied,
+            acceptance_write_binding_pinned=acceptance_write_binding_pinned,
+            acceptance_write_ack_replayed=acceptance_write_ack_replayed,
             legacy_normalized_result_not_invented=legacy_refused,legacy_normalized_history_preserved=legacy_preserved,
             changed_creation_window_targets_refused=scope_checks[0],
             changed_cursor_target_refused=scope_checks[1],

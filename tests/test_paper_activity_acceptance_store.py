@@ -158,6 +158,72 @@ def test_optional_input_guard_rolls_back_new_record_before_commit(tmp_path,verdi
     assert store.inspect()['records']==0 and store.path.read_bytes()==before
 
 
+@pytest.mark.parametrize(('retarget_call','records'),((1,0),(2,1)))
+def test_append_pins_store_binding_across_untrusted_admission(
+        tmp_path,retarget_call,records):
+    value=scope();store=bound(tmp_path,value)
+    foreign=bound(tmp_path/'foreign',scope('foreign'))
+    original_path=store.path;calls=0
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    def retarget():
+        nonlocal calls
+        calls+=1
+        if calls==retarget_call:store.path=foreign.path
+        return admitted
+    try:
+        with pytest.raises(ValueError,match=(
+                '^PAPER_ACTIVITY_ACCEPTANCE_STORE_STORE_BINDING_CHANGED$')):
+            store.append(value,admission=retarget)
+    finally:store.path=original_path
+    report=store.inspect()
+    assert report['records']==records
+    if records:
+        recovered=store.append(value,admission=lambda:admitted)
+        assert recovered['duplicate'] is True
+        assert recovered['head_sha256']==report['head_sha256']
+
+
+def test_append_distrusts_insert_return_and_uses_exact_cold_read(
+        tmp_path,monkeypatch):
+    value=scope();store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    original=storage.PaperActivityAcceptanceStore._insert
+    def fabricated(db,seq,body,previous):
+        original(db,seq,body,previous)
+        return 'f'*64
+    monkeypatch.setattr(storage.PaperActivityAcceptanceStore,'_insert',
+        staticmethod(fabricated))
+    result=store.append(value,admission=lambda:admitted)
+    inspected=store.inspect()
+    assert result['head_sha256']==inspected['head_sha256']!='f'*64
+    assert result['record_sha256']==sha(value)
+    assert inspected['records']==1
+
+
+def test_append_requires_two_stable_cold_acknowledgement_reads(
+        tmp_path,monkeypatch):
+    value=scope();store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    original=store._read_state;calls=0
+    def unstable():
+        nonlocal calls
+        calls+=1;result=original()
+        if calls==1:result=dict(result,head_sha256=ZERO)
+        return result
+    monkeypatch.setattr(store,'_read_state',unstable)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_ACKNOWLEDGEMENT_UNCERTAIN$')):
+        store.append(value,admission=lambda:admitted)
+    report=store.inspect()
+    assert report['records']==1
+    recovered=store.append(value,admission=lambda:admitted)
+    assert recovered['duplicate'] is True
+    assert recovered['head_sha256']==report['head_sha256']
+
+
 def test_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
     value=scope();store=bound(tmp_path,value);before=store.path.read_bytes()
     admitted=(value['pacing_after_head_sha256'],value['retention_after_head_sha256'])

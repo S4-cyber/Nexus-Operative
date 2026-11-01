@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.96'
+REVISION = '0.340.97'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -232,6 +232,14 @@ DELIVERY_STAGES = tuple((dict(stage,
         'injected tests do not attest an account and no external order adapter is connected.',
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; activity-acceptance append now pins its store binding and main-file content around every untrusted admission/input callback, derives the expected chain head independently and requires two exact cold reads before acknowledging a commit' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Private activity-acceptance append now brackets every admission/input callback with exact store-path and bounded main-file proofs, derives rather than trusts the write return, and requires two stable cold reads of the committed record before acknowledgement. A post-commit retarget loses the acknowledgement, retains the exact record and recovers only through explicit duplicate replay. This is sampled local reconciliation integrity, not provider identity, authorized broker acceptance, native durability, sustained-market evidence or release approval.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -623,7 +631,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.96 requires private activity-acceptance inspection and ordered scope replay to pin one resolved store path, regular-file identity, bounded main-file fingerprint and exact serialized SQLite connection content before and after complete replay. Valid foreign, path-spoofed and retargeted acceptance stores are rejected with fixed diagnostics, while a pre-commit rollback journal remains retained and readable for conservative recovery review. Exact-source v0.340.95 commit 80b2dac751eb83420a18295e6b100103acea7c0f passed public security/history/Gitleaks run 41272950305, every research offline-evidence, browser-help and regression job in run 41272950343, and the complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41272950269. Fresh exact-source v0.340.96 workflows remain mandatory. This narrows sampled local reconciliation integrity uncertainty but is not provider identity, authorized broker acceptance, sustained market evidence, native-owner/durability acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.97 requires private activity-acceptance append to pin one resolved store and exact bounded main-file content around every untrusted admission/input callback, derive the expected chain head independently of the write return, and prove the exact committed record through two stable cold reads before acknowledgement. A post-commit retarget loses the acknowledgement, retains one record and recovers only through explicit duplicate replay. Exact-source v0.340.96 commit a0b387dea125e4887f19ca087c44921acc1b6536 passed public security/history/Gitleaks run 41277363061, every research offline-evidence, browser-help and regression job in run 41277363152, and the complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41277363160. Fresh exact-source v0.340.97 workflows remain mandatory. This narrows sampled local reconciliation acknowledgement uncertainty but is not provider identity, authorized broker acceptance, sustained market evidence, native-owner/durability acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

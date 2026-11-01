@@ -275,19 +275,53 @@ class PaperActivityAcceptanceStore:
 
     def append(self,scope,*,admission,precommit_check=lambda:True):
         scope=self._scope(scope);record_sha=sha(scope)
-        with closing(self._connect(write=True)[0]) as db:
-            with _transaction(db):
-                state=self._load(db);current=admission()
-                if current!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
-                if state['last_record_sha256']==record_sha:
-                    return dict(head_sha256=state['head_sha256'],record_sha256=record_sha,duplicate=True)
-                if state['records']>=MAX_RECORDS:_fail('RECORD_CAP')
-                if (state['pacing_bound_head_sha256']!=scope['pacing_before_head_sha256'] or
-                    state['retention_bound_head_sha256']!=scope['retention_before_head_sha256']):_fail('CONTINUITY_DISAGREEMENT')
-                head=self._insert(db,state['records']+1,dict(scope=scope,record_sha256=record_sha),state['head_sha256'])
-                self._load(db)
-                if precommit_check() is not True:_fail('INPUT_REVOKED')
-            # A changed post-commit sample loses the acknowledgment but retains
-            # the record so status/replay can show the exact uncertain boundary.
-            if admission()!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
-            return dict(head_sha256=head,record_sha256=record_sha,duplicate=False)
+        bound_path=Path(self.path).resolve();bound_account=self.account_digest
+        def require_binding():
+            try:current_path=Path(self.path).resolve()
+            except (OSError,RuntimeError,TypeError,ValueError):
+                _fail('STORE_BINDING_CHANGED')
+            if (current_path!=bound_path or
+                    self.account_digest!=bound_account):
+                _fail('STORE_BINDING_CHANGED')
+        self._check();require_binding()
+        def checked(callback):
+            before=_main_fingerprint(bound_path)
+            try:value=callback()
+            finally:
+                require_binding()
+                if _main_fingerprint(bound_path)!=before:
+                    _fail('FILE_SET_CHANGED')
+            return value
+        try:
+            with closing(self._connect(write=True)[0]) as db:
+                with _transaction(db):
+                    state=self._load(db);current=checked(admission)
+                    if current!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
+                    duplicate=state['last_record_sha256']==record_sha
+                    if duplicate:
+                        expected_head=state['head_sha256']
+                    else:
+                        if state['records']>=MAX_RECORDS:_fail('RECORD_CAP')
+                        if (state['pacing_bound_head_sha256']!=scope['pacing_before_head_sha256'] or
+                            state['retention_bound_head_sha256']!=scope['retention_before_head_sha256']):_fail('CONTINUITY_DISAGREEMENT')
+                        body=dict(scope=scope,record_sha256=record_sha)
+                        expected_head=sha(dict(seq=state['records']+1,
+                            body=body,previous=state['head_sha256']))
+                        self._insert(db,state['records']+1,body,
+                            state['head_sha256'])
+                        loaded=self._load(db)
+                        if (loaded['head_sha256']!=expected_head or
+                                loaded['last_record_sha256']!=record_sha):
+                            _fail('ACKNOWLEDGEMENT_UNCERTAIN')
+                    if checked(precommit_check) is not True:_fail('INPUT_REVOKED')
+                # A changed post-commit sample loses the acknowledgment but
+                # retains the record for explicit cold-read recovery.
+                if checked(admission)!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')
+        finally:require_binding()
+        first=self._read_state();second=self._read_state()
+        if (first!=second or second['head_sha256']!=expected_head or
+                second['last_record_sha256']!=record_sha or
+                second['last_record_scope']!=scope):
+            _fail('ACKNOWLEDGEMENT_UNCERTAIN')
+        return dict(head_sha256=second['head_sha256'],
+            record_sha256=record_sha,duplicate=duplicate)

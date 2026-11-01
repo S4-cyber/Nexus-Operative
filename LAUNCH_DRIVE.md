@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.97 activity-acceptance write acknowledgement
+
+Private activity-acceptance append now pins the exact resolved store and main-file content around every untrusted admission/input callback, derives the expected chain head independently of the write return and requires two stable cold reads of the exact committed record before acknowledging it. A post-commit retarget loses the acknowledgement, retains one record and recovers only through an explicit duplicate replay. Direct and mandatory disposable evidence exercise the complete boundary without automatic retry.
+
+Exact-source v0.340.96 commit `a0b387dea125e4887f19ca087c44921acc1b6536` passed security/history/Gitleaks run 41277363061, every research evidence/browser/regression job in run 41277363152, and complete Windows regression, private-tool, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41277363160. Fresh v0.340.97 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local acknowledgement evidence does not close an external gate or predict profit.
+
+No Portal control or modifiable parameter changed; the seven beginner tabs and black/bright-purple bottom-right help contract are unchanged. Engagement permissions remain OFF by default, and limits, account checks, fail-closed exits and the independent emergency stop are unchanged. No credential, provider request, automatic retry, order route, money movement, live/cloud authority or release approval was added.
+
+Local validation passed 4,773 tests with one expected skip and one existing warning; the activity-acceptance/reconciliation/release/evidence/version/installer focus passed 330. Sixteen profiles and saved-evidence verification matched 395 source files / `1a5207b28f49cfec2b6db2188d54418bbea449179abdc50d42f1b07269bc5d5f`; evidence SHA-256 is `ca3b935906c4809ce5e2e07ad002076f61c0c21f93d4f558deec51d86b899eac`. The final wheel SHA-256 is `5475689bb6e21d60922d5ad3ae1a584a27d692ad8e3f370601634dc02f6f9a13`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 809-path candidate audit and introduced-line credential scan reported zero findings. Fresh v0.340.97 hosted workflows remain required.
+
 ## v0.340.96 activity-acceptance read binding
 
 Private activity-acceptance inspection and ordered scope replay now share one immutable read boundary: resolved path, regular single-link identity, bounded main-file hash, exact connection-local `main` path and exact serialized SQLite content. Valid foreign, path-spoofed, retargeted or same-path-mutated stores return fixed fail-closed diagnostics before foreign or mixed history can be accepted. A retained rollback journal remains available to SQLite for conservative crash recovery; committed WAL/SHM sidecars remain rejected. Direct and mandatory disposable evidence preserve both stores and then replay the exact original two-transition history.

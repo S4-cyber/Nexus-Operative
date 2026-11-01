@@ -260,6 +260,50 @@ def _sync_committed_store(path,identity,fingerprint,*,new):
         _fail('COMMIT_DURABILITY_UNCERTAIN')
 
 
+def _main_fingerprint(path):
+    """Return one exact bounded quiescent main-file fingerprint."""
+    return capture_file_fingerprints((path,),(MAX_DATABASE_BYTES,),
+        'PAPER_PROVIDER_READ_REVIEW_STORE_')[0]
+
+
+def _require_main_connection(db,bound_path):
+    """Require a writer to target exactly the captured SQLite main path."""
+    try:
+        rows=db.execute('PRAGMA database_list').fetchall()
+        if (len(rows)!=1 or len(rows[0])!=3 or
+                type(rows[0][0]) is not int or rows[0][1]!='main' or
+                type(rows[0][2]) is not str or not rows[0][2] or
+                Path(rows[0][2]).resolve()!=bound_path):
+            _fail('CONNECTION_BINDING_CHANGED')
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_fail('DATABASE_BUSY')
+        _fail('CONNECTION_BINDING_CHANGED')
+    except (OSError,RuntimeError,sqlite3.Error,TypeError):
+        _fail('CONNECTION_BINDING_CHANGED')
+
+
+def _require_main_connection_content(db,bound_path):
+    """Require a writer's exact main bytes without trusting its pathname."""
+    expected=_main_fingerprint(bound_path)
+    try:
+        serialized=db.serialize(name='main')
+        observed=_main_fingerprint(bound_path)
+        if (observed!=expected or type(serialized) is not bytes or
+                len(serialized)!=expected[3] or
+                hashlib.sha256(serialized).hexdigest()!=expected[7]):
+            _fail('CONNECTION_CONTENT_CHANGED')
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_fail('DATABASE_BUSY')
+        _fail('CONNECTION_CONTENT_CHANGED')
+    except (MemoryError,OSError,OverflowError,RuntimeError,
+            sqlite3.Error,TypeError):
+        _fail('CONNECTION_CONTENT_CHANGED')
+
+
 class PaperProviderReadReviewStore:
     def __init__(self,path,provider_budget,gates):
         from nexus.paper_provider_read_budget import PaperProviderReadBudget
@@ -440,21 +484,22 @@ class PaperProviderReadReviewStore:
         scope=self._scope(scope);expected_head=_digest(expected_head);receipt=sha(scope)
         current=self.inspect()
         if current['head_sha256']!=expected_head:_fail('HEAD_CHANGED')
+        bound_path=Path(self.path).resolve()
         existed=current['initialized']
         if existed:
-            initial_identity=capture_file_identities((self.path,),
+            initial_identity=capture_file_identities((bound_path,),
                 'PAPER_PROVIDER_READ_REVIEW_STORE_')
-            initial_fingerprint=capture_file_fingerprints((self.path,),
+            initial_fingerprint=capture_file_fingerprints((bound_path,),
                 (MAX_DATABASE_BYTES,),'PAPER_PROVIDER_READ_REVIEW_STORE_')
         else:
             initial_identity=initial_fingerprint=None
         def require_initial():
             if not existed:
-                if self.path.exists():_fail('FILE_IDENTITY_CHANGED')
+                if bound_path.exists():_fail('FILE_IDENTITY_CHANGED')
                 return
-            require_file_identities((self.path,),initial_identity,
+            require_file_identities((bound_path,),initial_identity,
                 'PAPER_PROVIDER_READ_REVIEW_STORE_')
-            require_file_fingerprints((self.path,),(MAX_DATABASE_BYTES,),
+            require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
                 initial_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
         def initial_check(callback):
             try:value=callback()
@@ -466,18 +511,22 @@ class PaperProviderReadReviewStore:
         db,new=self._connect(write=True);committed=False;transaction_identity=None
         try:
             with closing(db):
+                _require_main_connection(db,bound_path)
                 if new==existed:_fail('FILE_IDENTITY_CHANGED')
-                transaction_identity=capture_file_identities((self.path,),
+                transaction_identity=capture_file_identities((bound_path,),
                     'PAPER_PROVIDER_READ_REVIEW_STORE_')
                 if existed and transaction_identity!=initial_identity:
                     _fail('FILE_IDENTITY_CHANGED')
+                if existed:
+                    require_initial()
+                    _require_main_connection_content(db,bound_path)
                 def transaction_check(callback):
-                    transaction_fingerprint=_active_file_fingerprint(self.path)
+                    transaction_fingerprint=_active_file_fingerprint(bound_path)
                     try:value=callback()
                     finally:
-                        require_file_identities((self.path,),transaction_identity,
+                        require_file_identities((bound_path,),transaction_identity,
                             'PAPER_PROVIDER_READ_REVIEW_STORE_')
-                        if _active_file_fingerprint(self.path)!=transaction_fingerprint:
+                        if _active_file_fingerprint(bound_path)!=transaction_fingerprint:
                             _fail('FILE_SET_CHANGED')
                     return value
                 with _transaction(db):
@@ -495,13 +544,15 @@ class PaperProviderReadReviewStore:
                     if transaction_check(precommit_check) is not True:
                         _fail('INPUT_REVOKED')
                 committed=True
-                committed_identity=capture_file_identities((self.path,),
+                _require_main_connection(db,bound_path)
+                _require_main_connection_content(db,bound_path)
+                committed_identity=capture_file_identities((bound_path,),
                     'PAPER_PROVIDER_READ_REVIEW_STORE_')
-                committed_fingerprint=capture_file_fingerprints((self.path,),
+                committed_fingerprint=capture_file_fingerprints((bound_path,),
                     (MAX_DATABASE_BYTES,),'PAPER_PROVIDER_READ_REVIEW_STORE_')
-                _sync_committed_store(self.path,committed_identity,
+                _sync_committed_store(bound_path,committed_identity,
                     committed_fingerprint,new=new)
-                with guard_file_set_finalization((self.path,),
+                with guard_file_set_finalization((bound_path,),
                         (MAX_DATABASE_BYTES,),committed_identity,
                         committed_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_'):
                     if admission()!=receipt:
@@ -514,5 +565,5 @@ class PaperProviderReadReviewStore:
                         ready_for_routing=False,release_approved=False)
         except BaseException:
             if new and not committed:
-                _discard_uncommitted_new(self.path,transaction_identity)
+                _discard_uncommitted_new(bound_path,transaction_identity)
             raise

@@ -473,6 +473,87 @@ def test_receipt_inspection_rechecks_path_content_after_serialization(
     assert store.inspect()['retained_receipts']==1
 
 
+@pytest.mark.parametrize(('seam','expected'),(
+    ('binding','CONNECTION_BINDING_CHANGED'),
+    ('content','CONNECTION_CONTENT_CHANGED')))
+def test_receipt_writer_refuses_foreign_connection_before_mutation(
+        tmp_path,monkeypatch,seam,expected):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    state=store.inspect();scope=state['receipts'][-1]['scope']
+    receipt=state['receipts'][-1]['receipt_sha256']
+    foreign=tmp_path/'foreign.sqlite3';shutil.copyfile(path,foreign)
+    foreign_db=sqlite3.connect(foreign)
+    try:foreign_db.execute('PRAGMA user_version=1');foreign_db.commit()
+    finally:foreign_db.close()
+    original_connect=store._connect
+    class SpoofedConnection(sqlite3.Connection):
+        def execute(self,statement,*args,**kwargs):
+            if seam=='content' and statement=='PRAGMA database_list':
+                return SimpleNamespace(fetchall=lambda:[
+                    (0,'main',str(path.resolve()))])
+            return super().execute(statement,*args,**kwargs)
+    def substitute(write=False):
+        if not write:return original_connect(write=write)
+        db=sqlite3.connect(foreign.resolve().as_uri()+'?mode=rw',uri=True,
+            timeout=10,factory=SpoofedConnection)
+        db.execute('PRAGMA journal_mode=DELETE')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('BEGIN IMMEDIATE')
+        return db,False
+    before=(path.read_bytes(),foreign.read_bytes())
+    monkeypatch.setattr(store,'_connect',substitute)
+    with pytest.raises(ValueError,match=(
+            f'^PAPER_PROVIDER_READ_REVIEW_STORE_{expected}$')):
+        store.append(scope,expected_head=state['head_sha256'],
+            admission=lambda:receipt)
+    monkeypatch.setattr(store,'_connect',original_connect)
+    assert (path.read_bytes(),foreign.read_bytes())==before
+    assert store.inspect()['retained_receipts']==1
+
+
+def test_receipt_writer_rechecks_path_content_after_connection_serialization(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    state=store.inspect();scope=state['receipts'][-1]['scope']
+    receipt=state['receipts'][-1]['receipt_sha256'];before=path.read_bytes()
+    original_connect=store._connect
+    original_fingerprint=store_subject._main_fingerprint
+    serialized=False
+    class SerializationRaceConnection(sqlite3.Connection):
+        def serialize(self,*args,**kwargs):
+            nonlocal serialized
+            result=super().serialize(*args,**kwargs);serialized=True
+            return result
+    def observed_connection(write=False):
+        if not write:return original_connect(write=write)
+        db=sqlite3.connect(path.resolve().as_uri()+'?mode=rw',uri=True,
+            timeout=10,factory=SerializationRaceConnection)
+        db.execute('PRAGMA journal_mode=DELETE')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('BEGIN IMMEDIATE')
+        return db,False
+    def changed_fingerprint(value):
+        result=original_fingerprint(value)
+        if serialized:
+            replacement='f'*64 if result[-1]!='f'*64 else 'e'*64
+            return (*result[:-1],replacement)
+        return result
+    monkeypatch.setattr(store,'_connect',observed_connection)
+    monkeypatch.setattr(store_subject,'_main_fingerprint',changed_fingerprint)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED$')):
+        store.append(scope,expected_head=state['head_sha256'],
+            admission=lambda:receipt)
+    monkeypatch.setattr(store,'_connect',original_connect)
+    monkeypatch.setattr(store_subject,'_main_fingerprint',original_fingerprint)
+    assert serialized and path.read_bytes()==before
+    assert store.inspect()['retained_receipts']==1
+
+
 def test_exact_duplicate_is_idempotent_and_revocation_fails_closed(tmp_path):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';options=heads(gate,budget)
     first=subject.retain_review(path,budget,[gate],**options);saved=path.read_bytes()

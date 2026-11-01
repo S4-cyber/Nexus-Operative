@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.106'
+REVISION = '0.340.107'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -647,7 +647,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.106 closes the durable provider-read receipt inspection serialization race. Receipt inspection now rechecks the exact bounded pathname identity and fingerprint immediately after SQLite main serialization and before replaying any receipt. Serialization-time pathname disagreement fails closed under fixed FILE_SET_CHANGED. Exact-source v0.340.105 commit 0db7a6f5cb2f4bbe8bbf8bf7c8796994f1f741c4 exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.106 workflows remain mandatory. This closes one synthetic local durable-reconciliation evidence boundary but is not atomic descriptor ownership, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.107 closes the durable provider-read receipt writer connection-substitution boundary. Existing receipt writes now require the writable SQLite main connection to resolve to the captured store path and serialize to the exact bounded pathname bytes before mutation; every committed write repeats both proofs before durability acknowledgement. Foreign, spoofed and serialization-time divergent connections fail closed without changing either database. Exact-source v0.340.106 commit b3cda7363865e2b6cc09795e59d4b57d9352178b exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.107 workflows remain mandatory. This closes one synthetic local durable-reconciliation evidence boundary but is not atomic descriptor ownership, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

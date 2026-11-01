@@ -789,6 +789,91 @@ def fixture_report():
             inspection_load_calls==0 and
             inspection_store.read_bytes()==inspection_continuity_before and
             inspection_reader.inspect()['retained_receipts']==1)
+        inspection_state=inspection_reader.inspect()
+        inspection_scope=inspection_state['receipts'][-1]['scope']
+        inspection_receipt=inspection_state['receipts'][-1][
+            'receipt_sha256']
+        def substitute_write_connection(write=False):
+            if not write:return inspection_connect(write=write)
+            db=sqlite3.connect(
+                foreign_inspection_store.resolve().as_uri()+'?mode=rw',
+                uri=True,timeout=10)
+            db.execute('PRAGMA journal_mode=DELETE')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            return db,False
+        inspection_write_connection_denied=False
+        inspection_reader._connect=substitute_write_connection
+        try:
+            inspection_reader.append(inspection_scope,
+                expected_head=inspection_state['head_sha256'],
+                admission=lambda:inspection_receipt)
+        except ValueError as error:
+            inspection_write_connection_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_BINDING_CHANGED')
+        finally:inspection_reader._connect=inspection_connect
+        def substitute_write_content(write=False):
+            if not write:return inspection_connect(write=write)
+            db=sqlite3.connect(
+                foreign_inspection_store.resolve().as_uri()+'?mode=rw',
+                uri=True,timeout=10,factory=SpoofedInspectionConnection)
+            db.execute('PRAGMA journal_mode=DELETE')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            return db,False
+        inspection_write_content_denied=False
+        inspection_reader._connect=substitute_write_content
+        try:
+            inspection_reader.append(inspection_scope,
+                expected_head=inspection_state['head_sha256'],
+                admission=lambda:inspection_receipt)
+        except ValueError as error:
+            inspection_write_content_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED')
+        finally:inspection_reader._connect=inspection_connect
+        inspection_write_serialized=False
+        inspection_main_fingerprint=store_module._main_fingerprint
+        class ObservedWriteConnection(sqlite3.Connection):
+            def serialize(self,*args,**kwargs):
+                nonlocal inspection_write_serialized
+                result=super().serialize(*args,**kwargs)
+                inspection_write_serialized=True
+                return result
+        def observe_write_content(write=False):
+            if not write:return inspection_connect(write=write)
+            db=sqlite3.connect(
+                inspection_store.resolve().as_uri()+'?mode=rw',uri=True,
+                timeout=10,factory=ObservedWriteConnection)
+            db.execute('PRAGMA journal_mode=DELETE')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            return db,False
+        def change_serialized_fingerprint(path):
+            result=inspection_main_fingerprint(path)
+            if inspection_write_serialized:
+                replacement='f'*64 if result[-1]!='f'*64 else 'e'*64
+                return (*result[:-1],replacement)
+            return result
+        inspection_write_continuity_denied=False
+        inspection_reader._connect=observe_write_content
+        store_module._main_fingerprint=change_serialized_fingerprint
+        try:
+            inspection_reader.append(inspection_scope,
+                expected_head=inspection_state['head_sha256'],
+                admission=lambda:inspection_receipt)
+        except ValueError as error:
+            inspection_write_continuity_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED')
+        finally:
+            inspection_reader._connect=inspection_connect
+            store_module._main_fingerprint=inspection_main_fingerprint
+        inspection_write_boundary_bound=(
+            inspection_write_connection_denied and
+            inspection_write_content_denied and
+            inspection_write_continuity_denied and
+            inspection_write_serialized and inspection_bytes==
+                {path:path.read_bytes() for path in inspection_bytes} and
+            inspection_reader.inspect()['retained_receipts']==1)
         def retarget_inspection(*args,**kwargs):
             inspection_reader.path=foreign_inspection_store
             return inspection_connect(*args,**kwargs)
@@ -987,6 +1072,15 @@ def fixture_report():
                 inspection_content_denied),
             retained_receipt_connection_content_continuity_pinned=(
                 inspection_continuity_denied),
+            retained_receipt_write_connection_pinned=(
+                inspection_write_boundary_bound and
+                inspection_write_connection_denied),
+            retained_receipt_write_connection_content_pinned=(
+                inspection_write_boundary_bound and
+                inspection_write_content_denied),
+            retained_receipt_write_connection_content_continuity_pinned=(
+                inspection_write_boundary_bound and
+                inspection_write_continuity_denied),
             retained_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_bound),
             journals_unchanged=source_same,

@@ -1020,6 +1020,29 @@ def fixture_report():
             close_error_retry['head_sha256']==
                 close_error_replay['head_sha256']==
                 close_error_final['head_sha256'])
+        read_close_connect=inspection_reader._connect
+        class ReadCloseFailureConnection(sqlite3.Connection):
+            def close(self):
+                super().close()
+                raise RuntimeError('private read close failure')
+        def fail_read_close(write=False):
+            if write:return read_close_connect(write=write)
+            db=sqlite3.connect(inspection_store.resolve().as_uri()+
+                '?mode=ro',uri=True,timeout=10,
+                factory=ReadCloseFailureConnection)
+            db.execute('PRAGMA query_only=ON')
+            return db,False
+        read_close_denied=False
+        inspection_reader._connect=fail_read_close
+        try:inspection_reader.inspect()
+        except ValueError as error:
+            read_close_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_READ_ACKNOWLEDGEMENT_UNCERTAIN')
+        finally:inspection_reader._connect=read_close_connect
+        read_close_retry=inspection_reader.inspect()
+        read_close_retry_bound=(read_close_denied and
+            read_close_retry['retained_receipts']==1 and
+            read_close_retry['head_sha256']==close_final['head_sha256'])
         def retarget_inspection(*args,**kwargs):
             inspection_reader.path=foreign_inspection_store
             return inspection_connect(*args,**kwargs)
@@ -1235,6 +1258,8 @@ def fixture_report():
                 close_boundary_bound),
             retained_receipt_close_error_requires_explicit_recovery=(
                 close_error_recovery_bound),
+            retained_receipt_read_close_error_requires_explicit_retry=(
+                read_close_retry_bound),
             retained_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_bound),
             journals_unchanged=source_same,

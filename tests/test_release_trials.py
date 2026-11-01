@@ -449,6 +449,7 @@ def test_pacing_profile_requires_provider_read_history_review_fences():
                   'retained_receipt_write_setup_content_pinned',
                   'retained_receipt_connection_close_content_pinned',
                   'retained_receipt_close_error_requires_explicit_recovery',
+                  'retained_receipt_read_close_error_requires_explicit_retry',
                   'retained_receipt_parent_descriptor_boundary_respected',
                   'journal_file_fingerprints_rechecked',
                   'semantic_reader_failures_rechecked','output_never_authoritative'):

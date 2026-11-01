@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.114 fail-closed read-close acknowledgement
+
+Provider-read receipt inspection now converts an ordinary SQLite connection-close failure after a complete read into fixed `READ_ACKNOWLEDGEMENT_UNCERTAIN`. The error is sanitized, retained receipt bytes are unchanged, and success requires an explicit fresh inspection retry. Keyboard interrupts and process-exit signals are not converted. No UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+This local read acknowledgement boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.113 fixed close-error acknowledgement
 
 Ordinary exceptions after a provider-read receipt commit, including SQLite connection-close acknowledgement failures, now become the fixed fail-closed `COMMIT_DURABILITY_UNCERTAIN` result. The wrapper cannot infer success from the retained row; the receipt remains exactly once and requires explicit exact-head duplicate recovery. Keyboard interrupts and process-exit signals are not converted. No UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.

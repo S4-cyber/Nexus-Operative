@@ -691,6 +691,31 @@ def test_receipt_writer_close_error_requires_explicit_duplicate_recovery(
     assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
 
 
+def test_receipt_reader_close_error_requires_explicit_retry(tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    first=subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    original_connect=store._connect
+    class CloseFailureConnection(sqlite3.Connection):
+        def close(self):
+            super().close()
+            raise RuntimeError('private read close failure')
+    def close_failure(write=False):
+        if write:return original_connect(write=write)
+        db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+            timeout=10,factory=CloseFailureConnection)
+        db.execute('PRAGMA query_only=ON')
+        return db,False
+    monkeypatch.setattr(store,'_connect',close_failure)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_READ_ACKNOWLEDGEMENT_UNCERTAIN$')):
+        store.inspect()
+    monkeypatch.setattr(store,'_connect',original_connect)
+    retry=store.inspect()
+    assert retry['retained_receipts']==1
+    assert retry['head_sha256']==first['head_sha256']
+
+
 def test_exact_duplicate_is_idempotent_and_revocation_fails_closed(tmp_path):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';options=heads(gate,budget)
     first=subject.retain_review(path,budget,[gate],**options);saved=path.read_bytes()

@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.113 (pre-release).**
+**Current development build: 0.340.114 (pre-release).**
+
+## v0.340.114 fail-closed read-close acknowledgement
+
+Provider-read receipt inspection now converts an ordinary SQLite connection-close failure after a complete read into fixed `READ_ACKNOWLEDGEMENT_UNCERTAIN`. The error is sanitized, retained receipt bytes are unchanged, and success requires an explicit fresh inspection retry. Keyboard interrupts and process-exit signals are not converted. No UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+This local read acknowledgement boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.113 (pre-release).**
 
 ## v0.340.113 fixed close-error acknowledgement
 

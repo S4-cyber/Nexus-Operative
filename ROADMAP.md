@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.112. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.113. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.112 extends durable provider-read receipt acknowledgement through SQLite connection close. After the writer connection closes, the exact committed pathname identity and bounded fingerprint must still match before success is returned. Close-time disagreement fails closed while the exactly-once receipt remains available only through explicit duplicate recovery. The v0.340.111 packaged provider/account history-only review remains separately selected, bounded, read-only and non-authoritative. Together these improve private broker-paper preparation and receipt reconciliation without accepting an account, sustained trial, fees/holds/funds, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted; fresh exact-source hosted workflows remain required.
+Current hardening: v0.340.113 converts any ordinary post-commit receipt-writer exception, including connection-close acknowledgement failure, into a fixed fail-closed durability error. The committed receipt remains exactly once and success requires an explicit exact-head duplicate replay; private exception text is not exposed and the wrapper cannot silently reconstruct success from an uncertain close. The v0.340.112 post-close identity/fingerprint proof and v0.340.111 packaged history-only review remain intact. This is local durability evidence, not provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted; fresh exact-source hosted workflows remain required.
 
 ```mermaid
 flowchart TD

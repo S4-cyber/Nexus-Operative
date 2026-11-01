@@ -573,7 +573,9 @@ class PaperProviderReadReviewStore:
             require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
                 committed_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
             return result
-        except BaseException:
+        except BaseException as error:
             if new and not committed:
                 _discard_uncommitted_new(bound_path,transaction_identity)
+            if committed and isinstance(error,Exception) and type(error) is not ValueError:
+                _fail('COMMIT_DURABILITY_UNCERTAIN')
             raise

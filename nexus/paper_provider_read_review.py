@@ -970,6 +970,56 @@ def fixture_report():
             close_final['retained_receipts']==1 and
             close_retry['head_sha256']==close_replay['head_sha256']==
                 close_final['head_sha256'])
+        close_error_gate,close_error_budget=build_pair(
+            root/'retained-close-error')
+        close_error_store=root/'retained-close-error'/'receipt.sqlite3'
+        close_error_first=retain_review(close_error_store,close_error_budget,
+            [close_error_gate],expected_provider_head=
+                close_error_budget.inspect()['head_sha256'],
+            expected_account_heads={close_error_gate.account_digest:
+                close_error_gate.inspect()['head_sha256']})
+        close_error_reader=PaperProviderReadReviewStore(close_error_store,
+            close_error_budget,[close_error_gate])
+        close_error_state=close_error_reader.inspect()
+        close_error_scope=dict(close_error_state['receipts'][-1]['scope'])
+        close_error_scope['review_sha256']='b'*64
+        close_error_receipt=sha(close_error_scope)
+        close_error_connect=close_error_reader._connect
+        class CloseFailureConnection(sqlite3.Connection):
+            def close(self):
+                super().close()
+                raise RuntimeError('private close failure')
+        def fail_write_close(write=False):
+            if not write:return close_error_connect(write=write)
+            db=sqlite3.connect(close_error_store.resolve().as_uri()+
+                '?mode=rw',uri=True,timeout=10,
+                factory=CloseFailureConnection)
+            db.execute('PRAGMA journal_mode=DELETE')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            return db,False
+        close_error_denied=False
+        close_error_reader._connect=fail_write_close
+        try:
+            close_error_reader.append(close_error_scope,
+                expected_head=close_error_first['head_sha256'],
+                admission=lambda:close_error_receipt)
+        except ValueError as error:
+            close_error_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN')
+        finally:close_error_reader._connect=close_error_connect
+        close_error_replay=close_error_reader.inspect()
+        close_error_retry=close_error_reader.append(close_error_scope,
+            expected_head=close_error_replay['head_sha256'],
+            admission=lambda:close_error_receipt)
+        close_error_final=close_error_reader.inspect()
+        close_error_recovery_bound=(close_error_denied and
+            close_error_replay['retained_receipts']==2 and
+            close_error_retry['duplicate'] is True and
+            close_error_final['retained_receipts']==2 and
+            close_error_retry['head_sha256']==
+                close_error_replay['head_sha256']==
+                close_error_final['head_sha256'])
         def retarget_inspection(*args,**kwargs):
             inspection_reader.path=foreign_inspection_store
             return inspection_connect(*args,**kwargs)
@@ -1183,6 +1233,8 @@ def fixture_report():
                 setup_content_denied),
             retained_receipt_connection_close_content_pinned=(
                 close_boundary_bound),
+            retained_receipt_close_error_requires_explicit_recovery=(
+                close_error_recovery_bound),
             retained_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_bound),
             journals_unchanged=source_same,

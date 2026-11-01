@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.113 fixed close-error acknowledgement
+
+Ordinary exceptions after a provider-read receipt commit, including SQLite connection-close acknowledgement failures, now become the fixed fail-closed `COMMIT_DURABILITY_UNCERTAIN` result. The wrapper cannot infer success from the retained row; the receipt remains exactly once and requires explicit exact-head duplicate recovery. Keyboard interrupts and process-exit signals are not converted. No UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+This local durability boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.112 provider-read receipt connection-close continuity
 
 The durable provider-read receipt writer now carries its acknowledgement proof through SQLite connection close. After a committed write connection closes, the exact bounded pathname identity and fingerprint must still match before success is returned. A close-time metadata or content disagreement fails closed with the fixed store error; the committed receipt remains exactly once and may be recovered only by an explicit exact-head duplicate replay. No automatic retry is introduced.

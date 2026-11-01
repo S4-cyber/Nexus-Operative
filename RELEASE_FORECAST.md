@@ -1,6 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.112
+## Current candidate: v0.340.113
+
+Post-commit provider-read receipt exceptions now fail with a fixed durability-uncertain result and require explicit duplicate recovery. This prevents a connection-close error from being reconstructed as success while preserving exactly-once receipt history.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.112
 
 The provider-read receipt writer now reasserts the exact committed file identity and bounded fingerprint after SQLite connection close before acknowledging success. Close-time disagreement remains a fixed fail-closed condition with exactly-once retention and explicit duplicate recovery. The separately selected v0.340.111 history-only preparation mode remains available and non-authoritative.
 

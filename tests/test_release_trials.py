@@ -438,6 +438,7 @@ def test_pacing_profile_requires_provider_read_history_review_fences():
                   'retained_receipt_commit_flush_failure_recoverable',
                   'retained_receipt_commit_fingerprint_change_recoverable',
                   'retained_receipt_commit_descriptor_tamper_recoverable',
+                  'retained_receipt_parent_descriptor_boundary_respected',
                   'journal_file_fingerprints_rechecked',
                   'semantic_reader_failures_rechecked','output_never_authoritative'):
         changed=copy.deepcopy(result);changed['provider_read_history_review'][field]=False

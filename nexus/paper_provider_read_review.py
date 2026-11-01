@@ -699,6 +699,60 @@ def fixture_report():
             expected_store_head=descriptor_replay['head_sha256'])
         descriptor_final=PaperProviderReadReviewStore(
             descriptor_store,descriptor_budget,[descriptor_gate]).inspect()
+        parent_descriptor_bound=True
+        if os.name!='nt':
+            parent_gate,parent_budget=build_pair(
+                root/'retained-parent-descriptor')
+            parent_store=(root/'retained-parent-descriptor'/'receipt.sqlite3')
+            foreign_parent=root/'retained-parent-descriptor-foreign'
+            foreign_parent.mkdir()
+            parent_substituted=False;parent_directory_syncs=0
+            def substitute_parent_descriptor(value,flags,*args,**kwargs):
+                nonlocal parent_substituted
+                if (not parent_substituted and
+                        flags&getattr(os,'O_DIRECTORY',0) and
+                        Path(value).resolve()==parent_store.resolve().parent):
+                    parent_substituted=True
+                    return original_open(foreign_parent,flags,*args,**kwargs)
+                return original_open(value,flags,*args,**kwargs)
+            def count_parent_directory_sync(descriptor):
+                nonlocal parent_directory_syncs
+                if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                    parent_directory_syncs+=1
+                return original_fsync(descriptor)
+            parent_failure_denied=False
+            store_module.os.open=substitute_parent_descriptor
+            store_module.os.fsync=count_parent_directory_sync
+            try:
+                retain_review(parent_store,parent_budget,[parent_gate],
+                    expected_provider_head=
+                        parent_budget.inspect()['head_sha256'],
+                    expected_account_heads={parent_gate.account_digest:
+                        parent_gate.inspect()['head_sha256']})
+            except ValueError as error:
+                parent_failure_denied=(str(error)==
+                    'PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN')
+            finally:
+                store_module.os.open=original_open
+                store_module.os.fsync=original_fsync
+            parent_replay=PaperProviderReadReviewStore(
+                parent_store,parent_budget,[parent_gate]).inspect()
+            parent_receipt=retain_review(parent_store,parent_budget,
+                [parent_gate],expected_provider_head=
+                    parent_budget.inspect()['head_sha256'],
+                expected_account_heads={parent_gate.account_digest:
+                    parent_gate.inspect()['head_sha256']},
+                expected_store_head=parent_replay['head_sha256'])
+            parent_final=PaperProviderReadReviewStore(
+                parent_store,parent_budget,[parent_gate]).inspect()
+            parent_descriptor_bound=(parent_substituted and
+                parent_directory_syncs==0 and parent_failure_denied and
+                parent_replay['retained_receipts']==1 and
+                parent_receipt['duplicate'] is True and
+                parent_final['retained_receipts']==1 and
+                parent_receipt['head_sha256']==
+                    parent_replay['head_sha256']==
+                    parent_final['head_sha256'])
         checks=dict(
             exact_provider_account_history=result['local_provider_account_history_consistent'],
             every_session_matched=result['matched_sessions']==5,
@@ -803,6 +857,8 @@ def fixture_report():
                 descriptor_receipt['head_sha256']==
                     descriptor_replay['head_sha256']==
                     descriptor_final['head_sha256']),
+            retained_receipt_parent_descriptor_boundary_respected=(
+                parent_descriptor_bound),
             journals_unchanged=source_same,
             journal_file_fingerprints_rechecked=result['journal_files_rechecked_unchanged'],
             semantic_reader_failures_rechecked=result['semantic_reader_failures_rechecked'],

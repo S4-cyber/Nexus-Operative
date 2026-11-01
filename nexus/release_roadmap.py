@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.91'
+REVISION = '0.340.92'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -483,6 +483,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The exact O_RDWR receipt-store descriptor is now independently bounded-byte hashed before and after fsync and required to match the committed pathname fingerprint. Descriptor tampering is rejected before sync, the committed receipt remains retained and only explicit exact-head duplicate replay can recover after inspection. This is sampled local descriptor/path integrity evidence, not physical durability, broker acceptance or native-owner acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; new POSIX provider/read receipt stores now pin the resolved parent-directory identity before opening it, require the fsync descriptor and post-flush pathname to retain that exact device/inode, and reject wrong-directory substitution before directory sync' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' New POSIX receipt-store directory persistence now opens the resolved parent with no-follow semantics and requires the descriptor and post-flush pathname to match the captured directory identity. A substituted directory descriptor is rejected before directory fsync, the committed receipt remains retained and explicit exact-head duplicate replay remains the only recovery. Windows has no portable Python directory-fsync API and keeps its independent native gate. This is sampled local identity evidence, not physical durability or broker acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -583,7 +591,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.91 independently bounded-byte hashes the exact writable provider/read receipt descriptor before and after its explicit file sync and requires both samples to match the already committed pathname fingerprint. Descriptor tampering is therefore rejected before sync with fixed durability uncertainty; the committed receipt remains retained and recovery is limited to explicit exact-head duplicate replay after inspection. Exact-source v0.340.90 commit f7e971227c9724f20a447e1a4dda208e11afcfbd passed public security/history/Gitleaks run 41252669894, all three offline-release-evidence, browser-help and regression jobs in research run 41252669909, and the complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41252669888. This narrows sampled local descriptor/path integrity uncertainty but is not physical power-loss proof, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.92 pins the exact resolved parent-directory identity for every new POSIX provider/read receipt store, opens it with no-follow semantics and requires both the fsync descriptor and post-flush pathname to retain that device/inode. Wrong-directory substitution is rejected before directory sync with fixed durability uncertainty; the committed receipt remains retained and recovery is limited to explicit exact-head duplicate replay after inspection. Exact-source v0.340.91 commit ea7d8bcadf5840933515067e32026dcccb660738 passed public security/history/Gitleaks run 41256686760, all three offline-release-evidence, browser-help and regression jobs in research run 41256686779, and the complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution workflow 41256686845. Windows has no portable Python directory-fsync API and retains its independent native acceptance gate. This narrows sampled local directory-identity uncertainty but is not physical power-loss proof, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

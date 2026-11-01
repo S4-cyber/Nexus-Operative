@@ -1,5 +1,13 @@
 # Nexus Operative release acceptance
 
+## v0.340.92 exact POSIX parent-directory descriptor binding
+
+A newly created POSIX provider/read-review receipt is locally returnable only when the directory descriptor receiving `fsync` matches the exact resolved parent identity captured before open and both descriptor and pathname retain that identity afterward. A valid foreign-directory descriptor must preserve the committed receipt, emit the fixed durability refusal before directory sync and require an explicit exact-head retry that returns one duplicate instead of appending again. Python has no portable Windows directory-fsync API; native Windows pathname persistence and physical power-loss behavior remain unaccepted.
+
+Exact-source v0.340.91 commit `ea7d8bcadf5840933515067e32026dcccb660738` passed security/history/Gitleaks 41256686760, every research evidence/browser/regression job in 41256686779, and complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41256686845. Fresh v0.340.92 workflows and actual authorized paper-account/private-volume acceptance remain required. This is sampled local POSIX directory-identity evidence, not physical durability acceptance, provider identity, account acceptance, source coverage, native-owner Windows acceptance, fee/hold/funds reconciliation, market realism, cloud readiness, independent approval or owner release approval.
+
+Local validation passed 4,754 tests with one expected skip and one existing warning; the affected receipt/release modules passed 162. Sixteen profiles verified against 395 exact source files / `5cda0c7c9b7c1d4bf76055d182c3c8bc91f7b4dd161846bb5d8d8a0b13bfce34`. Evidence SHA-256 is `a678b8ca05a6fd46465f5d22c45cfbba46c66f1abf192e004f36e0096bf92dae`; wheel SHA-256 is `6c9e030e3aab298c11041be271265e0835543482772147bd78aa0185e0ad8597`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed; the 804-path proposed-snapshot artifact audit passed with zero findings. Release approval, trading permission and live-money authority remain false.
+
 ## v0.340.91 exact writable receipt-descriptor binding
 
 A committed provider/read-review receipt is locally returnable only when bounded bytes read through the exact writable descriptor before and after explicit sync equal the already committed pathname fingerprint. Descriptor/path divergence must preserve the committed receipt, emit the fixed durability refusal before sync and require an explicit exact-head retry that returns one duplicate instead of appending again. Python has no portable Windows directory-fsync API; native Windows pathname persistence and physical power-loss behavior remain unaccepted.

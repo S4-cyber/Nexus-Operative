@@ -138,6 +138,34 @@ def _descriptor_file_fingerprint(descriptor,resolved):
         after.st_nlink,digest.hexdigest())
 
 
+def _sync_parent_directory(resolved):
+    """Flush only the exact POSIX parent directory identity."""
+    parent=resolved.parent
+    before=parent.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+        raise RuntimeError
+    expected=(before.st_dev,before.st_ino)
+    flags=(os.O_RDONLY|getattr(os,'O_DIRECTORY',0)|
+        getattr(os,'O_CLOEXEC',0)|getattr(os,'O_NOFOLLOW',0))
+    descriptor=os.open(parent,flags)
+    try:
+        opened=os.fstat(descriptor)
+        if not stat.S_ISDIR(opened.st_mode) or (opened.st_dev,
+                opened.st_ino)!=expected:
+            raise RuntimeError
+        os.fsync(descriptor)
+        final=os.fstat(descriptor)
+        observed=parent.lstat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (final.st_dev,final.st_ino)!=expected or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISDIR(observed.st_mode) or
+                (observed.st_dev,observed.st_ino)!=expected):
+            raise RuntimeError
+    finally:
+        os.close(descriptor)
+
+
 def _discard_uncommitted_new(path,identity):
     """Remove only the exact empty file created for an aborted first write.
 
@@ -181,8 +209,9 @@ def _sync_committed_store(path,identity,fingerprint,*,new):
     post-commit bounded fingerprint is fixed before the flush and rechecked
     around both the file and directory boundaries.  The exact writable
     descriptor is independently hashed before and after its flush, so a
-    pathname sample cannot hide different descriptor bytes.  A new POSIX pathname also
-    receives the available parent-directory fsync.  Python has no portable
+    pathname sample cannot hide different descriptor bytes.  A new POSIX
+    pathname also flushes only a descriptor proven to be its exact parent
+    directory identity.  Python has no portable
     Windows directory-fsync API, so Windows retains the explicit writable
     main-file flush and the existing installer/native acceptance gate.  Any
     uncertainty preserves the committed store and fails closed.
@@ -222,15 +251,7 @@ def _sync_committed_store(path,identity,fingerprint,*,new):
         require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,
             'PAPER_PROVIDER_READ_REVIEW_STORE_')
         if new and os.name!='nt':
-            directory_flags=(os.O_RDONLY|getattr(os,'O_DIRECTORY',0)|
-                getattr(os,'O_CLOEXEC',0))
-            directory_descriptor=os.open(resolved.parent,directory_flags)
-            try:
-                if not stat.S_ISDIR(os.fstat(directory_descriptor).st_mode):
-                    raise RuntimeError
-                os.fsync(directory_descriptor)
-            finally:
-                os.close(directory_descriptor)
+            _sync_parent_directory(resolved)
             require_file_identities((path,),identity,
                 'PAPER_PROVIDER_READ_REVIEW_STORE_')
             require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,

@@ -605,6 +605,41 @@ def test_receipt_parent_flush_uncertainty_retains_exact_commit_for_retry(
     assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
 
 
+@pytest.mark.skipif(os.name=='nt',reason='Python exposes no portable Windows directory fsync')
+def test_receipt_parent_flush_binds_exact_directory_descriptor(
+        tmp_path,monkeypatch):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    foreign=tmp_path/'foreign';foreign.mkdir()
+    original_open=store_subject.os.open;original_fsync=store_subject.os.fsync
+    substituted=False;directory_syncs=0
+    def open_file(value,flags,*args,**kwargs):
+        nonlocal substituted
+        if (not substituted and flags&getattr(os,'O_DIRECTORY',0) and
+                Path(value).resolve()==path.resolve().parent):
+            substituted=True
+            return original_open(foreign,flags,*args,**kwargs)
+        return original_open(value,flags,*args,**kwargs)
+    def fsync(descriptor):
+        nonlocal directory_syncs
+        if stat.S_ISDIR(os.fstat(descriptor).st_mode):directory_syncs+=1
+        return original_fsync(descriptor)
+    monkeypatch.setattr(store_subject.os,'open',open_file)
+    monkeypatch.setattr(store_subject.os,'fsync',fsync)
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN$'):
+        subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    assert substituted and directory_syncs==0
+    replay=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert replay['retained_receipts']==1
+    monkeypatch.setattr(store_subject.os,'open',original_open)
+    monkeypatch.setattr(store_subject.os,'fsync',original_fsync)
+    retry=subject.retain_review(path,budget,[gate],
+        expected_store_head=replay['head_sha256'],**heads(gate,budget))
+    final=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert retry['duplicate'] is True and final['retained_receipts']==1
+    assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
+
+
 def test_receipt_flush_rejects_same_identity_change_before_fingerprint_recheck(
         tmp_path,monkeypatch):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';fsynced=False

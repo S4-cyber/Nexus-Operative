@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.92 exact POSIX parent-directory descriptor binding
+
+New POSIX provider/read-review receipt stores now capture the resolved parent-directory identity, open it with no-follow semantics and require the descriptor plus post-flush pathname to retain that exact device/inode. A valid foreign-directory descriptor is rejected before directory sync, preserving the already committed receipt and allowing only an operator-directed exact-head duplicate replay after inspection. Python exposes no portable Windows directory-fsync API, so native Windows path persistence and physical power-loss testing remain independent gates.
+
+Exact-source v0.340.91 commit `ea7d8bcadf5840933515067e32026dcccb660738` passed security/history/Gitleaks 41256686760, all research evidence/browser/regression jobs in 41256686779, and complete Windows regression, EXE, installer, reinstall/uninstall, phase-evidence and distribution run 41256686845. Fresh v0.340.92 workflows and authorized paper-account/private-volume acceptance remain required. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This sampled local POSIX directory-identity evidence does not close an external gate or predict profit.
+
+Local validation passed 4,754 tests with one expected skip and one existing warning; the affected receipt/release modules passed 162. Sixteen profiles verified against 395 source files / `5cda0c7c9b7c1d4bf76055d182c3c8bc91f7b4dd161846bb5d8d8a0b13bfce34`. Evidence SHA-256 is `a678b8ca05a6fd46465f5d22c45cfbba46c66f1abf192e004f36e0096bf92dae`; wheel SHA-256 is `6c9e030e3aab298c11041be271265e0835543482772147bd78aa0185e0ad8597`. Compilation, dependencies, roadmap equality, Portal syntax and fourteen controller checks passed; the 804-path proposed-snapshot artifact audit passed with zero findings. No UI or modifiable parameter changed; fresh hosted workflows remain required.
+
 ## v0.340.91 exact writable receipt-descriptor binding
 
 Provider/read-review receipt retention now hashes bounded bytes through the exact writable descriptor before and after explicit file sync and requires both samples to match the committed pathname fingerprint. Descriptor/path divergence preserves the already committed receipt, fails closed before acknowledgement and allows only an operator-directed exact-head duplicate replay after inspection. Python exposes no portable Windows directory-fsync API, so native Windows path persistence and physical power-loss testing remain independent gates.

@@ -333,6 +333,64 @@ def test_writers_pin_spoofed_connection_content_before_mutation(
 
 
 @pytest.mark.parametrize('operation',('bind','append'))
+def test_writers_recheck_path_content_after_connection_serialization(
+        tmp_path,monkeypatch,operation):
+    value=scope();target=bound(tmp_path,value);before=target.path.read_bytes()
+    original_connect=target._connect
+    original_fingerprint=storage._main_fingerprint
+    serialize_calls=0;content_changed=False
+    class ObservedConnection(sqlite3.Connection):
+        def serialize(self,*args,**kwargs):
+            nonlocal serialize_calls,content_changed
+            result=super().serialize(*args,**kwargs)
+            serialize_calls+=1
+            if serialize_calls==2:content_changed=True
+            return result
+    def observed_connection(write=False):
+        assert write is True
+        db=sqlite3.connect(target.path.resolve().as_uri()+'?mode=rw',
+            uri=True,timeout=10,factory=ObservedConnection)
+        db.execute('PRAGMA journal_mode=DELETE')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('BEGIN IMMEDIATE')
+        return db,False
+    def changed_fingerprint(path):
+        result=original_fingerprint(path)
+        if content_changed:
+            replacement=('f'*64 if result[-1]!='f'*64 else 'e'*64)
+            return (*result[:-1],replacement)
+        return result
+    monkeypatch.setattr(target,'_connect',observed_connection)
+    monkeypatch.setattr(storage,'_main_fingerprint',changed_fingerprint)
+    if operation=='bind':
+        invoke=lambda:target.bind(
+            pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    else:
+        invoke=lambda:target.append(value,admission=lambda:(
+            value['pacing_after_head_sha256'],
+            value['retention_after_head_sha256']))
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_CONTENT_CHANGED$')):
+        invoke()
+    monkeypatch.setattr(target,'_connect',original_connect)
+    monkeypatch.setattr(storage,'_main_fingerprint',original_fingerprint)
+    report=target.inspect()
+    assert serialize_calls==2
+    if operation=='bind':
+        assert target.path.read_bytes()==before
+        assert report['records']==0
+    else:
+        assert report['records']==1
+        recovered=target.append(value,admission=lambda:(
+            value['pacing_after_head_sha256'],
+            value['retention_after_head_sha256']))
+        assert recovered['duplicate'] is True
+        assert recovered['head_sha256']==report['head_sha256']
+
+
+@pytest.mark.parametrize('operation',('bind','append'))
 def test_writers_pin_file_identity_through_commit_and_acknowledgement(
         tmp_path,monkeypatch,operation):
     value=scope();target=bound(tmp_path,value);before=target.path.read_bytes()

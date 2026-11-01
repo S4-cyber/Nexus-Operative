@@ -175,7 +175,8 @@ def _require_main_connection_content(db,bound_path):
     expected=_main_fingerprint(bound_path)
     try:
         serialized=db.serialize(name='main')
-        if (type(serialized) is not bytes or
+        observed=_main_fingerprint(bound_path)
+        if (observed!=expected or type(serialized) is not bytes or
                 len(serialized)!=expected[3] or
                 hashlib.sha256(serialized).hexdigest()!=expected[7]):
             _fail('CONNECTION_CONTENT_CHANGED')

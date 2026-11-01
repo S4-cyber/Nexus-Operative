@@ -305,6 +305,58 @@ def fixture_report():
             acceptance_write_connection_content_pinned and
             connection_before==(connection_acceptance.path.read_bytes(),
                 connection_foreign.path.read_bytes()))
+        continuity_root=base/'write-connection-content-continuity'
+        continuity_root.mkdir()
+        ccp,cca,continuity_acceptance,continuity_scope=_scope(continuity_root)
+        continuity_connect=continuity_acceptance._connect
+        continuity_fingerprint=acceptance_storage._main_fingerprint
+        continuity_serialize_calls=0;continuity_changed=False
+        class ObservedContinuityConnection(sqlite3.Connection):
+            def serialize(self,*args,**kwargs):
+                nonlocal continuity_serialize_calls,continuity_changed
+                result=super().serialize(*args,**kwargs)
+                continuity_serialize_calls+=1
+                if continuity_serialize_calls==2:continuity_changed=True
+                return result
+        def observed_continuity_connection(write=False):
+            if write is not True:raise RuntimeError('fixture write required')
+            db=sqlite3.connect(
+                continuity_acceptance.path.resolve().as_uri()+'?mode=rw',
+                uri=True,timeout=10,factory=ObservedContinuityConnection)
+            db.execute('PRAGMA journal_mode=DELETE')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            return db,False
+        def changed_continuity_fingerprint(path):
+            result=continuity_fingerprint(path)
+            if continuity_changed:
+                replacement=('f'*64 if result[-1]!='f'*64 else 'e'*64)
+                return (*result[:-1],replacement)
+            return result
+        acceptance_write_connection_content_continuity_pinned=False
+        continuity_acceptance._connect=observed_continuity_connection
+        acceptance_storage._main_fingerprint=changed_continuity_fingerprint
+        try:
+            try:continuity_acceptance.append(continuity_scope,admission=lambda:(
+                ccp.inspect()['head_sha256'],cca.inspect()['head_sha256']))
+            except ValueError as error:
+                acceptance_write_connection_content_continuity_pinned=(
+                    str(error)==
+                    'PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_CONTENT_CHANGED')
+        finally:
+            continuity_acceptance._connect=continuity_connect
+            acceptance_storage._main_fingerprint=continuity_fingerprint
+        retained_continuity=continuity_acceptance.inspect()
+        recovered_continuity=continuity_acceptance.append(continuity_scope,
+            admission=lambda:(ccp.inspect()['head_sha256'],
+                cca.inspect()['head_sha256']))
+        acceptance_write_connection_content_continuity_pinned=(
+            acceptance_write_connection_content_continuity_pinned and
+            continuity_serialize_calls==2 and
+            retained_continuity['records']==1 and
+            recovered_continuity['duplicate'] is True and
+            recovered_continuity['head_sha256']==
+                retained_continuity['head_sha256'])
         identity_root=base/'write-identity';identity_root.mkdir()
         ip,ia,identity_acceptance,identity_scope=_scope(identity_root)
         identity_before=identity_acceptance.path.read_bytes()
@@ -454,6 +506,7 @@ def fixture_report():
             acceptance_inspection_bound and acceptance_write_binding_pinned and
             acceptance_write_ack_replayed and acceptance_write_connection_pinned and
             acceptance_write_connection_content_pinned and
+            acceptance_write_connection_content_continuity_pinned and
             acceptance_write_file_identity_pinned and
             acceptance_write_committed_content_pinned and
             acceptance_commit_durability_replayed and
@@ -480,6 +533,8 @@ def fixture_report():
             acceptance_write_connection_pinned=acceptance_write_connection_pinned,
             acceptance_write_connection_content_pinned=
                 acceptance_write_connection_content_pinned,
+            acceptance_write_connection_content_continuity_pinned=
+                acceptance_write_connection_content_continuity_pinned,
             acceptance_write_file_identity_pinned=
                 acceptance_write_file_identity_pinned,
             acceptance_write_committed_content_pinned=

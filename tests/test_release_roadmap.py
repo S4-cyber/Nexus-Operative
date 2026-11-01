@@ -70,6 +70,47 @@ def test_rough_progress_is_weighted_scoped_reproducible_and_separate_from_accept
     assert 'Rough implementation progress' in markdown() and 'about 40%' in markdown()
 
 
+def test_acceptance_plan_covers_stages_and_preserves_separate_evidence_gates():
+    data = snapshot()
+    plan = data['acceptance_plan']
+    stages = {stage['id']: stage for stage in data['delivery_stages']}
+    assert plan['read_only'] and plan['next_major_gate'] == 'D4'
+    assert [stage['stage_id'] for stage in plan['stages']] == list(stages)
+    identities = []
+    for stage in plan['stages']:
+        expected = [dependency for dependency in stages[stage['stage_id']]['depends_on']
+            if stages[dependency]['status'] != 'ACCEPTED']
+        assert stage['unaccepted_dependencies'] == expected
+        assert len(stage['steps']) >= 3
+        for step in stage['steps']:
+            identities.append(step['id'])
+            assert step['state'] == 'REVIEW_REQUIRED'
+            assert step['title'] and step['required_evidence']
+            assert f"- [ ] {step['id']} — {step['title']}: {step['required_evidence']}" in markdown()
+    assert len(set(identities)) == len(identities)
+    assert all(plan[key] is False for key in
+        ('release_approved', 'live_orders_enabled', 'money_movement_enabled'))
+    paper = next(stage for stage in plan['stages'] if stage['stage_id'] == 'D4')
+    assert 'read-only inventory first' in paper['steps'][0]['required_evidence']
+    assert 'separately scoped saved write credentials' in paper['steps'][2]['required_evidence']
+
+
+def test_acceptance_plan_public_view_cannot_mutate_gates_or_later_responses():
+    client = TestClient(app)
+    first = client.get('/api/roadmap').json()['acceptance_plan']
+    first['live_orders_enabled'] = True
+    first['stages'][0]['steps'][0]['state'] = 'ACCEPTED'
+    first['stages'][-1]['unaccepted_dependencies'].clear()
+    first['stages'][0]['steps'].clear()
+    later = client.get('/api/roadmap').json()['acceptance_plan']
+    assert not later['live_orders_enabled']
+    assert later['stages'][0]['steps'][0]['state'] == 'REVIEW_REQUIRED'
+    assert len(later['stages'][-1]['unaccepted_dependencies']) == 8
+    for method in ('post', 'put', 'patch', 'delete'):
+        assert client.request(method, '/api/roadmap', json={'acceptance_plan': first}).status_code == 405
+    assert snapshot()['progress_estimate']['fully_accepted_stages'] == 0
+
+
 def test_discovery_roadmap_scopes_durable_budget_without_provider_claim():
     discovery=snapshot()['opportunity_discovery']
     assert discovery['requests_per_hour_shared_local_data_root']==36

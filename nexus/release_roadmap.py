@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.108'
+REVISION = '0.340.109'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -578,6 +578,71 @@ def progress_estimate():
             basis=stages[identity]['progress'],remaining=stages[identity]['remaining']) for identity,weight,done in PROGRESS_BASELINE])
 
 
+# Remaining acceptance work, not a runnable workflow or permission checklist.
+# Keep tuples immutable; every public view constructs independent containers.
+ACCEPTANCE_STEPS = (
+    ('D1', (
+        ('Native setup', 'Test a fresh ordinary-user Windows profile, install/upgrade/uninstall and preserved saved/OFF choices.'),
+        ('Beginner controls', 'Verify startup defaults, seven tabs, hover help, observed Matrix history and separate Portal/Engage controls on the installed build.'),
+        ('Owner recovery', 'Record restart, outage, emergency-cut and backup/restore results using OWNER_PAPER_ACCEPTANCE.md; retained private data stays outside Git.'),
+    )),
+    ('D2', (
+        ('Data quality', 'Independently review history provenance, deduplication, conflicts and leakage-free training/test splits.'),
+        ('Strategy evaluation', 'Measure held-out and forward results after fees, spread, slippage, liquidity limits and drawdowns against simple baselines.'),
+        ('Policy governance', 'Review calibration, drift and model updates; explicitly approve each candidate before any execution integration. Council output remains advisory.'),
+    )),
+    ('D3', (
+        ('Sustained observations', 'Retain genuine public-feed paper observations for at least 72 hours and review the 95% declared-coverage diagnostic; coverage alone does not accept the strategy.'),
+        ('Failure trials', 'Exercise disconnects, stale data, restarts, risk vetoes and independent emergency stop with durable accounting and no automatic re-engagement.'),
+        ('Independent review', 'Review actual incidents, costs, reconciliation and strategy quality before accepting autonomous paper operation.'),
+    )),
+    ('D4', (
+        ('Authorized environment', 'Use an owner-authorized paper account and native private Windows volume; accept scoped credential onboarding and authenticated read-only inventory first.'),
+        ('Recovery and coverage', 'Verify original-ID recovery, activity collection/replay, reconnect budgets, lost acknowledgements and stop behavior against that account; retain exact evidence privately.'),
+        ('Paper submission integration', 'Accept the internal single-attempt boundary, then review separately scoped saved write credentials, explicit operator controls and broker-wide pacing before connecting any strategy route.'),
+        ('Broker reconciliation', 'Match actual fills, fee associations, pending orders, holds, cash and positions; resolve discrepancies and obtain independent connected-paper acceptance.'),
+    )),
+    ('D5', (
+        ('Provider funding design', 'Select a provider-held account and reviewed provider-hosted authorization/funding flow; Nexus must not collect raw banking credentials or take custody.'),
+        ('Funds reconciliation', 'Implement pending versus settled transfers and spendable cash with scoped secrets, duplicate handling, failures and reversals.'),
+        ('Funding acceptance', 'Test provider sandbox flows, then obtain separately authorized end-to-end funding/security acceptance before treating balances as spendable.'),
+    )),
+    ('D6', (
+        ('Live risk boundary', 'Implement a separate live adapter with accepted policy, reconciled spendable funds and hard exposure, loss, order and pacing caps.'),
+        ('Controlled rollout', 'Independently review monitoring, reconciliation, emergency cut and recovery; obtain separate explicit owner authorization before any limited real-money trial.'),
+        ('Live acceptance', 'Review supervised limited-rollout evidence before expanding any autonomous live scope; release approval never activates trading.'),
+    )),
+    ('D7', (
+        ('Hosting choice', 'Verify an eligible free-tier host and quotas using a supported account; do not assume anonymous always-on compute or enable billing automatically.'),
+        ('Secure headless engine', 'Implement authenticated controls, encrypted transport/storage/backups, credential isolation, key recovery, shared Matrix deduplication and one execution owner across desktop/cloud.'),
+        ('Computer-off trial', 'Prove remote halt, quota/outage recovery, distributed fencing and durable reconciliation during multi-day paper operation with the desktop off.'),
+    )),
+    ('D8', (
+        ('End-to-end measurements', 'Measure feed-to-decision-to-provider timings, costs and bounded queues on real accepted paths; fixture throughput is not broker fill speed.'),
+        ('Resilience trials', 'Run sustained load, long-run storage, outage, power-loss, restore and rollback trials on native profiles.'),
+        ('Independent assurance', 'Complete security/risk review and operational runbooks against the exact release candidate and retained evidence.'),
+    )),
+    ('D9', (
+        ('Scope acceptance', 'Accept all D1–D8 production workflows in the agreed scope and resolve remaining defects; percentages cannot substitute for evidence.'),
+        ('Release candidate', 'Bind source, full regression, browser checks, security/history scans, Windows installer/upgrade/recovery and signed or checksum-verified distribution evidence to one exact candidate.'),
+        ('Owner release decision', 'Obtain independent final review and explicit owner approval to label 1.0. Keep live activation as a separate authorization.'),
+    )),
+)
+
+
+def acceptance_plan():
+    stages = {row['id']: row for row in DELIVERY_STAGES}
+    return dict(read_only=True, purpose='REMAINING_ACCEPTANCE_WORK_NOT_EXECUTION_AUTHORITY',
+        release_approved=False, live_orders_enabled=False, money_movement_enabled=False,
+        next_major_gate='D4',
+        stages=[dict(stage_id=identity,
+            unaccepted_dependencies=[dependency for dependency in stages[identity]['depends_on']
+                if stages[dependency]['status'] != 'ACCEPTED'],
+            steps=[dict(id=f'{identity}.{index}', title=title, required_evidence=evidence,
+                state='REVIEW_REQUIRED') for index, (title, evidence) in enumerate(steps, 1)])
+            for identity, steps in ACCEPTANCE_STEPS])
+
+
 SETTINGS = (
     ('broad_refresh_seconds',5),('ranking_seconds',15),('ai_candidate_count',30),
     ('adaptive_acceleration',True),('autonomous_paper_first',True),
@@ -627,7 +692,7 @@ NEXT = (
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
-                current_hardening=CURRENT_HARDENING,progress_estimate=progress_estimate(),launch_assessment=dict(stage='EXPERIMENTAL_LOCAL_PAPER_PREPRODUCTION',full_release_date_established=False,percentage_complete_established=False,rough_engineering_estimate_available=True,next_major_gate='CONNECTED_BROKER_PAPER_AND_SUSTAINED_TRIAL_ACCEPTANCE',minimum_coverage_window_hours=72,coverage_is_release_acceptance=False),first_run_setup=dict(FIRST_RUN),
+                current_hardening=CURRENT_HARDENING,progress_estimate=progress_estimate(),acceptance_plan=acceptance_plan(),launch_assessment=dict(stage='EXPERIMENTAL_LOCAL_PAPER_PREPRODUCTION',full_release_date_established=False,percentage_complete_established=False,rough_engineering_estimate_available=True,next_major_gate='CONNECTED_BROKER_PAPER_AND_SUSTAINED_TRIAL_ACCEPTANCE',minimum_coverage_window_hours=72,coverage_is_release_acceptance=False),first_run_setup=dict(FIRST_RUN),
                 opportunity_discovery=dict(implemented=True,scope='USD spot crypto research only',default_with_portal=True,burst_seconds=900,markets_per_burst=4,requests_per_hour_shared_local_data_root=36,durable_request_admissions=True,provider_or_ip_wide_budget_verified=False,selected_market_limit=6,summary_limit=256,stored_in_process_memory=True,execution_integration=False,forecasts_validated=False),
                 production_user_flow=list(PRODUCTION_USER_FLOW),live_workflow_available=False,
                 institutional_design=dict(document='INSTITUTIONAL_DESIGN.md',status='PUBLIC_DESIGN_REVIEW_OFFLINE_FOUNDATION',
@@ -647,7 +712,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.108 moves the durable provider-read receipt connection proof ahead of SQLite setup. Every opened receipt connection must expose exactly one main database at the intended store path before busy-timeout or journal configuration; an existing writer must additionally match the exact bounded pathname bytes before any write PRAGMA or transaction, while a substituted fresh connection is rejected before schema creation and the exact empty target is removed. Exact-source v0.340.107 commit c500f6a58e1c7197901f9bb1dd1d229810be2300 exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.108 workflows remain mandatory. This closes one synthetic local durable-reconciliation evidence boundary but is not atomic descriptor ownership, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.'
+CURRENT_HARDENING = 'v0.340.109 adds a source-controlled, read-only remaining-acceptance plan covering all nine delivery stages, with stable step identities, required evidence and unaccepted prerequisites. The API and generated roadmap expose the same plan; no checkbox can approve a stage or enable execution. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages accepted. Connected broker-paper and sustained genuine-feed acceptance remain the next operational gates. Existing provider-read receipt setup fences remain intact. No UI control, saved credential, provider IO, automatic retry, funding/live/cloud authority or release approval is added. Fresh exact-source hosted workflows remain required.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():
@@ -666,6 +731,14 @@ def markdown():
         '| Stage | Relative scope weight | Rough implementation | Acceptance |','| --- | --- | --- | --- |']
     lines += [f"| {row['id']}: {row['title']} | {row['weight_percent']}% | {row['implementation_estimate_percent']}% | {row['acceptance_status']} |" for row in estimate['stages']]
     lines += ['',estimate['update_policy'],'',f"Assessment basis: commit `{estimate['basis_commit']}`; exact weighted index {estimate['weighted_index_percent']} before rounding. This is an assessment, not an independently measured completion percentage or permission."]
+    lines += ['', '## Remaining milestone acceptance checklist', '',
+        'This is a read-only work plan, not an executable workflow or trading permission. Steps remain REVIEW_REQUIRED until separately evidenced and reviewed. Dependencies describe acceptance sequencing; development can proceed in parallel. The next major operational gate is D4, alongside sustained D3 trials.']
+    stages_by_id = {stage['id']: stage for stage in d['delivery_stages']}
+    for stage in d['acceptance_plan']['stages']:
+        dependencies = ', '.join(stage['unaccepted_dependencies']) or 'None'
+        lines += ['', f"### {stage['stage_id']}: {stages_by_id[stage['stage_id']]['title']}", '',
+            f'Unaccepted prerequisite stages: {dependencies}.', '']
+        lines += [f"- [ ] {step['id']} — {step['title']}: {step['required_evidence']}" for step in stage['steps']]
     lines += ['','## Standing target settings (verify actual runtime separately)','']+[f'- {key}: {value}' for key,value in SETTINGS]
     lines += ['','## Intended production experience','']+[f'{i}. {step}' for i,step in enumerate(PRODUCTION_USER_FLOW,1)]
     lines += ['','Bank authorization, real funding and live execution are future work. Built-in numerical intelligence is included; external AI is optional. The current fixed BTC paper policy executes trades; learned council output remains advisory.','']

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.108. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.109. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.108 moves the durable provider-read receipt connection proof ahead of SQLite setup. Every opened receipt connection must expose exactly one main database at the intended store path before busy-timeout or journal configuration; an existing writer must additionally match the exact bounded pathname bytes before any write PRAGMA or transaction, while a substituted fresh connection is rejected before schema creation and the exact empty target is removed. Exact-source v0.340.107 commit c500f6a58e1c7197901f9bb1dd1d229810be2300 exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.108 workflows remain mandatory. This closes one synthetic local durable-reconciliation evidence boundary but is not atomic descriptor ownership, physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.109 adds a source-controlled, read-only remaining-acceptance plan covering all nine delivery stages, with stable step identities, required evidence and unaccepted prerequisites. The API and generated roadmap expose the same plan; no checkbox can approve a stage or enable execution. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages accepted. Connected broker-paper and sustained genuine-feed acceptance remain the next operational gates. Existing provider-read receipt setup fences remain intact. No UI control, saved credential, provider IO, automatic retry, funding/live/cloud authority or release approval is added. Fresh exact-source hosted workflows remain required.
 
 ```mermaid
 flowchart TD
@@ -68,6 +68,83 @@ Manual relative-scope weights multiplied by rough implementation estimates; over
 Reassess after meaningful integration, acceptance or scope changes; no automatic increase for versions, patches or passing test counts. Estimates may decrease. Report occasionally in development updates.
 
 Assessment basis: commit `b2a9bc6da241bb8c7f0e1dfe1b2ed6b251bf467c`; exact weighted index 38.0 before rounding. This is an assessment, not an independently measured completion percentage or permission.
+
+## Remaining milestone acceptance checklist
+
+This is a read-only work plan, not an executable workflow or trading permission. Steps remain REVIEW_REQUIRED until separately evidenced and reviewed. Dependencies describe acceptance sequencing; development can proceed in parallel. The next major operational gate is D4, alongside sustained D3 trials.
+
+### D1: Usable research application
+
+Unaccepted prerequisite stages: None.
+
+- [ ] D1.1 — Native setup: Test a fresh ordinary-user Windows profile, install/upgrade/uninstall and preserved saved/OFF choices.
+- [ ] D1.2 — Beginner controls: Verify startup defaults, seven tabs, hover help, observed Matrix history and separate Portal/Engage controls on the installed build.
+- [ ] D1.3 — Owner recovery: Record restart, outage, emergency-cut and backup/restore results using OWNER_PAPER_ACCEPTANCE.md; retained private data stays outside Git.
+
+### D2: Learning models with defensible strategy evidence
+
+Unaccepted prerequisite stages: D1.
+
+- [ ] D2.1 — Data quality: Independently review history provenance, deduplication, conflicts and leakage-free training/test splits.
+- [ ] D2.2 — Strategy evaluation: Measure held-out and forward results after fees, spread, slippage, liquidity limits and drawdowns against simple baselines.
+- [ ] D2.3 — Policy governance: Review calibration, drift and model updates; explicitly approve each candidate before any execution integration. Council output remains advisory.
+
+### D3: Autonomous paper trading
+
+Unaccepted prerequisite stages: D1, D2.
+
+- [ ] D3.1 — Sustained observations: Retain genuine public-feed paper observations for at least 72 hours and review the 95% declared-coverage diagnostic; coverage alone does not accept the strategy.
+- [ ] D3.2 — Failure trials: Exercise disconnects, stale data, restarts, risk vetoes and independent emergency stop with durable accounting and no automatic re-engagement.
+- [ ] D3.3 — Independent review: Review actual incidents, costs, reconciliation and strategy quality before accepting autonomous paper operation.
+
+### D4: Connected broker paper trading
+
+Unaccepted prerequisite stages: D3.
+
+- [ ] D4.1 — Authorized environment: Use an owner-authorized paper account and native private Windows volume; accept scoped credential onboarding and authenticated read-only inventory first.
+- [ ] D4.2 — Recovery and coverage: Verify original-ID recovery, activity collection/replay, reconnect budgets, lost acknowledgements and stop behavior against that account; retain exact evidence privately.
+- [ ] D4.3 — Paper submission integration: Accept the internal single-attempt boundary, then review separately scoped saved write credentials, explicit operator controls and broker-wide pacing before connecting any strategy route.
+- [ ] D4.4 — Broker reconciliation: Match actual fills, fee associations, pending orders, holds, cash and positions; resolve discrepancies and obtain independent connected-paper acceptance.
+
+### D5: Secure deposits and available-funds verification
+
+Unaccepted prerequisite stages: D4.
+
+- [ ] D5.1 — Provider funding design: Select a provider-held account and reviewed provider-hosted authorization/funding flow; Nexus must not collect raw banking credentials or take custody.
+- [ ] D5.2 — Funds reconciliation: Implement pending versus settled transfers and spendable cash with scoped secrets, duplicate handling, failures and reversals.
+- [ ] D5.3 — Funding acceptance: Test provider sandbox flows, then obtain separately authorized end-to-end funding/security acceptance before treating balances as spendable.
+
+### D6: Governed autonomous live trading
+
+Unaccepted prerequisite stages: D2, D3, D4, D5.
+
+- [ ] D6.1 — Live risk boundary: Implement a separate live adapter with accepted policy, reconciled spendable funds and hard exposure, loss, order and pacing caps.
+- [ ] D6.2 — Controlled rollout: Independently review monitoring, reconciliation, emergency cut and recovery; obtain separate explicit owner authorization before any limited real-money trial.
+- [ ] D6.3 — Live acceptance: Review supervised limited-rollout evidence before expanding any autonomous live scope; release approval never activates trading.
+
+### D7: Secure computer-off operation and shared Matrix hub
+
+Unaccepted prerequisite stages: D3, D4.
+
+- [ ] D7.1 — Hosting choice: Verify an eligible free-tier host and quotas using a supported account; do not assume anonymous always-on compute or enable billing automatically.
+- [ ] D7.2 — Secure headless engine: Implement authenticated controls, encrypted transport/storage/backups, credential isolation, key recovery, shared Matrix deduplication and one execution owner across desktop/cloud.
+- [ ] D7.3 — Computer-off trial: Prove remote halt, quota/outage recovery, distributed fencing and durable reconciliation during multi-day paper operation with the desktop off.
+
+### D8: Speed, resilience and independent acceptance
+
+Unaccepted prerequisite stages: D2, D3, D4.
+
+- [ ] D8.1 — End-to-end measurements: Measure feed-to-decision-to-provider timings, costs and bounded queues on real accepted paths; fixture throughput is not broker fill speed.
+- [ ] D8.2 — Resilience trials: Run sustained load, long-run storage, outage, power-loss, restore and rollback trials on native profiles.
+- [ ] D8.3 — Independent assurance: Complete security/risk review and operational runbooks against the exact release candidate and retained evidence.
+
+### D9: 1.0 production release
+
+Unaccepted prerequisite stages: D1, D2, D3, D4, D5, D6, D7, D8.
+
+- [ ] D9.1 — Scope acceptance: Accept all D1–D8 production workflows in the agreed scope and resolve remaining defects; percentages cannot substitute for evidence.
+- [ ] D9.2 — Release candidate: Bind source, full regression, browser checks, security/history scans, Windows installer/upgrade/recovery and signed or checksum-verified distribution evidence to one exact candidate.
+- [ ] D9.3 — Owner release decision: Obtain independent final review and explicit owner approval to label 1.0. Keep live activation as a separate authorization.
 
 ## Standing target settings (verify actual runtime separately)
 

@@ -1,5 +1,11 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Candidate update on 2026-11-01
+
+v0.340.110 connects the source-controlled 28-step acceptance plan to the existing Portal roadmap view, with bounded validation, exact prerequisite/status checks, literal text rendering and stale-result clearing. Narrow-window testing also prompted shorter broker-recovery and pacing-review help. Source v0.340.108 passed all three hosted workflows; v0.340.109 security and browser jobs passed at the initial check while its remaining jobs were still running. Fresh exact-source v0.340.110 hosted checks remain required.
+
+The implementation estimate remains about 40% (rough range 30–45%, low confidence), with 0/9 major stages fully accepted. This usability work does not close authorized broker-paper, sustained real-feed, funds, live/cloud, independent or owner acceptance. The next operational gate is still supervised connected-paper acceptance alongside sustained local paper trials. Local paper testing needs no deposit; connected-paper acceptance needs an authorized paper account and scoped local credential setup. No launch date is established, and historical conditional planning ranges below are not a delivery commitment.
+
 ## Candidate update on 2026-10-30
 
 Current candidate: v0.340.62, based on published v0.340.61 source `aecfa21d3eccf51bd2749944e143f18e344ad69a`. v0.340.62 increases only the hosted Windows/Python 3.11 complete-regression job's finite outer budget from 35 to 60 minutes. Exact compile and full pytest commands, pinned Actions, nonpersistent checkout credentials, separate browser/evidence jobs and application behavior are unchanged. v0.340.61 security 41122236996 and Windows 41122237165 passed. Research 41122237311 passed browser/help and saved evidence but was cancelled at 75% after 3,548 passes and 16 skips when offline regression exhausted the old budget; it is not pre-claimed. Fresh exact-source v0.340.62 results and actual authorized paper-account acceptance remain required.

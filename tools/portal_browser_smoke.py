@@ -27,8 +27,8 @@ def fixtures(path,pending=True,missing_history=False):
     if path=='/api/matrix/hub':return dict(bars=300,conflicts=0,database_bytes=32768,database_byte_limit=134217728,artifact_bytes=8192,artifact_byte_limit=33554432)
     if path.startswith('/api/matrix/hub/signal?'):return dict(decision='ABSTAIN_STALE_OR_FUTURE_DATA',model_content_sha256='a'*64,forecast_as_of=1000,age_seconds=999999,forecasts=[])
     if path=='/api/roadmap':
-        from nexus.release_roadmap import progress_estimate
-        return dict(progress_estimate=progress_estimate(),read_only=True,revision='0.86.0',branch='development/windows-portal-foundation',delivery_stages=[dict(id='D5',title='Secure deposits',status='NOT_IMPLEMENTED',progress='Preview only.',remaining='Reconcile spendable funds.'),dict(id='D9',title='1.0 production release',status='BLOCKED',progress='Prerelease.',remaining='Independent acceptance.')],production_scope='Separate live authorization required.',milestones=[],strategic_goals=[],next_steps=['Validate sustained paper operation.'],supporting_track='Cloud planned.',speed_target='No broker speed validation.',resume='Read source roadmap.')
+        from nexus.release_roadmap import snapshot
+        return snapshot()
     if path=='/api/execution/alpaca-paper/fee-projection-fixture':return dict(input_consistency_ok=True,reasons=[],projected_balances=dict(USD='1009.78011',BTC='0'),fees_by_asset=dict(BTC='0.001',USD='0.10989'),cash_path=dict(declared_path_consistency_ok=True),activity_normalization=dict(status='REVIEW_REQUIRED',fee_coverage_complete=False,executions=[{},{}],fee_debits=[{},{}]))
     if path=='/api/execution/alpaca-paper/request-recovery-fixture':return dict(bounded_recovery_step=dict(source='TEMPORARY_BOUNDED_RECOVERY_STEP_FIXTURE',passed=True,first_request_selected=True,next_request_selected=True,cooldown_review_unchanged=True,stale_head_prevented_io=True,steps_performed=2,get_requests=4,**{k:False for k in ('automatic_continuation', 'automatic_retry', 'automatic_submission', 'ready_for_routing', 'broker_connected', 'broker_account_reconciled', 'spendable_funds_verified', 'ledger_applied', 'live_orders_enabled', 'money_movement_enabled', 'release_approved', 'actual_provider_access', 'actual_vault_access')}),activity_link_review=dict(source='TEMPORARY_REQUEST_ACTIVITY_LINK_FIXTURE',passed=True,original_request_linked=True,explicit_fills_checked=True,offsetting_bad_price_detected=True,journals_unchanged=True,**{k:False for k in ('source_attested', 'activity_coverage_verified', 'fee_coverage_complete', 'fee_execution_links_verified', 'holds_reconciled', 'broker_account_reconciled', 'spendable_funds_verified', 'ledger_applied', 'ready_for_routing', 'broker_connected', 'live_orders_enabled', 'money_movement_enabled', 'automatic_retry', 'release_approved')}),submission_review=dict(read_only=True,passive=True,clear_before_marker=True,recovery_required_after_marker=True,sendable=False,routing_authorized=False,capacity_reserved=False),passed=True,current_replay_duplicate=True,lookup_recovery=dict(attempts=2,rate_limit_wait_seconds=30,interruption_recorded=True,late_completion_rejected=True),recovered=dict(retained_events=6,requests=[dict(snapshot=dict(filled_quantity='1'))]))
     if path=='/api/public-data/efficiency':return dict(read_only=True,requests=12,transport_attempts=4,cache_hits=6,shared_returns=2,transport_failures=0,wait_timeouts=0,active_requests=0,active_request_limit=3,mean_successful_transport_ms=120)
@@ -162,6 +162,13 @@ def run(output,channel=None):
                         if path=='/api/execution/intent/'+ORDER+'/cancel':
                             state['pending']=False;request.fulfill(json=dict(status='SIMULATED_CANCELLED'));return
                         blocked.append('UNEXPECTED_WRITE '+path);request.abort();return
+                    if path=='/api/roadmap':
+                        result=fixtures(path,state['pending'],state['missing_history'])
+                        if state.get('roadmap_mode')=='promoted':
+                            result['acceptance_plan']['stages'][0]['steps'][0]['state']='ACCEPTED'
+                        if state.get('roadmap_mode')=='literal':
+                            result['acceptance_plan']['stages'][0]['steps'][0]['title']='<img src=x onerror=alert(1)>'
+                        request.fulfill(json=result);return
                     try:request.fulfill(json=fixtures(path,state['pending'],state['missing_history']))
                     except ValueError as exc:blocked.append(str(exc));request.abort()
                 page.route('**/*',route)
@@ -276,8 +283,29 @@ def run(output,channel=None):
                             page.locator('#release-roadmap-load').click()
                             expect(page.locator('#release-progress-summary')).to_contain_text('About 40%')
                             expect(page.locator('#release-progress-summary')).to_contain_text('0/9 major stages fully accepted')
-                            expect(page.locator('#release-roadmap-content')).to_contain_text('D5 / Secure deposits / NOT_IMPLEMENTED')
+                            expect(page.locator('#release-roadmap-content')).to_contain_text('D5 / Secure deposits and available-funds verification / NOT_IMPLEMENTED')
                             expect(page.locator('#release-roadmap-content')).to_contain_text('D9 / 1.0 production release / BLOCKED')
+                            expect(page.locator('#release-roadmap-content')).to_contain_text('REMAINING ACCEPTANCE CHECKLIST / REVIEW REQUIRED')
+                            expect(page.locator('#release-roadmap-content')).to_contain_text('[ ] D4.1 / Authorized environment')
+                            expect(page.locator('#release-roadmap-content')).to_contain_text('[ ] D9.3 / Owner release decision')
+                            expect(page.locator('#release-roadmap-content')).to_contain_text('Unaccepted prerequisites: D3')
+                            expect(page.locator('#release-roadmap-content').locator('input')).to_have_count(0)
+                            if page.locator('#release-roadmap-content').evaluate('element => parseFloat(getComputedStyle(element).fontSize)')<16:
+                                raise ValueError('ROADMAP_TEXT_TOO_SMALL')
+                            before_roadmap_writes=len(writes)
+                            state['roadmap_mode']='promoted'
+                            page.locator('#release-roadmap-load').click()
+                            expect(page.locator('#release-progress-summary')).to_contain_text('could not be verified')
+                            expect(page.locator('#release-roadmap-content')).to_contain_text('Roadmap unavailable or inconsistent')
+                            expect(page.locator('#release-roadmap-content')).not_to_contain_text('[ ] D4.1')
+                            state['roadmap_mode']='literal'
+                            page.locator('#release-roadmap-load').click()
+                            expect(page.locator('#release-roadmap-content')).to_contain_text('<img src=x onerror=alert(1)>')
+                            expect(page.locator('#release-roadmap-content').locator('img')).to_have_count(0)
+                            state.pop('roadmap_mode')
+                            page.locator('#release-roadmap-load').click()
+                            expect(page.locator('#release-roadmap-content')).to_contain_text('[ ] D9.3 / Owner release decision')
+                            if len(writes)!=before_roadmap_writes:raise ValueError('ROADMAP_VIEW_SENT_WRITE')
                             page.mouse.move(0,0)
                             page.screenshot(path=str(output/f'startup-{width}x{height}.png'),full_page=True)
                         for control in page.locator('button,input,select,textarea').all():

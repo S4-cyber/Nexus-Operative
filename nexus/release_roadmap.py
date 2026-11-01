@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.109'
+REVISION = '0.340.110'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -712,7 +712,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.109 adds a source-controlled, read-only remaining-acceptance plan covering all nine delivery stages, with stable step identities, required evidence and unaccepted prerequisites. The API and generated roadmap expose the same plan; no checkbox can approve a stage or enable execution. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages accepted. Connected broker-paper and sustained genuine-feed acceptance remain the next operational gates. Existing provider-read receipt setup fences remain intact. No UI control, saved credential, provider IO, automatic retry, funding/live/cloud authority or release approval is added. Fresh exact-source hosted workflows remain required.'
+CURRENT_HARDENING = 'v0.340.110 displays the bundled 28-step remaining-acceptance checklist through the existing Portal roadmap button. The controller validates all nine stage identities, prerequisite/status consistency, bounded step identities/text and false authority flags before displaying any current assessment. Malformed or promoted plans clear earlier progress/checklist output; legacy references explicitly report an unavailable detailed checklist. Rendering uses literal text and creates no editable checkboxes, settings or execution controls. Controller and intercepted-browser checks cover these boundaries. Existing broker, risk, emergency-stop and OFF-default behavior is unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages accepted; actual authorized broker-paper and sustained-feed acceptance remain required. Fresh exact-source hosted workflows remain mandatory.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

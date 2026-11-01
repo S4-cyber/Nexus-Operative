@@ -149,3 +149,33 @@ def test_receipt_reader_close_error_requires_explicit_retry(tmp_path,monkeypatch
     retry=store.inspect()
     assert retry['retained_receipts']==1
     assert retry['head_sha256']==first['head_sha256']
+
+
+def test_receipt_writer_close_error_requires_explicit_duplicate_recovery(
+        tmp_path,monkeypatch):
+    store,scope,receipt,head=contended_append(tmp_path,'close')
+    original_connect=store._connect
+    class CloseFailureConnection(sqlite3.Connection):
+        def close(self):
+            super().close()
+            raise RuntimeError('private write close failure')
+    def close_failure(write=False):
+        if not write:return original_connect(write=write)
+        db=sqlite3.connect(store.path.resolve().as_uri()+'?mode=rw',uri=True,
+            timeout=10,factory=CloseFailureConnection)
+        db.execute('PRAGMA journal_mode=DELETE')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('BEGIN IMMEDIATE')
+        return db
+    monkeypatch.setattr(store,'_connect',close_failure)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN$')):
+        store.append(scope,expected_head=head,admission=lambda:receipt)
+    monkeypatch.setattr(store,'_connect',original_connect)
+    replay=store.inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    final=store.inspect()
+    assert replay['retained_receipts']==final['retained_receipts']==2
+    assert retry['duplicate'] is True
+    assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']

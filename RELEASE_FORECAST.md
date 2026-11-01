@@ -1,6 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.115
+## Current candidate: v0.340.116
+
+Retained account-read receipt writes now report a sanitized fixed durability-uncertain result if SQLite connection close fails after commit. The receipt remains exactly once and only an explicit duplicate replay bound to the observed head can recover acknowledgement.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.115
 
 Retained account-read receipt inspection now reports a sanitized fixed uncertainty result if SQLite connection close fails after a complete read. Receipt history remains unchanged and only a fresh explicit inspection retry can return success, matching the provider-read boundary.
 

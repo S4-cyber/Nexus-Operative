@@ -153,24 +153,35 @@ class PaperReadReviewStore:
         if current['head_sha256']!=expected_head:_fail('HEAD_CHANGED')
         if admission()!=receipt:_fail('ADMISSION_CHANGED')
         if precommit_check() is not True:_fail('INPUT_REVOKED')
-        with closing(self._connect(write=True)) as db:
-            with _transaction(db):
-                count=db.execute('SELECT count(*) FROM records').fetchone()[0]
-                if count==0:
-                    head=self._insert(db,0,dict(schema=SCHEMA,account_sha256=self.account),ZERO)
-                    receipts=[]
-                else:head,receipts=self._load(db)
-                if expected_head==ZERO and count==0:pass
-                elif head!=expected_head:_fail('HEAD_CHANGED')
-                duplicate=bool(receipts and receipts[-1]['receipt_sha256']==receipt)
-                if not duplicate:
-                    if len(receipts)>=MAX_RECORDS:_fail('RECORD_CAP')
-                    head=self._insert(db,len(receipts)+1,dict(scope=scope,receipt_sha256=receipt),head)
-                    self._load(db)
-                if admission()!=receipt:_fail('ADMISSION_CHANGED')
-                if precommit_check() is not True:_fail('INPUT_REVOKED')
-            if admission()!=receipt:_fail('ADMISSION_CHANGED_AFTER_COMMIT')
-            if precommit_check() is not True:_fail('INPUT_REVOKED_AFTER_COMMIT')
-            return dict(mode='LOCAL_MIXED_READ_REVIEW_RECEIPT',head_sha256=head,
-                receipt_sha256=receipt,duplicate=duplicate,read_only=True,
-                ready_for_routing=False,release_approved=False)
+        db=self._connect(write=True);committed=False;result=None
+        try:
+            with closing(db):
+                with _transaction(db):
+                    count=db.execute('SELECT count(*) FROM records').fetchone()[0]
+                    if count==0:
+                        head=self._insert(db,0,dict(schema=SCHEMA,account_sha256=self.account),ZERO)
+                        receipts=[]
+                    else:head,receipts=self._load(db)
+                    if expected_head==ZERO and count==0:pass
+                    elif head!=expected_head:_fail('HEAD_CHANGED')
+                    duplicate=bool(receipts and receipts[-1]['receipt_sha256']==receipt)
+                    if not duplicate:
+                        if len(receipts)>=MAX_RECORDS:_fail('RECORD_CAP')
+                        head=self._insert(db,len(receipts)+1,dict(scope=scope,receipt_sha256=receipt),head)
+                        self._load(db)
+                    if admission()!=receipt:_fail('ADMISSION_CHANGED')
+                    if precommit_check() is not True:_fail('INPUT_REVOKED')
+                committed=True
+                if admission()!=receipt:_fail('ADMISSION_CHANGED_AFTER_COMMIT')
+                if precommit_check() is not True:_fail('INPUT_REVOKED_AFTER_COMMIT')
+                result=dict(mode='LOCAL_MIXED_READ_REVIEW_RECEIPT',head_sha256=head,
+                    receipt_sha256=receipt,duplicate=duplicate,read_only=True,
+                    ready_for_routing=False,release_approved=False)
+            return result
+        except BaseException as error:
+            # A committed row may exist even when connection-close
+            # acknowledgement fails. Never reconstruct success or retry it
+            # automatically; require an explicit exact-head duplicate replay.
+            if committed and isinstance(error,Exception) and type(error) is not ValueError:
+                _fail('COMMIT_DURABILITY_UNCERTAIN')
+            raise

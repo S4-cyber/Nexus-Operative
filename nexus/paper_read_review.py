@@ -22,6 +22,7 @@ FLAGS=('source_attested','source_coverage_verified','clock_domains_verified',
 CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'legacy_tail_unverified','review_preserved_files','durable_receipt_replays',
         'durable_receipt_read_close_error_requires_explicit_retry',
+        'durable_receipt_write_close_error_requires_explicit_recovery',
         'private_results_not_retained')
 
 
@@ -257,6 +258,37 @@ def fixture_report():
                 'PAPER_READ_REVIEW_STORE_READ_ACKNOWLEDGEMENT_UNCERTAIN')
         finally:receipt_reader._connect=receipt_connect
         read_close_retry=receipt_reader.inspect()
+        writer=PaperReadReviewStore(root/'review.sqlite3',gate)
+        writer_state=writer.inspect()
+        writer_scope=dict(writer_state['receipts'][-1]['scope'],
+            review_sha256=sha(dict(fixture='write-close')))
+        writer_receipt=sha(writer_scope);writer_connect=writer._connect
+        class WriteCloseFailureConnection(sqlite3.Connection):
+            def close(self):
+                super().close()
+                raise RuntimeError('private write close failure')
+        def fail_write_close(write=False):
+            if not write:return writer_connect(write=write)
+            db=sqlite3.connect((root/'review.sqlite3').resolve().as_uri()+
+                '?mode=rw',uri=True,timeout=10,
+                factory=WriteCloseFailureConnection)
+            db.execute('PRAGMA journal_mode=DELETE')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            return db
+        write_close_denied=False
+        writer._connect=fail_write_close
+        try:writer.append(writer_scope,expected_head=writer_state['head_sha256'],
+            admission=lambda:writer_receipt)
+        except ValueError as error:
+            write_close_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN')
+        finally:writer._connect=writer_connect
+        write_close_replay=writer.inspect()
+        write_close_retry=writer.append(writer_scope,
+            expected_head=write_close_replay['head_sha256'],
+            admission=lambda:writer_receipt)
+        write_close_final=writer.inspect()
         store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
@@ -269,6 +301,14 @@ def fixture_report():
                 read_close_denied and
                 read_close_retry['retained_receipts']==1 and
                 read_close_retry['head_sha256']==receipt['head_sha256']),
+            durable_receipt_write_close_error_requires_explicit_recovery=(
+                write_close_denied and
+                write_close_replay['retained_receipts']==2 and
+                write_close_final['retained_receipts']==2 and
+                write_close_retry['duplicate'] is True and
+                write_close_retry['head_sha256']==
+                    write_close_replay['head_sha256']==
+                    write_close_final['head_sha256']),
             private_results_not_retained=all(token not in store_bytes for token in
                 (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
                 not _contains_exact_scalar(retained,'1000'))

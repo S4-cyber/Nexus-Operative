@@ -132,8 +132,16 @@ class PaperReadReviewStore:
         if not self.path.exists():
             return dict(mode='LOCAL_MIXED_READ_REVIEW_HISTORY',initialized=False,account_sha256=self.account,
                 head_sha256=ZERO,retained_receipts=0,receipts=[],read_only=True,ready_for_routing=False,release_approved=False)
-        with closing(self._connect()) as db:
-            with _transaction(db):head,receipts=self._load(db)
+        try:
+            with closing(self._connect()) as db:
+                with _transaction(db):head,receipts=self._load(db)
+        except BaseException as error:
+            # A normal runtime failure after the read may include connection
+            # close, so the caller cannot treat the result as acknowledged.
+            # Preserve fixed semantic ValueErrors and process-control signals.
+            if isinstance(error,Exception) and type(error) is not ValueError:
+                _fail('READ_ACKNOWLEDGEMENT_UNCERTAIN')
+            raise
         return dict(mode='LOCAL_MIXED_READ_REVIEW_HISTORY',initialized=True,account_sha256=self.account,
             head_sha256=head,retained_receipts=len(receipts),receipts=receipts,read_only=True,
             ready_for_routing=False,release_approved=False)

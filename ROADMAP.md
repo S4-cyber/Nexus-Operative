@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.114. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.115. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.114 makes provider-read receipt inspection fail closed when an ordinary connection-close acknowledgement fault follows a complete read. It returns one fixed sanitized uncertainty code, preserves the exact receipt history and requires an explicit fresh inspection retry; interrupts and process-exit signals remain unconverted. The v0.340.113 committed-write close recovery and v0.340.111 packaged history-only review remain intact. This is local durability evidence, not provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted; fresh exact-source hosted workflows remain required.
+Current hardening: v0.340.115 gives retained account-read receipt inspection the same fail-closed connection-close acknowledgement boundary as the provider-read receipt path. An ordinary close failure returns one fixed sanitized uncertainty code, leaves the exact receipt history unchanged and requires an explicit fresh inspection retry; semantic validation errors, interrupts and process-exit signals remain unconverted. The v0.340.114 provider-read boundary, v0.340.113 committed-write close recovery and v0.340.111 packaged history-only review remain intact. This is local reconciliation durability evidence, not provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted; fresh exact-source hosted workflows remain required.
 
 ```mermaid
 flowchart TD

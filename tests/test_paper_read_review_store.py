@@ -123,3 +123,29 @@ def test_read_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
         blocker.execute('BEGIN EXCLUSIVE')
         with pytest.raises(ValueError,match=r'^PAPER_READ_REVIEW_STORE_DATABASE_BUSY$'):store.inspect()
     assert store.inspect()==expected
+
+
+def test_receipt_reader_close_error_requires_explicit_retry(tmp_path,monkeypatch):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    first=review.retain_review(path,gate,bindings,expected_head=head)
+    store=PaperReadReviewStore(path,gate);saved=path.read_bytes()
+    original_connect=store._connect
+    class CloseFailureConnection(sqlite3.Connection):
+        def close(self):
+            super().close()
+            raise RuntimeError('private read close failure')
+    def close_failure(write=False):
+        if write:return original_connect(write=write)
+        db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+            timeout=10,factory=CloseFailureConnection)
+        db.execute('PRAGMA query_only=ON')
+        return db
+    monkeypatch.setattr(store,'_connect',close_failure)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_READ_ACKNOWLEDGEMENT_UNCERTAIN$')):
+        store.inspect()
+    assert path.read_bytes()==saved
+    monkeypatch.setattr(store,'_connect',original_connect)
+    retry=store.inspect()
+    assert retry['retained_receipts']==1
+    assert retry['head_sha256']==first['head_sha256']

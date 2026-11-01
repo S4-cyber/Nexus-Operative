@@ -21,6 +21,7 @@ FLAGS=('source_attested','source_coverage_verified','clock_domains_verified',
        'automatic_retry','automatic_continuation','release_approved')
 CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'legacy_tail_unverified','review_preserved_files','durable_receipt_replays',
+        'durable_receipt_read_close_error_requires_explicit_retry',
         'private_results_not_retained')
 
 
@@ -234,6 +235,28 @@ def fixture_report():
         receipt=retain_review(root/'review.sqlite3',gate,bindings,expected_head=head)
         from nexus.paper_read_review_store import PaperReadReviewStore
         retained=PaperReadReviewStore(root/'review.sqlite3',gate).inspect()
+        receipt_reader=PaperReadReviewStore(root/'review.sqlite3',gate)
+        receipt_connect=receipt_reader._connect
+        import sqlite3
+        class ReadCloseFailureConnection(sqlite3.Connection):
+            def close(self):
+                super().close()
+                raise RuntimeError('private read close failure')
+        def fail_read_close(write=False):
+            if write:return receipt_connect(write=write)
+            db=sqlite3.connect((root/'review.sqlite3').resolve().as_uri()+
+                '?mode=ro',uri=True,timeout=10,
+                factory=ReadCloseFailureConnection)
+            db.execute('PRAGMA query_only=ON')
+            return db
+        read_close_denied=False
+        receipt_reader._connect=fail_read_close
+        try:receipt_reader.inspect()
+        except ValueError as error:
+            read_close_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_READ_ACKNOWLEDGEMENT_UNCERTAIN')
+        finally:receipt_reader._connect=receipt_connect
+        read_close_retry=receipt_reader.inspect()
         store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
@@ -242,6 +265,10 @@ def fixture_report():
             legacy_tail_unverified=not legacy['receipt_bindings_consistent'] and 'LEGACY_PURPOSE_UNVERIFIED' in legacy['review_reasons'],
             review_preserved_files=unchanged,
             durable_receipt_replays=retained['retained_receipts']==1 and retained['head_sha256']==receipt['head_sha256'],
+            durable_receipt_read_close_error_requires_explicit_retry=(
+                read_close_denied and
+                read_close_retry['retained_receipts']==1 and
+                read_close_retry['head_sha256']==receipt['head_sha256']),
             private_results_not_retained=all(token not in store_bytes for token in
                 (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
                 not _contains_exact_scalar(retained,'1000'))

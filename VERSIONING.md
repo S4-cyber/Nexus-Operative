@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.100 (pre-release).** This build requires an existing private activity-acceptance store to match the caller's exact replayed current journal heads and retained baseline-plus-transition counts. Any changed binding is preserved and blocked; exact current-state replay remains explicit and idempotent. It adds no Portal route, saved credential, provider IO, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+**Current development build: 0.340.101 (pre-release).** This build pins every existing writable private activity-acceptance SQLite connection to the exact captured journal content before bind or append mutation. A foreign database that reports the target path is preserved and blocked. It adds no Portal route, saved credential, provider IO, live endpoint or external authority. OFF defaults, limits, account checks, exits and the independent emergency stop remain unchanged. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+
+## v0.340.101 activity-acceptance writable connection content binding
+
+Existing writable acceptance stores now serialize their connection-local `main` database before mutation and require exact size/SHA-256 agreement with the bounded captured pathname. The proof runs after exact path binding and file-identity capture. A foreign connection that spoofs the target pathname fails with fixed `CONNECTION_CONTENT_CHANGED` before either database changes.
+
+Direct controls cover bind and append, fixed error precedence and exact byte preservation. Mandatory disposable evidence independently substitutes a different writable database, spoofs its reported path and requires unchanged target/foreign bytes. No automatic retry, private account data or retained market evidence is added.
+
+Exact-source v0.340.100 commit `cb537e43514b18a70ff38d0474998c0f6b4f0d21` exposed no connector-visible workflow run or commit status at the pre-sprint check. Fresh v0.340.101 workflows and actual authorized paper-account/private-volume acceptance remain required. This local proof is not physical durability, provider identity, transport/source coverage, broker-wide coordination, native-owner acceptance, settled funds, fee/hold reconciliation, market realism, profitability, cloud readiness or release acceptance.
+
+No UI control or modifiable parameter changed; all seven beginner tabs and black/bright-purple bottom-right help behavior remain unchanged. Engagement remains OFF by default, with limits, account checks, exits and the independent emergency stop preserved. No credential, network request, order route, automatic retry, money movement, live/cloud authority or release approval was added.
+
+Local prepublication validation passed 4,797 tests with one expected skip and one existing warning; the activity-acceptance/reconciliation/release/Windows focus passed 356 and the direct store file passed 49. Sixteen profiles and saved-evidence verification matched 395 source files / `67223e317bb483be369e671f7897590d3f4c40f671676388c9f5b9bd69ac96da`; evidence SHA-256 is `7a2f5c2d69f18fc4800dafc90a9e9e601fd93a23e9ebd1e9b535fe817924c133`. The wheel SHA-256 is `63c4ce76a31a1b5cea93f911840b74e820bf38e3d57a1a0598aef507aad9932a`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controller checks passed; the 813-path / 62,213,721-byte proposed-snapshot artifact audit and introduced-line high-confidence credential scan found nothing. Local Gitleaks and Playwright are unavailable. Fresh exact-source v0.340.101 hosted workflows remain mandatory.
 
 ## v0.340.100 activity-acceptance rebind validation
 

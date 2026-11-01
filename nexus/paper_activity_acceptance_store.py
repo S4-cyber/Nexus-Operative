@@ -170,6 +170,24 @@ def _require_main_connection(db,bound_path):
         _fail('CONNECTION_BINDING_CHANGED')
 
 
+def _require_main_connection_content(db,bound_path):
+    """Require an existing writer's exact main bytes before any mutation."""
+    expected=_main_fingerprint(bound_path)
+    try:
+        serialized=db.serialize(name='main')
+        if (type(serialized) is not bytes or
+                len(serialized)!=expected[3] or
+                hashlib.sha256(serialized).hexdigest()!=expected[7]):
+            _fail('CONNECTION_CONTENT_CHANGED')
+    except ValueError:raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_fail('DATABASE_BUSY')
+        _fail('CONNECTION_CONTENT_CHANGED')
+    except (MemoryError,OSError,OverflowError,RuntimeError,
+            sqlite3.Error,TypeError):
+        _fail('CONNECTION_CONTENT_CHANGED')
+
+
 def _discard_uncommitted_new(path,identity):
     """Remove only the exact empty file from an aborted first write.
 
@@ -421,6 +439,8 @@ class PaperActivityAcceptanceStore:
                     require_binding();_require_main_connection(db,bound_path)
                     transaction_identity=capture_file_identities((bound_path,),
                         'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+                    if not new:
+                        _require_main_connection_content(db,bound_path)
                     with _transaction(db):
                         count=db.execute('SELECT count(*) FROM records').fetchone()[0]
                         if count==0:
@@ -472,6 +492,8 @@ class PaperActivityAcceptanceStore:
                     require_binding();_require_main_connection(db,bound_path)
                     transaction_identity=capture_file_identities((bound_path,),
                         'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+                    if not new:
+                        _require_main_connection_content(db,bound_path)
                     with _transaction(db):
                         state=self._load(db);current=checked(admission)
                         if current!=(scope['pacing_after_head_sha256'],scope['retention_after_head_sha256']):_fail('ADMISSION_CHANGED')

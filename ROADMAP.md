@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.100. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.101. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.100 makes every existing private activity-acceptance bind prove the supplied pacing and retention heads plus session and batch counts exactly match the replayed current cross-journal boundary. A changed head or count fails closed before acknowledgement and preserves the retained store; exact current-state replay remains idempotent. Exact-source v0.340.99 commit eda6717e80c577466c9e9d9cb8b1caa4ac367d65 exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.100 workflows remain mandatory. This prevents a caller from silently treating a different journal boundary as an existing binding but is not physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
+Current hardening: v0.340.101 serializes every existing writable activity-acceptance SQLite main database before bind or append can mutate it and requires exact size/hash agreement with the captured on-disk journal. A substituted connection that merely reports the expected path now fails closed before changing either store. Exact-source v0.340.100 commit cb537e43514b18a70ff38d0474998c0f6b4f0d21 exposed no connector-visible workflow run or commit status at the pre-sprint check, so current-source CI success is not claimed and fresh v0.340.101 workflows remain mandatory. This closes one local journal-substitution boundary but is not physical durability, provider identity, authorized broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, live/cloud readiness or release approval. No Portal control, modifiable parameter, saved credential, provider IO, automatic retry, live endpoint or external authority changes. Rough implementation stays about 40% (30–45%, low confidence), with 0/9 fully accepted major stages.
 
 ```mermaid
 flowchart TD

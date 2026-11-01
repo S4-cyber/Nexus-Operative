@@ -295,6 +295,42 @@ def test_append_refuses_foreign_write_connection_before_mutation(
     assert (target.path.read_bytes(),foreign.path.read_bytes())==before
 
 
+@pytest.mark.parametrize('operation',('bind','append'))
+def test_writers_pin_spoofed_connection_content_before_mutation(
+        tmp_path,monkeypatch,operation):
+    target_value=scope('target');foreign_value=scope('foreign')
+    target=bound(tmp_path/'target',target_value)
+    foreign=bound(tmp_path/'foreign',foreign_value)
+    target_path=target.path
+    class SpoofedConnection(sqlite3.Connection):
+        def execute(self,statement,*args,**kwargs):
+            if statement=='PRAGMA database_list':
+                return SimpleNamespace(fetchall=lambda:[
+                    (0,'main',str(target_path.resolve()))])
+            return super().execute(statement,*args,**kwargs)
+    def substitute_content_connection(*args,**kwargs):
+        db=sqlite3.connect(foreign.path.resolve().as_uri()+'?mode=rw',
+            uri=True,timeout=10,factory=SpoofedConnection)
+        db.execute('PRAGMA journal_mode=DELETE')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('BEGIN IMMEDIATE')
+        return db,False
+    before=(target.path.read_bytes(),foreign.path.read_bytes())
+    monkeypatch.setattr(target,'_connect',substitute_content_connection)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_CONTENT_CHANGED$')):
+        if operation=='bind':
+            target.bind(
+                pacing_head=target_value['pacing_before_head_sha256'],
+                retention_head=target_value['retention_before_head_sha256'],
+                pacing_sessions=0,retained_batches=0)
+        else:
+            target.append(target_value,admission=lambda:(
+                target_value['pacing_after_head_sha256'],
+                target_value['retention_after_head_sha256']))
+    assert (target.path.read_bytes(),foreign.path.read_bytes())==before
+
+
 def test_bind_fsync_uncertainty_retains_baseline_for_explicit_replay(
         tmp_path,monkeypatch):
     value=scope();store=storage.PaperActivityAcceptanceStore(

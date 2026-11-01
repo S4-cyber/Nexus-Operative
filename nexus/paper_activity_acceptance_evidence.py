@@ -258,7 +258,9 @@ def fixture_report():
         connection_root=base/'write-connection';connection_root.mkdir()
         cp,ca,connection_acceptance,connection_scope=_scope(connection_root)
         connection_foreign_root=base/'write-connection-foreign';connection_foreign_root.mkdir()
-        _cfp,_cfa,connection_foreign,_cfs=_scope(connection_foreign_root)
+        _cfp,_cfa,connection_foreign,_cfs=_scope(connection_foreign_root,2)
+        connection_foreign.append(_cfs,admission=lambda:(
+            _cfp.inspect()['head_sha256'],_cfa.inspect()['head_sha256']))
         connection_before=(connection_acceptance.path.read_bytes(),
             connection_foreign.path.read_bytes())
         connection_open=connection_acceptance._connect
@@ -271,6 +273,35 @@ def fixture_report():
                 'PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_BINDING_CHANGED')
         finally:connection_acceptance._connect=connection_open
         acceptance_write_connection_pinned=(acceptance_write_connection_pinned and
+            connection_before==(connection_acceptance.path.read_bytes(),
+                connection_foreign.path.read_bytes()))
+        connection_path=connection_acceptance.path
+        class SpoofedWriteConnection(sqlite3.Connection):
+            def execute(self,statement,*args,**kwargs):
+                if statement=='PRAGMA database_list':
+                    class StaticRows:
+                        def fetchall(self):return [
+                            (0,'main',str(connection_path.resolve()))]
+                    return StaticRows()
+                return super().execute(statement,*args,**kwargs)
+        def substitute_write_content(*args,**kwargs):
+            db=sqlite3.connect(
+                connection_foreign.path.resolve().as_uri()+'?mode=rw',
+                uri=True,timeout=10,factory=SpoofedWriteConnection)
+            db.execute('PRAGMA journal_mode=DELETE')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            return db,False
+        acceptance_write_connection_content_pinned=False
+        connection_acceptance._connect=substitute_write_content
+        try:connection_acceptance.append(connection_scope,admission=lambda:(
+            cp.inspect()['head_sha256'],ca.inspect()['head_sha256']))
+        except ValueError as error:
+            acceptance_write_connection_content_pinned=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_CONTENT_CHANGED')
+        finally:connection_acceptance._connect=connection_open
+        acceptance_write_connection_content_pinned=(
+            acceptance_write_connection_content_pinned and
             connection_before==(connection_acceptance.path.read_bytes(),
                 connection_foreign.path.read_bytes()))
         durability_root=base/'write-durability';durability_root.mkdir()
@@ -353,6 +384,7 @@ def fixture_report():
         passed=(missing_created_nothing and before_unbound and after_bound and
             acceptance_inspection_bound and acceptance_write_binding_pinned and
             acceptance_write_ack_replayed and acceptance_write_connection_pinned and
+            acceptance_write_connection_content_pinned and
             acceptance_commit_durability_replayed and
             acceptance_uncommitted_initialization_replayed and
             acceptance_rebind_boundary_pinned and silent and unchanged and
@@ -375,6 +407,8 @@ def fixture_report():
             acceptance_write_binding_pinned=acceptance_write_binding_pinned,
             acceptance_write_ack_replayed=acceptance_write_ack_replayed,
             acceptance_write_connection_pinned=acceptance_write_connection_pinned,
+            acceptance_write_connection_content_pinned=
+                acceptance_write_connection_content_pinned,
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
             acceptance_uncommitted_initialization_replayed=
                 acceptance_uncommitted_initialization_replayed,

@@ -269,3 +269,72 @@ def test_write_connection_content_spoof_is_rejected_before_transaction(
             '^PAPER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED$')):
         store.append(scope,expected_head=head,admission=lambda:receipt)
     assert store.path.read_bytes()==before and foreign.read_bytes()==foreign_before
+
+
+def continuity_connection(counter):
+    class ContinuityConnection(sqlite3.Connection):
+        def serialize(self,*args,**kwargs):
+            result=super().serialize(*args,**kwargs)
+            counter.append(len(result))
+            return result
+    return ContinuityConnection
+
+
+def changed_continuity_fingerprint(original,counter):
+    def changed(path):
+        result=original(path)
+        if len(counter)>=2:
+            altered=list(result);altered[7]='f'*64
+            return tuple(altered)
+        return result
+    return changed
+
+
+def test_read_connection_content_is_reproved_after_complete_replay(
+        tmp_path,monkeypatch):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    first=review.retain_review(path,gate,bindings,expected_head=head)
+    before=path.read_bytes();counter=[]
+    original_connect=store_subject.sqlite3.connect
+    original_fingerprint=store_subject._main_fingerprint
+    def connect(database,*args,**kwargs):
+        if '?mode=ro' in str(database):
+            kwargs['factory']=continuity_connection(counter)
+        return original_connect(database,*args,**kwargs)
+    monkeypatch.setattr(store_subject.sqlite3,'connect',connect)
+    monkeypatch.setattr(store_subject,'_main_fingerprint',
+        changed_continuity_fingerprint(original_fingerprint,counter))
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED$')):
+        PaperReadReviewStore(path,gate).inspect()
+    assert len(counter)==2 and path.read_bytes()==before
+    monkeypatch.setattr(store_subject.sqlite3,'connect',original_connect)
+    monkeypatch.setattr(store_subject,'_main_fingerprint',original_fingerprint)
+    retry=PaperReadReviewStore(path,gate).inspect()
+    assert retry['head_sha256']==first['head_sha256']
+
+
+def test_write_connection_content_is_reproved_after_commit_and_recovers(
+        tmp_path,monkeypatch):
+    store,scope,receipt,head=contended_append(tmp_path,'continuity')
+    before=store.inspect()['retained_receipts'];counter=[]
+    original_connect=store_subject.sqlite3.connect
+    original_fingerprint=store_subject._main_fingerprint
+    def connect(database,*args,**kwargs):
+        if '?mode=rw' in str(database):
+            kwargs['factory']=continuity_connection(counter)
+        return original_connect(database,*args,**kwargs)
+    monkeypatch.setattr(store_subject.sqlite3,'connect',connect)
+    monkeypatch.setattr(store_subject,'_main_fingerprint',
+        changed_continuity_fingerprint(original_fingerprint,counter))
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED$')):
+        store.append(scope,expected_head=head,admission=lambda:receipt)
+    assert len(counter)==2
+    monkeypatch.setattr(store_subject.sqlite3,'connect',original_connect)
+    monkeypatch.setattr(store_subject,'_main_fingerprint',original_fingerprint)
+    replay=store.inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    assert replay['retained_receipts']==before+1 and retry['duplicate'] is True
+    assert store.inspect()['retained_receipts']==before+1

@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.119 (pre-release).**
+**Current development build: 0.340.120 (pre-release).**
+
+## v0.340.120 account-receipt connection-content continuity
+
+Retained account-receipt inspection now re-proves the same SQLite connection's exact `main` path and serialized content after complete replay. Receipt writes perform the same proof after commit and before success. A late pathname/connection divergence fails closed with fixed `CONNECTION_CONTENT_CHANGED`; read history is unchanged and needs an explicit retry, while a committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory evidence covers both boundaries. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+Exact-source v0.340.119 commit `41e8c87c2fd03e4a899b4dfec1713bc0c13834ee` passed public-security run 41377499637, research safety/browser/evidence run 41377499818 and Windows packaging/installer run 41377499671. This sampled local continuity proof grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.120 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.119 (pre-release).**
 
 ## v0.340.119 Windows-portable account-receipt evidence cleanup
 

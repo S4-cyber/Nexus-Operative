@@ -25,6 +25,8 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_write_close_error_requires_explicit_recovery',
         'durable_receipt_connection_binding_pinned',
         'durable_receipt_connection_content_pinned',
+        'durable_receipt_read_connection_content_continuity_pinned',
+        'durable_receipt_write_connection_content_continuity_pinned',
         'private_results_not_retained')
 
 
@@ -336,6 +338,69 @@ def fixture_report():
         connection_content_pinned=(content_denied and
             (root/'review.sqlite3').read_bytes()==binding_source and
             foreign_store.read_bytes()==foreign_source)
+        from nexus import paper_read_review_store as receipt_store_module
+        original_main_fingerprint=receipt_store_module._main_fingerprint
+        continuity_serialized=[]
+        class ContinuityConnection(sqlite3.Connection):
+            def serialize(self,*args,**kwargs):
+                result=super().serialize(*args,**kwargs)
+                continuity_serialized.append(len(result));return result
+        def continuity_connect(database,*args,**kwargs):
+            if '?mode=ro' in str(database):kwargs['factory']=ContinuityConnection
+            return original_sqlite_connect(database,*args,**kwargs)
+        def continuity_fingerprint(path):
+            result=original_main_fingerprint(path)
+            if len(continuity_serialized)>=2:
+                changed=list(result);changed[7]='f'*64;return tuple(changed)
+            return result
+        continuity_source=(root/'review.sqlite3').read_bytes()
+        read_continuity_denied=False
+        sqlite3.connect=continuity_connect
+        receipt_store_module._main_fingerprint=continuity_fingerprint
+        try:PaperReadReviewStore(root/'review.sqlite3',gate).inspect()
+        except ValueError as error:
+            read_continuity_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED')
+        finally:
+            sqlite3.connect=original_sqlite_connect
+            receipt_store_module._main_fingerprint=original_main_fingerprint
+        read_continuity_retry=PaperReadReviewStore(
+            root/'review.sqlite3',gate).inspect()
+        read_connection_content_continuity_pinned=(
+            read_continuity_denied and len(continuity_serialized)==2 and
+            (root/'review.sqlite3').read_bytes()==continuity_source and
+            read_continuity_retry['head_sha256']==write_close_final['head_sha256'])
+        continuity_serialized=[]
+        continuity_writer=PaperReadReviewStore(root/'review.sqlite3',gate)
+        continuity_state=continuity_writer.inspect()
+        continuity_scope=dict(continuity_state['receipts'][-1]['scope'],
+            review_sha256=sha(dict(fixture='write-content-continuity')))
+        continuity_receipt=sha(continuity_scope)
+        def continuity_write_connect(database,*args,**kwargs):
+            if '?mode=rw' in str(database):kwargs['factory']=ContinuityConnection
+            return original_sqlite_connect(database,*args,**kwargs)
+        write_continuity_denied=False
+        sqlite3.connect=continuity_write_connect
+        receipt_store_module._main_fingerprint=continuity_fingerprint
+        try:continuity_writer.append(continuity_scope,
+            expected_head=continuity_state['head_sha256'],
+            admission=lambda:continuity_receipt)
+        except ValueError as error:
+            write_continuity_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED')
+        finally:
+            sqlite3.connect=original_sqlite_connect
+            receipt_store_module._main_fingerprint=original_main_fingerprint
+        write_continuity_replay=continuity_writer.inspect()
+        write_continuity_retry=continuity_writer.append(continuity_scope,
+            expected_head=write_continuity_replay['head_sha256'],
+            admission=lambda:continuity_receipt)
+        write_continuity_final=continuity_writer.inspect()
+        write_connection_content_continuity_pinned=(
+            write_continuity_denied and len(continuity_serialized)==2 and
+            write_continuity_replay['retained_receipts']==3 and
+            write_continuity_retry['duplicate'] is True and
+            write_continuity_final==write_continuity_replay)
         store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
@@ -360,6 +425,10 @@ def fixture_report():
                 connection_binding_pinned),
             durable_receipt_connection_content_pinned=(
                 connection_content_pinned),
+            durable_receipt_read_connection_content_continuity_pinned=(
+                read_connection_content_continuity_pinned),
+            durable_receipt_write_connection_content_continuity_pinned=(
+                write_connection_content_continuity_pinned),
             private_results_not_retained=all(token not in store_bytes for token in
                 (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
                 not _contains_exact_scalar(retained,'1000'))

@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.119
+## Current candidate: v0.340.120
+
+Account-receipt reads now re-prove the opened SQLite connection's path and serialized content after complete replay, and writes repeat the proof after commit. Late pathname/connection divergence is refused; committed writes require explicit exact-head duplicate recovery rather than automatic retry.
+
+The exact v0.340.119 parent passed hosted public-security, research safety/browser/evidence and Windows packaging/installer workflows. Fresh exact-source v0.340.120 workflows remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.119
 
 Mandatory account-receipt content-binding evidence now closes its disposable foreign SQLite connection before temporary-directory cleanup. This repairs the exact hosted Windows handle-lifecycle failure without suppressing cleanup errors or weakening the v0.340.118 content check.
 

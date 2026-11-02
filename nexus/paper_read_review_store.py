@@ -224,7 +224,14 @@ class PaperReadReviewStore:
                 head_sha256=ZERO,retained_receipts=0,receipts=[],read_only=True,ready_for_routing=False,release_approved=False)
         try:
             with closing(self._connect()) as db:
-                with _transaction(db):head,receipts=self._load(db)
+                with _transaction(db):
+                    head,receipts=self._load(db)
+                    # The setup proof is not enough: the pathname may be
+                    # replaced while this already-open connection continues
+                    # to expose the original database.  Re-prove both seams
+                    # after the complete application read.
+                    _require_main_connection(db,self.path.resolve())
+                    _require_main_connection_content(db,self.path.resolve())
         except BaseException as error:
             # A normal runtime failure after the read may include connection
             # close, so the caller cannot treat the result as acknowledged.
@@ -262,6 +269,11 @@ class PaperReadReviewStore:
                     if admission()!=receipt:_fail('ADMISSION_CHANGED')
                     if precommit_check() is not True:_fail('INPUT_REVOKED')
                 committed=True
+                # Commit may leave this connection attached to bytes that no
+                # longer match the captured pathname.  Refuse acknowledgement
+                # until the same connection proves path and content parity.
+                _require_main_connection(db,self.path.resolve())
+                _require_main_connection_content(db,self.path.resolve())
                 if admission()!=receipt:_fail('ADMISSION_CHANGED_AFTER_COMMIT')
                 if precommit_check() is not True:_fail('INPUT_REVOKED_AFTER_COMMIT')
                 result=dict(mode='LOCAL_MIXED_READ_REVIEW_RECEIPT',head_sha256=head,

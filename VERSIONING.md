@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.124 (pre-release).**
+**Current development build: 0.340.125 (pre-release).**
+
+## v0.340.125 Windows-portable receipt cleanup acceptance
+
+Exact-source v0.340.124 public-security run 41408293845 passed, and the saved-evidence and Portal browser-help jobs passed. Research run 41408293798 and Windows packaging run 41408293822 both exposed the same eight incorrect direct-test assumptions: Windows SQLite may materialize bytes after early setup PRAGMAs. The implementation already retained the exact nonempty file, failed closed with `UNCOMMITTED_CLEANUP_UNCERTAIN` and did not retry. Direct acceptance now permits only safe removal of the unchanged empty file with the original identity error or retention of the same original nonempty identity with cleanup uncertainty. It proves one connection attempt, no sidecars and no automatic retry; deterministic paired tests prove exact nonempty files are never deleted.
+
+No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This cross-platform acceptance repair grants no atomic descriptor binding, physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.125 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.124 (pre-release).**
 
 ## v0.340.124 receipt initialization identity continuity
 

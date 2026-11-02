@@ -811,6 +811,17 @@ def test_uncommitted_cleanup_never_deletes_replacement(tmp_path):
     assert path.exists() and path.stat().st_size==0
 
 
+def test_uncommitted_cleanup_retains_exact_nonempty_file(tmp_path):
+    path=tmp_path/'review.sqlite3';content=b'private uncommitted state'
+    path.write_bytes(content)
+    identity=guard_subject.capture_file_identities((path,),
+        'PAPER_PROVIDER_READ_REVIEW_STORE_')
+    with pytest.raises(ValueError,match=
+            '^PAPER_PROVIDER_READ_REVIEW_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN$'):
+        store_subject._discard_uncommitted_new(path,identity)
+    assert path.read_bytes()==content
+
+
 def test_fresh_receipt_identity_is_required_before_sqlite_connect(
         tmp_path,monkeypatch):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
@@ -838,7 +849,8 @@ def test_fresh_receipt_identity_is_rechecked_through_sqlite_setup(
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
     target=path.resolve().as_uri();original_connect=store_subject.sqlite3.connect
     original_require=store_subject.require_file_identities
-    state={'connected':False,'sql':None,'failed':False}
+    state={'connected':False,'connects':0,'created_identity':None,
+        'sql':None,'failed':False}
     class Connection:
         def __init__(self,db):self.db=db
         def execute(self,sql,*args,**kwargs):
@@ -847,6 +859,10 @@ def test_fresh_receipt_identity_is_rechecked_through_sqlite_setup(
         def close(self):return self.db.close()
         def __getattr__(self,name):return getattr(self.db,name)
     def connect(*args,**kwargs):
+        if str(args[0]).startswith(target):
+            state['connects']+=1
+            state['created_identity']=guard_subject.capture_file_identities(
+                (path,),'PAPER_PROVIDER_READ_REVIEW_STORE_')
         db=original_connect(*args,**kwargs)
         if str(args[0]).startswith(target):
             state['connected']=True;return Connection(db)
@@ -860,10 +876,18 @@ def test_fresh_receipt_identity_is_rechecked_through_sqlite_setup(
         return original_require(paths,expected,prefix)
     monkeypatch.setattr(store_subject.sqlite3,'connect',connect)
     monkeypatch.setattr(store_subject,'require_file_identities',require)
-    with pytest.raises(ValueError,match=
-            '^PAPER_PROVIDER_READ_REVIEW_STORE_FILE_IDENTITY_CHANGED$'):
+    with pytest.raises(ValueError) as raised:
         PaperProviderReadReviewStore(path,budget,[gate])._connect(write=True)
-    assert state['failed'] and not path.exists()
+    assert state['failed'] and state['connects']==1
+    if path.exists():
+        assert str(raised.value)==(
+            'PAPER_PROVIDER_READ_REVIEW_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN')
+        assert path.stat().st_size>0
+        assert guard_subject.capture_file_identities((path,),
+            'PAPER_PROVIDER_READ_REVIEW_STORE_')==state['created_identity']
+    else:
+        assert str(raised.value)==(
+            'PAPER_PROVIDER_READ_REVIEW_STORE_FILE_IDENTITY_CHANGED')
     assert all(not Path(str(path)+suffix).exists() for suffix in
         ('-journal','-wal','-shm'))
 

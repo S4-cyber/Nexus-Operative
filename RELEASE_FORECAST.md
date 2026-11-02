@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.124
+## Current candidate: v0.340.125
+
+Windows SQLite may materialize bytes after early setup PRAGMAs. Receipt initialization acceptance now distinguishes the two safe fail-closed outcomes: remove only the unchanged empty file and preserve the original identity error, or retain the same original nonempty identity under cleanup uncertainty. Both paths prove one connection attempt, no sidecars and no automatic retry; paired deterministic tests prove exact nonempty files are never deleted.
+
+The exact v0.340.124 public-security workflow and its saved-evidence and Portal browser-help jobs passed. Its research and Windows packaging workflows exposed the corrected eight-case direct-test portability assumption. Fresh exact-source v0.340.125 workflows remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.124
 
 Fresh account-read and provider-read receipt initialization now retains the exact exclusively created file identity across connection binding and every SQLite setup statement. A mid-setup identity loss closes the connection and fails closed, while only the exact unchanged empty sidecar-free file may be removed before an explicit retry.
 

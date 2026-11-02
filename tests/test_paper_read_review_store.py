@@ -357,6 +357,80 @@ def test_new_write_connection_retarget_removes_only_empty_target_and_retries(
         expected_head=head)['duplicate'] is False
 
 
+def test_uncommitted_cleanup_never_deletes_replacement(tmp_path):
+    path=tmp_path/'review.sqlite3';path.touch(mode=0o600)
+    identity=store_subject.capture_file_identities((path,),
+        'PAPER_READ_REVIEW_STORE_')
+    replacement=tmp_path/'replacement.sqlite3';replacement.touch(mode=0o600)
+    os.replace(replacement,path)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN$')):
+        store_subject._discard_uncommitted_new(path,identity)
+    assert path.exists() and path.stat().st_size==0
+
+
+@pytest.mark.parametrize('failure_sql',(None,'PRAGMA busy_timeout',
+    'PRAGMA journal_mode','PRAGMA synchronous','PRAGMA page_size',
+    'PRAGMA max_page_count','BEGIN IMMEDIATE','CREATE TABLE'))
+def test_fresh_receipt_initialization_failure_restores_absence_and_exact_retry(
+        tmp_path,monkeypatch,failure_sql):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    target=path.resolve().as_uri();original=store_subject.sqlite3.connect
+    failed=False
+    class Connection:
+        def __init__(self,db):self.db=db
+        def execute(self,sql,*args,**kwargs):
+            nonlocal failed
+            if not failed and sql.startswith(failure_sql):
+                failed=True
+                raise RuntimeError('private initialization failure')
+            return self.db.execute(sql,*args,**kwargs)
+        def close(self):return self.db.close()
+        def __getattr__(self,name):return getattr(self.db,name)
+    def connect(*args,**kwargs):
+        nonlocal failed
+        if not str(args[0]).startswith(target):
+            return original(*args,**kwargs)
+        if failure_sql is None and not failed:
+            failed=True
+            raise RuntimeError('private connection failure')
+        db=original(*args,**kwargs)
+        return Connection(db) if not failed else db
+    monkeypatch.setattr(store_subject.sqlite3,'connect',connect)
+    with pytest.raises(RuntimeError,match='private (connection|initialization) failure'):
+        review.retain_review(path,gate,bindings,expected_head=head)
+    assert failed and not path.exists()
+    assert all(not Path(str(path)+suffix).exists() for suffix in
+        ('-journal','-wal','-shm'))
+    receipt=review.retain_review(path,gate,bindings,expected_head=head)
+    replay=PaperReadReviewStore(path,gate).inspect()
+    assert replay['retained_receipts']==1
+    assert receipt['head_sha256']==replay['head_sha256']
+
+
+def test_fresh_receipt_initialization_close_uncertainty_retains_path(
+        tmp_path,monkeypatch):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    target=path.resolve().as_uri();original=store_subject.sqlite3.connect
+    class Connection:
+        def __init__(self,db):self.db=db
+        def execute(self,sql,*args,**kwargs):
+            if sql.startswith('PRAGMA busy_timeout'):
+                raise RuntimeError('private initialization failure')
+            return self.db.execute(sql,*args,**kwargs)
+        def close(self):
+            self.db.close()
+            raise RuntimeError('private close acknowledgement failure')
+    def connect(*args,**kwargs):
+        db=original(*args,**kwargs)
+        return Connection(db) if str(args[0]).startswith(target) else db
+    monkeypatch.setattr(store_subject.sqlite3,'connect',connect)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN$')):
+        review.retain_review(path,gate,bindings,expected_head=head)
+    assert path.exists() and path.stat().st_size==0
+
+
 def spoof_connection(target):
     class SpoofConnection(sqlite3.Connection):
         def execute(self,statement,*args,**kwargs):

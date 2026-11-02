@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.122'
+REVISION = '0.340.123'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -555,6 +555,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The mixed account-read review receipt now has explicit file-sync parity with the provider-read receipt. Its exact O_RDWR descriptor must match the committed pathname fingerprint before and after fsync; a new POSIX entry also flushes only its pinned parent-directory descriptor. Flush, descriptor or directory uncertainty fails closed while preserving one committed receipt for inspection and explicit exact-head duplicate recovery. Mandatory pacing evidence now includes this account receipt boundary. This is sampled local durability handling, not physical power-loss, native-owner or broker acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; fresh mixed account-read receipt initialization now pins the exact exclusively created descriptor identity, removes only that unchanged empty file after an uncommitted setup failure, and retains any substituted path under fixed cleanup uncertainty' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Fresh mixed account-read receipt initialization now captures the device/inode identity from the exclusive create descriptor. An uncommitted connection or setup failure removes only that exact unchanged empty regular single-link file; a substituted empty pathname, sidecar, close uncertainty or any bytes are retained under fixed `UNCOMMITTED_CLEANUP_UNCERTAIN`. Explicit clean retry is proven after safe cleanup, and mandatory pacing evidence covers both recovery and replacement refusal. This is local initialization integrity, not broker, native-owner or physical-durability acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -720,7 +728,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.122 gives the mixed account-read receipt the explicit durability boundary already used by the provider-read receipt: its exact writable descriptor must match the committed pathname fingerprint before and after file sync, and a new POSIX pathname flushes only its pinned parent directory. Flush, descriptor or directory uncertainty returns fixed `COMMIT_DURABILITY_UNCERTAIN`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory pacing evidence includes this account boundary. Exact-source v0.340.121 passed public-security run 41387574788, research safety/browser/evidence run 41387574767 and Windows packaging/installer run 41387574646; v0.340.122 requires fresh exact-source workflows. This is sampled local durability handling, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.123 pins fresh mixed account-read receipt cleanup to the exact device/inode captured from its exclusive create descriptor. Failed connection or initialization removes only that unchanged empty regular single-link file; replacement, sidecar, close or content uncertainty retains the path and returns fixed `UNCOMMITTED_CLEANUP_UNCERTAIN`. Mandatory pacing evidence proves safe absence restoration, explicit clean retry and refusal to delete a substituted empty path. Exact-source v0.340.122 passed public-security run 41393196408, research safety/browser/evidence run 41393196440 and Windows packaging/installer run 41393196422; v0.340.123 requires fresh exact-source workflows. This is local initialization cleanup integrity, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

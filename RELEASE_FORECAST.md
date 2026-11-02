@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.122
+## Current candidate: v0.340.123
+
+Fresh mixed account-read receipt setup now binds cleanup to the exact file identity captured at exclusive creation. Uncommitted connection or initialization failures restore absence only when that same empty file remains; substituted paths and close uncertainty fail closed without speculative deletion.
+
+The exact v0.340.122 parent passed hosted public-security, research safety/browser/evidence and Windows packaging/installer workflows. Fresh exact-source v0.340.123 workflows remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.122
 
 The mixed account-read receipt now applies an explicit writable-file sync after commit and pins the exact descriptor bytes to the committed pathname fingerprint. New POSIX stores also sync only their captured parent-directory identity. Any flush or descriptor uncertainty fails closed while retaining exactly one receipt for inspection and explicit duplicate recovery.
 

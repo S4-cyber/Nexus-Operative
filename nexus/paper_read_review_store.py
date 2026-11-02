@@ -232,13 +232,22 @@ def _require_main_connection_content(db,bound_path):
         _fail('CONNECTION_CONTENT_CHANGED')
 
 
-def _discard_uncommitted_new(path):
-    """Remove only the exact empty target created before a rejected connect."""
+def _discard_uncommitted_new(path,identity):
+    """Remove only the exact empty target created before a rejected connect.
+
+    A different empty file is not proof of the file this process created.  Pin
+    cleanup to the descriptor identity captured at exclusive creation so a
+    pathname substitution can never authorize deletion of another file.
+    """
     path=Path(path);sidecars=tuple(Path(str(path)+suffix) for suffix in
         ('-journal','-wal','-shm'))
     try:
-        observed=path.lstat()
-        if (stat.S_ISLNK(observed.st_mode) or
+        if (type(identity) is not tuple or len(identity)!=1 or
+                type(identity[0]) is not tuple or len(identity[0])!=3):
+            raise RuntimeError
+        observed=path.lstat();resolved=path.resolve()
+        if ((str(resolved),observed.st_dev,observed.st_ino)!=identity[0] or
+                stat.S_ISLNK(observed.st_mode) or
                 not stat.S_ISREG(observed.st_mode) or observed.st_nlink!=1 or
                 observed.st_size!=0):
             raise RuntimeError
@@ -268,20 +277,24 @@ class PaperReadReviewStore:
         check_existing(self.path,MAX_DATABASE_BYTES,'PAPER_READ_REVIEW_STORE_')
 
     def _connect(self,write=False):
-        self._check();new=False;bound_path=self.path.resolve()
-        if write and not self.path.exists():
-            self.path.parent.mkdir(parents=True,exist_ok=True)
-            try:
-                fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(fd);new=True
-            except FileExistsError:pass
-            self._check()
+        self._check();new=False;created_identity=None;db=None
         try:
+            if write and not self.path.exists():
+                self.path.parent.mkdir(parents=True,exist_ok=True)
+                try:
+                    fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+                except FileExistsError:pass
+                else:
+                    new=True
+                    try:
+                        opened=os.fstat(fd)
+                        created_identity=((str(self.path.resolve()),
+                            opened.st_dev,opened.st_ino),)
+                    finally:os.close(fd)
+                self._check()
+            bound_path=self.path.resolve()
             db=sqlite3.connect(bound_path.as_uri()+('?mode=rw' if write else '?mode=ro'),
                 uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
-        except BaseException:
-            if new:_discard_uncommitted_new(bound_path)
-            raise
-        try:
             _require_main_connection(db,bound_path)
             if not new:_require_main_connection_content(db,bound_path)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
@@ -292,15 +305,21 @@ class PaperReadReviewStore:
                 if new:db.execute('CREATE TABLE records (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
             return db
         except sqlite3.OperationalError as error:
-            try:db.close()
-            finally:
-                if new:_discard_uncommitted_new(bound_path)
+            if db is not None:
+                try:db.close()
+                except BaseException:
+                    if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new:_discard_uncommitted_new(self.path,created_identity)
             if _database_busy(error):_fail('DATABASE_BUSY')
             raise
         except BaseException:
-            try:db.close()
-            finally:
-                if new:_discard_uncommitted_new(bound_path)
+            if db is not None:
+                try:db.close()
+                except BaseException:
+                    if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new:_discard_uncommitted_new(self.path,created_identity)
             raise
 
     @staticmethod

@@ -33,6 +33,8 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_postclose_finalization_pinned',
         'durable_receipt_commit_flush_failure_recoverable',
         'durable_receipt_parent_descriptor_boundary_respected',
+        'durable_receipt_fresh_initialization_recoverable',
+        'durable_receipt_cleanup_identity_pinned',
         'private_results_not_retained')
 
 
@@ -531,6 +533,65 @@ def fixture_report():
                 parent_directory_syncs==0 and parent_denied and
                 parent_replay['retained_receipts']==1 and
                 parent_retry['duplicate'] is True and parent_final==parent_replay)
+        initialization_path=root/'initialization-review.sqlite3'
+        initialization_store=PaperReadReviewStore(initialization_path,gate)
+        initialization_target=initialization_path.resolve().as_uri()
+        initialization_failures=0
+        def fail_initialization_connect(*args,**kwargs):
+            nonlocal initialization_failures
+            if (str(args[0]).startswith(initialization_target) and
+                    initialization_failures==0):
+                initialization_failures+=1
+                raise RuntimeError('fixture private account initialization failure')
+            return original_sqlite_connect(*args,**kwargs)
+        initialization_denied=False
+        receipt_store_module.sqlite3.connect=fail_initialization_connect
+        try:initialization_store.append(flush_scope,expected_head=ZERO,
+            admission=lambda:flush_receipt)
+        except RuntimeError as error:
+            initialization_denied=(str(error)==
+                'fixture private account initialization failure')
+        finally:
+            receipt_store_module.sqlite3.connect=original_sqlite_connect
+        initialization_absence=(not initialization_path.exists() and all(
+            not Path(str(initialization_path)+suffix).exists() for suffix in
+            ('-journal','-wal','-shm')))
+        initialization_receipt=initialization_store.append(flush_scope,
+            expected_head=ZERO,admission=lambda:flush_receipt)
+        initialization_replay=initialization_store.inspect()
+        fresh_initialization_recoverable=(initialization_failures==1 and
+            initialization_denied and initialization_absence and
+            initialization_receipt['duplicate'] is False and
+            initialization_replay['retained_receipts']==1 and
+            initialization_receipt['head_sha256']==
+                initialization_replay['head_sha256'])
+        cleanup_path=root/'cleanup-identity-review.sqlite3'
+        cleanup_store=PaperReadReviewStore(cleanup_path,gate)
+        cleanup_target=cleanup_path.resolve().as_uri()
+        cleanup_substituted=False
+        def substitute_cleanup_target(*args,**kwargs):
+            nonlocal cleanup_substituted
+            if (str(args[0]).startswith(cleanup_target) and
+                    not cleanup_substituted):
+                cleanup_substituted=True
+                replacement=root/'cleanup-replacement.sqlite3'
+                replacement.touch(mode=0o600)
+                os.replace(replacement,cleanup_path)
+                raise RuntimeError('fixture private account connection failure')
+            return original_sqlite_connect(*args,**kwargs)
+        cleanup_denied=False
+        receipt_store_module.sqlite3.connect=substitute_cleanup_target
+        try:cleanup_store.append(flush_scope,expected_head=ZERO,
+            admission=lambda:flush_receipt)
+        except ValueError as error:
+            cleanup_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN')
+        finally:
+            receipt_store_module.sqlite3.connect=original_sqlite_connect
+        cleanup_replacement_retained=(cleanup_path.exists() and
+            cleanup_path.stat().st_size==0)
+        cleanup_identity_pinned=(cleanup_substituted and cleanup_denied and
+            cleanup_replacement_retained)
         store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
@@ -567,6 +628,10 @@ def fixture_report():
                 commit_flush_failure_recoverable),
             durable_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_boundary_respected),
+            durable_receipt_fresh_initialization_recoverable=(
+                fresh_initialization_recoverable),
+            durable_receipt_cleanup_identity_pinned=(
+                cleanup_identity_pinned),
             private_results_not_retained=all(token not in store_bytes for token in
                 (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
                 not _contains_exact_scalar(retained,'1000'))

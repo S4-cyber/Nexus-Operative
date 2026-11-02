@@ -1,5 +1,11 @@
 # Nexus Operative continuity instructions
 
+## v0.340.123 account-receipt initialization identity pinning
+
+Fresh mixed account-read receipt initialization now captures the exact device/inode from its exclusive create descriptor. Failed connection or setup removes only that unchanged empty regular single-link file; a substituted path, sidecar, close uncertainty or bytes are retained with fixed `UNCOMMITTED_CLEANUP_UNCERTAIN`. Mandatory pacing evidence proves safe absence restoration, explicit clean retry and refusal to delete a substituted empty path. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+Exact-source v0.340.122 commit `ad43a75980077956e60a58a58a111cf4cd1399d4` passed public-security run 41393196408, research safety/browser/evidence run 41393196440 and Windows packaging/installer run 41393196422. This local initialization boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.123 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.122 account-receipt explicit sync parity
 
 The mixed account-read receipt now matches the provider-read receipt's explicit durability boundary. Its exact writable descriptor must match the committed pathname fingerprint before and after file sync; a newly created POSIX pathname also flushes only its pinned parent-directory descriptor. Flush, descriptor or directory uncertainty fails closed with fixed `COMMIT_DURABILITY_UNCERTAIN`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory pacing evidence includes the account boundary. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.

@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.124 receipt initialization identity continuity
+
+Fresh account-read and provider-read receipt stores now re-prove the exact exclusive-create device/inode before SQLite opens, after connection, after main-database binding and before and after every setup statement. Mid-setup identity loss closes SQLite and fails closed; cleanup may remove only the exact unchanged empty sidecar-free file, while substitution remains retained under `UNCOMMITTED_CLEANUP_UNCERTAIN`. Mandatory evidence injects a mid-setup identity failure and proves explicit clean retry for both stores. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+Exact-source v0.340.123 commit `93772f547a91dd66b33442f1394b168f11a9d0c9` passed public-security run 41399596360, research safety/browser/evidence run 41399596333 and Windows packaging/installer run 41399596211. This sampled local continuity boundary grants no atomic descriptor binding, physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.124 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.123 account-receipt initialization identity pinning
 
 Fresh mixed account-read receipt initialization now captures the exact device/inode from its exclusive create descriptor. Failed connection or setup removes only that unchanged empty regular single-link file; a substituted path, sidecar, close uncertainty or bytes are retained with fixed `UNCOMMITTED_CLEANUP_UNCERTAIN`. Mandatory pacing evidence proves safe absence restoration, explicit clean retry and refusal to delete a substituted empty path. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.

@@ -35,6 +35,7 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_parent_descriptor_boundary_respected',
         'durable_receipt_fresh_initialization_recoverable',
         'durable_receipt_cleanup_identity_pinned',
+        'durable_receipt_initialization_identity_continuity_pinned',
         'private_results_not_retained')
 
 
@@ -592,6 +593,55 @@ def fixture_report():
             cleanup_path.stat().st_size==0)
         cleanup_identity_pinned=(cleanup_substituted and cleanup_denied and
             cleanup_replacement_retained)
+        continuity_path=root/'initialization-continuity-review.sqlite3'
+        continuity_store=PaperReadReviewStore(continuity_path,gate)
+        continuity_target=continuity_path.resolve().as_uri()
+        continuity_sql=None;continuity_failures=0
+        original_require=receipt_store_module.require_file_identities
+        class ContinuityConnection:
+            def __init__(self,db):self.db=db
+            def execute(self,sql,*args,**kwargs):
+                nonlocal continuity_sql
+                result=self.db.execute(sql,*args,**kwargs)
+                continuity_sql=sql
+                return result
+            def close(self):return self.db.close()
+            def __getattr__(self,name):return getattr(self.db,name)
+        def continuity_connect(*args,**kwargs):
+            db=original_sqlite_connect(*args,**kwargs)
+            if str(args[0]).startswith(continuity_target):
+                return ContinuityConnection(db)
+            return db
+        def continuity_require(paths,expected,prefix):
+            nonlocal continuity_failures
+            if (continuity_failures==0 and type(continuity_sql) is str and
+                    continuity_sql.startswith('PRAGMA synchronous')):
+                continuity_failures+=1
+                raise ValueError(prefix+'FILE_IDENTITY_CHANGED')
+            return original_require(paths,expected,prefix)
+        continuity_denied=False
+        receipt_store_module.sqlite3.connect=continuity_connect
+        receipt_store_module.require_file_identities=continuity_require
+        try:continuity_store.append(flush_scope,expected_head=ZERO,
+            admission=lambda:flush_receipt)
+        except ValueError as error:
+            continuity_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_FILE_IDENTITY_CHANGED')
+        finally:
+            receipt_store_module.sqlite3.connect=original_sqlite_connect
+            receipt_store_module.require_file_identities=original_require
+        continuity_absence=(not continuity_path.exists() and all(
+            not Path(str(continuity_path)+suffix).exists() for suffix in
+            ('-journal','-wal','-shm')))
+        continuity_receipt=continuity_store.append(flush_scope,
+            expected_head=ZERO,admission=lambda:flush_receipt)
+        continuity_replay=continuity_store.inspect()
+        initialization_identity_continuity_pinned=(
+            continuity_failures==1 and continuity_denied and
+            continuity_absence and continuity_receipt['duplicate'] is False and
+            continuity_replay['retained_receipts']==1 and
+            continuity_receipt['head_sha256']==
+                continuity_replay['head_sha256'])
         store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
@@ -632,6 +682,8 @@ def fixture_report():
                 fresh_initialization_recoverable),
             durable_receipt_cleanup_identity_pinned=(
                 cleanup_identity_pinned),
+            durable_receipt_initialization_identity_continuity_pinned=(
+                initialization_identity_continuity_pinned),
             private_results_not_retained=all(token not in store_bytes for token in
                 (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
                 not _contains_exact_scalar(retained,'1000'))

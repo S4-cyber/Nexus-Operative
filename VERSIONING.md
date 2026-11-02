@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.123 (pre-release).**
+**Current development build: 0.340.124 (pre-release).**
+
+## v0.340.124 receipt initialization identity continuity
+
+Fresh account-read and provider-read receipt stores now re-prove the exact exclusive-create device/inode before SQLite opens, after connection, after main-database binding and before and after every setup statement. Mid-setup identity loss closes SQLite and fails closed; cleanup may remove only the exact unchanged empty sidecar-free file, while substitution remains retained under `UNCOMMITTED_CLEANUP_UNCERTAIN`. Mandatory evidence injects a mid-setup identity failure and proves explicit clean retry for both stores. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+Exact-source v0.340.123 commit `93772f547a91dd66b33442f1394b168f11a9d0c9` passed public-security run 41399596360, research safety/browser/evidence run 41399596333 and Windows packaging/installer run 41399596211. This sampled local continuity boundary grants no atomic descriptor binding, physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.124 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.123 (pre-release).**
 
 ## v0.340.123 account-receipt initialization identity pinning
 

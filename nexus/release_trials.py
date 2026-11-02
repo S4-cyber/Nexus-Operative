@@ -1076,6 +1076,7 @@ def _validate(profile, result):
              'retained_receipt_write_connection_content_pinned',
              'retained_receipt_write_connection_content_continuity_pinned',
              'retained_receipt_initialization_connection_pinned',
+             'retained_receipt_initialization_identity_continuity_pinned',
              'retained_receipt_write_setup_content_pinned',
              'retained_receipt_connection_close_content_pinned',
              'retained_receipt_close_error_requires_explicit_recovery',

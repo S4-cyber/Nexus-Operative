@@ -293,16 +293,28 @@ class PaperReadReviewStore:
                     finally:os.close(fd)
                 self._check()
             bound_path=self.path.resolve()
+            def require_fresh_identity():
+                if new:
+                    require_file_identities((bound_path,),created_identity,
+                        'PAPER_READ_REVIEW_STORE_')
+            require_fresh_identity()
             db=sqlite3.connect(bound_path.as_uri()+('?mode=rw' if write else '?mode=ro'),
                 uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
+            require_fresh_identity()
             _require_main_connection(db,bound_path)
+            require_fresh_identity()
             if not new:_require_main_connection_content(db,bound_path)
-            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+            def setup(statement):
+                require_fresh_identity()
+                result=db.execute(statement)
+                require_fresh_identity()
+                return result
+            setup(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
-                db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')
-                size=db.execute('PRAGMA page_size').fetchone()[0]
-                db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES//size}');db.execute('BEGIN IMMEDIATE')
-                if new:db.execute('CREATE TABLE records (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
+                setup('PRAGMA journal_mode=DELETE');setup('PRAGMA synchronous=FULL')
+                size=setup('PRAGMA page_size').fetchone()[0]
+                setup(f'PRAGMA max_page_count={MAX_DATABASE_BYTES//size}');setup('BEGIN IMMEDIATE')
+                if new:setup('CREATE TABLE records (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
             return db
         except sqlite3.OperationalError as error:
             if db is not None:

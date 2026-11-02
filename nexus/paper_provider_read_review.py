@@ -575,6 +575,60 @@ def fixture_report():
         initialization_replay=PaperProviderReadReviewStore(
             initialization_store,initialization_budget,
             [initialization_gate]).inspect()
+        continuity_gate,continuity_budget=build_pair(
+            root/'fresh-retained-identity-continuity')
+        continuity_store=(root/'fresh-retained-identity-continuity'/
+            'receipt.sqlite3')
+        continuity_target=continuity_store.resolve().as_uri()
+        continuity_sql=None;continuity_failures=0
+        original_require=store_module.require_file_identities
+        class ContinuityConnection:
+            def __init__(self,db):self.db=db
+            def execute(self,sql,*args,**kwargs):
+                nonlocal continuity_sql
+                result=self.db.execute(sql,*args,**kwargs)
+                continuity_sql=sql
+                return result
+            def close(self):return self.db.close()
+            def __getattr__(self,name):return getattr(self.db,name)
+        def continuity_connect(*args,**kwargs):
+            db=original_connect(*args,**kwargs)
+            if str(args[0]).startswith(continuity_target):
+                return ContinuityConnection(db)
+            return db
+        def continuity_require(paths,expected,prefix):
+            nonlocal continuity_failures
+            if (continuity_failures==0 and type(continuity_sql) is str and
+                    continuity_sql.startswith('PRAGMA synchronous')):
+                continuity_failures+=1
+                raise ValueError(prefix+'FILE_IDENTITY_CHANGED')
+            return original_require(paths,expected,prefix)
+        continuity_denied=False
+        store_module.sqlite3.connect=continuity_connect
+        store_module.require_file_identities=continuity_require
+        try:
+            PaperProviderReadReviewStore(continuity_store,continuity_budget,
+                [continuity_gate])._connect(write=True)
+        except ValueError as error:
+            continuity_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_FILE_IDENTITY_CHANGED')
+        finally:
+            store_module.sqlite3.connect=original_connect
+            store_module.require_file_identities=original_require
+        continuity_absence=(not continuity_store.exists() and all(
+            not Path(str(continuity_store)+suffix).exists() for suffix in
+            ('-journal','-wal','-shm')))
+        continuity_receipt=retain_review(continuity_store,continuity_budget,
+            [continuity_gate],expected_provider_head=
+                continuity_budget.inspect()['head_sha256'],
+            expected_account_heads={continuity_gate.account_digest:
+                continuity_gate.inspect()['head_sha256']})
+        continuity_replay=PaperProviderReadReviewStore(continuity_store,
+            continuity_budget,[continuity_gate]).inspect()
+        initialization_identity_continuity_pinned=(
+            continuity_failures==1 and continuity_denied and
+            continuity_absence and continuity_replay['retained_receipts']==1 and
+            continuity_receipt['head_sha256']==continuity_replay['head_sha256'])
         durability_gate,durability_budget=build_pair(
             root/'retained-commit-durability')
         durability_store=(root/'retained-commit-durability'/'receipt.sqlite3')
@@ -1208,6 +1262,8 @@ def fixture_report():
                     initialization_replay['head_sha256'] and
                 initialization_receipt['receipt_sha256']==
                     initialization_replay['receipts'][0]['receipt_sha256']),
+            retained_receipt_initialization_identity_continuity_pinned=(
+                initialization_identity_continuity_pinned),
             retained_receipt_commit_flush_failure_recoverable=(
                 durability_failures==1 and durability_failure_denied and
                 durability_replay['retained_receipts']==1 and

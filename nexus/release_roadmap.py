@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.123'
+REVISION = '0.340.124'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -728,7 +728,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.123 pins fresh mixed account-read receipt cleanup to the exact device/inode captured from its exclusive create descriptor. Failed connection or initialization removes only that unchanged empty regular single-link file; replacement, sidecar, close or content uncertainty retains the path and returns fixed `UNCOMMITTED_CLEANUP_UNCERTAIN`. Mandatory pacing evidence proves safe absence restoration, explicit clean retry and refusal to delete a substituted empty path. Exact-source v0.340.122 passed public-security run 41393196408, research safety/browser/evidence run 41393196440 and Windows packaging/installer run 41393196422; v0.340.123 requires fresh exact-source workflows. This is local initialization cleanup integrity, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.124 requires both fresh account-read and provider-read receipt stores to retain their exact exclusive-create device/inode through SQLite initialization. The identity is re-proved before connect, after connect, after main-database binding and before and after every setup statement. A mid-setup loss closes SQLite and fails closed; cleanup can remove only the exact unchanged empty sidecar-free file, while substitution remains retained under `UNCOMMITTED_CLEANUP_UNCERTAIN`. Mandatory evidence injects a mid-setup identity failure and proves explicit clean retry for both stores. Exact-source v0.340.123 passed public-security run 41399596360, research safety/browser/evidence run 41399596333 and Windows packaging/installer run 41399596211; v0.340.124 requires fresh exact-source workflows. This is sampled local initialization continuity, not atomic descriptor binding, physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

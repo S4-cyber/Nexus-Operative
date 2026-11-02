@@ -5,6 +5,7 @@ This journal proves only that one bounded local review was completed against the
 named pacing head and binding digests; it grants no provider or order authority.
 """
 from contextlib import closing,contextmanager
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -13,7 +14,8 @@ import sqlite3
 import stat
 
 from nexus.alpaca_paper_contract import canonical,sha
-from nexus.sqlite_journal_guard import check_existing,check_path_set
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints,check_existing,check_path_set)
 
 SCHEMA='nexus.paper-read-review-history.v1'
 PROFILE='nexus.paper-read-review-receipt.v1'
@@ -64,6 +66,40 @@ def _require_main_connection(db,bound_path):
         _fail('CONNECTION_BINDING_CHANGED')
     except (OSError,RuntimeError,sqlite3.Error,TypeError):
         _fail('CONNECTION_BINDING_CHANGED')
+
+
+def _main_fingerprint(path):
+    """Return one exact bounded quiescent main-file fingerprint."""
+    return capture_file_fingerprints((path,),(MAX_DATABASE_BYTES,),
+        'PAPER_READ_REVIEW_STORE_')[0]
+
+
+def _require_main_connection_content(db,bound_path):
+    """Require the connection's serialized main bytes to match its path."""
+    expected=_main_fingerprint(bound_path)
+    try:
+        serialized=db.serialize(name='main')
+        observed=_main_fingerprint(bound_path)
+        if (observed!=expected or type(serialized) is not bytes or
+                len(serialized)!=expected[3] or
+                hashlib.sha256(serialized).hexdigest()!=expected[7]):
+            _fail('CONNECTION_CONTENT_CHANGED')
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_fail('DATABASE_BUSY')
+        # sqlite3.Connection.serialize() discards SQLITE_BUSY and reports the
+        # code-less "unable to serialize 'main'" on an exclusive lock.  A
+        # bounded, read-only schema probe recovers the real lock condition;
+        # every other serializer failure remains a content-integrity failure.
+        try:db.execute('SELECT 1 FROM sqlite_schema LIMIT 1').fetchone()
+        except sqlite3.Error as probe:
+            if isinstance(probe,sqlite3.OperationalError) and _database_busy(probe):
+                _fail('DATABASE_BUSY')
+        _fail('CONNECTION_CONTENT_CHANGED')
+    except (MemoryError,OSError,OverflowError,RuntimeError,
+            sqlite3.Error,TypeError):
+        _fail('CONNECTION_CONTENT_CHANGED')
 
 
 def _discard_uncommitted_new(path):
@@ -117,6 +153,7 @@ class PaperReadReviewStore:
             raise
         try:
             _require_main_connection(db,bound_path)
+            if not new:_require_main_connection_content(db,bound_path)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')

@@ -24,6 +24,7 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_read_close_error_requires_explicit_retry',
         'durable_receipt_write_close_error_requires_explicit_recovery',
         'durable_receipt_connection_binding_pinned',
+        'durable_receipt_connection_content_pinned',
         'private_results_not_retained')
 
 
@@ -310,6 +311,29 @@ def fixture_report():
         connection_binding_pinned=(binding_denied and
             (root/'review.sqlite3').read_bytes()==binding_source and
             foreign_store.read_bytes()==foreign_source)
+        class SpoofContentConnection(sqlite3.Connection):
+            def execute(self,statement,*args,**kwargs):
+                if statement=='PRAGMA database_list':
+                    class Rows:
+                        @staticmethod
+                        def fetchall():return [(0,'main',str(
+                            (root/'review.sqlite3').resolve()))]
+                    return Rows()
+                return super().execute(statement,*args,**kwargs)
+        def retarget_content(database,*args,**kwargs):
+            if '?mode=ro' in str(database):
+                database=foreign_store.resolve().as_uri()+'?mode=ro'
+                kwargs['uri']=True;kwargs['factory']=SpoofContentConnection
+            return original_sqlite_connect(database,*args,**kwargs)
+        content_denied=False;sqlite3.connect=retarget_content
+        try:PaperReadReviewStore(root/'review.sqlite3',gate).inspect()
+        except ValueError as error:
+            content_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED')
+        finally:sqlite3.connect=original_sqlite_connect
+        connection_content_pinned=(content_denied and
+            (root/'review.sqlite3').read_bytes()==binding_source and
+            foreign_store.read_bytes()==foreign_source)
         store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
@@ -332,6 +356,8 @@ def fixture_report():
                     write_close_final['head_sha256']),
             durable_receipt_connection_binding_pinned=(
                 connection_binding_pinned),
+            durable_receipt_connection_content_pinned=(
+                connection_content_pinned),
             private_results_not_retained=all(token not in store_bytes for token in
                 (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
                 not _contains_exact_scalar(retained,'1000'))

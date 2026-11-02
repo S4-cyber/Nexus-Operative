@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.117'
+REVISION = '0.340.118'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -712,7 +712,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.117 requires every retained account-read receipt SQLite connection to prove that its `main` database resolves to the captured store path before any setup PRAGMA, read or write. A substituted read or fresh writer fails closed with a fixed binding error, preserves both databases and removes only the exact empty newly created target so an explicit clean retry remains possible. The v0.340.116 post-commit close recovery and v0.340.115 inspection acknowledgement boundary remain intact. This is local reconciliation integrity evidence, not provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted; fresh exact-source hosted workflows remain required.'
+CURRENT_HARDENING = 'v0.340.118 requires every existing account-read receipt SQLite connection to serialize to the exact bounded bytes captured from its bound `main` path before setup or application access. A pathname-spoofed foreign connection fails closed with fixed `CONNECTION_CONTENT_CHANGED` while both stores remain unchanged; exclusive-lock contention remains bounded and reports `DATABASE_BUSY`. The v0.340.117 exact-path binding and narrow fresh-target cleanup remain intact. This is local reconciliation integrity evidence, not provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted; fresh exact-source hosted workflows remain required.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

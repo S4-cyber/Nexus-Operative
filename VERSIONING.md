@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.117 (pre-release).**
+**Current development build: 0.340.118 (pre-release).**
+
+## v0.340.118 account-receipt connection content binding
+
+Every existing account-read receipt SQLite connection now proves that its serialized `main` bytes match the exact bounded file captured at the already verified store path before setup or application access. A pathname-spoofed foreign connection fails closed with fixed `CONNECTION_CONTENT_CHANGED` and preserves both stores. Exclusive-lock contention remains bounded and reports `DATABASE_BUSY`. No automatic retry, UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+This local connection-integrity boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.117 (pre-release).**
 
 ## v0.340.117 account-receipt connection binding
 

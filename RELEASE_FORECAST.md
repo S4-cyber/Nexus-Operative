@@ -1,6 +1,12 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.117
+## Current candidate: v0.340.118
+
+Existing account-read receipt connections now prove their serialized SQLite `main` bytes match the bounded file at the already verified store path. Pathname-spoofed foreign connections fail closed without changing either store, while exclusive-lock contention retains its bounded busy result.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.117
 
 Retained account-read receipt connections now prove their exact SQLite `main` path before setup or access. Substituted reads and fresh writers fail closed while preserving existing databases and allowing only an explicit clean retry.
 

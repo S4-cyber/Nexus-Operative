@@ -1,5 +1,11 @@
 # Nexus Operative continuity instructions
 
+## v0.340.118 account-receipt connection content binding
+
+Every existing account-read receipt SQLite connection now proves that its serialized `main` bytes match the exact bounded file captured at the already verified store path before setup or application access. A pathname-spoofed foreign connection fails closed with fixed `CONNECTION_CONTENT_CHANGED` and preserves both stores. Exclusive-lock contention remains bounded and reports `DATABASE_BUSY`. No automatic retry, UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+This local connection-integrity boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.117 account-receipt connection binding
 
 Every retained account-read receipt SQLite connection now proves that its `main` database resolves to the captured store path before any setup PRAGMA, read or write. A substituted read or fresh writer fails closed with fixed `CONNECTION_BINDING_CHANGED`, preserves both databases, and removes only the exact empty newly created target so an explicit clean retry remains possible. No automatic retry, UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.

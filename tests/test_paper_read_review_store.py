@@ -218,3 +218,54 @@ def test_new_write_connection_retarget_removes_only_empty_target_and_retries(
     monkeypatch.setattr(store_subject.sqlite3,'connect',original)
     assert review.retain_review(path,gate,bindings,
         expected_head=head)['duplicate'] is False
+
+
+def spoof_connection(target):
+    class SpoofConnection(sqlite3.Connection):
+        def execute(self,statement,*args,**kwargs):
+            if statement=='PRAGMA database_list':
+                class Rows:
+                    @staticmethod
+                    def fetchall():return [(0,'main',str(target.resolve()))]
+                return Rows()
+            return super().execute(statement,*args,**kwargs)
+    return SpoofConnection
+
+
+def test_read_connection_content_spoof_is_rejected_before_receipt_load(
+        tmp_path,monkeypatch):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    review.retain_review(path,gate,bindings,expected_head=head)
+    foreign=tmp_path/'foreign.sqlite3'
+    with sqlite3.connect(foreign) as db:db.execute('CREATE TABLE private (v)')
+    before=path.read_bytes();foreign_before=foreign.read_bytes()
+    original=store_subject.sqlite3.connect
+    def retarget(database,*args,**kwargs):
+        if '?mode=ro' in str(database):
+            database=foreign.resolve().as_uri()+'?mode=ro';kwargs['uri']=True
+            kwargs['factory']=spoof_connection(path)
+        return original(database,*args,**kwargs)
+    monkeypatch.setattr(store_subject.sqlite3,'connect',retarget)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED$')):
+        PaperReadReviewStore(path,gate).inspect()
+    assert path.read_bytes()==before and foreign.read_bytes()==foreign_before
+
+
+def test_write_connection_content_spoof_is_rejected_before_transaction(
+        tmp_path,monkeypatch):
+    store,scope,receipt,head=contended_append(tmp_path,'content')
+    foreign=tmp_path/'foreign.sqlite3'
+    with sqlite3.connect(foreign) as db:db.execute('CREATE TABLE private (v)')
+    before=store.path.read_bytes();foreign_before=foreign.read_bytes()
+    original=store_subject.sqlite3.connect
+    def retarget(database,*args,**kwargs):
+        if '?mode=rw' in str(database):
+            database=foreign.resolve().as_uri()+'?mode=rw';kwargs['uri']=True
+            kwargs['factory']=spoof_connection(store.path)
+        return original(database,*args,**kwargs)
+    monkeypatch.setattr(store_subject.sqlite3,'connect',retarget)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_CONNECTION_CONTENT_CHANGED$')):
+        store.append(scope,expected_head=head,admission=lambda:receipt)
+    assert store.path.read_bytes()==before and foreign.read_bytes()==foreign_before

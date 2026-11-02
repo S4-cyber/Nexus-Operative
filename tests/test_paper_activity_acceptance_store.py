@@ -587,6 +587,61 @@ def test_uncommitted_cleanup_never_deletes_replacement(tmp_path):
     assert path.exists() and path.stat().st_size==0
 
 
+@pytest.mark.parametrize('failure_after',(None,'PRAGMA database_list',
+    'PRAGMA busy_timeout','PRAGMA journal_mode','PRAGMA synchronous',
+    'PRAGMA page_size','PRAGMA max_page_count','BEGIN IMMEDIATE',
+    'CREATE TABLE'))
+def test_fresh_acceptance_identity_is_rechecked_through_sqlite_setup(
+        tmp_path,monkeypatch,failure_after):
+    value=scope();path=tmp_path/'acceptance.sqlite3'
+    target=path.resolve().as_uri();original_connect=storage.sqlite3.connect
+    original_require=storage.require_file_identities
+    state={'connected':False,'connects':0,'created_identity':None,
+        'sql':None,'failed':False}
+    class Connection:
+        def __init__(self,db):self.db=db
+        def execute(self,sql,*args,**kwargs):
+            result=self.db.execute(sql,*args,**kwargs);state['sql']=sql
+            return result
+        def close(self):return self.db.close()
+        def __getattr__(self,name):return getattr(self.db,name)
+    def connect(*args,**kwargs):
+        if str(args[0]).startswith(target):
+            state['connects']+=1
+            state['created_identity']=storage.capture_file_identities(
+                (path,),'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+        db=original_connect(*args,**kwargs)
+        if str(args[0]).startswith(target):
+            state['connected']=True;return Connection(db)
+        return db
+    def require(paths,expected,prefix):
+        trigger=(state['connected'] if failure_after is None else
+            type(state['sql']) is str and state['sql'].startswith(failure_after))
+        if trigger and not state['failed']:
+            state['failed']=True
+            raise ValueError(prefix+'FILE_IDENTITY_CHANGED')
+        return original_require(paths,expected,prefix)
+    monkeypatch.setattr(storage.sqlite3,'connect',connect)
+    monkeypatch.setattr(storage,'require_file_identities',require)
+    store=PaperActivityAcceptanceStore(path,ACCOUNT)
+    with pytest.raises(ValueError) as raised:
+        store.bind(pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    assert state['failed'] and state['connects']==1
+    if path.exists():
+        assert str(raised.value)==(
+            'PAPER_ACTIVITY_ACCEPTANCE_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN')
+        assert path.stat().st_size>0
+        assert storage.capture_file_identities((path,),
+            'PAPER_ACTIVITY_ACCEPTANCE_STORE_')==state['created_identity']
+    else:
+        assert str(raised.value)==(
+            'PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_IDENTITY_CHANGED')
+    assert all(not Path(str(path)+suffix).exists() for suffix in
+        ('-journal','-wal','-shm'))
+
+
 @pytest.mark.parametrize('failure_sql',(None,'PRAGMA busy_timeout',
     'PRAGMA journal_mode','PRAGMA synchronous','PRAGMA page_size',
     'PRAGMA max_page_count','BEGIN IMMEDIATE','CREATE TABLE'))

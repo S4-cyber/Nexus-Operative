@@ -482,6 +482,83 @@ def fixture_report():
             retained_durability['records']==1 and
             recovered_durability['duplicate'] is True and
             recovered_durability['head_sha256']==retained_durability['head_sha256'])
+        identity_continuity_root=base/'write-initialization-identity'
+        identity_continuity_root.mkdir()
+        identity_continuity_path=(identity_continuity_root/
+            'acceptance.sqlite3')
+        identity_continuity_store=PaperActivityAcceptanceStore(
+            identity_continuity_path,ACCOUNT)
+        identity_continuity_target=identity_continuity_path.resolve().as_uri()
+        original_connect=acceptance_storage.sqlite3.connect
+        original_require=acceptance_storage.require_file_identities
+        identity_continuity_sql=None;identity_continuity_failures=0
+        identity_continuity_connects=0;created_identity=None
+        class IdentityContinuityConnection:
+            def __init__(self,db):self.db=db
+            def execute(self,sql,*args,**kwargs):
+                nonlocal identity_continuity_sql
+                result=self.db.execute(sql,*args,**kwargs)
+                identity_continuity_sql=sql
+                return result
+            def close(self):return self.db.close()
+            def __getattr__(self,name):return getattr(self.db,name)
+        def identity_continuity_connect(*args,**kwargs):
+            nonlocal identity_continuity_connects,created_identity
+            if str(args[0]).startswith(identity_continuity_target):
+                identity_continuity_connects+=1
+                created_identity=acceptance_storage.capture_file_identities(
+                    (identity_continuity_path,),
+                    'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
+            db=original_connect(*args,**kwargs)
+            if str(args[0]).startswith(identity_continuity_target):
+                return IdentityContinuityConnection(db)
+            return db
+        def identity_continuity_require(paths,expected,prefix):
+            nonlocal identity_continuity_failures
+            if (identity_continuity_failures==0 and
+                    type(identity_continuity_sql) is str and
+                    identity_continuity_sql.startswith(
+                        'PRAGMA synchronous')):
+                identity_continuity_failures+=1
+                raise ValueError(prefix+'FILE_IDENTITY_CHANGED')
+            return original_require(paths,expected,prefix)
+        initialization_identity_denied=False
+        acceptance_storage.sqlite3.connect=identity_continuity_connect
+        acceptance_storage.require_file_identities=(
+            identity_continuity_require)
+        try:
+            try:identity_continuity_store.bind(pacing_head='0'*64,
+                retention_head='0'*64,pacing_sessions=0,
+                retained_batches=0)
+            except ValueError as error:
+                initialization_identity_denied=(str(error) in (
+                    'PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_IDENTITY_CHANGED',
+                    'PAPER_ACTIVITY_ACCEPTANCE_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN'))
+        finally:
+            acceptance_storage.sqlite3.connect=original_connect
+            acceptance_storage.require_file_identities=original_require
+        identity_continuity_sidecars=all(not Path(
+            str(identity_continuity_path)+suffix).exists() for suffix in
+            ('-journal','-wal','-shm'))
+        if identity_continuity_path.exists():
+            retained_identity=(
+                identity_continuity_path.stat().st_size>0 and
+                acceptance_storage.capture_file_identities(
+                    (identity_continuity_path,),
+                    'PAPER_ACTIVITY_ACCEPTANCE_STORE_')==created_identity)
+            retry_path=(identity_continuity_root/'retry.sqlite3')
+        else:
+            retained_identity=True;retry_path=identity_continuity_path
+        identity_continuity_retry=PaperActivityAcceptanceStore(
+            retry_path,ACCOUNT).bind(pacing_head='0'*64,
+                retention_head='0'*64,pacing_sessions=0,
+                retained_batches=0)
+        acceptance_initialization_identity_continuity_pinned=(
+            identity_continuity_failures==1 and
+            identity_continuity_connects==1 and
+            initialization_identity_denied and retained_identity and
+            identity_continuity_sidecars and
+            identity_continuity_retry['records']==0)
         cleanup_root=base/'write-initialization-cleanup';cleanup_root.mkdir()
         cleanup_acceptance=PaperActivityAcceptanceStore(
             cleanup_root/'acceptance.sqlite3',ACCOUNT)
@@ -548,6 +625,7 @@ def fixture_report():
             acceptance_write_file_identity_pinned and
             acceptance_write_committed_content_pinned and
             acceptance_commit_durability_replayed and
+            acceptance_initialization_identity_continuity_pinned and
             acceptance_uncommitted_initialization_replayed and
             acceptance_rebind_boundary_pinned and silent and unchanged and
             rollback_observed and all(scope_checks) and scope_unchanged and legacy_refused and legacy_preserved)
@@ -580,6 +658,8 @@ def fixture_report():
             acceptance_write_committed_content_pinned=
                 acceptance_write_committed_content_pinned,
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
+            acceptance_initialization_identity_continuity_pinned=
+                acceptance_initialization_identity_continuity_pinned,
             acceptance_uncommitted_initialization_replayed=
                 acceptance_uncommitted_initialization_replayed,
             acceptance_rebind_boundary_pinned=acceptance_rebind_boundary_pinned,

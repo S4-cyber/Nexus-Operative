@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.125 (pre-release).**
+**Current development build: 0.340.126 (pre-release).**
+
+## v0.340.126 paper-activity acceptance initialization identity continuity
+
+Fresh paper-activity acceptance journals now re-prove their exact exclusive-create device/inode before SQLite opens, after connection and main-database binding, and before and after every setup statement. Existing writers also prove the connection path and serialized main content before setup. Mandatory saved evidence injects mid-setup identity loss, proves one connection attempt and no sidecars, and accepts only exact empty-file removal or retention of the same nonempty identity under cleanup uncertainty before an explicit clean retry.
+
+No exact-source v0.340.125 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no atomic descriptor binding, physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.126 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.125 (pre-release).**
 
 ## v0.340.125 Windows-portable receipt cleanup acceptance
 

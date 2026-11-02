@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.125
+## Current candidate: v0.340.126
+
+The durable paper-activity acceptance journal now retains its exact exclusive-create identity across connection binding and every SQLite setup statement. Existing writers also prove the exact connection path and serialized main content before setup. Injected mid-setup identity loss allows only exact empty-file removal or retention of the same nonempty identity under cleanup uncertainty, with one connection attempt, no sidecars and an explicit clean retry.
+
+No exact-source v0.340.125 workflow result was visible when this candidate began. Fresh exact-source v0.340.126 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.125
 
 Windows SQLite may materialize bytes after early setup PRAGMAs. Receipt initialization acceptance now distinguishes the two safe fail-closed outcomes: remove only the unchanged empty file and preserve the original identity error, or retain the same original nonempty identity under cleanup uncertainty. Both paths prove one connection attempt, no sidecars and no automatic retry; paired deterministic tests prove exact nonempty files are never deleted.
 

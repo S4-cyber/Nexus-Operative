@@ -1,5 +1,11 @@
 # Nexus Operative continuity instructions
 
+## v0.340.126 paper-activity acceptance initialization identity continuity
+
+Fresh paper-activity acceptance journals now re-prove their exact exclusive-create device/inode before SQLite opens, after connection and main-database binding, and before and after every setup statement. Existing writers also prove the connection path and serialized main content before setup. Mandatory saved evidence injects mid-setup identity loss, proves one connection attempt and no sidecars, and accepts only exact empty-file removal or retention of the same nonempty identity under cleanup uncertainty before an explicit clean retry.
+
+No exact-source v0.340.125 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no atomic descriptor binding, physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.126 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.125 Windows-portable receipt cleanup acceptance
 
 Exact-source v0.340.124 public-security run 41408293845 passed, and the saved-evidence and Portal browser-help jobs passed. Research run 41408293798 and Windows packaging run 41408293822 both exposed the same eight incorrect direct-test assumptions: Windows SQLite may materialize bytes after early setup PRAGMAs. The implementation already retained the exact nonempty file, failed closed with `UNCOMMITTED_CLEANUP_UNCERTAIN` and did not retry. Direct acceptance now permits only safe removal of the unchanged empty file with the original identity error or retention of the same original nonempty identity with cleanup uncertainty. It proves one connection attempt, no sidecars and no automatic retry; deterministic paired tests prove exact nonempty files are never deleted.

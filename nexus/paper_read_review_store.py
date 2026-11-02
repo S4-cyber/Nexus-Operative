@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 
 from nexus.alpaca_paper_contract import canonical,sha
 from nexus.sqlite_journal_guard import check_existing,check_path_set
@@ -47,6 +48,47 @@ def _digest(value):
     return value
 
 
+def _require_main_connection(db,bound_path):
+    """Require the opened SQLite connection to target the captured store."""
+    try:
+        rows=db.execute('PRAGMA database_list').fetchall()
+        if (len(rows)!=1 or len(rows[0])!=3 or
+                type(rows[0][0]) is not int or rows[0][1]!='main' or
+                type(rows[0][2]) is not str or not rows[0][2] or
+                Path(rows[0][2]).resolve()!=bound_path):
+            _fail('CONNECTION_BINDING_CHANGED')
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_fail('DATABASE_BUSY')
+        _fail('CONNECTION_BINDING_CHANGED')
+    except (OSError,RuntimeError,sqlite3.Error,TypeError):
+        _fail('CONNECTION_BINDING_CHANGED')
+
+
+def _discard_uncommitted_new(path):
+    """Remove only the exact empty target created before a rejected connect."""
+    path=Path(path);sidecars=tuple(Path(str(path)+suffix) for suffix in
+        ('-journal','-wal','-shm'))
+    try:
+        observed=path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or observed.st_nlink!=1 or
+                observed.st_size!=0):
+            raise RuntimeError
+        for sidecar in sidecars:
+            try:sidecar.lstat()
+            except FileNotFoundError:continue
+            raise RuntimeError
+        path.unlink()
+        for candidate in (path,*sidecars):
+            try:candidate.lstat()
+            except FileNotFoundError:continue
+            raise RuntimeError
+    except (OSError,RuntimeError,TypeError,ValueError):
+        _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+
+
 class PaperReadReviewStore:
     """Hash-chained aggregate receipts bound to one pacing journal/account."""
     def __init__(self,path,gate):
@@ -60,16 +102,21 @@ class PaperReadReviewStore:
         check_existing(self.path,MAX_DATABASE_BYTES,'PAPER_READ_REVIEW_STORE_')
 
     def _connect(self,write=False):
-        self._check();new=False
+        self._check();new=False;bound_path=self.path.resolve()
         if write and not self.path.exists():
             self.path.parent.mkdir(parents=True,exist_ok=True)
             try:
                 fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(fd);new=True
             except FileExistsError:pass
             self._check()
-        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),
-            uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
         try:
+            db=sqlite3.connect(bound_path.as_uri()+('?mode=rw' if write else '?mode=ro'),
+                uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
+        except BaseException:
+            if new:_discard_uncommitted_new(bound_path)
+            raise
+        try:
+            _require_main_connection(db,bound_path)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')
@@ -78,10 +125,16 @@ class PaperReadReviewStore:
                 if new:db.execute('CREATE TABLE records (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
             return db
         except sqlite3.OperationalError as error:
-            db.close()
+            try:db.close()
+            finally:
+                if new:_discard_uncommitted_new(bound_path)
             if _database_busy(error):_fail('DATABASE_BUSY')
             raise
-        except BaseException:db.close();raise
+        except BaseException:
+            try:db.close()
+            finally:
+                if new:_discard_uncommitted_new(bound_path)
+            raise
 
     @staticmethod
     def _insert(db,seq,body,previous):

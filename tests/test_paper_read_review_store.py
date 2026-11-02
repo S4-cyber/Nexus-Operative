@@ -179,3 +179,42 @@ def test_receipt_writer_close_error_requires_explicit_duplicate_recovery(
     assert replay['retained_receipts']==final['retained_receipts']==2
     assert retry['duplicate'] is True
     assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
+
+
+def test_read_connection_retarget_is_rejected_before_receipt_load(
+        tmp_path,monkeypatch):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    review.retain_review(path,gate,bindings,expected_head=head)
+    foreign=tmp_path/'foreign.sqlite3'
+    with sqlite3.connect(foreign) as db:db.execute('CREATE TABLE private (v)')
+    before=path.read_bytes();foreign_before=foreign.read_bytes()
+    original=store_subject.sqlite3.connect
+    def retarget(database,*args,**kwargs):
+        if '?mode=ro' in str(database):
+            database=foreign.resolve().as_uri()+'?mode=ro';kwargs['uri']=True
+        return original(database,*args,**kwargs)
+    monkeypatch.setattr(store_subject.sqlite3,'connect',retarget)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_CONNECTION_BINDING_CHANGED$')):
+        PaperReadReviewStore(path,gate).inspect()
+    assert path.read_bytes()==before and foreign.read_bytes()==foreign_before
+
+
+def test_new_write_connection_retarget_removes_only_empty_target_and_retries(
+        tmp_path,monkeypatch):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    foreign=tmp_path/'foreign.sqlite3'
+    with sqlite3.connect(foreign) as db:db.execute('CREATE TABLE private (v)')
+    foreign_before=foreign.read_bytes();original=store_subject.sqlite3.connect
+    def retarget(database,*args,**kwargs):
+        if '?mode=rw' in str(database):
+            database=foreign.resolve().as_uri()+'?mode=rw';kwargs['uri']=True
+        return original(database,*args,**kwargs)
+    monkeypatch.setattr(store_subject.sqlite3,'connect',retarget)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_CONNECTION_BINDING_CHANGED$')):
+        review.retain_review(path,gate,bindings,expected_head=head)
+    assert not path.exists() and foreign.read_bytes()==foreign_before
+    monkeypatch.setattr(store_subject.sqlite3,'connect',original)
+    assert review.retain_review(path,gate,bindings,
+        expected_head=head)['duplicate'] is False

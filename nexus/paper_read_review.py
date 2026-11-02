@@ -23,6 +23,7 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'legacy_tail_unverified','review_preserved_files','durable_receipt_replays',
         'durable_receipt_read_close_error_requires_explicit_retry',
         'durable_receipt_write_close_error_requires_explicit_recovery',
+        'durable_receipt_connection_binding_pinned',
         'private_results_not_retained')
 
 
@@ -289,6 +290,26 @@ def fixture_report():
             expected_head=write_close_replay['head_sha256'],
             admission=lambda:writer_receipt)
         write_close_final=writer.inspect()
+        foreign_store=root/'foreign-review.sqlite3'
+        original_sqlite_connect=sqlite3.connect
+        with original_sqlite_connect(foreign_store) as foreign_db:
+            foreign_db.execute('CREATE TABLE private (v)')
+        binding_source=(root/'review.sqlite3').read_bytes()
+        foreign_source=foreign_store.read_bytes()
+        def retarget_read(database,*args,**kwargs):
+            if '?mode=ro' in str(database):
+                database=foreign_store.resolve().as_uri()+'?mode=ro'
+                kwargs['uri']=True
+            return original_sqlite_connect(database,*args,**kwargs)
+        binding_denied=False;sqlite3.connect=retarget_read
+        try:PaperReadReviewStore(root/'review.sqlite3',gate).inspect()
+        except ValueError as error:
+            binding_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_CONNECTION_BINDING_CHANGED')
+        finally:sqlite3.connect=original_sqlite_connect
+        connection_binding_pinned=(binding_denied and
+            (root/'review.sqlite3').read_bytes()==binding_source and
+            foreign_store.read_bytes()==foreign_source)
         store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
@@ -309,6 +330,8 @@ def fixture_report():
                 write_close_retry['head_sha256']==
                     write_close_replay['head_sha256']==
                     write_close_final['head_sha256']),
+            durable_receipt_connection_binding_pinned=(
+                connection_binding_pinned),
             private_results_not_retained=all(token not in store_bytes for token in
                 (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
                 not _contains_exact_scalar(retained,'1000'))

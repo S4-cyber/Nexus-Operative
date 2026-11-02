@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.120'
+REVISION = '0.340.121'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -712,7 +712,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.120 re-proves each retained account-receipt SQLite connection\'s exact path and serialized content after complete receipt replay and after commit, rather than relying only on setup-time binding. A pathname/connection divergence at either boundary fails closed with fixed `CONNECTION_CONTENT_CHANGED`; reads require an explicit fresh retry, while a committed write remains exactly once and can be acknowledged only by explicit exact-head duplicate replay. Exact-source v0.340.119 passed hosted public-security, research safety/browser/evidence and Windows packaging/installer workflows; v0.340.120 requires fresh exact-source workflows. This is sampled local reconciliation continuity, not provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.121 captures the exact account-receipt pathname identity and bounded fingerprint after the committed connection re-proves its path and serialized bytes. That file set is guarded across post-commit admission checks and result construction, then rechecked after connection close. A late identity, metadata or content change fails closed with fixed `FILE_SET_CHANGED`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Exact-source v0.340.120 passed hosted public-security, research safety/browser/evidence and Windows packaging/installer workflows; v0.340.121 requires fresh exact-source workflows. This is sampled local reconciliation finalization, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

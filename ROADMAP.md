@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.120. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.121. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.120 re-proves each retained account-receipt SQLite connection's exact path and serialized content after complete receipt replay and after commit, rather than relying only on setup-time binding. A pathname/connection divergence at either boundary fails closed with fixed `CONNECTION_CONTENT_CHANGED`; reads require an explicit fresh retry, while a committed write remains exactly once and can be acknowledged only by explicit exact-head duplicate replay. Exact-source v0.340.119 passed hosted public-security, research safety/browser/evidence and Windows packaging/installer workflows; v0.340.120 requires fresh exact-source workflows. This is sampled local reconciliation continuity, not provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.121 captures the exact account-receipt pathname identity and bounded fingerprint after the committed connection re-proves its path and serialized bytes. That file set is guarded across post-commit admission checks and result construction, then rechecked after connection close. A late identity, metadata or content change fails closed with fixed `FILE_SET_CHANGED`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Exact-source v0.340.120 passed hosted public-security, research safety/browser/evidence and Windows packaging/installer workflows; v0.340.121 requires fresh exact-source workflows. This is sampled local reconciliation finalization, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

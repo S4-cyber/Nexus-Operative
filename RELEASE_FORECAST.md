@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.120
+## Current candidate: v0.340.121
+
+Account-receipt writers now pin the exact committed pathname identity and bounded fingerprint across post-commit callbacks, result construction and successful connection close. Late file-set change is refused while the receipt remains exactly once for explicit duplicate recovery.
+
+The exact v0.340.120 parent passed hosted public-security, research safety/browser/evidence and Windows packaging/installer workflows. Fresh exact-source v0.340.121 workflows remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.120
 
 Account-receipt reads now re-prove the opened SQLite connection's path and serialized content after complete replay, and writes repeat the proof after commit. Late pathname/connection divergence is refused; committed writes require explicit exact-head duplicate recovery rather than automatic retry.
 

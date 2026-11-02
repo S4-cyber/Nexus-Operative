@@ -1,5 +1,11 @@
 # Nexus Operative continuity instructions
 
+## v0.340.121 account-receipt commit finalization pinning
+
+After a committed account-receipt connection re-proves its exact path and serialized content, the writer now captures the pathname identity and bounded fingerprint, guards them across post-commit callbacks and result construction, and rechecks them after connection close. A late identity, metadata or content change fails closed with fixed `FILE_SET_CHANGED`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory evidence covers callback-time and close-time changes. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+Exact-source v0.340.120 commit `c43ab75ba46ddf7310a908a085e75e758cd2f76a` passed public-security run 41382845644, research safety/browser/evidence run 41382845604 and Windows packaging/installer run 41382845516. This sampled local finalization proof grants no provider, broker, market, funds, live/cloud or release authority and is not physical durability. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.121 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.120 account-receipt connection-content continuity
 
 Retained account-receipt inspection now re-proves the same SQLite connection's exact `main` path and serialized content after complete replay. Receipt writes perform the same proof after commit and before success. A late pathname/connection divergence fails closed with fixed `CONNECTION_CONTENT_CHANGED`; read history is unchanged and needs an explicit retry, while a committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory evidence covers both boundaries. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.

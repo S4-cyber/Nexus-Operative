@@ -4,6 +4,7 @@ Co-reported consistency only: no provider attestation, credential/network access
 reservation, journal writes, import, repair, retry, acceptance or order authority.
 """
 import json
+import os
 import re
 
 from nexus.alpaca_paper_contract import canonical,sha
@@ -27,6 +28,8 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_connection_content_pinned',
         'durable_receipt_read_connection_content_continuity_pinned',
         'durable_receipt_write_connection_content_continuity_pinned',
+        'durable_receipt_postcommit_finalization_pinned',
+        'durable_receipt_postclose_finalization_pinned',
         'private_results_not_retained')
 
 
@@ -401,6 +404,63 @@ def fixture_report():
             write_continuity_replay['retained_receipts']==3 and
             write_continuity_retry['duplicate'] is True and
             write_continuity_final==write_continuity_replay)
+        finalization_state=continuity_writer.inspect()
+        finalization_scope=dict(finalization_state['receipts'][-1]['scope'],
+            review_sha256=sha(dict(fixture='postcommit-finalization')))
+        finalization_receipt=sha(finalization_scope);finalization_calls=0
+        def changed_mtime(path):
+            state=path.stat();os.utime(path,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+        def finalization_admission():
+            nonlocal finalization_calls
+            finalization_calls+=1
+            if finalization_calls==3:changed_mtime(root/'review.sqlite3')
+            return finalization_receipt
+        finalization_denied=False
+        try:continuity_writer.append(finalization_scope,
+            expected_head=finalization_state['head_sha256'],
+            admission=finalization_admission)
+        except ValueError as error:
+            finalization_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_FILE_SET_CHANGED')
+        finalization_replay=continuity_writer.inspect()
+        finalization_retry=continuity_writer.append(finalization_scope,
+            expected_head=finalization_replay['head_sha256'],
+            admission=lambda:finalization_receipt)
+        finalization_final=continuity_writer.inspect()
+        postcommit_finalization_pinned=(finalization_denied and
+            finalization_calls==3 and
+            finalization_replay['retained_receipts']==4 and
+            finalization_retry['duplicate'] is True and
+            finalization_final==finalization_replay)
+        close_state=continuity_writer.inspect()
+        close_scope=dict(close_state['receipts'][-1]['scope'],
+            review_sha256=sha(dict(fixture='postclose-finalization')))
+        close_receipt=sha(close_scope)
+        class CloseMutationConnection(sqlite3.Connection):
+            def close(self):
+                super().close();changed_mtime(root/'review.sqlite3')
+        def close_mutation_connect(database,*args,**kwargs):
+            if '?mode=rw' in str(database):
+                kwargs['factory']=CloseMutationConnection
+            return original_sqlite_connect(database,*args,**kwargs)
+        close_finalization_denied=False;sqlite3.connect=close_mutation_connect
+        try:continuity_writer.append(close_scope,
+            expected_head=close_state['head_sha256'],
+            admission=lambda:close_receipt)
+        except ValueError as error:
+            close_finalization_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_FILE_SET_CHANGED')
+        finally:sqlite3.connect=original_sqlite_connect
+        close_finalization_replay=continuity_writer.inspect()
+        close_finalization_retry=continuity_writer.append(close_scope,
+            expected_head=close_finalization_replay['head_sha256'],
+            admission=lambda:close_receipt)
+        close_finalization_final=continuity_writer.inspect()
+        postclose_finalization_pinned=(close_finalization_denied and
+            close_finalization_replay['retained_receipts']==5 and
+            close_finalization_retry['duplicate'] is True and
+            close_finalization_final==close_finalization_replay)
         store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
@@ -429,6 +489,10 @@ def fixture_report():
                 read_connection_content_continuity_pinned),
             durable_receipt_write_connection_content_continuity_pinned=(
                 write_connection_content_continuity_pinned),
+            durable_receipt_postcommit_finalization_pinned=(
+                postcommit_finalization_pinned),
+            durable_receipt_postclose_finalization_pinned=(
+                postclose_finalization_pinned),
             private_results_not_retained=all(token not in store_bytes for token in
                 (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
                 not _contains_exact_scalar(retained,'1000'))

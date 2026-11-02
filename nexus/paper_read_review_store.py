@@ -15,7 +15,9 @@ import stat
 
 from nexus.alpaca_paper_contract import canonical,sha
 from nexus.sqlite_journal_guard import (
-    capture_file_fingerprints,check_existing,check_path_set)
+    capture_file_fingerprints,capture_file_identities,check_existing,
+    check_path_set,guard_file_set_finalization,require_file_fingerprints,
+    require_file_identities)
 
 SCHEMA='nexus.paper-read-review-history.v1'
 PROFILE='nexus.paper-read-review-receipt.v1'
@@ -250,7 +252,8 @@ class PaperReadReviewStore:
         if current['head_sha256']!=expected_head:_fail('HEAD_CHANGED')
         if admission()!=receipt:_fail('ADMISSION_CHANGED')
         if precommit_check() is not True:_fail('INPUT_REVOKED')
-        db=self._connect(write=True);committed=False;result=None
+        bound_path=self.path.resolve();db=self._connect(write=True)
+        committed=False;committed_identity=committed_fingerprint=result=None
         try:
             with closing(db):
                 with _transaction(db):
@@ -272,13 +275,32 @@ class PaperReadReviewStore:
                 # Commit may leave this connection attached to bytes that no
                 # longer match the captured pathname.  Refuse acknowledgement
                 # until the same connection proves path and content parity.
-                _require_main_connection(db,self.path.resolve())
-                _require_main_connection_content(db,self.path.resolve())
-                if admission()!=receipt:_fail('ADMISSION_CHANGED_AFTER_COMMIT')
-                if precommit_check() is not True:_fail('INPUT_REVOKED_AFTER_COMMIT')
-                result=dict(mode='LOCAL_MIXED_READ_REVIEW_RECEIPT',head_sha256=head,
-                    receipt_sha256=receipt,duplicate=duplicate,read_only=True,
-                    ready_for_routing=False,release_approved=False)
+                _require_main_connection(db,bound_path)
+                _require_main_connection_content(db,bound_path)
+                committed_identity=capture_file_identities((bound_path,),
+                    'PAPER_READ_REVIEW_STORE_')
+                committed_fingerprint=capture_file_fingerprints((bound_path,),
+                    (MAX_DATABASE_BYTES,),'PAPER_READ_REVIEW_STORE_')
+                # Untrusted final callbacks and result construction cannot
+                # conceal a late same-path rewrite after the committed
+                # connection proof.
+                with guard_file_set_finalization((bound_path,),
+                        (MAX_DATABASE_BYTES,),committed_identity,
+                        committed_fingerprint,'PAPER_READ_REVIEW_STORE_'):
+                    if admission()!=receipt:
+                        _fail('ADMISSION_CHANGED_AFTER_COMMIT')
+                    if precommit_check() is not True:
+                        _fail('INPUT_REVOKED_AFTER_COMMIT')
+                    result=dict(mode='LOCAL_MIXED_READ_REVIEW_RECEIPT',
+                        head_sha256=head,receipt_sha256=receipt,
+                        duplicate=duplicate,read_only=True,
+                        ready_for_routing=False,release_approved=False)
+            # Closing is part of acknowledgement.  Re-prove the exact
+            # committed pathname and bounded bytes after it succeeds.
+            require_file_identities((bound_path,),committed_identity,
+                'PAPER_READ_REVIEW_STORE_')
+            require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
+                committed_fingerprint,'PAPER_READ_REVIEW_STORE_')
             return result
         except BaseException as error:
             # A committed row may exist even when connection-close

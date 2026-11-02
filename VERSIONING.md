@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.120 (pre-release).**
+**Current development build: 0.340.121 (pre-release).**
+
+## v0.340.121 account-receipt commit finalization pinning
+
+After a committed account-receipt connection re-proves its exact path and serialized content, the writer now captures the pathname identity and bounded fingerprint, guards them across post-commit callbacks and result construction, and rechecks them after connection close. A late identity, metadata or content change fails closed with fixed `FILE_SET_CHANGED`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory evidence covers callback-time and close-time changes. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+Exact-source v0.340.120 commit `c43ab75ba46ddf7310a908a085e75e758cd2f76a` passed public-security run 41382845644, research safety/browser/evidence run 41382845604 and Windows packaging/installer run 41382845516. This sampled local finalization proof grants no provider, broker, market, funds, live/cloud or release authority and is not physical durability. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.121 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.120 (pre-release).**
 
 ## v0.340.120 account-receipt connection-content continuity
 

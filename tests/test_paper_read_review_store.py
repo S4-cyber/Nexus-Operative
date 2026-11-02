@@ -1,5 +1,6 @@
 """Durable content-free receipts for complete local mixed-read review."""
 import json
+import os
 import sqlite3
 
 import pytest
@@ -338,3 +339,55 @@ def test_write_connection_content_is_reproved_after_commit_and_recovers(
         admission=lambda:receipt)
     assert replay['retained_receipts']==before+1 and retry['duplicate'] is True
     assert store.inspect()['retained_receipts']==before+1
+
+
+def test_write_postcommit_callback_cannot_hide_file_set_change(tmp_path):
+    store,scope,receipt,head=contended_append(tmp_path,'finalization')
+    before=store.inspect()['retained_receipts'];calls=0
+    def admission():
+        nonlocal calls
+        calls+=1
+        if calls==3:
+            state=store.path.stat()
+            os.utime(store.path,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+        return receipt
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_FILE_SET_CHANGED$')):
+        store.append(scope,expected_head=head,admission=admission)
+    replay=store.inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    final=store.inspect()
+    assert calls==3 and replay['retained_receipts']==before+1
+    assert retry['duplicate'] is True and final==replay
+
+
+def test_write_close_time_file_change_requires_explicit_duplicate_recovery(
+        tmp_path,monkeypatch):
+    store,scope,receipt,head=contended_append(tmp_path,'close-finalization')
+    before=store.inspect()['retained_receipts'];original_connect=store._connect
+    class CloseMutationConnection(sqlite3.Connection):
+        def close(self):
+            super().close();state=store.path.stat()
+            os.utime(store.path,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+    def close_mutation(write=False):
+        if not write:return original_connect(write=write)
+        db=sqlite3.connect(store.path.resolve().as_uri()+'?mode=rw',uri=True,
+            timeout=10,factory=CloseMutationConnection)
+        db.execute('PRAGMA journal_mode=DELETE')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('BEGIN IMMEDIATE')
+        return db
+    monkeypatch.setattr(store,'_connect',close_mutation)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_FILE_SET_CHANGED$')):
+        store.append(scope,expected_head=head,admission=lambda:receipt)
+    monkeypatch.setattr(store,'_connect',original_connect)
+    replay=store.inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    final=store.inspect()
+    assert replay['retained_receipts']==before+1
+    assert retry['duplicate'] is True and final==replay

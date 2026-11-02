@@ -1,6 +1,7 @@
 """Whole mixed read history review, supplied fixtures only and no authority."""
 from copy import deepcopy
 import json
+import sqlite3
 import subprocess
 import sys
 import pytest
@@ -194,6 +195,22 @@ def test_mandatory_fixture_preserves_authority_boundary():
     result=module.fixture_report()
     assert result['passed'] and all(result[k] is True for k in module.CHECKS)
     assert all(result[k] is False for k in module.FLAGS)
+
+
+def test_mandatory_fixture_closes_foreign_content_database(monkeypatch):
+    opened=[];original=sqlite3.connect
+    class TrackedConnection(sqlite3.Connection):pass
+    def track(database,*args,**kwargs):
+        if (str(database).endswith('foreign-review.sqlite3') and
+                '?mode=' not in str(database)):
+            kwargs['factory']=TrackedConnection
+            result=original(database,*args,**kwargs);opened.append(result)
+            return result
+        return original(database,*args,**kwargs)
+    monkeypatch.setattr(sqlite3,'connect',track)
+    assert module.fixture_report()['passed'] and len(opened)==1
+    with pytest.raises(sqlite3.ProgrammingError,match='closed database'):
+        opened[0].execute('SELECT 1')
 
 
 def test_private_scalar_check_does_not_confuse_opaque_hash_substrings():

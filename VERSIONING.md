@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.118 (pre-release).**
+**Current development build: 0.340.119 (pre-release).**
+
+## v0.340.119 Windows-portable account-receipt evidence cleanup
+
+The mandatory account-receipt content-binding fixture now closes its disposable foreign SQLite connection explicitly before temporary-directory cleanup. This fixes the exact Windows `WinError 32` handle-lifecycle failure reported by the v0.340.118 regression, evidence and installer workflows; it does not ignore cleanup failures or weaken any content/path check. A direct lifecycle test proves the fixture connection is closed. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+This cross-platform evidence repair grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.118 (pre-release).**
 
 ## v0.340.118 account-receipt connection content binding
 

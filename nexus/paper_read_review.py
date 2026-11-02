@@ -293,8 +293,10 @@ def fixture_report():
         write_close_final=writer.inspect()
         foreign_store=root/'foreign-review.sqlite3'
         original_sqlite_connect=sqlite3.connect
-        with original_sqlite_connect(foreign_store) as foreign_db:
-            foreign_db.execute('CREATE TABLE private (v)')
+        foreign_db=original_sqlite_connect(foreign_store)
+        try:
+            with foreign_db:foreign_db.execute('CREATE TABLE private (v)')
+        finally:foreign_db.close()
         binding_source=(root/'review.sqlite3').read_bytes()
         foreign_source=foreign_store.read_bytes()
         def retarget_read(database,*args,**kwargs):

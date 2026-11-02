@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.121 (pre-release).**
+**Current development build: 0.340.122 (pre-release).**
+
+## v0.340.122 account-receipt explicit sync parity
+
+The mixed account-read receipt now matches the provider-read receipt's explicit durability boundary. Its exact writable descriptor must match the committed pathname fingerprint before and after file sync; a newly created POSIX pathname also flushes only its pinned parent-directory descriptor. Flush, descriptor or directory uncertainty fails closed with fixed `COMMIT_DURABILITY_UNCERTAIN`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory pacing evidence includes the account boundary. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+Exact-source v0.340.121 commit `4c6ba730c553b9efbd5d028f1730fb4db61bc256` passed public-security run 41387574788, research safety/browser/evidence run 41387574767 and Windows packaging/installer run 41387574646. This sampled local durability handling grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.122 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.121 (pre-release).**
 
 ## v0.340.121 account-receipt commit finalization pinning
 

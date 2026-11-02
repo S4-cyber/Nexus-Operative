@@ -1,5 +1,11 @@
 # Nexus Operative continuity instructions
 
+## v0.340.122 account-receipt explicit sync parity
+
+The mixed account-read receipt now matches the provider-read receipt's explicit durability boundary. Its exact writable descriptor must match the committed pathname fingerprint before and after file sync; a newly created POSIX pathname also flushes only its pinned parent-directory descriptor. Flush, descriptor or directory uncertainty fails closed with fixed `COMMIT_DURABILITY_UNCERTAIN`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory pacing evidence includes the account boundary. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
+
+Exact-source v0.340.121 commit `4c6ba730c553b9efbd5d028f1730fb4db61bc256` passed public-security run 41387574788, research safety/browser/evidence run 41387574767 and Windows packaging/installer run 41387574646. This sampled local durability handling grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.122 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.121 account-receipt commit finalization pinning
 
 After a committed account-receipt connection re-proves its exact path and serialized content, the writer now captures the pathname identity and bounded fingerprint, guards them across post-commit callbacks and result construction, and rechecks them after connection close. A late identity, metadata or content change fails closed with fixed `FILE_SET_CHANGED`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory evidence covers callback-time and close-time changes. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.

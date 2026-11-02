@@ -52,6 +52,134 @@ def _digest(value):
     return value
 
 
+def _active_fingerprint_boundary(item,host=None):
+    """Use fields shared by pathname and open-handle APIs on this host."""
+    host=os.name if host is None else host
+    return (item.st_dev,item.st_ino,item.st_size,item.st_mtime_ns,
+        item.st_ctime_ns if host!='nt' else None,item.st_nlink)
+
+
+def _committed_fingerprint_boundary(fingerprint,host=None):
+    """Normalize a one-file pathname fingerprint for descriptor comparison."""
+    host=os.name if host is None else host
+    if (type(fingerprint) is not tuple or len(fingerprint)!=1 or
+            type(fingerprint[0]) is not tuple or len(fingerprint[0])!=8):
+        raise RuntimeError
+    path,device,inode,size,mtime,ctime,links,digest=fingerprint[0]
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device,inode,size,mtime,ctime,links)) or
+            re.fullmatch(r'[0-9a-f]{64}',digest) is None):
+        raise RuntimeError
+    return (path,device,inode,size,mtime,ctime if host!='nt' else None,
+        links,digest)
+
+
+def _descriptor_file_fingerprint(descriptor,resolved):
+    """Hash bounded bytes through the exact writable committed descriptor."""
+    before=os.fstat(descriptor)
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or
+            not 1<=before.st_size<=MAX_DATABASE_BYTES):
+        raise RuntimeError
+    original_offset=os.lseek(descriptor,0,os.SEEK_CUR)
+    digest=hashlib.sha256();remaining=MAX_DATABASE_BYTES+1
+    try:
+        os.lseek(descriptor,0,os.SEEK_SET)
+        while remaining:
+            block=os.read(descriptor,min(1024*1024,remaining))
+            if not block:break
+            digest.update(block);remaining-=len(block)
+    finally:
+        os.lseek(descriptor,original_offset,os.SEEK_SET)
+    after=os.fstat(descriptor)
+    if (remaining==0 or
+            _active_fingerprint_boundary(before)!=
+                _active_fingerprint_boundary(after) or
+            before.st_ctime_ns!=after.st_ctime_ns):
+        raise RuntimeError
+    return (str(resolved),after.st_dev,after.st_ino,after.st_size,
+        after.st_mtime_ns,after.st_ctime_ns if os.name!='nt' else None,
+        after.st_nlink,digest.hexdigest())
+
+
+def _sync_parent_directory(resolved):
+    """Flush only the exact POSIX parent directory identity."""
+    parent=resolved.parent;before=parent.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+        raise RuntimeError
+    expected=(before.st_dev,before.st_ino)
+    flags=(os.O_RDONLY|getattr(os,'O_DIRECTORY',0)|
+        getattr(os,'O_CLOEXEC',0)|getattr(os,'O_NOFOLLOW',0))
+    descriptor=os.open(parent,flags)
+    try:
+        opened=os.fstat(descriptor)
+        if (not stat.S_ISDIR(opened.st_mode) or
+                (opened.st_dev,opened.st_ino)!=expected):
+            raise RuntimeError
+        os.fsync(descriptor)
+        final=os.fstat(descriptor);observed=parent.lstat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (final.st_dev,final.st_ino)!=expected or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISDIR(observed.st_mode) or
+                (observed.st_dev,observed.st_ino)!=expected):
+            raise RuntimeError
+    finally:
+        os.close(descriptor)
+
+
+def _sync_committed_store(path,identity,fingerprint,*,new):
+    """Flush the exact committed file and a newly created POSIX entry.
+
+    SQLite ``synchronous=FULL`` remains the transaction policy. This explicit
+    boundary makes file or directory flush uncertainty visible to the caller,
+    while retaining the committed receipt for inspection and exact duplicate
+    recovery. Windows has no portable Python directory-fsync API, so it keeps
+    the writable main-file barrier and the separate native acceptance gate.
+    """
+    try:
+        if (type(new) is not bool or type(identity) is not tuple or
+                len(identity)!=1 or type(identity[0]) is not tuple or
+                len(identity[0])!=3):
+            raise RuntimeError
+        path=Path(path);resolved=path.resolve()
+        expected_path,expected_device,expected_inode=identity[0]
+        if str(resolved)!=expected_path:raise RuntimeError
+        expected_descriptor=_committed_fingerprint_boundary(fingerprint)
+        require_file_identities((path,),identity,'PAPER_READ_REVIEW_STORE_')
+        require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,
+            'PAPER_READ_REVIEW_STORE_')
+        flags=(os.O_RDWR|getattr(os,'O_BINARY',0)|
+            getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
+        descriptor=os.open(resolved,flags)
+        try:
+            before=os.fstat(descriptor)
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or
+                    not 1<=before.st_size<=MAX_DATABASE_BYTES or
+                    (before.st_dev,before.st_ino)!=(expected_device,
+                        expected_inode)):
+                raise RuntimeError
+            if (_descriptor_file_fingerprint(descriptor,resolved)!=
+                    expected_descriptor):
+                raise RuntimeError
+            os.fsync(descriptor)
+            if (_descriptor_file_fingerprint(descriptor,resolved)!=
+                    expected_descriptor):
+                raise RuntimeError
+        finally:
+            os.close(descriptor)
+        require_file_identities((path,),identity,'PAPER_READ_REVIEW_STORE_')
+        require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,
+            'PAPER_READ_REVIEW_STORE_')
+        if new and os.name!='nt':
+            _sync_parent_directory(resolved)
+            require_file_identities((path,),identity,
+                'PAPER_READ_REVIEW_STORE_')
+            require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,
+                'PAPER_READ_REVIEW_STORE_')
+    except BaseException:
+        _fail('COMMIT_DURABILITY_UNCERTAIN')
+
+
 def _require_main_connection(db,bound_path):
     """Require the opened SQLite connection to target the captured store."""
     try:
@@ -250,6 +378,7 @@ class PaperReadReviewStore:
         scope=self._scope(scope);expected_head=_digest(expected_head);receipt=sha(scope)
         current=self.inspect()
         if current['head_sha256']!=expected_head:_fail('HEAD_CHANGED')
+        new=not current['initialized']
         if admission()!=receipt:_fail('ADMISSION_CHANGED')
         if precommit_check() is not True:_fail('INPUT_REVOKED')
         bound_path=self.path.resolve();db=self._connect(write=True)
@@ -281,6 +410,8 @@ class PaperReadReviewStore:
                     'PAPER_READ_REVIEW_STORE_')
                 committed_fingerprint=capture_file_fingerprints((bound_path,),
                     (MAX_DATABASE_BYTES,),'PAPER_READ_REVIEW_STORE_')
+                _sync_committed_store(bound_path,committed_identity,
+                    committed_fingerprint,new=new)
                 # Untrusted final callbacks and result construction cannot
                 # conceal a late same-path rewrite after the committed
                 # connection proof.

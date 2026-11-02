@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.121'
+REVISION = '0.340.122'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -547,6 +547,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' New POSIX receipt-store directory persistence now opens the resolved parent with no-follow semantics and requires the descriptor and post-flush pathname to match the captured directory identity. A substituted directory descriptor is rejected before directory fsync, the committed receipt remains retained and explicit exact-head duplicate replay remains the only recovery. Windows has no portable Python directory-fsync API and keeps its independent native gate. This is sampled local identity evidence, not physical durability or broker acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the mixed account-read review receipt now independently matches the provider-read receipt durability boundary: every committed exact writable descriptor is bounded-byte matched and fsynced, each new POSIX pathname flushes its exact pinned parent directory, and uncertainty retains exactly one receipt for explicit duplicate recovery' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The mixed account-read review receipt now has explicit file-sync parity with the provider-read receipt. Its exact O_RDWR descriptor must match the committed pathname fingerprint before and after fsync; a new POSIX entry also flushes only its pinned parent-directory descriptor. Flush, descriptor or directory uncertainty fails closed while preserving one committed receipt for inspection and explicit exact-head duplicate recovery. Mandatory pacing evidence now includes this account receipt boundary. This is sampled local durability handling, not physical power-loss, native-owner or broker acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -712,7 +720,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.121 captures the exact account-receipt pathname identity and bounded fingerprint after the committed connection re-proves its path and serialized bytes. That file set is guarded across post-commit admission checks and result construction, then rechecked after connection close. A late identity, metadata or content change fails closed with fixed `FILE_SET_CHANGED`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Exact-source v0.340.120 passed hosted public-security, research safety/browser/evidence and Windows packaging/installer workflows; v0.340.121 requires fresh exact-source workflows. This is sampled local reconciliation finalization, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.122 gives the mixed account-read receipt the explicit durability boundary already used by the provider-read receipt: its exact writable descriptor must match the committed pathname fingerprint before and after file sync, and a new POSIX pathname flushes only its pinned parent directory. Flush, descriptor or directory uncertainty returns fixed `COMMIT_DURABILITY_UNCERTAIN`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory pacing evidence includes this account boundary. Exact-source v0.340.121 passed public-security run 41387574788, research safety/browser/evidence run 41387574767 and Windows packaging/installer run 41387574646; v0.340.122 requires fresh exact-source workflows. This is sampled local durability handling, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

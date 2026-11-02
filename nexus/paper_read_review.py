@@ -6,6 +6,7 @@ reservation, journal writes, import, repair, retry, acceptance or order authorit
 import json
 import os
 import re
+import stat
 
 from nexus.alpaca_paper_contract import canonical,sha
 from nexus import paper_read_pacing as pacing
@@ -30,6 +31,8 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_write_connection_content_continuity_pinned',
         'durable_receipt_postcommit_finalization_pinned',
         'durable_receipt_postclose_finalization_pinned',
+        'durable_receipt_commit_flush_failure_recoverable',
+        'durable_receipt_parent_descriptor_boundary_respected',
         'private_results_not_retained')
 
 
@@ -234,14 +237,14 @@ def fixture_report():
     from copy import deepcopy
     with tempfile.TemporaryDirectory(prefix='nexus-mixed-read-review-') as directory:
         root=Path(directory);gate,bindings=_fixture(root,full_activity=True);head=gate.inspect()['head_sha256']
-        files=lambda:{p.name:p.read_bytes() for p in root.iterdir()}
+        files=lambda:{p.name:p.read_bytes() for p in root.iterdir() if p.is_file()}
         before=files();result=review(gate,bindings,expected_head=head)
         omitted=review(gate,bindings[1:],expected_head=head)
         changed=deepcopy(bindings);changed[0]['normalized_result']['cash']='999'
         different=review(gate,changed,expected_head=head)
         unchanged=files()==before
         receipt=retain_review(root/'review.sqlite3',gate,bindings,expected_head=head)
-        from nexus.paper_read_review_store import PaperReadReviewStore
+        from nexus.paper_read_review_store import PaperReadReviewStore,ZERO
         retained=PaperReadReviewStore(root/'review.sqlite3',gate).inspect()
         receipt_reader=PaperReadReviewStore(root/'review.sqlite3',gate)
         receipt_connect=receipt_reader._connect
@@ -461,6 +464,73 @@ def fixture_report():
             close_finalization_replay['retained_receipts']==5 and
             close_finalization_retry['duplicate'] is True and
             close_finalization_final==close_finalization_replay)
+        flush_path=root/'flush-review.sqlite3'
+        flush_store=PaperReadReviewStore(flush_path,gate)
+        flush_scope=retained['receipts'][0]['scope']
+        flush_receipt=sha(flush_scope);original_fsync=receipt_store_module.os.fsync
+        flush_failures=0
+        def fail_first_file_flush(descriptor):
+            nonlocal flush_failures
+            if (flush_failures==0 and
+                    stat.S_ISREG(os.fstat(descriptor).st_mode)):
+                flush_failures+=1
+                raise OSError('fixture private account receipt flush failure')
+            return original_fsync(descriptor)
+        flush_denied=False;receipt_store_module.os.fsync=fail_first_file_flush
+        try:flush_store.append(flush_scope,expected_head=ZERO,
+            admission=lambda:flush_receipt)
+        except ValueError as error:
+            flush_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN')
+        finally:receipt_store_module.os.fsync=original_fsync
+        flush_replay=flush_store.inspect()
+        flush_retry=flush_store.append(flush_scope,
+            expected_head=flush_replay['head_sha256'],
+            admission=lambda:flush_receipt)
+        flush_final=flush_store.inspect()
+        commit_flush_failure_recoverable=(flush_failures==1 and flush_denied and
+            flush_replay['retained_receipts']==1 and
+            flush_retry['duplicate'] is True and flush_final==flush_replay)
+        parent_descriptor_boundary_respected=True
+        if os.name!='nt':
+            parent_path=root/'parent-review.sqlite3'
+            parent_store=PaperReadReviewStore(parent_path,gate)
+            foreign_parent=root/'foreign-parent';foreign_parent.mkdir()
+            original_open=receipt_store_module.os.open
+            parent_substituted=False;parent_directory_syncs=0
+            def substitute_parent(value,flags,*args,**kwargs):
+                nonlocal parent_substituted
+                if (not parent_substituted and
+                        flags&getattr(os,'O_DIRECTORY',0) and
+                        Path(value).resolve()==parent_path.resolve().parent):
+                    parent_substituted=True
+                    return original_open(foreign_parent,flags,*args,**kwargs)
+                return original_open(value,flags,*args,**kwargs)
+            def count_parent_sync(descriptor):
+                nonlocal parent_directory_syncs
+                if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                    parent_directory_syncs+=1
+                return original_fsync(descriptor)
+            parent_denied=False
+            receipt_store_module.os.open=substitute_parent
+            receipt_store_module.os.fsync=count_parent_sync
+            try:parent_store.append(flush_scope,expected_head=ZERO,
+                admission=lambda:flush_receipt)
+            except ValueError as error:
+                parent_denied=(str(error)==
+                    'PAPER_READ_REVIEW_STORE_COMMIT_DURABILITY_UNCERTAIN')
+            finally:
+                receipt_store_module.os.open=original_open
+                receipt_store_module.os.fsync=original_fsync
+            parent_replay=parent_store.inspect()
+            parent_retry=parent_store.append(flush_scope,
+                expected_head=parent_replay['head_sha256'],
+                admission=lambda:flush_receipt)
+            parent_final=parent_store.inspect()
+            parent_descriptor_boundary_respected=(parent_substituted and
+                parent_directory_syncs==0 and parent_denied and
+                parent_replay['retained_receipts']==1 and
+                parent_retry['duplicate'] is True and parent_final==parent_replay)
         store_bytes=(root/'review.sqlite3').read_bytes()
         token=gate.begin(admission=lambda:1792368400);gate.finish(token,admission=lambda:1792368400,status_code=200)
         before=files();legacy=review(gate,bindings,expected_head=gate.inspect()['head_sha256'])
@@ -493,6 +563,10 @@ def fixture_report():
                 postcommit_finalization_pinned),
             durable_receipt_postclose_finalization_pinned=(
                 postclose_finalization_pinned),
+            durable_receipt_commit_flush_failure_recoverable=(
+                commit_flush_failure_recoverable),
+            durable_receipt_parent_descriptor_boundary_respected=(
+                parent_descriptor_boundary_respected),
             private_results_not_retained=all(token not in store_bytes for token in
                 (b'fixture_key_only_123',b'fixture_secret_only_123',b'nx_review_fixture',b'BTC/USD')) and
                 not _contains_exact_scalar(retained,'1000'))

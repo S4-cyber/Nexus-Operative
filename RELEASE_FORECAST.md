@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.121
+## Current candidate: v0.340.122
+
+The mixed account-read receipt now applies an explicit writable-file sync after commit and pins the exact descriptor bytes to the committed pathname fingerprint. New POSIX stores also sync only their captured parent-directory identity. Any flush or descriptor uncertainty fails closed while retaining exactly one receipt for inspection and explicit duplicate recovery.
+
+The exact v0.340.121 parent passed hosted public-security, research safety/browser/evidence and Windows packaging/installer workflows. Fresh exact-source v0.340.122 workflows remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.121
 
 Account-receipt writers now pin the exact committed pathname identity and bounded fingerprint across post-commit callbacks, result construction and successful connection close. Late file-set change is refused while the receipt remains exactly once for explicit duplicate recovery.
 

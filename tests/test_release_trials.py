@@ -462,6 +462,21 @@ def test_pacing_profile_requires_provider_read_history_review_fences():
             trials._validate('pacing',changed)
 
 
+def test_pacing_profile_requires_account_read_history_review_fences():
+    from nexus.paper_read_review import CHECKS,FLAGS
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    for field in CHECKS:
+        changed=copy.deepcopy(result)
+        changed['account_read_history_review'][field]=False
+        with pytest.raises(ValueError,match='ACCOUNT_READ_HISTORY_FENCES'):
+            trials._validate('pacing',changed)
+    for field in FLAGS:
+        changed=copy.deepcopy(result)
+        changed['account_read_history_review'][field]=True
+        with pytest.raises(ValueError,match='ACCOUNT_READ_HISTORY_AUTHORITY'):
+            trials._validate('pacing',changed)
+
+
 def test_pacing_profile_requires_provider_post_activity_review_fences():
     from nexus.paper_provider_post_activity_review import FLAGS
     result=trials._pacing_trial();trials._validate('pacing',result)

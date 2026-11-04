@@ -1143,6 +1143,7 @@ def _validate(profile, result):
             'postcommit_all_content_replayed','postcommit_all_pacing_operations_typed',
             'postcommit_all_pacing_result_receipts_bound','postcommit_all_pacing_request_targets_bound',
             'postcommit_all_normalized_results_bound','acceptance_store_binding_pinned',
+            'acceptance_object_scope_pinned','acceptance_cleanup_path_pinned',
             'acceptance_connection_binding_pinned','acceptance_connection_content_pinned',
             'acceptance_read_close_requires_explicit_retry',
             'acceptance_connection_content_continuity_pinned',

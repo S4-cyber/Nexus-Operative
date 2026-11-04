@@ -243,27 +243,60 @@ class PaperActivityAcceptanceStore:
         self.path=Path(path);self.account=_uuid(paper_account_id)
         self.account_digest=hashlib.sha256(self.account.encode()).hexdigest()
 
+    def _capture_binding(self):
+        """Pin the mutable store object to one path and paper account."""
+        try:
+            bound_path=Path(self.path).resolve()
+            bound_account=self.account
+            bound_digest=self.account_digest
+            if (type(bound_account) is not str or
+                    hashlib.sha256(bound_account.encode()).hexdigest()!=
+                    bound_digest):
+                _fail('STORE_BINDING_CHANGED')
+        except ValueError:
+            raise
+        except (AttributeError,OSError,RuntimeError,TypeError):
+            _fail('STORE_BINDING_CHANGED')
+        return bound_path,bound_account,bound_digest
+
+    def _require_binding(self,binding):
+        bound_path,bound_account,bound_digest=binding
+        try:
+            if (Path(self.path).resolve()!=bound_path or
+                    self.account!=bound_account or
+                    self.account_digest!=bound_digest or
+                    hashlib.sha256(self.account.encode()).hexdigest()!=
+                    bound_digest):
+                _fail('STORE_BINDING_CHANGED')
+        except ValueError:
+            raise
+        except (AttributeError,OSError,RuntimeError,TypeError):
+            _fail('STORE_BINDING_CHANGED')
+
     def _check(self):check_existing(self.path,MAX_DATABASE_BYTES,'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
 
     def _connect(self,write=False):
-        self._check();new=False;created_identity=None;db=None
+        binding=self._capture_binding();bound_path=binding[0]
+        self._check();self._require_binding(binding)
+        new=False;created_identity=None;db=None
         try:
-            if write and not self.path.exists():
-                self.path.parent.mkdir(parents=True,exist_ok=True)
+            if write and not bound_path.exists():
+                bound_path.parent.mkdir(parents=True,exist_ok=True)
+                self._require_binding(binding)
                 try:
-                    descriptor=os.open(self.path,os.O_CREAT|os.O_EXCL|
+                    descriptor=os.open(bound_path,os.O_CREAT|os.O_EXCL|
                         os.O_WRONLY,0o600)
                 except FileExistsError:pass
                 else:
                     new=True
                     try:
                         opened=os.fstat(descriptor)
-                        created_identity=((str(self.path.resolve()),
+                        created_identity=((str(bound_path),
                             opened.st_dev,opened.st_ino),)
                     finally:os.close(descriptor)
-                self._check()
-            bound_path=self.path.resolve()
+                self._check();self._require_binding(binding)
             def require_fresh_identity():
+                self._require_binding(binding)
                 if new:
                     require_file_identities((bound_path,),created_identity,
                         'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
@@ -294,7 +327,7 @@ class PaperActivityAcceptanceStore:
                 except BaseException:
                     if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
                     raise
-            if new:_discard_uncommitted_new(self.path,created_identity)
+            if new:_discard_uncommitted_new(bound_path,created_identity)
             if _database_busy(error):_fail('DATABASE_BUSY')
             raise
         except BaseException:
@@ -303,7 +336,7 @@ class PaperActivityAcceptanceStore:
                 except BaseException:
                     if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
                     raise
-            if new:_discard_uncommitted_new(self.path,created_identity)
+            if new:_discard_uncommitted_new(bound_path,created_identity)
             raise
 
     @staticmethod
@@ -362,12 +395,8 @@ class PaperActivityAcceptanceStore:
 
     def _read_state(self):
         """Replay one exact bounded store through the connection that opened it."""
-        bound_path=Path(self.path).resolve()
-        def require_binding():
-            try:current=Path(self.path).resolve()
-            except (OSError,RuntimeError,TypeError,ValueError):
-                _fail('STORE_BINDING_CHANGED')
-            if current!=bound_path:_fail('STORE_BINDING_CHANGED')
+        binding=self._capture_binding();bound_path=binding[0]
+        def require_binding():self._require_binding(binding)
         self._check();require_binding()
         identity=capture_file_identities((bound_path,),
             'PAPER_ACTIVITY_ACCEPTANCE_STORE_')
@@ -424,40 +453,48 @@ class PaperActivityAcceptanceStore:
         return state
 
     def inspect(self):
-        self._check()
-        if not self.path.exists():
-            return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=False,account_sha256=self.account_digest,
+        binding=self._capture_binding();bound_path=binding[0]
+        bound_digest=binding[2]
+        self._check();self._require_binding(binding)
+        if not bound_path.exists():
+            self._require_binding(binding)
+            if bound_path.exists():_fail('FILE_IDENTITY_CHANGED')
+            return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=False,account_sha256=bound_digest,
                 head_sha256=ZERO,records=0,pacing_bound_head_sha256=None,retention_bound_head_sha256=None,
                 baseline_pacing_sessions=0,baseline_retained_batches=0,preexisting_history_unverified=False,last_record_sha256=None,
                 last_record_scope=None,
                 automatic_retry=False,ready_for_routing=False)
         state=self._read_state()
+        self._require_binding(binding)
         public=dict(state);public.pop('record_scopes')
-        return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=True,account_sha256=self.account_digest,**public,
+        return dict(mode='PAPER_ACTIVITY_ACCEPTANCE_HISTORY',initialized=True,account_sha256=bound_digest,**public,
             automatic_retry=False,ready_for_routing=False)
 
     def replay_scopes(self):
         """Return validated aggregate scopes in retained order for local replay."""
-        self._check()
-        if not self.path.exists(): return ()
+        binding=self._capture_binding();bound_path=binding[0]
+        self._check();self._require_binding(binding)
+        if not bound_path.exists():
+            self._require_binding(binding)
+            if bound_path.exists():_fail('FILE_IDENTITY_CHANGED')
+            return ()
         state=self._read_state()
+        self._require_binding(binding)
         return tuple(dict(scope) for scope in state['record_scopes'])
 
     def bind(self,*,pacing_head,retention_head,pacing_sessions,retained_batches):
+        binding=self._capture_binding();bound_path=binding[0]
+        bound_account=binding[2]
         pacing_head=_head(pacing_head);retention_head=_head(retention_head)
         if any(type(v) is not int or v<0 for v in (pacing_sessions,retained_batches)):_fail('BASELINE_INVALID')
-        baseline=dict(schema=SCHEMA,account_sha256=self.account_digest,
+        self._require_binding(binding)
+        baseline=dict(schema=SCHEMA,account_sha256=bound_account,
             baseline_pacing_head_sha256=pacing_head,baseline_retention_head_sha256=retention_head,
             baseline_pacing_sessions=pacing_sessions,baseline_retained_batches=retained_batches,
             preexisting_history_unverified=bool(pacing_sessions or retained_batches or pacing_head!=ZERO or retention_head!=ZERO))
-        bound_path=Path(self.path).resolve();bound_account=self.account_digest
-        def require_binding():
-            try:current=Path(self.path).resolve()
-            except (OSError,RuntimeError,TypeError,ValueError):
-                _fail('STORE_BINDING_CHANGED')
-            if current!=bound_path or self.account_digest!=bound_account:
-                _fail('STORE_BINDING_CHANGED')
+        def require_binding():self._require_binding(binding)
         self._check();require_binding();db,new=self._connect(write=True)
+        require_binding()
         committed=False;transaction_identity=None;committed_fingerprint=None
         def require_identity():
             if transaction_identity is None:_fail('FILE_IDENTITY_CHANGED')
@@ -523,15 +560,10 @@ class PaperActivityAcceptanceStore:
         return second
 
     def append(self,scope,*,admission,precommit_check=lambda:True):
-        scope=self._scope(scope);record_sha=sha(scope)
-        bound_path=Path(self.path).resolve();bound_account=self.account_digest
-        def require_binding():
-            try:current_path=Path(self.path).resolve()
-            except (OSError,RuntimeError,TypeError,ValueError):
-                _fail('STORE_BINDING_CHANGED')
-            if (current_path!=bound_path or
-                    self.account_digest!=bound_account):
-                _fail('STORE_BINDING_CHANGED')
+        binding=self._capture_binding();bound_path=binding[0]
+        scope=self._scope(scope);self._require_binding(binding)
+        record_sha=sha(scope)
+        def require_binding():self._require_binding(binding)
         self._check();require_binding()
         transaction_identity=None;committed_fingerprint=None
         def require_identity():
@@ -558,7 +590,7 @@ class PaperActivityAcceptanceStore:
                 require_callback_finalization();raise
             require_callback_finalization()
             return value
-        db,new=self._connect(write=True);committed=False
+        db,new=self._connect(write=True);require_binding();committed=False
         def require_finalization():
             require_binding()
             if transaction_identity is not None:require_identity()

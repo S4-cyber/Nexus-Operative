@@ -1,5 +1,11 @@
 # Nexus Operative continuity instructions
 
+## v0.340.137 activity-acceptance object-scope binding
+
+The private activity-acceptance journal now pins one complete mutable store object—resolved path, normalized paper-account ID and account digest—before missing-file inspection, connection setup, replay, baseline binding, append callbacks, commit acknowledgement and final return. Fresh-file cleanup always targets the captured exclusively created path, so a retarget cannot redirect deletion to a decoy. Ordinary object retargets fail closed with a fixed binding diagnostic; `KeyboardInterrupt` and `SystemExit` retain their existing independent precedence. Mandatory disposable evidence covers metadata retarget refusal and captured-path cleanup, while direct tests cover both readers, missing inspection and pre/post-commit callbacks.
+
+Exact-source v0.340.136 public-repository security, browser/help and offline release-evidence jobs passed before this candidate began. Its complete regression and Windows installer/build lanes were still running with no observed failure, so their final results are not inferred here. No runtime authority, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.137 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.136 native Windows fresh-journal cleanup acceptance
 
 Fresh SQLite identity-check failure regressions for the account acceptance, mixed account-read receipt and provider-read receipt stores now accept the native-Windows outcome where the still-open exact new file remains zero bytes. Retained size is never cleanup proof: the test requires the exact exclusively created identity plus fixed cleanup uncertainty and rejects all journal/WAL/shared-memory sidecars. Retained state remains fail-closed for explicit review; adjacent deterministic regressions continue to prove one clean durable retry only when absence was actually restored.

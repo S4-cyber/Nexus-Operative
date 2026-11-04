@@ -233,6 +233,50 @@ def fixture_report():
                 inspection_bytes} and
             after_acceptance.inspect()['records']==2 and
             len(after_acceptance.replay_scopes())==2)
+        object_load=after_acceptance._load
+        object_account=after_acceptance.account
+        object_digest=after_acceptance.account_digest
+        object_scope_denied=False
+        def retarget_object(db):
+            result=object_load(db)
+            after_acceptance.account_digest='f'*64
+            return result
+        after_acceptance._load=retarget_object
+        try:
+            try:after_acceptance.inspect()
+            except ValueError as error:
+                object_scope_denied=(str(error)==
+                    'PAPER_ACTIVITY_ACCEPTANCE_STORE_STORE_BINDING_CHANGED')
+        finally:
+            after_acceptance.account=object_account
+            after_acceptance.account_digest=object_digest
+            after_acceptance._load=object_load
+        acceptance_object_scope_pinned=(object_scope_denied and
+            inspection_bytes[acceptance_path]==acceptance_path.read_bytes() and
+            after_acceptance.inspect()['records']==2)
+        cleanup_binding_root=base/'cleanup-object-binding'
+        cleanup_binding_root.mkdir()
+        cleanup_binding_path=cleanup_binding_root/'acceptance.sqlite3'
+        cleanup_binding_decoy=cleanup_binding_root/'decoy.sqlite3'
+        cleanup_binding_decoy.write_bytes(b'do-not-delete')
+        cleanup_binding_store=PaperActivityAcceptanceStore(
+            cleanup_binding_path,ACCOUNT)
+        cleanup_binding_require=acceptance_storage.require_file_identities
+        cleanup_binding_denied=False
+        def retarget_cleanup(paths,identities,prefix):
+            cleanup_binding_require(paths,identities,prefix)
+            cleanup_binding_store.path=cleanup_binding_decoy
+            raise RuntimeError('injected object retarget')
+        acceptance_storage.require_file_identities=retarget_cleanup
+        try:
+            try:cleanup_binding_store._connect(write=True)
+            except RuntimeError as error:
+                cleanup_binding_denied=(str(error)=='injected object retarget')
+        finally:
+            acceptance_storage.require_file_identities=cleanup_binding_require
+        acceptance_cleanup_path_pinned=(cleanup_binding_denied and
+            not cleanup_binding_path.exists() and
+            cleanup_binding_decoy.read_bytes()==b'do-not-delete')
         read_close_before=acceptance_path.read_bytes()
         class ReadCloseFailureConnection(sqlite3.Connection):
             def close(self):
@@ -742,7 +786,8 @@ def fixture_report():
             not legacy['all_normalized_results_bound'] and legacy['all_request_targets_bound'])
         legacy_preserved=legacy['unchanged'] and legacy_before==_sqlite_files_snapshot(legacy_root)
         passed=(missing_created_nothing and before_unbound and after_bound and
-            acceptance_inspection_bound and
+            acceptance_inspection_bound and acceptance_object_scope_pinned and
+            acceptance_cleanup_path_pinned and
             acceptance_read_close_requires_explicit_retry and
             acceptance_connection_content_continuity_pinned and
             acceptance_write_binding_pinned and
@@ -773,6 +818,8 @@ def fixture_report():
             postcommit_all_pacing_request_targets_bound=after['all_request_targets_bound'],
             postcommit_all_normalized_results_bound=after['all_normalized_results_bound'],
             acceptance_store_binding_pinned=acceptance_binding_denied,
+            acceptance_object_scope_pinned=acceptance_object_scope_pinned,
+            acceptance_cleanup_path_pinned=acceptance_cleanup_path_pinned,
             acceptance_connection_binding_pinned=acceptance_connection_denied,
             acceptance_connection_content_pinned=acceptance_content_denied,
             acceptance_read_close_requires_explicit_retry=

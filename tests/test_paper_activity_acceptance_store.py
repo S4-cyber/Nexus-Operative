@@ -192,6 +192,67 @@ def test_readers_pin_store_connection_and_exact_content(
 
 
 @pytest.mark.parametrize('reader',('inspect','replay_scopes'))
+@pytest.mark.parametrize('field',('account','account_digest'))
+def test_readers_pin_complete_store_object_scope(
+        tmp_path,monkeypatch,reader,field):
+    value=scope(f'object-scope-{reader}-{field}');store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    store.append(value,admission=lambda:admitted)
+    before=store.path.read_bytes();original_load=store._load
+    original_account=store.account;original_digest=store.account_digest
+    def retarget(db):
+        result=original_load(db)
+        if field=='account':store.account=OTHER
+        else:store.account_digest='f'*64
+        return result
+    monkeypatch.setattr(store,'_load',retarget)
+    try:
+        with pytest.raises(ValueError,match=(
+                '^PAPER_ACTIVITY_ACCEPTANCE_STORE_STORE_BINDING_CHANGED$')):
+            getattr(store,reader)()
+    finally:
+        store.account=original_account;store.account_digest=original_digest
+        monkeypatch.setattr(store,'_load',original_load)
+    assert store.path.read_bytes()==before
+    assert store.inspect()['records']==1
+    assert store.replay_scopes()==(value,)
+
+
+def test_missing_reader_pins_object_scope_before_reporting_absence(
+        tmp_path,monkeypatch):
+    path=tmp_path/'missing'/'acceptance.sqlite3'
+    store=PaperActivityAcceptanceStore(path,ACCOUNT)
+    original_check=store._check;original_account=store.account
+    def retarget():
+        original_check();store.account=OTHER
+    monkeypatch.setattr(store,'_check',retarget)
+    try:
+        with pytest.raises(ValueError,match=(
+                '^PAPER_ACTIVITY_ACCEPTANCE_STORE_STORE_BINDING_CHANGED$')):
+            store.inspect()
+    finally:store.account=original_account
+    assert not path.parent.exists()
+
+
+def test_fresh_connect_cleanup_uses_captured_path_after_object_retarget(
+        tmp_path,monkeypatch):
+    path=tmp_path/'fresh'/'acceptance.sqlite3'
+    decoy=tmp_path/'decoy.sqlite3';decoy.write_bytes(b'do-not-delete')
+    store=PaperActivityAcceptanceStore(path,ACCOUNT)
+    original_require=storage.require_file_identities
+    def retarget_then_fail(paths,identities,prefix):
+        original_require(paths,identities,prefix)
+        store.path=decoy
+        raise RuntimeError('injected setup failure')
+    monkeypatch.setattr(storage,'require_file_identities',retarget_then_fail)
+    with pytest.raises(RuntimeError,match='injected setup failure'):
+        store._connect(write=True)
+    assert not path.exists()
+    assert decoy.read_bytes()==b'do-not-delete'
+
+
+@pytest.mark.parametrize('reader',('inspect','replay_scopes'))
 def test_readers_recheck_path_content_after_connection_serialization(
         tmp_path,monkeypatch,reader):
     value=scope('serialization-continuity');store=bound(tmp_path,value)
@@ -304,24 +365,31 @@ def test_optional_input_guard_rolls_back_new_record_before_commit(tmp_path,verdi
     assert store.inspect()['records']==0 and store.path.read_bytes()==before
 
 
+@pytest.mark.parametrize('field',('path','account','account_digest'))
 @pytest.mark.parametrize(('retarget_call','records'),((1,0),(2,1)))
 def test_append_pins_store_binding_across_untrusted_admission(
-        tmp_path,retarget_call,records):
+        tmp_path,retarget_call,records,field):
     value=scope();store=bound(tmp_path,value)
     foreign=bound(tmp_path/'foreign',scope('foreign'))
-    original_path=store.path;calls=0
+    original_path=store.path;original_account=store.account
+    original_digest=store.account_digest;calls=0
     admitted=(value['pacing_after_head_sha256'],
         value['retention_after_head_sha256'])
     def retarget():
         nonlocal calls
         calls+=1
-        if calls==retarget_call:store.path=foreign.path
+        if calls==retarget_call:
+            if field=='path':store.path=foreign.path
+            elif field=='account':store.account=OTHER
+            else:store.account_digest='f'*64
         return admitted
     try:
         with pytest.raises(ValueError,match=(
                 '^PAPER_ACTIVITY_ACCEPTANCE_STORE_STORE_BINDING_CHANGED$')):
             store.append(value,admission=retarget)
-    finally:store.path=original_path
+    finally:
+        store.path=original_path;store.account=original_account
+        store.account_digest=original_digest
     report=store.inspect()
     assert report['records']==records
     if records:

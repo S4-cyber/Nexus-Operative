@@ -1,5 +1,11 @@
 # Nexus Operative continuity instructions
 
+## v0.340.141 Activity SSE result-envelope validation
+
+The explicit one-attempt Activity SSE coordinator now validates its initial semantic review, private transport pair, reconnect review and cursor-checkpoint acknowledgement before consuming aggregate fields. Malformed internal returns receive fixed fail-closed diagnostics instead of raw unpack or key errors. A fabricated post-commit acknowledgement withholds success while preserving exactly one original-path checkpoint for explicit cold recovery. Mandatory disposable evidence covers that retained uncertain acknowledgement, while direct regressions cover every malformed boundary.
+
+No exact-source v0.340.140 workflow run or commit status was exposed when this candidate began, so hosted Windows/browser/security success is not inferred. No runtime authority, real provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This injected local validation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.141 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.140 Activity SSE semantic-review scope finalization
 
 Both semantic-review boundaries in the explicit one-attempt Activity SSE coordinator now finalize against the exact captured cursor-store instance, path object, resolved path and account digest. Initial-envelope and reconnect-review ordinary failures or successful returns cannot conceal an equal-path object retarget; the fixed store-scope refusal wins over a generic review diagnostic. `KeyboardInterrupt` and `SystemExit` remain independently observable. Mandatory disposable evidence covers the post-GET exceptional boundary, and direct regressions cover both reviewers and both process-control signals.

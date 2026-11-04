@@ -1333,6 +1333,7 @@ def _validate(profile, result):
                 'checkpoint_store_scope_pinned',
                 'checkpoint_exception_scope_pinned',
                 'semantic_review_exception_scope_pinned',
+                'malformed_checkpoint_acknowledgement_retained',
                 'no_private_identifier_or_credential_echo',
                 'no_automatic_or_financial_authority')) and
             checkpoint['actual_storage_retained'] is False,

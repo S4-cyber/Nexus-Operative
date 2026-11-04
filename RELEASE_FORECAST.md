@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.140
+## Current candidate: v0.340.141
+
+The one-attempt Activity SSE coordinator now validates each internal result envelope before consuming aggregate fields. Malformed returns remain fixed and fail closed; a fabricated post-commit acknowledgement preserves one cold-recoverable checkpoint without reporting success or repeating provider IO.
+
+No exact-source v0.340.140 workflow run or commit status was exposed when this candidate began. Fresh exact-source v0.340.141 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.140
 
 The one-attempt Activity SSE coordinator now finalizes both semantic reviewers against its exact captured cursor-store scope. Equal-path object replacement cannot be hidden behind either an initial-envelope or reconnect-review ordinary failure, and process-control signals retain independent precedence.
 

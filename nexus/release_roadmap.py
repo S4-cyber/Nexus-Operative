@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.140'
+REVISION = '0.340.141'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -728,7 +728,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.140 finalizes both semantic Activity SSE reviews against the exact captured cursor-store scope. Initial-envelope and reconnect-review ordinary failures or successful returns cannot conceal an equal-path object retarget; the fixed store-scope refusal wins over a generic review diagnostic. KeyboardInterrupt and SystemExit remain independently observable. Mandatory disposable evidence and direct regressions cover the post-GET semantic-review exception boundary. No exact-source v0.340.139 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. This remains injected local checkpoint hardening, not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No real provider IO, credential read, automatic retry/reconnect, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.141 validates the initial semantic review, private transport pair, reconnect review and cursor-checkpoint acknowledgement before their aggregate fields can be consumed. Malformed internal results now receive fixed fail-closed diagnostics instead of raw unpack or key errors. A fabricated post-commit acknowledgement withholds success while exactly one original-path checkpoint remains available for explicit cold recovery. Mandatory disposable evidence and direct regressions cover the retained malformed-acknowledgement boundary. No exact-source v0.340.140 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. This remains injected local checkpoint hardening, not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No real provider IO, credential read, automatic retry/reconnect, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

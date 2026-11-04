@@ -217,6 +217,62 @@ def test_reconnect_reason_disagreement_never_checkpoints(tmp_path):
     assert len(opener.requests) == 1 and not path.exists()
 
 
+def test_malformed_initial_review_is_fixed_and_network_silent(
+        tmp_path, monkeypatch):
+    path = tmp_path / 'cursor.sqlite3'
+    monkeypatch.setattr(subject.envelope, 'review',
+        lambda *args, **kwargs: {})
+    opener = Opener(segments()[2])
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='INITIAL_REVIEW_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT),
+            opener=opener)
+    assert not opener.requests and not path.exists()
+
+
+@pytest.mark.parametrize('result', (None, {}, (object(), []), ({}, [])))
+def test_malformed_transport_result_is_fixed_and_storage_silent(
+        tmp_path, monkeypatch, result):
+    path = tmp_path / 'cursor.sqlite3'
+    monkeypatch.setattr(subject.transport, '_collect_once_private',
+        lambda *args, **kwargs: result)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='TRANSPORT_RESULT_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT))
+    assert not path.exists()
+
+
+def test_malformed_reconnect_review_is_fixed_and_never_checkpoints(
+        tmp_path, monkeypatch):
+    path = tmp_path / 'cursor.sqlite3'
+    monkeypatch.setattr(subject.reconnect, 'review',
+        lambda *args, **kwargs: {})
+    opener = Opener(segments()[2])
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='RECONNECT_REVIEW_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT),
+            opener=opener)
+    assert len(opener.requests) == 1 and not path.exists()
+
+
+def test_malformed_checkpoint_acknowledgement_retains_exact_recovery(
+        tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    original_checkpoint = store.checkpoint
+
+    def commit_with_malformed_acknowledgement(*args, **kwargs):
+        original_checkpoint(*args, **kwargs)
+        return {'account_sha256': store.account_sha256}
+
+    store.checkpoint = commit_with_malformed_acknowledgement
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN'):
+        run(tmp_path, cursor_store=store)
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['initialized'] and cold['retained_checkpoints'] == 1
+
+
 def test_cursor_store_binding_change_during_io_never_checkpoints(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     moved = tmp_path / 'moved.sqlite3'

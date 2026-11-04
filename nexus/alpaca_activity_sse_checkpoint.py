@@ -126,6 +126,58 @@ def _checked_store_call(callback, store, binding, error_code=None):
     return result
 
 
+def _digest(value):
+    return (type(value) is str and len(value) == 64 and
+        all(character in '0123456789abcdef' for character in value))
+
+
+def _initial_review_result(value):
+    if type(value) is not dict or not _digest(value.get('account_sha256')):
+        _fail('INITIAL_REVIEW_INVALID')
+    return value
+
+
+def _transport_result(value):
+    if type(value) is not tuple or len(value) != 2:
+        _fail('TRANSPORT_RESULT_INVALID')
+    review, replay = value
+    if (type(review) is not dict or
+            not _digest(review.get('input_sha256')) or
+            type(review.get('source')) is not str or
+            not 0 < len(review['source']) <= 64 or
+            type(review.get('gap_or_server_error_observed')) is not bool or
+            type(review.get('reconnect_review_required')) is not bool or
+            type(review.get('actual_provider_access')) is not bool or
+            type(review.get('actual_stream_connection')) is not bool):
+        _fail('TRANSPORT_RESULT_INVALID')
+    return review, replay
+
+
+def _reconnect_review_result(value):
+    counts = ('initial_events_reviewed', 'replay_events_reviewed',
+        'redelivered_events_deduplicated', 'new_events_processed')
+    if (type(value) is not dict or not _digest(value.get('input_sha256')) or
+            any(type(value.get(key)) is not int or
+                not 0 < value[key] <= 2000 for key in counts)):
+        _fail('RECONNECT_REVIEW_INVALID')
+    return value
+
+
+def _checkpoint_receipt(value, account_sha256):
+    if (type(value) is not dict or
+            value.get('account_sha256') != account_sha256 or
+            any(not _digest(value.get(key)) for key in (
+                'head_sha256', 'receipt_sha256', 'cursor_sha256')) or
+            any(type(value.get(key)) is not bool for key in (
+                'duplicate', 'reconnect_reservation_bound',
+                'transport_input_bound', 'complete_review_counts_bound')) or
+            value.get('local_cursor_checkpoint_committed') is not True or
+            value.get('process_restart_recoverable') is not True or
+            any(value.get(flag) is not False for flag in FLAGS)):
+        _fail('CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN')
+    return value
+
+
 def _reservation(value):
     if value is None:
         return None
@@ -164,8 +216,8 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         cursor_store, store_binding)
     try:
         initial_review = _checked_store_call(
-            lambda: envelope.review(initial,
-                expected_account_id=expected_account_id),
+            lambda: _initial_review_result(envelope.review(initial,
+                expected_account_id=expected_account_id)),
             cursor_store, store_binding)
         persisted = initial[-1]['event_id']
         if envelope.ULID.fullmatch(persisted) is None:
@@ -204,8 +256,8 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
     if elapsed_clock is not None:
         options['elapsed_clock'] = elapsed_clock
     transport_review, replay = _checked_store_call(
-        lambda: transport._collect_once_private(
-            api_key, api_secret, **options), cursor_store, store_binding)
+        lambda: _transport_result(transport._collect_once_private(
+            api_key, api_secret, **options)), cursor_store, store_binding)
     replay = _checked_store_call(
         lambda: _frozen_events(replay, 'REPLAY_EVENTS_INVALID'),
         cursor_store, store_binding)
@@ -214,11 +266,11 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         _fail('INTERRUPTED_SEGMENT_INELIGIBLE')
     try:
         checked = _checked_store_call(
-            lambda: reconnect.review(initial, replay,
+            lambda: _reconnect_review_result(reconnect.review(initial, replay,
                 expected_account_id=expected_account_id,
                 persisted_event_id=persisted,
                 reconnect_since_id=persisted,
-                reconnect_reason=reconnect_reason),
+                reconnect_reason=reconnect_reason)),
             cursor_store, store_binding)
     except ActivitySSECheckpointError:
         raise
@@ -245,16 +297,14 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         return review_input_sha256
 
     saved = _checked_store_call(
-        lambda: cursor_store.checkpoint(checked,
+        lambda: _checkpoint_receipt(cursor_store.checkpoint(checked,
             previous_cursor=persisted,
             next_cursor=replay[-1]['event_id'],
             expected_head=expected_cursor_head, admission=admission,
             reconnect_reservation_token=reservation,
             transport_input_sha256=transport_input_sha256),
+            store_binding[3]),
         cursor_store, store_binding)
-    if (type(saved) is not dict or
-            saved.get('account_sha256') != store_binding[3]):
-        _fail('CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN')
     return dict(mode='EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT',
         status='REVIEW_REQUIRED', policy=POLICY,
         source=transport_review['source'],
@@ -428,6 +478,35 @@ def fixture_report():
             semantic_error = str(error)
         finally:
             reconnect.review = original_reconnect_review
+        acknowledgement_path = Path(folder) / 'ack-pinned.sqlite3'
+        acknowledgement_store = ActivitySSECursorStore(
+            acknowledgement_path, account)
+        acknowledgement_checkpoint = acknowledgement_store.checkpoint
+
+        def commit_with_malformed_acknowledgement(*args, **kwargs):
+            acknowledgement_checkpoint(*args, **kwargs)
+            return {'account_sha256': acknowledgement_store.account_sha256}
+
+        acknowledgement_store.checkpoint = \
+            commit_with_malformed_acknowledgement
+        acknowledgement_error = None
+        try:
+            collect_and_checkpoint_once(
+                'fixture_key_only_123', 'fixture_secret_only_123',
+                expected_account_id=account, initial_events=first,
+                reconnect_reason='CONNECTION_DROPPED',
+                cursor_store=acknowledgement_store,
+                expected_cursor_head=ZERO,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True, opener=Opener(),
+                wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+                permission_check=lambda: True,
+                emergency_stop_check=lambda: False,
+                credential_check=lambda: True)
+        except ActivitySSECheckpointError as error:
+            acknowledgement_error = str(error)
+        acknowledgement_recovery = ActivitySSECursorStore(
+            acknowledgement_path, account).inspect()
         encoded = json.dumps(result, sort_keys=True)
         checks = dict(single_injected_get=len(opener.requests) == 1,
             duplicate_redelivery_and_advance=
@@ -450,6 +529,11 @@ def fixture_report():
                     'ALPACA_ACTIVITY_SSE_CHECKPOINT_CURSOR_STORE_CHANGED' and
                 len(semantic_opener.requests) == 1 and
                 not semantic_path.exists(),
+            malformed_checkpoint_acknowledgement_retained=
+                acknowledgement_error ==
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_'
+                    'CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN' and
+                acknowledgement_recovery['retained_checkpoints'] == 1,
             no_private_identifier_or_credential_echo=all(token not in encoded
                 for token in (account, '01K0000', '11111111',
                     'fixture_key_only_123', 'fixture_secret_only_123')),

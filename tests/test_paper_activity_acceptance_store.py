@@ -813,9 +813,10 @@ def test_fresh_acceptance_identity_is_rechecked_through_sqlite_setup(
     if path.exists():
         assert str(raised.value)==(
             'PAPER_ACTIVITY_ACCEPTANCE_STORE_UNCOMMITTED_CLEANUP_UNCERTAIN')
-        assert path.stat().st_size>0
         assert storage.capture_file_identities((path,),
             'PAPER_ACTIVITY_ACCEPTANCE_STORE_')==state['created_identity']
+        # Native Windows can retain the still-open exact file at zero bytes.
+        # Size is not cleanup proof: identity and the uncertainty result are.
     else:
         assert str(raised.value)==(
             'PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_IDENTITY_CHANGED')

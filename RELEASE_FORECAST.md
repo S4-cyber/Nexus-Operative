@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.135
+## Current candidate: v0.340.136
+
+Native-Windows fresh-journal failure acceptance now distinguishes exact retained identity and fixed cleanup uncertainty from file size. All three affected SQLite stores reject sidecars and retain uncertain state for explicit review; adjacent deterministic regressions prove a clean durable retry only when absence was actually restored.
+
+Exact-source v0.340.135 browser/help, public-repository security and offline release-evidence workflows passed; its two Windows workflows failed only the twelve superseded retained-size assertions. Fresh exact-source v0.340.136 hosted Windows workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.135
 
 Provider read-review receipt operations now bind one mutable store object to its exact store path, cached provider digest and protected source-path tuple through complete reads and every write callback phase. Retargeted ordinary callbacks fail closed without redirecting new storage or changing source exclusions; process-control signals remain independently observable.
 

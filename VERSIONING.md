@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.135 (pre-release).**
+**Current development build: 0.340.136 (pre-release).**
+
+## v0.340.136 native Windows fresh-journal cleanup acceptance
+
+Fresh SQLite identity-check failure regressions for the account acceptance, mixed account-read receipt and provider-read receipt stores now accept the native-Windows outcome where the still-open exact new file remains zero bytes. Retained size is never cleanup proof: the test requires the exact exclusively created identity plus fixed cleanup uncertainty and rejects all journal/WAL/shared-memory sidecars. Retained state remains fail-closed for explicit review; adjacent deterministic regressions continue to prove one clean durable retry only when absence was actually restored.
+
+Exact-source v0.340.135 browser/help, public-repository security and offline release-evidence workflows passed. Its Windows safety and simulated-research workflows failed only twelve obsolete `size > 0` assertions covered by this slice. No runtime authority, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic acceptance correction grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.136 exact-source hosted Windows workflows and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.135 (pre-release).**
 
 ## v0.340.135 provider receipt object-scope binding
 

@@ -313,28 +313,58 @@ class PaperReadReviewStore:
         self.path=Path(path);self.gate=gate;self.account=gate.account_digest
         check_path_set((self.path,gate.path),'PAPER_READ_REVIEW_STORE_')
 
+    def _capture_binding(self):
+        """Pin this mutable store object and its pacing gate for one call."""
+        try:
+            gate=self.gate
+            binding=(Path(self.path).resolve(),gate,
+                Path(gate.path).resolve(),self.account)
+            if gate.account_digest!=self.account:_fail('STORE_BINDING_CHANGED')
+        except ValueError:
+            raise
+        except (AttributeError,OSError,RuntimeError,TypeError):
+            _fail('STORE_BINDING_CHANGED')
+        return binding
+
+    def _require_binding(self,binding):
+        bound_path,bound_gate,bound_gate_path,bound_account=binding
+        try:
+            if (Path(self.path).resolve()!=bound_path or
+                    self.gate is not bound_gate or
+                    Path(bound_gate.path).resolve()!=bound_gate_path or
+                    self.account!=bound_account or
+                    bound_gate.account_digest!=bound_account):
+                _fail('STORE_BINDING_CHANGED')
+        except ValueError:
+            raise
+        except (AttributeError,OSError,RuntimeError,TypeError):
+            _fail('STORE_BINDING_CHANGED')
+
     def _check(self):
         check_path_set((self.path,self.gate.path),'PAPER_READ_REVIEW_STORE_')
         check_existing(self.path,MAX_DATABASE_BYTES,'PAPER_READ_REVIEW_STORE_')
 
     def _connect(self,write=False):
-        self._check();new=False;created_identity=None;db=None
+        binding=self._capture_binding();bound_path=binding[0]
+        self._check();self._require_binding(binding)
+        new=False;created_identity=None;db=None
         try:
-            if write and not self.path.exists():
-                self.path.parent.mkdir(parents=True,exist_ok=True)
+            if write and not bound_path.exists():
+                bound_path.parent.mkdir(parents=True,exist_ok=True)
+                self._require_binding(binding)
                 try:
-                    fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+                    fd=os.open(bound_path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
                 except FileExistsError:pass
                 else:
                     new=True
                     try:
                         opened=os.fstat(fd)
-                        created_identity=((str(self.path.resolve()),
+                        created_identity=((str(bound_path),
                             opened.st_dev,opened.st_ino),)
                     finally:os.close(fd)
-                self._check()
-            bound_path=self.path.resolve()
+                self._check();self._require_binding(binding)
             def require_fresh_identity():
+                self._require_binding(binding)
                 if new:
                     require_file_identities((bound_path,),created_identity,
                         'PAPER_READ_REVIEW_STORE_')
@@ -363,7 +393,7 @@ class PaperReadReviewStore:
                 except BaseException:
                     if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
                     raise
-            if new:_discard_uncommitted_new(self.path,created_identity)
+            if new:_discard_uncommitted_new(bound_path,created_identity)
             if _database_busy(error):_fail('DATABASE_BUSY')
             raise
         except BaseException:
@@ -372,7 +402,7 @@ class PaperReadReviewStore:
                 except BaseException:
                     if new:_fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
                     raise
-            if new:_discard_uncommitted_new(self.path,created_identity)
+            if new:_discard_uncommitted_new(bound_path,created_identity)
             raise
 
     @staticmethod
@@ -420,16 +450,20 @@ class PaperReadReviewStore:
         return previous,receipts
 
     def inspect(self):
-        self._check()
-        if not self.path.exists():
-            return dict(mode='LOCAL_MIXED_READ_REVIEW_HISTORY',initialized=False,account_sha256=self.account,
+        binding=self._capture_binding();bound_path=binding[0]
+        bound_account=binding[3]
+        self._check();self._require_binding(binding)
+        if not bound_path.exists():
+            self._require_binding(binding)
+            if bound_path.exists():_fail('FILE_IDENTITY_CHANGED')
+            return dict(mode='LOCAL_MIXED_READ_REVIEW_HISTORY',initialized=False,account_sha256=bound_account,
                 head_sha256=ZERO,retained_receipts=0,receipts=[],read_only=True,ready_for_routing=False,release_approved=False)
-        bound_path=self.path.resolve()
         identity=capture_file_identities((bound_path,),
             'PAPER_READ_REVIEW_STORE_')
         fingerprint=capture_file_fingerprints((bound_path,),
             (MAX_DATABASE_BYTES,),'PAPER_READ_REVIEW_STORE_')
         def require_store():
+            self._require_binding(binding)
             require_file_identities((bound_path,),identity,
                 'PAPER_READ_REVIEW_STORE_')
             require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
@@ -457,16 +491,19 @@ class PaperReadReviewStore:
                 _fail('READ_ACKNOWLEDGEMENT_UNCERTAIN')
             raise
         require_store()
-        return dict(mode='LOCAL_MIXED_READ_REVIEW_HISTORY',initialized=True,account_sha256=self.account,
+        return dict(mode='LOCAL_MIXED_READ_REVIEW_HISTORY',initialized=True,account_sha256=bound_account,
             head_sha256=head,retained_receipts=len(receipts),receipts=receipts,read_only=True,
             ready_for_routing=False,release_approved=False)
 
     def append(self,scope,*,expected_head,admission,precommit_check=lambda:True):
         """Append one verified aggregate scope; changed inputs lose acknowledgment."""
-        scope=self._scope(scope);expected_head=_digest(expected_head);receipt=sha(scope)
-        current=self.inspect()
+        binding=self._capture_binding();bound_path=binding[0]
+        bound_account=binding[3]
+        scope=self._scope(scope);self._require_binding(binding)
+        expected_head=_digest(expected_head);receipt=sha(scope)
+        current=self.inspect();self._require_binding(binding)
         if current['head_sha256']!=expected_head:_fail('HEAD_CHANGED')
-        bound_path=self.path.resolve();existed=current['initialized']
+        existed=current['initialized']
         if existed:
             initial_identity=capture_file_identities((bound_path,),
                 'PAPER_READ_REVIEW_STORE_')
@@ -475,6 +512,7 @@ class PaperReadReviewStore:
         else:
             initial_identity=initial_fingerprint=None
         def require_initial():
+            self._require_binding(binding)
             if not existed:
                 try:bound_path.lstat()
                 except FileNotFoundError:return
@@ -493,7 +531,7 @@ class PaperReadReviewStore:
             return value
         if initial_check(admission)!=receipt:_fail('ADMISSION_CHANGED')
         if initial_check(precommit_check) is not True:_fail('INPUT_REVOKED')
-        require_initial();db=self._connect(write=True)
+        require_initial();db=self._connect(write=True);self._require_binding(binding)
         new=not existed;committed=False;transaction_identity=None
         committed_identity=committed_fingerprint=result=None
         try:
@@ -508,6 +546,7 @@ class PaperReadReviewStore:
                 def transaction_check(callback):
                     transaction_fingerprint=_active_file_fingerprint(bound_path)
                     def require_transaction():
+                        self._require_binding(binding)
                         require_file_identities((bound_path,),
                             transaction_identity,'PAPER_READ_REVIEW_STORE_')
                         if (_active_file_fingerprint(bound_path)!=
@@ -522,7 +561,7 @@ class PaperReadReviewStore:
                 with _transaction(db):
                     count=db.execute('SELECT count(*) FROM records').fetchone()[0]
                     if count==0:
-                        head=self._insert(db,0,dict(schema=SCHEMA,account_sha256=self.account),ZERO)
+                        head=self._insert(db,0,dict(schema=SCHEMA,account_sha256=bound_account),ZERO)
                         receipts=[]
                     else:head,receipts=self._load(db)
                     if expected_head==ZERO and count==0:pass
@@ -540,6 +579,7 @@ class PaperReadReviewStore:
                 # Commit may leave this connection attached to bytes that no
                 # longer match the captured pathname.  Refuse acknowledgement
                 # until the same connection proves path and content parity.
+                self._require_binding(binding)
                 _require_main_connection(db,bound_path)
                 _require_main_connection_content(db,bound_path)
                 committed_identity=capture_file_identities((bound_path,),
@@ -554,9 +594,19 @@ class PaperReadReviewStore:
                 with guard_file_set_finalization((bound_path,),
                         (MAX_DATABASE_BYTES,),committed_identity,
                         committed_fingerprint,'PAPER_READ_REVIEW_STORE_'):
-                    if admission()!=receipt:
+                    try:value=admission()
+                    except BaseException as error:
+                        if not isinstance(error,Exception):raise
+                        self._require_binding(binding);raise
+                    self._require_binding(binding)
+                    if value!=receipt:
                         _fail('ADMISSION_CHANGED_AFTER_COMMIT')
-                    if precommit_check() is not True:
+                    try:value=precommit_check()
+                    except BaseException as error:
+                        if not isinstance(error,Exception):raise
+                        self._require_binding(binding);raise
+                    self._require_binding(binding)
+                    if value is not True:
                         _fail('INPUT_REVOKED_AFTER_COMMIT')
                     result=dict(mode='LOCAL_MIXED_READ_REVIEW_RECEIPT',
                         head_sha256=head,receipt_sha256=receipt,
@@ -564,6 +614,7 @@ class PaperReadReviewStore:
                         ready_for_routing=False,release_approved=False)
             # Closing is part of acknowledgement.  Re-prove the exact
             # committed pathname and bounded bytes after it succeeds.
+            self._require_binding(binding)
             require_file_identities((bound_path,),committed_identity,
                 'PAPER_READ_REVIEW_STORE_')
             require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),

@@ -26,6 +26,8 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_read_close_error_requires_explicit_retry',
         'durable_receipt_read_finalization_pinned',
         'durable_receipt_read_finalization_preserves_process_control',
+        'durable_receipt_object_scope_pinned',
+        'durable_receipt_object_scope_preserves_process_control',
         'durable_receipt_write_close_error_requires_explicit_recovery',
         'durable_receipt_connection_binding_pinned',
         'durable_receipt_connection_content_pinned',
@@ -315,6 +317,60 @@ def fixture_report():
             read_signal_raised and
             (root/'review.sqlite3').read_bytes()==read_signal_bytes and
             read_signal_retry==retained)
+        object_reader=PaperReadReviewStore(root/'review.sqlite3',gate)
+        object_reader_load=object_reader._load
+        object_reader_path=object_reader.path
+        object_read_denied=False
+        def retarget_object_reader(db):
+            value=object_reader_load(db)
+            object_reader.path=root/'retargeted-read-review.sqlite3'
+            return value
+        object_reader._load=retarget_object_reader
+        try:object_reader.inspect()
+        except ValueError as error:
+            object_read_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_STORE_BINDING_CHANGED')
+        finally:
+            object_reader.path=object_reader_path
+            object_reader._load=object_reader_load
+        object_read_retry=object_reader.inspect()
+        object_scope_path=root/'object-scope-review.sqlite3'
+        object_scope_target=root/'retargeted-write-review.sqlite3'
+        object_writer=PaperReadReviewStore(object_scope_path,gate)
+        object_scope=retained['receipts'][-1]['scope']
+        object_receipt=sha(object_scope);object_write_denied=False
+        def retarget_object_writer():
+            object_writer.path=object_scope_target
+            return object_receipt
+        try:object_writer.append(object_scope,expected_head=ZERO,
+            admission=retarget_object_writer)
+        except ValueError as error:
+            object_write_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_STORE_BINDING_CHANGED')
+        finally:object_writer.path=object_scope_path
+        object_write_absent=(not object_scope_path.exists() and
+            not object_scope_target.exists())
+        object_write_retry=object_writer.append(object_scope,
+            expected_head=ZERO,admission=lambda:object_receipt)
+        object_write_replay=object_writer.inspect()
+        signal_scope_path=root/'signal-scope-review.sqlite3'
+        signal_scope_target=root/'retargeted-signal-review.sqlite3'
+        signal_writer=PaperReadReviewStore(signal_scope_path,gate)
+        object_signal_raised=False
+        def interrupt_object_writer():
+            signal_writer.path=signal_scope_target
+            raise KeyboardInterrupt
+        try:signal_writer.append(object_scope,expected_head=ZERO,
+            admission=interrupt_object_writer)
+        except KeyboardInterrupt:object_signal_raised=True
+        finally:signal_writer.path=signal_scope_path
+        object_scope_pinned=(object_read_denied and
+            object_read_retry==retained and object_write_denied and
+            object_write_absent and object_write_retry['duplicate'] is False and
+            object_write_replay['retained_receipts']==1)
+        object_scope_preserves_process_control=(object_signal_raised and
+            not signal_scope_path.exists() and
+            not signal_scope_target.exists())
         writer=PaperReadReviewStore(root/'review.sqlite3',gate)
         writer_state=writer.inspect()
         writer_scope=dict(writer_state['receipts'][-1]['scope'],
@@ -779,6 +835,9 @@ def fixture_report():
                 read_finalization_pinned),
             durable_receipt_read_finalization_preserves_process_control=(
                 read_finalization_preserves_process_control),
+            durable_receipt_object_scope_pinned=(object_scope_pinned),
+            durable_receipt_object_scope_preserves_process_control=(
+                object_scope_preserves_process_control),
             durable_receipt_write_close_error_requires_explicit_recovery=(
                 write_close_denied and
                 write_close_replay['retained_receipts']==2 and

@@ -201,6 +201,120 @@ def test_receipt_reader_process_control_precedes_final_file_recheck(
     assert retry['retained_receipts']==1
 
 
+@pytest.mark.parametrize('field',(
+    'store_path','store_account','gate_object','gate_path','gate_account'))
+def test_receipt_reader_pins_store_and_gate_object_scope(
+        tmp_path,monkeypatch,field):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    first=review.retain_review(path,gate,bindings,expected_head=head)
+    other_gate,_,_=complete(tmp_path/'other')
+    store=PaperReadReviewStore(path,gate);original_load=store._load
+    original_path=store.path;original_account=store.account
+    original_gate=store.gate;original_gate_path=gate.path
+    original_gate_account=gate.account_digest
+    def retarget(db):
+        result=original_load(db)
+        if field=='store_path':store.path=tmp_path/'retargeted.sqlite3'
+        elif field=='store_account':store.account='f'*64
+        elif field=='gate_object':store.gate=other_gate
+        elif field=='gate_path':gate.path=other_gate.path
+        else:gate.account_digest='f'*64
+        return result
+    monkeypatch.setattr(store,'_load',retarget)
+    try:
+        with pytest.raises(ValueError,match=(
+                '^PAPER_READ_REVIEW_STORE_STORE_BINDING_CHANGED$')):
+            store.inspect()
+    finally:
+        store.path=original_path;store.account=original_account
+        store.gate=original_gate;gate.path=original_gate_path
+        gate.account_digest=original_gate_account
+        monkeypatch.setattr(store,'_load',original_load)
+    assert store.inspect()['head_sha256']==first['head_sha256']
+    assert not (tmp_path/'retargeted.sqlite3').exists()
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_receipt_reader_object_retarget_does_not_mask_process_control(
+        tmp_path,monkeypatch,signal):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    first=review.retain_review(path,gate,bindings,expected_head=head)
+    store=PaperReadReviewStore(path,gate);original_load=store._load
+    def interrupt(db):
+        original_load(db);store.path=tmp_path/'retargeted.sqlite3'
+        raise signal()
+    monkeypatch.setattr(store,'_load',interrupt)
+    try:
+        with pytest.raises(signal):store.inspect()
+    finally:
+        store.path=path;monkeypatch.setattr(store,'_load',original_load)
+    assert store.inspect()['head_sha256']==first['head_sha256']
+    assert not (tmp_path/'retargeted.sqlite3').exists()
+
+
+@pytest.mark.parametrize('field',(
+    'store_path','store_account','gate_object','gate_path'))
+@pytest.mark.parametrize(('retarget_call','committed'),((1,False),(2,False),(3,True)))
+def test_receipt_writer_pins_store_and_gate_scope_across_callbacks(
+        tmp_path,field,retarget_call,committed):
+    store,scope,receipt,head=contended_append(
+        tmp_path,f'object-binding-{field}-{retarget_call}')
+    other_gate,_,_=complete(tmp_path/'other')
+    original_path=store.path;original_account=store.account
+    original_gate=store.gate;original_gate_path=store.gate.path
+    before=store.inspect()['retained_receipts'];calls=0
+    def admission():
+        nonlocal calls
+        calls+=1
+        if calls==retarget_call:
+            if field=='store_path':store.path=tmp_path/'retargeted.sqlite3'
+            elif field=='store_account':store.account='f'*64
+            elif field=='gate_object':store.gate=other_gate
+            else:original_gate.path=other_gate.path
+        return receipt
+    try:
+        with pytest.raises(ValueError,match=(
+                '^PAPER_READ_REVIEW_STORE_STORE_BINDING_CHANGED$')):
+            store.append(scope,expected_head=head,admission=admission)
+    finally:
+        store.path=original_path;store.account=original_account
+        store.gate=original_gate;original_gate.path=original_gate_path
+    replay=store.inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    assert calls==retarget_call
+    assert replay['retained_receipts']==before+int(committed)
+    assert retry['duplicate'] is committed
+    assert not (tmp_path/'retargeted.sqlite3').exists()
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+@pytest.mark.parametrize(('interrupt_call','committed'),((1,False),(2,False),(3,True)))
+def test_receipt_writer_object_retarget_does_not_mask_process_control(
+        tmp_path,signal,interrupt_call,committed):
+    store,scope,receipt,head=contended_append(
+        tmp_path,f'object-binding-signal-{interrupt_call}')
+    original_path=store.path;before=store.inspect()['retained_receipts'];calls=0
+    def admission():
+        nonlocal calls
+        calls+=1
+        if calls==interrupt_call:
+            store.path=tmp_path/'retargeted.sqlite3'
+            raise signal()
+        return receipt
+    try:
+        with pytest.raises(signal):
+            store.append(scope,expected_head=head,admission=admission)
+    finally:store.path=original_path
+    replay=store.inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    assert calls==interrupt_call
+    assert replay['retained_receipts']==before+int(committed)
+    assert retry['duplicate'] is committed
+    assert not (tmp_path/'retargeted.sqlite3').exists()
+
+
 def test_receipt_writer_close_error_requires_explicit_duplicate_recovery(
         tmp_path,monkeypatch):
     store,scope,receipt,head=contended_append(tmp_path,'close')

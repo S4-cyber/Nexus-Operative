@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.134 account receipt object-scope binding
+
+Account read-review receipt operations now pin the store path, cached account, exact pacing-gate object, gate path and gate account for the full call. Reads recheck that object scope around connection setup, replay, close and final return. Writes recheck it around initial inspection, every ordinary callback, transaction, commit, close and acknowledgement, so a callback cannot redirect creation or conceal a committed transition. `KeyboardInterrupt` and `SystemExit` remain independently observable before secondary binding checks. Mandatory disposable evidence covers read retarget refusal, pre-connect write retarget refusal, clean retry and process-control independence; direct tests cover every binding field and all three callback phases.
+
+No exact-source v0.340.133 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.134 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.133 account receipt read-finalization continuity parity
 
 Retained account read-review receipt inspection now pins the original journal identity and bounded bytes before opening SQLite, rechecks them around complete semantic replay and again after connection close before returning success. A close-time journal change wins over a normal return or ordinary close exception. `KeyboardInterrupt` and `SystemExit` remain independently observable and are not replaced by the secondary final proof. Mandatory disposable evidence covers close-time mutation, process-control independence, unchanged retained bytes and exact fresh replay; direct tests cover ordinary success/error close paths and both signals.

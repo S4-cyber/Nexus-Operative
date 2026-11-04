@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.139'
+REVISION = '0.340.140'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -728,7 +728,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.139 finalizes every ordinary Activity SSE coordinator callback against the exact captured cursor-store instance, path object, resolved path and account digest. Failed initial replay, safety admission, transport and checkpoint calls cannot conceal an equal-path retarget. If a retarget follows a committed checkpoint and an ordinary exception, the success acknowledgement is withheld while exactly one original-path checkpoint remains available for explicit cold recovery. KeyboardInterrupt and SystemExit retain independent precedence even after commit. Mandatory disposable evidence and direct regressions cover exceptional exit, cold recovery and both process-control signals. No exact-source v0.340.138 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. This remains injected local checkpoint hardening, not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No real provider IO, credential read, automatic retry/reconnect, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.140 finalizes both semantic Activity SSE reviews against the exact captured cursor-store scope. Initial-envelope and reconnect-review ordinary failures or successful returns cannot conceal an equal-path object retarget; the fixed store-scope refusal wins over a generic review diagnostic. KeyboardInterrupt and SystemExit remain independently observable. Mandatory disposable evidence and direct regressions cover the post-GET semantic-review exception boundary. No exact-source v0.340.139 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. This remains injected local checkpoint hardening, not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No real provider IO, credential read, automatic retry/reconnect, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

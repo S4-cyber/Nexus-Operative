@@ -278,6 +278,69 @@ def test_failed_transport_cannot_mask_equal_path_retarget(tmp_path):
     assert len(opener.requests) == 1 and not path.exists()
 
 
+@pytest.mark.parametrize(('module_name','requests'), [
+    ('envelope', 0),
+    ('reconnect', 1),
+])
+def test_failed_semantic_review_cannot_mask_equal_path_retarget(
+        tmp_path, monkeypatch, module_name, requests):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    opener = Opener(segments()[2])
+
+    def failed_review(*args, **kwargs):
+        store.path = type(path)(str(path))
+        raise RuntimeError('private semantic review failure')
+
+    monkeypatch.setattr(getattr(subject, module_name), 'review', failed_review)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_CHANGED'):
+        run(tmp_path, cursor_store=store, opener=opener)
+    assert len(opener.requests) == requests and not path.exists()
+
+
+@pytest.mark.parametrize(('module_name','requests'), [
+    ('envelope', 0),
+    ('reconnect', 1),
+])
+def test_successful_semantic_review_cannot_hide_equal_path_retarget(
+        tmp_path, monkeypatch, module_name, requests):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    opener = Opener(segments()[2])
+    module = getattr(subject, module_name)
+    original_review = module.review
+
+    def retarget_after_review(*args, **kwargs):
+        result = original_review(*args, **kwargs)
+        store.path = type(path)(str(path))
+        return result
+
+    monkeypatch.setattr(module, 'review', retarget_after_review)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_CHANGED'):
+        run(tmp_path, cursor_store=store, opener=opener)
+    assert len(opener.requests) == requests and not path.exists()
+
+
+@pytest.mark.parametrize('module_name', ('envelope', 'reconnect'))
+@pytest.mark.parametrize('signal', (KeyboardInterrupt, SystemExit))
+def test_semantic_review_process_control_remains_independent(
+        tmp_path, monkeypatch, module_name, signal):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+
+    def interrupted_review(*args, **kwargs):
+        store.path = type(path)(str(path))
+        raise signal()
+
+    monkeypatch.setattr(
+        getattr(subject, module_name), 'review', interrupted_review)
+    with pytest.raises(signal):
+        run(tmp_path, cursor_store=store)
+    assert not path.exists()
+
+
 def test_failed_post_checkpoint_store_retarget_retains_recovery(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     store = ActivitySSECursorStore(path, ACCOUNT)

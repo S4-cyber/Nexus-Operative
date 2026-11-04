@@ -163,8 +163,10 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         lambda: _frozen_events(initial_events, 'INITIAL_EVENTS_INVALID'),
         cursor_store, store_binding)
     try:
-        initial_review = envelope.review(initial,
-            expected_account_id=expected_account_id)
+        initial_review = _checked_store_call(
+            lambda: envelope.review(initial,
+                expected_account_id=expected_account_id),
+            cursor_store, store_binding)
         persisted = initial[-1]['event_id']
         if envelope.ULID.fullmatch(persisted) is None:
             _fail('INITIAL_CURSOR_INVALID')
@@ -211,10 +213,15 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
             transport_review['reconnect_review_required']):
         _fail('INTERRUPTED_SEGMENT_INELIGIBLE')
     try:
-        checked = reconnect.review(initial, replay,
-            expected_account_id=expected_account_id,
-            persisted_event_id=persisted, reconnect_since_id=persisted,
-            reconnect_reason=reconnect_reason)
+        checked = _checked_store_call(
+            lambda: reconnect.review(initial, replay,
+                expected_account_id=expected_account_id,
+                persisted_event_id=persisted,
+                reconnect_since_id=persisted,
+                reconnect_reason=reconnect_reason),
+            cursor_store, store_binding)
+    except ActivitySSECheckpointError:
+        raise
     except Exception:
         _fail('RECONNECT_REVIEW_FAILED')
     unchanged = _checked_store_call(cursor_store.inspect, cursor_store,
@@ -394,6 +401,33 @@ def fixture_report():
             exception_error = str(error)
         exception_recovery = ActivitySSECursorStore(
             exception_path, account).inspect()
+        semantic_path = Path(folder) / 'semantic-pinned.sqlite3'
+        semantic_store = ActivitySSECursorStore(semantic_path, account)
+        semantic_opener = Opener()
+        original_reconnect_review = reconnect.review
+
+        def retarget_during_semantic_review(*args, **kwargs):
+            semantic_store.path = Path(str(semantic_path))
+            raise RuntimeError('private semantic review failure')
+
+        semantic_error = None
+        reconnect.review = retarget_during_semantic_review
+        try:
+            collect_and_checkpoint_once(
+                'fixture_key_only_123', 'fixture_secret_only_123',
+                expected_account_id=account, initial_events=first,
+                reconnect_reason='CONNECTION_DROPPED',
+                cursor_store=semantic_store, expected_cursor_head=ZERO,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True, opener=semantic_opener,
+                wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+                permission_check=lambda: True,
+                emergency_stop_check=lambda: False,
+                credential_check=lambda: True)
+        except ActivitySSECheckpointError as error:
+            semantic_error = str(error)
+        finally:
+            reconnect.review = original_reconnect_review
         encoded = json.dumps(result, sort_keys=True)
         checks = dict(single_injected_get=len(opener.requests) == 1,
             duplicate_redelivery_and_advance=
@@ -411,6 +445,11 @@ def fixture_report():
                 exception_error ==
                     'ALPACA_ACTIVITY_SSE_CHECKPOINT_CURSOR_STORE_CHANGED' and
                 exception_recovery['retained_checkpoints'] == 1,
+            semantic_review_exception_scope_pinned=
+                semantic_error ==
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_CURSOR_STORE_CHANGED' and
+                len(semantic_opener.requests) == 1 and
+                not semantic_path.exists(),
             no_private_identifier_or_credential_echo=all(token not in encoded
                 for token in (account, '01K0000', '11111111',
                     'fixture_key_only_123', 'fixture_secret_only_123')),

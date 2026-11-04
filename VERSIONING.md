@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.139 (pre-release).**
+**Current development build: 0.340.140 (pre-release).**
+
+## v0.340.140 Activity SSE semantic-review scope finalization
+
+Both semantic-review boundaries in the explicit one-attempt Activity SSE coordinator now finalize against the exact captured cursor-store instance, path object, resolved path and account digest. Initial-envelope and reconnect-review ordinary failures or successful returns cannot conceal an equal-path object retarget; the fixed store-scope refusal wins over a generic review diagnostic. `KeyboardInterrupt` and `SystemExit` remain independently observable. Mandatory disposable evidence covers the post-GET exceptional boundary, and direct regressions cover both reviewers and both process-control signals.
+
+No exact-source v0.340.139 workflow run or commit status was exposed when this candidate began, so hosted Windows/browser/security success is not inferred. No runtime authority, real provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This injected local review boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.140 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.139 (pre-release).**
 
 ## v0.340.139 Activity SSE exceptional-exit store finalization
 

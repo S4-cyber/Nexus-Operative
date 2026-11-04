@@ -716,6 +716,28 @@ def test_receipt_reader_close_error_requires_explicit_retry(tmp_path,monkeypatch
     assert retry['head_sha256']==first['head_sha256']
 
 
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_receipt_reader_finalization_preserves_process_control(
+        tmp_path,monkeypatch,signal):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    first=subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    before=path.read_bytes()
+
+    def interrupt():
+        observed=path.stat()
+        os.utime(path,ns=(observed.st_atime_ns,
+            observed.st_mtime_ns+1_000_000_000))
+        raise signal()
+
+    monkeypatch.setattr(store,'_connect',interrupt)
+    with pytest.raises(signal):store.inspect()
+    assert path.read_bytes()==before
+    replay=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    assert replay['retained_receipts']==1
+    assert replay['head_sha256']==first['head_sha256']
+
+
 def test_exact_duplicate_is_idempotent_and_revocation_fails_closed(tmp_path):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';options=heads(gate,budget)
     first=subject.retain_review(path,budget,[gate],**options);saved=path.read_bytes()

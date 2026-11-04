@@ -272,6 +272,29 @@ def test_reader_close_preserves_process_control_signals(
     with pytest.raises(signal):store.inspect()
 
 
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_reader_finalization_preserves_process_control_signals(
+        tmp_path,monkeypatch,signal):
+    value=scope('read-finalization-signal');store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    store.append(value,admission=lambda:admitted)
+    before=store.path.read_bytes()
+
+    def interrupt(write=False):
+        observed=store.path.stat()
+        os.utime(store.path,ns=(observed.st_atime_ns,
+            observed.st_mtime_ns+1_000_000_000))
+        raise signal()
+
+    monkeypatch.setattr(store,'_connect',interrupt)
+    with pytest.raises(signal):store.inspect()
+    assert store.path.read_bytes()==before
+    replay=PaperActivityAcceptanceStore(store.path,ACCOUNT).inspect()
+    assert replay['records']==1
+    assert replay['last_record_sha256']==sha(value)
+
+
 @pytest.mark.parametrize('verdict',[False,1])
 def test_optional_input_guard_rolls_back_new_record_before_commit(tmp_path,verdict):
     value=scope();store=bound(tmp_path,value);before=store.path.read_bytes()

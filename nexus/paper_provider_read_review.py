@@ -534,6 +534,32 @@ def fixture_report():
             expected_store_head=recovery_replay['head_sha256'])
         recovery_final=PaperProviderReadReviewStore(
             recovery_store,recovery_budget,[recovery_gate]).inspect()
+        finalization_gate,finalization_budget=build_pair(
+            root/'retained-read-finalization-process-control')
+        finalization_store=(root/'retained-read-finalization-process-control'/
+            'receipt.sqlite3')
+        finalization_created=retain_review(finalization_store,
+            finalization_budget,[finalization_gate],expected_provider_head=
+                finalization_budget.inspect()['head_sha256'],
+            expected_account_heads={finalization_gate.account_digest:
+                finalization_gate.inspect()['head_sha256']})
+        finalization_reader=PaperProviderReadReviewStore(finalization_store,
+            finalization_budget,[finalization_gate])
+        finalization_bytes=finalization_store.read_bytes()
+        finalization_connect=finalization_reader._connect
+        finalization_interrupted=False
+        def interrupt_read_finalization(write=False):
+            observed=finalization_store.stat()
+            os.utime(finalization_store,ns=(observed.st_atime_ns,
+                observed.st_mtime_ns+1_000_000_000))
+            raise KeyboardInterrupt
+        finalization_reader._connect=interrupt_read_finalization
+        try:
+            try:finalization_reader.inspect()
+            except KeyboardInterrupt:finalization_interrupted=True
+        finally:finalization_reader._connect=finalization_connect
+        finalization_replay=PaperProviderReadReviewStore(finalization_store,
+            finalization_budget,[finalization_gate]).inspect()
         fabricated_gate,fabricated_budget=build_pair(
             root/'fabricated-retained-ack')
         fabricated_store=root/'fabricated-retained-ack'/'receipt.sqlite3'
@@ -1319,6 +1345,12 @@ def fixture_report():
                 recovery_receipt['head_sha256']==
                     recovery_replay['head_sha256']==
                     recovery_final['head_sha256']),
+            retained_receipt_read_finalization_preserves_process_control=(
+                finalization_interrupted and
+                finalization_store.read_bytes()==finalization_bytes and
+                finalization_replay['retained_receipts']==1 and
+                finalization_replay['head_sha256']==
+                    finalization_created['head_sha256']),
             retained_receipt_fresh_failure_recoverable=(
                 fresh_calls==2 and fresh_failure_denied and
                 fresh_absence_restored and

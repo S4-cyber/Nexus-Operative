@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.129 (pre-release).**
+**Current development build: 0.340.130 (pre-release).**
+
+## v0.340.130 retained read-finalization process-control independence
+
+Provider read-review receipts and paper-activity acceptance now preserve `KeyboardInterrupt` and `SystemExit` without allowing a final pathname/content recheck to mask them. Every ordinary read failure still rechecks the exact captured store and fails closed, and successful reads still complete the final integrity proof. Mandatory disposable evidence mutates only store metadata while interrupting each reader, proves unchanged retained bytes and exact fresh replay, and direct tests cover both signals.
+
+No exact-source v0.340.129 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.130 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.129 (pre-release).**
 
 ## v0.340.129 provider recovery process-control independence
 

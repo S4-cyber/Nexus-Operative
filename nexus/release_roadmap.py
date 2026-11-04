@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.129'
+REVISION = '0.340.130'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -728,7 +728,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.129 preserves independent process control throughout provider read-review and retained-receipt recovery. KeyboardInterrupt and SystemExit now bypass peer-source rechecks in stable readers, review scope and precommit callbacks, and they propagate unchanged if retained-state inspection is interrupted after an ordinary lost write acknowledgement. Ordinary exceptions still recheck every bound source and fail closed; ordinary lost acknowledgements still reconstruct success only from two stable exact retained-state reads. Mandatory saved evidence proves an interrupted recovery inspection retains one receipt and requires explicit duplicate replay, while direct tests cover both process-control signals at every boundary. No exact-source v0.340.128 workflow result was visible when this candidate began, so fresh v0.340.129 hosted workflows remain required. This is local synthetic reconciliation-journal hardening, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.130 preserves independent process control through retained-store read finalization. Provider read-review receipts and paper-activity acceptance now let KeyboardInterrupt and SystemExit propagate before the final pathname/content recheck can replace them. Every ordinary read failure still rechecks the exact captured store and fails closed; successful reads still complete the final proof. Mandatory saved evidence mutates only disposable store metadata while interrupting each reader, proves unchanged retained bytes and exact fresh replay, and direct tests cover both process-control signals. No exact-source v0.340.129 workflow result or commit status was visible when this candidate began, so fresh v0.340.130 hosted workflows remain required. This is local synthetic reconciliation-journal hardening, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

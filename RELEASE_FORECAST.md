@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.129
+## Current candidate: v0.340.130
+
+Provider receipt and paper-activity acceptance reads now preserve process-control signals across final pathname/content verification. Ordinary failures still recheck the captured store and fail closed; successful reads still complete the final proof.
+
+No exact-source v0.340.129 workflow result or commit status was visible when this candidate began. Fresh exact-source v0.340.130 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.129
 
 Provider read-review stable reads, review scope, precommit callbacks and retained-receipt recovery now preserve process-control signals even when a secondary source recheck or cold inspection would fail. Ordinary failures remain fail-closed, while ordinary lost acknowledgements still require stable exact retained state.
 

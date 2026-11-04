@@ -403,21 +403,24 @@ class PaperActivityAcceptanceStore:
                     sqlite3.Error,TypeError):
                 _fail('CONNECTION_BINDING_CHANGED')
         try:
-            try:
-                db,_=self._connect()
-                with closing(db):
-                    require_store();require_connection(db,content=False)
-                    with _transaction(db):
-                        db.execute('BEGIN')
-                        db.execute('SELECT count(*) FROM sqlite_master').fetchone()
-                        require_store();require_connection(db)
-                        state=self._load(db)
-                        require_connection(db);require_store()
-            except BaseException as error:
-                if isinstance(error,Exception) and type(error) is not ValueError:
-                    _fail('READ_ACKNOWLEDGEMENT_UNCERTAIN')
-                raise
-        finally:require_store()
+            db,_=self._connect()
+            with closing(db):
+                require_store();require_connection(db,content=False)
+                with _transaction(db):
+                    db.execute('BEGIN')
+                    db.execute('SELECT count(*) FROM sqlite_master').fetchone()
+                    require_store();require_connection(db)
+                    state=self._load(db)
+                    require_connection(db);require_store()
+        except BaseException as error:
+            # Recheck every ordinary failure against the captured store, but
+            # never let that integrity proof mask operator/process control.
+            if not isinstance(error,Exception):raise
+            require_store()
+            if type(error) is not ValueError:
+                _fail('READ_ACKNOWLEDGEMENT_UNCERTAIN')
+            raise
+        require_store()
         return state
 
     def inspect(self):

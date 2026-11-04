@@ -482,21 +482,25 @@ class PaperProviderReadReviewStore:
                     sqlite3.Error,TypeError):
                 _fail('CONNECTION_BINDING_CHANGED')
         try:
-            try:
-                db,_=self._connect()
-                with closing(db):
-                    require_store();require_connection(db,content=False)
-                    with _transaction(db):
-                        db.execute('BEGIN')
-                        db.execute('SELECT count(*) FROM sqlite_master').fetchone()
-                        require_store();require_connection(db)
-                        head,receipts=self._load(db)
-                        require_connection(db);require_store()
-            except BaseException as error:
-                if isinstance(error,Exception) and type(error) is not ValueError:
-                    _fail('READ_ACKNOWLEDGEMENT_UNCERTAIN')
-                raise
-        finally:require_store()
+            db,_=self._connect()
+            with closing(db):
+                require_store();require_connection(db,content=False)
+                with _transaction(db):
+                    db.execute('BEGIN')
+                    db.execute('SELECT count(*) FROM sqlite_master').fetchone()
+                    require_store();require_connection(db)
+                    head,receipts=self._load(db)
+                    require_connection(db);require_store()
+        except BaseException as error:
+            # An operator interrupt or process exit must remain independently
+            # observable.  A concurrent store change is still checked for
+            # every ordinary failure, but must not replace process control.
+            if not isinstance(error,Exception):raise
+            require_store()
+            if type(error) is not ValueError:
+                _fail('READ_ACKNOWLEDGEMENT_UNCERTAIN')
+            raise
+        require_store()
         return dict(mode='LOCAL_PROVIDER_READ_REVIEW_HISTORY',initialized=True,provider_sha256=self.provider,
             head_sha256=head,retained_receipts=len(receipts),receipts=receipts,read_only=True,
             ready_for_routing=False,release_approved=False)

@@ -5,6 +5,7 @@ activity.  It never reads credentials, contacts a provider or grants authority.
 """
 import json
 import hashlib
+import os
 from pathlib import Path
 import subprocess
 import sqlite3
@@ -521,6 +522,29 @@ def fixture_report():
             retained_signal['records']==1 and
             recovered_signal['duplicate'] is True and
             recovered_signal['head_sha256']==retained_signal['head_sha256'])
+        read_signal_root=base/'read-finalization-process-control';read_signal_root.mkdir()
+        rsp,rsa,read_signal_acceptance,read_signal_scope=_scope(read_signal_root)
+        read_signal_acceptance.append(read_signal_scope,admission=lambda:(
+            rsp.inspect()['head_sha256'],rsa.inspect()['head_sha256']))
+        read_signal_bytes=read_signal_acceptance.path.read_bytes()
+        read_signal_connect=read_signal_acceptance._connect
+        read_signal_raised=False
+        def interrupt_read_finalization(write=False):
+            observed=read_signal_acceptance.path.stat()
+            os.utime(read_signal_acceptance.path,ns=(observed.st_atime_ns,
+                observed.st_mtime_ns+1_000_000_000))
+            raise KeyboardInterrupt
+        read_signal_acceptance._connect=interrupt_read_finalization
+        try:
+            try:read_signal_acceptance.inspect()
+            except KeyboardInterrupt:read_signal_raised=True
+        finally:read_signal_acceptance._connect=read_signal_connect
+        read_signal_replay=read_signal_acceptance.inspect()
+        acceptance_read_finalization_preserves_process_control=(
+            read_signal_raised and
+            read_signal_acceptance.path.read_bytes()==read_signal_bytes and
+            read_signal_replay['records']==1 and
+            read_signal_replay['last_record_sha256']==sha(read_signal_scope))
         close_root=base/'write-close';close_root.mkdir()
         clp,cla,close_acceptance,close_scope=_scope(close_root)
         close_connect=close_acceptance._connect
@@ -698,6 +722,7 @@ def fixture_report():
             acceptance_write_committed_content_pinned and
             acceptance_commit_durability_replayed and
             acceptance_commit_sync_preserves_process_control and
+            acceptance_read_finalization_preserves_process_control and
             acceptance_write_close_requires_explicit_recovery and
             acceptance_initialization_identity_continuity_pinned and
             acceptance_uncommitted_initialization_replayed and
@@ -736,6 +761,8 @@ def fixture_report():
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
             acceptance_commit_sync_preserves_process_control=
                 acceptance_commit_sync_preserves_process_control,
+            acceptance_read_finalization_preserves_process_control=
+                acceptance_read_finalization_preserves_process_control,
             acceptance_write_close_requires_explicit_recovery=
                 acceptance_write_close_requires_explicit_recovery,
             acceptance_initialization_identity_continuity_pinned=

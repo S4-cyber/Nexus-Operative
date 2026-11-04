@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.126'
+REVISION = '0.340.127'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -728,7 +728,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.126 extends exclusive-create identity continuity to the durable paper-activity acceptance journal. Fresh initialization now re-proves the exact created device/inode before SQLite opens, after connection and main-database binding, and before and after every setup statement. Existing writers prove their connection path and serialized content before setup. Mandatory activity-acceptance evidence injects identity loss after a setup statement, proves one connection attempt and no sidecars, and accepts only exact empty-file removal or retention of the same nonempty identity under cleanup uncertainty before an explicit clean retry. No exact-source v0.340.125 workflow result was visible when this candidate began, so fresh v0.340.126 hosted workflows remain required. This is local synthetic reconciliation-journal hardening, not atomic descriptor binding, physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.127 gives the durable paper-activity acceptance journal the same fail-closed connection-close acknowledgement boundary as the provider/account receipt stores. Ordinary read-close failures become fixed READ_ACKNOWLEDGEMENT_UNCERTAIN and require an explicit fresh retry without changing retained bytes. Ordinary write-close failures after commit become fixed COMMIT_DURABILITY_UNCERTAIN; the accepted transition remains exactly once and requires explicit duplicate recovery. Semantic validation errors and process-control signals are preserved. Mandatory activity-acceptance evidence exercises both paths. No exact-source v0.340.126 workflow result was visible when this candidate began, so fresh v0.340.127 hosted workflows remain required. This is local synthetic reconciliation-journal hardening, not physical durability, provider identity, broker acceptance, sustained market realism, fees/holds/funds reconciliation, native-owner operation, live/cloud readiness or release. No provider IO, credential read, automatic retry, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

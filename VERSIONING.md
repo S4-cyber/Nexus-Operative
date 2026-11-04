@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.126 (pre-release).**
+**Current development build: 0.340.127 (pre-release).**
+
+## v0.340.127 paper-activity close acknowledgement parity
+
+The durable paper-activity acceptance journal now converts ordinary SQLite connection-close failures after a complete read into fixed `READ_ACKNOWLEDGEMENT_UNCERTAIN`; retained bytes stay unchanged and success requires an explicit fresh retry. Ordinary close failures after a committed write become fixed `COMMIT_DURABILITY_UNCERTAIN`; the accepted transition remains exactly once and recovery requires explicit duplicate replay. Semantic validation errors, keyboard interrupts and process-exit signals are not converted. Mandatory saved evidence exercises both recovery paths.
+
+No exact-source v0.340.126 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.127 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.126 (pre-release).**
 
 ## v0.340.126 paper-activity acceptance initialization identity continuity
 

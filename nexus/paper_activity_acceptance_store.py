@@ -403,15 +403,20 @@ class PaperActivityAcceptanceStore:
                     sqlite3.Error,TypeError):
                 _fail('CONNECTION_BINDING_CHANGED')
         try:
-            db,_=self._connect()
-            with closing(db):
-                require_store();require_connection(db,content=False)
-                with _transaction(db):
-                    db.execute('BEGIN')
-                    db.execute('SELECT count(*) FROM sqlite_master').fetchone()
-                    require_store();require_connection(db)
-                    state=self._load(db)
-                    require_connection(db);require_store()
+            try:
+                db,_=self._connect()
+                with closing(db):
+                    require_store();require_connection(db,content=False)
+                    with _transaction(db):
+                        db.execute('BEGIN')
+                        db.execute('SELECT count(*) FROM sqlite_master').fetchone()
+                        require_store();require_connection(db)
+                        state=self._load(db)
+                        require_connection(db);require_store()
+            except BaseException as error:
+                if isinstance(error,Exception) and type(error) is not ValueError:
+                    _fail('READ_ACKNOWLEDGEMENT_UNCERTAIN')
+                raise
         finally:require_store()
         return state
 
@@ -494,9 +499,12 @@ class PaperActivityAcceptanceStore:
                 require_binding()
                 if transaction_identity is not None:require_identity()
                 if committed_fingerprint is not None:require_committed_content()
-        except BaseException:
+        except BaseException as error:
             if new and not committed:
                 _discard_uncommitted_new(bound_path,transaction_identity)
+            if (committed and isinstance(error,Exception) and
+                    type(error) is not ValueError):
+                _fail('COMMIT_DURABILITY_UNCERTAIN')
             raise
         require_identity();require_committed_content()
         first=self._read_state();require_identity();require_committed_content()
@@ -585,9 +593,12 @@ class PaperActivityAcceptanceStore:
                 require_binding()
                 if transaction_identity is not None:require_identity()
                 if committed_fingerprint is not None:require_committed_content()
-        except BaseException:
+        except BaseException as error:
             if new and not committed:
                 _discard_uncommitted_new(bound_path,transaction_identity)
+            if (committed and isinstance(error,Exception) and
+                    type(error) is not ValueError):
+                _fail('COMMIT_DURABILITY_UNCERTAIN')
             raise
         require_identity();require_committed_content()
         first=self._read_state();require_identity();require_committed_content()

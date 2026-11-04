@@ -227,6 +227,51 @@ def test_readers_recheck_path_content_after_connection_serialization(
     assert store.replay_scopes()==(value,)
 
 
+@pytest.mark.parametrize('reader',('inspect','replay_scopes'))
+def test_reader_close_error_requires_explicit_retry(
+        tmp_path,monkeypatch,reader):
+    value=scope('read-close');store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    store.append(value,admission=lambda:admitted)
+    before=store.path.read_bytes();original_connect=store._connect
+    class CloseFailureConnection(sqlite3.Connection):
+        def close(self):
+            super().close()
+            raise RuntimeError('private read close failure')
+    def close_failure(write=False):
+        if write:return original_connect(write=write)
+        db=sqlite3.connect(store.path.resolve().as_uri()+'?mode=ro',
+            uri=True,timeout=10,factory=CloseFailureConnection)
+        return db,False
+    monkeypatch.setattr(store,'_connect',close_failure)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_'
+            'READ_ACKNOWLEDGEMENT_UNCERTAIN$')):
+        getattr(store,reader)()
+    assert store.path.read_bytes()==before
+    monkeypatch.setattr(store,'_connect',original_connect)
+    assert store.inspect()['records']==1
+    assert store.replay_scopes()==(value,)
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_reader_close_preserves_process_control_signals(
+        tmp_path,monkeypatch,signal):
+    value=scope('read-close-signal');store=bound(tmp_path,value)
+    original_connect=store._connect
+    class SignalConnection(sqlite3.Connection):
+        def close(self):
+            super().close();raise signal()
+    def close_signal(write=False):
+        if write:return original_connect(write=write)
+        return (sqlite3.connect(
+            store.path.resolve().as_uri()+'?mode=ro',uri=True,
+            timeout=10,factory=SignalConnection),False)
+    monkeypatch.setattr(store,'_connect',close_signal)
+    with pytest.raises(signal):store.inspect()
+
+
 @pytest.mark.parametrize('verdict',[False,1])
 def test_optional_input_guard_rolls_back_new_record_before_commit(tmp_path,verdict):
     value=scope();store=bound(tmp_path,value);before=store.path.read_bytes()
@@ -573,6 +618,73 @@ def test_append_requires_stable_descriptor_bytes_across_fsync(
     replayed=store.append(value,admission=lambda:admitted)
     assert replayed['duplicate'] is True
     assert replayed['head_sha256']==retained['head_sha256']
+
+
+@pytest.mark.parametrize('operation',('bind','append'))
+def test_writer_close_error_requires_explicit_recovery(
+        tmp_path,monkeypatch,operation):
+    value=scope('write-close');store=bound(tmp_path,value)
+    original_connect=store._connect
+    class CloseFailureConnection(sqlite3.Connection):
+        def close(self):
+            super().close()
+            raise RuntimeError('private write close failure')
+    def close_failure(write=False):
+        if not write:return original_connect(write=write)
+        db=sqlite3.connect(store.path.resolve().as_uri()+'?mode=rw',
+            uri=True,timeout=10,factory=CloseFailureConnection)
+        db.execute('PRAGMA journal_mode=DELETE')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('BEGIN IMMEDIATE')
+        return db,False
+    monkeypatch.setattr(store,'_connect',close_failure)
+    if operation=='bind':
+        invoke=lambda:store.bind(
+            pacing_head=value['pacing_before_head_sha256'],
+            retention_head=value['retention_before_head_sha256'],
+            pacing_sessions=0,retained_batches=0)
+    else:
+        admitted=(value['pacing_after_head_sha256'],
+            value['retention_after_head_sha256'])
+        invoke=lambda:store.append(value,admission=lambda:admitted)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_ACTIVITY_ACCEPTANCE_STORE_'
+            'COMMIT_DURABILITY_UNCERTAIN$')):
+        invoke()
+    monkeypatch.setattr(store,'_connect',original_connect)
+    retained=store.inspect()
+    if operation=='bind':
+        replayed=invoke()
+        assert retained['records']==replayed['records']==0
+        assert retained['head_sha256']==replayed['head_sha256']
+    else:
+        replayed=invoke()
+        assert retained['records']==1
+        assert replayed['duplicate'] is True
+        assert retained['head_sha256']==replayed['head_sha256']
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_writer_close_preserves_process_control_signals(
+        tmp_path,monkeypatch,signal):
+    value=scope('write-close-signal');store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    original_connect=store._connect
+    class SignalConnection(sqlite3.Connection):
+        def close(self):
+            super().close();raise signal()
+    def close_signal(write=False):
+        if not write:return original_connect(write=write)
+        db=sqlite3.connect(store.path.resolve().as_uri()+'?mode=rw',
+            uri=True,timeout=10,factory=SignalConnection)
+        db.execute('PRAGMA journal_mode=DELETE')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('BEGIN IMMEDIATE')
+        return db,False
+    monkeypatch.setattr(store,'_connect',close_signal)
+    with pytest.raises(signal):
+        store.append(value,admission=lambda:admitted)
 
 
 def test_uncommitted_cleanup_never_deletes_replacement(tmp_path):

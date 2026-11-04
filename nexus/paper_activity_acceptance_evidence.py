@@ -232,6 +232,28 @@ def fixture_report():
                 inspection_bytes} and
             after_acceptance.inspect()['records']==2 and
             len(after_acceptance.replay_scopes())==2)
+        read_close_before=acceptance_path.read_bytes()
+        class ReadCloseFailureConnection(sqlite3.Connection):
+            def close(self):
+                super().close()
+                raise RuntimeError('injected acceptance read close failure')
+        def read_close_failure(write=False):
+            if write:return acceptance_connect(write=write)
+            return (sqlite3.connect(
+                acceptance_path.resolve().as_uri()+'?mode=ro',uri=True,
+                timeout=10,factory=ReadCloseFailureConnection),False)
+        acceptance_read_close_requires_explicit_retry=False
+        after_acceptance._connect=read_close_failure
+        try:after_acceptance.inspect()
+        except ValueError as error:
+            acceptance_read_close_requires_explicit_retry=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_READ_ACKNOWLEDGEMENT_UNCERTAIN')
+        finally:after_acceptance._connect=acceptance_connect
+        acceptance_read_close_requires_explicit_retry=(
+            acceptance_read_close_requires_explicit_retry and
+            acceptance_path.read_bytes()==read_close_before and
+            after_acceptance.inspect()['records']==2 and
+            len(after_acceptance.replay_scopes())==2)
         continuity_before=acceptance_path.read_bytes()
         continuity_fingerprint=acceptance_storage._main_fingerprint
         continuity_changed=False
@@ -482,6 +504,38 @@ def fixture_report():
             retained_durability['records']==1 and
             recovered_durability['duplicate'] is True and
             recovered_durability['head_sha256']==retained_durability['head_sha256'])
+        close_root=base/'write-close';close_root.mkdir()
+        clp,cla,close_acceptance,close_scope=_scope(close_root)
+        close_connect=close_acceptance._connect
+        class WriteCloseFailureConnection(sqlite3.Connection):
+            def close(self):
+                super().close()
+                raise RuntimeError('injected acceptance write close failure')
+        def write_close_failure(write=False):
+            if not write:return close_connect(write=write)
+            db=sqlite3.connect(
+                close_acceptance.path.resolve().as_uri()+'?mode=rw',uri=True,
+                timeout=10,factory=WriteCloseFailureConnection)
+            db.execute('PRAGMA journal_mode=DELETE')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            return db,False
+        acceptance_write_close_requires_explicit_recovery=False
+        close_acceptance._connect=write_close_failure
+        try:close_acceptance.append(close_scope,admission=lambda:(
+            clp.inspect()['head_sha256'],cla.inspect()['head_sha256']))
+        except ValueError as error:
+            acceptance_write_close_requires_explicit_recovery=(str(error)==
+                'PAPER_ACTIVITY_ACCEPTANCE_STORE_COMMIT_DURABILITY_UNCERTAIN')
+        finally:close_acceptance._connect=close_connect
+        retained_close=close_acceptance.inspect()
+        recovered_close=close_acceptance.append(close_scope,admission=lambda:(
+            clp.inspect()['head_sha256'],cla.inspect()['head_sha256']))
+        acceptance_write_close_requires_explicit_recovery=(
+            acceptance_write_close_requires_explicit_recovery and
+            retained_close['records']==1 and
+            recovered_close['duplicate'] is True and
+            recovered_close['head_sha256']==retained_close['head_sha256'])
         identity_continuity_root=base/'write-initialization-identity'
         identity_continuity_root.mkdir()
         identity_continuity_path=(identity_continuity_root/
@@ -617,6 +671,7 @@ def fixture_report():
         legacy_preserved=legacy['unchanged'] and legacy_before==_sqlite_files_snapshot(legacy_root)
         passed=(missing_created_nothing and before_unbound and after_bound and
             acceptance_inspection_bound and
+            acceptance_read_close_requires_explicit_retry and
             acceptance_connection_content_continuity_pinned and
             acceptance_write_binding_pinned and
             acceptance_write_ack_replayed and acceptance_write_connection_pinned and
@@ -625,6 +680,7 @@ def fixture_report():
             acceptance_write_file_identity_pinned and
             acceptance_write_committed_content_pinned and
             acceptance_commit_durability_replayed and
+            acceptance_write_close_requires_explicit_recovery and
             acceptance_initialization_identity_continuity_pinned and
             acceptance_uncommitted_initialization_replayed and
             acceptance_rebind_boundary_pinned and silent and unchanged and
@@ -644,6 +700,8 @@ def fixture_report():
             acceptance_store_binding_pinned=acceptance_binding_denied,
             acceptance_connection_binding_pinned=acceptance_connection_denied,
             acceptance_connection_content_pinned=acceptance_content_denied,
+            acceptance_read_close_requires_explicit_retry=
+                acceptance_read_close_requires_explicit_retry,
             acceptance_connection_content_continuity_pinned=
                 acceptance_connection_content_continuity_pinned,
             acceptance_write_binding_pinned=acceptance_write_binding_pinned,
@@ -658,6 +716,8 @@ def fixture_report():
             acceptance_write_committed_content_pinned=
                 acceptance_write_committed_content_pinned,
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
+            acceptance_write_close_requires_explicit_recovery=
+                acceptance_write_close_requires_explicit_recovery,
             acceptance_initialization_identity_continuity_pinned=
                 acceptance_initialization_identity_continuity_pinned,
             acceptance_uncommitted_initialization_replayed=

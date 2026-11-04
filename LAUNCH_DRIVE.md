@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.127 paper-activity close acknowledgement parity
+
+The durable paper-activity acceptance journal now converts ordinary SQLite connection-close failures after a complete read into fixed `READ_ACKNOWLEDGEMENT_UNCERTAIN`; retained bytes stay unchanged and success requires an explicit fresh retry. Ordinary close failures after a committed write become fixed `COMMIT_DURABILITY_UNCERTAIN`; the accepted transition remains exactly once and recovery requires explicit duplicate replay. Semantic validation errors, keyboard interrupts and process-exit signals are not converted. Mandatory saved evidence exercises both recovery paths.
+
+No exact-source v0.340.126 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.127 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.126 paper-activity acceptance initialization identity continuity
 
 Fresh paper-activity acceptance journals now re-prove their exact exclusive-create device/inode before SQLite opens, after connection and main-database binding, and before and after every setup statement. Existing writers also prove the connection path and serialized main content before setup. Mandatory saved evidence injects mid-setup identity loss, proves one connection attempt and no sidecars, and accepts only exact empty-file removal or retention of the same nonempty identity under cleanup uncertainty before an explicit clean retry.

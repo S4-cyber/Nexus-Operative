@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.126
+## Current candidate: v0.340.127
+
+The durable paper-activity acceptance journal now reports fixed read-acknowledgement uncertainty for ordinary connection-close failures after complete inspection, preserving retained bytes until an explicit retry. A committed write with the same close uncertainty reports fixed commit-durability uncertainty, retains exactly one accepted transition and requires explicit duplicate recovery.
+
+No exact-source v0.340.126 workflow result was visible when this candidate began. Fresh exact-source v0.340.127 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.126
 
 The durable paper-activity acceptance journal now retains its exact exclusive-create identity across connection binding and every SQLite setup statement. Existing writers also prove the exact connection path and serialized main content before setup. Injected mid-setup identity loss allows only exact empty-file removal or retention of the same nonempty identity under cleanup uncertainty, with one connection attempt, no sidecars and an explicit clean retry.
 

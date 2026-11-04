@@ -1066,6 +1066,8 @@ def _validate(profile, result):
              'retained_receipt_recovery_inspection_preserves_process_control',
              'retained_receipt_read_finalization_preserves_process_control',
              'retained_receipt_write_finalization_preserves_process_control',
+             'retained_receipt_object_scope_pinned',
+             'retained_receipt_object_scope_preserves_process_control',
              'retained_receipt_fresh_failure_recoverable',
              'retained_receipt_initialization_failure_recoverable',
              'retained_receipt_commit_flush_failure_recoverable',

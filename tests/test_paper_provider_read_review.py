@@ -738,6 +738,52 @@ def test_receipt_reader_finalization_preserves_process_control(
     assert replay['head_sha256']==first['head_sha256']
 
 
+@pytest.mark.parametrize('field',('path','provider','protected'))
+def test_receipt_reader_pins_complete_store_object_scope(
+        tmp_path,monkeypatch,field):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    first=subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    original_path=store.path;original_provider=store.provider
+    original_protected=store.protected;original_load=store._load
+    def retarget(db):
+        result=original_load(db)
+        if field=='path':store.path=tmp_path/'retargeted.sqlite3'
+        elif field=='provider':store.provider='f'*64
+        else:store.protected=(tmp_path/'retargeted-source.sqlite3',)
+        return result
+    monkeypatch.setattr(store,'_load',retarget)
+    try:
+        with pytest.raises(ValueError,match=(
+                '^PAPER_PROVIDER_READ_REVIEW_STORE_STORE_BINDING_CHANGED$')):
+            store.inspect()
+    finally:
+        store.path=original_path;store.provider=original_provider
+        store.protected=original_protected
+        monkeypatch.setattr(store,'_load',original_load)
+    assert store.inspect()['head_sha256']==first['head_sha256']
+    assert not (tmp_path/'retargeted.sqlite3').exists()
+    assert not (tmp_path/'retargeted-source.sqlite3').exists()
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_receipt_reader_object_retarget_does_not_mask_process_control(
+        tmp_path,monkeypatch,signal):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    first=subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    store=PaperProviderReadReviewStore(path,budget,[gate])
+    original_load=store._load
+    def interrupt(db):
+        original_load(db);store.provider='f'*64;raise signal()
+    monkeypatch.setattr(store,'_load',interrupt)
+    try:
+        with pytest.raises(signal):store.inspect()
+    finally:
+        store.provider=budget.provider_digest
+        monkeypatch.setattr(store,'_load',original_load)
+    assert store.inspect()['head_sha256']==first['head_sha256']
+
+
 def test_exact_duplicate_is_idempotent_and_revocation_fails_closed(tmp_path):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';options=heads(gate,budget)
     first=subject.retain_review(path,budget,[gate],**options);saved=path.read_bytes()
@@ -1339,6 +1385,66 @@ def contended_append(tmp_path,seed):
     scope=dict(store.inspect()['receipts'][0]['scope'],review_sha256=sha(dict(seed=seed)))
     receipt=sha(scope)
     return store,scope,receipt,first['head_sha256']
+
+
+@pytest.mark.parametrize('field',('path','provider','protected'))
+@pytest.mark.parametrize(('retarget_call','committed'),((1,False),(2,False),(3,True)))
+def test_writer_pins_complete_store_scope_across_callbacks(
+        tmp_path,field,retarget_call,committed):
+    store,scope,receipt,head=contended_append(
+        tmp_path,f'object-binding-{field}-{retarget_call}')
+    original_path=store.path;original_provider=store.provider
+    original_protected=store.protected
+    before=store.inspect()['retained_receipts'];calls=0
+    def admission():
+        nonlocal calls
+        calls+=1
+        if calls==retarget_call:
+            if field=='path':store.path=tmp_path/'retargeted.sqlite3'
+            elif field=='provider':store.provider='f'*64
+            else:store.protected=(tmp_path/'retargeted-source.sqlite3',)
+        return receipt
+    try:
+        with pytest.raises(ValueError,match=(
+                '^PAPER_PROVIDER_READ_REVIEW_STORE_STORE_BINDING_CHANGED$')):
+            store.append(scope,expected_head=head,admission=admission)
+    finally:
+        store.path=original_path;store.provider=original_provider
+        store.protected=original_protected
+    replay=store.inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    assert calls==retarget_call
+    assert replay['retained_receipts']==before+int(committed)
+    assert retry['duplicate'] is committed
+    assert not (tmp_path/'retargeted.sqlite3').exists()
+    assert not (tmp_path/'retargeted-source.sqlite3').exists()
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+@pytest.mark.parametrize(('interrupt_call','committed'),((1,False),(2,False),(3,True)))
+def test_writer_object_retarget_does_not_mask_process_control(
+        tmp_path,signal,interrupt_call,committed):
+    store,scope,receipt,head=contended_append(
+        tmp_path,f'object-binding-signal-{interrupt_call}')
+    original_provider=store.provider
+    before=store.inspect()['retained_receipts'];calls=0
+    def admission():
+        nonlocal calls
+        calls+=1
+        if calls==interrupt_call:
+            store.provider='f'*64;raise signal()
+        return receipt
+    try:
+        with pytest.raises(signal):
+            store.append(scope,expected_head=head,admission=admission)
+    finally:store.provider=original_provider
+    replay=store.inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    assert calls==interrupt_call
+    assert replay['retained_receipts']==before+int(committed)
+    assert retry['duplicate'] is committed
 
 
 def test_writer_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):

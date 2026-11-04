@@ -1223,6 +1223,59 @@ def fixture_report():
         read_close_retry_bound=(read_close_denied and
             read_close_retry['retained_receipts']==1 and
             read_close_retry['head_sha256']==close_final['head_sha256'])
+        object_scope_load=inspection_reader._load
+        object_scope_provider=inspection_reader.provider
+        object_read_denied=False
+        def retarget_object_scope_read(db):
+            value=object_scope_load(db)
+            inspection_reader.provider='f'*64
+            return value
+        inspection_reader._load=retarget_object_scope_read
+        try:inspection_reader.inspect()
+        except ValueError as error:
+            object_read_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_STORE_BINDING_CHANGED')
+        finally:
+            inspection_reader.provider=object_scope_provider
+            inspection_reader._load=object_scope_load
+        object_read_retry=inspection_reader.inspect()
+        object_store=root/'retained-object-scope'/'receipt.sqlite3'
+        object_source=root/'retained-object-scope'/'retargeted-source.sqlite3'
+        object_writer=PaperProviderReadReviewStore(object_store,
+            inspection_budget,[inspection_gate])
+        object_protected=object_writer.protected;object_write_denied=False
+        def retarget_object_scope_write():
+            object_writer.protected=(object_source,)
+            return inspection_receipt
+        try:object_writer.append(inspection_scope,expected_head=ZERO,
+            admission=retarget_object_scope_write)
+        except ValueError as error:
+            object_write_denied=(str(error)==
+                'PAPER_PROVIDER_READ_REVIEW_STORE_STORE_BINDING_CHANGED')
+        finally:object_writer.protected=object_protected
+        object_write_absent=(not object_store.exists() and
+            not object_source.exists())
+        object_write_retry=object_writer.append(inspection_scope,
+            expected_head=ZERO,admission=lambda:inspection_receipt)
+        object_write_replay=object_writer.inspect()
+        signal_store=root/'retained-object-signal'/'receipt.sqlite3'
+        signal_writer=PaperProviderReadReviewStore(signal_store,
+            inspection_budget,[inspection_gate])
+        signal_provider=signal_writer.provider;object_signal_raised=False
+        def interrupt_object_scope_write():
+            signal_writer.provider='f'*64
+            raise KeyboardInterrupt
+        try:signal_writer.append(inspection_scope,expected_head=ZERO,
+            admission=interrupt_object_scope_write)
+        except KeyboardInterrupt:object_signal_raised=True
+        finally:signal_writer.provider=signal_provider
+        object_scope_pinned=(object_read_denied and
+            object_read_retry['head_sha256']==inspection_state['head_sha256'] and
+            object_write_denied and object_write_absent and
+            object_write_retry['duplicate'] is False and
+            object_write_replay['retained_receipts']==1)
+        object_scope_preserves_process_control=(object_signal_raised and
+            not signal_store.exists())
         def retarget_inspection(*args,**kwargs):
             inspection_reader.path=foreign_inspection_store
             return inspection_connect(*args,**kwargs)
@@ -1394,6 +1447,9 @@ def fixture_report():
                 write_signal_retry['head_sha256']==
                     write_signal_replay['head_sha256']==
                     write_signal_final['head_sha256']),
+            retained_receipt_object_scope_pinned=(object_scope_pinned),
+            retained_receipt_object_scope_preserves_process_control=(
+                object_scope_preserves_process_control),
             retained_receipt_fresh_failure_recoverable=(
                 fresh_calls==2 and fresh_failure_denied and
                 fresh_absence_restored and

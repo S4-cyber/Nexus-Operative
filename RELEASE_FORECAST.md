@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.134
+## Current candidate: v0.340.135
+
+Provider read-review receipt operations now bind one mutable store object to its exact store path, cached provider digest and protected source-path tuple through complete reads and every write callback phase. Retargeted ordinary callbacks fail closed without redirecting new storage or changing source exclusions; process-control signals remain independently observable.
+
+No exact-source v0.340.134 workflow result or commit status was visible when this candidate began. Fresh exact-source v0.340.135 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.134
 
 Account read-review receipt operations now bind one mutable store object to its exact store path, cached account and pacing-gate identity/path/account through complete reads and every write callback phase. Retargeted ordinary callbacks fail closed without redirecting new storage; process-control signals remain independently observable.
 

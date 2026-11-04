@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.134 (pre-release).**
+**Current development build: 0.340.135 (pre-release).**
+
+## v0.340.135 provider receipt object-scope binding
+
+Provider read-review receipt operations now pin the store path, cached provider digest and complete protected source-path tuple for the full call. Reads recheck that object scope around connection setup, replay, close and final return. Writes recheck it around initial inspection, every ordinary callback, transaction, commit, close and acknowledgement, so a callback cannot redirect creation, change source exclusions or conceal a committed transition. `KeyboardInterrupt` and `SystemExit` remain independently observable before secondary binding checks. Mandatory disposable evidence covers read digest retarget refusal, pre-connect protected-path retarget refusal, clean retry and process-control independence; direct tests cover every binding field and all three callback phases.
+
+No exact-source v0.340.134 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.135 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.134 (pre-release).**
 
 ## v0.340.134 account receipt object-scope binding
 

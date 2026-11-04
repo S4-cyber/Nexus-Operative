@@ -29,6 +29,7 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_connection_content_pinned',
         'durable_receipt_read_connection_content_continuity_pinned',
         'durable_receipt_write_connection_content_continuity_pinned',
+        'durable_receipt_write_callback_continuity_pinned',
         'durable_receipt_postcommit_finalization_pinned',
         'durable_receipt_write_finalization_preserves_process_control',
         'durable_receipt_postclose_finalization_pinned',
@@ -412,6 +413,36 @@ def fixture_report():
             write_continuity_replay['retained_receipts']==3 and
             write_continuity_retry['duplicate'] is True and
             write_continuity_final==write_continuity_replay)
+        callback_continuity_state=continuity_writer.inspect()
+        callback_continuity_scope=dict(
+            callback_continuity_state['receipts'][-1]['scope'],
+            review_sha256=sha(dict(fixture='write-callback-continuity')))
+        callback_continuity_receipt=sha(callback_continuity_scope)
+        def callback_continuity_attempt(mutation_call):
+            calls=0;denied=False
+            def admission():
+                nonlocal calls
+                calls+=1
+                if calls==mutation_call:
+                    changed=root/'review.sqlite3';state=changed.stat()
+                    os.utime(changed,ns=(state.st_atime_ns,
+                        state.st_mtime_ns+1_000_000_000))
+                    raise RuntimeError('private callback failure')
+                return callback_continuity_receipt
+            try:continuity_writer.append(callback_continuity_scope,
+                expected_head=callback_continuity_state['head_sha256'],
+                admission=admission)
+            except ValueError as error:
+                denied=(str(error)==
+                    'PAPER_READ_REVIEW_STORE_FILE_SET_CHANGED')
+            return denied,calls,continuity_writer.inspect()
+        callback_initial=callback_continuity_attempt(1)
+        callback_transaction=callback_continuity_attempt(2)
+        write_callback_continuity_pinned=(
+            callback_initial[:2]==(True,1) and
+            callback_transaction[:2]==(True,2) and
+            callback_initial[2]==callback_continuity_state and
+            callback_transaction[2]==callback_continuity_state)
         finalization_state=continuity_writer.inspect()
         finalization_scope=dict(finalization_state['receipts'][-1]['scope'],
             review_sha256=sha(dict(fixture='postcommit-finalization')))
@@ -719,6 +750,8 @@ def fixture_report():
                 read_connection_content_continuity_pinned),
             durable_receipt_write_connection_content_continuity_pinned=(
                 write_connection_content_continuity_pinned),
+            durable_receipt_write_callback_continuity_pinned=(
+                write_callback_continuity_pinned),
             durable_receipt_postcommit_finalization_pinned=(
                 postcommit_finalization_pinned),
             durable_receipt_write_finalization_preserves_process_control=(

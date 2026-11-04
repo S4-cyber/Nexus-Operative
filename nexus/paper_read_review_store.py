@@ -59,6 +59,47 @@ def _active_fingerprint_boundary(item,host=None):
         item.st_ctime_ns if host!='nt' else None,item.st_nlink)
 
 
+def _active_file_fingerprint(path):
+    """Sample the writer main file while a DELETE transaction is active.
+
+    A rollback sidecar is expected at this boundary, so the quiescent journal
+    sampler cannot be used.  The complete sidecar-free proof still runs before
+    and after the write.
+    """
+    try:
+        observed=path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink!=1 or
+                not 0<=observed.st_size<=MAX_DATABASE_BYTES):
+            _fail('FILE_SET_CHANGED')
+        flags=(os.O_RDONLY|getattr(os,'O_BINARY',0)|
+            getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
+        digest=hashlib.sha256()
+        with os.fdopen(os.open(path.resolve(),flags),'rb',buffering=0) as stream:
+            before=os.fstat(stream.fileno());remaining=MAX_DATABASE_BYTES+1
+            while remaining:
+                block=stream.read(min(1024*1024,remaining))
+                if not block:break
+                digest.update(block);remaining-=len(block)
+            after=os.fstat(stream.fileno())
+        final=path.lstat()
+        if (remaining==0 or
+                _active_fingerprint_boundary(observed)!=
+                    _active_fingerprint_boundary(before) or
+                _active_fingerprint_boundary(before)!=
+                    _active_fingerprint_boundary(after) or
+                _active_fingerprint_boundary(after)!=
+                    _active_fingerprint_boundary(final) or
+                not stat.S_ISREG(final.st_mode)):
+            _fail('FILE_SET_CHANGED')
+        return (*_active_fingerprint_boundary(final),digest.hexdigest())
+    except ValueError:
+        raise
+    except (OSError,RuntimeError,TypeError):
+        _fail('FILE_SET_CHANGED')
+
+
 def _committed_fingerprint_boundary(fingerprint,host=None):
     """Normalize a one-file pathname fingerprint for descriptor comparison."""
     host=os.name if host is None else host
@@ -409,13 +450,59 @@ class PaperReadReviewStore:
         scope=self._scope(scope);expected_head=_digest(expected_head);receipt=sha(scope)
         current=self.inspect()
         if current['head_sha256']!=expected_head:_fail('HEAD_CHANGED')
-        new=not current['initialized']
-        if admission()!=receipt:_fail('ADMISSION_CHANGED')
-        if precommit_check() is not True:_fail('INPUT_REVOKED')
-        bound_path=self.path.resolve();db=self._connect(write=True)
-        committed=False;committed_identity=committed_fingerprint=result=None
+        bound_path=self.path.resolve();existed=current['initialized']
+        if existed:
+            initial_identity=capture_file_identities((bound_path,),
+                'PAPER_READ_REVIEW_STORE_')
+            initial_fingerprint=capture_file_fingerprints((bound_path,),
+                (MAX_DATABASE_BYTES,),'PAPER_READ_REVIEW_STORE_')
+        else:
+            initial_identity=initial_fingerprint=None
+        def require_initial():
+            if not existed:
+                try:bound_path.lstat()
+                except FileNotFoundError:return
+                except OSError:_fail('FILE_IDENTITY_CHANGED')
+                _fail('FILE_IDENTITY_CHANGED')
+            require_file_identities((bound_path,),initial_identity,
+                'PAPER_READ_REVIEW_STORE_')
+            require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
+                initial_fingerprint,'PAPER_READ_REVIEW_STORE_')
+        def initial_check(callback):
+            try:value=callback()
+            except BaseException as error:
+                if not isinstance(error,Exception):raise
+                require_initial();raise
+            require_initial()
+            return value
+        if initial_check(admission)!=receipt:_fail('ADMISSION_CHANGED')
+        if initial_check(precommit_check) is not True:_fail('INPUT_REVOKED')
+        require_initial();db=self._connect(write=True)
+        new=not existed;committed=False;transaction_identity=None
+        committed_identity=committed_fingerprint=result=None
         try:
             with closing(db):
+                _require_main_connection(db,bound_path)
+                transaction_identity=capture_file_identities((bound_path,),
+                    'PAPER_READ_REVIEW_STORE_')
+                if existed and transaction_identity!=initial_identity:
+                    _fail('FILE_IDENTITY_CHANGED')
+                if existed:
+                    require_initial()
+                def transaction_check(callback):
+                    transaction_fingerprint=_active_file_fingerprint(bound_path)
+                    def require_transaction():
+                        require_file_identities((bound_path,),
+                            transaction_identity,'PAPER_READ_REVIEW_STORE_')
+                        if (_active_file_fingerprint(bound_path)!=
+                                transaction_fingerprint):
+                            _fail('FILE_SET_CHANGED')
+                    try:value=callback()
+                    except BaseException as error:
+                        if not isinstance(error,Exception):raise
+                        require_transaction();raise
+                    require_transaction()
+                    return value
                 with _transaction(db):
                     count=db.execute('SELECT count(*) FROM records').fetchone()[0]
                     if count==0:
@@ -429,8 +516,10 @@ class PaperReadReviewStore:
                         if len(receipts)>=MAX_RECORDS:_fail('RECORD_CAP')
                         head=self._insert(db,len(receipts)+1,dict(scope=scope,receipt_sha256=receipt),head)
                         self._load(db)
-                    if admission()!=receipt:_fail('ADMISSION_CHANGED')
-                    if precommit_check() is not True:_fail('INPUT_REVOKED')
+                    if transaction_check(admission)!=receipt:
+                        _fail('ADMISSION_CHANGED')
+                    if transaction_check(precommit_check) is not True:
+                        _fail('INPUT_REVOKED')
                 committed=True
                 # Commit may leave this connection attached to bytes that no
                 # longer match the captured pathname.  Refuse acknowledgement

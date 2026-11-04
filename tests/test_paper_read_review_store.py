@@ -672,6 +672,36 @@ def test_write_postcommit_callback_cannot_hide_file_set_change(tmp_path):
     assert retry['duplicate'] is True and final==replay
 
 
+@pytest.mark.parametrize('callback_error',(False,True))
+@pytest.mark.parametrize('mutation_call',(1,2))
+def test_write_callback_cannot_hide_file_set_change_before_commit(
+        tmp_path,callback_error,mutation_call):
+    store,scope,receipt,head=contended_append(
+        tmp_path,f'callback-continuity-{mutation_call}-{callback_error}')
+    before=store.inspect();calls=0
+    def admission():
+        nonlocal calls
+        calls+=1
+        if calls==mutation_call:
+            state=store.path.stat()
+            os.utime(store.path,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+            if callback_error:
+                raise RuntimeError('private callback failure')
+        return receipt
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_FILE_SET_CHANGED$')):
+        store.append(scope,expected_head=head,admission=admission)
+    replay=PaperReadReviewStore(store.path,store.gate).inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    assert calls==mutation_call and replay==before
+    assert retry['duplicate'] is False
+    assert PaperReadReviewStore(
+        store.path,store.gate).inspect()['retained_receipts']==(
+            before['retained_receipts']+1)
+
+
 @pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
 @pytest.mark.parametrize('interrupt_call',(1,2,3))
 def test_write_callbacks_preserve_process_control_before_file_recheck(

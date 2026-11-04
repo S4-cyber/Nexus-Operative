@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.138 (pre-release).**
+**Current development build: 0.340.139 (pre-release).**
+
+## v0.340.139 Activity SSE exceptional-exit store finalization
+
+Every ordinary callback boundary in the explicit one-attempt Activity SSE coordinator now finalizes against the exact captured cursor-store instance, path object, resolved path and account digest. Failed initial replay, safety admission, transport and checkpoint calls cannot conceal an equal-path retarget. A retarget followed by an ordinary post-commit exception withholds success while leaving exactly one original-path checkpoint for explicit cold recovery. `KeyboardInterrupt` and `SystemExit` remain independently observable even after commit. Mandatory disposable evidence covers the exceptional lost-acknowledgement recovery, while direct regressions cover initial review, safety, transport, checkpoint and both process-control signals.
+
+No exact-source v0.340.138 workflow run or commit status was exposed when this candidate began, so hosted Windows/browser/security success is not inferred. No runtime authority, real provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This injected local checkpoint boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.139 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.138 (pre-release).**
 
 ## v0.340.138 Activity SSE coordinator object-scope acknowledgement
 

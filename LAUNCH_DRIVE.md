@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.139 Activity SSE exceptional-exit store finalization
+
+Every ordinary callback boundary in the explicit one-attempt Activity SSE coordinator now finalizes against the exact captured cursor-store instance, path object, resolved path and account digest. Failed initial replay, safety admission, transport and checkpoint calls cannot conceal an equal-path retarget. A retarget followed by an ordinary post-commit exception withholds success while leaving exactly one original-path checkpoint for explicit cold recovery. `KeyboardInterrupt` and `SystemExit` remain independently observable even after commit. Mandatory disposable evidence covers the exceptional lost-acknowledgement recovery, while direct regressions cover initial review, safety, transport, checkpoint and both process-control signals.
+
+No exact-source v0.340.138 workflow run or commit status was exposed when this candidate began, so hosted Windows/browser/security success is not inferred. No runtime authority, real provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This injected local checkpoint boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.139 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.138 Activity SSE coordinator object-scope acknowledgement
 
 The explicit one-attempt Activity SSE checkpoint coordinator now captures one exact cursor-store instance, path object, resolved path and paper-account digest before copying private inputs or invoking any safety, transport or storage callback. It rechecks that scope after every callback and after the checkpoint method returns; foreign equality cannot hide a retarget. A retarget after the SQLite commit loses the success acknowledgement while leaving exactly one checkpoint on the original path for explicit cold recovery. It does not redirect storage or issue a second GET. Mandatory disposable evidence and direct regressions cover pre-network foreign-path mutation and post-commit recovery.

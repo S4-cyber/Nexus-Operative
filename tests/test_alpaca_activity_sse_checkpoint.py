@@ -230,6 +230,91 @@ def test_cursor_store_binding_change_during_io_never_checkpoints(tmp_path):
     assert not path.exists() and not moved.exists()
 
 
+def test_failed_initial_store_review_cannot_mask_equal_path_retarget(
+        tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+
+    def failed_review():
+        store.path = type(path)(str(path))
+        raise RuntimeError('private review failure')
+
+    store.inspect = failed_review
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_CHANGED'):
+        run(tmp_path, cursor_store=store)
+    assert not path.exists()
+
+
+def test_failed_safety_callback_cannot_mask_equal_path_retarget(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    opener = Opener(segments()[2])
+
+    def failed_permission():
+        store.path = type(path)(str(path))
+        raise RuntimeError('private permission failure')
+
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_CHANGED'):
+        run(tmp_path, cursor_store=store, opener=opener,
+            permission_check=failed_permission)
+    assert not opener.requests and not path.exists()
+
+
+def test_failed_transport_cannot_mask_equal_path_retarget(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    _, _, raw = segments()
+
+    def failed_open():
+        store.path = type(path)(str(path))
+        raise RuntimeError('private transport failure')
+
+    opener = Opener(raw, callback=failed_open)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_CHANGED'):
+        run(tmp_path, cursor_store=store, opener=opener)
+    assert len(opener.requests) == 1 and not path.exists()
+
+
+def test_failed_post_checkpoint_store_retarget_retains_recovery(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    original_checkpoint = store.checkpoint
+
+    def retarget_then_fail(*args, **kwargs):
+        original_checkpoint(*args, **kwargs)
+        store.path = type(path)(str(path))
+        raise RuntimeError('private checkpoint failure')
+
+    store.checkpoint = retarget_then_fail
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_CHANGED'):
+        run(tmp_path, cursor_store=store)
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['initialized'] and cold['retained_checkpoints'] == 1
+
+
+@pytest.mark.parametrize('signal', (KeyboardInterrupt, SystemExit))
+def test_post_checkpoint_process_control_remains_independent(
+        tmp_path, signal):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    original_checkpoint = store.checkpoint
+
+    def retarget_then_interrupt(*args, **kwargs):
+        original_checkpoint(*args, **kwargs)
+        store.path = type(path)(str(path))
+        raise signal()
+
+    store.checkpoint = retarget_then_interrupt
+    with pytest.raises(signal):
+        run(tmp_path, cursor_store=store)
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['initialized'] and cold['retained_checkpoints'] == 1
+
+
 def test_post_checkpoint_store_retarget_loses_ack_but_retains_recovery(
         tmp_path):
     path = tmp_path / 'cursor.sqlite3'

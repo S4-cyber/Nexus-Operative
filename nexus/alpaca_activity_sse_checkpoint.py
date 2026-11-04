@@ -109,6 +109,23 @@ def _require_store_binding(store, binding):
         _fail('CURSOR_STORE_CHANGED')
 
 
+def _checked_store_call(callback, store, binding, error_code=None):
+    """Finalize one ordinary callback against the exact captured store."""
+    try:
+        result = callback()
+    except BaseException as error:
+        # Process-control signals remain independently observable.  Ordinary
+        # failures cannot conceal a concurrent or callback-driven retarget.
+        if not isinstance(error, Exception):
+            raise
+        _require_store_binding(store, binding)
+        if error_code is not None:
+            _fail(error_code)
+        raise
+    _require_store_binding(store, binding)
+    return result
+
+
 def _reservation(value):
     if value is None:
         return None
@@ -142,8 +159,9 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
     if not all(callable(item) for item in (
             permission_check, emergency_stop_check, credential_check)):
         _fail('CHECK_INVALID')
-    initial = _frozen_events(initial_events, 'INITIAL_EVENTS_INVALID')
-    _require_store_binding(cursor_store, store_binding)
+    initial = _checked_store_call(
+        lambda: _frozen_events(initial_events, 'INITIAL_EVENTS_INVALID'),
+        cursor_store, store_binding)
     try:
         initial_review = envelope.review(initial,
             expected_account_id=expected_account_id)
@@ -161,19 +179,18 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
             any(character not in '0123456789abcdef'
                 for character in expected_cursor_head)):
         _fail('EXPECTED_HEAD_INVALID')
-    try:
-        before = cursor_store.inspect()
-    except Exception:
-        _fail('CURSOR_STORE_REVIEW_FAILED')
-    _require_store_binding(cursor_store, store_binding)
+    before = _checked_store_call(cursor_store.inspect, cursor_store,
+        store_binding, 'CURSOR_STORE_REVIEW_FAILED')
     if before['head_sha256'] != expected_cursor_head:
         _fail('CURSOR_HEAD_CHANGED')
     if (before['initialized'] and
             before['current_event_id'] != persisted):
         _fail('PERSISTED_CURSOR_DISAGREEMENT')
-    if not _safety(permission_check, emergency_stop_check, credential_check):
+    admitted = _checked_store_call(
+        lambda: _safety(permission_check, emergency_stop_check,
+            credential_check), cursor_store, store_binding)
+    if not admitted:
         _fail('ADMISSION_REVOKED')
-    _require_store_binding(cursor_store, store_binding)
 
     options = dict(expected_account_id=expected_account_id,
         since_id=persisted, confirm_read_only_paper=True, opener=opener,
@@ -184,10 +201,12 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         options['wall_clock'] = wall_clock
     if elapsed_clock is not None:
         options['elapsed_clock'] = elapsed_clock
-    transport_review, replay = transport._collect_once_private(
-        api_key, api_secret, **options)
-    _require_store_binding(cursor_store, store_binding)
-    replay = _frozen_events(replay, 'REPLAY_EVENTS_INVALID')
+    transport_review, replay = _checked_store_call(
+        lambda: transport._collect_once_private(
+            api_key, api_secret, **options), cursor_store, store_binding)
+    replay = _checked_store_call(
+        lambda: _frozen_events(replay, 'REPLAY_EVENTS_INVALID'),
+        cursor_store, store_binding)
     if (transport_review['gap_or_server_error_observed'] or
             transport_review['reconnect_review_required']):
         _fail('INTERRUPTED_SEGMENT_INELIGIBLE')
@@ -198,11 +217,8 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
             reconnect_reason=reconnect_reason)
     except Exception:
         _fail('RECONNECT_REVIEW_FAILED')
-    try:
-        unchanged = cursor_store.inspect()
-    except Exception:
-        _fail('CURSOR_STORE_REVIEW_FAILED')
-    _require_store_binding(cursor_store, store_binding)
+    unchanged = _checked_store_call(cursor_store.inspect, cursor_store,
+        store_binding, 'CURSOR_STORE_REVIEW_FAILED')
     if (unchanged['head_sha256'] != expected_cursor_head or
             unchanged['current_event_id'] != before['current_event_id']):
         _fail('CURSOR_HEAD_CHANGED')
@@ -212,25 +228,23 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
     review_input_sha256 = checked['input_sha256']
 
     def admission():
-        if (not _safety(permission_check, emergency_stop_check,
-                credential_check) or
-                not _store_binding_matches(cursor_store, store_binding) or
+        safe = _safety(permission_check, emergency_stop_check,
+            credential_check)
+        _require_store_binding(cursor_store, store_binding)
+        if (not safe or
                 sha(dict(initial=initial, replay=replay)) !=
                     private_input_sha256):
             return None
         return review_input_sha256
 
-    try:
-        saved = cursor_store.checkpoint(checked,
+    saved = _checked_store_call(
+        lambda: cursor_store.checkpoint(checked,
             previous_cursor=persisted,
             next_cursor=replay[-1]['event_id'],
             expected_head=expected_cursor_head, admission=admission,
             reconnect_reservation_token=reservation,
-            transport_input_sha256=transport_input_sha256)
-    except ValueError:
-        # Cursor-store diagnostics are already fixed and contain no private data.
-        raise
-    _require_store_binding(cursor_store, store_binding)
+            transport_input_sha256=transport_input_sha256),
+        cursor_store, store_binding)
     if (type(saved) is not dict or
             saved.get('account_sha256') != store_binding[3]):
         _fail('CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN')
@@ -353,6 +367,33 @@ def fixture_report():
             scope_error = str(error)
         scope_recovery = ActivitySSECursorStore(
             scope_path, account).inspect()
+        exception_path = Path(folder) / 'exception-pinned.sqlite3'
+        exception_store = ActivitySSECursorStore(exception_path, account)
+        exception_checkpoint = exception_store.checkpoint
+
+        def retarget_and_raise(*args, **kwargs):
+            exception_checkpoint(*args, **kwargs)
+            exception_store.path = Path(str(exception_path))
+            raise RuntimeError('private checkpoint failure')
+
+        exception_store.checkpoint = retarget_and_raise
+        exception_error = None
+        try:
+            collect_and_checkpoint_once(
+                'fixture_key_only_123', 'fixture_secret_only_123',
+                expected_account_id=account, initial_events=first,
+                reconnect_reason='CONNECTION_DROPPED',
+                cursor_store=exception_store, expected_cursor_head=ZERO,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True, opener=Opener(),
+                wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+                permission_check=lambda: True,
+                emergency_stop_check=lambda: False,
+                credential_check=lambda: True)
+        except ActivitySSECheckpointError as error:
+            exception_error = str(error)
+        exception_recovery = ActivitySSECursorStore(
+            exception_path, account).inspect()
         encoded = json.dumps(result, sort_keys=True)
         checks = dict(single_injected_get=len(opener.requests) == 1,
             duplicate_redelivery_and_advance=
@@ -366,6 +407,10 @@ def fixture_report():
                     'ALPACA_ACTIVITY_SSE_CHECKPOINT_CURSOR_STORE_CHANGED' and
                 scope_recovery['retained_checkpoints'] == 1 and
                 not retargeted_path.exists(),
+            checkpoint_exception_scope_pinned=
+                exception_error ==
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_CURSOR_STORE_CHANGED' and
+                exception_recovery['retained_checkpoints'] == 1,
             no_private_identifier_or_credential_echo=all(token not in encoded
                 for token in (account, '01K0000', '11111111',
                     'fixture_key_only_123', 'fixture_secret_only_123')),

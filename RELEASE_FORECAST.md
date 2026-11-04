@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.138
+## Current candidate: v0.340.139
+
+The one-attempt Activity SSE coordinator now finalizes ordinary initial-replay, safety, transport and checkpoint failures against its exact captured cursor-store scope. Equal-path object replacement cannot be hidden by an exception. A post-commit ordinary failure withholds acknowledgement while preserving one cold-recoverable checkpoint; process-control signals remain independent.
+
+No exact-source v0.340.138 workflow run or commit status was exposed when this candidate began. Fresh exact-source v0.340.139 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.138
 
 The explicit one-attempt Activity SSE checkpoint coordinator now binds one exact cursor-store instance, path object, resolved path and account digest across every private-input, safety, transport, storage and final-acknowledgement seam. A post-commit retarget loses acknowledgement but preserves exactly one original-path checkpoint for explicit cold recovery.
 

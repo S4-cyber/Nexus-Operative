@@ -999,6 +999,24 @@ def test_receipt_main_file_flush_uncertainty_retains_exact_commit_for_retry(
     assert retry['head_sha256']==replay['head_sha256']==final['head_sha256']
 
 
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_receipt_commit_sync_preserves_process_control_signals(
+        tmp_path,monkeypatch,signal):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    original=store_subject.os.fsync
+    monkeypatch.setattr(store_subject.os,'fsync',lambda _descriptor:(
+        (_ for _ in ()).throw(signal())))
+    with pytest.raises(signal):
+        subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    monkeypatch.setattr(store_subject.os,'fsync',original)
+    retained=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    retry=subject.retain_review(path,budget,[gate],
+        expected_store_head=retained['head_sha256'],**heads(gate,budget))
+    assert retained['retained_receipts']==1
+    assert retry['duplicate'] is True
+    assert retry['head_sha256']==retained['head_sha256']
+
+
 @pytest.mark.skipif(os.name=='nt',reason='Python exposes no portable Windows directory fsync')
 def test_receipt_parent_flush_uncertainty_retains_exact_commit_for_retry(
         tmp_path,monkeypatch):

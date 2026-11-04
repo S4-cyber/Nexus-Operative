@@ -598,6 +598,25 @@ def test_append_fsync_uncertainty_retains_one_for_explicit_duplicate(
     assert replayed['head_sha256']==retained['head_sha256']
 
 
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_append_sync_preserves_process_control_signals(
+        tmp_path,monkeypatch,signal):
+    value=scope('sync-signal');store=bound(tmp_path,value)
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    original=storage.os.fsync
+    monkeypatch.setattr(storage.os,'fsync',lambda _descriptor:(
+        (_ for _ in ()).throw(signal())))
+    with pytest.raises(signal):
+        store.append(value,admission=lambda:admitted)
+    monkeypatch.setattr(storage.os,'fsync',original)
+    retained=store.inspect()
+    replayed=store.append(value,admission=lambda:admitted)
+    assert retained['records']==1
+    assert replayed['duplicate'] is True
+    assert replayed['head_sha256']==retained['head_sha256']
+
+
 def test_append_requires_stable_descriptor_bytes_across_fsync(
         tmp_path,monkeypatch):
     value=scope();store=bound(tmp_path,value)

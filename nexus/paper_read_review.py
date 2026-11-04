@@ -32,6 +32,7 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_postcommit_finalization_pinned',
         'durable_receipt_postclose_finalization_pinned',
         'durable_receipt_commit_flush_failure_recoverable',
+        'durable_receipt_commit_sync_preserves_process_control',
         'durable_receipt_parent_descriptor_boundary_respected',
         'durable_receipt_fresh_initialization_recoverable',
         'durable_receipt_cleanup_identity_pinned',
@@ -494,6 +495,24 @@ def fixture_report():
         commit_flush_failure_recoverable=(flush_failures==1 and flush_denied and
             flush_replay['retained_receipts']==1 and
             flush_retry['duplicate'] is True and flush_final==flush_replay)
+        signal_path=root/'signal-review.sqlite3'
+        signal_store=PaperReadReviewStore(signal_path,gate)
+        signal_raised=False
+        def interrupt_commit_sync(_descriptor):raise KeyboardInterrupt
+        receipt_store_module.os.fsync=interrupt_commit_sync
+        try:
+            try:signal_store.append(flush_scope,expected_head=ZERO,
+                admission=lambda:flush_receipt)
+            except KeyboardInterrupt:signal_raised=True
+        finally:receipt_store_module.os.fsync=original_fsync
+        signal_replay=signal_store.inspect()
+        signal_retry=signal_store.append(flush_scope,
+            expected_head=signal_replay['head_sha256'],
+            admission=lambda:flush_receipt)
+        signal_final=signal_store.inspect()
+        commit_sync_preserves_process_control=(signal_raised and
+            signal_replay['retained_receipts']==1 and
+            signal_retry['duplicate'] is True and signal_final==signal_replay)
         parent_descriptor_boundary_respected=True
         if os.name!='nt':
             parent_path=root/'parent-review.sqlite3'
@@ -676,6 +695,8 @@ def fixture_report():
                 postclose_finalization_pinned),
             durable_receipt_commit_flush_failure_recoverable=(
                 commit_flush_failure_recoverable),
+            durable_receipt_commit_sync_preserves_process_control=(
+                commit_sync_preserves_process_control),
             durable_receipt_parent_descriptor_boundary_respected=(
                 parent_descriptor_boundary_respected),
             durable_receipt_fresh_initialization_recoverable=(

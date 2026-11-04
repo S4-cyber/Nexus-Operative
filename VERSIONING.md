@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.127 (pre-release).**
+**Current development build: 0.340.128 (pre-release).**
+
+## v0.340.128 post-commit process-control independence
+
+Account read-review receipts, provider read-review receipts and paper-activity acceptance now normalize only ordinary post-commit sync failures to fixed `COMMIT_DURABILITY_UNCERTAIN`. `KeyboardInterrupt` and `SystemExit` propagate after the transition remains exactly once, requiring explicit cold inspection and duplicate recovery. The provider wrapper no longer converts those signals into reconstructed success; ordinary runtime lost-acknowledgement recovery remains unchanged. Mandatory evidence covers the keyboard-interrupt boundary in all three journals, and direct tests cover both signals.
+
+No exact-source v0.340.127 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.128 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.127 (pre-release).**
 
 ## v0.340.127 paper-activity close acknowledgement parity
 

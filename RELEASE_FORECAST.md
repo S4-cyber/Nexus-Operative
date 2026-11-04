@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.127
+## Current candidate: v0.340.128
+
+Account read-review receipts, provider read-review receipts and paper-activity acceptance now preserve `KeyboardInterrupt` and `SystemExit` across explicit post-commit sync. The committed transition remains exactly once and requires explicit cold inspection plus duplicate recovery. Ordinary sync failures still fail closed, and ordinary provider-wrapper lost acknowledgements still recover from retained state.
+
+No exact-source v0.340.127 workflow result was visible when this candidate began. Fresh exact-source v0.340.128 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.127
 
 The durable paper-activity acceptance journal now reports fixed read-acknowledgement uncertainty for ordinary connection-close failures after complete inspection, preserving retained bytes until an explicit retry. A committed write with the same close uncertainty reports fixed commit-durability uncertainty, retains exactly one accepted transition and requires explicit duplicate recovery.
 

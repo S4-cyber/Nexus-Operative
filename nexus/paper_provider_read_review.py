@@ -233,6 +233,7 @@ def retain_review(store_path,provider_budget,gates,*,expected_provider_head,expe
         store.append(value,expected_head=expected_store_head,
             admission=lambda:sha(scope()),precommit_check=checked_precommit)
     except BaseException as error:
+        if not isinstance(error,Exception):raise
         write_error=error
     require_sources()
     if type(write_error) is ValueError:raise write_error
@@ -662,6 +663,29 @@ def fixture_report():
             expected_store_head=durability_replay['head_sha256'])
         durability_final=PaperProviderReadReviewStore(
             durability_store,durability_budget,[durability_gate]).inspect()
+        signal_gate,signal_budget=build_pair(
+            root/'retained-process-control')
+        signal_store=(root/'retained-process-control'/'receipt.sqlite3')
+        signal_raised=False
+        def interrupt_commit_sync(_descriptor):raise KeyboardInterrupt
+        store_module.os.fsync=interrupt_commit_sync
+        try:
+            try:
+                retain_review(signal_store,signal_budget,[signal_gate],
+                    expected_provider_head=signal_budget.inspect()['head_sha256'],
+                    expected_account_heads={signal_gate.account_digest:
+                        signal_gate.inspect()['head_sha256']})
+            except KeyboardInterrupt:signal_raised=True
+        finally:store_module.os.fsync=original_fsync
+        signal_replay=PaperProviderReadReviewStore(
+            signal_store,signal_budget,[signal_gate]).inspect()
+        signal_receipt=retain_review(signal_store,signal_budget,[signal_gate],
+            expected_provider_head=signal_budget.inspect()['head_sha256'],
+            expected_account_heads={signal_gate.account_digest:
+                signal_gate.inspect()['head_sha256']},
+            expected_store_head=signal_replay['head_sha256'])
+        signal_final=PaperProviderReadReviewStore(
+            signal_store,signal_budget,[signal_gate]).inspect()
         fingerprint_gate,fingerprint_budget=build_pair(
             root/'retained-commit-fingerprint')
         fingerprint_store=(root/'retained-commit-fingerprint'/'receipt.sqlite3')
@@ -1272,6 +1296,12 @@ def fixture_report():
                 durability_receipt['head_sha256']==
                     durability_replay['head_sha256']==
                     durability_final['head_sha256']),
+            retained_receipt_commit_sync_preserves_process_control=(
+                signal_raised and signal_replay['retained_receipts']==1 and
+                signal_receipt['duplicate'] is True and
+                signal_final['retained_receipts']==1 and
+                signal_receipt['head_sha256']==signal_replay['head_sha256']==
+                    signal_final['head_sha256']),
             retained_receipt_commit_fingerprint_change_recoverable=(
                 fingerprint_changes==1 and fingerprint_failure_denied and
                 fingerprint_replay['retained_receipts']==1 and

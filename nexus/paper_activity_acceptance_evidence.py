@@ -504,6 +504,23 @@ def fixture_report():
             retained_durability['records']==1 and
             recovered_durability['duplicate'] is True and
             recovered_durability['head_sha256']==retained_durability['head_sha256'])
+        signal_root=base/'write-process-control';signal_root.mkdir()
+        sp,sa,signal_acceptance,signal_scope=_scope(signal_root)
+        signal_raised=False
+        def interrupt_commit_sync(_descriptor):raise KeyboardInterrupt
+        acceptance_storage.os.fsync=interrupt_commit_sync
+        try:
+            try:signal_acceptance.append(signal_scope,admission=lambda:(
+                sp.inspect()['head_sha256'],sa.inspect()['head_sha256']))
+            except KeyboardInterrupt:signal_raised=True
+        finally:acceptance_storage.os.fsync=original_fsync
+        retained_signal=signal_acceptance.inspect()
+        recovered_signal=signal_acceptance.append(signal_scope,admission=lambda:(
+            sp.inspect()['head_sha256'],sa.inspect()['head_sha256']))
+        acceptance_commit_sync_preserves_process_control=(signal_raised and
+            retained_signal['records']==1 and
+            recovered_signal['duplicate'] is True and
+            recovered_signal['head_sha256']==retained_signal['head_sha256'])
         close_root=base/'write-close';close_root.mkdir()
         clp,cla,close_acceptance,close_scope=_scope(close_root)
         close_connect=close_acceptance._connect
@@ -680,6 +697,7 @@ def fixture_report():
             acceptance_write_file_identity_pinned and
             acceptance_write_committed_content_pinned and
             acceptance_commit_durability_replayed and
+            acceptance_commit_sync_preserves_process_control and
             acceptance_write_close_requires_explicit_recovery and
             acceptance_initialization_identity_continuity_pinned and
             acceptance_uncommitted_initialization_replayed and
@@ -716,6 +734,8 @@ def fixture_report():
             acceptance_write_committed_content_pinned=
                 acceptance_write_committed_content_pinned,
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
+            acceptance_commit_sync_preserves_process_control=
+                acceptance_commit_sync_preserves_process_control,
             acceptance_write_close_requires_explicit_recovery=
                 acceptance_write_close_requires_explicit_recovery,
             acceptance_initialization_identity_continuity_pinned=

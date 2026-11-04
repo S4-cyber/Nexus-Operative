@@ -256,7 +256,7 @@ def _sync_committed_store(path,identity,fingerprint,*,new):
                 'PAPER_PROVIDER_READ_REVIEW_STORE_')
             require_file_fingerprints((path,),(MAX_DATABASE_BYTES,),fingerprint,
                 'PAPER_PROVIDER_READ_REVIEW_STORE_')
-    except BaseException:
+    except Exception:
         _fail('COMMIT_DURABILITY_UNCERTAIN')
 
 

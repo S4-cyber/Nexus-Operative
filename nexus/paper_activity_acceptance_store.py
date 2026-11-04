@@ -150,7 +150,7 @@ def _sync_committed_store(path,fingerprint,*,new):
         if new and os.name!='nt':
             _sync_parent_directory(resolved)
             if _main_fingerprint(path)!=fingerprint:raise RuntimeError
-    except BaseException:_fail('COMMIT_DURABILITY_UNCERTAIN')
+    except Exception:_fail('COMMIT_DURABILITY_UNCERTAIN')
 
 
 def _require_main_connection(db,bound_path):

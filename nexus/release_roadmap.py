@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.141'
+REVISION = '0.340.142'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -563,6 +563,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Fresh mixed account-read receipt initialization now captures the device/inode identity from the exclusive create descriptor. An uncommitted connection or setup failure removes only that exact unchanged empty regular single-link file; a substituted empty pathname, sidecar, close uncertainty or any bytes are retained under fixed `UNCOMMITTED_CLEANUP_UNCERTAIN`. Explicit clean retry is proven after safe cleanup, and mandatory pacing evidence covers both recovery and replacement refusal. This is local initialization integrity, not broker, native-owner or physical-durability acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; an installed OFF-by-default Activity SSE operator now combines the saved read-only Windows credential pair, private retained initial segment, exact cursor/reconnect heads, bounded one-attempt budget and independent emergency-cut latch; status is vault/network/storage silent, every attempt needs three explicit confirmations, and aggregate output omits credentials and event/order identities' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The installed Activity SSE operator now exposes a local-only status and one explicitly confirmed saved-pair acceptance attempt. It binds a private retained segment and exact cursor/reconnect heads, samples the independent emergency-cut latch at every downstream safety checkpoint, makes at most one GET and one cursor checkpoint, and emits aggregate hashes/counts only. It remains OFF by default and grants no trading, funding, routing, source, delivery, reconciliation or release authority.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -728,7 +736,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.141 validates the initial semantic review, private transport pair, reconnect review and cursor-checkpoint acknowledgement before their aggregate fields can be consumed. Malformed internal results now receive fixed fail-closed diagnostics instead of raw unpack or key errors. A fabricated post-commit acknowledgement withholds success while exactly one original-path checkpoint remains available for explicit cold recovery. Mandatory disposable evidence and direct regressions cover the retained malformed-acknowledgement boundary. No exact-source v0.340.140 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. This remains injected local checkpoint hardening, not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No real provider IO, credential read, automatic retry/reconnect, UI control or authority is added. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.142 adds an installed OFF-by-default Activity SSE acceptance operator around the existing one-attempt coordinator. Vault/network/storage-silent status reports only local aggregate state. One attempt requires a saved read-only Windows pair, private retained initial segment outside Git, exact cursor and reconnect heads, and three explicit confirmations; the independent emergency-cut latch is sampled before vault access and throughout the attempt. It never sleeps or retries automatically, and aggregate output omits credentials and event/order identities. No exact-source v0.340.141 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. Local injected success is not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

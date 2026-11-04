@@ -317,6 +317,53 @@ def collect_saved(orders, *, expected_account_id, after, until,
     return result
 
 
+def collect_activity_sse_saved(*, expected_account_id, initial_events,
+        reconnect_reason, cursor_store, expected_cursor_head,
+        reconnect_budget, expected_budget_head, evaluated_at,
+        confirm_reconnect_attempt=False, confirm_read_only_paper=False,
+        confirm_cursor_checkpoint=False, opener=None, wall_clock=time.time,
+        elapsed_clock=time.monotonic, outcome_clock=time.time,
+        permission_check=lambda: True, emergency_stop_check=None):
+    """One explicit saved-pair Activity SSE attempt; no loop or retry."""
+    if (confirm_reconnect_attempt is not True or
+            confirm_read_only_paper is not True or
+            confirm_cursor_checkpoint is not True):
+        _fail('READ_CONFIRMATION_REQUIRED')
+    if not callable(permission_check) or not callable(emergency_stop_check):
+        _fail('READ_REVOKED')
+    from nexus.alpaca_activity_sse_reconnect_budget import (
+        collect_and_checkpoint_due)
+    epoch, raw, record = _capture()
+
+    def current():
+        return _current(epoch) and permission_check() is True
+
+    def credential_check():
+        if not current():
+            return False
+        current_epoch, current_raw, _ = _capture()
+        return (epoch == current_epoch and raw == current_raw and
+            _current(epoch) and permission_check() is True)
+
+    result = collect_and_checkpoint_due(record['api_key'],
+        record['api_secret'], expected_account_id=expected_account_id,
+        initial_events=initial_events, reconnect_reason=reconnect_reason,
+        cursor_store=cursor_store, expected_cursor_head=expected_cursor_head,
+        reconnect_budget=reconnect_budget,
+        expected_budget_head=expected_budget_head,
+        evaluated_at=evaluated_at,
+        confirm_reconnect_attempt=confirm_reconnect_attempt,
+        confirm_read_only_paper=confirm_read_only_paper,
+        confirm_cursor_checkpoint=confirm_cursor_checkpoint, opener=opener,
+        wall_clock=wall_clock, elapsed_clock=elapsed_clock,
+        outcome_clock=outcome_clock, permission_check=current,
+        emergency_stop_check=emergency_stop_check,
+        credential_check=credential_check)
+    if not credential_check():
+        _fail('READ_REVOKED')
+    return dict(result, actual_vault_access=True)
+
+
 def inspect_rules_saved(*,expected_account_id,confirm_read_only_paper=False,opener=None,
                         wall_clock=time.time,elapsed_clock=time.monotonic,pacing=None,expected_pacing_head=None,
                         provider_budget=None,expected_provider_budget_head=None):

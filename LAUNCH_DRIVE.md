@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.142 saved-pair Activity SSE acceptance operator
+
+The installed `activity-sse` tool now provides vault/network/storage-silent local status and one OFF-by-default acceptance attempt. An attempt requires a saved read-only Windows credential pair, a bounded private initial-event file outside the checkout, exact cursor and reconnect heads, and separate confirmations for the attempt, provider read and cursor checkpoint. The independent emergency-cut latch is sampled before vault access and throughout the boundary. It never sleeps or retries automatically; aggregate output omits credentials and raw event/order identities.
+
+Focused synthetic tests prove one injected GET, one durable cursor checkpoint, complete review-count binding, confirmation refusal, no-secret output, and emergency-latch refusal before vault or journal mutation. Packaged source smoke includes the new status-only command without creating default storage. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+No exact-source v0.340.141 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.142 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,022 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused acceptance/release set passed 626. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `dbe1f1a1a5beabf2edd690ca63e777a3252a3d079ed55ecf65bca59402dd2940`; `validation/release_trials_0_340_142.json` SHA256 is `6681cdcbf318137cccd3403177e81dc1fccb97bb18385790486c0c482986c131`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `67e3e11305ca18b3c5963a8dda9294f71e8be670ba9d1b5dbee137ee6346beaa`. No actual provider/account/native Windows acceptance was performed.
+
 ## v0.340.141 Activity SSE result-envelope validation
 
 The explicit one-attempt Activity SSE coordinator now validates its initial semantic review, private transport pair, reconnect review and cursor-checkpoint acknowledgement before consuming aggregate fields. Malformed internal returns receive fixed fail-closed diagnostics instead of raw unpack or key errors. A fabricated post-commit acknowledgement withholds success while preserving exactly one original-path checkpoint for explicit cold recovery. Mandatory disposable evidence covers that retained uncertain acknowledgement, while direct regressions cover every malformed boundary.

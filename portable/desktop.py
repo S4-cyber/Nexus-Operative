@@ -47,6 +47,7 @@ PAPER_TOOLS={
     'account-response-review':'nexus.paper_account_response_review',
     'account-recovery':'nexus.paper_read_pacing_recovery',
     'activity':'nexus.paper_activity_acceptance_probe',
+    'activity-sse':'nexus.paper_activity_sse_acceptance_probe',
     'account-probe':'nexus.paper_acceptance_probe',
     'account-review':'nexus.paper_account_evidence_review',
     'observation-crypto':'nexus.encrypted_observation',

@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.141
+## Current candidate: v0.340.142
+
+The installed Activity SSE tool now provides local-only status and one explicitly confirmed saved-pair checkpoint attempt, fenced by exact heads, a private retained segment and the independent emergency-cut latch. The attempt never sleeps or retries automatically and emits only aggregate hashes and counts.
+
+No exact-source v0.340.141 workflow run or commit status was exposed when this candidate began. Fresh exact-source v0.340.142 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,022 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused acceptance/release set passed 626. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `dbe1f1a1a5beabf2edd690ca63e777a3252a3d079ed55ecf65bca59402dd2940`; `validation/release_trials_0_340_142.json` SHA256 is `6681cdcbf318137cccd3403177e81dc1fccb97bb18385790486c0c482986c131`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `67e3e11305ca18b3c5963a8dda9294f71e8be670ba9d1b5dbee137ee6346beaa`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.141
 
 The one-attempt Activity SSE coordinator now validates each internal result envelope before consuming aggregate fields. Malformed returns remain fixed and fail closed; a fabricated post-commit acknowledgement preserves one cold-recoverable checkpoint without reporting success or repeating provider IO.
 

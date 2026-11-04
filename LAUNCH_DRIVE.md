@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.138 Activity SSE coordinator object-scope acknowledgement
+
+The explicit one-attempt Activity SSE checkpoint coordinator now captures one exact cursor-store instance, path object, resolved path and paper-account digest before copying private inputs or invoking any safety, transport or storage callback. It rechecks that scope after every callback and after the checkpoint method returns; foreign equality cannot hide a retarget. A retarget after the SQLite commit loses the success acknowledgement while leaving exactly one checkpoint on the original path for explicit cold recovery. It does not redirect storage or issue a second GET. Mandatory disposable evidence and direct regressions cover pre-network foreign-path mutation and post-commit recovery.
+
+Exact-source v0.340.137 passed public-repository security run 41886456303, every research/browser/offline-evidence job in run 41886456375 and complete Windows EXE/installer/reinstall/distribution run 41886456370. No runtime authority, real provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This injected local checkpoint boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.138 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.137 activity-acceptance object-scope binding
 
 The private activity-acceptance journal now pins one complete mutable store object—resolved path, normalized paper-account ID and account digest—before missing-file inspection, connection setup, replay, baseline binding, append callbacks, commit acknowledgement and final return. Fresh-file cleanup always targets the captured exclusively created path, so a retarget cannot redirect deletion to a decoy. Ordinary object retargets fail closed with a fixed binding diagnostic; `KeyboardInterrupt` and `SystemExit` retain their existing independent precedence. Mandatory disposable evidence covers metadata retarget refusal and captured-path cleanup, while direct tests cover both readers, missing inspection and pre/post-commit callbacks.

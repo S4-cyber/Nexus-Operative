@@ -598,6 +598,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('explicit_activity_sse_transport','bounded_segment_reviewed'),False,'EXPLICIT_ACTIVITY_SSE_TRANSPORT'),
         (('explicit_activity_sse_transport','ready_for_routing'),True,'EXPLICIT_ACTIVITY_SSE_TRANSPORT_AUTHORITY'),
         (('explicit_activity_sse_checkpoint','exact_head_checkpoint_committed'),False,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT'),
+        (('explicit_activity_sse_checkpoint','checkpoint_store_scope_pinned'),False,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT'),
         (('explicit_activity_sse_checkpoint','ready_for_routing'),True,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT_AUTHORITY'),
         (('explicit_activity_sse_reconnect_budget','first_failure_retained_without_retry'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','lost_reservation_ack_replays_without_provider_request'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),

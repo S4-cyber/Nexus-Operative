@@ -230,6 +230,46 @@ def test_cursor_store_binding_change_during_io_never_checkpoints(tmp_path):
     assert not path.exists() and not moved.exists()
 
 
+def test_post_checkpoint_store_retarget_loses_ack_but_retains_recovery(
+        tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    moved = tmp_path / 'moved.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    original_checkpoint = store.checkpoint
+
+    def retarget_after_checkpoint(*args, **kwargs):
+        saved = original_checkpoint(*args, **kwargs)
+        store.path = moved
+        return saved
+
+    store.checkpoint = retarget_after_checkpoint
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_CHANGED'):
+        run(tmp_path, cursor_store=store)
+    assert path.exists() and not moved.exists()
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['initialized'] and cold['retained_checkpoints'] == 1
+
+
+def test_equal_foreign_path_never_matches_captured_store_scope(tmp_path):
+    class EqualPath:
+        def __eq__(self, other): return True
+
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+
+    def permission():
+        store.path = EqualPath()
+        return True
+
+    opener = Opener(segments()[2])
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_CHANGED'):
+        run(tmp_path, cursor_store=store, opener=opener,
+            permission_check=permission)
+    assert not opener.requests and not path.exists()
+
+
 def test_input_is_deep_copied_before_transport(tmp_path):
     initial, _, raw = segments()
     original = copy.deepcopy(initial)

@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.137
+## Current candidate: v0.340.138
+
+The explicit one-attempt Activity SSE checkpoint coordinator now binds one exact cursor-store instance, path object, resolved path and account digest across every private-input, safety, transport, storage and final-acknowledgement seam. A post-commit retarget loses acknowledgement but preserves exactly one original-path checkpoint for explicit cold recovery.
+
+Exact-source v0.340.137 passed all three hosted workflows: public-repository security, complete research/browser/offline evidence and Windows EXE/installer/reinstall/distribution. Fresh exact-source v0.340.138 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.137
 
 The private activity-acceptance journal now binds its resolved path, normalized paper-account ID and account digest through missing-file inspection, connection setup, replay, writes, callbacks and final acknowledgement. Fresh initialization cleanup remains fixed to the captured exclusively created path and cannot be redirected to a decoy.
 

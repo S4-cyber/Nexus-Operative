@@ -761,6 +761,79 @@ def test_retained_receipt_recovers_exact_lost_acknowledgement(
     assert receipt['receipt_sha256']==replay['receipts'][0]['receipt_sha256']
 
 
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_stable_reader_preserves_process_control_without_masking(
+        monkeypatch,signal):
+    monkeypatch.setattr(subject,'_require_bindings',lambda *args,**kwargs:(_
+        for _ in ()).throw(ValueError('must not mask process control')))
+    reader=subject._stable_reader(None,[],None,(),(),(),(),())
+    with pytest.raises(signal):
+        reader(lambda:(_ for _ in ()).throw(signal()))
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_retain_scope_preserves_process_control_without_source_recheck(
+        tmp_path,monkeypatch,signal):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';calls=0
+    original=subject._require_bindings
+    def require(*args,**kwargs):
+        nonlocal calls
+        calls+=1
+        if calls>1:raise ValueError('must not mask process control')
+        return original(*args,**kwargs)
+    monkeypatch.setattr(subject,'_require_bindings',require)
+    monkeypatch.setattr(subject,'review',lambda *args,**kwargs:(_ for _ in
+        ()).throw(signal()))
+    with pytest.raises(signal):
+        subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    assert calls==1 and not path.exists()
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_retain_precommit_preserves_process_control_without_source_recheck(
+        tmp_path,monkeypatch,signal):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3';interrupted=False
+    original=subject._require_bindings
+    def require(*args,**kwargs):
+        if interrupted:raise ValueError('must not mask process control')
+        return original(*args,**kwargs)
+    def interrupt():
+        nonlocal interrupted
+        interrupted=True
+        raise signal()
+    monkeypatch.setattr(subject,'_require_bindings',require)
+    with pytest.raises(signal):
+        subject.retain_review(path,budget,[gate],precommit_check=interrupt,
+            **heads(gate,budget))
+    assert interrupted and not path.exists()
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_lost_ack_recovery_inspection_preserves_process_control(
+        tmp_path,monkeypatch,signal):
+    gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
+    original_append=PaperProviderReadReviewStore.append
+    original_capture=subject.capture_file_identities
+    def lost_ack(store,*args,**kwargs):
+        original_append(store,*args,**kwargs)
+        raise RuntimeError('private lost receipt acknowledgement')
+    def capture(paths,*args,**kwargs):
+        if tuple(paths)==(path,):raise signal()
+        return original_capture(paths,*args,**kwargs)
+    monkeypatch.setattr(PaperProviderReadReviewStore,'append',lost_ack)
+    monkeypatch.setattr(subject,'capture_file_identities',capture)
+    with pytest.raises(signal):
+        subject.retain_review(path,budget,[gate],**heads(gate,budget))
+    monkeypatch.setattr(PaperProviderReadReviewStore,'append',original_append)
+    monkeypatch.setattr(subject,'capture_file_identities',original_capture)
+    retained=PaperProviderReadReviewStore(path,budget,[gate]).inspect()
+    retry=subject.retain_review(path,budget,[gate],
+        expected_store_head=retained['head_sha256'],**heads(gate,budget))
+    assert retained['retained_receipts']==1
+    assert retry['duplicate'] is True
+    assert retry['head_sha256']==retained['head_sha256']
+
+
 def test_retained_receipt_rejects_fabricated_write_return(tmp_path,monkeypatch):
     gate,budget=build(tmp_path);path=tmp_path/'review.sqlite3'
     monkeypatch.setattr(PaperProviderReadReviewStore,'append',lambda *args,**kwargs:

@@ -94,7 +94,8 @@ def _stable_reader(provider_budget,gates,store_binding,paths,absent_paths,file_b
                    file_limits,file_fingerprints):
     def read(reader):
         try:value=reader()
-        except BaseException:
+        except BaseException as error:
+            if not isinstance(error,Exception):raise
             _require_bindings(provider_budget,gates,store_binding,paths,absent_paths,
                 file_binding,file_limits,file_fingerprints)
             raise
@@ -209,7 +210,8 @@ def retain_review(store_path,provider_budget,gates,*,expected_provider_head,expe
             result=review(provider_budget,gates,
                 expected_provider_head=expected_provider_head,
                 expected_account_heads=expected_account_heads)
-        except BaseException:
+        except BaseException as error:
+            if not isinstance(error,Exception):raise
             require_sources();raise
         require_sources()
         if not result['local_provider_account_history_consistent']:_fail('INCOMPLETE')
@@ -222,7 +224,8 @@ def retain_review(store_path,provider_budget,gates,*,expected_provider_head,expe
     def checked_precommit():
         require_sources()
         try:allowed=precommit_check()
-        except BaseException:
+        except BaseException as error:
+            if not isinstance(error,Exception):raise
             require_sources();raise
         require_sources()
         return allowed
@@ -273,7 +276,8 @@ def retain_review(store_path,provider_budget,gates,*,expected_provider_head,expe
                 release_approved=False)
     except ValueError:
         raise
-    except BaseException:
+    except BaseException as error:
+        if not isinstance(error,Exception):raise
         require_sources();_fail('DURABLE_STATE_CHANGED')
 
 
@@ -493,6 +497,43 @@ def fixture_report():
             PaperProviderReadReviewStore.append=original_append
         ack_replay=PaperProviderReadReviewStore(
             ack_store,ack_budget,[ack_gate]).inspect()
+        recovery_gate,recovery_budget=build_pair(
+            root/'retained-recovery-process-control')
+        recovery_store=(root/'retained-recovery-process-control'/
+            'receipt.sqlite3')
+        original_inspect=PaperProviderReadReviewStore.inspect
+        recovery_committed=False;recovery_interrupted=False
+        def lose_recovery_acknowledgement(store,*args,**kwargs):
+            nonlocal recovery_committed
+            original_append(store,*args,**kwargs)
+            recovery_committed=True
+            raise RuntimeError('fixture private lost recovery acknowledgement')
+        def interrupt_recovery_inspection(store):
+            if recovery_committed:raise KeyboardInterrupt
+            return original_inspect(store)
+        PaperProviderReadReviewStore.append=lose_recovery_acknowledgement
+        PaperProviderReadReviewStore.inspect=interrupt_recovery_inspection
+        try:
+            try:
+                retain_review(recovery_store,recovery_budget,[recovery_gate],
+                    expected_provider_head=
+                        recovery_budget.inspect()['head_sha256'],
+                    expected_account_heads={recovery_gate.account_digest:
+                        recovery_gate.inspect()['head_sha256']})
+            except KeyboardInterrupt:recovery_interrupted=True
+        finally:
+            PaperProviderReadReviewStore.append=original_append
+            PaperProviderReadReviewStore.inspect=original_inspect
+        recovery_replay=PaperProviderReadReviewStore(
+            recovery_store,recovery_budget,[recovery_gate]).inspect()
+        recovery_receipt=retain_review(recovery_store,recovery_budget,
+            [recovery_gate],expected_provider_head=
+                recovery_budget.inspect()['head_sha256'],
+            expected_account_heads={recovery_gate.account_digest:
+                recovery_gate.inspect()['head_sha256']},
+            expected_store_head=recovery_replay['head_sha256'])
+        recovery_final=PaperProviderReadReviewStore(
+            recovery_store,recovery_budget,[recovery_gate]).inspect()
         fabricated_gate,fabricated_budget=build_pair(
             root/'fabricated-retained-ack')
         fabricated_store=root/'fabricated-retained-ack'/'receipt.sqlite3'
@@ -1270,6 +1311,14 @@ def fixture_report():
                 ack_receipt['receipt_sha256']==
                     ack_replay['receipts'][0]['receipt_sha256'] and
                 fabricated_denied and not fabricated_store.exists()),
+            retained_receipt_recovery_inspection_preserves_process_control=(
+                recovery_interrupted and
+                recovery_replay['retained_receipts']==1 and
+                recovery_receipt['duplicate'] is True and
+                recovery_final['retained_receipts']==1 and
+                recovery_receipt['head_sha256']==
+                    recovery_replay['head_sha256']==
+                    recovery_final['head_sha256']),
             retained_receipt_fresh_failure_recoverable=(
                 fresh_calls==2 and fresh_failure_denied and
                 fresh_absence_restored and

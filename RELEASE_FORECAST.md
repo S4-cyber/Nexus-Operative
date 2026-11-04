@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.128
+## Current candidate: v0.340.129
+
+Provider read-review stable reads, review scope, precommit callbacks and retained-receipt recovery now preserve process-control signals even when a secondary source recheck or cold inspection would fail. Ordinary failures remain fail-closed, while ordinary lost acknowledgements still require stable exact retained state.
+
+No exact-source v0.340.128 workflow result was visible when this candidate began. Fresh exact-source v0.340.129 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.128
 
 Account read-review receipts, provider read-review receipts and paper-activity acceptance now preserve `KeyboardInterrupt` and `SystemExit` across explicit post-commit sync. The committed transition remains exactly once and requires explicit cold inspection plus duplicate recovery. Ordinary sync failures still fail closed, and ordinary provider-wrapper lost acknowledgements still recover from retained state.
 

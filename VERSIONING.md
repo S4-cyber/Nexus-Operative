@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.128 (pre-release).**
+**Current development build: 0.340.129 (pre-release).**
+
+## v0.340.129 provider recovery process-control independence
+
+Provider read-review stable readers, review scope, precommit callbacks and retained-receipt recovery now preserve `KeyboardInterrupt` and `SystemExit` without allowing a secondary source recheck or cold inspection to mask them. Ordinary exceptions still recheck every bound source and fail closed. Ordinary lost acknowledgements still recover only from stable exact retained state. Mandatory evidence proves interrupted recovery inspection retains one receipt and requires explicit duplicate replay; direct tests cover both signals at every boundary.
+
+No exact-source v0.340.128 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.129 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.128 (pre-release).**
 
 ## v0.340.128 post-commit process-control independence
 

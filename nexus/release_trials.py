@@ -1063,6 +1063,7 @@ def _validate(profile, result):
              'multi_account_reader_failure_rechecks_peer',
              'retained_receipt_source_mutation_denied',
              'retained_receipt_acknowledgement_replayed',
+             'retained_receipt_recovery_inspection_preserves_process_control',
              'retained_receipt_fresh_failure_recoverable',
              'retained_receipt_initialization_failure_recoverable',
              'retained_receipt_commit_flush_failure_recoverable',

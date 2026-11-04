@@ -30,6 +30,7 @@ CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'durable_receipt_read_connection_content_continuity_pinned',
         'durable_receipt_write_connection_content_continuity_pinned',
         'durable_receipt_postcommit_finalization_pinned',
+        'durable_receipt_write_finalization_preserves_process_control',
         'durable_receipt_postclose_finalization_pinned',
         'durable_receipt_commit_flush_failure_recoverable',
         'durable_receipt_commit_sync_preserves_process_control',
@@ -440,6 +441,35 @@ def fixture_report():
             finalization_replay['retained_receipts']==4 and
             finalization_retry['duplicate'] is True and
             finalization_final==finalization_replay)
+        finalization_signal_state=continuity_writer.inspect()
+        finalization_signal_scope=dict(
+            finalization_signal_state['receipts'][-1]['scope'],
+            review_sha256=sha(dict(
+                fixture='postcommit-finalization-process-control')))
+        finalization_signal_receipt=sha(finalization_signal_scope)
+        finalization_signal_calls=0;finalization_signal_raised=False
+        def finalization_signal_admission():
+            nonlocal finalization_signal_calls
+            finalization_signal_calls+=1
+            if finalization_signal_calls==3:
+                changed_mtime(root/'review.sqlite3')
+                raise KeyboardInterrupt
+            return finalization_signal_receipt
+        try:continuity_writer.append(finalization_signal_scope,
+            expected_head=finalization_signal_state['head_sha256'],
+            admission=finalization_signal_admission)
+        except KeyboardInterrupt:finalization_signal_raised=True
+        finalization_signal_replay=continuity_writer.inspect()
+        finalization_signal_retry=continuity_writer.append(
+            finalization_signal_scope,
+            expected_head=finalization_signal_replay['head_sha256'],
+            admission=lambda:finalization_signal_receipt)
+        finalization_signal_final=continuity_writer.inspect()
+        write_finalization_preserves_process_control=(
+            finalization_signal_raised and finalization_signal_calls==3 and
+            finalization_signal_replay['retained_receipts']==5 and
+            finalization_signal_retry['duplicate'] is True and
+            finalization_signal_final==finalization_signal_replay)
         close_state=continuity_writer.inspect()
         close_scope=dict(close_state['receipts'][-1]['scope'],
             review_sha256=sha(dict(fixture='postclose-finalization')))
@@ -465,7 +495,7 @@ def fixture_report():
             admission=lambda:close_receipt)
         close_finalization_final=continuity_writer.inspect()
         postclose_finalization_pinned=(close_finalization_denied and
-            close_finalization_replay['retained_receipts']==5 and
+            close_finalization_replay['retained_receipts']==6 and
             close_finalization_retry['duplicate'] is True and
             close_finalization_final==close_finalization_replay)
         flush_path=root/'flush-review.sqlite3'
@@ -691,6 +721,8 @@ def fixture_report():
                 write_connection_content_continuity_pinned),
             durable_receipt_postcommit_finalization_pinned=(
                 postcommit_finalization_pinned),
+            durable_receipt_write_finalization_preserves_process_control=(
+                write_finalization_preserves_process_control),
             durable_receipt_postclose_finalization_pinned=(
                 postclose_finalization_pinned),
             durable_receipt_commit_flush_failure_recoverable=(

@@ -672,6 +672,35 @@ def test_write_postcommit_callback_cannot_hide_file_set_change(tmp_path):
     assert retry['duplicate'] is True and final==replay
 
 
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+@pytest.mark.parametrize('interrupt_call',(1,2,3))
+def test_write_callbacks_preserve_process_control_before_file_recheck(
+        tmp_path,signal,interrupt_call):
+    store,scope,receipt,head=contended_append(
+        tmp_path,f'process-control-{interrupt_call}')
+    before=store.inspect()['retained_receipts'];calls=0
+    def admission():
+        nonlocal calls
+        calls+=1
+        if calls==interrupt_call:
+            state=store.path.stat()
+            os.utime(store.path,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+            raise signal()
+        return receipt
+    with pytest.raises(signal):
+        store.append(scope,expected_head=head,admission=admission)
+    replay=PaperReadReviewStore(store.path,store.gate).inspect()
+    retry=store.append(scope,expected_head=replay['head_sha256'],
+        admission=lambda:receipt)
+    committed=interrupt_call==3
+    assert calls==interrupt_call
+    assert replay['retained_receipts']==before+int(committed)
+    assert retry['duplicate'] is committed
+    assert PaperReadReviewStore(
+        store.path,store.gate).inspect()['retained_receipts']==before+1
+
+
 def test_write_close_time_file_change_requires_explicit_duplicate_recovery(
         tmp_path,monkeypatch):
     store,scope,receipt,head=contended_append(tmp_path,'close-finalization')

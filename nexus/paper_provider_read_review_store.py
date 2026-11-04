@@ -528,7 +528,10 @@ class PaperProviderReadReviewStore:
                 initial_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
         def initial_check(callback):
             try:value=callback()
-            finally:require_initial()
+            except BaseException as error:
+                if not isinstance(error,Exception):raise
+                require_initial();raise
+            require_initial()
             return value
         if initial_check(admission)!=receipt:_fail('ADMISSION_CHANGED')
         if initial_check(precommit_check) is not True:_fail('INPUT_REVOKED')
@@ -548,12 +551,16 @@ class PaperProviderReadReviewStore:
                     _require_main_connection_content(db,bound_path)
                 def transaction_check(callback):
                     transaction_fingerprint=_active_file_fingerprint(bound_path)
-                    try:value=callback()
-                    finally:
+                    def require_transaction():
                         require_file_identities((bound_path,),transaction_identity,
                             'PAPER_PROVIDER_READ_REVIEW_STORE_')
                         if _active_file_fingerprint(bound_path)!=transaction_fingerprint:
                             _fail('FILE_SET_CHANGED')
+                    try:value=callback()
+                    except BaseException as error:
+                        if not isinstance(error,Exception):raise
+                        require_transaction();raise
+                    require_transaction()
                     return value
                 with _transaction(db):
                     count=db.execute('SELECT count(*) FROM records').fetchone()[0]
@@ -595,8 +602,9 @@ class PaperProviderReadReviewStore:
                 committed_fingerprint,'PAPER_PROVIDER_READ_REVIEW_STORE_')
             return result
         except BaseException as error:
+            if not isinstance(error,Exception):raise
             if new and not committed:
                 _discard_uncommitted_new(bound_path,transaction_identity)
-            if committed and isinstance(error,Exception) and type(error) is not ValueError:
+            if committed and type(error) is not ValueError:
                 _fail('COMMIT_DURABILITY_UNCERTAIN')
             raise

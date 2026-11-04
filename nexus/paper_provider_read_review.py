@@ -560,6 +560,41 @@ def fixture_report():
         finally:finalization_reader._connect=finalization_connect
         finalization_replay=PaperProviderReadReviewStore(finalization_store,
             finalization_budget,[finalization_gate]).inspect()
+        write_signal_gate,write_signal_budget=build_pair(
+            root/'retained-write-finalization-process-control')
+        write_signal_store=(root/'retained-write-finalization-process-control'/
+            'receipt.sqlite3')
+        write_signal_first=retain_review(write_signal_store,
+            write_signal_budget,[write_signal_gate],expected_provider_head=
+                write_signal_budget.inspect()['head_sha256'],
+            expected_account_heads={write_signal_gate.account_digest:
+                write_signal_gate.inspect()['head_sha256']})
+        write_signal_writer=PaperProviderReadReviewStore(write_signal_store,
+            write_signal_budget,[write_signal_gate])
+        write_signal_scope=dict(
+            write_signal_writer.inspect()['receipts'][0]['scope'],
+            review_sha256=sha(dict(
+                fixture='provider-write-finalization-process-control')))
+        write_signal_receipt=sha(write_signal_scope)
+        write_signal_calls=0;write_signal_raised=False
+        def interrupt_write_finalization():
+            nonlocal write_signal_calls
+            write_signal_calls+=1
+            if write_signal_calls==3:
+                observed=write_signal_store.stat()
+                os.utime(write_signal_store,ns=(observed.st_atime_ns,
+                    observed.st_mtime_ns+1_000_000_000))
+                raise KeyboardInterrupt
+            return write_signal_receipt
+        try:write_signal_writer.append(write_signal_scope,
+            expected_head=write_signal_first['head_sha256'],
+            admission=interrupt_write_finalization)
+        except KeyboardInterrupt:write_signal_raised=True
+        write_signal_replay=write_signal_writer.inspect()
+        write_signal_retry=write_signal_writer.append(write_signal_scope,
+            expected_head=write_signal_replay['head_sha256'],
+            admission=lambda:write_signal_receipt)
+        write_signal_final=write_signal_writer.inspect()
         fabricated_gate,fabricated_budget=build_pair(
             root/'fabricated-retained-ack')
         fabricated_store=root/'fabricated-retained-ack'/'receipt.sqlite3'
@@ -1351,6 +1386,14 @@ def fixture_report():
                 finalization_replay['retained_receipts']==1 and
                 finalization_replay['head_sha256']==
                     finalization_created['head_sha256']),
+            retained_receipt_write_finalization_preserves_process_control=(
+                write_signal_raised and write_signal_calls==3 and
+                write_signal_replay['retained_receipts']==2 and
+                write_signal_retry['duplicate'] is True and
+                write_signal_final['retained_receipts']==2 and
+                write_signal_retry['head_sha256']==
+                    write_signal_replay['head_sha256']==
+                    write_signal_final['head_sha256']),
             retained_receipt_fresh_failure_recoverable=(
                 fresh_calls==2 and fresh_failure_denied and
                 fresh_absence_restored and

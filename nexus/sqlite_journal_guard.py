@@ -177,9 +177,17 @@ def guard_file_set_finalization(paths, maximum_bytes, identities,
     """
     try:
         yield
-    finally:
+    except BaseException as error:
+        # Emergency/operator process control must not be replaced by a
+        # secondary sampled pathname check. Ordinary failures still give a
+        # late file-set disagreement precedence, preserving fail-closed
+        # acknowledgement semantics.
+        if not isinstance(error,Exception):raise
         require_file_identities(paths, identities, prefix)
         require_file_fingerprints(paths, maximum_bytes, fingerprints, prefix)
+        raise
+    require_file_identities(paths, identities, prefix)
+    require_file_fingerprints(paths, maximum_bytes, fingerprints, prefix)
 
 
 PATH_CHECKS=('recovery_companions_rejected','ancestors_rejected','normalized_aliases_rejected','unrelated_paths_unchanged')

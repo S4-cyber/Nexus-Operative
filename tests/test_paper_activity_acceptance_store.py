@@ -640,6 +640,33 @@ def test_append_sync_preserves_process_control_signals(
     assert replayed['head_sha256']==retained['head_sha256']
 
 
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+@pytest.mark.parametrize('interrupt_call',(1,2))
+def test_append_callbacks_preserve_process_control_before_finalization(
+        tmp_path,signal,interrupt_call):
+    value=scope(f'callback-process-control-{interrupt_call}')
+    store=bound(tmp_path,value);calls=0
+    admitted=(value['pacing_after_head_sha256'],
+        value['retention_after_head_sha256'])
+    def admission():
+        nonlocal calls
+        calls+=1
+        if calls==interrupt_call:
+            state=store.path.stat()
+            os.utime(store.path,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+            raise signal()
+        return admitted
+    with pytest.raises(signal):store.append(value,admission=admission)
+    replay=PaperActivityAcceptanceStore(store.path,ACCOUNT).inspect()
+    retry=store.append(value,admission=lambda:admitted)
+    committed=interrupt_call==2
+    assert calls==interrupt_call
+    assert replay['records']==int(committed)
+    assert retry['duplicate'] is committed
+    assert PaperActivityAcceptanceStore(store.path,ACCOUNT).inspect()['records']==1
+
+
 def test_append_requires_stable_descriptor_bytes_across_fsync(
         tmp_path,monkeypatch):
     value=scope();store=bound(tmp_path,value)

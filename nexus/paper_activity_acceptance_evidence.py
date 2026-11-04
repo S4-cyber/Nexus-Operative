@@ -545,6 +545,37 @@ def fixture_report():
             read_signal_acceptance.path.read_bytes()==read_signal_bytes and
             read_signal_replay['records']==1 and
             read_signal_replay['last_record_sha256']==sha(read_signal_scope))
+        write_finalization_root=base/'write-finalization-process-control'
+        write_finalization_root.mkdir()
+        wfp,wfa,write_finalization_acceptance,write_finalization_scope=(
+            _scope(write_finalization_root))
+        write_finalization_calls=0;write_finalization_raised=False
+        write_finalization_admitted=(wfp.inspect()['head_sha256'],
+            wfa.inspect()['head_sha256'])
+        def interrupt_write_finalization():
+            nonlocal write_finalization_calls
+            write_finalization_calls+=1
+            if write_finalization_calls==2:
+                observed=write_finalization_acceptance.path.stat()
+                os.utime(write_finalization_acceptance.path,ns=(
+                    observed.st_atime_ns,
+                    observed.st_mtime_ns+1_000_000_000))
+                raise KeyboardInterrupt
+            return write_finalization_admitted
+        try:write_finalization_acceptance.append(
+            write_finalization_scope,
+            admission=interrupt_write_finalization)
+        except KeyboardInterrupt:write_finalization_raised=True
+        write_finalization_replay=write_finalization_acceptance.inspect()
+        write_finalization_retry=write_finalization_acceptance.append(
+            write_finalization_scope,
+            admission=lambda:write_finalization_admitted)
+        acceptance_write_finalization_preserves_process_control=(
+            write_finalization_raised and write_finalization_calls==2 and
+            write_finalization_replay['records']==1 and
+            write_finalization_retry['duplicate'] is True and
+            write_finalization_retry['head_sha256']==
+                write_finalization_replay['head_sha256'])
         close_root=base/'write-close';close_root.mkdir()
         clp,cla,close_acceptance,close_scope=_scope(close_root)
         close_connect=close_acceptance._connect
@@ -723,6 +754,7 @@ def fixture_report():
             acceptance_commit_durability_replayed and
             acceptance_commit_sync_preserves_process_control and
             acceptance_read_finalization_preserves_process_control and
+            acceptance_write_finalization_preserves_process_control and
             acceptance_write_close_requires_explicit_recovery and
             acceptance_initialization_identity_continuity_pinned and
             acceptance_uncommitted_initialization_replayed and
@@ -763,6 +795,8 @@ def fixture_report():
                 acceptance_commit_sync_preserves_process_control,
             acceptance_read_finalization_preserves_process_control=
                 acceptance_read_finalization_preserves_process_control,
+            acceptance_write_finalization_preserves_process_control=
+                acceptance_write_finalization_preserves_process_control,
             acceptance_write_close_requires_explicit_recovery=
                 acceptance_write_close_requires_explicit_recovery,
             acceptance_initialization_identity_continuity_pinned=

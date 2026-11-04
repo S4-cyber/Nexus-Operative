@@ -424,23 +424,39 @@ class PaperReadReviewStore:
         if not self.path.exists():
             return dict(mode='LOCAL_MIXED_READ_REVIEW_HISTORY',initialized=False,account_sha256=self.account,
                 head_sha256=ZERO,retained_receipts=0,receipts=[],read_only=True,ready_for_routing=False,release_approved=False)
+        bound_path=self.path.resolve()
+        identity=capture_file_identities((bound_path,),
+            'PAPER_READ_REVIEW_STORE_')
+        fingerprint=capture_file_fingerprints((bound_path,),
+            (MAX_DATABASE_BYTES,),'PAPER_READ_REVIEW_STORE_')
+        def require_store():
+            require_file_identities((bound_path,),identity,
+                'PAPER_READ_REVIEW_STORE_')
+            require_file_fingerprints((bound_path,),(MAX_DATABASE_BYTES,),
+                fingerprint,'PAPER_READ_REVIEW_STORE_')
         try:
             with closing(self._connect()) as db:
+                require_store()
                 with _transaction(db):
                     head,receipts=self._load(db)
                     # The setup proof is not enough: the pathname may be
                     # replaced while this already-open connection continues
                     # to expose the original database.  Re-prove both seams
                     # after the complete application read.
-                    _require_main_connection(db,self.path.resolve())
-                    _require_main_connection_content(db,self.path.resolve())
+                    _require_main_connection(db,bound_path)
+                    _require_main_connection_content(db,bound_path)
+                    require_store()
         except BaseException as error:
             # A normal runtime failure after the read may include connection
             # close, so the caller cannot treat the result as acknowledged.
-            # Preserve fixed semantic ValueErrors and process-control signals.
-            if isinstance(error,Exception) and type(error) is not ValueError:
+            # Every ordinary failure re-proves the original pathname and
+            # bytes. Process-control signals remain independently observable.
+            if not isinstance(error,Exception):raise
+            require_store()
+            if type(error) is not ValueError:
                 _fail('READ_ACKNOWLEDGEMENT_UNCERTAIN')
             raise
+        require_store()
         return dict(mode='LOCAL_MIXED_READ_REVIEW_HISTORY',initialized=True,account_sha256=self.account,
             head_sha256=head,retained_receipts=len(receipts),receipts=receipts,read_only=True,
             ready_for_routing=False,release_approved=False)

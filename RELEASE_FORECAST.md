@@ -1,6 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.132
+## Current candidate: v0.340.133
+
+Account read-review receipt inspection now pins the original journal identity and bounded bytes through complete replay and connection close. Close-time mutation cannot be hidden by normal return or ordinary close failure; process-control signals remain independently observable.
+
+No exact-source v0.340.132 workflow result or commit status was visible when this candidate began. Fresh exact-source v0.340.133 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.132
 
 Account read-review receipt writes now pin existing journal identity and bytes around pre-connect callbacks and sample the active main file around in-transaction callbacks. Ordinary callback failures cannot mask a retained-journal change; process-control signals remain independently observable.
 

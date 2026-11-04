@@ -154,6 +154,53 @@ def test_receipt_reader_close_error_requires_explicit_retry(tmp_path,monkeypatch
     assert retry['head_sha256']==first['head_sha256']
 
 
+@pytest.mark.parametrize('close_error',(False,True))
+def test_receipt_reader_close_cannot_hide_file_set_change(
+        tmp_path,monkeypatch,close_error):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    first=review.retain_review(path,gate,bindings,expected_head=head)
+    store=PaperReadReviewStore(path,gate);original_connect=store._connect
+    class CloseMutationConnection(sqlite3.Connection):
+        def close(self):
+            super().close();state=path.stat()
+            os.utime(path,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+            if close_error:raise RuntimeError('private read close failure')
+    def close_mutation(write=False):
+        if write:return original_connect(write=write)
+        db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+            timeout=10,factory=CloseMutationConnection)
+        db.execute('PRAGMA query_only=ON')
+        return db
+    monkeypatch.setattr(store,'_connect',close_mutation)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_READ_REVIEW_STORE_FILE_SET_CHANGED$')):
+        store.inspect()
+    monkeypatch.setattr(store,'_connect',original_connect)
+    retry=store.inspect()
+    assert retry['head_sha256']==first['head_sha256']
+    assert retry['retained_receipts']==1
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_receipt_reader_process_control_precedes_final_file_recheck(
+        tmp_path,monkeypatch,signal):
+    gate,bindings,head=complete(tmp_path);path=tmp_path/'review.sqlite3'
+    first=review.retain_review(path,gate,bindings,expected_head=head)
+    store=PaperReadReviewStore(path,gate);original_load=store._load
+    def interrupt(db):
+        original_load(db);state=path.stat()
+        os.utime(path,ns=(state.st_atime_ns,
+            state.st_mtime_ns+1_000_000_000))
+        raise signal()
+    monkeypatch.setattr(store,'_load',interrupt)
+    with pytest.raises(signal):store.inspect()
+    monkeypatch.setattr(store,'_load',original_load)
+    retry=store.inspect()
+    assert retry['head_sha256']==first['head_sha256']
+    assert retry['retained_receipts']==1
+
+
 def test_receipt_writer_close_error_requires_explicit_duplicate_recovery(
         tmp_path,monkeypatch):
     store,scope,receipt,head=contended_append(tmp_path,'close')

@@ -24,6 +24,8 @@ FLAGS=('source_attested','source_coverage_verified','clock_domains_verified',
 CHECKS=('five_actual_results_match','omission_refused','changed_result_refused',
         'legacy_tail_unverified','review_preserved_files','durable_receipt_replays',
         'durable_receipt_read_close_error_requires_explicit_retry',
+        'durable_receipt_read_finalization_pinned',
+        'durable_receipt_read_finalization_preserves_process_control',
         'durable_receipt_write_close_error_requires_explicit_recovery',
         'durable_receipt_connection_binding_pinned',
         'durable_receipt_connection_content_pinned',
@@ -274,6 +276,45 @@ def fixture_report():
                 'PAPER_READ_REVIEW_STORE_READ_ACKNOWLEDGEMENT_UNCERTAIN')
         finally:receipt_reader._connect=receipt_connect
         read_close_retry=receipt_reader.inspect()
+        class ReadCloseMutationConnection(sqlite3.Connection):
+            def close(self):
+                super().close();changed=root/'review.sqlite3'
+                state=changed.stat();os.utime(changed,ns=(state.st_atime_ns,
+                    state.st_mtime_ns+1_000_000_000))
+        def mutate_read_close(write=False):
+            if write:return receipt_connect(write=write)
+            db=sqlite3.connect((root/'review.sqlite3').resolve().as_uri()+
+                '?mode=ro',uri=True,timeout=10,
+                factory=ReadCloseMutationConnection)
+            db.execute('PRAGMA query_only=ON')
+            return db
+        read_finalization_denied=False
+        receipt_reader._connect=mutate_read_close
+        try:receipt_reader.inspect()
+        except ValueError as error:
+            read_finalization_denied=(str(error)==
+                'PAPER_READ_REVIEW_STORE_FILE_SET_CHANGED')
+        finally:receipt_reader._connect=receipt_connect
+        read_finalization_retry=receipt_reader.inspect()
+        read_signal_load=receipt_reader._load
+        read_signal_bytes=(root/'review.sqlite3').read_bytes()
+        read_signal_raised=False
+        def interrupt_read_finalization(db):
+            read_signal_load(db);changed=root/'review.sqlite3'
+            state=changed.stat();os.utime(changed,ns=(state.st_atime_ns,
+                state.st_mtime_ns+1_000_000_000))
+            raise KeyboardInterrupt
+        receipt_reader._load=interrupt_read_finalization
+        try:receipt_reader.inspect()
+        except KeyboardInterrupt:read_signal_raised=True
+        finally:receipt_reader._load=read_signal_load
+        read_signal_retry=receipt_reader.inspect()
+        read_finalization_pinned=(read_finalization_denied and
+            read_finalization_retry==retained)
+        read_finalization_preserves_process_control=(
+            read_signal_raised and
+            (root/'review.sqlite3').read_bytes()==read_signal_bytes and
+            read_signal_retry==retained)
         writer=PaperReadReviewStore(root/'review.sqlite3',gate)
         writer_state=writer.inspect()
         writer_scope=dict(writer_state['receipts'][-1]['scope'],
@@ -734,6 +775,10 @@ def fixture_report():
                 read_close_denied and
                 read_close_retry['retained_receipts']==1 and
                 read_close_retry['head_sha256']==receipt['head_sha256']),
+            durable_receipt_read_finalization_pinned=(
+                read_finalization_pinned),
+            durable_receipt_read_finalization_preserves_process_control=(
+                read_finalization_preserves_process_control),
             durable_receipt_write_close_error_requires_explicit_recovery=(
                 write_close_denied and
                 write_close_replay['retained_receipts']==2 and

@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.133 account receipt read-finalization continuity parity
+
+Retained account read-review receipt inspection now pins the original journal identity and bounded bytes before opening SQLite, rechecks them around complete semantic replay and again after connection close before returning success. A close-time journal change wins over a normal return or ordinary close exception. `KeyboardInterrupt` and `SystemExit` remain independently observable and are not replaced by the secondary final proof. Mandatory disposable evidence covers close-time mutation, process-control independence, unchanged retained bytes and exact fresh replay; direct tests cover ordinary success/error close paths and both signals.
+
+No exact-source v0.340.132 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.133 exact-source hosted and actual authorized-account acceptance remain required.
+
 ## v0.340.132 account receipt write-callback continuity parity
 
 The account read-review receipt writer now pins an existing journal's exact identity and bounded bytes around pre-connect callbacks and samples the same main-file identity, metadata and bytes around callbacks inside its active transaction. A callback cannot hide a retained-journal change by returning normally or raising an ordinary exception. `KeyboardInterrupt` and `SystemExit` remain independently observable and are not replaced by the secondary continuity proof. Mandatory disposable evidence covers both ordinary-failure phases and unchanged replay; direct tests also cover normal callback returns and both process-control signals.

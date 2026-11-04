@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.132 (pre-release).**
+**Current development build: 0.340.133 (pre-release).**
+
+## v0.340.133 account receipt read-finalization continuity parity
+
+Retained account read-review receipt inspection now pins the original journal identity and bounded bytes before opening SQLite, rechecks them around complete semantic replay and again after connection close before returning success. A close-time journal change wins over a normal return or ordinary close exception. `KeyboardInterrupt` and `SystemExit` remain independently observable and are not replaced by the secondary final proof. Mandatory disposable evidence covers close-time mutation, process-control independence, unchanged retained bytes and exact fresh replay; direct tests cover ordinary success/error close paths and both signals.
+
+No exact-source v0.340.132 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.133 exact-source hosted and actual authorized-account acceptance remain required.
+
+**Previous development build: 0.340.132 (pre-release).**
 
 ## v0.340.132 account receipt write-callback continuity parity
 

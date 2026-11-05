@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.162'
+REVISION = '0.340.163'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.162 contains ordinary saved-pair Activity SSE coordinator exceptions at the installed direct-operator boundary before provider access and after a durable one-request commit. It preserves process-control signals and completed cursor/reconnect state without retrying provider IO or rewriting journals. Exact-source v0.340.161 commit `2cad3c5472a016b6660d62f0f0dfe046c44c4fc4` passed public-security run 42064004986 plus browser-help and saved-evidence jobs in run 42064005270. Its complete offline regression and Windows run 42064004884 remained active at this candidate\'s predecessor checkpoint and are not claimed as passed. This is operator-boundary error containment, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.163 contains ordinary local-only Activity SSE cursor and reconnect-budget status inspection failures and malformed store views at the installed direct-operator boundary. Status remains vault/network silent, process-control signals remain observable and no journal is created on refusal. Exact-source v0.340.162 commit `ab455a71b8ea1c57a84edd1a63f4c2a2a9e522bd` passed public-security run 42075170839 plus the complete offline regression, browser-help and saved-evidence jobs in run 42075170882. Windows run 42075170810 remained active at this candidate\'s predecessor checkpoint and is not claimed as passed. This is local status error containment, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

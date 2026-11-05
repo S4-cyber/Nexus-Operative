@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.162
+## Current candidate: v0.340.163
+
+The installed Activity SSE local-only status API now contains ordinary cursor and reconnect-budget inspection failures and malformed store views at its fixed public diagnostic. Status remains vault/network silent, no journal is created on refusal, and process-control signals remain observable.
+
+Exact-source v0.340.162 commit `ab455a71b8ea1c57a84edd1a63f4c2a2a9e522bd` passed public-security run 42075170839 plus the complete offline regression, browser-help and saved-evidence jobs in run 42075170882. Windows run 42075170810 remained active at the predecessor checkpoint and is not claimed as passed. Fresh exact-source v0.340.163 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,156-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 368 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `ae1f3b49465d4383553238a2c8984202bebbe68008cb0e9858ceb6cbc9a57b2e`; `validation/release_trials_0_340_163.json` SHA256 is `c9bc68da81f88eaa960227973adc79a6afb2a40057b84c048b4eb1aa9a935e8b`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `fc2d119732015e40645792558b065f8f9799c4aa6176c3cf34fef80ce2107fff`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.162
 
 The installed Activity SSE operator now contains ordinary saved-pair coordinator exceptions at its direct public boundary before provider access and after a durable one-request commit. Process-control signals remain observable, the committed cursor/reconnect state is preserved, and no provider retry or journal rewrite is introduced.
 

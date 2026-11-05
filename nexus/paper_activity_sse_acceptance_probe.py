@@ -483,6 +483,46 @@ def _attempt_store_inspect(store, digest_fields):
     return value
 
 
+def _status_store_inspect(store, role):
+    """Read one local-only store status without exposing private faults."""
+    try:
+        value = store.inspect()
+    except Exception:
+        _fail()
+    if type(value) is not dict:
+        _fail()
+    if role == 'cursor':
+        current = value.get('current_cursor_sha256')
+        if (value.get('mode') !=
+                'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_HISTORY' or
+                value.get('status') != 'REVIEW_REQUIRED' or
+                value.get('account_sha256') != store.account_sha256 or
+                type(value.get('initialized')) is not bool or
+                not _digest(value.get('head_sha256')) or
+                (current is not None and not _digest(current)) or
+                type(value.get('retained_checkpoints')) is not int or
+                value['retained_checkpoints'] < 0 or
+                type(value.get('complete_review_counts_bound')) is not bool):
+            _fail()
+    elif role == 'budget':
+        next_allowed = value.get('next_allowed_at')
+        if (value.get('mode') !=
+                'PRIVATE_ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET' or
+                value.get('status') != 'REVIEW_REQUIRED' or
+                value.get('account_sha256') != store.account_sha256 or
+                not _digest(value.get('head_sha256')) or
+                type(value.get('attempts')) is not int or
+                value['attempts'] < 0 or
+                type(next_allowed) not in (int, float) or
+                not math.isfinite(next_allowed) or next_allowed < 0 or
+                any(type(value.get(field)) is not bool for field in
+                    ('review_required', 'completed'))):
+            _fail()
+    else:
+        _fail()
+    return value
+
+
 def status(*, expected_account_id, cursor_path, budget_path,
         order_journal_path, clock=time.time):
     _, cursor, budget, order, journal_scope = _scope(expected_account_id, cursor_path,
@@ -490,13 +530,15 @@ def status(*, expected_account_id, cursor_path, budget_path,
     journal_before = _journal_scope_matches(*journal_scope)
     clock_before = _status_clock(clock)
     stop_before = _stop_sample(order)
-    cursor_before, budget_before = cursor.inspect(), budget.inspect()
+    cursor_before = _status_store_inspect(cursor, 'cursor')
+    budget_before = _status_store_inspect(budget, 'budget')
     cursor_file_before = _status_file_sample(cursor.path,
         MAX_CURSOR_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
     budget_file_before = _status_file_sample(budget.path,
         MAX_BUDGET_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
     evaluated_at = _status_clock(clock)
-    cursor_state, budget_state = cursor.inspect(), budget.inspect()
+    cursor_state = _status_store_inspect(cursor, 'cursor')
+    budget_state = _status_store_inspect(budget, 'budget')
     cursor_file_after = _status_file_sample(cursor.path,
         MAX_CURSOR_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
     budget_file_after = _status_file_sample(budget.path,

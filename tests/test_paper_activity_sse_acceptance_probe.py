@@ -111,6 +111,65 @@ def test_status_is_vault_network_silent_and_missing_paths_stay_missing(
     assert not result['actual_provider_access'] and not private.exists()
 
 
+@pytest.mark.parametrize('store_type',(
+    subject.ActivitySSECursorStore,subject.ActivitySSEReconnectBudget))
+def test_status_store_inspection_failure_hides_private_detail(
+        tmp_path,monkeypatch,store_type):
+    private=tmp_path/'private'
+
+    def unavailable(self):
+        raise PermissionError('PRIVATE_STATUS_STORE_DETAIL')
+
+    monkeypatch.setattr(store_type,'inspect',unavailable)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert not private.exists()
+
+
+@pytest.mark.parametrize('store_type',(
+    subject.ActivitySSECursorStore,subject.ActivitySSEReconnectBudget))
+def test_status_malformed_store_view_fails_fixed(
+        tmp_path,monkeypatch,store_type):
+    private=tmp_path/'private'
+    monkeypatch.setattr(store_type,'inspect',lambda self:{})
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert not private.exists()
+
+
+@pytest.mark.parametrize('store_type',(
+    subject.ActivitySSECursorStore,subject.ActivitySSEReconnectBudget))
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_status_store_inspection_preserves_process_control(
+        tmp_path,monkeypatch,store_type,signal):
+    private=tmp_path/'private'
+
+    def interrupted(self):
+        raise signal()
+
+    monkeypatch.setattr(store_type,'inspect',interrupted)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(signal):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert not private.exists()
+
+
 @pytest.mark.parametrize('observed',(None,True,'1000',float('nan'),
     float('inf'),-1,1e12+1))
 def test_status_invalid_clock_is_explicitly_ineligible_without_raw_error(

@@ -1,6 +1,17 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.160
++## Current candidate: v0.340.161
+
+The installed Activity SSE operator now contains ordinary final cursor and reconnect-budget inspection failures after its one bounded provider attempt to the fixed public diagnostic. Process-control signals remain observable, final snapshots require well-formed public digest fields, and the already committed cursor/reconnect state is preserved without provider retry or journal rewrite.
+
+Exact-source v0.340.160 commit `8fb3069d62321e64f6f099f5e542a9641114bdc8` passed public-security run 42058990679 plus browser-help and saved-evidence jobs in run 42058990497. Its complete offline regression remained active and Windows run 42058990637 had exposed no jobs at the predecessor checkpoint, so neither is claimed as passed. Fresh exact-source v0.340.161 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+
+Final local source verification passed the complete 5,144-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 356 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `2c6d9188319007359c67ba814a85c588e0bb02387521d5195a85b1de6b75107c`; `validation/release_trials_0_340_161.json` SHA256 is `32fc03d2093a1d85977d9b1a3791ba7b40abf154b61d4499d2565f3a48447eb6`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `f7395051b1a45d448dd5b2d6fed8f1709e1980c60d3768e803833b3de131167e`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.160
 
 The installed Activity SSE operator now contains ordinary final journal-parent inspection failures after the one bounded provider attempt to its fixed diagnostic. Process-control signals remain observable, and the already committed cursor/reconnect state is preserved without provider retry or journal rewrite.
 

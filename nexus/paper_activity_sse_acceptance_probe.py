@@ -465,6 +465,24 @@ def _attempt_head_preflight(cursor, budget, expected_cursor_head,
         _fail()
 
 
+def _attempt_store_inspect(store, digest_fields):
+    """Read one final durable-store snapshot without leaking local detail.
+
+    The provider boundary may already have completed before this read.  An
+    ordinary SQLite/filesystem failure must therefore withhold the aggregate
+    acknowledgement with the fixed probe result, while process-control
+    signals remain observable and no second provider request is attempted.
+    """
+    try:
+        value = store.inspect()
+    except Exception:
+        _fail()
+    if (type(value) is not dict or
+            any(not _digest(value.get(field)) for field in digest_fields)):
+        _fail()
+    return value
+
+
 def status(*, expected_account_id, cursor_path, budget_path,
         order_journal_path, clock=time.time):
     _, cursor, budget, order, journal_scope = _scope(expected_account_id, cursor_path,
@@ -615,10 +633,11 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
             not _final_storage_matches(final_storage_scope) or
             stop_active()):
         _fail()
-    after_cursor = cursor.inspect()
+    after_cursor = _attempt_store_inspect(cursor,
+        ('head_sha256', 'current_cursor_sha256'))
     if not _final_storage_matches(final_storage_scope) or stop_active():
         _fail()
-    after_budget = budget.inspect()
+    after_budget = _attempt_store_inspect(budget, ('head_sha256',))
     if not _final_storage_matches(final_storage_scope) or stop_active():
         _fail()
     if (result['checkpoint_head_sha256'] != after_cursor['head_sha256'] or

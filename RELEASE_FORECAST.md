@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.165
+## Current candidate: v0.340.166
+
+Installed local-only Activity SSE status now requires schema-exact read-only cursor and reconnect-budget views, safe fixed control fields and every authority flag false. Initialized legacy cursors without complete review counts remain explicitly ineligible for an attempt.
+
+Exact-source v0.340.165 commit `7f097c10105703b97ebef36f550bba8b7deb9faa` passed public-security run 42102910129, complete offline-regression/browser-help/saved-evidence run 42102910962 and Windows run 42102911227. Fresh exact-source v0.340.166 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,178-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 390 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `7285af2b06dbad9853d95bcf40b76cb90b6c4b99f7b26c70bfa1a68ea430202a`; `validation/release_trials_0_340_166.json` SHA256 is `14b94590585e7d604754ddada17b9aa01014398a9468171404351203ed9c4a1f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `6cd8d543fe3844f1693e09324b10f8fad4215fb33547cd01bac37a1d75b53e33`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.165
 
 Installed local-only Activity SSE status now validates cursor initialization/count/digest agreement, the fixed reconnect attempt cap and pending-token/head binding. One-attempt eligibility explicitly requires capacity below that cap.
 

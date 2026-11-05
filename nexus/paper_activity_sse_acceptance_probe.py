@@ -18,13 +18,15 @@ import time
 
 from nexus import emergency_intent, paper_credentials
 from nexus.alpaca_activity_sse_cursor_store import (
-    ActivitySSECursorStore, MAX_DATABASE_BYTES as MAX_CURSOR_DATABASE_BYTES,
-    ZERO)
+    ActivitySSECursorStore, FLAGS as CURSOR_FLAGS,
+    MAX_CHECKPOINTS as MAX_CURSOR_CHECKPOINTS,
+    MAX_DATABASE_BYTES as MAX_CURSOR_DATABASE_BYTES, ZERO)
 from nexus.alpaca_activity_sse_reconnect_budget import (
-    ActivitySSEReconnectBudget,
+    ActivitySSEReconnectBudget, BACKOFF_SECONDS,
+    BUDGET_VIEW_KEYS, FLAGS as BUDGET_FLAGS,
     MAX_ATTEMPTS as MAX_RECONNECT_ATTEMPTS,
     MAX_DATABASE_BYTES as MAX_BUDGET_DATABASE_BYTES, REASONS)
-from nexus.alpaca_activity_sse_review import MAX_INPUT_BYTES
+from nexus.alpaca_activity_sse_review import MAX_INPUT_BYTES, ULID
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus.paper_acceptance_probe import FLAGS, ROOT
@@ -34,6 +36,12 @@ from nexus.sqlite_journal_guard import (capture_file_fingerprints,
 
 
 ATTEMPT_SOURCES = frozenset(('INJECTED_UNATTESTED', 'PAPER_HTTPS_READS'))
+CURSOR_VIEW_KEYS = frozenset((
+    'mode', 'status', 'initialized', 'account_sha256', 'head_sha256',
+    'current_event_id', 'current_cursor_sha256', 'retained_checkpoints',
+    'read_only', 'local_cursor_checkpoint_committed',
+    'process_restart_recoverable', 'complete_review_counts_bound',
+    *CURSOR_FLAGS))
 
 
 def _fail():
@@ -496,21 +504,35 @@ def _status_store_inspect(store, role):
     if role == 'cursor':
         initialized = value.get('initialized')
         head = value.get('head_sha256')
+        event_id = value.get('current_event_id')
         current = value.get('current_cursor_sha256')
         retained = value.get('retained_checkpoints')
+        committed = value.get('local_cursor_checkpoint_committed')
+        recoverable = value.get('process_restart_recoverable')
         complete = value.get('complete_review_counts_bound')
-        if (value.get('mode') !=
+        if (set(value) != CURSOR_VIEW_KEYS or
+                value.get('mode') !=
                 'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_HISTORY' or
                 value.get('status') != 'REVIEW_REQUIRED' or
                 value.get('account_sha256') != store.account_sha256 or
+                value.get('read_only') is not True or
+                any(value.get(flag) is not False for flag in CURSOR_FLAGS) or
                 type(initialized) is not bool or
                 not _digest(head) or
-                'current_cursor_sha256' not in value or
+                (event_id is not None and
+                    (type(event_id) is not str or
+                        ULID.fullmatch(event_id) is None)) or
                 (current is not None and not _digest(current)) or
-                type(retained) is not int or retained < 0 or
+                type(retained) is not int or
+                not 0 <= retained <= MAX_CURSOR_CHECKPOINTS or
+                type(committed) is not bool or
+                type(recoverable) is not bool or
                 type(complete) is not bool or
+                initialized != (event_id is not None) or
                 initialized != (current is not None) or
                 initialized != (retained > 0) or
+                initialized != committed or initialized != recoverable or
+                (initialized and current != sha(event_id)) or
                 (not initialized and (head != ZERO or complete)) or
                 (initialized and head == ZERO)):
             _fail()
@@ -519,10 +541,15 @@ def _status_store_inspect(store, role):
         attempts = value.get('attempts')
         pending = value.get('pending_token')
         next_allowed = value.get('next_allowed_at')
-        if (value.get('mode') !=
+        if (set(value) != BUDGET_VIEW_KEYS or
+                value.get('mode') !=
                 'PRIVATE_ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET' or
                 value.get('status') != 'REVIEW_REQUIRED' or
                 value.get('account_sha256') != store.account_sha256 or
+                value.get('backoff_seconds') != BACKOFF_SECONDS or
+                value.get('automatic_retry') is not False or
+                value.get('automatic_sleep') is not False or
+                any(value.get(flag) is not False for flag in BUDGET_FLAGS) or
                 not _digest(head) or
                 value.get('max_attempts') != MAX_RECONNECT_ATTEMPTS or
                 type(attempts) is not int or
@@ -601,6 +628,8 @@ def status(*, expected_account_id, cursor_path, budget_path,
         storage_snapshot_consistent=storage_consistent,
         snapshot_consistent=snapshot_consistent,
         one_attempt_eligible=(snapshot_consistent and not stop and
+            (not cursor_state['initialized'] or
+                cursor_state['complete_review_counts_bound']) and
             budget_state['pending_token'] is None and
             not budget_state['review_required'] and
             not budget_state['completed'] and

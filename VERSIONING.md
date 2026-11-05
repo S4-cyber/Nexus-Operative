@@ -1,6 +1,17 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.165 (pre-release).**
+**Current development build: 0.340.166 (pre-release).**
+
+## v0.340.166 Activity SSE status control-plane admission
+
+Installed local-only Activity SSE status now requires the complete cursor and reconnect-budget public schemas before projecting any safe outward status. Cursor views must remain read-only, bind a valid event ID to its cursor digest, keep bounded retained history and make initialization agree with commit/recovery state; every authority flag must remain false. Budget views must retain the fixed backoff schedule, keep automatic retry and sleep false, and keep every authority flag false. An initialized legacy cursor without complete review counts remains visible for review but is not one-attempt eligible.
+
+Direct regressions inject writable cursor state, false commit state, automatic retry/sleep, changed backoff, authority flags and unexpected fields without credential-vault access, provider IO or journal creation. A coherent two-read cursor advance remains a non-throwing inconsistent snapshot. This is local status control-plane admission, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.165 commit `7f097c10105703b97ebef36f550bba8b7deb9faa` passed public-security run 42102910129, complete offline-regression/browser-help/saved-evidence run 42102910962 and Windows run 42102911227. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.166 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,178-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 390 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `7285af2b06dbad9853d95bcf40b76cb90b6c4b99f7b26c70bfa1a68ea430202a`; `validation/release_trials_0_340_166.json` SHA256 is `14b94590585e7d604754ddada17b9aa01014398a9468171404351203ed9c4a1f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `6cd8d543fe3844f1693e09324b10f8fad4215fb33547cd01bac37a1d75b53e33`. No actual provider/account/native Windows acceptance was performed.
+
 
 ## v0.340.165 Activity SSE status admission semantics
 

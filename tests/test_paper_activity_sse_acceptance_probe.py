@@ -10,7 +10,7 @@ from nexus import paper_activity_sse_acceptance_probe as subject
 from nexus import paper_credentials
 from nexus.alpaca_activity_sse_cursor_store import ZERO
 from nexus.alpaca_activity_sse_review import _event
-from nexus.alpaca_paper_contract import canonical
+from nexus.alpaca_paper_contract import canonical, sha
 
 
 ACCOUNT='01234567-89ab-cdef-0123-456789abcdef'
@@ -248,6 +248,67 @@ def test_status_rejects_contradictory_budget_state(
     assert not private.exists()
 
 
+@pytest.mark.parametrize(('store_type','changes'),(
+    (subject.ActivitySSECursorStore,{'read_only':False}),
+    (subject.ActivitySSECursorStore,
+        {'local_cursor_checkpoint_committed':True}),
+    (subject.ActivitySSECursorStore,{'actual_provider_access':True}),
+    (subject.ActivitySSECursorStore,{'unexpected_authority':False}),
+    (subject.ActivitySSEReconnectBudget,{'automatic_retry':True}),
+    (subject.ActivitySSEReconnectBudget,{'automatic_sleep':True}),
+    (subject.ActivitySSEReconnectBudget,{'ready_for_routing':True}),
+    (subject.ActivitySSEReconnectBudget,{'backoff_seconds':(0,)}),
+    (subject.ActivitySSEReconnectBudget,{'unexpected_authority':False})))
+def test_status_rejects_store_control_or_schema_contradiction(
+        tmp_path,monkeypatch,store_type,changes):
+    private=tmp_path/'private';original=store_type.inspect
+
+    def contradictory(self):
+        return {**original(self),**changes}
+
+    monkeypatch.setattr(store_type,'inspect',contradictory)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert not private.exists()
+
+
+def test_status_denies_attempt_for_initialized_legacy_cursor_without_complete_counts(
+        tmp_path,monkeypatch):
+    private=tmp_path/'private';original=subject.ActivitySSECursorStore.inspect
+    event_id='01K00000000000000000000004'
+
+    def legacy(self):
+        return {**original(self),
+            'initialized':True,
+            'head_sha256':'f'*64,
+            'current_event_id':event_id,
+            'current_cursor_sha256':sha(event_id),
+            'retained_checkpoints':1,
+            'local_cursor_checkpoint_committed':True,
+            'process_restart_recoverable':True,
+            'complete_review_counts_bound':False}
+
+    monkeypatch.setattr(subject.ActivitySSECursorStore,'inspect',legacy)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert result['snapshot_consistent']
+    assert result['cursor_initialized']
+    assert not result['complete_review_counts_bound']
+    assert not result['one_attempt_eligible']
+    assert not result['actual_vault_access']
+    assert not result['actual_provider_access'] and not private.exists()
+
+
 @pytest.mark.parametrize('store_type',(
     subject.ActivitySSECursorStore,subject.ActivitySSEReconnectBudget))
 @pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
@@ -332,9 +393,14 @@ def test_status_denies_eligibility_when_repeated_journal_reads_disagree(
             result=dict(result)
             result['head_sha256']='f'*64
             if store_name == 'cursor':
+                event_id='01K00000000000000000000004'
                 result.update(initialized=True,
-                    current_cursor_sha256='e'*64,
-                    retained_checkpoints=1)
+                    current_event_id=event_id,
+                    current_cursor_sha256=sha(event_id),
+                    retained_checkpoints=1,
+                    local_cursor_checkpoint_committed=True,
+                    process_restart_recoverable=True,
+                    complete_review_counts_bound=True)
         return result
 
     monkeypatch.setattr(store,'inspect',changed)

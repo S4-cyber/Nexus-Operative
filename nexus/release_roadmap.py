@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.165'
+REVISION = '0.340.166'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.165 validates the semantic agreement of Activity SSE cursor initialization, retained-count, cursor-digest and head fields plus the reconnect attempt cap and pending-token/head binding used by installed local status. One-attempt eligibility now explicitly requires remaining attempt capacity and reports the fixed cap. Exact-source v0.340.164 commit `9326dddbbb3f703e33ee54b5bfc887b2feafcae2` passed public-security run 42094600439 plus browser-help and saved-evidence jobs in run 42094600268. Its complete offline regression and Windows run 42094600284 remained active at this candidate\'s predecessor checkpoint and are not claimed as passed. This is local status admission semantics, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.166 makes installed Activity SSE local status schema-exact at its cursor and reconnect-budget boundaries. Cursor views must preserve read-only mode, bounded retained history, event/cursor digest binding, commit/recovery agreement and every authority flag false. Budget views must preserve the fixed backoff schedule, automatic retry and sleep false, and every authority flag false. An initialized legacy cursor without complete review counts remains visible but cannot be one-attempt eligible. Exact-source v0.340.165 commit `7f097c10105703b97ebef36f550bba8b7deb9faa` passed public-security run 42102910129, complete research/browser/evidence run 42102910962 and Windows run 42102911227. This is local status control-plane admission, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

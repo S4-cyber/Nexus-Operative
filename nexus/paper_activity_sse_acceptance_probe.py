@@ -164,6 +164,24 @@ def _status_clock(clock):
     return value
 
 
+def _attempt_clock(clock):
+    """Return one bounded admission timestamp or fail with a fixed result.
+
+    Attempt mode must not let an untrusted clock callable expose private
+    exception details or reach the credential/provider/storage boundary with
+    an invalid timestamp.  Process-control signals deliberately remain
+    independently observable.
+    """
+    try:
+        value = clock()
+    except Exception:
+        _fail()
+    if (type(value) not in (int, float) or not math.isfinite(value) or
+            not 0 <= value <= 1e12):
+        _fail()
+    return value
+
+
 def _status_file_sample(path, maximum_bytes, prefix):
     """Sample one optional private journal without surfacing path details."""
     try:
@@ -275,7 +293,7 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
 
     if stop_active():
         _fail()
-    evaluated_at = wall_clock()
+    evaluated_at = _attempt_clock(wall_clock)
     result = paper_credentials.collect_activity_sse_saved(
         expected_account_id=account, initial_events=events,
         reconnect_reason=reconnect_reason, cursor_store=cursor,

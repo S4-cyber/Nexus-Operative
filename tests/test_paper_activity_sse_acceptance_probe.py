@@ -262,6 +262,64 @@ def test_emergency_latch_blocks_before_vault_or_journal_write(
     assert not options['budget_path'].exists()
 
 
+@pytest.mark.parametrize('observed',(None,True,'1000',float('nan'),
+    float('inf'),-1,1e12+1))
+def test_attempt_invalid_admission_clock_fails_fixed_before_vault_network_or_write(
+        tmp_path,monkeypatch,observed):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:observed,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
+def test_attempt_admission_clock_failure_hides_private_detail_before_io(
+        tmp_path,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+
+    def unavailable():
+        raise RuntimeError('PRIVATE_CLOCK_DETAIL')
+
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=unavailable,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_attempt_admission_clock_preserves_process_control_before_io(
+        tmp_path,monkeypatch,signal):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+
+    def interrupt():
+        raise signal()
+
+    with pytest.raises(signal):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=interrupt,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
 def test_one_saved_pair_attempt_commits_aggregate_checkpoint(
         tmp_path,saved_pair):
     options,raw=paths(tmp_path);opener=Opener(raw)

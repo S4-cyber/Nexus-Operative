@@ -1,5 +1,16 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.148 Activity SSE attempt-clock admission fence
+
+The installed `activity-sse` attempt now validates its first wall-clock sample as an exact numeric, finite and bounded timestamp before credential, provider or cursor/reconnect-journal access. Invalid values and ordinary clock exceptions fail with the single fixed operator diagnostic, without private exception detail or side effects. `KeyboardInterrupt` and `SystemExit` remain independently observable.
+
+Direct regressions cover exceptions, booleans, strings, non-finite values, negative and oversized values plus both process-control signals. They require zero vault access, zero provider requests and no cursor or reconnect-budget creation. This is not authorized-account acceptance, provider/source or clock attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.147 commit `3d65cfa5bfa06aa56458b87f032b0b72bd5899b9` exposed no connector-visible workflow run or commit status when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.148 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,072 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 294. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `256aeef013ede0d033fcc8b667f539f24573d55108e20b319b22b8f9af0b7666`; `validation/release_trials_0_340_148.json` SHA256 is `fb1a06026e452b5f27a2f70ff978601fc2b4f2a647d8be27c33f3bfcdabd2cb8`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `ea24f2720792a4b2ca89603a66652130281c7ed39f67c7c7038e154d79c40d48`. No actual provider/account/native Windows acceptance was performed.
+
+
 ## v0.340.147 Activity SSE status file-set coherence
 
 The installed `activity-sse` local status path now binds both cursor and reconnect-budget reads to matching bounded pathname identities and full-file fingerprints. A same-path byte-identical journal replacement between reads is reported as `storage_snapshot_consistent=false` and cannot claim one-attempt eligibility even when aggregate heads and counts match. Missing paths remain absent, and sampling never reads credentials, contacts a provider or writes default storage.

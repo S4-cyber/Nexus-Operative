@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.152. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.153. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.152 pins the validated regular retained-input target for the installed Activity SSE attempt before identity and fingerprint capture. A mutable parent symlink cannot silently substitute a different stable private event file after scope validation; alias movement observed during pinning fails closed, and leaf symlinks remain refused before vault, provider or journal access. Exact-source v0.340.151 passed public-security run 41994206168, every research-safety/browser/evidence job in run 41994206176 and the complete Windows regression, EXE, installer, reinstall and data-preserving uninstall lane in run 41994206219. This sampled local input path fence is not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.153 preserves leaf-path semantics while pinning the installed Activity SSE cursor, reconnect-budget and independent emergency-cut journal parents. An existing leaf symlink now fails before status inspection, credential access, provider IO or journal creation, while legitimate parent aliases remain bound to their validated targets. Exact-source v0.340.152 passed public-security run 42003383445, every research-safety/browser/evidence job in run 42003383425 and the complete Windows regression, EXE, installer, reinstall and data-preserving uninstall lane in run 42003383403. This sampled local journal path fence is not an ACL/administrator boundary, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

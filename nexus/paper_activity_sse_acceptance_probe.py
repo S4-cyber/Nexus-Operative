@@ -116,19 +116,39 @@ def _private_input_scope(value):
         _fail()
 
 
+def _private_journal_path(value):
+    """Pin one journal parent without accepting a leaf symlink.
+
+    Resolving the complete caller path would erase the distinction between a
+    journal pathname and a leaf symlink to another file.  Resolve only the
+    parent for the retained operational path, then require that it names the
+    same target observed by the complete-path check.  This keeps legitimate
+    parent aliases pinned while refusing leaf aliases before any journal is
+    inspected or created.
+    """
+    try:
+        path, resolved = _private_path(value)
+        pinned = path.absolute().parent.resolve() / path.name
+        if pinned != resolved:
+            _fail()
+        return pinned
+    except (OSError, RuntimeError, TypeError, ValueError):
+        _fail()
+
+
 def _scope(expected_account_id, cursor_path, budget_path, order_journal_path):
     account = _uuid(expected_account_id)
-    cursor, cursor_resolved = _private_path(cursor_path)
-    budget, budget_resolved = _private_path(budget_path)
-    order, order_resolved = _private_path(order_journal_path)
-    check_path_set((cursor_resolved, budget_resolved, order_resolved),
+    cursor = _private_journal_path(cursor_path)
+    budget = _private_journal_path(budget_path)
+    order = _private_journal_path(order_journal_path)
+    check_path_set((cursor, budget, order),
         'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
     # Retain the validated canonical targets, not caller-controlled aliases.
     # Otherwise a mutable parent symlink can redirect every operational
     # journal after the relationship check, hide an already-persisted
     # emergency latch and move later writes into a different directory.
-    return (account, ActivitySSECursorStore(cursor_resolved, account),
-        ActivitySSEReconnectBudget(budget_resolved, account), order_resolved)
+    return (account, ActivitySSECursorStore(cursor, account),
+        ActivitySSEReconnectBudget(budget, account), order)
 
 
 def _load_events(path):

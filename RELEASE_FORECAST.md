@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.152
+## Current candidate: v0.340.153
+
+The installed Activity SSE operator now canonicalizes each journal parent while preserving the selected leaf name. Cursor, reconnect-budget and emergency-cut journal leaf symlinks fail before local status inspection, credential access, provider IO or journal creation; legitimate parent aliases remain pinned.
+
+Exact-source v0.340.152 commit `6353b34822c402693ffcdc4b55418de986230cc2` passed public-security run 42003383445, every research-safety/browser/evidence job in run 42003383425 and the complete Windows regression, EXE, installer, reinstall and data-preserving uninstall lane in run 42003383403. Fresh exact-source v0.340.153 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,109 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 321. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `f2b48eae8e2286e76a492737c11bd6bd9ec47de50becfd808b005f007b4162d7`; `validation/release_trials_0_340_153.json` SHA256 was `80e43401ebf2150a5cb5ee60cb4468af52c732e0b2a5a65e2d08be19b9343a51` before this durable result note. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `26c8d9ebf938be38e76c30a44569c39e5e566ff4990a0587096a4a35f6abe7e8`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.152
 
 The installed Activity SSE attempt now pins the validated regular retained-input target before identity and fingerprint capture. A parent-alias swap after scope validation cannot silently substitute another stable private event file, and leaf symlinks remain refused before vault, provider or journal access.
 

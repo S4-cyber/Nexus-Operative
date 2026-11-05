@@ -1,6 +1,17 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.152 (pre-release).**
+**Current development build: 0.340.153 (pre-release).**
+
+## v0.340.153 Activity SSE journal leaf-path pinning
+
+The installed Activity SSE status and attempt paths now canonicalize each journal parent while preserving the caller-selected leaf name. Cursor, reconnect-budget and independent emergency-cut journal leaf symlinks fail closed before status inspection, credential access, provider IO or journal creation; legitimate parent aliases remain pinned to the validated target directory.
+
+Direct regressions cover all three journal roles in both local-only status and explicitly confirmed attempt mode. Each refusal preserves the unrelated symlink target bytes, performs no provider request, creates no default journal and, in attempt mode, reads no saved credential. Existing parent-alias swap coverage remains green. This is sampled local pathname hardening, not an ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.152 commit `6353b34822c402693ffcdc4b55418de986230cc2` passed public-security run 42003383445, every research-safety/browser/evidence job in run 42003383425 and the complete Windows regression, EXE, installer, reinstall and data-preserving uninstall lane in run 42003383403. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.153 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+
+Final local validation passed 5,109 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 321. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `f2b48eae8e2286e76a492737c11bd6bd9ec47de50becfd808b005f007b4162d7`; `validation/release_trials_0_340_153.json` SHA256 was `80e43401ebf2150a5cb5ee60cb4468af52c732e0b2a5a65e2d08be19b9343a51` before this durable result note. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `26c8d9ebf938be38e76c30a44569c39e5e566ff4990a0587096a4a35f6abe7e8`. No actual provider/account/native Windows acceptance was performed.
 
 ## v0.340.152 Activity SSE retained-input scope pinning
 

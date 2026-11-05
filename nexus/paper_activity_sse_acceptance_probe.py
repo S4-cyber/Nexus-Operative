@@ -106,8 +106,12 @@ def _scope(expected_account_id, cursor_path, budget_path, order_journal_path):
     order, order_resolved = _private_path(order_journal_path)
     check_path_set((cursor_resolved, budget_resolved, order_resolved),
         'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
-    return (account, ActivitySSECursorStore(cursor, account),
-        ActivitySSEReconnectBudget(budget, account), order)
+    # Retain the validated canonical targets, not caller-controlled aliases.
+    # Otherwise a mutable parent symlink can redirect every operational
+    # journal after the relationship check, hide an already-persisted
+    # emergency latch and move later writes into a different directory.
+    return (account, ActivitySSECursorStore(cursor_resolved, account),
+        ActivitySSEReconnectBudget(budget_resolved, account), order_resolved)
 
 
 def _load_events(path):

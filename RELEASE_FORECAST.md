@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.150
+## Current candidate: v0.340.151
+
+The installed Activity SSE operator now pins the resolved cursor, reconnect-budget and order-journal targets selected during scope validation. A later parent-alias swap cannot hide the original emergency latch or redirect journal creation; attempt mode refuses before vault or provider access.
+
+Exact-source v0.340.150 remote commit `11b638a62d5bab96bfd307ffe0e7fedf8484d8a9` exposed no connector-visible workflow run or commit status when this candidate began. Fresh exact-source v0.340.151 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,100 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 312. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `385168e4272da4e6c0139ec426f87b65f6c73eb4b85a4b89a75c39b7e1120aec`; `validation/release_trials_0_340_151.json` SHA256 is `502f356a53799d040a71331db41d9433c67f6e451653d53dfba244b07c367749`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `b65bd477f5e9c4acb51bc0e2015909a9092fad99dcb8322aa60f24c020c9f50d`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.150
 
 The installed Activity SSE attempt now requires a stable repeated local snapshot and exact supplied cursor/reconnect heads before opening saved Windows credentials. Invalid, stale or changing state fails before vault, provider or journal writes; the lower coordinator retains its independent exact-head checks.
 

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.150'
+REVISION = '0.340.151'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -583,6 +583,10 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The installed Activity SSE attempt now requires a stable, repeated cursor/reconnect snapshot whose bounded file identities, fingerprints and exact heads match operator input before opening saved credentials. Invalid, stale or incoherent heads fail locally; the coordinator still rechecks after vault admission. This is sampled local preflight integrity, not an atomic multi-journal snapshot, provider/account acceptance, sustained-market evidence, reconciliation or release approval.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The installed Activity SSE operator now retains the validated resolved cursor, reconnect-budget and order-journal targets instead of caller-controlled path aliases. A mutable parent symlink can no longer redirect status or attempt storage after scope validation, hide an existing independent emergency latch or move later writes to another directory. This is sampled local path-scope hardening, not an ACL/administrator boundary, provider/account acceptance, sustained-market evidence, reconciliation or release approval.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -748,7 +752,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.150 performs a stable local exact-head preflight before opening saved Activity SSE credentials. Two cursor and reconnect-budget reads plus bounded pathname identities and fingerprints must agree with the operator-supplied heads; invalid, stale or incoherent input fails without vault, provider or write access, while the lower coordinator retains its post-vault race checks. Exact-source v0.340.149 exposed no connector-visible workflow run or commit status when this candidate began, so hosted success is not inferred. Local injected success is not an atomic multi-journal snapshot, provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.151 pins the validated resolved cursor, reconnect-budget and order-journal targets for the installed Activity SSE operator. Status and attempt paths cannot be redirected through a mutable parent symlink after scope validation to hide an existing emergency latch or move later writes; direct regressions require zero vault/provider access and no redirected journal creation. Exact-source v0.340.150 exposed no connector-visible workflow run or commit status when this candidate began, so hosted success is not inferred. This sampled local path fence is not an ACL or administrator boundary, provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

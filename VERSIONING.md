@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.150 (pre-release).**
+**Current development build: 0.340.151 (pre-release).**
+
+## v0.340.151 Activity SSE resolved operational scope
+
+The installed Activity SSE operator now retains the validated resolved cursor, reconnect-budget and order-journal targets rather than caller-controlled path aliases. A mutable parent symlink can no longer redirect status or attempt storage after scope validation, hide an existing independent emergency-cut latch or move later writes into another directory.
+
+Direct regressions swap the parent alias after scope validation in both status and attempt mode. Status remains bound to the original active latch; the attempt refuses before any credential read, provider request or cursor/reconnect journal creation. This is a sampled local path fence, not an ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.150 remote commit `11b638a62d5bab96bfd307ffe0e7fedf8484d8a9` exposed no connector-visible workflow run or commit status when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.151 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,100 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 312. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `385168e4272da4e6c0139ec426f87b65f6c73eb4b85a4b89a75c39b7e1120aec`; `validation/release_trials_0_340_151.json` SHA256 is `502f356a53799d040a71331db41d9433c67f6e451653d53dfba244b07c367749`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `b65bd477f5e9c4acb51bc0e2015909a9092fad99dcb8322aa60f24c020c9f50d`. No actual provider/account/native Windows acceptance was performed.
 
 ## v0.340.150 saved Activity SSE exact-head preflight
 

@@ -246,6 +246,41 @@ def test_status_late_emergency_latch_denies_eligibility(tmp_path,monkeypatch):
     assert not result['actual_provider_access']
 
 
+def test_status_pins_resolved_emergency_latch_across_parent_alias_swap(
+        tmp_path):
+    first=tmp_path/'first';second=tmp_path/'second'
+    first.mkdir();second.mkdir()
+    alias=tmp_path/'active'
+    try:
+        alias.symlink_to(first,target_is_directory=True)
+    except OSError:
+        pytest.skip('directory symlinks unavailable')
+    subject.emergency_intent.persist(first/'orders.sqlite3')
+    calls=0
+
+    def swap_alias_on_first_clock():
+        nonlocal calls
+        calls+=1
+        if calls == 1:
+            alias.unlink()
+            alias.symlink_to(second,target_is_directory=True)
+        return 1000
+
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=alias/'cursor.sqlite3',
+        budget_path=alias/'budget.sqlite3',
+        order_journal_path=alias/'orders.sqlite3',
+        clock=swap_alias_on_first_clock)
+    assert calls==2
+    assert result['emergency_cut_latch_active']
+    assert result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+    assert not result['actual_vault_access']
+    assert not result['actual_provider_access']
+    assert not (second/'cursor.sqlite3').exists()
+    assert not (second/'budget.sqlite3').exists()
+
+
 def test_emergency_latch_blocks_before_vault_or_journal_write(
         tmp_path,monkeypatch):
     options,raw=paths(tmp_path)
@@ -260,6 +295,53 @@ def test_emergency_latch_blocks_before_vault_or_journal_write(
             elapsed_clock=lambda:50,outcome_clock=lambda:1000)
     assert not options['cursor_path'].exists()
     assert not options['budget_path'].exists()
+
+
+def test_attempt_pins_resolved_journals_before_parent_alias_swap(
+        tmp_path,saved_pair,monkeypatch):
+    first=tmp_path/'first';second=tmp_path/'second';retained=tmp_path/'retained'
+    first.mkdir();second.mkdir();retained.mkdir()
+    alias=tmp_path/'active'
+    try:
+        alias.symlink_to(first,target_is_directory=True)
+    except OSError:
+        pytest.skip('directory symlinks unavailable')
+    initial,raw=segments();source=retained/'initial.json'
+    source.write_text(canonical(initial),encoding='utf-8')
+    options=dict(expected_account_id=ACCOUNT,initial_events_path=source,
+        cursor_path=alias/'cursor.sqlite3',
+        budget_path=alias/'budget.sqlite3',
+        order_journal_path=alias/'orders.sqlite3',
+        expected_cursor_head=ZERO,expected_budget_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED')
+    opener=Opener(raw);vault_reads=0
+    original_read=saved_pair.get_password
+    original_preflight=subject._attempt_head_preflight
+
+    def count_vault_reads(*args):
+        nonlocal vault_reads
+        vault_reads+=1
+        return original_read(*args)
+
+    def swap_after_preflight(*args):
+        original_preflight(*args)
+        alias.unlink()
+        alias.symlink_to(second,target_is_directory=True)
+        subject.emergency_intent.persist(first/'orders.sqlite3')
+
+    monkeypatch.setattr(saved_pair,'get_password',count_vault_reads)
+    monkeypatch.setattr(subject,'_attempt_head_preflight',
+        swap_after_preflight)
+    with pytest.raises(ValueError,match='^PAPER_VAULT_READ_REVOKED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert vault_reads==0 and not opener.requests
+    assert not (first/'cursor.sqlite3').exists()
+    assert not (first/'budget.sqlite3').exists()
+    assert not (second/'cursor.sqlite3').exists()
+    assert not (second/'budget.sqlite3').exists()
 
 
 @pytest.mark.parametrize('observed',(None,True,'1000',float('nan'),

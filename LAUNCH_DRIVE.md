@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.158 Activity SSE emergency-cut leaf coherence
+
+The installed Activity SSE local-only status now samples private-free metadata for the actual independent `emergency_cut.intent` leaf. Any observed leaf, including a directory, symlink or malformed entry, remains an active cut; metadata distinguishes a stable leaf from byte-identical pathname replacement, while ordinary inspection failure is active and inconsistent.
+
+Direct regressions create a latch between samples and replace an existing latch with byte-identical bytes. Both report an active cut, mark the emergency-cut scope and whole snapshot inconsistent, deny one-attempt eligibility, preserve the latch bytes and perform no vault or provider access. This is sampled local pathname evidence, not an atomic descriptor, writer/reset lock, ACL or administrator boundary, distributed stop service, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.157 commit `1a15e69170e163468bc52e9cbedefe1d03e7a94e` passed public-security run 42035996532 and every browser-help, saved-evidence and complete offline-regression job in run 42035996905. Windows run 42035996560 remained active at this candidate's predecessor checkpoint and is not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.158 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,133-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 345 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `4ac20ba68eaa267cd4e550a83a1693a30b92fd4d0f87a9e22821fba6a90c3808`; `validation/release_trials_0_340_158.json` SHA256 is `e0a68c5296d888e728b85554ea15d80510ca6ad4e94109f28e5a152900737e5f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `eb7af523194e94eca078a2bd55a137b6d49d35597d5cf9e7f561574250fa2435`. No actual provider/account/native Windows acceptance was performed.
+
 ## v0.340.157 Activity SSE final journal content coherence
 
 After guarded Activity SSE coordinator completion, the installed operator now captures bounded identity and full-file fingerprints for the created cursor and reconnect-budget databases. It repeats both checks around every final database read and after constructing the acknowledgement. Same-inode content mutation therefore withholds the acknowledgement without another provider request or rewrite of the completed journals.

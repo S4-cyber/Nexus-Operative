@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.157'
+REVISION = '0.340.158'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.157 adds bounded content coherence to the installed Activity SSE final acknowledgement. After guarded coordinator completion, the created cursor and reconnect-budget databases receive identity plus full-file fingerprints; every final cursor/budget read and the constructed acknowledgement is surrounded by repeated checks. Same-inode mutation therefore withholds the acknowledgement without retrying provider IO or rewriting completed journals. Exact-source v0.340.156 passed public-security run 42031767979 plus browser-help and saved-evidence jobs in run 42031768046; its complete offline regression remained active and Windows run 42031768020 remained queued at this candidate\'s predecessor checkpoint, so neither is claimed as passed. This is sampled bounded local file evidence, not an atomic retained descriptor, writer lock or ACL/administrator boundary, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.158 binds the installed Activity SSE local-only status to coherent independent emergency-cut leaf samples. Any observed leaf, including a directory, symlink or malformed entry, remains an active cut; bounded private-free metadata distinguishes a stable leaf from byte-identical pathname replacement, and ordinary inspection failure is active and inconsistent. Exact-source v0.340.157 passed public-security run 42035996532 and every browser-help, saved-evidence and complete offline-regression job in run 42035996905. Windows run 42035996560 remained active at this candidate\'s predecessor checkpoint and is not claimed as passed. This is sampled local pathname evidence, not an atomic descriptor, writer/reset lock or ACL/administrator boundary, distributed stop service, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

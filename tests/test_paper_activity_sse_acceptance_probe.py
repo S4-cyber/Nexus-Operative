@@ -256,7 +256,7 @@ def test_status_binds_validated_journal_identity_before_first_read(
 
 def test_status_late_emergency_latch_denies_eligibility(tmp_path,monkeypatch):
     private=tmp_path/'private';order=private/'orders.sqlite3';calls=0
-    original=subject.emergency_intent.requested
+    original=subject._stop_sample
 
     def cut_between_samples(path):
         nonlocal calls
@@ -265,16 +265,47 @@ def test_status_late_emergency_latch_denies_eligibility(tmp_path,monkeypatch):
             subject.emergency_intent.persist(path)
         return original(path)
 
-    monkeypatch.setattr(subject.emergency_intent,'requested',
-        cut_between_samples)
+    monkeypatch.setattr(subject,'_stop_sample',cut_between_samples)
     result=subject.status(expected_account_id=ACCOUNT,
         cursor_path=private/'cursor.sqlite3',
         budget_path=private/'budget.sqlite3',order_journal_path=order,
         clock=lambda:1000)
     assert calls==2
     assert result['emergency_cut_latch_active']
+    assert not result['emergency_cut_scope_consistent']
     assert not result['snapshot_consistent']
     assert not result['one_attempt_eligible']
+    assert not result['actual_vault_access']
+    assert not result['actual_provider_access']
+
+
+def test_status_detects_byte_identical_emergency_latch_replacement(
+        tmp_path,monkeypatch):
+    private=tmp_path/'private';order=private/'orders.sqlite3'
+    subject.emergency_intent.persist(order)
+    latch=subject.emergency_intent.path(order);original=subject._stop_sample
+    calls=0
+
+    def replace_between_samples(path):
+        nonlocal calls
+        calls+=1
+        if calls == 2:
+            replacement=latch.with_name(latch.name+'.replacement')
+            replacement.write_bytes(latch.read_bytes())
+            replacement.replace(latch)
+        return original(path)
+
+    monkeypatch.setattr(subject,'_stop_sample',replace_between_samples)
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',order_journal_path=order,
+        clock=lambda:1000)
+    assert calls==2
+    assert result['emergency_cut_latch_active']
+    assert not result['emergency_cut_scope_consistent']
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+    assert latch.read_bytes()==subject.emergency_intent.RECORD
     assert not result['actual_vault_access']
     assert not result['actual_provider_access']
 

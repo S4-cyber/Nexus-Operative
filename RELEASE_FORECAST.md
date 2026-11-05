@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.157
+## Current candidate: v0.340.158
+
+The installed Activity SSE local-only status now binds repeated independent emergency-cut samples to private-free leaf metadata. A new latch or byte-identical pathname replacement reports an active cut and inconsistent snapshot, denying one-attempt eligibility without vault or provider access.
+
+Exact-source v0.340.157 commit `1a15e69170e163468bc52e9cbedefe1d03e7a94e` passed public-security run 42035996532 and every browser-help, saved-evidence and complete offline-regression job in run 42035996905. Windows run 42035996560 remained active at the predecessor checkpoint and is not claimed as passed. Fresh exact-source v0.340.158 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local source verification passed the complete 5,133-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 345 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `4ac20ba68eaa267cd4e550a83a1693a30b92fd4d0f87a9e22821fba6a90c3808`; `validation/release_trials_0_340_158.json` SHA256 is `e0a68c5296d888e728b85554ea15d80510ca6ad4e94109f28e5a152900737e5f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `eb7af523194e94eca078a2bd55a137b6d49d35597d5cf9e7f561574250fa2435`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.157
 
 The installed Activity SSE operator now captures bounded identity and full-file fingerprints for the cursor and reconnect-budget databases after guarded coordinator completion. Same-inode mutation during the final read/acknowledgement sequence withholds the acknowledgement without provider retry or completed-journal rewrite.
 

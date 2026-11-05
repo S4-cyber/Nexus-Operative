@@ -331,6 +331,30 @@ def _status_clock(clock):
     return value
 
 
+def _stop_sample(order_path):
+    """Sample the independent cut leaf without reading or following it.
+
+    Any observed leaf remains an active cut, including a directory, symlink or
+    otherwise malformed entry.  Metadata is retained only for repeated local
+    comparison so a pathname replacement cannot look like two equal boolean
+    samples.  Ordinary inspection failure is indeterminate and therefore
+    active/fail-closed to callers.
+    """
+    try:
+        observed = emergency_intent.path(order_path).lstat()
+    except FileNotFoundError:
+        return ('MISSING',)
+    except (OSError, RuntimeError, TypeError, ValueError):
+        return None
+    return ('PRESENT', stat.S_IFMT(observed.st_mode), observed.st_dev,
+        observed.st_ino, observed.st_size, observed.st_mtime_ns,
+        observed.st_ctime_ns, observed.st_nlink)
+
+
+def _stop_sample_active(sample):
+    return sample != ('MISSING',)
+
+
 def _attempt_clock(clock):
     """Return one bounded admission timestamp or fail with a fixed result.
 
@@ -402,7 +426,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
         budget_path, order_journal_path)
     journal_before = _journal_scope_matches(*journal_scope)
     clock_before = _status_clock(clock)
-    stop_before = emergency_intent.requested(order)
+    stop_before = _stop_sample(order)
     cursor_before, budget_before = cursor.inspect(), budget.inspect()
     cursor_file_before = _status_file_sample(cursor.path,
         MAX_CURSOR_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
@@ -414,7 +438,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
         MAX_CURSOR_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
     budget_file_after = _status_file_sample(budget.path,
         MAX_BUDGET_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
-    stop_after = emergency_intent.requested(order)
+    stop_after = _stop_sample(order)
     journal_after = _journal_scope_matches(*journal_scope)
     clock_consistent = (clock_before is not None and
         evaluated_at is not None and evaluated_at >= clock_before)
@@ -424,10 +448,13 @@ def status(*, expected_account_id, cursor_path, budget_path,
         budget_file_before is not None and
         cursor_file_before == cursor_file_after and
         budget_file_before == budget_file_after)
+    stop_consistent = (stop_before is not None and
+        stop_before == stop_after)
     snapshot_consistent = (clock_consistent and storage_consistent and
         cursor_before == cursor_state and
-        budget_before == budget_state and stop_before == stop_after)
-    stop = stop_before or stop_after
+        budget_before == budget_state and stop_consistent)
+    stop = (_stop_sample_active(stop_before) or
+        _stop_sample_active(stop_after))
     return dict(mode='PAPER_ACTIVITY_SSE_ACCEPTANCE_STATUS',
         status='REVIEW_REQUIRED', read_only=True,
         account_sha256=cursor_state['account_sha256'],
@@ -444,6 +471,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
         reconnect_review_required=budget_state['review_required'],
         reconnect_completed=budget_state['completed'],
         emergency_cut_latch_active=stop,
+        emergency_cut_scope_consistent=stop_consistent,
         status_evaluated_at=evaluated_at,
         status_clock_consistent=clock_consistent,
         journal_scope_consistent=journal_consistent,
@@ -457,7 +485,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
         automatic_sleep=False,
         actual_provider_access=False, actual_vault_access=False,
         **{flag: False for flag in FLAGS},
-        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires the initially validated journal namespace to remain identity-consistent, two valid non-regressing wall-clock samples, matching bounded identities and fingerprints across two cursor and reconnect-budget reads, and matching emergency-cut samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
+        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires the initially validated journal namespace to remain identity-consistent, two valid non-regressing wall-clock samples, matching bounded identities and fingerprints across two cursor and reconnect-budget reads, and matching emergency-cut leaf metadata samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
 
 
 def attempt(*, expected_account_id, initial_events_path, cursor_path,
@@ -505,7 +533,7 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
                     allow_created=(coordinator_started and
                         not coordinator_completed)):
                 return True
-            return emergency_intent.requested(order)
+            return _stop_sample_active(_stop_sample(order))
         except Exception:
             return True
 

@@ -608,18 +608,28 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     if not _journal_scope_matches(*journal_scope):
         _fail()
     coordinator_started = True
-    result = paper_credentials.collect_activity_sse_saved(
-        expected_account_id=account, initial_events=events,
-        reconnect_reason=reconnect_reason, cursor_store=cursor,
-        expected_cursor_head=expected_cursor_head,
-        reconnect_budget=budget, expected_budget_head=expected_budget_head,
-        evaluated_at=evaluated_at,
-        confirm_reconnect_attempt=confirm_reconnect_attempt,
-        confirm_read_only_paper=confirm_read_only_paper,
-        confirm_cursor_checkpoint=confirm_cursor_checkpoint, opener=opener,
-        wall_clock=wall_clock, elapsed_clock=elapsed_clock,
-        outcome_clock=outcome_clock, permission_check=input_guard,
-        emergency_stop_check=stop_active)
+    try:
+        result = paper_credentials.collect_activity_sse_saved(
+            expected_account_id=account, initial_events=events,
+            reconnect_reason=reconnect_reason, cursor_store=cursor,
+            expected_cursor_head=expected_cursor_head,
+            reconnect_budget=budget,
+            expected_budget_head=expected_budget_head,
+            evaluated_at=evaluated_at,
+            confirm_reconnect_attempt=confirm_reconnect_attempt,
+            confirm_read_only_paper=confirm_read_only_paper,
+            confirm_cursor_checkpoint=confirm_cursor_checkpoint,
+            opener=opener, wall_clock=wall_clock,
+            elapsed_clock=elapsed_clock, outcome_clock=outcome_clock,
+            permission_check=input_guard,
+            emergency_stop_check=stop_active)
+    except Exception:
+        # The coordinator owns the detailed private failure state.  The
+        # installed direct API exposes only its fixed diagnostic regardless
+        # of whether the bounded request had not started or its durable
+        # checkpoint had already committed.  Process-control signals remain
+        # independently observable and no retry is introduced here.
+        _fail()
     coordinator_completed = True
     active_journal_scope = _final_journal_scope(*journal_scope)
     final_storage_scope = _final_storage_scope(cursor, budget)

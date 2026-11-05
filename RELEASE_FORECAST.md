@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-+## Current candidate: v0.340.161
+## Current candidate: v0.340.162
+
+The installed Activity SSE operator now contains ordinary saved-pair coordinator exceptions at its direct public boundary before provider access and after a durable one-request commit. Process-control signals remain observable, the committed cursor/reconnect state is preserved, and no provider retry or journal rewrite is introduced.
+
+Exact-source v0.340.161 commit `2cad3c5472a016b6660d62f0f0dfe046c44c4fc4` passed public-security run 42064004986 plus browser-help and saved-evidence jobs in run 42064005270. Its complete offline regression and Windows run 42064004884 remained active at the predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.162 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local source verification passed the complete 5,148-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 360 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `060d89293af76d8f8e35108e83b933b4a99db87dc9248891acb2018463eea73f`; `validation/release_trials_0_340_162.json` SHA256 is `8be8510501c35258e20fddf8657849256da18aaf5403dca7813faf4b1e79a511`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `b1de2f23f67beaa5968613b2c96ee4a40a821b6414a14cc995231cf106cf7d7c`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.161
 
 The installed Activity SSE operator now contains ordinary final cursor and reconnect-budget inspection failures after its one bounded provider attempt to the fixed public diagnostic. Process-control signals remain observable, final snapshots require well-formed public digest fields, and the already committed cursor/reconnect state is preserved without provider retry or journal rewrite.
 

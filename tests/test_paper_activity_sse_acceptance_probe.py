@@ -489,7 +489,8 @@ def test_attempt_pins_resolved_journals_before_parent_alias_swap(
     monkeypatch.setattr(saved_pair,'get_password',count_vault_reads)
     monkeypatch.setattr(subject,'_attempt_head_preflight',
         swap_after_preflight)
-    with pytest.raises(ValueError,match='^PAPER_VAULT_READ_REVOKED$'):
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
         subject.attempt(**options,confirm_reconnect_attempt=True,
             confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
             opener=opener,wall_clock=lambda:1000,
@@ -1183,6 +1184,78 @@ def test_one_saved_pair_attempt_commits_aggregate_checkpoint(
         cursor_path=options['cursor_path'],budget_path=options['budget_path'],
         order_journal_path=options['order_journal_path'],clock=lambda:1001)
     assert replay['reconnect_completed'] and not replay['one_attempt_eligible']
+
+
+def test_coordinator_failure_before_request_hides_private_detail(
+        tmp_path,saved_pair,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+
+    def unavailable(**kwargs):
+        raise PermissionError('PRIVATE_COORDINATOR_DETAIL')
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        unavailable)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
+def test_coordinator_failure_after_commit_hides_private_detail_without_retry(
+        tmp_path,saved_pair,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=paper_credentials.collect_activity_sse_saved
+
+    def fail_after_commit(**kwargs):
+        original(**kwargs)
+        raise RuntimeError('PRIVATE_POST_COMMIT_COORDINATOR_DETAIL')
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        fail_after_commit)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_coordinator_post_commit_process_control_remains_observable(
+        tmp_path,saved_pair,monkeypatch,signal):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=paper_credentials.collect_activity_sse_saved
+
+    def interrupt_after_commit(**kwargs):
+        original(**kwargs)
+        raise signal()
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        interrupt_after_commit)
+    with pytest.raises(signal):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
 
 
 @pytest.mark.parametrize(('field','replacement'),(

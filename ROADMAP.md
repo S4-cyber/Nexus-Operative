@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.161. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.162. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.161 contains ordinary final Activity SSE cursor and reconnect-budget inspection failures after the one bounded provider attempt to the installed operator's fixed diagnostic. It preserves process-control signals and the already committed cursor/reconnect state without retrying provider IO or rewriting journals. Exact-source v0.340.160 commit `8fb3069d62321e64f6f099f5e542a9641114bdc8` passed public-security run 42058990679 plus browser-help and saved-evidence jobs in run 42058990497. Its complete offline regression remained active and Windows run 42058990637 had exposed no jobs at this candidate's predecessor checkpoint, so neither is claimed as passed. This is post-attempt error containment, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.162 contains ordinary saved-pair Activity SSE coordinator exceptions at the installed direct-operator boundary before provider access and after a durable one-request commit. It preserves process-control signals and completed cursor/reconnect state without retrying provider IO or rewriting journals. Exact-source v0.340.161 commit `2cad3c5472a016b6660d62f0f0dfe046c44c4fc4` passed public-security run 42064004986 plus browser-help and saved-evidence jobs in run 42064005270. Its complete offline regression and Windows run 42064004884 remained active at this candidate's predecessor checkpoint and are not claimed as passed. This is operator-boundary error containment, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

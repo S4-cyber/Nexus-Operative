@@ -17,9 +17,11 @@ import sys
 import time
 
 from nexus import emergency_intent, paper_credentials
-from nexus.alpaca_activity_sse_cursor_store import ActivitySSECursorStore
+from nexus.alpaca_activity_sse_cursor_store import (
+    ActivitySSECursorStore, MAX_DATABASE_BYTES as MAX_CURSOR_DATABASE_BYTES)
 from nexus.alpaca_activity_sse_reconnect_budget import (
-    ActivitySSEReconnectBudget, REASONS)
+    ActivitySSEReconnectBudget,
+    MAX_DATABASE_BYTES as MAX_BUDGET_DATABASE_BYTES, REASONS)
 from nexus.alpaca_activity_sse_review import MAX_INPUT_BYTES
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_inspection import _uuid
@@ -162,6 +164,18 @@ def _status_clock(clock):
     return value
 
 
+def _status_file_sample(path, maximum_bytes, prefix):
+    """Sample one optional private journal without surfacing path details."""
+    try:
+        if not path.exists():
+            return ('MISSING',)
+        return ('PRESENT',
+            capture_file_identities((path,), prefix),
+            capture_file_fingerprints((path,), (maximum_bytes,), prefix))
+    except Exception:
+        return None
+
+
 def status(*, expected_account_id, cursor_path, budget_path,
         order_journal_path, clock=time.time):
     _, cursor, budget, order = _scope(expected_account_id, cursor_path,
@@ -169,12 +183,24 @@ def status(*, expected_account_id, cursor_path, budget_path,
     clock_before = _status_clock(clock)
     stop_before = emergency_intent.requested(order)
     cursor_before, budget_before = cursor.inspect(), budget.inspect()
+    cursor_file_before = _status_file_sample(cursor.path,
+        MAX_CURSOR_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
+    budget_file_before = _status_file_sample(budget.path,
+        MAX_BUDGET_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
     evaluated_at = _status_clock(clock)
     cursor_state, budget_state = cursor.inspect(), budget.inspect()
+    cursor_file_after = _status_file_sample(cursor.path,
+        MAX_CURSOR_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
+    budget_file_after = _status_file_sample(budget.path,
+        MAX_BUDGET_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
     stop_after = emergency_intent.requested(order)
     clock_consistent = (clock_before is not None and
         evaluated_at is not None and evaluated_at >= clock_before)
-    snapshot_consistent = (clock_consistent and
+    storage_consistent = (cursor_file_before is not None and
+        budget_file_before is not None and
+        cursor_file_before == cursor_file_after and
+        budget_file_before == budget_file_after)
+    snapshot_consistent = (clock_consistent and storage_consistent and
         cursor_before == cursor_state and
         budget_before == budget_state and stop_before == stop_after)
     stop = stop_before or stop_after
@@ -196,6 +222,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
         emergency_cut_latch_active=stop,
         status_evaluated_at=evaluated_at,
         status_clock_consistent=clock_consistent,
+        storage_snapshot_consistent=storage_consistent,
         snapshot_consistent=snapshot_consistent,
         one_attempt_eligible=(snapshot_consistent and not stop and
             budget_state['pending_token'] is None and
@@ -205,7 +232,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
         automatic_sleep=False,
         actual_provider_access=False, actual_vault_access=False,
         **{flag: False for flag in FLAGS},
-        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires two valid non-regressing wall-clock samples, two matching cursor and reconnect-budget reads, and matching emergency-cut samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
+        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires two valid non-regressing wall-clock samples, matching bounded identities and fingerprints across two cursor and reconnect-budget reads, and matching emergency-cut samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
 
 
 def attempt(*, expected_account_id, initial_events_path, cursor_path,

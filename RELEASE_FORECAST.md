@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.146
+## Current candidate: v0.340.147
+
+The installed Activity SSE local status now requires matching bounded pathname identities and file fingerprints across both cursor and reconnect-budget reads. A byte-identical replacement between reads remains explicitly inconsistent and ineligible.
+
+No exact-source v0.340.146 workflow run or commit status was exposed when this candidate began. Fresh exact-source v0.340.147 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,062 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 252. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `08e2d6813017af053e039356b6ba795043fad72a03b0bc6f721c8821edf16410`; `validation/release_trials_0_340_147.json` SHA256 is `fce568c3593593129666e0135aa83506184bf615c2f37c6997edb9027670d1a8`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `936d4d53d9ffb4eb1b61ee780fd76abe8d347b59d9ba27facdb9bd8938ee3fca`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.146
 
 The installed Activity SSE local status now requires two bounded, finite and non-regressing wall-clock samples around its repeated journals and emergency-cut observations before reporting one-attempt eligibility. Invalid or unavailable time remains explicitly ineligible without leaking an exception.
 

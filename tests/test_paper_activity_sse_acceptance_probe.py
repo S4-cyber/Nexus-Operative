@@ -104,6 +104,7 @@ def test_status_is_vault_network_silent_and_missing_paths_stay_missing(
     assert clock_calls==2
     assert result['status_evaluated_at']==1000
     assert result['status_clock_consistent']
+    assert result['storage_snapshot_consistent']
     assert result['snapshot_consistent'] and result['one_attempt_eligible']
     assert not result['actual_vault_access']
     assert not result['actual_provider_access'] and not private.exists()
@@ -183,6 +184,41 @@ def test_status_denies_eligibility_when_repeated_journal_reads_disagree(
     assert not result['one_attempt_eligible']
     assert not result['actual_vault_access']
     assert not result['actual_provider_access'] and not private.exists()
+
+
+@pytest.mark.parametrize('store_name',('cursor','budget'))
+def test_status_denies_eligibility_after_byte_identical_path_replacement(
+        tmp_path,saved_pair,monkeypatch,store_name):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    subject.attempt(**options,confirm_reconnect_attempt=True,
+        confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+        opener=opener,wall_clock=lambda:1000,elapsed_clock=lambda:50,
+        outcome_clock=lambda:1000)
+    store = (subject.ActivitySSECursorStore if store_name == 'cursor' else
+        subject.ActivitySSEReconnectBudget)
+    original=store.inspect;calls=0
+
+    def replace_before_second_read(self):
+        nonlocal calls
+        calls+=1
+        if calls == 2:
+            replacement=self.path.with_name(self.path.name+'.replacement')
+            replacement.write_bytes(self.path.read_bytes())
+            replacement.replace(self.path)
+        return original(self)
+
+    monkeypatch.setattr(store,'inspect',replace_before_second_read)
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert calls==2
+    assert result['cursor_head_sha256'] != ZERO
+    assert result['reconnect_budget_head_sha256'] != ZERO
+    assert not result['storage_snapshot_consistent']
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+    assert not result['actual_vault_access']
+    assert not result['actual_provider_access']
 
 
 def test_status_late_emergency_latch_denies_eligibility(tmp_path,monkeypatch):

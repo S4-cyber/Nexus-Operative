@@ -344,6 +344,114 @@ def test_attempt_pins_resolved_journals_before_parent_alias_swap(
     assert not (second/'budget.sqlite3').exists()
 
 
+def test_attempt_pins_resolved_private_input_across_parent_alias_swap(
+        tmp_path,saved_pair,monkeypatch):
+    first=tmp_path/'first';second=tmp_path/'second';journals=tmp_path/'journals'
+    first.mkdir();second.mkdir();journals.mkdir()
+    alias=tmp_path/'input'
+    try:
+        alias.symlink_to(first,target_is_directory=True)
+    except OSError:
+        pytest.skip('directory symlinks unavailable')
+    initial,raw=segments()
+    (first/'initial.json').write_text(canonical(initial),encoding='utf-8')
+    (second/'initial.json').write_text('[]',encoding='utf-8')
+    options=dict(expected_account_id=ACCOUNT,
+        initial_events_path=alias/'initial.json',
+        cursor_path=journals/'cursor.sqlite3',
+        budget_path=journals/'budget.sqlite3',
+        order_journal_path=journals/'orders.sqlite3',
+        expected_cursor_head=ZERO,expected_budget_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED')
+    original=subject.check_path_set;calls=0
+
+    def swap_after_combined_scope(paths,prefix):
+        nonlocal calls
+        original(paths,prefix);calls+=1
+        if calls == 2:
+            alias.unlink()
+            alias.symlink_to(second,target_is_directory=True)
+
+    monkeypatch.setattr(subject,'check_path_set',swap_after_combined_scope)
+    opener=Opener(raw)
+    result=subject.attempt(**options,confirm_reconnect_attempt=True,
+        confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+        opener=opener,wall_clock=lambda:1000,elapsed_clock=lambda:50,
+        outcome_clock=lambda:1000)
+    assert calls >= 2 and len(opener.requests)==1
+    assert result['initial_events_sha256']==subject.sha(initial)
+    assert result['local_cursor_checkpoint_committed']
+
+
+def test_attempt_refuses_private_input_leaf_replacement_after_scope(
+        tmp_path,saved_pair,monkeypatch):
+    private=tmp_path/'private';private.mkdir()
+    initial,raw=segments();source=private/'initial.json'
+    source.write_text(canonical(initial),encoding='utf-8')
+    options=dict(expected_account_id=ACCOUNT,initial_events_path=source,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',
+        expected_cursor_head=ZERO,expected_budget_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED')
+    original=subject.check_path_set;calls=0;vault_reads=0
+    original_read=saved_pair.get_password
+
+    def replace_after_combined_scope(paths,prefix):
+        nonlocal calls
+        original(paths,prefix);calls+=1
+        if calls == 2:
+            replacement=source.with_name('replacement.json')
+            replacement.write_bytes(source.read_bytes())
+            replacement.replace(source)
+
+    def count_vault_reads(*args):
+        nonlocal vault_reads
+        vault_reads+=1
+        return original_read(*args)
+
+    monkeypatch.setattr(subject,'check_path_set',replace_after_combined_scope)
+    monkeypatch.setattr(saved_pair,'get_password',count_vault_reads)
+    opener=Opener(raw)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert calls==2 and vault_reads==0 and not opener.requests
+    assert not (private/'cursor.sqlite3').exists()
+    assert not (private/'budget.sqlite3').exists()
+
+
+def test_attempt_keeps_rejecting_private_input_leaf_symlink(
+        tmp_path,saved_pair):
+    private=tmp_path/'private';private.mkdir()
+    initial,raw=segments();target=private/'target.json'
+    target.write_text(canonical(initial),encoding='utf-8')
+    source=private/'initial.json'
+    try:
+        source.symlink_to(target)
+    except OSError:
+        pytest.skip('file symlinks unavailable')
+    options=dict(expected_account_id=ACCOUNT,initial_events_path=source,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',
+        expected_cursor_head=ZERO,expected_budget_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED')
+    opener=Opener(raw)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not (private/'cursor.sqlite3').exists()
+    assert not (private/'budget.sqlite3').exists()
+
+
 @pytest.mark.parametrize('observed',(None,True,'1000',float('nan'),
     float('inf'),-1,1e12+1))
 def test_attempt_invalid_admission_clock_fails_fixed_before_vault_network_or_write(

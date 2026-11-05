@@ -99,6 +99,23 @@ def _private_path(value):
         _fail()
 
 
+def _private_input_scope(value):
+    """Pin one regular private input and its initial file evidence."""
+    try:
+        path, resolved = _private_path(value)
+        observed = path.lstat()
+        pinned = path.absolute().parent.resolve() / path.name
+        if stat.S_ISLNK(observed.st_mode) or pinned != resolved:
+            _fail()
+        identities = capture_file_identities((pinned,),
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
+        fingerprints = capture_file_fingerprints((pinned,),
+            (MAX_INPUT_BYTES,), 'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
+        return pinned, identities, fingerprints
+    except (OSError, RuntimeError, TypeError, ValueError):
+        _fail()
+
+
 def _scope(expected_account_id, cursor_path, budget_path, order_journal_path):
     account = _uuid(expected_account_id)
     cursor, cursor_resolved = _private_path(cursor_path)
@@ -305,21 +322,22 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
         _fail()
     account, cursor, budget, order = _scope(expected_account_id,
         cursor_path, budget_path, order_journal_path)
-    initial_path, initial_resolved = _private_path(initial_events_path)
-    check_path_set((cursor.path, budget.path, order, initial_resolved),
+    initial_path, identities, fingerprints = _private_input_scope(
+        initial_events_path)
+    check_path_set((cursor.path, budget.path, order, initial_path),
         'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
-    identities = capture_file_identities((initial_path,),
-        'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
-    fingerprints = capture_file_fingerprints((initial_path,),
-        (MAX_INPUT_BYTES,), 'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
 
     def input_guard():
-        require_file_identities((initial_path,), identities,
-            'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
-        require_file_fingerprints((initial_path,), (MAX_INPUT_BYTES,),
-            fingerprints, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
-        return True
+        try:
+            require_file_identities((initial_path,), identities,
+                'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
+            require_file_fingerprints((initial_path,), (MAX_INPUT_BYTES,),
+                fingerprints, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
+            return True
+        except Exception:
+            _fail()
 
+    input_guard()
     events = _load_events(initial_path)
     input_guard()
 

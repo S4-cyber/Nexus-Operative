@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.152 Activity SSE retained-input scope pinning
+
+The installed Activity SSE attempt now pins the validated regular retained-input target before identity and fingerprint capture. A mutable parent symlink cannot silently substitute a different stable private event file after scope validation; alias movement observed during pinning fails closed, while leaf symlinks remain refused.
+
+Direct regressions swap the input parent alias after combined scope validation and prove that the original retained segment supplies the only provider attempt. A separate regression preserves leaf-symlink refusal before vault, provider, cursor or reconnect-journal access. This is sampled local path hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.151 commit `c327a3f7ac595823f905e57f29a0a0b129eed0c8` passed public-security run 41994206168, every research-safety/browser/evidence job in run 41994206176 and the complete Windows regression, EXE, installer, reinstall and data-preserving uninstall lane in run 41994206219. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.152 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,103 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 315. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `5206cc7f35b4138772e6fb672e5d57d188ae1dbb971150aa55fcee9f50e408cf`; `validation/release_trials_0_340_152.json` SHA256 is `c61f03064cb1b356e43f6ad63dca767f82a095aa96719ce6b56eb22066f3b52e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `65a8377b7693f390884ad9974ad9f46c70b80ea3a3723c13acdac9288f83a6c0`. No actual provider/account/native Windows acceptance was performed.
+
 ## v0.340.151 Activity SSE resolved operational scope
 
 The installed Activity SSE operator now retains the validated resolved cursor, reconnect-budget and order-journal targets rather than caller-controlled path aliases. A mutable parent symlink can no longer redirect status or attempt storage after scope validation, hide an existing independent emergency-cut latch or move later writes into another directory.

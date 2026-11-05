@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.151
+## Current candidate: v0.340.152
+
+The installed Activity SSE attempt now pins the validated regular retained-input target before identity and fingerprint capture. A parent-alias swap after scope validation cannot silently substitute another stable private event file, and leaf symlinks remain refused before vault, provider or journal access.
+
+Exact-source v0.340.151 commit `c327a3f7ac595823f905e57f29a0a0b129eed0c8` passed public-security run 41994206168, every research-safety/browser/evidence job in run 41994206176 and the complete Windows regression, EXE, installer, reinstall and data-preserving uninstall lane in run 41994206219. Fresh exact-source v0.340.152 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,103 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 315. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `5206cc7f35b4138772e6fb672e5d57d188ae1dbb971150aa55fcee9f50e408cf`; `validation/release_trials_0_340_152.json` SHA256 is `c61f03064cb1b356e43f6ad63dca767f82a095aa96719ce6b56eb22066f3b52e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `65a8377b7693f390884ad9974ad9f46c70b80ea3a3723c13acdac9288f83a6c0`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.151
 
 The installed Activity SSE operator now pins the resolved cursor, reconnect-budget and order-journal targets selected during scope validation. A later parent-alias swap cannot hide the original emergency latch or redirect journal creation; attempt mode refuses before vault or provider access.
 

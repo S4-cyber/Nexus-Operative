@@ -248,6 +248,40 @@ def test_status_rejects_contradictory_budget_state(
     assert not private.exists()
 
 
+@pytest.mark.parametrize('changes',(
+    {'head_sha256':'f'*64},
+    {'attempts':1},
+    {'expected_cursor_head_sha256':'f'*64},
+    {'last_evaluated_at':1},
+    {'last_outcome':'REVIEW_REQUIRED'},
+    {'last_requested_retry_after_seconds':1},
+    {'last_applied_backoff_seconds':1},
+    {'provider_directed_backoff_observed':True},
+    {'last_reconnect_reason':'CONNECTION_DROPPED'},
+    {'review_required':True},
+    {'completed':True},
+    {'checkpoint_head_sha256':'f'*64}))
+def test_status_rejects_contradictory_budget_lifecycle(
+        tmp_path,monkeypatch,changes):
+    private=tmp_path/'private'
+    original=subject.ActivitySSEReconnectBudget.inspect
+
+    def contradictory(self):
+        return {**original(self),**changes}
+
+    monkeypatch.setattr(subject.ActivitySSEReconnectBudget,'inspect',
+        contradictory)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert not private.exists()
+
+
 @pytest.mark.parametrize(('store_type','changes'),(
     (subject.ActivitySSECursorStore,{'read_only':False}),
     (subject.ActivitySSECursorStore,
@@ -401,6 +435,12 @@ def test_status_denies_eligibility_when_repeated_journal_reads_disagree(
                     local_cursor_checkpoint_committed=True,
                     process_restart_recoverable=True,
                     complete_review_counts_bound=True)
+            else:
+                result.update(attempts=1,pending_token='f'*64,
+                    expected_cursor_head_sha256=ZERO,
+                    last_evaluated_at=1000,
+                    last_begin_expected_head_sha256=ZERO,
+                    last_reconnect_reason='CONNECTION_DROPPED')
         return result
 
     monkeypatch.setattr(store,'inspect',changed)

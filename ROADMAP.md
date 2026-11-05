@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.166. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.167. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.166 makes installed Activity SSE local status schema-exact at its cursor and reconnect-budget boundaries. Cursor views must preserve read-only mode, bounded retained history, event/cursor digest binding, commit/recovery agreement and every authority flag false. Budget views must preserve the fixed backoff schedule, automatic retry and sleep false, and every authority flag false. An initialized legacy cursor without complete review counts remains visible but cannot be one-attempt eligible. Exact-source v0.340.165 commit `7f097c10105703b97ebef36f550bba8b7deb9faa` passed public-security run 42102910129, complete research/browser/evidence run 42102910962 and Windows run 42102911227. This is local status control-plane admission, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.167 independently validates the complete Activity SSE reconnect-budget lifecycle used by installed local status. Missing-state fields must remain exactly empty; pending, retry, review, emergency-close and completed states must agree on attempts, heads, outcome codes, backoff timing, checkpoint evidence and terminal flags. Contradictory lifecycle views fail before vault or provider access. Exact-source v0.340.166 commit `717c40812f56114d4afbd6db8be9341b8dcfeec1` passed public-security run 42112172083, complete research/browser/evidence run 42112172247 and Windows run 42112171944. This is local status lifecycle admission, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

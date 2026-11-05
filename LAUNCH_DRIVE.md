@@ -1,5 +1,16 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.167 Activity SSE reconnect-budget lifecycle admission
+
+Installed local-only Activity SSE status now independently validates the complete reconnect-budget lifecycle. A missing budget must remain exactly empty. Pending, retry, review, emergency-close and completed views must agree on attempt counts, chain heads, expected cursors, outcome codes, delays, provider backoff, checkpoint evidence and terminal flags. Contradictory lifecycle views fail at the fixed public diagnostic before credential-vault access, provider IO or journal creation.
+
+Twelve direct regressions inject impossible zero-attempt, pending, terminal and backoff combinations while retaining the existing legitimate pending, retry, review, emergency-close and completed paths. This is local status lifecycle admission, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.166 commit `717c40812f56114d4afbd6db8be9341b8dcfeec1` passed public-security run 42112172083, complete offline-regression/browser-help/saved-evidence run 42112172247 and Windows run 42112171944. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.167 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,190-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 402 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `425d4632c036e6770008b1f6626823ef0e9aafd73fdbbe27de7d4b606517ef9c`; `validation/release_trials_0_340_167.json` SHA256 is `6dd181b5af563f4c0135610c7b0e469455f5fdda25e8bd49de0c94ee361f1d61`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `cdb52dbfc3335a7aff4992e6d961fd11516136bd826cc6cc1f09f1524a8a4061`. No actual provider/account/native Windows acceptance was performed.
+
+
 ## v0.340.166 Activity SSE status control-plane admission
 
 Installed local-only Activity SSE status now requires the complete cursor and reconnect-budget public schemas before projecting any safe outward status. Cursor views must remain read-only, bind a valid event ID to its cursor digest, keep bounded retained history and make initialization agree with commit/recovery state; every authority flag must remain false. Budget views must retain the fixed backoff schedule, keep automatic retry and sleep false, and keep every authority flag false. An initialized legacy cursor without complete review counts remains visible for review but is not one-attempt eligible.

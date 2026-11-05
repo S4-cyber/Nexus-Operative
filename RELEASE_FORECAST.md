@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.166
+## Current candidate: v0.340.167
+
+Installed local-only Activity SSE status now independently validates the complete reconnect-budget lifecycle. Missing, pending, retry, review, emergency-close and completed states must agree on their attempts, heads, outcomes, delays, checkpoint evidence and terminal flags. Contradictions fail before credential or provider access.
+
+Exact-source v0.340.166 commit `717c40812f56114d4afbd6db8be9341b8dcfeec1` passed public-security run 42112172083, complete offline-regression/browser-help/saved-evidence run 42112172247 and Windows run 42112171944. Fresh exact-source v0.340.167 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,190-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 402 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `425d4632c036e6770008b1f6626823ef0e9aafd73fdbbe27de7d4b606517ef9c`; `validation/release_trials_0_340_167.json` SHA256 is `6dd181b5af563f4c0135610c7b0e469455f5fdda25e8bd49de0c94ee361f1d61`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `cdb52dbfc3335a7aff4992e6d961fd11516136bd826cc6cc1f09f1524a8a4061`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.166
 
 Installed local-only Activity SSE status now requires schema-exact read-only cursor and reconnect-budget views, safe fixed control fields and every authority flag false. Initialized legacy cursors without complete review counts remain explicitly ineligible for an attempt.
 

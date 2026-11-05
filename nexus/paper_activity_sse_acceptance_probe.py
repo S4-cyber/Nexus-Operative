@@ -25,7 +25,8 @@ from nexus.alpaca_activity_sse_reconnect_budget import (
     ActivitySSEReconnectBudget, BACKOFF_SECONDS,
     BUDGET_VIEW_KEYS, FLAGS as BUDGET_FLAGS,
     MAX_ATTEMPTS as MAX_RECONNECT_ATTEMPTS,
-    MAX_DATABASE_BYTES as MAX_BUDGET_DATABASE_BYTES, REASONS)
+    MAX_DATABASE_BYTES as MAX_BUDGET_DATABASE_BYTES,
+    MAX_PROVIDER_RETRY_AFTER, OUTCOMES, PROVIDER_DELAY_ERRORS, REASONS)
 from nexus.alpaca_activity_sse_review import MAX_INPUT_BYTES, ULID
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_inspection import _uuid
@@ -51,6 +52,106 @@ def _fail():
 def _digest(value):
     return (type(value) is str and len(value) == 64 and
         all(character in '0123456789abcdef' for character in value))
+
+
+def _status_code(value):
+    return (type(value) is str and 1 <= len(value) <= 96 and
+        all(character in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_' for
+            character in value))
+
+
+def _status_budget_lifecycle(value):
+    """Validate cross-field reconnect lifecycle semantics independently.
+
+    ``inspect`` owns replay validation.  The installed status boundary still
+    treats its returned dictionary as untrusted: a schema-correct but
+    contradictory lifecycle must not be rendered as eligible or safe.
+    """
+    attempts = value['attempts']
+    head = value['head_sha256']
+    pending = value['pending_token']
+    expected_cursor = value['expected_cursor_head_sha256']
+    next_allowed = value['next_allowed_at']
+    evaluated = value['last_evaluated_at']
+    outcome = value['last_outcome']
+    detail = value['last_detail_code']
+    requested_outcome = value['last_requested_outcome']
+    requested_detail = value['last_requested_detail_code']
+    requested_delay = value['last_requested_retry_after_seconds']
+    applied_backoff = value['last_applied_backoff_seconds']
+    provider_backoff = value['provider_directed_backoff_observed']
+    begin_head = value['last_begin_expected_head_sha256']
+    reason = value['last_reconnect_reason']
+    review = value['review_required']
+    completed = value['completed']
+    checkpoint_head = value['checkpoint_head_sha256']
+    checkpoint_receipt = value['checkpoint_receipt_sha256']
+    attempt_head = value['last_attempt_head_sha256']
+    result_head = value['last_result_head_sha256']
+    emergency_head = value['emergency_stop_prior_head_sha256']
+    if (type(evaluated) not in (int, float) or
+            not math.isfinite(evaluated) or evaluated < 0 or
+            type(requested_delay) is not int or
+            not 0 <= requested_delay <= MAX_PROVIDER_RETRY_AFTER or
+            type(applied_backoff) is not int or
+            not 0 <= applied_backoff <= MAX_PROVIDER_RETRY_AFTER or
+            type(provider_backoff) is not bool or
+            any(field is not None and not _digest(field) for field in
+                (expected_cursor, begin_head, checkpoint_head,
+                    checkpoint_receipt, attempt_head, result_head,
+                    emergency_head))):
+        return False
+    if attempts == 0:
+        return (head == ZERO and pending is None and
+            expected_cursor is None and next_allowed == 0 and
+            evaluated == 0 and outcome is None and detail is None and
+            requested_outcome is None and requested_detail is None and
+            requested_delay == 0 and applied_backoff == 0 and
+            not provider_backoff and begin_head is None and reason is None and
+            not review and not completed and checkpoint_head is None and
+            checkpoint_receipt is None and attempt_head is None and
+            result_head is None and emergency_head is None)
+    if (head == ZERO or not _digest(expected_cursor) or reason not in REASONS or
+            review and completed):
+        return False
+    if pending is not None:
+        if (pending != head or review or completed or
+                checkpoint_head is not None or checkpoint_receipt is not None or
+                emergency_head is not None):
+            return False
+        if outcome is None:
+            return (attempts == 1 and detail is None and
+                requested_outcome is None and requested_detail is None and
+                requested_delay == 0 and applied_backoff == 0 and
+                not provider_backoff and attempt_head is None and
+                result_head is None and next_allowed == 0)
+        return (attempts >= 2 and outcome == 'RETRY_REQUIRED' and
+            requested_outcome == 'RETRY_REQUIRED' and _status_code(detail) and
+            _status_code(requested_detail) and _digest(attempt_head) and
+            _digest(result_head) and next_allowed <= evaluated)
+    if (outcome not in OUTCOMES or requested_outcome not in OUTCOMES or
+            not _status_code(detail) or not _status_code(requested_detail) or
+            not _digest(attempt_head) or not _digest(result_head) or
+            provider_backoff != (requested_detail in PROVIDER_DELAY_ERRORS and
+                requested_delay > 0)):
+        return False
+    if emergency_head is None:
+        if head != result_head:
+            return False
+    elif (not review or detail != 'EMERGENCY_STOP_ACTIVE' or
+            emergency_head != result_head):
+        return False
+    if completed:
+        return (not review and outcome == 'CHECKPOINT_COMMITTED' and
+            next_allowed == 0 and _digest(checkpoint_head) and
+            _digest(checkpoint_receipt))
+    if review:
+        return (outcome in ('REVIEW_REQUIRED', 'CHECKPOINT_UNCERTAIN') and
+            next_allowed == 0 and checkpoint_head is None and
+            checkpoint_receipt is None)
+    return (outcome == 'RETRY_REQUIRED' and
+        attempts < MAX_RECONNECT_ATTEMPTS and next_allowed > evaluated and
+        checkpoint_head is None and checkpoint_receipt is None)
 
 
 def _attempt_result(value, account_sha256):
@@ -560,7 +661,8 @@ def _status_store_inspect(store, role):
                 type(next_allowed) not in (int, float) or
                 not math.isfinite(next_allowed) or next_allowed < 0 or
                 any(type(value.get(field)) is not bool for field in
-                    ('review_required', 'completed'))):
+                    ('review_required', 'completed')) or
+                not _status_budget_lifecycle(value)):
             _fail()
     else:
         _fail()

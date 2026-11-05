@@ -224,6 +224,39 @@ def _final_journal_scope(paths, identities):
     return result
 
 
+def _final_storage_scope(cursor, budget):
+    """Capture bounded cursor/budget content after coordinator completion."""
+    paths = (cursor.path, budget.path)
+    maximum_bytes = (MAX_CURSOR_DATABASE_BYTES, MAX_BUDGET_DATABASE_BYTES)
+    try:
+        identities = capture_file_identities(paths,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_FINAL_')
+        fingerprints = capture_file_fingerprints(paths, maximum_bytes,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_FINAL_')
+        require_file_identities(paths, identities,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_FINAL_')
+        require_file_fingerprints(paths, maximum_bytes, fingerprints,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_FINAL_')
+    except Exception:
+        _fail()
+    return (paths, maximum_bytes, identities, fingerprints)
+
+
+def _final_storage_matches(scope):
+    """Recheck the bounded final cursor/budget content without path detail."""
+    if type(scope) is not tuple or len(scope) != 4:
+        return False
+    paths, maximum_bytes, identities, fingerprints = scope
+    try:
+        require_file_identities(paths, identities,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_FINAL_')
+        require_file_fingerprints(paths, maximum_bytes, fingerprints,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_FINAL_')
+    except Exception:
+        return False
+    return True
+
+
 def _scope(expected_account_id, cursor_path, budget_path, order_journal_path):
     account = _uuid(expected_account_id)
     cursor, cursor_identity = _private_journal_path(cursor_path)
@@ -498,6 +531,7 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
         emergency_stop_check=stop_active)
     coordinator_completed = True
     active_journal_scope = _final_journal_scope(*journal_scope)
+    final_storage_scope = _final_storage_scope(cursor, budget)
     result = _attempt_result(result, cursor.account_sha256)
     # The coordinator has already made its one provider attempt and may have
     # committed the checkpoint.  Independently resample the external cut and
@@ -505,13 +539,14 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     # input change must withhold the installed-tool success acknowledgement,
     # but must never cause another GET or rewrite the completed journals.
     if (not _journal_scope_matches(*active_journal_scope) or
+            not _final_storage_matches(final_storage_scope) or
             stop_active()):
         _fail()
     after_cursor = cursor.inspect()
-    if stop_active():
+    if not _final_storage_matches(final_storage_scope) or stop_active():
         _fail()
     after_budget = budget.inspect()
-    if stop_active():
+    if not _final_storage_matches(final_storage_scope) or stop_active():
         _fail()
     if (result['checkpoint_head_sha256'] != after_cursor['head_sha256'] or
             result['reconnect_budget_head_sha256'] !=
@@ -520,7 +555,7 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
             result['automatic_retry'] is not False or
             result['actual_vault_access'] is not True):
         _fail()
-    return dict(mode='PAPER_ACTIVITY_SSE_ACCEPTANCE_ATTEMPT',
+    response = dict(mode='PAPER_ACTIVITY_SSE_ACCEPTANCE_ATTEMPT',
         status='REVIEW_REQUIRED', read_completed=True,
         source=result['source'], account_sha256=result['account_sha256'],
         initial_events_sha256=sha(events),
@@ -546,6 +581,9 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
         live_orders_enabled=False, money_movement_enabled=False,
         ready_for_routing=False, release_approved=False,
         limitations='One explicitly confirmed saved-credential paper Activity SSE GET and exact-head local checkpoint. Aggregate counts and hashes omit private event/order identities. This is not provider source attestation, complete historical delivery, fee coverage, broker reconciliation, spendable-funds proof, native power-loss proof, routing authority, live-trading permission or release approval. Preserve every private input and journal outside Git and review uncertainty without automatic retry or reset.')
+    if not _final_storage_matches(final_storage_scope) or stop_active():
+        _fail()
+    return response
 
 
 class _Parser(argparse.ArgumentParser):

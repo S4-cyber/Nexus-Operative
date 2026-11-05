@@ -620,6 +620,38 @@ def test_attempt_binds_created_journals_before_final_acknowledgement(
     assert options['budget_path'].exists()
 
 
+@pytest.mark.parametrize('journal_name',('cursor_path','budget_path'))
+def test_attempt_binds_created_journal_content_before_final_acknowledgement(
+        tmp_path,saved_pair,monkeypatch,journal_name):
+    options,raw=paths(tmp_path);selected=options[journal_name]
+    original=subject._final_storage_scope;mutation={}
+
+    def mutate_after_final_storage_scope(cursor,budget):
+        scope=original(cursor,budget)
+        before=selected.stat()
+        with selected.open('ab') as stream:
+            stream.write(b'PRIVATE_SAME_IDENTITY_MUTATION')
+        after=selected.stat()
+        assert (before.st_dev,before.st_ino)==(after.st_dev,after.st_ino)
+        mutation['size']=after.st_size
+        return scope
+
+    monkeypatch.setattr(subject,'_final_storage_scope',
+        mutate_after_final_storage_scope)
+    opener=Opener(raw)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    assert selected.stat().st_size==mutation['size']
+    assert selected.read_bytes().endswith(b'PRIVATE_SAME_IDENTITY_MUTATION')
+    assert options['cursor_path'].exists()
+    assert options['budget_path'].exists()
+
+
 def test_attempt_pins_resolved_private_input_across_parent_alias_swap(
         tmp_path,saved_pair,monkeypatch):
     first=tmp_path/'first';second=tmp_path/'second';journals=tmp_path/'journals'

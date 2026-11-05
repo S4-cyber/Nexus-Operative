@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.156'
+REVISION = '0.340.157'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.156 closes the installed Activity SSE final-acknowledgement namespace window after the guarded coordinator returns. Every now-present cursor, reconnect-budget or independent emergency-cut journal leaf is promoted to an identity-bound member before final cursor/budget reads; a leaf still missing at promotion must remain missing. Byte-identical replacement of a newly created cursor or budget, or introduction of a late order journal, therefore withholds the installed acknowledgement without retrying provider IO or rewriting the completed journals. Exact-source v0.340.155 passed public-security run 42028210403 plus browser-help and saved-evidence jobs in run 42028210356; its complete offline regression and Windows run 42028210343 remained active at this candidate\'s predecessor checkpoint and are not claimed as passed. This is a sampled local final-read fence, not an atomic retained descriptor or ACL/administrator boundary, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.157 adds bounded content coherence to the installed Activity SSE final acknowledgement. After guarded coordinator completion, the created cursor and reconnect-budget databases receive identity plus full-file fingerprints; every final cursor/budget read and the constructed acknowledgement is surrounded by repeated checks. Same-inode mutation therefore withholds the acknowledgement without retrying provider IO or rewriting completed journals. Exact-source v0.340.156 passed public-security run 42031767979 plus browser-help and saved-evidence jobs in run 42031768046; its complete offline regression remained active and Windows run 42031768020 remained queued at this candidate\'s predecessor checkpoint, so neither is claimed as passed. This is sampled bounded local file evidence, not an atomic retained descriptor, writer lock or ACL/administrator boundary, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

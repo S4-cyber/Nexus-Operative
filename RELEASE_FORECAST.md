@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.156
+## Current candidate: v0.340.157
+
+The installed Activity SSE operator now captures bounded identity and full-file fingerprints for the cursor and reconnect-budget databases after guarded coordinator completion. Same-inode mutation during the final read/acknowledgement sequence withholds the acknowledgement without provider retry or completed-journal rewrite.
+
+Exact-source v0.340.156 commit `735f241ff9c7ea374cc2c88756ae182e05d8bdf6` passed public-security run 42031767979 plus browser-help and saved-evidence jobs in run 42031768046. Its complete offline regression remained active and Windows run 42031768020 remained queued at the predecessor checkpoint, so neither is claimed as passed. Fresh exact-source v0.340.157 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local source verification passed the complete 5,132-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 344 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `f2825e6d06d3962a366f2e4b6ab9466da8430e2aa62ab8bf0c37bf41ea720eb5`; `validation/release_trials_0_340_157.json` SHA256 is `81ca5d1827f872aff2cf5f017acbdd2429dbef7ee2db911468bf7e8dce9e7749`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `a5721b45ab6a57f68c6374bca3a81b673587b74475185d1a89278473bf508a2c`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.156
 
 The installed Activity SSE operator now promotes every journal leaf present after guarded coordinator completion into an identity-bound final scope. Byte-identical replacement of a newly created cursor or budget, or introduction of a late order journal, withholds the final acknowledgement without provider retry or completed-journal rewrite.
 

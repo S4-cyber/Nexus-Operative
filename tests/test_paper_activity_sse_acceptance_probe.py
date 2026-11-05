@@ -222,6 +222,38 @@ def test_status_denies_eligibility_after_byte_identical_path_replacement(
     assert not result['actual_provider_access']
 
 
+@pytest.mark.parametrize('journal_name',('cursor_path','budget_path'))
+def test_status_binds_validated_journal_identity_before_first_read(
+        tmp_path,saved_pair,journal_name):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    subject.attempt(**options,confirm_reconnect_attempt=True,
+        confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+        opener=opener,wall_clock=lambda:1000,elapsed_clock=lambda:50,
+        outcome_clock=lambda:1000)
+    selected=options[journal_name];calls=0
+
+    def replace_on_first_clock():
+        nonlocal calls
+        calls+=1
+        if calls == 1:
+            replacement=selected.with_name(selected.name+'.replacement')
+            replacement.write_bytes(selected.read_bytes())
+            replacement.replace(selected)
+        return 1001
+
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],
+        clock=replace_on_first_clock)
+    assert calls==2
+    assert not result['journal_scope_consistent']
+    assert not result['storage_snapshot_consistent']
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+    assert not result['actual_vault_access']
+    assert not result['actual_provider_access']
+
+
 def test_status_late_emergency_latch_denies_eligibility(tmp_path,monkeypatch):
     private=tmp_path/'private';order=private/'orders.sqlite3';calls=0
     original=subject.emergency_intent.requested
@@ -483,6 +515,74 @@ def test_attempt_rejects_unsafe_existing_journal_leaf_before_vault_or_storage(
     for name in ('cursor_path','budget_path','order_journal_path'):
         if name != journal_name:
             assert not options[name].exists()
+
+
+@pytest.mark.parametrize('journal_name',
+    ('cursor_path','budget_path','order_journal_path'))
+def test_attempt_rejects_missing_journal_substitution_after_head_preflight(
+        tmp_path,saved_pair,monkeypatch,journal_name):
+    options,raw=paths(tmp_path);selected=options[journal_name]
+    original=subject._attempt_head_preflight
+    vault_reads=0;original_read=saved_pair.get_password
+
+    def count_vault_reads(*args):
+        nonlocal vault_reads
+        vault_reads+=1
+        return original_read(*args)
+
+    def substitute_after_preflight(*args):
+        original(*args)
+        selected.write_bytes(b'PRIVATE_UNRELATED_JOURNAL')
+
+    monkeypatch.setattr(saved_pair,'get_password',count_vault_reads)
+    monkeypatch.setattr(subject,'_attempt_head_preflight',
+        substitute_after_preflight)
+    opener=Opener(raw)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert vault_reads==0 and not opener.requests
+    assert selected.read_bytes()==b'PRIVATE_UNRELATED_JOURNAL'
+    for name in ('cursor_path','budget_path','order_journal_path'):
+        if name != journal_name:
+            assert not options[name].exists()
+
+
+def test_attempt_rejects_existing_order_journal_identity_replacement(
+        tmp_path,saved_pair,monkeypatch):
+    options,raw=paths(tmp_path);selected=options['order_journal_path']
+    selected.write_bytes(b'PRIVATE_UNRELATED_JOURNAL')
+    original=subject._attempt_head_preflight
+    vault_reads=0;original_read=saved_pair.get_password
+
+    def count_vault_reads(*args):
+        nonlocal vault_reads
+        vault_reads+=1
+        return original_read(*args)
+
+    def replace_after_preflight(*args):
+        original(*args)
+        replacement=selected.with_name(selected.name+'.replacement')
+        replacement.write_bytes(selected.read_bytes())
+        replacement.replace(selected)
+
+    monkeypatch.setattr(saved_pair,'get_password',count_vault_reads)
+    monkeypatch.setattr(subject,'_attempt_head_preflight',
+        replace_after_preflight)
+    opener=Opener(raw)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert vault_reads==0 and not opener.requests
+    assert selected.read_bytes()==b'PRIVATE_UNRELATED_JOURNAL'
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
 
 
 def test_attempt_pins_resolved_private_input_across_parent_alias_swap(

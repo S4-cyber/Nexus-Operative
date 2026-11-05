@@ -11,8 +11,12 @@ import threading
 import pytest
 from fastapi.testclient import TestClient
 from nexus import app as api
+from nexus.durable_orders import DB_BUSY_TIMEOUT_MS
 from test_engine_throttle import rig,START
 from test_paper_forward import Clock,warmup
+
+
+CUT_COMPLETION_TIMEOUT_SECONDS=DB_BUSY_TIMEOUT_MS/1000+5
 
 
 @pytest.fixture
@@ -49,7 +53,12 @@ def test_real_write_lock_keeps_cut_pending_but_signals_runner_without_waiting(co
             assert c.post('/api/simulate/halt/reset',json={'confirm_reset':True}).status_code==409
             assert w.status()['enabled'] and obs==['on']
         finally:writer.rollback();writer.close()
-        results=await asyncio.wait_for(asyncio.gather(*cuts),5)
+        # A queued cut uses the same bounded SQLite busy policy as the writer
+        # it must conservatively stop.  Give that documented 10-second wait a
+        # fixed completion margin; a shorter test timeout can cancel only the
+        # HTTP waiter while the shielded durable cut is still progressing.
+        results=await asyncio.wait_for(asyncio.gather(*cuts),
+            CUT_COMPLETION_TIMEOUT_SECONDS)
         assert all(v['emergency_cut_state']=='VERIFIED' for v in results)
     asyncio.run(exercise())
     after=g.recovery_report();assert after['halted'] and after['portfolio_reconciled']
@@ -90,9 +99,10 @@ def test_cut_signal_vetoes_fill_after_actual_sqlite_write_wait(control,monkeypat
                 assert not cycle.done() and not cut.done() and not r._stop.is_set()
                 assert r.status()['ownership_held'] and api.status()['emergency_cut_state']=='PENDING'
             finally:writer.rollback();writer.close()
-            return await asyncio.wait_for(cut,6)
+            return await asyncio.wait_for(cut,
+                CUT_COMPLETION_TIMEOUT_SECONDS)
         assert asyncio.run(exercise())['emergency_cut_state']=='VERIFIED'
-        result=cycle.result(5)
+        result=cycle.result(CUT_COMPLETION_TIMEOUT_SECONDS)
         # Once the blocked writer is released, the fill boundary can observe
         # either the independent cut latch or the stopped runner first. Both
         # are explicit fail-closed outcomes; the durable no-fill assertions

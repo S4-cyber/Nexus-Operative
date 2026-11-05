@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.154 (pre-release).**
+**Current development build: 0.340.155 (pre-release).**
+
+## v0.340.155 Activity SSE journal namespace binding
+
+The installed Activity SSE operator now retains the sampled identity of every existing cursor, reconnect-budget and independent emergency-cut journal leaf. Status requires that namespace to remain coherent across its complete local snapshot. Attempt mode requires existing identities and initially missing leaves to remain unchanged through both sides of the exact-head pre-vault boundary; guarded coordinator initialization remains permitted only afterward.
+
+Direct regressions replace valid journals with byte-identical single-link files during status, introduce otherwise safe single-link files into each missing journal role after the head preflight, and replace an existing order-journal identity. Each change denies eligibility or fails with the fixed operator diagnostic before saved-credential access or provider IO while preserving the substituted private bytes. This is sampled local pathname binding, not an atomic retained descriptor, ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.154 commit `6d8accc3227adfc7d24f419c4ca8ced1d02688f0` passed public-security run 42018844357, browser-help and saved-evidence jobs in run 42018844478 and the complete Windows install/test, EXE, installer, reinstall, uninstall and evidence lane in run 42018844477. Its offline regression failed one SELL emergency-storage contention fixture after 5,098 passes and 23 platform skips because the fixture's six-second waiter was shorter than the durable journal's documented ten-second SQLite busy bound. v0.340.155 aligns the affected emergency-storage waits with that fixed busy bound plus a five-second completion margin; the shielded independent cut, pending-state and durable no-fill assertions remain unchanged. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.155 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,127-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/emergency/package/release/version/roadmap/audit/evidence focus passed 350 tests. The affected SELL contention regression passed ten consecutive repetitions. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `6fe25729979e6792ad463749c4fc8913a459c12a1d838c45509c2eccadad3edd`; `validation/release_trials_0_340_155.json` SHA256 is `59f5c72c36618eb45036c747de234d98984f7036fd334ea9bbe64f20a45dced5`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `e15d2948ebe90964696bbb5a586a38ca46289a192adcf362bd43a10311c7ab86`. No actual provider/account/native Windows acceptance was performed.
 
 ## v0.340.154 Activity SSE existing-journal leaf admission
 

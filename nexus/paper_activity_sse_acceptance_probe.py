@@ -117,7 +117,7 @@ def _private_input_scope(value):
 
 
 def _private_journal_path(value):
-    """Pin one journal parent and admit only a safe existing leaf.
+    """Pin one journal parent and sample any safe existing leaf identity.
 
     Resolving the complete caller path would erase the distinction between a
     journal pathname and a leaf symlink to another file.  Resolve only the
@@ -139,24 +139,64 @@ def _private_journal_path(value):
                 (not stat.S_ISREG(observed.st_mode) or
                     observed.st_nlink != 1)):
             _fail()
-        return pinned
+        identity = (None if observed is None else
+            capture_file_identities((pinned,),
+                'PAPER_ACTIVITY_SSE_ACCEPTANCE_JOURNAL_'))
+        return pinned, identity
     except (OSError, RuntimeError, TypeError, ValueError):
         _fail()
 
 
+def _journal_scope_matches(paths, identities, *, allow_created=False):
+    """Recheck the sampled journal namespace without exposing path details.
+
+    Existing leaves remain bound to their sampled identities.  Missing leaves
+    must remain missing until the explicit pre-vault head check has completed;
+    after the coordinator may legitimately initialize them, only the existing
+    regular single-link admission rule is repeated.  This is sampled pathname
+    evidence, not an atomic descriptor or ACL boundary.
+    """
+    if (type(paths) is not tuple or type(identities) is not tuple or
+            len(paths) != 3 or len(identities) != 3):
+        return False
+    for path, identity in zip(paths, identities):
+        if identity is not None:
+            try:
+                require_file_identities((path,), identity,
+                    'PAPER_ACTIVITY_SSE_ACCEPTANCE_JOURNAL_')
+            except Exception:
+                return False
+            continue
+        try:
+            observed = path.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            return False
+        if (not allow_created or not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink != 1):
+            return False
+    return True
+
+
 def _scope(expected_account_id, cursor_path, budget_path, order_journal_path):
     account = _uuid(expected_account_id)
-    cursor = _private_journal_path(cursor_path)
-    budget = _private_journal_path(budget_path)
-    order = _private_journal_path(order_journal_path)
-    check_path_set((cursor, budget, order),
+    cursor, cursor_identity = _private_journal_path(cursor_path)
+    budget, budget_identity = _private_journal_path(budget_path)
+    order, order_identity = _private_journal_path(order_journal_path)
+    paths = (cursor, budget, order)
+    identities = (cursor_identity, budget_identity, order_identity)
+    check_path_set(paths,
         'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
+    if not _journal_scope_matches(paths, identities):
+        _fail()
     # Retain the validated canonical targets, not caller-controlled aliases.
     # Otherwise a mutable parent symlink can redirect every operational
     # journal after the relationship check, hide an already-persisted
     # emergency latch and move later writes into a different directory.
     return (account, ActivitySSECursorStore(cursor, account),
-        ActivitySSEReconnectBudget(budget, account), order)
+        ActivitySSEReconnectBudget(budget, account), order,
+        (paths, identities))
 
 
 def _load_events(path):
@@ -280,8 +320,9 @@ def _attempt_head_preflight(cursor, budget, expected_cursor_head,
 
 def status(*, expected_account_id, cursor_path, budget_path,
         order_journal_path, clock=time.time):
-    _, cursor, budget, order = _scope(expected_account_id, cursor_path,
+    _, cursor, budget, order, journal_scope = _scope(expected_account_id, cursor_path,
         budget_path, order_journal_path)
+    journal_before = _journal_scope_matches(*journal_scope)
     clock_before = _status_clock(clock)
     stop_before = emergency_intent.requested(order)
     cursor_before, budget_before = cursor.inspect(), budget.inspect()
@@ -296,9 +337,12 @@ def status(*, expected_account_id, cursor_path, budget_path,
     budget_file_after = _status_file_sample(budget.path,
         MAX_BUDGET_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
     stop_after = emergency_intent.requested(order)
+    journal_after = _journal_scope_matches(*journal_scope)
     clock_consistent = (clock_before is not None and
         evaluated_at is not None and evaluated_at >= clock_before)
-    storage_consistent = (cursor_file_before is not None and
+    journal_consistent = journal_before and journal_after
+    storage_consistent = (journal_consistent and
+        cursor_file_before is not None and
         budget_file_before is not None and
         cursor_file_before == cursor_file_after and
         budget_file_before == budget_file_after)
@@ -324,6 +368,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
         emergency_cut_latch_active=stop,
         status_evaluated_at=evaluated_at,
         status_clock_consistent=clock_consistent,
+        journal_scope_consistent=journal_consistent,
         storage_snapshot_consistent=storage_consistent,
         snapshot_consistent=snapshot_consistent,
         one_attempt_eligible=(snapshot_consistent and not stop and
@@ -334,7 +379,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
         automatic_sleep=False,
         actual_provider_access=False, actual_vault_access=False,
         **{flag: False for flag in FLAGS},
-        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires two valid non-regressing wall-clock samples, matching bounded identities and fingerprints across two cursor and reconnect-budget reads, and matching emergency-cut samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
+        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires the initially validated journal namespace to remain identity-consistent, two valid non-regressing wall-clock samples, matching bounded identities and fingerprints across two cursor and reconnect-budget reads, and matching emergency-cut samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
 
 
 def attempt(*, expected_account_id, initial_events_path, cursor_path,
@@ -348,12 +393,14 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
             confirm_cursor_checkpoint is not True or
             reconnect_reason not in REASONS):
         _fail()
-    account, cursor, budget, order = _scope(expected_account_id,
+    account, cursor, budget, order, journal_scope = _scope(expected_account_id,
         cursor_path, budget_path, order_journal_path)
     initial_path, identities, fingerprints = _private_input_scope(
         initial_events_path)
     check_path_set((cursor.path, budget.path, order, initial_path),
         'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
+    if not _journal_scope_matches(*journal_scope):
+        _fail()
 
     def input_guard():
         try:
@@ -369,9 +416,14 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     events = _load_events(initial_path)
     input_guard()
 
+    coordinator_started = False
+
     def stop_active():
         try:
             input_guard()
+            if not _journal_scope_matches(*journal_scope,
+                    allow_created=coordinator_started):
+                return True
             return emergency_intent.requested(order)
         except Exception:
             return True
@@ -381,6 +433,9 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     evaluated_at = _attempt_clock(wall_clock)
     _attempt_head_preflight(cursor, budget, expected_cursor_head,
         expected_budget_head)
+    if not _journal_scope_matches(*journal_scope):
+        _fail()
+    coordinator_started = True
     result = paper_credentials.collect_activity_sse_saved(
         expected_account_id=account, initial_events=events,
         reconnect_reason=reconnect_reason, cursor_store=cursor,
@@ -399,7 +454,8 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     # retained-input identity around every final journal read: a late stop or
     # input change must withhold the installed-tool success acknowledgement,
     # but must never cause another GET or rewrite the completed journals.
-    if stop_active():
+    if (not _journal_scope_matches(*journal_scope, allow_created=True) or
+            stop_active()):
         _fail()
     after_cursor = cursor.inspect()
     if stop_active():

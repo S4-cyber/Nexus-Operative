@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.154
+## Current candidate: v0.340.155
+
+The installed Activity SSE operator now binds every existing journal leaf to its initially sampled identity and requires initially missing leaves to remain absent through the exact-head pre-vault boundary. Byte-identical replacements and newly introduced regular single-link files fail before saved-credential or provider access; guarded initialization remains available afterward.
+
+Exact-source v0.340.154 commit `6d8accc3227adfc7d24f419c4ca8ced1d02688f0` passed public-security run 42018844357, browser-help and saved-evidence jobs in run 42018844478 and the complete Windows install/test, EXE, installer, reinstall, uninstall and evidence lane in run 42018844477. Its offline regression failed one SELL emergency-storage contention fixture after 5,098 passes and 23 platform skips because the fixture's six-second waiter was shorter than the durable journal's documented ten-second SQLite busy bound. v0.340.155 aligns the fixture with that bounded policy plus a five-second completion margin without weakening the independent cut, pending-state or durable no-fill assertions. Fresh exact-source v0.340.155 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local source verification passed the complete 5,127-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/emergency/package/release/version/roadmap/audit/evidence focus passed 350 tests. The affected SELL contention regression passed ten consecutive repetitions. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `6fe25729979e6792ad463749c4fc8913a459c12a1d838c45509c2eccadad3edd`; `validation/release_trials_0_340_155.json` SHA256 is `59f5c72c36618eb45036c747de234d98984f7036fd334ea9bbe64f20a45dced5`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `e15d2948ebe90964696bbb5a586a38ca46289a192adcf362bd43a10311c7ab86`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.154
 
 The installed Activity SSE operator now admits an existing cursor, reconnect-budget or emergency-cut journal leaf only when it is a regular single-link file. Directories and hardlinks fail before local status inspection, credential access, provider IO or other journal creation; missing leaves and pinned parent aliases retain their existing behavior.
 

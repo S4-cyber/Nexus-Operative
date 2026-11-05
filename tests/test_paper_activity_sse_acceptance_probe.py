@@ -139,6 +139,66 @@ def test_one_saved_pair_attempt_commits_aggregate_checkpoint(
     assert replay['reconnect_completed'] and not replay['one_attempt_eligible']
 
 
+@pytest.mark.parametrize(('field','replacement'),(
+    ('mode','WRONG'),('status','READY'),('source','PRIVATE_SECRET'),
+    ('account_sha256','0'*64),('checkpoint_head_sha256','bad'),
+    ('reconnect_budget_head_sha256','bad'),
+    ('initial_events_reviewed',True),('replay_events_reviewed',0),
+    ('redelivered_events_deduplicated',2001),
+    ('new_events_processed','1'),('new_events_processed',2),
+    ('reconnect_attempt_number',True),
+    ('reconnect_attempt_cap',0),
+    ('local_cursor_checkpoint_committed',False),
+    ('process_restart_recoverable',False),
+    ('complete_review_counts_bound',False),
+    ('reconnect_budget_completed',False),('actual_vault_access',False),
+    ('automatic_retry',True),('actual_provider_access','false'),
+    ('actual_stream_connection','false')))
+def test_malformed_saved_pair_acknowledgement_fails_fixed_after_one_commit(
+        tmp_path,saved_pair,monkeypatch,field,replacement):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=paper_credentials.collect_activity_sse_saved
+
+    def malformed(**kwargs):
+        result=original(**kwargs)
+        result[field]=replacement
+        return result
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        malformed)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,elapsed_clock=lambda:50,
+            outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
+def test_stream_connection_cannot_claim_no_provider_access():
+    result=dict(mode='EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT',
+        status='REVIEW_REQUIRED',source='INJECTED_UNATTESTED',
+        account_sha256='a'*64,
+        checkpoint_head_sha256='b'*64,reconnect_budget_head_sha256='c'*64,
+        initial_events_reviewed=1,replay_events_reviewed=1,
+        redelivered_events_deduplicated=1,new_events_processed=1,
+        reconnect_attempt_number=1,reconnect_attempt_cap=3,
+        local_cursor_checkpoint_committed=True,
+        process_restart_recoverable=True,complete_review_counts_bound=True,
+        reconnect_budget_completed=True,actual_vault_access=True,
+        automatic_retry=False,actual_provider_access=False,
+        actual_stream_connection=True)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject._attempt_result(result,'a'*64)
+
+
 @pytest.mark.parametrize('missing',('confirm_reconnect_attempt',
     'confirm_read_only_paper','confirm_cursor_checkpoint'))
 def test_every_confirmation_is_required_before_vault(tmp_path,monkeypatch,missing):

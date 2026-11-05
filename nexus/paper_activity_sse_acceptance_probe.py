@@ -28,8 +28,57 @@ from nexus.sqlite_journal_guard import (capture_file_fingerprints,
     require_file_identities)
 
 
+ATTEMPT_SOURCES = frozenset(('INJECTED_UNATTESTED', 'PAPER_HTTPS_READS'))
+
+
 def _fail():
     raise ValueError('PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED') from None
+
+
+def _digest(value):
+    return (type(value) is str and len(value) == 64 and
+        all(character in '0123456789abcdef' for character in value))
+
+
+def _attempt_result(value, account_sha256):
+    """Validate the saved-pair acknowledgement before using any field.
+
+    The durable coordinator owns the detailed protocol validation.  This
+    final installed-tool boundary still treats its aggregate return as an
+    untrusted acknowledgement: malformed values must never escape as raw
+    indexing/type errors or be rendered as partial success after a commit.
+    """
+    counts = ('initial_events_reviewed', 'replay_events_reviewed',
+        'redelivered_events_deduplicated', 'new_events_processed')
+    required_true = ('local_cursor_checkpoint_committed',
+        'process_restart_recoverable', 'complete_review_counts_bound',
+        'reconnect_budget_completed', 'actual_vault_access')
+    required_false = ('automatic_retry',)
+    if (type(value) is not dict or
+            value.get('mode') !=
+                'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT' or
+            value.get('status') != 'REVIEW_REQUIRED' or
+            value.get('account_sha256') != account_sha256 or
+            value.get('source') not in ATTEMPT_SOURCES or
+            not _digest(value.get('checkpoint_head_sha256')) or
+            not _digest(value.get('reconnect_budget_head_sha256')) or
+            any(type(value.get(key)) is not int or
+                not 0 < value[key] <= 2000 for key in counts) or
+            value.get('replay_events_reviewed') !=
+                value.get('redelivered_events_deduplicated', 0) +
+                value.get('new_events_processed', 0) or
+            type(value.get('reconnect_attempt_number')) is not int or
+            type(value.get('reconnect_attempt_cap')) is not int or
+            not 1 <= value['reconnect_attempt_number'] <=
+                value['reconnect_attempt_cap'] <= 100 or
+            any(value.get(key) is not True for key in required_true) or
+            any(value.get(key) is not False for key in required_false) or
+            type(value.get('actual_provider_access')) is not bool or
+            type(value.get('actual_stream_connection')) is not bool or
+            (value['actual_stream_connection'] and
+                not value['actual_provider_access'])):
+        _fail()
+    return value
 
 
 def _private_path(value):
@@ -186,6 +235,7 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
         wall_clock=wall_clock, elapsed_clock=elapsed_clock,
         outcome_clock=outcome_clock, permission_check=input_guard,
         emergency_stop_check=stop_active)
+    result = _attempt_result(result, cursor.account_sha256)
     input_guard()
     after_cursor, after_budget = cursor.inspect(), budget.inspect()
     if (result['checkpoint_head_sha256'] != after_cursor['head_sha256'] or

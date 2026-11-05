@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.142'
+REVISION = '0.340.143'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -736,7 +736,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.142 adds an installed OFF-by-default Activity SSE acceptance operator around the existing one-attempt coordinator. Vault/network/storage-silent status reports only local aggregate state. One attempt requires a saved read-only Windows pair, private retained initial segment outside Git, exact cursor and reconnect heads, and three explicit confirmations; the independent emergency-cut latch is sampled before vault access and throughout the attempt. It never sleeps or retries automatically, and aggregate output omits credentials and event/order identities. No exact-source v0.340.141 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. Local injected success is not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.143 validates the installed Activity SSE acceptance operator acknowledgement before consuming or rendering any aggregate field. The boundary allowlists the two transport-source labels, binds the paper-account and journal heads, rejects bool-as-int counts, requires count conservation, bounds the reconnect attempt and proves fixed safety acknowledgements. A malformed post-commit result fails with one fixed diagnostic while the already committed checkpoint remains exactly once for explicit review; it cannot trigger another GET. No exact-source v0.340.142 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. Local injected success is not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

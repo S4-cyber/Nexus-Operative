@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.142 (pre-release).**
+**Current development build: 0.340.143 (pre-release).**
+
+## v0.340.143 installed Activity SSE acknowledgement validation
+
+The installed `activity-sse` attempt now validates the saved-pair coordinator acknowledgement before consuming or rendering any aggregate field. The final boundary allowlists live and injected transport-source labels, binds the account and both durable heads, rejects bool-as-int or out-of-range counts, requires replay-count conservation, bounds the reconnect attempt and requires the fixed commit, recovery, review, budget, vault and no-retry acknowledgements. A malformed post-commit result fails with one fixed diagnostic while the exact checkpoint remains once for explicit cold review; it cannot issue a second GET.
+
+Direct regressions corrupt every accepted field after a real injected commit, require the same fixed refusal, prove one provider request and one retained checkpoint, and cover the impossible stream-without-provider claim. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+No exact-source v0.340.142 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.143 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,046 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit set passed 236. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `d11be2e1d21be87dab0f6fc645d59e106923c65f9c99fc38c6591a9bef8c7864`; `validation/release_trials_0_340_143.json` SHA256 is `f9213f65e2e210db5ff0537086df175e85ad891549b709a222bf2b149382c208`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `da5bc26160bad9efe7591c3673e7005319908da47d51e5d410d02e9b06dd1331`. No actual provider/account/native Windows acceptance was performed.
+
+**Previous development build: 0.340.142 (pre-release).**
 
 ## v0.340.142 saved-pair Activity SSE acceptance operator
 

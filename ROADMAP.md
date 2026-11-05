@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.168. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.169. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.168 binds installed Activity SSE terminal reconnect-budget status to exact requested outcome, detail, provider-delay and fixed-backoff semantics. Completed budgets must retain SUCCESS checkpoint evidence distinct from the prior cursor and match the stable retained cursor head; stable cross-store contradictions fail closed, while changing two-read pairs remain non-throwing inconsistent snapshots. Exact-source v0.340.167 commit `2da2d740dc239a78038b8ac54c99d68fe704a2ae` passed public-security run 42121316997, complete research/browser/evidence run 42121316706 and Windows run 42121317181. This is local terminal-status reconciliation, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.169 binds every installed Activity SSE pending reconnect reservation to its stable retained cursor and exact BEGIN/prior-retry semantics. Initial reservations must retain the zero predecessor head; retry reservations must retain distinct attempt/result heads, exact provider-delay evidence and the prior result head. Stable cross-store contradictions fail closed, while changing two-read pairs remain non-throwing inconsistent snapshots. Exact-source v0.340.168 commit `e69cf33902104e9f5e6ed8184e140dcbc125db48` passed public-security run 42130284085 and the browser-help job in research run 42130284030; full regression/evidence and Windows run 42130284005 remained active at this candidate checkpoint and are not claimed as passed. This is local pending-reservation reconciliation, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

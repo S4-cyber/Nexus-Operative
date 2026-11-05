@@ -1,5 +1,16 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.169 Activity SSE pending-reservation reconciliation
+
+Installed local-only Activity SSE status now binds every pending reconnect reservation to the stable retained cursor and its exact durable history. A first reservation must retain the zero predecessor head. A reservation after a retry must retain distinct attempt and result heads, bind its BEGIN to that result head, and make the provider-directed-delay flag agree exactly with the requested detail and delay. A stable pending-budget/cursor disagreement fails closed, while a changing two-read pair remains a non-throwing inconsistent snapshot.
+
+Three coherent synthetic pending forms, two real durable reservations and seven contradictory or racing views are covered directly. Refusals remain credential-vault and provider-network silent and create no journal. This is local pending-reservation reconciliation, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.168 commit `e69cf33902104e9f5e6ed8184e140dcbc125db48` passed public-security run 42130284085 and the browser-help job in research run 42130284030. Its full regression/evidence jobs and Windows run 42130284005 remained active at this candidate checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.169 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,224-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 436 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `c6726f1e70a4ca07cf054f22d122f210a80ef2300fb67eeaf11d9770c0085e1e`; `validation/release_trials_0_340_169.json` SHA256 is `de93633ef6c5c4b53126cbb1bc5c9e218b0ae60fa7ae978b5d68b4daa6fc1e07`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `41aed751967f367b772c1bc3b197fec1aa78c219cac0a14f5dcec4b890482082`. No actual provider/account/native Windows acceptance was performed.
+
+
 ## v0.340.168 Activity SSE terminal status reconciliation
 
 Installed local-only Activity SSE status now binds settled reconnect state to its exact requested outcome, detail, provider-delay and fixed-backoff semantics. Retry timing must equal the retained result time plus the applied schedule; ordinary reviews preserve their requested result; emergency conversion and later waiting-state closure remain distinct; completed status requires a SUCCESS result and checkpoint evidence distinct from the prior cursor. A stable completed-budget/cursor disagreement fails closed, while a changing two-read pair remains a non-throwing inconsistent snapshot.

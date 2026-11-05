@@ -146,6 +146,38 @@ def _completed_cursor_view(original, store, head='c'*64):
         'complete_review_counts_bound':True}
 
 
+def _pending_budget_view(original, store, kind):
+    value=original(store)
+    value.update(attempts=1,head_sha256='f'*64,pending_token='f'*64,
+        expected_cursor_head_sha256=ZERO,last_evaluated_at=1000,
+        last_begin_expected_head_sha256=ZERO,
+        last_reconnect_reason='CONNECTION_DROPPED')
+    if kind == 'initial':
+        return value
+    value.update(attempts=2,head_sha256='e'*64,pending_token='e'*64,
+        last_evaluated_at=1010,last_outcome='RETRY_REQUIRED',
+        last_detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED',
+        last_requested_outcome='RETRY_REQUIRED',
+        last_requested_detail_code=
+            'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED',
+        last_applied_backoff_seconds=subject.BACKOFF_SECONDS[0],
+        next_allowed_at=1001,last_begin_expected_head_sha256='f'*64,
+        last_attempt_head_sha256='a'*64,last_result_head_sha256='f'*64)
+    if kind == 'retry':
+        return value
+    if kind == 'provider_retry':
+        delay=9
+        value.update(
+            last_detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED',
+            last_requested_detail_code=
+                'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED',
+            last_requested_retry_after_seconds=delay,
+            last_applied_backoff_seconds=delay,
+            provider_directed_backoff_observed=True,next_allowed_at=1009)
+        return value
+    raise AssertionError(kind)
+
+
 def test_status_is_vault_network_silent_and_missing_paths_stay_missing(
         tmp_path,monkeypatch):
     private=tmp_path/'private';clock_calls=0
@@ -449,6 +481,136 @@ def test_status_reports_changing_completed_cursor_pair_as_inconsistent_race(
         order_journal_path=private/'orders.sqlite3',clock=lambda:1001)
     assert reads == 2
     assert result['reconnect_completed']
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+    assert not private.exists()
+
+
+@pytest.mark.parametrize('kind',('initial','retry','provider_retry'))
+def test_status_accepts_coherent_pending_budget_lifecycle(
+        tmp_path,monkeypatch,kind):
+    private=tmp_path/'private'
+    original=subject.ActivitySSEReconnectBudget.inspect
+    monkeypatch.setattr(subject.ActivitySSEReconnectBudget,'inspect',
+        lambda self:_pending_budget_view(original,self,kind))
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',clock=lambda:1010)
+    assert result['snapshot_consistent']
+    assert result['reconnect_pending']
+    assert not result['one_attempt_eligible']
+    assert not private.exists()
+
+
+@pytest.mark.parametrize('kind',('initial','retry'))
+def test_status_accepts_real_pending_budget_reservation(
+        tmp_path,monkeypatch,kind):
+    private=tmp_path/'private';private.mkdir()
+    cursor_path=private/'cursor.sqlite3'
+    budget_path=private/'budget.sqlite3'
+    order_path=private/'orders.sqlite3'
+    _,_,budget,_,_=subject._scope(ACCOUNT,cursor_path,budget_path,
+        order_path)
+    reservation=budget.begin(evaluated_at=1000,
+        expected_cursor_head=ZERO,reconnect_reason='CONNECTION_DROPPED',
+        expected_head=ZERO,emergency_stop_check=lambda:False,
+        confirm_reconnect_attempt=True)
+    if kind == 'retry':
+        budget.finish(reservation['token'],evaluated_at=1000,
+            outcome='RETRY_REQUIRED',
+            detail_code='ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED',
+            emergency_stop_check=lambda:False)
+        retained=budget.inspect()
+        budget.begin(evaluated_at=1001,expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED',
+            expected_head=retained['head_sha256'],
+            emergency_stop_check=lambda:False,
+            confirm_reconnect_attempt=True)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=cursor_path,budget_path=budget_path,
+        order_journal_path=order_path,clock=lambda:1001)
+    assert result['snapshot_consistent']
+    assert result['reconnect_pending']
+    assert result['reconnect_attempts'] == (1 if kind == 'initial' else 2)
+    assert not result['one_attempt_eligible']
+
+
+@pytest.mark.parametrize(('kind','changes'),(
+    ('initial',{'last_begin_expected_head_sha256':'a'*64}),
+    ('retry',{'last_begin_expected_head_sha256':'e'*64}),
+    ('retry',{'last_attempt_head_sha256':'f'*64}),
+    ('retry',{'provider_directed_backoff_observed':True}),
+    ('provider_retry',{'provider_directed_backoff_observed':False})))
+def test_status_rejects_contradictory_pending_budget_lifecycle(
+        tmp_path,monkeypatch,kind,changes):
+    private=tmp_path/'private'
+    original=subject.ActivitySSEReconnectBudget.inspect
+    monkeypatch.setattr(subject.ActivitySSEReconnectBudget,'inspect',
+        lambda self:{**_pending_budget_view(original,self,kind),**changes})
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1010)
+    assert not private.exists()
+
+
+def test_status_rejects_stable_pending_budget_cursor_disagreement(
+        tmp_path,monkeypatch):
+    private=tmp_path/'private'
+    original=subject.ActivitySSEReconnectBudget.inspect
+
+    def contradictory(self):
+        value=_pending_budget_view(original,self,'initial')
+        value['expected_cursor_head_sha256']='c'*64
+        return value
+
+    monkeypatch.setattr(subject.ActivitySSEReconnectBudget,'inspect',
+        contradictory)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1010)
+    assert not private.exists()
+
+
+def test_status_reports_changing_pending_cursor_pair_as_inconsistent_race(
+        tmp_path,monkeypatch):
+    private=tmp_path/'private';reads=0
+    budget_inspect=subject.ActivitySSEReconnectBudget.inspect
+    cursor_inspect=subject.ActivitySSECursorStore.inspect
+
+    def changing_cursor(self):
+        nonlocal reads
+        reads += 1
+        value=cursor_inspect(self)
+        return (value if reads == 1 else
+            _completed_cursor_view(lambda _:value,self))
+
+    monkeypatch.setattr(subject.ActivitySSEReconnectBudget,'inspect',
+        lambda self:_pending_budget_view(budget_inspect,self,'initial'))
+    monkeypatch.setattr(subject.ActivitySSECursorStore,'inspect',
+        changing_cursor)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',clock=lambda:1010)
+    assert reads == 2
+    assert result['reconnect_pending']
     assert not result['snapshot_consistent']
     assert not result['one_attempt_eligible']
     assert not private.exists()

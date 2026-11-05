@@ -128,14 +128,19 @@ def _status_budget_lifecycle(value):
             return (attempts == 1 and detail is None and
                 requested_outcome is None and requested_detail is None and
                 requested_delay == 0 and applied_backoff == 0 and
-                not provider_backoff and attempt_head is None and
+                not provider_backoff and begin_head == ZERO and
+                attempt_head is None and
                 result_head is None and next_allowed == 0)
+        if attempts < 2:
+            return False
         applied = max(BACKOFF_SECONDS[attempts - 2], requested_delay)
         return (attempts >= 2 and outcome == 'RETRY_REQUIRED' and
             requested_outcome == outcome and detail == requested_detail and
             detail in RETRYABLE_ERRORS and _digest(attempt_head) and
             _digest(result_head) and begin_head == result_head and
-            pending != result_head and applied_backoff == applied and
+            attempt_head != result_head and pending != result_head and
+            provider_backoff == (requested_detail in PROVIDER_DELAY_ERRORS and
+                requested_delay > 0) and applied_backoff == applied and
             0 < next_allowed <= evaluated)
     if (outcome not in OUTCOMES or requested_outcome not in OUTCOMES or
             not _status_code(detail) or not _status_code(requested_detail) or
@@ -195,8 +200,11 @@ def _status_budget_lifecycle(value):
 
 def _status_pair_lifecycle(cursor, budget):
     """Bind stable terminal budget state to its retained cursor head."""
-    if budget['attempts'] == 0 or budget['pending_token'] is not None:
+    if budget['attempts'] == 0:
         return True
+    if budget['pending_token'] is not None:
+        return (cursor['head_sha256'] ==
+            budget['expected_cursor_head_sha256'])
     if budget['completed']:
         return (cursor['initialized'] and
             cursor['local_cursor_checkpoint_committed'] and

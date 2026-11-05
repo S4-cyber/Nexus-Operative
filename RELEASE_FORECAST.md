@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.168
+## Current candidate: v0.340.169
+
+Installed local-only Activity SSE status now binds pending reconnect reservations to exact durable BEGIN/prior-retry semantics and the stable retained cursor. Initial and retry-pending contradictions fail closed; legitimate two-read changes remain inconsistent snapshots rather than malformed-state failures.
+
+Exact-source v0.340.168 commit `e69cf33902104e9f5e6ed8184e140dcbc125db48` passed public-security run 42130284085 and the browser-help job in research run 42130284030. Its full regression/evidence jobs and Windows run 42130284005 remained active at the predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.169 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,224-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 436 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `c6726f1e70a4ca07cf054f22d122f210a80ef2300fb67eeaf11d9770c0085e1e`; `validation/release_trials_0_340_169.json` SHA256 is `de93633ef6c5c4b53126cbb1bc5c9e218b0ae60fa7ae978b5d68b4daa6fc1e07`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `41aed751967f367b772c1bc3b197fec1aa78c219cac0a14f5dcec4b890482082`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.168
 
 Installed local-only Activity SSE status now binds terminal reconnect outcomes, details, provider delays, fixed backoff, checkpoint evidence and the stable retained cursor into one fail-closed reconciliation decision. Legitimate two-read changes remain visible as inconsistent snapshots rather than malformed-state failures.
 

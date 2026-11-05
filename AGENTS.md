@@ -1,5 +1,15 @@
 # Nexus Operative continuity instructions
 
+## v0.340.145 coherent Activity SSE status snapshots
+
+The installed `activity-sse` local status path now brackets two cursor inspections and two reconnect-budget inspections with independent emergency-cut samples. One-attempt eligibility is reported only when both durable reads and both latch samples agree; a journal transition or late cut returns `snapshot_consistent=false` and keeps eligibility false. Status remains vault-, network- and storage-write-silent and does not grant provider access or engagement permission.
+
+Direct regressions make each durable store disagree across repeated reads and activate the independent cut between latch samples. They require explicit inconsistency, refusal of eligibility and no credential or provider access. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+No exact-source v0.340.144 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.145 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,051 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 241. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `bce37b6ae256e0a8e601e293c0e439945c9a790101c4675a80cbef28e04584ca`; `validation/release_trials_0_340_145.json` SHA256 is `90ad4f703f3028a644577c90c69d5dc881820b525696f8055b58a1152d26085f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `fa33c9b58783bbabad3329beb9a27c90bdfc6daa63edae5c1e8dff5434a7f448`. No actual provider/account/native Windows acceptance was performed.
+
 ## v0.340.144 installed Activity SSE final cut/input fence
 
 After the one saved-pair coordinator attempt returns, the installed `activity-sse` tool now independently resamples the emergency-cut latch and private retained-input identity before the first final journal inspection, between cursor and reconnect-budget inspection, and again before acknowledging success. A late cut or retained-input change fails with the same fixed diagnostic while the already committed cursor checkpoint and completed reconnect budget remain exactly once for explicit cold review; the wrapper never issues a second GET or rewrites settled journals.

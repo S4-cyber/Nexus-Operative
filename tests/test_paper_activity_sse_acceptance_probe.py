@@ -95,8 +95,62 @@ def test_status_is_vault_network_silent_and_missing_paths_stay_missing(
         cursor_path=private/'cursor.sqlite3',
         budget_path=private/'budget.sqlite3',
         order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
-    assert result['one_attempt_eligible'] and not result['actual_vault_access']
+    assert result['snapshot_consistent'] and result['one_attempt_eligible']
+    assert not result['actual_vault_access']
     assert not result['actual_provider_access'] and not private.exists()
+
+
+@pytest.mark.parametrize('store_name',('cursor','budget'))
+def test_status_denies_eligibility_when_repeated_journal_reads_disagree(
+        tmp_path,monkeypatch,store_name):
+    private=tmp_path/'private';calls=0
+    store = (subject.ActivitySSECursorStore if store_name == 'cursor' else
+        subject.ActivitySSEReconnectBudget)
+    original=store.inspect
+
+    def changed(self):
+        nonlocal calls
+        result=original(self);calls+=1
+        if calls == 2:
+            result=dict(result)
+            result['head_sha256']='f'*64
+        return result
+
+    monkeypatch.setattr(store,'inspect',changed)
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert calls==2
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+    assert not result['actual_vault_access']
+    assert not result['actual_provider_access'] and not private.exists()
+
+
+def test_status_late_emergency_latch_denies_eligibility(tmp_path,monkeypatch):
+    private=tmp_path/'private';order=private/'orders.sqlite3';calls=0
+    original=subject.emergency_intent.requested
+
+    def cut_between_samples(path):
+        nonlocal calls
+        calls+=1
+        if calls == 2:
+            subject.emergency_intent.persist(path)
+        return original(path)
+
+    monkeypatch.setattr(subject.emergency_intent,'requested',
+        cut_between_samples)
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',order_journal_path=order,
+        clock=lambda:1000)
+    assert calls==2
+    assert result['emergency_cut_latch_active']
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+    assert not result['actual_vault_access']
+    assert not result['actual_provider_access']
 
 
 def test_emergency_latch_blocks_before_vault_or_journal_write(

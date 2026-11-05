@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.144
+## Current candidate: v0.340.145
+
+The installed Activity SSE local status now reports one-attempt eligibility only when two cursor reads, two reconnect-budget reads and both surrounding independent emergency-cut samples agree. A transition produces an explicit inconsistent snapshot and remains ineligible.
+
+No exact-source v0.340.144 workflow run or commit status was exposed when this candidate began. Fresh exact-source v0.340.145 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,051 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 241. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `bce37b6ae256e0a8e601e293c0e439945c9a790101c4675a80cbef28e04584ca`; `validation/release_trials_0_340_145.json` SHA256 is `90ad4f703f3028a644577c90c69d5dc881820b525696f8055b58a1152d26085f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `fa33c9b58783bbabad3329beb9a27c90bdfc6daa63edae5c1e8dff5434a7f448`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.144
 
 The installed Activity SSE tool now resamples the independent emergency cut and private input identity around every final journal inspection after its one coordinator attempt. A late cut or retained-input change withholds success while preserving one checkpoint and completed reconnect budget without another GET.
 

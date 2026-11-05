@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.158
+## Current candidate: v0.340.159
+
+The installed Activity SSE operator now binds existing resolved journal parent directories as well as leaf files to sampled identities. Actual directory replacement makes status inconsistent and refuses an attempt before vault or provider access, preventing redirected cursor/budget creation away from the independently latched namespace.
+
+Exact-source v0.340.158 commit `47a0064614218066d1555f69a7cf1cfb53687bb0` passed public-security run 42044715944, the complete research/browser/evidence run 42044715745 and Windows simulated-research run 42044715814. Fresh exact-source v0.340.159 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local source verification passed the complete 5,135-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 347 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `2b2aaf5c2a79dc6771f0ab5f39cb8c53e2302b77c143acf6c03e2639283eb197`; `validation/release_trials_0_340_159.json` SHA256 is `ee8201654ef3aa43eaf576857415877740dfbfaa6f34fb1368ec6799bbdb7f9f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `f4b8b8292cf0364e12ad465fc6eebc75240cdf0e74b34f795eb6a1d3e2269ef6`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.158
 
 The installed Activity SSE local-only status now binds repeated independent emergency-cut samples to private-free leaf metadata. A new latch or byte-identical pathname replacement reports an active cut and inconsistent snapshot, denying one-attempt eligibility without vault or provider access.
 

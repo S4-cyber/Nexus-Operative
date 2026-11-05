@@ -117,7 +117,7 @@ def _private_input_scope(value):
 
 
 def _private_journal_path(value):
-    """Pin one journal parent and sample any safe existing leaf identity.
+    """Pin one journal parent plus any safe existing leaf identity.
 
     Resolving the complete caller path would erase the distinction between a
     journal pathname and a leaf symlink to another file.  Resolve only the
@@ -125,7 +125,9 @@ def _private_journal_path(value):
     same target observed by the complete-path check.  An existing leaf must
     also already be one regular single-link file.  This keeps legitimate
     parent aliases pinned while refusing leaf aliases, directories, devices
-    and multi-link files before any journal is inspected or created.
+    and multi-link files before any journal is inspected or created.  The
+    resolved parent identity is sampled separately because leaf checks alone
+    cannot detect replacement of an otherwise empty journal directory.
     """
     try:
         path, resolved = _private_path(value)
@@ -139,27 +141,58 @@ def _private_journal_path(value):
                 (not stat.S_ISREG(observed.st_mode) or
                     observed.st_nlink != 1)):
             _fail()
+        parent_identity = _journal_parent_identity(pinned.parent)
         identity = (None if observed is None else
             capture_file_identities((pinned,),
                 'PAPER_ACTIVITY_SSE_ACCEPTANCE_JOURNAL_'))
-        return pinned, identity
+        return pinned, identity, parent_identity
     except (OSError, RuntimeError, TypeError, ValueError):
         _fail()
 
 
-def _journal_scope_matches(paths, identities, *, allow_created=False):
+def _journal_parent_identity(path):
+    """Sample one resolved journal directory without retaining a handle."""
+    try:
+        observed = path.lstat()
+    except FileNotFoundError:
+        return None
+    if (stat.S_ISLNK(observed.st_mode) or
+            not stat.S_ISDIR(observed.st_mode)):
+        _fail()
+    return (str(path), observed.st_dev, observed.st_ino)
+
+
+def _journal_parent_matches(path, identity, *, allow_created=False):
+    """Require a sampled directory identity or its permitted creation state."""
+    try:
+        current = _journal_parent_identity(path)
+    except Exception:
+        return False
+    if identity is not None:
+        return current == identity
+    return current is None or allow_created
+
+
+def _journal_scope_matches(paths, identities, parent_identities, *,
+        allow_created=False):
     """Recheck the sampled journal namespace without exposing path details.
 
-    Existing leaves remain bound to their sampled identities.  Missing leaves
-    must remain missing until the explicit pre-vault head check has completed;
-    after the coordinator may legitimately initialize them, only the existing
-    regular single-link admission rule is repeated.  This is sampled pathname
-    evidence, not an atomic descriptor or ACL boundary.
+    Existing parent directories and leaves remain bound to their sampled
+    identities.  Missing paths must remain missing until the explicit
+    pre-vault head check has completed; after the coordinator may legitimately
+    initialize them, only the directory and regular single-link admission
+    rules are repeated.  This is sampled pathname evidence, not an atomic
+    descriptor or ACL boundary.
     """
     if (type(paths) is not tuple or type(identities) is not tuple or
-            len(paths) != 3 or len(identities) != 3):
+            type(parent_identities) is not tuple or len(paths) != 3 or
+            len(identities) != 3 or len(parent_identities) != 3):
         return False
-    for path, identity in zip(paths, identities):
+    for path, identity, parent_identity in zip(paths, identities,
+            parent_identities):
+        if not _journal_parent_matches(path.parent, parent_identity,
+                allow_created=allow_created):
+            return False
         if identity is not None:
             try:
                 require_file_identities((path,), identity,
@@ -179,8 +212,8 @@ def _journal_scope_matches(paths, identities, *, allow_created=False):
     return True
 
 
-def _final_journal_scope(paths, identities):
-    """Bind every journal leaf present after coordinator completion.
+def _final_journal_scope(paths, identities, parent_identities):
+    """Bind every journal directory and leaf after coordinator completion.
 
     The coordinator may legitimately create an initially missing cursor or
     reconnect-budget database.  Once it returns, creation is no longer part
@@ -191,8 +224,15 @@ def _final_journal_scope(paths, identities):
     the final cursor and budget reads.
     """
     if (type(paths) is not tuple or type(identities) is not tuple or
-            len(paths) != 3 or len(identities) != 3):
+            type(parent_identities) is not tuple or len(paths) != 3 or
+            len(identities) != 3 or len(parent_identities) != 3):
         _fail()
+    promoted_parents = []
+    for path, parent_identity in zip(paths, parent_identities):
+        current = _journal_parent_identity(path.parent)
+        if parent_identity is not None and current != parent_identity:
+            _fail()
+        promoted_parents.append(current)
     promoted = []
     for path, identity in zip(paths, identities):
         if identity is not None:
@@ -218,7 +258,7 @@ def _final_journal_scope(paths, identities):
                 'PAPER_ACTIVITY_SSE_ACCEPTANCE_JOURNAL_'))
         except Exception:
             _fail()
-    result = (paths, tuple(promoted))
+    result = (paths, tuple(promoted), tuple(promoted_parents))
     if not _journal_scope_matches(*result):
         _fail()
     return result
@@ -259,14 +299,16 @@ def _final_storage_matches(scope):
 
 def _scope(expected_account_id, cursor_path, budget_path, order_journal_path):
     account = _uuid(expected_account_id)
-    cursor, cursor_identity = _private_journal_path(cursor_path)
-    budget, budget_identity = _private_journal_path(budget_path)
-    order, order_identity = _private_journal_path(order_journal_path)
+    cursor, cursor_identity, cursor_parent = _private_journal_path(cursor_path)
+    budget, budget_identity, budget_parent = _private_journal_path(budget_path)
+    order, order_identity, order_parent = _private_journal_path(
+        order_journal_path)
     paths = (cursor, budget, order)
     identities = (cursor_identity, budget_identity, order_identity)
+    parent_identities = (cursor_parent, budget_parent, order_parent)
     check_path_set(paths,
         'PAPER_ACTIVITY_SSE_ACCEPTANCE_')
-    if not _journal_scope_matches(paths, identities):
+    if not _journal_scope_matches(paths, identities, parent_identities):
         _fail()
     # Retain the validated canonical targets, not caller-controlled aliases.
     # Otherwise a mutable parent symlink can redirect every operational
@@ -274,7 +316,7 @@ def _scope(expected_account_id, cursor_path, budget_path, order_journal_path):
     # emergency latch and move later writes into a different directory.
     return (account, ActivitySSECursorStore(cursor, account),
         ActivitySSEReconnectBudget(budget, account), order,
-        (paths, identities))
+        (paths, identities, parent_identities))
 
 
 def _load_events(path):
@@ -485,7 +527,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
         automatic_sleep=False,
         actual_provider_access=False, actual_vault_access=False,
         **{flag: False for flag in FLAGS},
-        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires the initially validated journal namespace to remain identity-consistent, two valid non-regressing wall-clock samples, matching bounded identities and fingerprints across two cursor and reconnect-budget reads, and matching emergency-cut leaf metadata samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
+        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires the initially validated journal parent-directory and leaf namespace to remain identity-consistent, two valid non-regressing wall-clock samples, matching bounded identities and fingerprints across two cursor and reconnect-budget reads, and matching emergency-cut leaf metadata samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
 
 
 def attempt(*, expected_account_id, initial_events_path, cursor_path,

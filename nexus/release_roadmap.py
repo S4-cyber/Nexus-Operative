@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.158'
+REVISION = '0.340.159'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.158 binds the installed Activity SSE local-only status to coherent independent emergency-cut leaf samples. Any observed leaf, including a directory, symlink or malformed entry, remains an active cut; bounded private-free metadata distinguishes a stable leaf from byte-identical pathname replacement, and ordinary inspection failure is active and inconsistent. Exact-source v0.340.157 passed public-security run 42035996532 and every browser-help, saved-evidence and complete offline-regression job in run 42035996905. Windows run 42035996560 remained active at this candidate\'s predecessor checkpoint and is not claimed as passed. This is sampled local pathname evidence, not an atomic descriptor, writer/reset lock or ACL/administrator boundary, distributed stop service, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.159 binds the installed Activity SSE journal parent directories as well as their leaf files to sampled identities. Replacing an already resolved empty journal directory at the same absolute pathname now makes local status inconsistent and refuses an attempt before saved-credential or provider access, so cursor/budget creation cannot silently move away from the independently latched namespace. Exact-source v0.340.158 passed public-security run 42044715944, the complete research/browser/evidence run 42044715745 and Windows simulated-research run 42044715814. This is sampled pathname evidence, not an atomic directory handle, writer/reset lock or ACL/administrator boundary, distributed stop service, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

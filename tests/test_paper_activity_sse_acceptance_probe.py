@@ -345,6 +345,36 @@ def test_status_pins_resolved_emergency_latch_across_parent_alias_swap(
     assert not (second/'budget.sqlite3').exists()
 
 
+def test_status_detects_resolved_journal_directory_replacement(tmp_path):
+    private=tmp_path/'private';private.mkdir();retired=tmp_path/'retired'
+    calls=0
+
+    def replace_on_first_clock():
+        nonlocal calls
+        calls+=1
+        if calls == 1:
+            private.rename(retired)
+            private.mkdir()
+            subject.emergency_intent.persist(retired/'orders.sqlite3')
+        return 1000
+
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',
+        clock=replace_on_first_clock)
+    assert calls==2
+    assert not result['journal_scope_consistent']
+    assert not result['storage_snapshot_consistent']
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+    assert subject.emergency_intent.requested(retired/'orders.sqlite3')
+    assert not result['actual_vault_access']
+    assert not result['actual_provider_access']
+    assert not (private/'cursor.sqlite3').exists()
+    assert not (private/'budget.sqlite3').exists()
+
+
 @pytest.mark.parametrize('journal_name',
     ('cursor_path','budget_path','order_journal_path'))
 def test_status_rejects_journal_leaf_symlink_before_storage_access(
@@ -469,6 +499,48 @@ def test_attempt_pins_resolved_journals_before_parent_alias_swap(
     assert not (first/'budget.sqlite3').exists()
     assert not (second/'cursor.sqlite3').exists()
     assert not (second/'budget.sqlite3').exists()
+
+
+def test_attempt_rejects_resolved_journal_directory_replacement_before_vault(
+        tmp_path,saved_pair,monkeypatch):
+    private=tmp_path/'private';private.mkdir();retired=tmp_path/'retired'
+    retained=tmp_path/'retained';retained.mkdir()
+    initial,raw=segments();source=retained/'initial.json'
+    source.write_text(canonical(initial),encoding='utf-8')
+    options=dict(expected_account_id=ACCOUNT,initial_events_path=source,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',
+        expected_cursor_head=ZERO,expected_budget_head=ZERO,
+        reconnect_reason='CONNECTION_DROPPED')
+    original=subject._attempt_head_preflight;vault_reads=0
+    original_read=saved_pair.get_password
+
+    def count_vault_reads(*args):
+        nonlocal vault_reads
+        vault_reads+=1
+        return original_read(*args)
+
+    def replace_after_preflight(*args):
+        original(*args)
+        private.rename(retired)
+        private.mkdir()
+        subject.emergency_intent.persist(retired/'orders.sqlite3')
+
+    monkeypatch.setattr(saved_pair,'get_password',count_vault_reads)
+    monkeypatch.setattr(subject,'_attempt_head_preflight',
+        replace_after_preflight)
+    opener=Opener(raw)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert vault_reads==0 and not opener.requests
+    assert subject.emergency_intent.requested(retired/'orders.sqlite3')
+    assert not (private/'cursor.sqlite3').exists()
+    assert not (private/'budget.sqlite3').exists()
 
 
 @pytest.mark.parametrize('journal_name',
@@ -623,8 +695,8 @@ def test_attempt_binds_created_journals_before_final_acknowledgement(
     options,raw=paths(tmp_path);selected=options[journal_name]
     original=subject._final_journal_scope;substituted={}
 
-    def replace_after_final_scope(paths,identities):
-        scope=original(paths,identities)
+    def replace_after_final_scope(paths,identities,parent_identities):
+        scope=original(paths,identities,parent_identities)
         if selected.exists():
             payload=selected.read_bytes()
             replacement=selected.with_name(selected.name+'.replacement')

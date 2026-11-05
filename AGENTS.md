@@ -1,5 +1,15 @@
 # Nexus Operative continuity instructions
 
+## v0.340.159 Activity SSE journal parent identity binding
+
+The installed Activity SSE operator now samples the resolved identity of every existing journal parent directory alongside the cursor, reconnect-budget and order-journal leaves. Replacing an already resolved empty journal directory at the same absolute pathname makes local-only status inconsistent and refuses an attempt before saved-credential or provider access. Newly created legitimate journal parents are promoted into the final identity-bound acknowledgement scope.
+
+Direct regressions replace the actual resolved journal directory during status and immediately after the exact-head preflight. Both preserve the independent latch in the retired directory, create no redirected cursor/budget journal and perform no vault or provider access. This is sampled pathname evidence, not an atomic retained directory descriptor, writer/reset lock, ACL or administrator boundary, distributed stop service, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.158 commit `47a0064614218066d1555f69a7cf1cfb53687bb0` passed public-security run 42044715944, the complete research/browser/evidence run 42044715745 and Windows simulated-research run 42044715814. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.159 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,135-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 347 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `2b2aaf5c2a79dc6771f0ab5f39cb8c53e2302b77c143acf6c03e2639283eb197`; `validation/release_trials_0_340_159.json` SHA256 is `ee8201654ef3aa43eaf576857415877740dfbfaa6f34fb1368ec6799bbdb7f9f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `f4b8b8292cf0364e12ad465fc6eebc75240cdf0e74b34f795eb6a1d3e2269ef6`. No actual provider/account/native Windows acceptance was performed.
+
 ## v0.340.158 Activity SSE emergency-cut leaf coherence
 
 The installed Activity SSE local-only status now samples private-free metadata for the actual independent `emergency_cut.intent` leaf. Any observed leaf, including a directory, symlink or malformed entry, remains an active cut; metadata distinguishes a stable leaf from byte-identical pathname replacement, while ordinary inspection failure is active and inconsistent.

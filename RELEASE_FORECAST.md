@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.155
+## Current candidate: v0.340.156
+
+The installed Activity SSE operator now promotes every journal leaf present after guarded coordinator completion into an identity-bound final scope. Byte-identical replacement of a newly created cursor or budget, or introduction of a late order journal, withholds the final acknowledgement without provider retry or completed-journal rewrite.
+
+Exact-source v0.340.155 commit `617d7fcb6886c4b78c4fa819603bf05d9723339d` passed public-security run 42028210403 plus browser-help and saved-evidence jobs in run 42028210356. Its complete offline regression and Windows run 42028210343 remained active at this candidate's predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.156 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local source verification passed the complete 5,130-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 342 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `75167e3ed47b5952d994f0a2f3252bb7164eaed70b91ef4f6e8d4e4bcc84893e`; `validation/release_trials_0_340_156.json` SHA256 is `673be0750089957759aa152d856f3433de6cc5bc176c3a962978c42f227a88ed`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `8eb2070368ca062949c8f60186492f8fff286fb95ff72810a26d582e8d03f31d`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.155
 
 The installed Activity SSE operator now binds every existing journal leaf to its initially sampled identity and requires initially missing leaves to remain absent through the exact-head pre-vault boundary. Byte-identical replacements and newly introduced regular single-link files fail before saved-credential or provider access; guarded initialization remains available afterward.
 

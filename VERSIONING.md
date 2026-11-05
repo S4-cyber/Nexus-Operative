@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.155 (pre-release).**
+**Current development build: 0.340.156 (pre-release).**
+
+## v0.340.156 Activity SSE final journal identity binding
+
+After the guarded Activity SSE coordinator returns, the installed operator now promotes every present cursor, reconnect-budget and independent emergency-cut journal leaf to an identity-bound final scope. Leaves still missing at that boundary must remain missing through the final cursor/budget reads. A byte-identical replacement of a newly created cursor or budget, or a newly introduced order journal, withholds the installed acknowledgement without retrying provider IO or rewriting the completed journals.
+
+Direct regressions substitute each of the three journal roles immediately after final-scope promotion. Every case fails with the fixed operator diagnostic after exactly one provider request and preserves the substituted bytes plus the already completed cursor/budget state. This is sampled final-read pathname binding, not an atomic retained descriptor, ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.155 commit `617d7fcb6886c4b78c4fa819603bf05d9723339d` passed public-security run 42028210403 plus browser-help and saved-evidence jobs in run 42028210356. Its complete offline regression and Windows run 42028210343 remained active at this candidate's predecessor checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.156 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,130-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 342 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `75167e3ed47b5952d994f0a2f3252bb7164eaed70b91ef4f6e8d4e4bcc84893e`; `validation/release_trials_0_340_156.json` SHA256 is `673be0750089957759aa152d856f3433de6cc5bc176c3a962978c42f227a88ed`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `8eb2070368ca062949c8f60186492f8fff286fb95ff72810a26d582e8d03f31d`. No actual provider/account/native Windows acceptance was performed.
 
 ## v0.340.155 Activity SSE journal namespace binding
 

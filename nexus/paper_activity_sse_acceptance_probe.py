@@ -179,6 +179,51 @@ def _journal_scope_matches(paths, identities, *, allow_created=False):
     return True
 
 
+def _final_journal_scope(paths, identities):
+    """Bind every journal leaf present after coordinator completion.
+
+    The coordinator may legitimately create an initially missing cursor or
+    reconnect-budget database.  Once it returns, creation is no longer part
+    of the installed-tool acknowledgement path: promote every now-present
+    safe leaf to an identity-bound member and require the whole namespace to
+    survive a repeated check.  A still-missing leaf remains required to stay
+    missing, so a late emergency-cut journal cannot appear unnoticed between
+    the final cursor and budget reads.
+    """
+    if (type(paths) is not tuple or type(identities) is not tuple or
+            len(paths) != 3 or len(identities) != 3):
+        _fail()
+    promoted = []
+    for path, identity in zip(paths, identities):
+        if identity is not None:
+            try:
+                require_file_identities((path,), identity,
+                    'PAPER_ACTIVITY_SSE_ACCEPTANCE_JOURNAL_')
+            except Exception:
+                _fail()
+            promoted.append(identity)
+            continue
+        try:
+            observed = path.lstat()
+        except FileNotFoundError:
+            promoted.append(None)
+            continue
+        except OSError:
+            _fail()
+        if (not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink != 1):
+            _fail()
+        try:
+            promoted.append(capture_file_identities((path,),
+                'PAPER_ACTIVITY_SSE_ACCEPTANCE_JOURNAL_'))
+        except Exception:
+            _fail()
+    result = (paths, tuple(promoted))
+    if not _journal_scope_matches(*result):
+        _fail()
+    return result
+
+
 def _scope(expected_account_id, cursor_path, budget_path, order_journal_path):
     account = _uuid(expected_account_id)
     cursor, cursor_identity = _private_journal_path(cursor_path)
@@ -417,12 +462,15 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     input_guard()
 
     coordinator_started = False
+    coordinator_completed = False
+    active_journal_scope = journal_scope
 
     def stop_active():
         try:
             input_guard()
-            if not _journal_scope_matches(*journal_scope,
-                    allow_created=coordinator_started):
+            if not _journal_scope_matches(*active_journal_scope,
+                    allow_created=(coordinator_started and
+                        not coordinator_completed)):
                 return True
             return emergency_intent.requested(order)
         except Exception:
@@ -448,13 +496,15 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
         wall_clock=wall_clock, elapsed_clock=elapsed_clock,
         outcome_clock=outcome_clock, permission_check=input_guard,
         emergency_stop_check=stop_active)
+    coordinator_completed = True
+    active_journal_scope = _final_journal_scope(*journal_scope)
     result = _attempt_result(result, cursor.account_sha256)
     # The coordinator has already made its one provider attempt and may have
     # committed the checkpoint.  Independently resample the external cut and
     # retained-input identity around every final journal read: a late stop or
     # input change must withhold the installed-tool success acknowledgement,
     # but must never cause another GET or rewrite the completed journals.
-    if (not _journal_scope_matches(*journal_scope, allow_created=True) or
+    if (not _journal_scope_matches(*active_journal_scope) or
             stop_active()):
         _fail()
     after_cursor = cursor.inspect()

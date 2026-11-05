@@ -1,6 +1,17 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.167 (pre-release).**
+**Current development build: 0.340.168 (pre-release).**
+
+## v0.340.168 Activity SSE terminal status reconciliation
+
+Installed local-only Activity SSE status now binds settled reconnect state to its exact requested outcome, detail, provider-delay and fixed-backoff semantics. Retry timing must equal the retained result time plus the applied schedule; ordinary reviews preserve their requested result; emergency conversion and later waiting-state closure remain distinct; completed status requires a SUCCESS result and checkpoint evidence distinct from the prior cursor. A stable completed-budget/cursor disagreement fails closed, while a changing two-read pair remains a non-throwing inconsistent snapshot.
+
+Five legitimate terminal forms and sixteen contradictory terminal or cross-store views are covered directly. Refusals remain credential-vault and provider-network silent and create no journal. This is local terminal-status reconciliation, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.167 commit `2da2d740dc239a78038b8ac54c99d68fe704a2ae` passed public-security run 42121316997, complete offline-regression/browser-help/saved-evidence run 42121316706 and Windows run 42121317181. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.168 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,212-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 424 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `0c2c0e381623087c30b47a37e7157b3dd38af204f93eb44521715f161b4a54d5`; `validation/release_trials_0_340_168.json` SHA256 is `6f5990be207acd0ab0c57d6f0621cf2a3f7b986ad71e7e3c8882a6e55358f09b`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `d7975f23a2ec9a3d5061b5ef384928eebf9262a68185ad4e2a8a265fdcc2d0cc`. No actual provider/account/native Windows acceptance was performed.
+
 
 ## v0.340.167 Activity SSE reconnect-budget lifecycle admission
 

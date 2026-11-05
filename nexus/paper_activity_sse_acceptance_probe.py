@@ -26,7 +26,8 @@ from nexus.alpaca_activity_sse_reconnect_budget import (
     BUDGET_VIEW_KEYS, FLAGS as BUDGET_FLAGS,
     MAX_ATTEMPTS as MAX_RECONNECT_ATTEMPTS,
     MAX_DATABASE_BYTES as MAX_BUDGET_DATABASE_BYTES,
-    MAX_PROVIDER_RETRY_AFTER, OUTCOMES, PROVIDER_DELAY_ERRORS, REASONS)
+    MAX_PROVIDER_RETRY_AFTER, OUTCOMES, PROVIDER_DELAY_ERRORS, REASONS,
+    RETRYABLE_ERRORS)
 from nexus.alpaca_activity_sse_review import MAX_INPUT_BYTES, ULID
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_inspection import _uuid
@@ -114,6 +115,10 @@ def _status_budget_lifecycle(value):
     if (head == ZERO or not _digest(expected_cursor) or reason not in REASONS or
             review and completed):
         return False
+    if (requested_outcome == 'RETRY_REQUIRED' and
+            ((requested_detail in PROVIDER_DELAY_ERRORS) !=
+                (requested_delay > 0))):
+        return False
     if pending is not None:
         if (pending != head or review or completed or
                 checkpoint_head is not None or checkpoint_receipt is not None or
@@ -125,10 +130,13 @@ def _status_budget_lifecycle(value):
                 requested_delay == 0 and applied_backoff == 0 and
                 not provider_backoff and attempt_head is None and
                 result_head is None and next_allowed == 0)
+        applied = max(BACKOFF_SECONDS[attempts - 2], requested_delay)
         return (attempts >= 2 and outcome == 'RETRY_REQUIRED' and
-            requested_outcome == 'RETRY_REQUIRED' and _status_code(detail) and
-            _status_code(requested_detail) and _digest(attempt_head) and
-            _digest(result_head) and next_allowed <= evaluated)
+            requested_outcome == outcome and detail == requested_detail and
+            detail in RETRYABLE_ERRORS and _digest(attempt_head) and
+            _digest(result_head) and begin_head == result_head and
+            pending != result_head and applied_backoff == applied and
+            0 < next_allowed <= evaluated)
     if (outcome not in OUTCOMES or requested_outcome not in OUTCOMES or
             not _status_code(detail) or not _status_code(requested_detail) or
             not _digest(attempt_head) or not _digest(result_head) or
@@ -139,19 +147,64 @@ def _status_budget_lifecycle(value):
         if head != result_head:
             return False
     elif (not review or detail != 'EMERGENCY_STOP_ACTIVE' or
-            emergency_head != result_head):
+            emergency_head != result_head or head == result_head):
         return False
+    converted_stop = (emergency_head is None and review and
+        outcome == 'REVIEW_REQUIRED' and detail == 'EMERGENCY_STOP_ACTIVE' and
+        requested_outcome == 'RETRY_REQUIRED' and
+        requested_detail in RETRYABLE_ERRORS)
+    emergency_close = (emergency_head is not None and
+        requested_outcome == 'RETRY_REQUIRED' and
+        requested_detail in RETRYABLE_ERRORS)
+    ordinary_result = (requested_outcome == outcome and
+        requested_detail == detail)
+    if not (ordinary_result or converted_stop or emergency_close):
+        return False
+    expected_backoff = max(BACKOFF_SECONDS[attempts - 1], requested_delay)
     if completed:
-        return (not review and outcome == 'CHECKPOINT_COMMITTED' and
-            next_allowed == 0 and _digest(checkpoint_head) and
-            _digest(checkpoint_receipt))
+        return (not review and ordinary_result and
+            outcome == 'CHECKPOINT_COMMITTED' and detail == 'SUCCESS' and
+            requested_delay == 0 and applied_backoff == 0 and
+            not provider_backoff and next_allowed == 0 and
+            _digest(checkpoint_head) and _digest(checkpoint_receipt) and
+            checkpoint_head != expected_cursor and
+            attempt_head != result_head)
     if review:
-        return (outcome in ('REVIEW_REQUIRED', 'CHECKPOINT_UNCERTAIN') and
-            next_allowed == 0 and checkpoint_head is None and
-            checkpoint_receipt is None)
-    return (outcome == 'RETRY_REQUIRED' and
-        attempts < MAX_RECONNECT_ATTEMPTS and next_allowed > evaluated and
-        checkpoint_head is None and checkpoint_receipt is None)
+        if (outcome != 'REVIEW_REQUIRED' and
+                outcome != 'CHECKPOINT_UNCERTAIN'):
+            return False
+        if (next_allowed != 0 or checkpoint_head is not None or
+                checkpoint_receipt is not None):
+            return False
+        if emergency_close:
+            return (attempts < MAX_RECONNECT_ATTEMPTS and
+                applied_backoff == expected_backoff and
+                attempt_head != result_head)
+        return (applied_backoff == 0 and
+            (converted_stop or
+                (ordinary_result and requested_delay == 0 and
+                    not provider_backoff)) and
+            attempt_head != result_head)
+    return (ordinary_result and outcome == 'RETRY_REQUIRED' and
+        detail in RETRYABLE_ERRORS and attempts < MAX_RECONNECT_ATTEMPTS and
+        applied_backoff == expected_backoff and
+        next_allowed == evaluated + applied_backoff and
+        checkpoint_head is None and checkpoint_receipt is None and
+        attempt_head != result_head)
+
+
+def _status_pair_lifecycle(cursor, budget):
+    """Bind stable terminal budget state to its retained cursor head."""
+    if budget['attempts'] == 0 or budget['pending_token'] is not None:
+        return True
+    if budget['completed']:
+        return (cursor['initialized'] and
+            cursor['local_cursor_checkpoint_committed'] and
+            cursor['process_restart_recoverable'] and
+            cursor['complete_review_counts_bound'] and
+            cursor['head_sha256'] == budget['checkpoint_head_sha256'])
+    return (cursor['head_sha256'] ==
+        budget['expected_cursor_head_sha256'])
 
 
 def _attempt_result(value, account_sha256):
@@ -691,6 +744,11 @@ def status(*, expected_account_id, cursor_path, budget_path,
         MAX_BUDGET_DATABASE_BYTES, 'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
     stop_after = _stop_sample(order)
     journal_after = _journal_scope_matches(*journal_scope)
+    pair_before = _status_pair_lifecycle(cursor_before, budget_before)
+    pair_after = _status_pair_lifecycle(cursor_state, budget_state)
+    if (cursor_before == cursor_state and budget_before == budget_state and
+            not pair_before):
+        _fail()
     clock_consistent = (clock_before is not None and
         evaluated_at is not None and evaluated_at >= clock_before)
     journal_consistent = journal_before and journal_after
@@ -703,7 +761,8 @@ def status(*, expected_account_id, cursor_path, budget_path,
         stop_before == stop_after)
     snapshot_consistent = (clock_consistent and storage_consistent and
         cursor_before == cursor_state and
-        budget_before == budget_state and stop_consistent)
+        budget_before == budget_state and pair_before and pair_after and
+        stop_consistent)
     stop = (_stop_sample_active(stop_before) or
         _stop_sample_active(stop_after))
     return dict(mode='PAPER_ACTIVITY_SSE_ACCEPTANCE_STATUS',

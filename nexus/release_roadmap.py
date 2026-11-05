@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.167'
+REVISION = '0.340.168'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.167 independently validates the complete Activity SSE reconnect-budget lifecycle used by installed local status. Missing-state fields must remain exactly empty; pending, retry, review, emergency-close and completed states must agree on attempts, heads, outcome codes, backoff timing, checkpoint evidence and terminal flags. Contradictory lifecycle views fail before vault or provider access. Exact-source v0.340.166 commit `717c40812f56114d4afbd6db8be9341b8dcfeec1` passed public-security run 42112172083, complete research/browser/evidence run 42112172247 and Windows run 42112171944. This is local status lifecycle admission, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.168 binds installed Activity SSE terminal reconnect-budget status to exact requested outcome, detail, provider-delay and fixed-backoff semantics. Completed budgets must retain SUCCESS checkpoint evidence distinct from the prior cursor and match the stable retained cursor head; stable cross-store contradictions fail closed, while changing two-read pairs remain non-throwing inconsistent snapshots. Exact-source v0.340.167 commit `2da2d740dc239a78038b8ac54c99d68fe704a2ae` passed public-security run 42121316997, complete research/browser/evidence run 42121316706 and Windows run 42121317181. This is local terminal-status reconciliation, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

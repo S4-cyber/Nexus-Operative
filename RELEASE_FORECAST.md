@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.145
+## Current candidate: v0.340.146
+
+The installed Activity SSE local status now requires two bounded, finite and non-regressing wall-clock samples around its repeated journals and emergency-cut observations before reporting one-attempt eligibility. Invalid or unavailable time remains explicitly ineligible without leaking an exception.
+
+No exact-source v0.340.145 workflow run or commit status was exposed when this candidate began. Fresh exact-source v0.340.146 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,060 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 250. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `e45325663b301bfcc5ef457a91cc03bdcbba1ab03dcf576629d44f2e7b704721`; `validation/release_trials_0_340_146.json` SHA256 is `e68e8a14facee7e9ec9cada62cb14cb947cc16460fdfd84d7c4f19c62b5e3f8f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `6793fce1da7b962bc67cc16a93cd5fa51d5c01bb1df4dfd94691abdc83a43230`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.145
 
 The installed Activity SSE local status now reports one-attempt eligibility only when two cursor reads, two reconnect-budget reads and both surrounding independent emergency-cut samples agree. A transition produces an explicit inconsistent snapshot and remains ineligible.
 

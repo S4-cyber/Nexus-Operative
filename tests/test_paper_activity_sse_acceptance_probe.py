@@ -88,16 +88,73 @@ def paths(tmp_path):
 
 def test_status_is_vault_network_silent_and_missing_paths_stay_missing(
         tmp_path,monkeypatch):
-    private=tmp_path/'private'
+    private=tmp_path/'private';clock_calls=0
+
+    def clock():
+        nonlocal clock_calls
+        clock_calls+=1
+        return 1000
+
     monkeypatch.setattr(paper_credentials,'_vault',
         lambda:pytest.fail('vault accessed'))
     result=subject.status(expected_account_id=ACCOUNT,
         cursor_path=private/'cursor.sqlite3',
         budget_path=private/'budget.sqlite3',
-        order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+        order_journal_path=private/'orders.sqlite3',clock=clock)
+    assert clock_calls==2
+    assert result['status_evaluated_at']==1000
+    assert result['status_clock_consistent']
     assert result['snapshot_consistent'] and result['one_attempt_eligible']
     assert not result['actual_vault_access']
     assert not result['actual_provider_access'] and not private.exists()
+
+
+@pytest.mark.parametrize('observed',(None,True,'1000',float('nan'),
+    float('inf'),-1,1e12+1))
+def test_status_invalid_clock_is_explicitly_ineligible_without_raw_error(
+        tmp_path,observed):
+    private=tmp_path/'private'
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',
+        clock=lambda:observed)
+    assert result['status_evaluated_at'] is None
+    assert not result['status_clock_consistent']
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+    assert not result['actual_vault_access']
+    assert not result['actual_provider_access'] and not private.exists()
+
+
+def test_status_clock_failure_is_explicitly_ineligible_without_raw_error(
+        tmp_path):
+    private=tmp_path/'private'
+
+    def unavailable():
+        raise RuntimeError('PRIVATE_CLOCK_DETAIL')
+
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',clock=unavailable)
+    assert result['status_evaluated_at'] is None
+    assert not result['status_clock_consistent']
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
+
+
+def test_status_regressing_clock_is_explicitly_ineligible(tmp_path):
+    private=tmp_path/'private';samples=iter((1000,999))
+    result=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3',
+        clock=lambda:next(samples))
+    assert result['status_evaluated_at']==999
+    assert not result['status_clock_consistent']
+    assert not result['snapshot_consistent']
+    assert not result['one_attempt_eligible']
 
 
 @pytest.mark.parametrize('store_name',('cursor','budget'))

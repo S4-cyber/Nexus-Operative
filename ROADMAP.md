@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.145. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.146. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.145 makes installed Activity SSE local status fail closed unless two cursor reads, two reconnect-budget reads and the surrounding independent emergency-cut samples agree. A journal transition or late cut is reported as an inconsistent snapshot and cannot claim one-attempt eligibility. No exact-source v0.340.144 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. Local injected success is not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.146 binds installed Activity SSE status eligibility to two bounded non-regressing wall-clock samples around the repeated cursor, reconnect-budget and independent emergency-cut observations. Clock exceptions or invalid, non-finite, out-of-range or regressing samples remain explicit local diagnostics and cannot claim a coherent or eligible snapshot. No exact-source v0.340.145 workflow run or commit status was exposed when this candidate began, so hosted success is not inferred. Local injected success is not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

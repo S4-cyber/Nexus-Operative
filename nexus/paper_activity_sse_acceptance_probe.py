@@ -8,6 +8,7 @@ prints private events.
 """
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import sqlite3
@@ -149,15 +150,32 @@ def _load_events(path):
         _fail()
 
 
+def _status_clock(clock):
+    """Return one bounded wall-clock sample without breaking local status."""
+    try:
+        value = clock()
+    except Exception:
+        return None
+    if (type(value) not in (int, float) or not math.isfinite(value) or
+            not 0 <= value <= 1e12):
+        return None
+    return value
+
+
 def status(*, expected_account_id, cursor_path, budget_path,
         order_journal_path, clock=time.time):
     _, cursor, budget, order = _scope(expected_account_id, cursor_path,
         budget_path, order_journal_path)
+    clock_before = _status_clock(clock)
     stop_before = emergency_intent.requested(order)
     cursor_before, budget_before = cursor.inspect(), budget.inspect()
+    evaluated_at = _status_clock(clock)
     cursor_state, budget_state = cursor.inspect(), budget.inspect()
     stop_after = emergency_intent.requested(order)
-    snapshot_consistent = (cursor_before == cursor_state and
+    clock_consistent = (clock_before is not None and
+        evaluated_at is not None and evaluated_at >= clock_before)
+    snapshot_consistent = (clock_consistent and
+        cursor_before == cursor_state and
         budget_before == budget_state and stop_before == stop_after)
     stop = stop_before or stop_after
     return dict(mode='PAPER_ACTIVITY_SSE_ACCEPTANCE_STATUS',
@@ -176,16 +194,18 @@ def status(*, expected_account_id, cursor_path, budget_path,
         reconnect_review_required=budget_state['review_required'],
         reconnect_completed=budget_state['completed'],
         emergency_cut_latch_active=stop,
+        status_evaluated_at=evaluated_at,
+        status_clock_consistent=clock_consistent,
         snapshot_consistent=snapshot_consistent,
         one_attempt_eligible=(snapshot_consistent and not stop and
             budget_state['pending_token'] is None and
             not budget_state['review_required'] and
             not budget_state['completed'] and
-            clock() >= budget_state['next_allowed_at']),
+            evaluated_at >= budget_state['next_allowed_at']),
         automatic_sleep=False,
         actual_provider_access=False, actual_vault_access=False,
         **{flag: False for flag in FLAGS},
-        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires two matching cursor and reconnect-budget reads plus matching emergency-cut samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
+        limitations='Local replay and independent emergency-cut latch sample only. Eligibility requires two valid non-regressing wall-clock samples, two matching cursor and reconnect-budget reads, and matching emergency-cut samples. No credential or provider access, permission grant, or broker/source/delivery/fee/funds/reconciliation assertion. Exact heads can change after this sampled status. A clear local latch is necessary but not sufficient authority for an attempt.')
 
 
 def attempt(*, expected_account_id, initial_events_path, cursor_path,

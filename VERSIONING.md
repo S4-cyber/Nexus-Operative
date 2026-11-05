@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.145 (pre-release).**
+**Current development build: 0.340.146 (pre-release).**
+
+## v0.340.146 Activity SSE status clock coherence
+
+The installed `activity-sse` local status path now samples wall time twice around the repeated cursor, reconnect-budget and independent emergency-cut observations. One-attempt eligibility requires both clock samples to be numeric, finite, bounded and non-regressing in addition to the durable snapshot agreement. Clock exceptions and invalid samples produce explicit ineligible diagnostics without exposing private error details, reading credentials, contacting a provider or writing default storage.
+
+Direct regressions cover exceptions, booleans, strings, non-finite values, negative and oversized values, backward movement and the stable eligible case. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+No exact-source v0.340.145 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.146 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,060 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 250. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `e45325663b301bfcc5ef457a91cc03bdcbba1ab03dcf576629d44f2e7b704721`; `validation/release_trials_0_340_146.json` SHA256 is `e68e8a14facee7e9ec9cada62cb14cb947cc16460fdfd84d7c4f19c62b5e3f8f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `6793fce1da7b962bc67cc16a93cd5fa51d5c01bb1df4dfd94691abdc83a43230`. No actual provider/account/native Windows acceptance was performed.
+
+**Previous development build: 0.340.145 (pre-release).**
 
 ## v0.340.145 coherent Activity SSE status snapshots
 

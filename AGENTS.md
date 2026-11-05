@@ -1,5 +1,15 @@
 # Nexus Operative continuity instructions
 
+## v0.340.160 Activity SSE final parent error containment
+
+The installed Activity SSE operator now contains ordinary final journal-parent inspection failures after its one bounded provider attempt to the fixed public diagnostic. A private filesystem exception cannot escape the direct operator boundary after the cursor and reconnect-budget commits, while `KeyboardInterrupt` and `SystemExit` remain independently observable.
+
+Direct regressions inject an ordinary permission failure and both process-control signals only after the saved-pair coordinator returns. Every case performs exactly one provider request, preserves the completed reconnect budget and retained checkpoint, performs no retry and leaves the attempt ineligible for automatic continuation. This is post-attempt error containment, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.159 commit `5573e1b45975469f359e5ff929d9ffd37325b899` passed public-security run 42055855787 plus browser-help and saved-evidence jobs in run 42055856294. Its complete offline regression and Windows run 42055856321 remained active at this candidate's predecessor checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.160 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,138-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 350 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `7bce49540671e89cb68c1723c3cdca40c887ce7dca83489a8d4b0b13c3baf8c7`; `validation/release_trials_0_340_160.json` SHA256 is `558978410ce030fe2a022d5307e01589fd1440289ae24775fa820d4ffb15bf9b`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `394f2bbe99cf63410b419f7e888312a3417af6ccc433e38f511130a298e14ad9`. No actual provider/account/native Windows acceptance was performed.
+
 ## v0.340.159 Activity SSE journal parent identity binding
 
 The installed Activity SSE operator now samples the resolved identity of every existing journal parent directory alongside the cursor, reconnect-budget and order-journal leaves. Replacing an already resolved empty journal directory at the same absolute pathname makes local-only status inconsistent and refuses an attempt before saved-credential or provider access. Newly created legitimate journal parents are promoted into the final identity-bound acknowledgement scope.

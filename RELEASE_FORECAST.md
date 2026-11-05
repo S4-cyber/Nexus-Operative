@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.159
+## Current candidate: v0.340.160
+
+The installed Activity SSE operator now contains ordinary final journal-parent inspection failures after the one bounded provider attempt to its fixed diagnostic. Process-control signals remain observable, and the already committed cursor/reconnect state is preserved without provider retry or journal rewrite.
+
+Exact-source v0.340.159 commit `5573e1b45975469f359e5ff929d9ffd37325b899` passed public-security run 42055855787 plus browser-help and saved-evidence jobs in run 42055856294. Its complete offline regression and Windows run 42055856321 remained active at the predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.160 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local source verification passed the complete 5,138-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 350 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `7bce49540671e89cb68c1723c3cdca40c887ce7dca83489a8d4b0b13c3baf8c7`; `validation/release_trials_0_340_160.json` SHA256 is `558978410ce030fe2a022d5307e01589fd1440289ae24775fa820d4ffb15bf9b`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `394f2bbe99cf63410b419f7e888312a3417af6ccc433e38f511130a298e14ad9`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.159
 
 The installed Activity SSE operator now binds existing resolved journal parent directories as well as leaf files to sampled identities. Actual directory replacement makes status inconsistent and refuses an attempt before vault or provider access, preventing redirected cursor/budget creation away from the independently latched namespace.
 

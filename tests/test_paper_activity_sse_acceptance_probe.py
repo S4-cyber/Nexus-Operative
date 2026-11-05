@@ -755,6 +755,78 @@ def test_attempt_binds_created_journal_content_before_final_acknowledgement(
     assert options['budget_path'].exists()
 
 
+def test_attempt_final_parent_inspection_failure_hides_private_detail(
+        tmp_path,saved_pair,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw);final_phase=False
+    original_collect=paper_credentials.collect_activity_sse_saved
+    original_parent=subject._journal_parent_identity
+
+    def complete_then_enter_final_phase(**kwargs):
+        nonlocal final_phase
+        result=original_collect(**kwargs)
+        final_phase=True
+        return result
+
+    def unavailable(path):
+        if final_phase:
+            raise PermissionError('PRIVATE_FINAL_PARENT_DETAIL')
+        return original_parent(path)
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        complete_then_enter_final_phase)
+    monkeypatch.setattr(subject,'_journal_parent_identity',unavailable)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    final_phase=False
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_attempt_final_parent_inspection_preserves_process_control(
+        tmp_path,saved_pair,monkeypatch,signal):
+    options,raw=paths(tmp_path);opener=Opener(raw);final_phase=False
+    original_collect=paper_credentials.collect_activity_sse_saved
+    original_parent=subject._journal_parent_identity
+
+    def complete_then_enter_final_phase(**kwargs):
+        nonlocal final_phase
+        result=original_collect(**kwargs)
+        final_phase=True
+        return result
+
+    def interrupted(path):
+        if final_phase:
+            raise signal()
+        return original_parent(path)
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        complete_then_enter_final_phase)
+    monkeypatch.setattr(subject,'_journal_parent_identity',interrupted)
+    with pytest.raises(signal):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    final_phase=False
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
 def test_attempt_pins_resolved_private_input_across_parent_alias_swap(
         tmp_path,saved_pair,monkeypatch):
     first=tmp_path/'first';second=tmp_path/'second';journals=tmp_path/'journals'

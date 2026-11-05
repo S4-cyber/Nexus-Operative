@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.159. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.160. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.159 binds the installed Activity SSE journal parent directories as well as their leaf files to sampled identities. Replacing an already resolved empty journal directory at the same absolute pathname now makes local status inconsistent and refuses an attempt before saved-credential or provider access, so cursor/budget creation cannot silently move away from the independently latched namespace. Exact-source v0.340.158 passed public-security run 42044715944, the complete research/browser/evidence run 42044715745 and Windows simulated-research run 42044715814. This is sampled pathname evidence, not an atomic directory handle, writer/reset lock or ACL/administrator boundary, distributed stop service, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.160 contains ordinary final Activity SSE journal-parent inspection failures after the one bounded provider attempt to the installed operator's fixed diagnostic. It preserves process-control signals and the already committed cursor/reconnect state without retrying provider IO or rewriting journals. Exact-source v0.340.159 passed public-security run 42055855787 plus browser-help and saved-evidence jobs in run 42055856294. Its complete offline regression and Windows run 42055856321 remained active at this candidate's predecessor checkpoint and are not claimed as passed. This is post-attempt error containment, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

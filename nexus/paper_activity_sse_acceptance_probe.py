@@ -229,7 +229,10 @@ def _final_journal_scope(paths, identities, parent_identities):
         _fail()
     promoted_parents = []
     for path, parent_identity in zip(paths, parent_identities):
-        current = _journal_parent_identity(path.parent)
+        try:
+            current = _journal_parent_identity(path.parent)
+        except Exception:
+            _fail()
         if parent_identity is not None and current != parent_identity:
             _fail()
         promoted_parents.append(current)

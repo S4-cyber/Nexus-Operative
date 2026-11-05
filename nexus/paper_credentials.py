@@ -333,6 +333,13 @@ def collect_activity_sse_saved(*, expected_account_id, initial_events,
         _fail('READ_REVOKED')
     from nexus.alpaca_activity_sse_reconnect_budget import (
         collect_and_checkpoint_due)
+    try:
+        permission_admitted = permission_check()
+        emergency_stopped = emergency_stop_check()
+    except Exception:
+        _fail('READ_REVOKED')
+    if permission_admitted is not True or emergency_stopped is not False:
+        _fail('READ_REVOKED')
     epoch, raw, record = _capture()
 
     def current():

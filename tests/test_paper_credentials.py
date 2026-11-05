@@ -77,6 +77,67 @@ def test_strict_confirmations_before_any_vault_access(vault, value):
     assert vault.reads == vault.writes == vault.deletes == 0
 
 
+@pytest.mark.parametrize(('permission','emergency'),(
+    (False,False),(None,False),(True,True),(True,None)))
+def test_activity_sse_admission_refuses_before_vault(
+        vault,permission,emergency):
+    with pytest.raises(credentials.PaperVaultError,
+            match='^PAPER_VAULT_READ_REVOKED$'):
+        credentials.collect_activity_sse_saved(
+            expected_account_id=BROKER_ACCOUNT,initial_events=[],
+            reconnect_reason='CONNECTION_DROPPED',cursor_store=None,
+            expected_cursor_head='0'*64,reconnect_budget=None,
+            expected_budget_head='0'*64,evaluated_at=1000,
+            confirm_reconnect_attempt=True,confirm_read_only_paper=True,
+            confirm_cursor_checkpoint=True,
+            permission_check=lambda:permission,
+            emergency_stop_check=lambda:emergency)
+    assert vault.reads == vault.writes == vault.deletes == 0
+
+
+@pytest.mark.parametrize('boundary',('permission','emergency'))
+def test_activity_sse_admission_failure_is_fixed_and_private_before_vault(
+        vault,boundary):
+    def failed():
+        raise RuntimeError(SECRET)
+
+    permission = failed if boundary == 'permission' else lambda:True
+    emergency = failed if boundary == 'emergency' else lambda:False
+    with pytest.raises(credentials.PaperVaultError,
+            match='^PAPER_VAULT_READ_REVOKED$') as caught:
+        credentials.collect_activity_sse_saved(
+            expected_account_id=BROKER_ACCOUNT,initial_events=[],
+            reconnect_reason='CONNECTION_DROPPED',cursor_store=None,
+            expected_cursor_head='0'*64,reconnect_budget=None,
+            expected_budget_head='0'*64,evaluated_at=1000,
+            confirm_reconnect_attempt=True,confirm_read_only_paper=True,
+            confirm_cursor_checkpoint=True,permission_check=permission,
+            emergency_stop_check=emergency)
+    assert SECRET not in str(caught.value)
+    assert vault.reads == vault.writes == vault.deletes == 0
+
+
+@pytest.mark.parametrize('boundary',('permission','emergency'))
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_activity_sse_admission_preserves_process_control_before_vault(
+        vault,boundary,signal):
+    def interrupted():
+        raise signal()
+
+    permission = interrupted if boundary == 'permission' else lambda:True
+    emergency = interrupted if boundary == 'emergency' else lambda:False
+    with pytest.raises(signal):
+        credentials.collect_activity_sse_saved(
+            expected_account_id=BROKER_ACCOUNT,initial_events=[],
+            reconnect_reason='CONNECTION_DROPPED',cursor_store=None,
+            expected_cursor_head='0'*64,reconnect_budget=None,
+            expected_budget_head='0'*64,evaluated_at=1000,
+            confirm_reconnect_attempt=True,confirm_read_only_paper=True,
+            confirm_cursor_checkpoint=True,permission_check=permission,
+            emergency_stop_check=emergency)
+    assert vault.reads == vault.writes == vault.deletes == 0
+
+
 @pytest.mark.parametrize('bad', [None, 1, '', 'x' * 257, 'x' * 20 + '\r\n', 'é' * 20],
                          ids=['none', 'int', 'empty', 'long', 'crlf', 'unicode'])
 def test_bad_keys_never_touch_vault(vault, bad):

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.148'
+REVISION = '0.340.149'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -575,6 +575,10 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The installed Activity SSE attempt now validates its first wall-clock sample as an exact finite bounded number before credential, provider or journal access. Ordinary clock failures collapse to one fixed refusal without private detail; process-control signals remain independently observable. This is local fail-closed operator hardening, not provider/account acceptance, source or clock attestation, sustained-market evidence, reconciliation or release approval.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The saved-pair Activity SSE seam now samples exact permission and independent emergency-stop admission before opening the Windows credential vault. Revoked, indeterminate or ordinarily failing callbacks collapse to one fixed refusal with no credential read; process-control signals remain observable. This is local fail-closed secret/admission hardening, not provider/account acceptance, sustained-market evidence, reconciliation or release approval.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -740,7 +744,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.148 validates the installed Activity SSE attempt admission timestamp before credential, provider or journal access. Invalid values and ordinary clock exceptions receive one fixed fail-closed diagnostic without private detail; KeyboardInterrupt and SystemExit remain independently observable. Exact-source v0.340.147 exposed no connector-visible workflow run or commit status when this candidate began, so hosted success is not inferred. Local injected success is not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.149 samples saved-pair Activity SSE permission and the independent emergency stop before opening the Windows credential vault. Revoked, indeterminate or ordinarily failing admission returns one fixed diagnostic without any credential read or private detail; KeyboardInterrupt and SystemExit remain independently observable. Exact-source v0.340.148 exposed no connector-visible workflow run or commit status when this candidate began, so hosted success is not inferred. Local injected success is not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

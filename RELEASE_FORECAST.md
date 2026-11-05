@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.148
+## Current candidate: v0.340.149
+
+The saved-pair Activity SSE seam now samples exact permission and independent emergency-stop admission before opening the Windows credential vault. Revoked, indeterminate or ordinarily failing callbacks produce one fixed refusal with no credential read; process-control signals remain independently observable.
+
+Exact-source v0.340.148 commit `1e4549590b1a07b7d3a259cbb345d6d6672e3ebb` exposed no connector-visible workflow run or commit status when this candidate began. Fresh exact-source v0.340.149 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,082 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused credential/operator/release/version/roadmap/audit/evidence set passed 362. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `910d823e203b0fac3578a238db1c5e6bfa6a489c3e43bd14cabd6be8bac4af06`; `validation/release_trials_0_340_149.json` SHA256 is `619f9cc80feaeb2d0fd3c0d5f3a2946e6ce714a275dcfc6d9e8582b00a0445fa`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `45c87f834953c18d6bf8ef37575432f9b46e5c1a39c671af164ea9b894dc785a`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.148
 
 The installed Activity SSE attempt now rejects invalid or unavailable admission time with one fixed diagnostic before credentials, provider IO or cursor/reconnect-journal creation. Process-control signals remain independently observable.
 

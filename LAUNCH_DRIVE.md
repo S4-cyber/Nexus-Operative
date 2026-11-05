@@ -1,5 +1,16 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.149 saved Activity SSE pre-vault admission fence
+
+The saved-pair Activity SSE seam now samples exact permission and the independent emergency-stop callback before opening the Windows credential vault. Revoked, indeterminate or ordinarily failing admission collapses to the fixed `PAPER_VAULT_READ_REVOKED` diagnostic with zero credential reads and no private exception detail. `KeyboardInterrupt` and `SystemExit` remain independently observable.
+
+Direct regressions cover false and indeterminate callback returns, private-detail exceptions, and both process-control signals at both admission boundaries. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.148 commit `1e4549590b1a07b7d3a259cbb345d6d6672e3ebb` exposed no connector-visible workflow run or commit status when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.149 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,082 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused credential/operator/release/version/roadmap/audit/evidence set passed 362. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `910d823e203b0fac3578a238db1c5e6bfa6a489c3e43bd14cabd6be8bac4af06`; `validation/release_trials_0_340_149.json` SHA256 is `619f9cc80feaeb2d0fd3c0d5f3a2946e6ce714a275dcfc6d9e8582b00a0445fa`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `45c87f834953c18d6bf8ef37575432f9b46e5c1a39c671af164ea9b894dc785a`. No actual provider/account/native Windows acceptance was performed.
+
+
 ## v0.340.148 Activity SSE attempt-clock admission fence
 
 The installed `activity-sse` attempt now validates its first wall-clock sample as an exact numeric, finite and bounded timestamp before credential, provider or cursor/reconnect-journal access. Invalid values and ordinary clock exceptions fail with the single fixed operator diagnostic, without private exception detail or side effects. `KeyboardInterrupt` and `SystemExit` remain independently observable.

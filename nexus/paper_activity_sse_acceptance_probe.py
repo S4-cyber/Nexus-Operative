@@ -194,6 +194,41 @@ def _status_file_sample(path, maximum_bytes, prefix):
         return None
 
 
+def _attempt_head_preflight(cursor, budget, expected_cursor_head,
+        expected_budget_head):
+    """Require one stable exact-head snapshot before credential access."""
+    if not _digest(expected_cursor_head) or not _digest(expected_budget_head):
+        _fail()
+    try:
+        cursor_before = cursor.inspect()
+        cursor_file_before = _status_file_sample(cursor.path,
+            MAX_CURSOR_DATABASE_BYTES,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
+        budget_before = budget.inspect()
+        budget_file_before = _status_file_sample(budget.path,
+            MAX_BUDGET_DATABASE_BYTES,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
+        cursor_after = cursor.inspect()
+        cursor_file_after = _status_file_sample(cursor.path,
+            MAX_CURSOR_DATABASE_BYTES,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
+        budget_after = budget.inspect()
+        budget_file_after = _status_file_sample(budget.path,
+            MAX_BUDGET_DATABASE_BYTES,
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
+    except Exception:
+        _fail()
+    if (type(cursor_before) is not dict or
+            type(budget_before) is not dict or
+            cursor_file_before is None or budget_file_before is None or
+            cursor_before != cursor_after or budget_before != budget_after or
+            cursor_file_before != cursor_file_after or
+            budget_file_before != budget_file_after or
+            cursor_before.get('head_sha256') != expected_cursor_head or
+            budget_before.get('head_sha256') != expected_budget_head):
+        _fail()
+
+
 def status(*, expected_account_id, cursor_path, budget_path,
         order_journal_path, clock=time.time):
     _, cursor, budget, order = _scope(expected_account_id, cursor_path,
@@ -294,6 +329,8 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     if stop_active():
         _fail()
     evaluated_at = _attempt_clock(wall_clock)
+    _attempt_head_preflight(cursor, budget, expected_cursor_head,
+        expected_budget_head)
     result = paper_credentials.collect_activity_sse_saved(
         expected_account_id=account, initial_events=events,
         reconnect_reason=reconnect_reason, cursor_store=cursor,

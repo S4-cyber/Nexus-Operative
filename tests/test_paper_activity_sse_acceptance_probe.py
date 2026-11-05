@@ -320,6 +320,98 @@ def test_attempt_admission_clock_preserves_process_control_before_io(
     assert not options['budget_path'].exists()
 
 
+@pytest.mark.parametrize('head_name',('expected_cursor_head',
+    'expected_budget_head'))
+@pytest.mark.parametrize('observed',(None,True,'bad','g'*64))
+def test_attempt_invalid_expected_head_fails_before_vault_network_or_write(
+        tmp_path,monkeypatch,head_name,observed):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    options[head_name]=observed
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
+@pytest.mark.parametrize('head_name',('expected_cursor_head',
+    'expected_budget_head'))
+def test_attempt_stale_expected_head_fails_before_vault_network_or_write(
+        tmp_path,monkeypatch,head_name):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    options[head_name]='f'*64
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
+@pytest.mark.parametrize('store_name',('cursor','budget'))
+def test_attempt_incoherent_head_preflight_fails_before_vault(
+        tmp_path,monkeypatch,store_name):
+    options,raw=paths(tmp_path);opener=Opener(raw);calls=0
+    store = (subject.ActivitySSECursorStore if store_name == 'cursor' else
+        subject.ActivitySSEReconnectBudget)
+    original=store.inspect
+
+    def changed(self):
+        nonlocal calls
+        result=original(self);calls+=1
+        if calls == 2:
+            result=dict(result);result['head_sha256']='f'*64
+        return result
+
+    monkeypatch.setattr(store,'inspect',changed)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert calls==2 and not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
+@pytest.mark.parametrize('store_name',('cursor','budget'))
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_attempt_head_preflight_preserves_process_control_before_vault(
+        tmp_path,monkeypatch,store_name,signal):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    store = (subject.ActivitySSECursorStore if store_name == 'cursor' else
+        subject.ActivitySSEReconnectBudget)
+
+    def interrupted(self):
+        raise signal()
+
+    monkeypatch.setattr(store,'inspect',interrupted)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(signal):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
 def test_one_saved_pair_attempt_commits_aggregate_checkpoint(
         tmp_path,saved_pair):
     options,raw=paths(tmp_path);opener=Opener(raw)

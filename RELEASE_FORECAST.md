@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.149
+## Current candidate: v0.340.150
+
+The installed Activity SSE attempt now requires a stable repeated local snapshot and exact supplied cursor/reconnect heads before opening saved Windows credentials. Invalid, stale or changing state fails before vault, provider or journal writes; the lower coordinator retains its independent exact-head checks.
+
+Exact-source v0.340.149 remote commit `b6b69112bcb5559cf314d70de2b46244841aba11` exposed no connector-visible workflow run or commit status when this candidate began. Fresh exact-source v0.340.150 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,098 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 310. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `cacbec57e50fa8dfa5e5a9043e548f36cb7a25c07bd2e7caf09e852c249400d9`; `validation/release_trials_0_340_150.json` SHA256 is `3d1cbff58b5be3a7c75ee5c88817784e48a33f9bcad5216bcc56106c195a3c15`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `2805a3f3837cff257f28d6ec568cfe5b74b1ce26ee76fc06fa41c3a937c5deff`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.149
 
 The saved-pair Activity SSE seam now samples exact permission and independent emergency-stop admission before opening the Windows credential vault. Revoked, indeterminate or ordinarily failing callbacks produce one fixed refusal with no credential read; process-control signals remain independently observable.
 

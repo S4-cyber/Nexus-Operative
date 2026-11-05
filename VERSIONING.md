@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.149 (pre-release).**
+**Current development build: 0.340.150 (pre-release).**
+
+## v0.340.150 saved Activity SSE exact-head preflight
+
+The installed `activity-sse` attempt now performs a stable local exact-head preflight before opening saved Windows credentials. It reads the cursor and reconnect-budget journals twice, binds each read to the same bounded pathname identity and full-file fingerprint, and requires the operator-supplied heads to match both stable snapshots. The lower coordinator still rechecks the exact heads at its own boundary; this preflight removes avoidable vault access without weakening the existing race fence.
+
+Invalid, stale or changing preflight state fails with one fixed diagnostic before credential or provider access and before default journal creation. Ordinary local inspection failures also collapse to that diagnostic without private detail, while `KeyboardInterrupt` and `SystemExit` remain independently observable. The two journals are sampled separately rather than as one atomic multi-journal transaction, so this is not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.149 remote commit `b6b69112bcb5559cf314d70de2b46244841aba11` exposed no connector-visible workflow run or commit status when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.150 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,098 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 310. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `cacbec57e50fa8dfa5e5a9043e548f36cb7a25c07bd2e7caf09e852c249400d9`; `validation/release_trials_0_340_150.json` SHA256 is `3d1cbff58b5be3a7c75ee5c88817784e48a33f9bcad5216bcc56106c195a3c15`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `2805a3f3837cff257f28d6ec568cfe5b74b1ce26ee76fc06fa41c3a937c5deff`. No actual provider/account/native Windows acceptance was performed.
 
 ## v0.340.149 saved Activity SSE pre-vault admission fence
 

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.149'
+REVISION = '0.340.150'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -579,6 +579,10 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The saved-pair Activity SSE seam now samples exact permission and independent emergency-stop admission before opening the Windows credential vault. Revoked, indeterminate or ordinarily failing callbacks collapse to one fixed refusal with no credential read; process-control signals remain observable. This is local fail-closed secret/admission hardening, not provider/account acceptance, sustained-market evidence, reconciliation or release approval.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The installed Activity SSE attempt now requires a stable, repeated cursor/reconnect snapshot whose bounded file identities, fingerprints and exact heads match operator input before opening saved credentials. Invalid, stale or incoherent heads fail locally; the coordinator still rechecks after vault admission. This is sampled local preflight integrity, not an atomic multi-journal snapshot, provider/account acceptance, sustained-market evidence, reconciliation or release approval.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -744,7 +748,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.149 samples saved-pair Activity SSE permission and the independent emergency stop before opening the Windows credential vault. Revoked, indeterminate or ordinarily failing admission returns one fixed diagnostic without any credential read or private detail; KeyboardInterrupt and SystemExit remain independently observable. Exact-source v0.340.148 exposed no connector-visible workflow run or commit status when this candidate began, so hosted success is not inferred. Local injected success is not provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.150 performs a stable local exact-head preflight before opening saved Activity SSE credentials. Two cursor and reconnect-budget reads plus bounded pathname identities and fingerprints must agree with the operator-supplied heads; invalid, stale or incoherent input fails without vault, provider or write access, while the lower coordinator retains its post-vault race checks. Exact-source v0.340.149 exposed no connector-visible workflow run or commit status when this candidate began, so hosted success is not inferred. Local injected success is not an atomic multi-journal snapshot, provider identity, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.163
+## Current candidate: v0.340.164
+
+Installed local-only Activity SSE status now requires its nullable cursor and reconnect-budget fields to be explicitly present and either null or valid digests. Missing or malformed values fail at the fixed public diagnostic before credential or provider access.
+
+Exact-source v0.340.163 commit `262e8e8c0be9963c81788137f7f1f05bd1bcf45b` passed public-security run 42084535570 plus browser-help and saved-evidence jobs in run 42084535525. Its complete offline regression and Windows run 42084535528 remained active at the predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.164 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,160-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 372 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `8dc8c2bf927c19a0cfea3c9e2e85bd0667c1c5e6cbd533397859e24fca3ddd75`; `validation/release_trials_0_340_164.json` SHA256 is `9796edcdb7942755e45253e3845073e09dcb381426ebcef3d7ae3b6938f75025`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `93a4f43bc4c9756b26005c2693a012caa6b1617826496de7266da46a3f3b4986`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.163
 
 The installed Activity SSE local-only status API now contains ordinary cursor and reconnect-budget inspection failures and malformed store views at its fixed public diagnostic. Status remains vault/network silent, no journal is created on refusal, and process-control signals remain observable.
 

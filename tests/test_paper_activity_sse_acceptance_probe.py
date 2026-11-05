@@ -149,6 +149,54 @@ def test_status_malformed_store_view_fails_fixed(
     assert not private.exists()
 
 
+@pytest.mark.parametrize(('store_type','field'),(
+    (subject.ActivitySSECursorStore,'current_cursor_sha256'),
+    (subject.ActivitySSEReconnectBudget,'pending_token')))
+def test_status_missing_nullable_store_field_fails_fixed(
+        tmp_path,monkeypatch,store_type,field):
+    private=tmp_path/'private';original=store_type.inspect
+
+    def missing(self):
+        result=original(self)
+        result.pop(field)
+        return result
+
+    monkeypatch.setattr(store_type,'inspect',missing)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert not private.exists()
+
+
+@pytest.mark.parametrize(('store_type','field'),(
+    (subject.ActivitySSECursorStore,'current_cursor_sha256'),
+    (subject.ActivitySSEReconnectBudget,'pending_token')))
+def test_status_invalid_nullable_store_field_fails_fixed(
+        tmp_path,monkeypatch,store_type,field):
+    private=tmp_path/'private';original=store_type.inspect
+
+    def malformed(self):
+        result=original(self)
+        result[field]=True
+        return result
+
+    monkeypatch.setattr(store_type,'inspect',malformed)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert not private.exists()
+
+
 @pytest.mark.parametrize('store_type',(
     subject.ActivitySSECursorStore,subject.ActivitySSEReconnectBudget))
 @pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))

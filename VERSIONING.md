@@ -1,6 +1,17 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.163 (pre-release).**
+**Current development build: 0.340.164 (pre-release).**
+
+## v0.340.164 Activity SSE nullable status-field containment
+
+Installed local-only Activity SSE status now requires `current_cursor_sha256` and `pending_token` to be explicitly present. Each nullable value must be `None` or a valid digest before any later direct field use. An otherwise valid-looking store view can therefore no longer omit a nullable field and escape as a raw indexing error; malformed non-null values fail at the same fixed public diagnostic.
+
+Direct regressions remove or corrupt each nullable field independently. All cases remain credential-vault and provider-network silent, create no journal and preserve process-control and independent emergency-stop behavior. This is local status shape containment, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.163 commit `262e8e8c0be9963c81788137f7f1f05bd1bcf45b` passed public-security run 42084535570 plus browser-help and saved-evidence jobs in run 42084535525. Its complete offline regression and Windows run 42084535528 remained active at this candidate's predecessor checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.164 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,160-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 372 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `8dc8c2bf927c19a0cfea3c9e2e85bd0667c1c5e6cbd533397859e24fca3ddd75`; `validation/release_trials_0_340_164.json` SHA256 is `9796edcdb7942755e45253e3845073e09dcb381426ebcef3d7ae3b6938f75025`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `93a4f43bc4c9756b26005c2693a012caa6b1617826496de7266da46a3f3b4986`. No actual provider/account/native Windows acceptance was performed.
+
 
 ## v0.340.163 Activity SSE status store containment
 

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.163. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.164. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.163 contains ordinary local-only Activity SSE cursor and reconnect-budget status inspection failures and malformed store views at the installed direct-operator boundary. Status remains vault/network silent, process-control signals remain observable and no journal is created on refusal. Exact-source v0.340.162 commit `ab455a71b8ea1c57a84edd1a63f4c2a2a9e522bd` passed public-security run 42075170839 plus the complete offline regression, browser-help and saved-evidence jobs in run 42075170882. Windows run 42075170810 remained active at this candidate's predecessor checkpoint and is not claimed as passed. This is local status error containment, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.164 requires the nullable Activity SSE cursor and reconnect-budget fields used by installed local status to be explicitly present and either null or valid digests. Missing fields and malformed pending/cursor values now fail at the fixed public diagnostic before credential or provider access, rather than escaping as raw indexing errors. Exact-source v0.340.163 commit `262e8e8c0be9963c81788137f7f1f05bd1bcf45b` passed public-security run 42084535570 plus browser-help and saved-evidence jobs in run 42084535525. Its complete offline regression and Windows run 42084535528 remained active at this candidate's predecessor checkpoint and are not claimed as passed. This is local status shape containment, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

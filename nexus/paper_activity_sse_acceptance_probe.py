@@ -499,12 +499,14 @@ def _status_store_inspect(store, role):
                 value.get('account_sha256') != store.account_sha256 or
                 type(value.get('initialized')) is not bool or
                 not _digest(value.get('head_sha256')) or
+                'current_cursor_sha256' not in value or
                 (current is not None and not _digest(current)) or
                 type(value.get('retained_checkpoints')) is not int or
                 value['retained_checkpoints'] < 0 or
                 type(value.get('complete_review_counts_bound')) is not bool):
             _fail()
     elif role == 'budget':
+        pending = value.get('pending_token')
         next_allowed = value.get('next_allowed_at')
         if (value.get('mode') !=
                 'PRIVATE_ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET' or
@@ -513,6 +515,8 @@ def _status_store_inspect(store, role):
                 not _digest(value.get('head_sha256')) or
                 type(value.get('attempts')) is not int or
                 value['attempts'] < 0 or
+                'pending_token' not in value or
+                (pending is not None and not _digest(pending)) or
                 type(next_allowed) not in (int, float) or
                 not math.isfinite(next_allowed) or next_allowed < 0 or
                 any(type(value.get(field)) is not bool for field in

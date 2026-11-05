@@ -199,6 +199,62 @@ def test_stream_connection_cannot_claim_no_provider_access():
         subject._attempt_result(result,'a'*64)
 
 
+def test_post_commit_emergency_cut_withholds_success_without_second_get(
+        tmp_path,saved_pair,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=paper_credentials.collect_activity_sse_saved
+
+    def cut_after_commit(**kwargs):
+        result=original(**kwargs)
+        from nexus import emergency_intent
+        emergency_intent.persist(options['order_journal_path'])
+        return result
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        cut_after_commit)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,elapsed_clock=lambda:50,
+            outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['emergency_cut_latch_active']
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
+def test_post_commit_private_input_change_withholds_success_without_second_get(
+        tmp_path,saved_pair,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=paper_credentials.collect_activity_sse_saved
+
+    def change_input_after_commit(**kwargs):
+        result=original(**kwargs)
+        options['initial_events_path'].write_bytes(b'changed')
+        return result
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        change_input_after_commit)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,elapsed_clock=lambda:50,
+            outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
 @pytest.mark.parametrize('missing',('confirm_reconnect_attempt',
     'confirm_read_only_paper','confirm_cursor_checkpoint'))
 def test_every_confirmation_is_required_before_vault(tmp_path,monkeypatch,missing):

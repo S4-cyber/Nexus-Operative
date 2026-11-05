@@ -1,5 +1,15 @@
 # Nexus Operative continuity instructions
 
+## v0.340.144 installed Activity SSE final cut/input fence
+
+After the one saved-pair coordinator attempt returns, the installed `activity-sse` tool now independently resamples the emergency-cut latch and private retained-input identity before the first final journal inspection, between cursor and reconnect-budget inspection, and again before acknowledging success. A late cut or retained-input change fails with the same fixed diagnostic while the already committed cursor checkpoint and completed reconnect budget remain exactly once for explicit cold review; the wrapper never issues a second GET or rewrites settled journals.
+
+Direct regressions activate the independent cut or replace the private input immediately after a real injected commit. They require refusal, exactly one provider request, one retained checkpoint, a completed reconnect budget and no automatic eligibility. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+No exact-source v0.340.143 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.144 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local validation passed 5,048 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit set passed 238. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `24e7f4c05e28293517e2b6c7aeb15d0c21d38c531767e7c7cad4a13487ea81f6`; `validation/release_trials_0_340_144.json` SHA256 is `9fb4af53093f75b7caef5dad873d19a056cd17a792b616f8fbc6316542386bc8`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `a110f75cc218760f2fa5d5cd5b5b4568e4fee2b07e6bd3948aaf320ef8e0aaa6`. No actual provider/account/native Windows acceptance was performed.
+
 ## v0.340.143 installed Activity SSE acknowledgement validation
 
 The installed `activity-sse` attempt now validates the saved-pair coordinator acknowledgement before consuming or rendering any aggregate field. The final boundary allowlists live and injected transport-source labels, binds the account and both durable heads, rejects bool-as-int or out-of-range counts, requires replay-count conservation, bounds the reconnect attempt and requires the fixed commit, recovery, review, budget, vault and no-retry acknowledgements. A malformed post-commit result fails with one fixed diagnostic while the exact checkpoint remains once for explicit cold review; it cannot issue a second GET.

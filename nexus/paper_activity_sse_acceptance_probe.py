@@ -236,8 +236,19 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
         outcome_clock=outcome_clock, permission_check=input_guard,
         emergency_stop_check=stop_active)
     result = _attempt_result(result, cursor.account_sha256)
-    input_guard()
-    after_cursor, after_budget = cursor.inspect(), budget.inspect()
+    # The coordinator has already made its one provider attempt and may have
+    # committed the checkpoint.  Independently resample the external cut and
+    # retained-input identity around every final journal read: a late stop or
+    # input change must withhold the installed-tool success acknowledgement,
+    # but must never cause another GET or rewrite the completed journals.
+    if stop_active():
+        _fail()
+    after_cursor = cursor.inspect()
+    if stop_active():
+        _fail()
+    after_budget = budget.inspect()
+    if stop_active():
+        _fail()
     if (result['checkpoint_head_sha256'] != after_cursor['head_sha256'] or
             result['reconnect_budget_head_sha256'] !=
                 after_budget['head_sha256'] or

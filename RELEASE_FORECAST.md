@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.143
+## Current candidate: v0.340.144
+
+The installed Activity SSE tool now resamples the independent emergency cut and private input identity around every final journal inspection after its one coordinator attempt. A late cut or retained-input change withholds success while preserving one checkpoint and completed reconnect budget without another GET.
+
+No exact-source v0.340.143 workflow run or commit status was exposed when this candidate began. Fresh exact-source v0.340.144 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final local validation passed 5,048 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit set passed 238. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `24e7f4c05e28293517e2b6c7aeb15d0c21d38c531767e7c7cad4a13487ea81f6`; `validation/release_trials_0_340_144.json` SHA256 is `9fb4af53093f75b7caef5dad873d19a056cd17a792b616f8fbc6316542386bc8`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `a110f75cc218760f2fa5d5cd5b5b4568e4fee2b07e6bd3948aaf320ef8e0aaa6`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.143
 
 The installed Activity SSE tool now validates the saved-pair coordinator acknowledgement before consuming aggregate fields. Source labels, account/head digests, strict counts, count conservation, reconnect bounds and fixed safety acknowledgements fail closed; a malformed post-commit result retains exactly one checkpoint for explicit review without a second GET.
 

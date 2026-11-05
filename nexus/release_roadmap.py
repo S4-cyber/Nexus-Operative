@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.164'
+REVISION = '0.340.165'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.164 requires the nullable Activity SSE cursor and reconnect-budget fields used by installed local status to be explicitly present and either null or valid digests. Missing fields and malformed pending/cursor values now fail at the fixed public diagnostic before credential or provider access, rather than escaping as raw indexing errors. Exact-source v0.340.163 commit `262e8e8c0be9963c81788137f7f1f05bd1bcf45b` passed public-security run 42084535570 plus browser-help and saved-evidence jobs in run 42084535525. Its complete offline regression and Windows run 42084535528 remained active at this candidate\'s predecessor checkpoint and are not claimed as passed. This is local status shape containment, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.165 validates the semantic agreement of Activity SSE cursor initialization, retained-count, cursor-digest and head fields plus the reconnect attempt cap and pending-token/head binding used by installed local status. One-attempt eligibility now explicitly requires remaining attempt capacity and reports the fixed cap. Exact-source v0.340.164 commit `9326dddbbb3f703e33ee54b5bfc887b2feafcae2` passed public-security run 42094600439 plus browser-help and saved-evidence jobs in run 42094600268. Its complete offline regression and Windows run 42094600284 remained active at this candidate\'s predecessor checkpoint and are not claimed as passed. This is local status admission semantics, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -107,6 +107,7 @@ def test_status_is_vault_network_silent_and_missing_paths_stay_missing(
     assert result['status_clock_consistent']
     assert result['storage_snapshot_consistent']
     assert result['snapshot_consistent'] and result['one_attempt_eligible']
+    assert result['reconnect_attempt_cap']==subject.MAX_RECONNECT_ATTEMPTS
     assert not result['actual_vault_access']
     assert not result['actual_provider_access'] and not private.exists()
 
@@ -186,6 +187,56 @@ def test_status_invalid_nullable_store_field_fails_fixed(
         return result
 
     monkeypatch.setattr(store_type,'inspect',malformed)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert not private.exists()
+
+
+@pytest.mark.parametrize('changes',(
+    {'initialized':True},
+    {'current_cursor_sha256':'f'*64},
+    {'retained_checkpoints':1},
+    {'head_sha256':'f'*64},
+    {'complete_review_counts_bound':True}))
+def test_status_rejects_contradictory_cursor_state(
+        tmp_path,monkeypatch,changes):
+    private=tmp_path/'private';original=subject.ActivitySSECursorStore.inspect
+
+    def contradictory(self):
+        return {**original(self),**changes}
+
+    monkeypatch.setattr(subject.ActivitySSECursorStore,'inspect',contradictory)
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(expected_account_id=ACCOUNT,
+            cursor_path=private/'cursor.sqlite3',
+            budget_path=private/'budget.sqlite3',
+            order_journal_path=private/'orders.sqlite3',clock=lambda:1000)
+    assert not private.exists()
+
+
+@pytest.mark.parametrize('changes',(
+    {'max_attempts':subject.MAX_RECONNECT_ATTEMPTS+1},
+    {'attempts':subject.MAX_RECONNECT_ATTEMPTS+1},
+    {'pending_token':'f'*64}))
+def test_status_rejects_contradictory_budget_state(
+        tmp_path,monkeypatch,changes):
+    private=tmp_path/'private'
+    original=subject.ActivitySSEReconnectBudget.inspect
+
+    def contradictory(self):
+        return {**original(self),**changes}
+
+    monkeypatch.setattr(subject.ActivitySSEReconnectBudget,'inspect',
+        contradictory)
     monkeypatch.setattr(paper_credentials,'_vault',
         lambda:pytest.fail('vault accessed'))
     with pytest.raises(ValueError,
@@ -280,6 +331,10 @@ def test_status_denies_eligibility_when_repeated_journal_reads_disagree(
         if calls == 2:
             result=dict(result)
             result['head_sha256']='f'*64
+            if store_name == 'cursor':
+                result.update(initialized=True,
+                    current_cursor_sha256='e'*64,
+                    retained_checkpoints=1)
         return result
 
     monkeypatch.setattr(store,'inspect',changed)

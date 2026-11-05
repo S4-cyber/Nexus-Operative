@@ -1,5 +1,16 @@
 # Nexus Operative continuity instructions
 
+## v0.340.165 Activity SSE status admission semantics
+
+Installed local-only Activity SSE status now requires cursor initialization, retained-checkpoint count, current-cursor digest and zero/nonzero head state to agree. Reconnect-budget status requires the fixed attempt cap, bounded attempt count and any pending token to match the current budget head. One-attempt eligibility explicitly requires remaining attempt capacity and the read-only status exposes that fixed cap.
+
+Direct regressions inject five contradictory cursor views and three contradictory budget views without credential-vault access, provider IO or journal creation. A separate coherent two-read cursor advance remains a non-throwing inconsistent snapshot, preserving the diagnostic distinction between a legitimate sampled race and a malformed store view. This is local status admission semantics, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.164 commit `9326dddbbb3f703e33ee54b5bfc887b2feafcae2` passed public-security run 42094600439 plus browser-help and saved-evidence jobs in run 42094600268. Its complete offline regression and Windows run 42094600284 remained active at this candidate's predecessor checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.165 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,168-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 380 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `9d537c4c1ee5193a3f601becb4bcdf466ff3f71f8b5cddee9430b3aa398b8e23`; `validation/release_trials_0_340_165.json` SHA256 is `fa1d1139ccb0c3489510a48dada1617f283376006592d087da89229de6425cfb`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `0854431e5a0d66bc3c86e1f9612e9cb7b27f54afab1b7f6f4e170caff8b12e8d`. No actual provider/account/native Windows acceptance was performed.
+
+
 ## v0.340.164 Activity SSE nullable status-field containment
 
 Installed local-only Activity SSE status now requires `current_cursor_sha256` and `pending_token` to be explicitly present. Each nullable value must be `None` or a valid digest before any later direct field use. An otherwise valid-looking store view can therefore no longer omit a nullable field and escape as a raw indexing error; malformed non-null values fail at the same fixed public diagnostic.

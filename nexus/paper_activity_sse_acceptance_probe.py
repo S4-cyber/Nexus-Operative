@@ -18,9 +18,11 @@ import time
 
 from nexus import emergency_intent, paper_credentials
 from nexus.alpaca_activity_sse_cursor_store import (
-    ActivitySSECursorStore, MAX_DATABASE_BYTES as MAX_CURSOR_DATABASE_BYTES)
+    ActivitySSECursorStore, MAX_DATABASE_BYTES as MAX_CURSOR_DATABASE_BYTES,
+    ZERO)
 from nexus.alpaca_activity_sse_reconnect_budget import (
     ActivitySSEReconnectBudget,
+    MAX_ATTEMPTS as MAX_RECONNECT_ATTEMPTS,
     MAX_DATABASE_BYTES as MAX_BUDGET_DATABASE_BYTES, REASONS)
 from nexus.alpaca_activity_sse_review import MAX_INPUT_BYTES
 from nexus.alpaca_paper_contract import sha
@@ -492,31 +494,42 @@ def _status_store_inspect(store, role):
     if type(value) is not dict:
         _fail()
     if role == 'cursor':
+        initialized = value.get('initialized')
+        head = value.get('head_sha256')
         current = value.get('current_cursor_sha256')
+        retained = value.get('retained_checkpoints')
+        complete = value.get('complete_review_counts_bound')
         if (value.get('mode') !=
                 'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_HISTORY' or
                 value.get('status') != 'REVIEW_REQUIRED' or
                 value.get('account_sha256') != store.account_sha256 or
-                type(value.get('initialized')) is not bool or
-                not _digest(value.get('head_sha256')) or
+                type(initialized) is not bool or
+                not _digest(head) or
                 'current_cursor_sha256' not in value or
                 (current is not None and not _digest(current)) or
-                type(value.get('retained_checkpoints')) is not int or
-                value['retained_checkpoints'] < 0 or
-                type(value.get('complete_review_counts_bound')) is not bool):
+                type(retained) is not int or retained < 0 or
+                type(complete) is not bool or
+                initialized != (current is not None) or
+                initialized != (retained > 0) or
+                (not initialized and (head != ZERO or complete)) or
+                (initialized and head == ZERO)):
             _fail()
     elif role == 'budget':
+        head = value.get('head_sha256')
+        attempts = value.get('attempts')
         pending = value.get('pending_token')
         next_allowed = value.get('next_allowed_at')
         if (value.get('mode') !=
                 'PRIVATE_ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET' or
                 value.get('status') != 'REVIEW_REQUIRED' or
                 value.get('account_sha256') != store.account_sha256 or
-                not _digest(value.get('head_sha256')) or
-                type(value.get('attempts')) is not int or
-                value['attempts'] < 0 or
+                not _digest(head) or
+                value.get('max_attempts') != MAX_RECONNECT_ATTEMPTS or
+                type(attempts) is not int or
+                not 0 <= attempts <= MAX_RECONNECT_ATTEMPTS or
                 'pending_token' not in value or
                 (pending is not None and not _digest(pending)) or
+                (pending is not None and pending != head) or
                 type(next_allowed) not in (int, float) or
                 not math.isfinite(next_allowed) or next_allowed < 0 or
                 any(type(value.get(field)) is not bool for field in
@@ -575,6 +588,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
             cursor_state['complete_review_counts_bound'],
         reconnect_budget_head_sha256=budget_state['head_sha256'],
         reconnect_attempts=budget_state['attempts'],
+        reconnect_attempt_cap=budget_state['max_attempts'],
         reconnect_next_allowed_at=budget_state['next_allowed_at'],
         reconnect_pending=budget_state['pending_token'] is not None,
         reconnect_review_required=budget_state['review_required'],
@@ -590,6 +604,7 @@ def status(*, expected_account_id, cursor_path, budget_path,
             budget_state['pending_token'] is None and
             not budget_state['review_required'] and
             not budget_state['completed'] and
+            budget_state['attempts'] < budget_state['max_attempts'] and
             evaluated_at >= budget_state['next_allowed_at']),
         automatic_sleep=False,
         actual_provider_access=False, actual_vault_access=False,

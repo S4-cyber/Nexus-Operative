@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.164
+## Current candidate: v0.340.165
+
+Installed local-only Activity SSE status now validates cursor initialization/count/digest agreement, the fixed reconnect attempt cap and pending-token/head binding. One-attempt eligibility explicitly requires capacity below that cap.
+
+Exact-source v0.340.164 commit `9326dddbbb3f703e33ee54b5bfc887b2feafcae2` passed public-security run 42094600439 plus browser-help and saved-evidence jobs in run 42094600268. Its complete offline regression and Windows run 42094600284 remained active at the predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.165 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,168-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 380 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `9d537c4c1ee5193a3f601becb4bcdf466ff3f71f8b5cddee9430b3aa398b8e23`; `validation/release_trials_0_340_165.json` SHA256 is `fa1d1139ccb0c3489510a48dada1617f283376006592d087da89229de6425cfb`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `0854431e5a0d66bc3c86e1f9612e9cb7b27f54afab1b7f6f4e170caff8b12e8d`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.164
 
 Installed local-only Activity SSE status now requires its nullable cursor and reconnect-budget fields to be explicitly present and either null or valid digests. Missing or malformed values fail at the fixed public diagnostic before credential or provider access.
 

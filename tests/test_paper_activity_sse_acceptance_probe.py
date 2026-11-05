@@ -2,6 +2,7 @@
 import copy
 import io
 import json
+import os
 
 import pytest
 
@@ -309,6 +310,41 @@ def test_status_rejects_journal_leaf_symlink_before_storage_access(
     assert not (private/'orders.sqlite3').exists()
 
 
+@pytest.mark.parametrize('journal_name',
+    ('cursor_path','budget_path','order_journal_path'))
+@pytest.mark.parametrize('leaf_kind',('directory','hardlink'))
+def test_status_rejects_unsafe_existing_journal_leaf_before_storage_access(
+        tmp_path,monkeypatch,journal_name,leaf_kind):
+    private=tmp_path/'private';private.mkdir()
+    options=dict(expected_account_id=ACCOUNT,
+        cursor_path=private/'cursor.sqlite3',
+        budget_path=private/'budget.sqlite3',
+        order_journal_path=private/'orders.sqlite3')
+    selected=options[journal_name];target=None
+    if leaf_kind == 'directory':
+        selected.mkdir()
+    else:
+        target=private/(journal_name+'.target')
+        target.write_bytes(b'PRIVATE_UNRELATED_JOURNAL')
+        try:
+            os.link(target,selected)
+        except OSError:
+            pytest.skip('hard links unavailable')
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.status(**options,clock=lambda:1000)
+    if leaf_kind == 'directory':
+        assert selected.is_dir() and not tuple(selected.iterdir())
+    else:
+        assert target.read_bytes()==b'PRIVATE_UNRELATED_JOURNAL'
+        assert selected.read_bytes()==b'PRIVATE_UNRELATED_JOURNAL'
+    for name in ('cursor_path','budget_path','order_journal_path'):
+        if name != journal_name:
+            assert not options[name].exists()
+
+
 def test_emergency_latch_blocks_before_vault_or_journal_write(
         tmp_path,monkeypatch):
     options,raw=paths(tmp_path)
@@ -405,6 +441,48 @@ def test_attempt_rejects_journal_leaf_symlink_before_vault_or_storage_access(
     assert not (private/'cursor.sqlite3').exists()
     assert not (private/'budget.sqlite3').exists()
     assert not (private/'orders.sqlite3').exists()
+
+
+@pytest.mark.parametrize('journal_name',
+    ('cursor_path','budget_path','order_journal_path'))
+@pytest.mark.parametrize('leaf_kind',('directory','hardlink'))
+def test_attempt_rejects_unsafe_existing_journal_leaf_before_vault_or_storage(
+        tmp_path,saved_pair,monkeypatch,journal_name,leaf_kind):
+    options,raw=paths(tmp_path);private=options['cursor_path'].parent
+    selected=options[journal_name];target=None
+    if leaf_kind == 'directory':
+        selected.mkdir()
+    else:
+        target=private/(journal_name+'.target')
+        target.write_bytes(b'PRIVATE_UNRELATED_JOURNAL')
+        try:
+            os.link(target,selected)
+        except OSError:
+            pytest.skip('hard links unavailable')
+    vault_reads=0;original_read=saved_pair.get_password
+
+    def count_vault_reads(*args):
+        nonlocal vault_reads
+        vault_reads+=1
+        return original_read(*args)
+
+    monkeypatch.setattr(saved_pair,'get_password',count_vault_reads)
+    opener=Opener(raw)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert vault_reads==0 and not opener.requests
+    if leaf_kind == 'directory':
+        assert selected.is_dir() and not tuple(selected.iterdir())
+    else:
+        assert target.read_bytes()==b'PRIVATE_UNRELATED_JOURNAL'
+        assert selected.read_bytes()==b'PRIVATE_UNRELATED_JOURNAL'
+    for name in ('cursor_path','budget_path','order_journal_path'):
+        if name != journal_name:
+            assert not options[name].exists()
 
 
 def test_attempt_pins_resolved_private_input_across_parent_alias_swap(

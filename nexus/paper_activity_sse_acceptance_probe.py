@@ -117,19 +117,27 @@ def _private_input_scope(value):
 
 
 def _private_journal_path(value):
-    """Pin one journal parent without accepting a leaf symlink.
+    """Pin one journal parent and admit only a safe existing leaf.
 
     Resolving the complete caller path would erase the distinction between a
     journal pathname and a leaf symlink to another file.  Resolve only the
     parent for the retained operational path, then require that it names the
-    same target observed by the complete-path check.  This keeps legitimate
-    parent aliases pinned while refusing leaf aliases before any journal is
-    inspected or created.
+    same target observed by the complete-path check.  An existing leaf must
+    also already be one regular single-link file.  This keeps legitimate
+    parent aliases pinned while refusing leaf aliases, directories, devices
+    and multi-link files before any journal is inspected or created.
     """
     try:
         path, resolved = _private_path(value)
+        try:
+            observed = path.lstat()
+        except FileNotFoundError:
+            observed = None
         pinned = path.absolute().parent.resolve() / path.name
-        if pinned != resolved:
+        if (pinned != resolved or
+                observed is not None and
+                (not stat.S_ISREG(observed.st_mode) or
+                    observed.st_nlink != 1)):
             _fail()
         return pinned
     except (OSError, RuntimeError, TypeError, ValueError):

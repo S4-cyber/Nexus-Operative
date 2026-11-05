@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.153
+## Current candidate: v0.340.154
+
+The installed Activity SSE operator now admits an existing cursor, reconnect-budget or emergency-cut journal leaf only when it is a regular single-link file. Directories and hardlinks fail before local status inspection, credential access, provider IO or other journal creation; missing leaves and pinned parent aliases retain their existing behavior.
+
+Exact-source v0.340.153 commit `8ae26e82827978bacafa973c9266a9d0d3d8f2fe` passed public-security run 42012583569 and every browser-help, saved-evidence and complete offline-regression job in run 42012583574. Windows run 42012583629 remained active at this candidate's final predecessor check and is not claimed as passed. Fresh exact-source v0.340.154 hosted workflows and actual authorized-account acceptance remain required.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+Final source verification passed the 333-test operator/package/release/version/roadmap/audit/evidence focus after the predecessor-CI note and evidence were finalized. The implementation candidate's complete local regression passed 5,121 tests with one expected non-Windows skip and one existing Starlette/httpx warning before that prose-only CI-status update. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `b71e8e1a3070fab03cef25b57283b88641cf871ee1c209bf543bff0fa21852c4`; `validation/release_trials_0_340_154.json` SHA256 is `f0f7f8dff84b7fa4dca00a292272acd064388f38e2baff48b3c46422e79203ae`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `1ac18b2a8b45dcf7409e0e260bb7201158a1fc35c550aa13578c58aa2918a37e`. No actual provider/account/native Windows acceptance was performed.
+
+## Previous candidate: v0.340.153
 
 The installed Activity SSE operator now canonicalizes each journal parent while preserving the selected leaf name. Cursor, reconnect-budget and emergency-cut journal leaf symlinks fail before local status inspection, credential access, provider IO or journal creation; legitimate parent aliases remain pinned.
 

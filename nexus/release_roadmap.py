@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.153'
+REVISION = '0.340.154'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.153 preserves leaf-path semantics while pinning the installed Activity SSE cursor, reconnect-budget and independent emergency-cut journal parents. An existing leaf symlink now fails before status inspection, credential access, provider IO or journal creation, while legitimate parent aliases remain bound to their validated targets. Exact-source v0.340.152 passed public-security run 42003383445, every research-safety/browser/evidence job in run 42003383425 and the complete Windows regression, EXE, installer, reinstall and data-preserving uninstall lane in run 42003383403. This sampled local journal path fence is not an ACL/administrator boundary, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.154 admits an existing installed Activity SSE cursor, reconnect-budget or independent emergency-cut journal leaf only when it is a regular single-link file. Directories and multiply linked files fail before status inspection, credential access, provider IO or other journal creation; missing leaves and pinned parent aliases retain their guarded behavior. Exact-source v0.340.153 passed public-security run 42012583569 and every browser-help, saved-evidence and complete offline-regression job in run 42012583574; Windows run 42012583629 remained active at this candidate\'s final predecessor check and is not claimed as passed. This sampled local journal path fence is not an ACL/administrator boundary, provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

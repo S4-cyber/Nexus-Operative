@@ -1,6 +1,17 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.153 (pre-release).**
+**Current development build: 0.340.154 (pre-release).**
+
+## v0.340.154 Activity SSE existing-journal leaf admission
+
+The installed Activity SSE status and attempt paths now require every existing cursor, reconnect-budget and independent emergency-cut journal leaf to be a regular single-link file before constructing a store or reading the latch. Directories, devices and multiply linked files fail closed with the same fixed operator diagnostic; missing leaves remain eligible for the existing guarded initialization path and legitimate parent aliases remain pinned.
+
+Direct regressions cover directories and hardlinks in all three journal roles for both local-only status and explicitly confirmed attempt mode. Each refusal preserves the unsafe leaf and any unrelated bytes, performs no provider request, creates no other default journal and, in attempt mode, reads no saved credential. This is sampled local pathname hardening, not an ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.153 commit `8ae26e82827978bacafa973c9266a9d0d3d8f2fe` passed public-security run 42012583569 and every browser-help, saved-evidence and complete offline-regression job in run 42012583574. Windows run 42012583629 remained active at this candidate's final predecessor check and is not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.154 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final source verification passed the 333-test operator/package/release/version/roadmap/audit/evidence focus after the predecessor-CI note and evidence were finalized. The implementation candidate's complete local regression passed 5,121 tests with one expected non-Windows skip and one existing Starlette/httpx warning before that prose-only CI-status update. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `b71e8e1a3070fab03cef25b57283b88641cf871ee1c209bf543bff0fa21852c4`; `validation/release_trials_0_340_154.json` SHA256 is `f0f7f8dff84b7fa4dca00a292272acd064388f38e2baff48b3c46422e79203ae`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `1ac18b2a8b45dcf7409e0e260bb7201158a1fc35c550aa13578c58aa2918a37e`. No actual provider/account/native Windows acceptance was performed.
+
 
 ## v0.340.153 Activity SSE journal leaf-path pinning
 

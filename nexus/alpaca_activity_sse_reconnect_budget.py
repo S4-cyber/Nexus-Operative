@@ -2002,6 +2002,12 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         _fail('CHECKPOINT_AUTHORIZATION_REQUIRED')
     if reconnect_budget.account_sha256 != cursor_store.account_sha256:
         _fail('ACCOUNT_DISAGREEMENT')
+    if not callable(permission_check):
+        _fail('PERMISSION_CHECK_INVALID')
+    if not callable(emergency_stop_check):
+        _fail('EMERGENCY_STOP_CHECK_INVALID')
+    if not callable(credential_check):
+        _fail('CREDENTIAL_CHECK_INVALID')
     cursor_binding = (cursor_store.path, cursor_store.account_sha256)
     budget_binding = (reconnect_budget.path,
         reconnect_budget.account_sha256)
@@ -2022,8 +2028,6 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         (wall_clock if wall_clock is not None else time.time))
     if not callable(result_clock):
         _fail('OUTCOME_CLOCK_INVALID')
-    if not callable(emergency_stop_check):
-        _fail('EMERGENCY_STOP_CHECK_INVALID')
     try:
         if emergency_stop_check() is not False:
             _fail('EMERGENCY_STOP_ACTIVE')
@@ -2104,31 +2108,64 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
     # provider-request authority in that interval.
     reservation_state_uncertain = False
     store_binding_changed = False
-    request_permission_check = permission_check
-    if callable(permission_check):
-        def request_permission_check():
-            nonlocal reservation_state_uncertain, store_binding_changed
-            allowed = permission_check()
+    def guarded_control_check(callback):
+        """Re-prove the pending grant after each untrusted callback.
+
+        Transport samples permission, stop and credential callbacks in that
+        order immediately before ``opener.open``.  Any one of those callbacks
+        can run foreign code, so checking only before the callback leaves a
+        final mutation window.  Always perform the binding and exact-token
+        proof after the callback, including when it returns a veto or raises.
+        """
+        nonlocal reservation_state_uncertain, store_binding_changed
+        try:
+            decision = callback()
+        except Exception:
             if not _store_bindings_match(cursor_store, reconnect_budget,
                     cursor_binding=cursor_binding,
                     budget_binding=budget_binding):
                 store_binding_changed = True
-                return False
-            if allowed is not True:
-                return allowed
-            try:
-                current = _budget_state_for_attempt(reconnect_budget)
-                exact = _exact_pending_reservation(current,
-                    token=token, attempt=attempt, cursor_head=cursor_head,
-                    expected_budget_head=expected_budget_head,
-                    evaluated_at=evaluated_at,
-                    reconnect_reason=reconnect_reason)
-            except Exception:
-                exact = False
-            if not exact:
-                reservation_state_uncertain = True
-                return False
-            return True
+            else:
+                try:
+                    current = _budget_state_for_attempt(reconnect_budget)
+                    exact = _exact_pending_reservation(current,
+                        token=token, attempt=attempt,
+                        cursor_head=cursor_head,
+                        expected_budget_head=expected_budget_head,
+                        evaluated_at=evaluated_at,
+                        reconnect_reason=reconnect_reason)
+                except Exception:
+                    exact = False
+                if not exact:
+                    reservation_state_uncertain = True
+            raise
+        if not _store_bindings_match(cursor_store, reconnect_budget,
+                cursor_binding=cursor_binding,
+                budget_binding=budget_binding):
+            store_binding_changed = True
+            return None
+        try:
+            current = _budget_state_for_attempt(reconnect_budget)
+            exact = _exact_pending_reservation(current,
+                token=token, attempt=attempt, cursor_head=cursor_head,
+                expected_budget_head=expected_budget_head,
+                evaluated_at=evaluated_at,
+                reconnect_reason=reconnect_reason)
+        except Exception:
+            exact = False
+        if not exact:
+            reservation_state_uncertain = True
+            return None
+        return decision
+
+    def request_permission_check():
+        return guarded_control_check(permission_check)
+
+    def request_emergency_stop_check():
+        return guarded_control_check(emergency_stop_check)
+
+    def request_credential_check():
+        return guarded_control_check(credential_check)
 
     options = dict(expected_account_id=expected_account_id,
         initial_events=initial_events, reconnect_reason=reconnect_reason,
@@ -2136,8 +2173,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         confirm_read_only_paper=confirm_read_only_paper,
         confirm_cursor_checkpoint=confirm_cursor_checkpoint, opener=opener,
         permission_check=request_permission_check,
-        emergency_stop_check=emergency_stop_check,
-        credential_check=credential_check)
+        emergency_stop_check=request_emergency_stop_check,
+        credential_check=request_credential_check)
     options['reconnect_reservation_token'] = token
     if wall_clock is not None:
         options['wall_clock'] = wall_clock
@@ -2830,6 +2867,33 @@ def fixture_report():
                     emergency_stop_check=lambda: True))
         except ActivitySSEReconnectBudgetError as error:
             blocked_code = str(error)
+        control_cursor = ActivitySSECursorStore(
+            root / 'control-cursor.sqlite3', account)
+        control_budget = ActivitySSEReconnectBudget(
+            root / 'control-budget.sqlite3', account)
+        control_opener = Opener(raw)
+        control_samples = []
+        def mutate_reservation_from_credential_check():
+            control_samples.append(True)
+            if len(control_samples) == 2:
+                state = control_budget.inspect()
+                control_budget.finish(state['pending_token'],
+                    evaluated_at=999, outcome='REVIEW_REQUIRED',
+                    detail_code='CONCURRENT_CREDENTIAL_REVIEW')
+            return True
+        control_code = None
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=999, opener=control_opener,
+                **dict(common, cursor_store=control_cursor,
+                    reconnect_budget=control_budget,
+                    credential_check=
+                        mutate_reservation_from_credential_check,
+                    wall_clock=lambda: 999))
+        except ActivitySSEReconnectBudgetError as error:
+            control_code = str(error)
+        control_state = control_budget.inspect()
         try:
             collect_and_checkpoint_due('fixture_key_only_123',
                 'fixture_secret_only_123', expected_budget_head=ZERO,
@@ -3304,6 +3368,16 @@ def fixture_report():
                 not blocked_cursor.path.exists() and
                 not blocked_budget.path.exists() and
                 not blocked_opener.requests,
+            control_callback_mutation_blocks_before_provider_request=
+                control_code is not None and control_code.endswith(
+                    'RESERVATION_STATE_UNCERTAIN') and
+                control_samples == [True, True] and
+                not control_opener.requests and
+                not control_cursor.path.exists() and
+                control_state['pending_token'] is None and
+                control_state['review_required'] and
+                control_state['last_detail_code'] ==
+                    'CONCURRENT_CREDENTIAL_REVIEW',
             due_second_attempt_explicit_and_single=
                 result['reconnect_attempt_number'] == 2 and
                 len(second.requests) == 1,

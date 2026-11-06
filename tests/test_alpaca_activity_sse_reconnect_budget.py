@@ -757,6 +757,65 @@ def test_concurrent_reservation_result_at_preopen_fence_blocks_provider_io(
     assert state['last_detail_code'] == 'CONCURRENT_OWNER_REVIEW'
 
 
+def test_credential_callback_result_at_preopen_fence_blocks_provider_io(
+        tmp_path):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    samples = []
+
+    def credential():
+        samples.append(True)
+        # The second credential sample is the transport's final pre-open
+        # fence. Retire the grant there to prove its post-callback check.
+        if len(samples) == 2:
+            state = budget.inspect()
+            budget.finish(state['pending_token'], evaluated_at=1000,
+                outcome='REVIEW_REQUIRED',
+                detail_code='CONCURRENT_CREDENTIAL_REVIEW')
+        return True
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            credential_check=credential)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert samples == [True, True]
+    assert not opener.requests and not cursor.path.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        budget.path, ACCOUNT).inspect()
+    assert state['pending_token'] is None and state['review_required']
+    assert state['last_detail_code'] == 'CONCURRENT_CREDENTIAL_REVIEW'
+
+
+def test_stop_callback_result_at_preopen_fence_blocks_provider_io(tmp_path):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+    samples = []
+
+    def stop_clear():
+        samples.append(False)
+        # Coordinator admission and BEGIN sample this check three times;
+        # checkpoint admission is fourth and final transport pre-open is fifth.
+        if len(samples) == 5:
+            state = budget.inspect()
+            budget.finish(state['pending_token'], evaluated_at=1000,
+                outcome='REVIEW_REQUIRED',
+                detail_code='CONCURRENT_STOP_REVIEW')
+        return False
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            emergency_stop_check=stop_clear)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESERVATION_STATE_UNCERTAIN'
+    assert samples == [False] * 5
+    assert not opener.requests and not cursor.path.exists()
+    state = subject.ActivitySSEReconnectBudget(
+        budget.path, ACCOUNT).inspect()
+    assert state['pending_token'] is None and state['review_required']
+    assert state['last_detail_code'] == 'CONCURRENT_STOP_REVIEW'
+
+
 def test_unreadable_reservation_at_preopen_fence_blocks_provider_io(
         tmp_path, monkeypatch):
     cursor, budget = stores(tmp_path)
@@ -2876,6 +2935,22 @@ def test_preflight_denials_are_network_silent(tmp_path, change, code):
     cursor, budget = stores(tmp_path)
     opener = Opener([raw])
     with pytest.raises(ValueError, match=code):
+        call(tmp_path, opener, stores=(cursor, budget), **change)
+    assert not opener.requests
+    assert not budget.path.exists() and not cursor.path.exists()
+
+
+@pytest.mark.parametrize(('change','code'), [
+    ({'permission_check': None}, 'PERMISSION_CHECK_INVALID'),
+    ({'credential_check': None}, 'CREDENTIAL_CHECK_INVALID'),
+])
+def test_invalid_control_checks_are_storage_and_network_silent(
+        tmp_path, change, code):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match=code):
         call(tmp_path, opener, stores=(cursor, budget), **change)
     assert not opener.requests
     assert not budget.path.exists() and not cursor.path.exists()

@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.181 (pre-release).**
+**Current development build: 0.340.182 (pre-release).**
+
+## v0.340.182 Activity SSE post-control reservation fence
+
+The one-attempt Activity SSE coordinator now replays the exact pending reservation and store bindings after each untrusted permission, emergency-stop and saved-credential callback. A callback that durably retires or retargets the grant at the transport's final pre-open fence now yields fixed uncertainty before any provider GET. Invalid permission or credential callbacks fail before cursor or reconnect-budget storage is created. The mandatory reconnect-budget release fixture reproduces the former credential-callback race and requires zero requests plus durable manual review.
+
+This is disposable local injected concurrency evidence only. It does not prove cross-process/native-vault coordination or physical power-loss durability, attest a provider or source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.181 head `247fd3d94e90adb9a5f2903d48617c53dddd66ea` remained current when this candidate began. GitHub exposed no workflow-run or commit-status records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the required full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a destructive history rewrite. Fresh v0.340.182 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,328 tests with one expected non-Windows skip and one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `abe9161835f7066b9f91018e1c53ab940a23d4b80e60f2f3bf0d73dad5555ca8`; `validation/release_trials_0_340_182.json` SHA256 is `17f484a1a740b660621d1eeef149be2914a7034295348c8db0f9bcc5338b2f0e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.182, retained the mandatory control-race evidence and has SHA256 `00eb12c3d9986d15426036f69c229c235088cfa3c3a953fd0b150fc39a9cfa78`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
 
 ## v0.340.181 joint credential-rotation and independent-stop recovery
 

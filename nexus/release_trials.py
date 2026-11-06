@@ -1364,6 +1364,7 @@ def _validate(profile, result):
                 'lost_reservation_ack_replays_without_provider_request',
                 'lost_retry_result_ack_replays_without_new_attempt',
                 'emergency_stop_blocks_before_reconnect_storage',
+                'control_callback_mutation_blocks_before_provider_request',
                 'due_second_attempt_explicit_and_single',
                 'checkpoint_and_budget_recover_together',
                 'success_exception_rechecks_settled_files',

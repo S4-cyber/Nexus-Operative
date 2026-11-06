@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.172
+## Current candidate: v0.340.173
+
+The installed one-attempt Activity SSE API now independently revalidates its final explicit authorization, bounded single-request/reconnect, checkpoint, durable-binding, emergency-fence, no-automatic-action, no-ledger-mutation, reconnect-policy and false-authority claims before acknowledging success.
+
+Exact-source v0.340.172 commit `4dff5b95e788272b65431744d372fb8b6c681c10` passed public-security run 42149577126. Research/browser/evidence run 42149577042 and Windows run 42149577079 remained active at the predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.173 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,277-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 489 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `ad102be7546491103d6b8ed2e053f7e1c1f94d0e2f1f5f6a0f30a1dfa90de864`; `validation/release_trials_0_340_173.json` SHA256 is `84a38290f44365d0eca87724da8347d3540e519faacbdc30fa34642eb9404c79`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 160-member wheel reported v0.340.173, retained the final control checks and has SHA256 `fcdc41a4ad66a9accf768aa939f9973548ff4f0e3d400c639557cf57cc755b34`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.172
 
 The installed one-attempt Activity SSE API now binds its final source and provider/stream access acknowledgement to the actual request mode. Injected access remains explicitly unattested and provider-silent; the production default must acknowledge both the HTTPS provider request and stream connection.
 

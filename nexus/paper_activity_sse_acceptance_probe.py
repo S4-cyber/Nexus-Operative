@@ -26,8 +26,8 @@ from nexus.alpaca_activity_sse_reconnect_budget import (
     BUDGET_VIEW_KEYS, FLAGS as BUDGET_FLAGS,
     MAX_ATTEMPTS as MAX_RECONNECT_ATTEMPTS,
     MAX_DATABASE_BYTES as MAX_BUDGET_DATABASE_BYTES,
-    MAX_PROVIDER_RETRY_AFTER, OUTCOMES, PROVIDER_DELAY_ERRORS, REASONS,
-    RETRYABLE_ERRORS)
+    MAX_PROVIDER_RETRY_AFTER, OUTCOMES, POLICY as RECONNECT_BUDGET_POLICY,
+    PROVIDER_DELAY_ERRORS, REASONS, RETRYABLE_ERRORS)
 from nexus.alpaca_activity_sse_review import MAX_INPUT_BYTES, ULID
 from nexus.alpaca_paper_contract import sha
 from nexus.alpaca_paper_inspection import _uuid
@@ -225,16 +225,26 @@ def _attempt_result(value, account_sha256, expected_actual_provider_access):
     """
     counts = ('initial_events_reviewed', 'replay_events_reviewed',
         'redelivered_events_deduplicated', 'new_events_processed')
-    required_true = ('local_cursor_checkpoint_committed',
-        'process_restart_recoverable', 'complete_review_counts_bound',
+    required_true = ('single_get_attempt', 'single_reconnect_attempt',
+        'explicit_read_authorization', 'explicit_checkpoint_authorization',
+        'cursor_checkpoint_eligible', 'cursor_written',
+        'local_cursor_checkpoint_committed', 'process_restart_recoverable',
+        'reconnect_reservation_bound', 'transport_input_bound',
+        'complete_review_counts_bound', 'bounded_backoff_enforced',
+        'caller_driven_attempt', 'emergency_stop_admission_fenced',
+        'emergency_stop_sampled_before_reservation',
         'reconnect_budget_completed', 'actual_vault_access')
-    required_false = ('automatic_retry',)
+    required_false = ('duplicate_checkpoint', 'automatic_retry',
+        'automatic_reconnect_performed', 'automatic_backoff_verified',
+        'ledger_applied', *BUDGET_FLAGS)
     if (type(value) is not dict or
             type(expected_actual_provider_access) is not bool or
             value.get('mode') !=
                 'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT' or
             value.get('status') != 'REVIEW_REQUIRED' or
             value.get('account_sha256') != account_sha256 or
+            value.get('reconnect_budget_policy') !=
+                RECONNECT_BUDGET_POLICY or
             value.get('source') not in ATTEMPT_SOURCES or
             not _digest(value.get('checkpoint_head_sha256')) or
             not _digest(value.get('reconnect_budget_head_sha256')) or
@@ -249,11 +259,15 @@ def _attempt_result(value, account_sha256, expected_actual_provider_access):
                 value['reconnect_attempt_cap'] <= 100 or
             any(value.get(key) is not True for key in required_true) or
             any(value.get(key) is not False for key in required_false) or
+            type(value.get('result_acknowledgement_recovered')) is not bool or
             type(value.get('actual_provider_access')) is not bool or
             type(value.get('actual_stream_connection')) is not bool or
+            type(value.get('actual_reconnect_performed')) is not bool or
             value['actual_provider_access'] is not
                 expected_actual_provider_access or
             value['actual_stream_connection'] is not
+                expected_actual_provider_access or
+            value['actual_reconnect_performed'] is not
                 expected_actual_provider_access or
             value.get('source') != ('PAPER_HTTPS_READS'
                 if expected_actual_provider_access else

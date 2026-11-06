@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.173 Activity SSE final control acknowledgement
+
+The installed one-attempt Activity SSE API now independently revalidates the final explicit authorization, single-request/reconnect, checkpoint eligibility and write, durable binding, emergency-fence, caller-driven bounded-budget, no-automatic-action and no-ledger-mutation claims. The reconnect policy, recovered-acknowledgement shape, actual reconnect semantics and every authority flag must also remain exact before success can leave the installed boundary.
+
+Twenty-nine direct regressions alter those final control claims after the coordinator has committed. Every refusal follows exactly one request, preserves the completed cursor and reconnect budget, and performs no retry or automatic continuation. This is local final control-acknowledgement hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.172 commit `4dff5b95e788272b65431744d372fb8b6c681c10` passed public-security run 42149577126. Research/browser/evidence run 42149577042 and Windows run 42149577079 remained active at this candidate checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.173 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,277-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 489 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `ad102be7546491103d6b8ed2e053f7e1c1f94d0e2f1f5f6a0f30a1dfa90de864`; `validation/release_trials_0_340_173.json` SHA256 is `84a38290f44365d0eca87724da8347d3540e519faacbdc30fa34642eb9404c79`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 160-member wheel reported v0.340.173, retained the final control checks and has SHA256 `fcdc41a4ad66a9accf768aa939f9973548ff4f0e3d400c639557cf57cc755b34`. No actual provider/account/native Windows acceptance was performed.
+
 ## v0.340.172 Activity SSE final request-mode provenance
 
 The installed one-attempt Activity SSE API now binds its final source and provider/stream access acknowledgement to the actual request mode. An injected opener must remain `INJECTED_UNATTESTED` with both access flags false; the production default opener must remain `PAPER_HTTPS_READS` with both flags true. A contradictory post-commit acknowledgement can no longer be rendered as genuine HTTPS or injected evidence.

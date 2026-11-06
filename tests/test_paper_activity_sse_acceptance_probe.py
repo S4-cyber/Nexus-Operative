@@ -2055,7 +2055,21 @@ def test_coordinator_post_commit_process_control_remains_observable(
     ('complete_review_counts_bound',False),
     ('reconnect_budget_completed',False),('actual_vault_access',False),
     ('automatic_retry',True),('actual_provider_access','false'),
-    ('actual_stream_connection','false')))
+    ('actual_stream_connection','false'),
+    ('single_get_attempt',False),('single_reconnect_attempt',False),
+    ('explicit_read_authorization',False),
+    ('explicit_checkpoint_authorization',False),
+    ('cursor_checkpoint_eligible',False),('cursor_written',False),
+    ('reconnect_reservation_bound',False),('transport_input_bound',False),
+    ('bounded_backoff_enforced',False),('caller_driven_attempt',False),
+    ('emergency_stop_admission_fenced',False),
+    ('emergency_stop_sampled_before_reservation',False),
+    ('duplicate_checkpoint',True),('automatic_reconnect_performed',True),
+    ('automatic_backoff_verified',True),('ledger_applied',True),
+    ('reconnect_budget_policy','WRONG'),
+    ('result_acknowledgement_recovered','false'),
+    ('actual_reconnect_performed',True),
+    *((flag,True) for flag in subject.BUDGET_FLAGS)))
 def test_malformed_saved_pair_acknowledgement_fails_fixed_after_one_commit(
         tmp_path,saved_pair,monkeypatch,field,replacement):
     options,raw=paths(tmp_path);opener=Opener(raw)
@@ -2091,11 +2105,25 @@ def _attempt_acknowledgement(**changes):
         initial_events_reviewed=1,replay_events_reviewed=2,
         redelivered_events_deduplicated=1,new_events_processed=1,
         reconnect_attempt_number=1,reconnect_attempt_cap=3,
+        reconnect_budget_policy=subject.RECONNECT_BUDGET_POLICY,
+        single_get_attempt=True,single_reconnect_attempt=True,
+        explicit_read_authorization=True,
+        explicit_checkpoint_authorization=True,
+        cursor_checkpoint_eligible=True,cursor_written=True,
         local_cursor_checkpoint_committed=True,
-        process_restart_recoverable=True,complete_review_counts_bound=True,
+        process_restart_recoverable=True,reconnect_reservation_bound=True,
+        transport_input_bound=True,complete_review_counts_bound=True,
+        bounded_backoff_enforced=True,caller_driven_attempt=True,
+        emergency_stop_admission_fenced=True,
+        emergency_stop_sampled_before_reservation=True,
         reconnect_budget_completed=True,actual_vault_access=True,
-        automatic_retry=False,actual_provider_access=False,
-        actual_stream_connection=True)
+        duplicate_checkpoint=False,automatic_retry=False,
+        automatic_reconnect_performed=False,
+        automatic_backoff_verified=False,ledger_applied=False,
+        result_acknowledgement_recovered=False,
+        actual_provider_access=False,actual_stream_connection=True,
+        actual_reconnect_performed=True,
+        **{flag:False for flag in subject.BUDGET_FLAGS})
     result.update(changes)
     return result
 
@@ -2116,7 +2144,8 @@ def test_stream_connection_cannot_claim_no_provider_access():
 def test_acknowledgement_source_and_access_must_match_request_mode(
         expected_provider,source,provider,stream):
     result=_attempt_acknowledgement(source=source,
-        actual_provider_access=provider,actual_stream_connection=stream)
+        actual_provider_access=provider,actual_stream_connection=stream,
+        actual_reconnect_performed=stream)
     with pytest.raises(ValueError,
             match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
         subject._attempt_result(result,'a'*64,expected_provider)
@@ -2128,7 +2157,8 @@ def test_acknowledgement_accepts_exact_request_mode(
         expected_provider,source):
     result=_attempt_acknowledgement(source=source,
         actual_provider_access=expected_provider,
-        actual_stream_connection=expected_provider)
+        actual_stream_connection=expected_provider,
+        actual_reconnect_performed=expected_provider)
     assert subject._attempt_result(result,'a'*64,
         expected_provider) is result
 
@@ -2145,7 +2175,8 @@ def test_false_request_mode_acknowledgement_fails_after_one_commit(
     def relabel(**kwargs):
         result=original(**kwargs)
         result.update(source=source,actual_provider_access=provider,
-            actual_stream_connection=stream)
+            actual_stream_connection=stream,
+            actual_reconnect_performed=stream)
         return result
 
     monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',

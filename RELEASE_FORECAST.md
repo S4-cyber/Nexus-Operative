@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.187
+## Current candidate: v0.340.188
+
+The Activity SSE transport now closes an already-open provider response if its context admission fails. It preserves the fixed failure diagnostic, reads no body, advances no cursor and leaves exactly one bounded caller-driven retry; ordinary cleanup errors are suppressed without suppressing process-control signals. Mandatory transport and reconnect-budget fixtures pin the boundary.
+
+Exact-source v0.340.187 research run 42242345847 and Windows/installer run 42242345837 passed all reported jobs. Security run 42242345811 passed the current/reachable audit across 8,657 blobs, 996 commits and 924 paths with zero findings, but required full-history Gitleaks still finds the two known literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`. Fresh v0.340.188 workflows remain required.
+
+Final local verification passed 5,342 tests with one expected non-Windows skip and one existing warning; the finalized focus passed 1,042. All sixteen profiles match 399 source files / `730ff0c1bda57be2e1b633d69a653ee47afc6a6c773c70aa88df848930ab1583`; report SHA256 is `a91402554ff5cb72b1bd4939632ba098146d1a5c04a11569ce04283e8e5b7dc3`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen controllers passed. The 161-member wheel reports v0.340.188 and has SHA256 `c028a224cea6052b2183e5a915ca2dae040a07ea0f84e6f6e285ddf5cbba01fc`.
+
+No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. This does not establish a launch date, release approval or trading/funding/live/cloud permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.187
 
 The exceptional Activity SSE ownership-release evidence now uses a platform-neutral late identity-failure injection after one response opens, while retaining the real OS-backed cursor lease. It requires response closure, no cursor advance, no retry and durable non-retryable review. This fixes the hosted Windows fixture without weakening the production guard or claiming native/provider acceptance.
 

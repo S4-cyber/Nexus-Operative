@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.187 (pre-release).**
+**Current development build: 0.340.188 (pre-release).**
+
+## v0.340.188 Activity SSE response-admission cleanup
+
+The Activity SSE transport now owns cleanup when an already-open provider response refuses context admission. A response whose `__enter__` fails is deterministically closed before the attempt returns the fixed `TRANSPORT_FAILED` diagnostic; private exception detail is not exposed, no response body is read, the durable cursor remains unchanged and the reconnect budget records one bounded caller-driven retry. Ordinary cleanup failures cannot replace the original diagnostic, while `KeyboardInterrupt` and `SystemExit` remain unsuppressed. The mandatory transport fixture and reconnect-budget integration fixture both pin this boundary.
+
+This is injected local exceptional-path evidence. It does not attest a provider/source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, demonstrate native Windows or physical power-loss durability, authorize trading/funding/live/cloud use, prove profitability or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.187 research run 42242345847 and Windows/installer run 42242345837 passed all reported jobs, including full regression, Portal browser help, saved release evidence, standalone EXE, installer, reinstall and data-preserving uninstall. Public-security run 42242345811 passed the current/reachable artifact audit across 8,657 blobs, 996 commits and 924 paths with zero findings, but failed required full-history Gitleaks on the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; removing them would require the prohibited destructive history rewrite. Fresh v0.340.188 exact-source hosted workflows remain required.
+
+Final local verification passed 5,342 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 1,042 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `730ff0c1bda57be2e1b633d69a653ee47afc6a6c773c70aa88df848930ab1583`; `validation/release_trials_0_340_188.json` SHA256 is `a91402554ff5cb72b1bd4939632ba098146d1a5c04a11569ce04283e8e5b7dc3`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.188, retains the response-admission fixture and has SHA256 `c028a224cea6052b2183e5a915ca2dae040a07ea0f84e6f6e285ddf5cbba01fc`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
 
 ## v0.340.187 Windows-portable Activity SSE release evidence
 

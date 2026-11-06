@@ -5,7 +5,7 @@ The callable in this module opens only the fixed Alpaca paper Activity SSE
 wire review.  It never retries, reconnects, advances a cursor, stores a
 credential, applies a ledger entry, or submits an order.
 """
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 import math
 import re
 import time
@@ -37,6 +37,43 @@ class ActivitySSETransportError(ValueError):
 def _fail(code, *, provider_retry_after_seconds=0):
     raise ActivitySSETransportError(code,
         provider_retry_after_seconds=provider_retry_after_seconds) from None
+
+
+def _close_unentered_response(response):
+    """Close one opened response that never entered its normal scope.
+
+    Ordinary cleanup detail must not replace the fixed failure that prevented
+    response admission. Process-control signals remain independently visible.
+    """
+    try:
+        closer = getattr(response, 'close', None)
+        if callable(closer):
+            closer()
+            return
+        exit_response = getattr(response, '__exit__', None)
+        if callable(exit_response):
+            exit_response(None, None, None)
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except Exception:
+        pass
+
+
+@contextmanager
+def _response_context(response):
+    """Preserve response context semantics and clean up failed admission."""
+    try:
+        response.__enter__()
+    except BaseException:
+        _close_unentered_response(response)
+        raise
+    try:
+        yield response
+    except BaseException as error:
+        if not response.__exit__(type(error), error, error.__traceback__):
+            raise
+    else:
+        response.__exit__(None, None, None)
 
 
 def _retry_after(headers):
@@ -218,20 +255,9 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
             # control signals from cleanup; suppress only ordinary close
             # detail in favor of the original fixed public diagnostic.
             if response is not None:
-                try:
-                    closer = getattr(response, 'close', None)
-                    if callable(closer):
-                        closer()
-                    else:
-                        exit_response = getattr(response, '__exit__', None)
-                        if callable(exit_response):
-                            exit_response(None, None, None)
-                except (KeyboardInterrupt, SystemExit):
-                    raise
-                except Exception:
-                    pass
+                _close_unentered_response(response)
             raise
-        with response:
+        with _response_context(response):
             # The lease is intentionally released once the single request has
             # opened. Later cursor changes are still caught by the existing
             # post-IO exact-head and checkpoint admission proofs.
@@ -386,6 +412,28 @@ def fixture_report():
         permission_check=lambda: True,
         emergency_stop_check=lambda: False,
         credential_check=lambda: True)
+    class EntryFailureResponse(Response):
+        def __enter__(self):
+            raise RuntimeError('private response admission detail')
+        def close(self):
+            self.closed = True
+    class EntryFailureOpener(Opener):
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            self.response = EntryFailureResponse(request.full_url)
+            return self.response
+    entry_opener = EntryFailureOpener()
+    entry_code = None
+    try:
+        collect_once('fixture_key_only_123', 'fixture_secret_only_123',
+            expected_account_id=account, since_id=cursor,
+            confirm_read_only_paper=True, opener=entry_opener,
+            wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+            permission_check=lambda: True,
+            emergency_stop_check=lambda: False,
+            credential_check=lambda: True)
+    except ActivitySSETransportError as error:
+        entry_code = str(error)
     request, timeout = opener.requests[0]
     encoded = json.dumps(result, sort_keys=True)
     checks = dict(
@@ -397,6 +445,11 @@ def fixture_report():
         bounded_segment_reviewed=result['bounded_segment_complete']
             and result['events_reviewed'] == 2 and 0 < timeout <= REQUEST_TIMEOUT,
         injected_response_closed=opener.response.closed,
+        failed_entry_response_closed=entry_code ==
+            'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED'
+            and len(entry_opener.requests) == 1
+            and entry_opener.response.closed
+            and entry_opener.response.body.tell() == 0,
         no_identifier_or_credential_echo=all(token not in encoded for token in
             (account, cursor, 'fixture_key_only_123', 'fixture_secret_only_123',
              '11111111', '22222222')),

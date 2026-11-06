@@ -94,6 +94,55 @@ def test_single_get_binds_target_headers_and_returns_only_aggregate_review():
         '11111111', '22222222'))
 
 
+def test_response_entry_failure_closes_opened_response_and_hides_detail():
+    class EntryFailureResponse(Response):
+        def __enter__(self):
+            raise RuntimeError('private response admission detail')
+        def close(self):
+            self.closed = True
+
+    response = EntryFailureResponse()
+    opener = Opener(response)
+    with pytest.raises(subject.ActivitySSETransportError) as raised:
+        collect(opener)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED'
+    assert 'private' not in str(raised.value)
+    assert len(opener.requests) == 1 and response.closed
+    assert response.reads == 0
+
+
+def test_response_entry_failure_suppresses_ordinary_close_detail():
+    class EntryFailureResponse(Response):
+        def __enter__(self):
+            raise RuntimeError('private response admission detail')
+        def close(self):
+            self.closed = True
+            raise RuntimeError('private response close detail')
+
+    response = EntryFailureResponse()
+    with pytest.raises(subject.ActivitySSETransportError) as raised:
+        collect(Opener(response))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED'
+    assert 'private' not in str(raised.value) and response.closed
+
+
+@pytest.mark.parametrize('signal', (KeyboardInterrupt, SystemExit))
+def test_response_entry_cleanup_preserves_process_control(signal):
+    class EntryFailureResponse(Response):
+        def __enter__(self):
+            raise RuntimeError('private response admission detail')
+        def close(self):
+            self.closed = True
+            raise signal()
+
+    response = EntryFailureResponse()
+    with pytest.raises(signal):
+        collect(Opener(response))
+    assert response.closed
+
+
 @pytest.mark.parametrize('confirmation', [False, None, 1, 'true'])
 def test_confirmation_is_strict_and_network_silent(confirmation):
     opener = Opener()

@@ -2356,6 +2356,39 @@ def test_transport_failure_records_backoff_without_sleep_or_second_get(tmp_path)
     assert second['attempt'] == 2
 
 
+def test_response_entry_failure_closes_response_and_retains_bounded_retry(
+        tmp_path):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+
+    class EntryFailureResponse(Response):
+        def __enter__(self):
+            raise RuntimeError('private response admission detail')
+        def close(self):
+            self.closed = True
+
+    class EntryFailureOpener(Opener):
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            self.response = EntryFailureResponse(raw, request.full_url)
+            return self.response
+
+    opener = EntryFailureOpener([])
+    with pytest.raises(ValueError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED'
+    assert 'private' not in str(raised.value)
+    assert len(opener.requests) == 1 and opener.response.closed
+    assert not cursor.path.exists()
+    state = budget.inspect()
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert state['last_detail_code'] == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED'
+    assert state['attempts'] == 1 and state['next_allowed_at'] == 1001
+    assert not state['automatic_retry'] and not state['automatic_sleep']
+
+
 @pytest.mark.parametrize('store_name', ('cursor', 'budget'))
 def test_failure_final_file_change_withholds_provider_failure_acknowledgement(
         tmp_path, monkeypatch, store_name):

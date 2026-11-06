@@ -1330,6 +1330,7 @@ def _validate(profile, result):
             all(transport[k] is True for k in ('passed','exact_single_get',
                 'fixed_activity_target','fixed_stream_headers',
                 'bounded_segment_reviewed','injected_response_closed',
+                'failed_entry_response_closed',
                 'no_identifier_or_credential_echo','no_automatic_continuation',
                 'output_never_authoritative')) and
             transport['injected_get_requests']==1,

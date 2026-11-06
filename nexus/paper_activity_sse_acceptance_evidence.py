@@ -767,11 +767,12 @@ def rotated_inflight_fixture_report():
 
             rotating = _RotatingOpener(raw, rotate)
             failed = False
+            order = root/'order_lifecycle.sqlite3'
             options = dict(expected_account_id=ACCOUNT,
                 initial_events_path=source,
                 cursor_path=root/'cursor.sqlite3',
                 budget_path=root/'budget.sqlite3',
-                order_journal_path=root/'orders.sqlite3',
+                order_journal_path=order,
                 expected_cursor_head=ZERO, expected_budget_head=ZERO,
                 reconnect_reason='CONNECTION_DROPPED',
                 confirm_reconnect_attempt=True,
@@ -784,9 +785,15 @@ def rotated_inflight_fixture_report():
             except ValueError as error:
                 failed = (str(error) ==
                     'PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED')
-            review = _cold_status(root, 1001)
+            review = _cold_status(root, 1001,
+                'order_lifecycle.sqlite3')
             review_committed = _snapshot(root)
+            no_order_before_stop = not order.exists()
             rotated_record = paper_credentials._decode(vault.raw)
+            stop = _independent_stop(root)
+            stopped_committed = _snapshot(root)
+            stopped = _cold_status(root, 1001,
+                'order_lifecycle.sqlite3')
             denied = _Opener(raw)
             denied_failed = False
             retry_options = {**options,
@@ -800,7 +807,8 @@ def rotated_inflight_fixture_report():
             except ValueError as error:
                 denied_failed = (str(error) ==
                     'PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED')
-            after_denial = _cold_status(root, 1001)
+            after_denial = _cold_status(root, 1001,
+                'order_lifecycle.sqlite3')
             checks = dict(
                 rotation_is_explicit_and_non_authoritative=(
                     len(rotations) == 1 and
@@ -825,17 +833,44 @@ def rotated_inflight_fixture_report():
                     review['reconnect_review_required'] is True and
                     review['reconnect_budget_completed'] is False and
                     review['one_attempt_eligible'] is False),
+                independent_stop_process_is_local_only=(
+                    no_order_before_stop and
+                    stop['passed'] is True and stop['halted'] is True and
+                    stop['intent_preceded_durable_halt'] is True and
+                    stop['emergency_intent_present'] is True and
+                    stop['durable_order_halt_confirmed'] is True and
+                    stop['desktop_started'] is False and
+                    stop['network_requested'] is False and
+                    stop['credential_access_requested'] is False and
+                    stop['automatic_restart'] is False and
+                    stop['external_connections'] == 0 and
+                    stop['credential_operations'] == 0),
+                independent_stop_preserves_rotation_review=(
+                    review_committed != stopped_committed and
+                    stopped['snapshot_consistent'] is True and
+                    stopped['storage_snapshot_consistent'] is True and
+                    stopped['emergency_cut_latch_active'] is True and
+                    stopped['emergency_cut_scope_consistent'] is True and
+                    stopped['cursor_head_sha256'] ==
+                        review['cursor_head_sha256'] and
+                    stopped['reconnect_budget_head_sha256'] ==
+                        review['reconnect_budget_head_sha256'] and
+                    stopped['reconnect_attempt_number'] == 1 and
+                    stopped['reconnect_review_required'] is True and
+                    stopped['one_attempt_eligible'] is False),
                 rotated_retry_denied_before_get=(
                     denied_failed and len(denied.requests) == 0),
                 denied_retry_preserves_exact_durable_state=(
-                    review_committed == _snapshot(root) and
+                    stopped_committed == _snapshot(root) and
                     after_denial['cursor_head_sha256'] ==
                         review['cursor_head_sha256'] and
                     after_denial['reconnect_budget_head_sha256'] ==
                         review['reconnect_budget_head_sha256'] and
                     after_denial['reconnect_attempt_number'] == 1 and
                     after_denial['reconnect_review_required'] is True and
-                    after_denial['one_attempt_eligible'] is False),
+                    after_denial['one_attempt_eligible'] is False and
+                    after_denial['emergency_cut_latch_active'] is True and
+                    after_denial['emergency_cut_scope_consistent'] is True),
                 cold_status_is_vault_network_and_write_silent=(
                     review['credential_operations'] == 0 and
                     review['external_connections'] == 0 and
@@ -844,7 +879,8 @@ def rotated_inflight_fixture_report():
                     after_denial['external_connections'] == 0 and
                     after_denial['journals_unchanged'] is True),
                 private_input_unchanged=source.read_bytes() == source_before,
-                no_order_journal_created=not (root/'orders.sqlite3').exists(),
+                no_order_journal_created_before_explicit_stop=
+                    no_order_before_stop,
                 no_automatic_retry_or_continuation=(
                     review['automatic_retry'] is False and
                     review['automatic_continuation'] is False and

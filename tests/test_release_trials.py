@@ -639,6 +639,8 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('installed_activity_sse_revoked_retry','restored_retry_makes_one_get'),False,'INSTALLED_ACTIVITY_SSE_REVOKED_RETRY'),
         (('installed_activity_sse_revoked_retry','ready_for_routing'),True,'INSTALLED_ACTIVITY_SSE_REVOKED_RETRY_AUTHORITY'),
         (('installed_activity_sse_rotated_inflight','inflight_rotation_requires_durable_review'),False,'INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT'),
+        (('installed_activity_sse_rotated_inflight','independent_stop_process_is_local_only'),False,'INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT'),
+        (('installed_activity_sse_rotated_inflight','independent_stop_preserves_rotation_review'),False,'INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT'),
         (('installed_activity_sse_rotated_inflight','rotated_retry_denied_before_get'),False,'INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT'),
         (('installed_activity_sse_rotated_inflight','ready_for_routing'),True,'INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT_AUTHORITY'),
         (('exact_response_bundle','session_tail_required'),False,'EXACT_RESPONSE_BUNDLE'),

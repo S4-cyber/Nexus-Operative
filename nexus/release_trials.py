@@ -1503,10 +1503,13 @@ def _validate(profile, result):
                 'inflight_rotation_fails_after_one_get',
                 'inflight_rotation_withholds_checkpoint',
                 'inflight_rotation_requires_durable_review',
+                'independent_stop_process_is_local_only',
+                'independent_stop_preserves_rotation_review',
                 'rotated_retry_denied_before_get',
                 'denied_retry_preserves_exact_durable_state',
                 'cold_status_is_vault_network_and_write_silent',
-                'private_input_unchanged','no_order_journal_created',
+                'private_input_unchanged',
+                'no_order_journal_created_before_explicit_stop',
                 'no_automatic_retry_or_continuation')) and
             installed_sse_rotated[
                 'retained_private_evidence_published'] is False and

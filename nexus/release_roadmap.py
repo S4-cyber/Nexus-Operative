@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.180'
+REVISION = '0.340.181'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -615,6 +615,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Mandatory installed Activity SSE in-flight rotation evidence now replaces the saved pair during response consumption. The old generation is revoked, exactly one bounded GET fails without a cursor checkpoint, the reconnect budget enters durable manual review, and a subsequent attempt is denied before network access despite the valid replacement pair. Cold review is vault/network/storage-write silent. This is disposable local injected evidence, not cross-process/native-vault proof, provider identity, broker acceptance, sustained-market coverage, reconciliation or routing authority.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the independent emergency-stop process now durably latches after an in-flight credential rotation has already forced manual review, preserving the exact cursor/reconnect heads and denying another GET with replacement credentials' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Mandatory installed joint-failure evidence now invokes the standalone emergency-stop process after an in-flight saved-pair rotation has forced durable manual review. The stop creates no Portal, vault or network activity, preserves the exact cursor/reconnect heads and attempt count, and keeps a subsequent confirmed attempt from reaching network despite valid replacement credentials. This is disposable local injected evidence, not native power-loss proof, provider identity, broker acceptance, sustained-market coverage, reconciliation or routing authority.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -780,7 +788,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.180 makes in-flight credential-rotation recovery evidence mandatory for the installed Activity SSE path. A disposable response rotates the explicit saved pair after one bounded GET begins; the old generation is revoked, no cursor checkpoint is accepted, and the durable reconnect budget enters manual review. A subsequent confirmed attempt is denied before any GET even though a valid replacement pair exists, while cold status remains vault/network/storage-write silent. GitHub exposed no workflow-run records for exact-source v0.340.179 when this candidate began, so no hosted success is inferred. The standing public-security blocker remains the full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a forbidden destructive history rewrite. This is disposable local injected secret-lifecycle evidence, not provider/source attestation, cross-process or physical/native-vault durability, broker acceptance, sustained market realism, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.181 makes joint credential-rotation and independent-stop recovery evidence mandatory for the installed Activity SSE path. After one bounded GET rotates the explicit saved pair and forces durable manual review without a cursor checkpoint, a standalone process publishes the emergency intent before the durable order halt. It starts no Portal, vault, network or automatic restart path, preserves the exact cursor/reconnect heads and attempt count, and another confirmed attempt with valid replacement credentials is denied before any GET. GitHub exposed no workflow-run or commit-status records for exact-source v0.340.180 when this candidate began, so no hosted success is inferred. The standing public-security blocker remains the full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a forbidden destructive history rewrite. This is disposable local injected joint-failure evidence, not provider/source attestation, cross-process/native-vault or physical power-loss proof, broker acceptance, sustained market realism, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

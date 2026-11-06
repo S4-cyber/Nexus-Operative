@@ -84,9 +84,12 @@ def test_rotated_inflight_fixture_requires_review_without_another_get():
     assert result['inflight_rotation_fails_after_one_get'] is True
     assert result['inflight_rotation_withholds_checkpoint'] is True
     assert result['inflight_rotation_requires_durable_review'] is True
+    assert result['independent_stop_process_is_local_only'] is True
+    assert result['independent_stop_preserves_rotation_review'] is True
     assert result['rotated_retry_denied_before_get'] is True
     assert result['denied_retry_preserves_exact_durable_state'] is True
     assert result['cold_status_is_vault_network_and_write_silent'] is True
+    assert result['no_order_journal_created_before_explicit_stop'] is True
     assert result['no_automatic_retry_or_continuation'] is True
     assert result['actual_provider_access'] is False
     assert result['ready_for_routing'] is False

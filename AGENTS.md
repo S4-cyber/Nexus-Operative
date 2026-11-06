@@ -1,5 +1,18 @@
 # Nexus Operative continuity instructions
 
+## v0.340.181 joint credential-rotation and independent-stop recovery
+
+The mandatory installed recovery fixture now invokes the standalone emergency-stop process after an in-flight saved-pair rotation has already forced the Activity SSE reconnect budget into durable manual review. The stop publishes its intent before the durable order halt, starts no Portal, vault, network or automatic-restart path, preserves the exact cursor/reconnect heads and attempt count, and keeps a subsequent confirmed attempt from reaching any GET despite valid replacement credentials.
+
+This is disposable local injected joint-failure evidence only. It does not prove cross-process/native-vault coordination or physical power-loss durability, attest a provider or source, accept a broker account, prove delivery coverage or market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.180 head `fcd9960e956044e3912932635b83e0b2f4d10361` remained current when this candidate began. GitHub exposed no workflow-run or commit-status records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the required full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a destructive history rewrite. Fresh v0.340.181 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,324 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/emergency/release/evidence/version/roadmap focus passed 445 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `c4c74807f58e4c6c88c9a18f0f6e3e77951f4fe4534c8ee1112932e72c728ece`; `validation/release_trials_0_340_181.json` SHA256 is `7e36d256166dd6f143d23ee01cad8d5c4800c17631bcf403fd55b333e7550ea5`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.181, retained the joint-failure evidence and has SHA256 `e12440a75ec711a0dbb205c2002440a0ea9b206793a8ae72f1f294108646ca89`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
+
+
 ## v0.340.180 Activity SSE in-flight credential-rotation review
 
 The mandatory installed recovery fixture now rotates the explicit saved paper credential pair while one injected Activity SSE response is being consumed. The old credential generation is revoked after exactly one bounded GET, no cursor checkpoint is accepted, and the reconnect budget enters durable manual review. A subsequent confirmed attempt is denied before any GET even though the replacement pair is valid; fresh review status remains vault/network/storage-write silent.

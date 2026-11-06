@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.189
+## Current candidate: v0.340.190
+
+The Activity SSE redirect handler now cleans up an already-open rejected response without allowing an ordinary close exception to replace fixed `REDIRECT_DENIED` or expose private response detail. Process-control signals remain visible. Durable reconnect state records the one attempted GET as non-retryable manual review with no cursor advance, provider backoff, automatic retry or sleep.
+
+Exact-source v0.340.189 research run 42262053404 passed its full Windows regression, Portal browser help and saved evidence. Windows/installer run 42262053467 remained active when this candidate was finalized. Security run 42262053444 passed the current/reachable audit across 8,685 blobs, 998 commits and 926 paths with zero findings, but required full-history Gitleaks still finds the two known literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`. Fresh v0.340.190 workflows remain required.
+
+Final local verification passed 5,352 tests with one expected non-Windows skip and one existing warning; the finalized eleven-file focus passed 756. All sixteen profiles match 399 source files / `3533f053846b16364120938f90b807f6d5ece1401bd3387451f38bb9eb80f7e0`; report SHA256 is `5043a782939adf0d8856c38d350c465a08470e914a13b9d09659fc0c6d2badcc`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen controllers passed. The 161-member wheel reports v0.340.190 and has SHA256 `850b23198f46556f22e023ab47fd7e813625ac160950c589815b4d9dcf30f092`.
+
+No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. This does not establish a launch date, release approval or trading/funding/live/cloud permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.189
 
 The Activity SSE transport now preserves the fixed HTTP classification and bounded provider-directed delay when cleanup of the unentered HTTP error response raises an ordinary exception. Validated 429/503 `Retry-After` backoff survives with one attempted GET, no cursor write and no automatic retry or sleep; private cleanup detail stays hidden and process-control signals remain visible. Mandatory transport, reconnect-budget and release fixtures pin the boundary.
 

@@ -9,6 +9,7 @@ from urllib.error import HTTPError
 import pytest
 
 from nexus import alpaca_activity_sse_reconnect_budget as subject
+from nexus import alpaca_activity_sse_transport as transport
 from nexus import alpaca_activity_sse_wire_review as wire
 from nexus.alpaca_activity_sse_cursor_store import ZERO, ActivitySSECursorStore
 from nexus.alpaca_activity_sse_review import _event
@@ -1011,6 +1012,40 @@ def test_owner_release_failure_closes_open_response_and_requires_review(
     assert retained['last_outcome'] == 'REVIEW_REQUIRED'
     assert retained['last_detail_code'] == 'NONRETRYABLE_FAILURE'
     assert lock_path.is_file()
+
+
+def test_redirect_close_failure_preserves_denial_and_requires_review(tmp_path):
+    cursor, budget = stores(tmp_path)
+
+    class RedirectResponse:
+        closed = False
+        def close(self):
+            self.closed = True
+            raise RuntimeError('private redirect cleanup detail')
+
+    class RedirectOpener:
+        def __init__(self):
+            self.requests = []
+            self.response = RedirectResponse()
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            transport._NoRedirect().redirect_request(request, self.response,
+                302, SECRET, {}, 'https://example.invalid/private')
+
+    opener = RedirectOpener()
+    with pytest.raises(subject.ActivitySSETransportError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_REDIRECT_DENIED'
+    assert 'private' not in str(raised.value)
+    assert len(opener.requests) == 1 and opener.response.closed
+    assert cursor.inspect()['head_sha256'] == ZERO
+    retained = budget.inspect()
+    assert retained['attempts'] == 1
+    assert retained['last_outcome'] == 'REVIEW_REQUIRED'
+    assert retained['last_detail_code'] == 'NONRETRYABLE_FAILURE'
+    assert retained['last_applied_backoff_seconds'] == 0
+    assert not retained['automatic_retry'] and not retained['automatic_sleep']
 
 
 def test_stop_callback_result_at_preopen_fence_blocks_provider_io(tmp_path):

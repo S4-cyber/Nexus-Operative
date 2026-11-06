@@ -111,7 +111,10 @@ def _http_failure(status, headers, response_url, target, evaluated_at):
 
 class _NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        fp.close()
+        # A redirect response is already open but is never admitted to normal
+        # response scope. Cleanup must not replace the fixed denial or expose
+        # private response detail. Process-control signals remain visible.
+        _close_unentered_response(fp)
         _fail('REDIRECT_DENIED')
 
 
@@ -466,6 +469,18 @@ def fixture_report():
     except ActivitySSETransportError as error:
         http_code = str(error)
         http_delay = error.provider_retry_after_seconds
+    class RedirectCloseFailure:
+        closed = False
+        def close(self):
+            self.closed = True
+            raise RuntimeError('private redirect cleanup detail')
+    redirect_response = RedirectCloseFailure()
+    redirect_code = None
+    try:
+        _NoRedirect().redirect_request(None, redirect_response, 302,
+            'private redirect reason', {}, 'https://example.invalid')
+    except ActivitySSETransportError as error:
+        redirect_code = str(error)
     request, timeout = opener.requests[0]
     encoded = json.dumps(result, sort_keys=True)
     checks = dict(
@@ -487,6 +502,9 @@ def fixture_report():
             and http_delay == 120
             and len(http_opener.requests) == 1
             and http_opener.response.closed,
+        failed_redirect_cleanup_preserves_denial=redirect_code ==
+            'ALPACA_ACTIVITY_SSE_TRANSPORT_REDIRECT_DENIED'
+            and redirect_response.closed,
         no_identifier_or_credential_echo=all(token not in encoded for token in
             (account, cursor, 'fixture_key_only_123', 'fixture_secret_only_123',
              '11111111', '22222222')),

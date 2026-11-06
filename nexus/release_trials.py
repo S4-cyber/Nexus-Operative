@@ -1332,6 +1332,7 @@ def _validate(profile, result):
                 'bounded_segment_reviewed','injected_response_closed',
                 'failed_entry_response_closed',
                 'failed_http_cleanup_preserves_backoff',
+                'failed_redirect_cleanup_preserves_denial',
                 'no_identifier_or_credential_echo','no_automatic_continuation',
                 'output_never_authoritative')) and
             transport['injected_get_requests']==1,

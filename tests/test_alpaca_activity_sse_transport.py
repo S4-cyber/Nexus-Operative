@@ -196,6 +196,38 @@ def test_default_opener_disables_proxies_and_redirects(monkeypatch):
     assert stream.closed
 
 
+def test_redirect_ordinary_close_failure_preserves_fixed_denial():
+    class CloseFailureResponse:
+        closed = False
+        def close(self):
+            self.closed = True
+            raise RuntimeError('private redirect cleanup detail')
+
+    response = CloseFailureResponse()
+    with pytest.raises(subject.ActivitySSETransportError) as raised:
+        subject._NoRedirect().redirect_request(None, response, 302, SECRET,
+            {}, 'https://example.invalid/private')
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_REDIRECT_DENIED'
+    assert response.closed and SECRET not in str(raised.value)
+    assert 'private' not in str(raised.value)
+
+
+@pytest.mark.parametrize('signal', (KeyboardInterrupt, SystemExit))
+def test_redirect_cleanup_preserves_process_control(signal):
+    class SignalingResponse:
+        closed = False
+        def close(self):
+            self.closed = True
+            raise signal()
+
+    response = SignalingResponse()
+    with pytest.raises(signal):
+        subject._NoRedirect().redirect_request(None, response, 302, SECRET,
+            {}, 'https://example.invalid/private')
+    assert response.closed
+
+
 @pytest.mark.parametrize(('response','code'), [
     (Response(url='https://api.alpaca.markets/v2beta1/events/activities'),
         'RESPONSE_URL_CHANGED'),

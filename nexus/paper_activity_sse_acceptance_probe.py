@@ -7,6 +7,7 @@ one cursor checkpoint; it never sleeps, retries, trades, moves funds, or
 prints private events.
 """
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -384,6 +385,16 @@ def _input_boundary(item, *, host=None):
         item.st_ctime_ns if host != 'nt' else None, item.st_nlink)
 
 
+def _input_fingerprint_sha256(fingerprints):
+    """Extract one validated digest from the private input scope."""
+    if (type(fingerprints) is not tuple or len(fingerprints) != 1 or
+            type(fingerprints[0]) is not tuple or
+            len(fingerprints[0]) != 8 or
+            not _digest(fingerprints[0][-1])):
+        _fail()
+    return fingerprints[0][-1]
+
+
 def _private_journal_path(value):
     """Pin one journal parent plus any safe existing leaf identity.
 
@@ -590,7 +601,9 @@ def _scope(expected_account_id, cursor_path, budget_path, order_journal_path):
         (paths, identities, parent_identities))
 
 
-def _load_events(path):
+def _load_events(path, expected_sha256):
+    if not _digest(expected_sha256):
+        _fail()
     path, _ = _private_path(path)
     try:
         observed = path.lstat()
@@ -612,6 +625,7 @@ def _load_events(path):
             closed = os.fstat(stream.fileno())
         final = path.lstat()
         if (len(raw) > MAX_INPUT_BYTES or raw != verified or
+                hashlib.sha256(raw).hexdigest() != expected_sha256 or
                 _input_boundary(after_first) != _input_boundary(opened) or
                 _input_boundary(closed) != _input_boundary(opened) or
                 _input_boundary(final) != _input_boundary(observed) or
@@ -935,7 +949,8 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
             _fail()
 
     input_guard()
-    events = _load_events(initial_path)
+    events = _load_events(initial_path,
+        _input_fingerprint_sha256(fingerprints))
     input_guard()
 
     coordinator_started = False

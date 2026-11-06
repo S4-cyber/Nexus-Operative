@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.195'
+REVISION = '0.340.196'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -792,7 +792,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.195 closes the Windows creation-time gap in the installed one-attempt Activity SSE retained-input loader. The already-open descriptor must now produce two byte-identical bounded reads, with stable identity, type, link count, size and timestamps around both reads. A regression models same-inode, same-size content substitution with restored modification and creation metadata: v0.340.194 accepted the substituted parsed bytes, while this candidate returns the fixed failure. Exact-source v0.340.194 security and research/browser/evidence workflows passed; its Windows/installer workflow remained active at candidate recovery. This is local injected race evidence, not provider/account acceptance, delivery coverage, sustained market realism, native durability, fee/hold/funds reconciliation, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.196 binds the installed one-attempt Activity SSE parsed bytes to the exact SHA-256 captured by its private pre-attempt input fingerprint. Two matching descriptor reads and stable metadata alone could still admit coordinated same-inode substitution if the original bytes were restored before the closing sample; the new regression reproduced that v0.340.195 acceptance and now requires the fixed failure. Exact-source v0.340.195 security passed, browser help and saved evidence passed, and its full regression plus Windows/installer workflow remained active at candidate recovery. This is local injected race evidence, not provider/account acceptance, delivery coverage, sustained market realism, native durability, fee/hold/funds reconciliation, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

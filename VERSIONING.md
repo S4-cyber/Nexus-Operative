@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.195 (pre-release).**
+**Current development build: 0.340.196 (pre-release).**
+
+## v0.340.196 fingerprint-bound retained-input parsing
+
+The installed one-attempt Activity SSE loader now requires the parsed retained-input bytes to match the exact SHA-256 captured by its private pre-attempt fingerprint. A new regression coordinates identical substituted bytes across both descriptor reads and restores the original before closing metadata checks; v0.340.195 accepted the changed parsed event, while this candidate returns the fixed failure. No provider access, retry, UI control or authority is added.
+
+Exact-source v0.340.195 public-security run 42305251659, research/browser/evidence run 42305251712 and Windows/installer run 42305251661 passed. Fresh v0.340.196 hosted checks remain required.
+
+No operational gate is newly accepted. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. Release approval, trading permission and launch timing remain separate; historical results and synthetic scores are not future profit predictions. No Portal control or editable parameter changed, so beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+Final local validation passed 5,395 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 454 tests. Sixteen offline profiles match 401 source files / `f334c06d9644369a2dcf2d82b91e7e4b3e65e95df522e5eb2c7949d3f97a5527`; report SHA256 is `5fc846340d6d79c9fc68d611784a457c0a41a684b224af076eeda0e1d6f01ab5`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.196 wheel SHA256 is `8e591b1f73f6af2f7e11ee6d6e00016397d7cb842a6c78a41d515e3c3ed91ac1`. Final staged artifact and introduced-line high-confidence secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+**Previous development build: 0.340.195 (pre-release).**
 
 ## v0.340.195 byte-consistent retained-input reads
 

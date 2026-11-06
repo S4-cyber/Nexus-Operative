@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.196
+
+The retained Activity SSE bytes now must match the exact pre-attempt private-input SHA-256, closing a coordinated dual-read substitution that could satisfy byte-consistency and restored metadata checks. Exact-source v0.340.195 security, research/browser/evidence and Windows/installer workflows passed. Fresh v0.340.196 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,395 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 454 tests. Sixteen offline profiles match 401 source files / `f334c06d9644369a2dcf2d82b91e7e4b3e65e95df522e5eb2c7949d3f97a5527`; report SHA256 is `5fc846340d6d79c9fc68d611784a457c0a41a684b224af076eeda0e1d6f01ab5`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.196 wheel SHA256 is `8e591b1f73f6af2f7e11ee6d6e00016397d7cb842a6c78a41d515e3c3ed91ac1`. Final staged artifact and introduced-line high-confidence secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.195
 
 The retained Activity SSE input must now return two byte-identical reads from its already-open descriptor in addition to stable path/descriptor metadata. This closes a reproducible Windows creation-time gap without adding provider access, retry, authority or a UI control. Exact-source v0.340.194 security, research/browser/evidence and Windows/installer workflows passed. Fresh v0.340.195 hosted checks remain required.

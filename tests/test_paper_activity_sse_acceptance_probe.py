@@ -1,5 +1,6 @@
 """Operator wrapper for one saved-pair Activity SSE acceptance attempt."""
 import copy
+import hashlib
 import io
 import json
 import os
@@ -1808,7 +1809,7 @@ def test_private_input_loader_rejects_same_inode_restored_mutation(
     monkeypatch.setattr(subject.os,'fstat',mutate_between_descriptor_samples)
     with pytest.raises(ValueError,
             match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
-        subject._load_events(source)
+        subject._load_events(source,hashlib.sha256(original).hexdigest())
     assert calls==3 and source.read_bytes()==original
 
 
@@ -1861,7 +1862,68 @@ def test_private_input_loader_rejects_windows_restored_metadata_mutation(
     monkeypatch.setattr(subject.os,'fstat',stable_fstat)
     with pytest.raises(ValueError,
             match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
-        subject._load_events(source)
+        subject._load_events(source,hashlib.sha256(original).hexdigest())
+    with original_open(source,'rb') as stream:
+        assert stream.read()==original
+
+
+def test_private_input_loader_rejects_coordinated_dual_read_substitution(
+        tmp_path,monkeypatch):
+    """Two matching raced reads cannot replace the initially sampled bytes."""
+    initial,_=segments();source=tmp_path/'initial.json'
+    original=canonical(initial).encode('utf-8')
+    changed=original.replace(b'11111111-1111-1111-1111-111111111111',
+        b'91111111-1111-1111-1111-111111111111',1)
+    assert len(changed)==len(original) and changed!=original
+    source.write_bytes(original)
+    baseline=source.stat();path_type=type(source)
+    original_lstat=path_type.lstat;original_open=path_type.open
+    original_fstat=subject.os.fstat;fstat_calls=0
+
+    def stable_metadata(value):
+        return SimpleNamespace(st_mode=value.st_mode,st_dev=value.st_dev,
+            st_ino=value.st_ino,st_size=value.st_size,
+            st_mtime_ns=baseline.st_mtime_ns,
+            st_ctime_ns=baseline.st_ctime_ns,st_nlink=value.st_nlink)
+
+    def stable_lstat(path,*args,**kwargs):
+        value=original_lstat(path,*args,**kwargs)
+        return stable_metadata(value) if path==source else value
+
+    def write_direct(raw):
+        with original_open(source,'wb') as stream:
+            stream.write(raw)
+        os.utime(source,ns=(baseline.st_atime_ns,baseline.st_mtime_ns))
+
+    def stable_fstat(descriptor):
+        nonlocal fstat_calls
+        fstat_calls+=1
+        if fstat_calls==3:
+            write_direct(original)
+        return stable_metadata(original_fstat(descriptor))
+
+    class SubstitutedStream:
+        def __init__(self,stream):self.stream=stream
+        def __enter__(self):self.stream.__enter__();return self
+        def __exit__(self,*args):return self.stream.__exit__(*args)
+        def fileno(self):return self.stream.fileno()
+        def seek(self,*args):return self.stream.seek(*args)
+        def read(self,*args):
+            write_direct(changed)
+            return self.stream.read(*args)
+
+    def substituted_open(path,*args,**kwargs):
+        stream=original_open(path,*args,**kwargs)
+        mode=args[0] if args else kwargs.get('mode','r')
+        return (SubstitutedStream(stream)
+            if path==source and mode=='rb' else stream)
+
+    monkeypatch.setattr(path_type,'lstat',stable_lstat)
+    monkeypatch.setattr(path_type,'open',substituted_open)
+    monkeypatch.setattr(subject.os,'fstat',stable_fstat)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject._load_events(source,hashlib.sha256(original).hexdigest())
     with original_open(source,'rb') as stream:
         assert stream.read()==original
 

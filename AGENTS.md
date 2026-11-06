@@ -1,5 +1,17 @@
 # Nexus Operative continuity instructions
 
+## v0.340.196 fingerprint-bound retained-input parsing
+
+The installed one-attempt Activity SSE loader now hashes each parsed retained-input byte string and requires it to equal the exact SHA-256 captured by the private pre-attempt fingerprint. Two byte-identical reads plus stable path/descriptor metadata were insufficient when a coordinating writer supplied the same substituted bytes for both reads and restored the original before closing samples. The new regression reproduces that v0.340.195 acceptance and now requires the fixed fail-closed diagnostic; the complete 294-test acceptance-probe module passes.
+
+Exact-source v0.340.195 public-security run 42305251659, research/browser/evidence run 42305251712 and Windows/installer run 42305251661 passed. Fresh v0.340.196 hosted checks remain required.
+
+This is local injected race evidence, not actual provider/source, paper-account, delivery-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,395 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 454 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `f334c06d9644369a2dcf2d82b91e7e4b3e65e95df522e5eb2c7949d3f97a5527`; `validation/release_trials_0_340_196.json` SHA256 is `5fc846340d6d79c9fc68d611784a457c0a41a684b224af076eeda0e1d6f01ab5`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.196 and has SHA256 `8e591b1f73f6af2f7e11ee6d6e00016397d7cb842a6c78a41d515e3c3ed91ac1`. The final staged public-artifact audit and introduced-line high-confidence secret scan found zero findings; local Gitleaks is unavailable, while exact-source v0.340.195 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## v0.340.195 byte-consistent retained-input reads
 
 The installed one-attempt Activity SSE loader now requires two byte-identical bounded reads from the already-open retained-input descriptor, while preserving stable type, single-link state, identity, size and timestamp checks around both reads. This closes the Windows creation-time gap where same-inode, same-size substituted content could be parsed after modification and creation metadata were restored. The new regression models that exact boundary: it failed against v0.340.194 and passes with the fixed diagnostic.

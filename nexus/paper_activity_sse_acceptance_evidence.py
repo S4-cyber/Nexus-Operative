@@ -422,3 +422,138 @@ def failure_fixture_report():
         paper_credentials._vault = original_vault
         paper_credentials._epoch = original_epoch
         paper_credentials._blocked = original_blocked
+
+
+def retry_fixture_report():
+    """Exercise an explicit due-time retry after one durable failed GET."""
+    original_vault = paper_credentials._vault
+    original_epoch = paper_credentials._epoch
+    original_blocked = paper_credentials._blocked
+    try:
+        with tempfile.TemporaryDirectory(
+                prefix='nexus-activity-sse-retry-evidence-') as directory:
+            root = Path(directory)
+            initial, raw = _segments()
+            source = root/'initial.json'
+            source.write_text(canonical(initial), encoding='utf-8')
+            source_before = source.read_bytes()
+            vault = _Vault()
+            paper_credentials._vault = lambda: vault
+            paper_credentials._epoch = 0
+            paper_credentials._blocked = False
+            paper_credentials.install(KEY, SECRET, confirm_store=True)
+            failed = _FailingOpener()
+            fixed_failure = False
+            try:
+                operator.attempt(expected_account_id=ACCOUNT,
+                    initial_events_path=source,
+                    cursor_path=root/'cursor.sqlite3',
+                    budget_path=root/'budget.sqlite3',
+                    order_journal_path=root/'orders.sqlite3',
+                    expected_cursor_head=ZERO, expected_budget_head=ZERO,
+                    reconnect_reason='CONNECTION_DROPPED',
+                    confirm_reconnect_attempt=True,
+                    confirm_read_only_paper=True,
+                    confirm_cursor_checkpoint=True,
+                    opener=failed, wall_clock=lambda:1000,
+                    elapsed_clock=lambda:50, outcome_clock=lambda:1000)
+            except ValueError as error:
+                fixed_failure = (str(error) ==
+                    'PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED')
+            failed_committed = _snapshot(root)
+            before_due = _cold_status(root, 1000)
+            due_at = before_due['reconnect_next_allowed_at']
+            due = _cold_status(root, due_at)
+            due_committed = _snapshot(root)
+            retry = _Opener(raw)
+            result = operator.attempt(expected_account_id=ACCOUNT,
+                initial_events_path=source,
+                cursor_path=root/'cursor.sqlite3',
+                budget_path=root/'budget.sqlite3',
+                order_journal_path=root/'orders.sqlite3',
+                expected_cursor_head=due['cursor_head_sha256'],
+                expected_budget_head=due['reconnect_budget_head_sha256'],
+                reconnect_reason='CONNECTION_DROPPED',
+                confirm_reconnect_attempt=True,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True,
+                opener=retry, wall_clock=lambda:due_at,
+                elapsed_clock=lambda:51, outcome_clock=lambda:due_at)
+            completed_committed = _snapshot(root)
+            completed = _cold_status(root, due_at + 1)
+            checks = dict(
+                first_failed_get_retained_once=(
+                    fixed_failure and len(failed.requests) == 1 and
+                    before_due['reconnect_attempt_number'] == 1 and
+                    before_due['reconnect_budget_completed'] is False and
+                    before_due['cursor_head_sha256'] == ZERO),
+                pre_deadline_restart_denies_retry=(
+                    before_due['snapshot_consistent'] is True and
+                    before_due['storage_snapshot_consistent'] is True and
+                    before_due['one_attempt_eligible'] is False and
+                    before_due['reconnect_next_allowed_at'] == 1001),
+                due_restart_only_reports_eligibility=(
+                    due['snapshot_consistent'] is True and
+                    due['storage_snapshot_consistent'] is True and
+                    due['one_attempt_eligible'] is True and
+                    due['reconnect_attempt_number'] == 1 and
+                    due['reconnect_budget_head_sha256'] ==
+                        before_due['reconnect_budget_head_sha256'] and
+                    failed_committed == due_committed),
+                explicit_retry_makes_one_get=(
+                    len(retry.requests) == 1 and
+                    result['reconnect_attempt_number'] == 2 and
+                    result['reconnect_attempt_cap'] == 4),
+                retry_replay_counts_retained=(
+                    result['initial_events_reviewed'] == 3 and
+                    result['replay_events_reviewed'] == 2 and
+                    result['redelivered_events_deduplicated'] == 1 and
+                    result['new_events_processed'] == 1),
+                retry_checkpoint_completed_exactly_once=(
+                    result['local_cursor_checkpoint_committed'] is True and
+                    result['process_restart_recoverable'] is True and
+                    result['complete_review_counts_bound'] is True and
+                    completed['reconnect_budget_completed'] is True and
+                    completed['reconnect_attempt_number'] == 2 and
+                    completed['cursor_head_sha256'] ==
+                        result['cursor_head_sha256'] and
+                    completed['reconnect_budget_head_sha256'] ==
+                        result['reconnect_budget_head_sha256']),
+                completed_restart_denies_third_attempt=
+                    completed['one_attempt_eligible'] is False,
+                cold_statuses_are_vault_silent=(
+                    before_due['credential_operations'] == 0 and
+                    due['credential_operations'] == 0 and
+                    completed['credential_operations'] == 0),
+                cold_statuses_are_network_silent=(
+                    before_due['external_connections'] == 0 and
+                    due['external_connections'] == 0 and
+                    completed['external_connections'] == 0),
+                completed_journals_are_cold_read_stable=(
+                    completed['journals_unchanged'] is True and
+                    completed_committed == _snapshot(root) and
+                    failed_committed != completed_committed),
+                private_input_unchanged=source.read_bytes() == source_before,
+                no_order_journal_created=not (root/'orders.sqlite3').exists(),
+                no_automatic_retry_or_continuation=(
+                    result['automatic_retry'] is False and
+                    result['automatic_sleep'] is False and
+                    before_due['automatic_retry'] is False and
+                    before_due['automatic_continuation'] is False and
+                    due['automatic_retry'] is False and
+                    due['automatic_continuation'] is False and
+                    completed['automatic_retry'] is False and
+                    completed['automatic_continuation'] is False and
+                    len(failed.requests) + len(retry.requests) == 2))
+            return dict(
+                source='SYNTHETIC_INSTALLED_ACTIVITY_SSE_RETRY_FIXTURE',
+                passed=all(checks.values()), **checks,
+                actual_provider_access=False,
+                actual_stream_connection=False,
+                retained_private_evidence_published=False,
+                historical_or_synthetic_performance_predicts_profit=False,
+                **{flag: False for flag in AUTHORITY_FLAGS})
+    finally:
+        paper_credentials._vault = original_vault
+        paper_credentials._epoch = original_epoch
+        paper_credentials._blocked = original_blocked

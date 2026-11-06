@@ -1,5 +1,18 @@
 # Nexus Operative continuity instructions
 
+## v0.340.178 explicit due-time Activity SSE retry recovery
+
+The mandatory installed recovery fixture now carries one failed injected GET through the full caller-driven lifecycle. The failed attempt retains its exact retry deadline; a fresh pre-deadline process denies retry, and a fresh due-time status reports eligibility without a request, sleep, credential access, network access or storage write. One separately confirmed retry then makes exactly one GET, commits exactly one checkpoint as attempt two, and a final fresh process replays the completed state while denying a third attempt.
+
+This is disposable local injected recovery evidence only. It does not attest a provider or source, prove delivery coverage or market realism, accept a broker account, reconcile fees, holds or funds, demonstrate physical/native Windows durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.177 research/browser/evidence run 42174016167 passed. Windows run 42174016160 remained active when this candidate began. Public-security run 42174016184 failed because its required full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals. Removing the reachable commit would require a destructive development-branch history rewrite and was not performed. Fresh v0.340.178 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,322 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized release/evidence/version/roadmap focus passed 146 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `c4e81ffd9958eb814537e71db4ef89952b5f1141a989ed31972866babdd6ac97`; `validation/release_trials_0_340_178.json` SHA256 is `2b201fd09ffa5b98808fa05ca540256f43ada670e2853a345b2844db22bef4c9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.178, retained the explicit-retry evidence and has SHA256 `050b409961e49082cd656bd2e5abae1de1f1025ba972c473d4ddaf2079c42b5c`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
+
+
 ## v0.340.177 independent emergency stop after failed Activity SSE attempt
 
 The mandatory installed failure-recovery fixture now activates the standalone emergency-stop process after exactly one injected failed Activity SSE GET and a durable retry schedule. The independent process publishes its intent before durable order halt without starting the Portal, requesting credentials, opening a network connection or enabling automatic restart. A fresh process at the exact retry deadline observes the latch, keeps the retained cursor/reconnect heads and attempt count unchanged, and denies another attempt.

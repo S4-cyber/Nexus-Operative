@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.177
+## Current candidate: v0.340.178
+
+The installed Activity SSE recovery evidence now executes the complete caller-driven failure-to-success lifecycle. One injected GET fails, durable backoff survives fresh-process review, pre-deadline retry is denied, due-time status remains side-effect free, one separately confirmed retry performs exactly one GET and checkpoint, and final cold replay reports completed attempt two while denying a third attempt.
+
+Exact-source v0.340.177 research/browser/evidence run 42174016167 passed. Windows run 42174016160 remained active when this candidate began. Public-security run 42174016184 remains blocked solely because its full-history Gitleaks scan reaches two high-entropy synthetic literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected source does not contain them, and the forbidden destructive history rewrite was not performed. Fresh exact-source v0.340.178 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,322 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release/evidence/version/roadmap focus passed 146 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `c4e81ffd9958eb814537e71db4ef89952b5f1141a989ed31972866babdd6ac97`; report SHA256 is `2b201fd09ffa5b98808fa05ca540256f43ada670e2853a345b2844db22bef4c9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.178 and has SHA256 `050b409961e49082cd656bd2e5abae1de1f1025ba972c473d4ddaf2079c42b5c`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the beginner tabs and black/bright-purple bottom-right hover help remain unchanged. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any trading, funding, live/cloud or release permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.177
 
 The installed failed-attempt Activity SSE evidence now activates the standalone emergency-stop process after one failed injected GET. That independent process publishes the durable intent before order halt without Portal, vault, network or automatic restart access. A fresh process at the exact retry deadline observes the latch and denies eligibility while preserving the reconnect/cursor evidence.
 
@@ -10,7 +20,7 @@ Final local verification passed 5,321 tests with one expected non-Windows skip a
 
 No Portal control or editable parameter changed; the beginner tabs and black/bright-purple bottom-right hover help remain unchanged. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any trading, funding, live/cloud or release permission. Historical results and synthetic scores are not future profit predictions.
 
-## Previous candidate: v0.340.176
+## Earlier candidate: v0.340.176
 
 Installed failed-attempt Activity SSE recovery is now mandatory in the bounded offline reconciliation profile. One injected GET fails, the retry deadline persists, a fresh pre-deadline process denies another attempt, and a fresh process at the exact deadline reports only explicit caller-driven eligibility without a request, sleep, retry, continuation, vault access or file change.
 

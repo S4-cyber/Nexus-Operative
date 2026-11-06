@@ -710,7 +710,8 @@ def _execute(profile):
         from nexus.alpaca_activity_sse_reconnect_budget import fixture_report as activity_sse_reconnect_budget_fixture
         from nexus.paper_activity_sse_acceptance_evidence import (
             failure_fixture_report as activity_sse_failure_fixture,
-            fixture_report as activity_sse_acceptance_fixture)
+            fixture_report as activity_sse_acceptance_fixture,
+            retry_fixture_report as activity_sse_retry_fixture)
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_account_response']=account_response_fixture()
         result['exact_activity_response']=activity_response_fixture()
@@ -727,6 +728,7 @@ def _execute(profile):
         result['explicit_activity_sse_reconnect_budget']=activity_sse_reconnect_budget_fixture()
         result['installed_activity_sse_acceptance']=activity_sse_acceptance_fixture()
         result['installed_activity_sse_failure_recovery']=activity_sse_failure_fixture()
+        result['installed_activity_sse_explicit_retry']=activity_sse_retry_fixture()
         return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
@@ -1436,6 +1438,31 @@ def _validate(profile, result):
             (*ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS,
              'actual_provider_access','actual_stream_connection')),
             'INSTALLED_ACTIVITY_SSE_FAILURE_RECOVERY_AUTHORITY')
+        installed_sse_retry=result['installed_activity_sse_explicit_retry']
+        _require(installed_sse_retry['source']==
+            'SYNTHETIC_INSTALLED_ACTIVITY_SSE_RETRY_FIXTURE' and
+            all(installed_sse_retry[k] is True for k in ('passed',
+                'first_failed_get_retained_once',
+                'pre_deadline_restart_denies_retry',
+                'due_restart_only_reports_eligibility',
+                'explicit_retry_makes_one_get',
+                'retry_replay_counts_retained',
+                'retry_checkpoint_completed_exactly_once',
+                'completed_restart_denies_third_attempt',
+                'cold_statuses_are_vault_silent',
+                'cold_statuses_are_network_silent',
+                'completed_journals_are_cold_read_stable',
+                'private_input_unchanged','no_order_journal_created',
+                'no_automatic_retry_or_continuation')) and
+            installed_sse_retry[
+                'retained_private_evidence_published'] is False and
+            installed_sse_retry[
+                'historical_or_synthetic_performance_predicts_profit'] is False,
+            'INSTALLED_ACTIVITY_SSE_EXPLICIT_RETRY')
+        _require(all(installed_sse_retry[k] is False for k in
+            (*ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS,
+             'actual_provider_access','actual_stream_connection')),
+            'INSTALLED_ACTIVITY_SSE_EXPLICIT_RETRY_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

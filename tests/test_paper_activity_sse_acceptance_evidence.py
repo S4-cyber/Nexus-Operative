@@ -1,7 +1,7 @@
 """Release evidence for the installed Activity SSE operator."""
 
 from nexus.paper_activity_sse_acceptance_evidence import (
-    failure_fixture_report, fixture_report)
+    failure_fixture_report, fixture_report, retry_fixture_report)
 
 
 def test_fixture_proves_installed_attempt_restart_without_authority():
@@ -33,6 +33,24 @@ def test_failure_fixture_proves_durable_backoff_without_automatic_retry():
     assert result['cold_statuses_are_vault_silent'] is True
     assert result['cold_statuses_are_network_silent'] is True
     assert result['failed_journals_remain_unchanged'] is True
+    assert result['no_automatic_retry_or_continuation'] is True
+    assert result['actual_provider_access'] is False
+    assert result['ready_for_routing'] is False
+    assert result['release_approved'] is False
+
+
+def test_retry_fixture_proves_explicit_due_retry_and_completed_cold_replay():
+    result = retry_fixture_report()
+    assert result['passed'] is True
+    assert result['first_failed_get_retained_once'] is True
+    assert result['pre_deadline_restart_denies_retry'] is True
+    assert result['due_restart_only_reports_eligibility'] is True
+    assert result['explicit_retry_makes_one_get'] is True
+    assert result['retry_checkpoint_completed_exactly_once'] is True
+    assert result['completed_restart_denies_third_attempt'] is True
+    assert result['cold_statuses_are_vault_silent'] is True
+    assert result['cold_statuses_are_network_silent'] is True
+    assert result['completed_journals_are_cold_read_stable'] is True
     assert result['no_automatic_retry_or_continuation'] is True
     assert result['actual_provider_access'] is False
     assert result['ready_for_routing'] is False

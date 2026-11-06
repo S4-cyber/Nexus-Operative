@@ -24,6 +24,8 @@ from nexus.alpaca_paper_contract import canonical
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
 KEY = 'K' * 24
 SECRET = 'S' * 32
+ROTATED_KEY = 'N' * 24
+ROTATED_SECRET = 'T' * 32
 AUTHORITY_FLAGS = (
     'provider_source_attested', 'activity_coverage_verified',
     'fee_execution_links_verified', 'broker_account_reconciled',
@@ -83,6 +85,32 @@ class _FailingOpener:
     def open(self, request, timeout):
         self.requests.append((request.get_method(), request.full_url, timeout))
         raise OSError('SYNTHETIC_ACTIVITY_STREAM_UNAVAILABLE')
+
+
+class _RotatingResponse(_Response):
+    def __init__(self, raw, target, rotate):
+        super().__init__(raw, target)
+        self.rotate = rotate
+        self.rotated = False
+
+    def read(self, size):
+        data = self.body.read(size)
+        if data and not self.rotated:
+            self.rotated = True
+            self.rotate()
+        return data
+
+
+class _RotatingOpener:
+    def __init__(self, raw, rotate):
+        self.raw = raw
+        self.rotate = rotate
+        self.requests = []
+
+    def open(self, request, timeout):
+        self.requests.append((request.get_method(), request.full_url, timeout))
+        return _RotatingResponse(
+            self.raw, request.full_url, self.rotate)
 
 
 def _segments():
@@ -150,7 +178,10 @@ after=snapshot()
 print(json.dumps({'snapshot_consistent':value['snapshot_consistent'],
  'storage_snapshot_consistent':value['storage_snapshot_consistent'],
  'one_attempt_eligible':value['one_attempt_eligible'],
+ 'cursor_initialized':value['cursor_initialized'],
  'cursor_head_sha256':value['cursor_head_sha256'],
+ 'retained_checkpoints':value['retained_checkpoints'],
+ 'complete_review_counts_bound':value['complete_review_counts_bound'],
  'reconnect_budget_head_sha256':value['reconnect_budget_head_sha256'],
  'reconnect_budget_completed':value['reconnect_completed'],
  'reconnect_attempt_number':value['reconnect_attempts'],
@@ -696,6 +727,133 @@ def revoked_retry_fixture_report():
             return dict(
                 source=
                     'SYNTHETIC_INSTALLED_ACTIVITY_SSE_REVOKED_RETRY_FIXTURE',
+                passed=all(checks.values()), **checks,
+                actual_provider_access=False,
+                actual_stream_connection=False,
+                retained_private_evidence_published=False,
+                historical_or_synthetic_performance_predicts_profit=False,
+                **{flag: False for flag in AUTHORITY_FLAGS})
+    finally:
+        paper_credentials._vault = original_vault
+        paper_credentials._epoch = original_epoch
+        paper_credentials._blocked = original_blocked
+
+
+def rotated_inflight_fixture_report():
+    """Prove an in-flight saved-pair rotation requires durable review."""
+    original_vault = paper_credentials._vault
+    original_epoch = paper_credentials._epoch
+    original_blocked = paper_credentials._blocked
+    try:
+        with tempfile.TemporaryDirectory(
+                prefix='nexus-activity-sse-rotated-inflight-evidence-'
+                ) as directory:
+            root = Path(directory)
+            initial, raw = _segments()
+            source = root/'initial.json'
+            source.write_text(canonical(initial), encoding='utf-8')
+            source_before = source.read_bytes()
+            vault = _Vault()
+            paper_credentials._vault = lambda: vault
+            paper_credentials._epoch = 0
+            paper_credentials._blocked = False
+            paper_credentials.install(KEY, SECRET, confirm_store=True)
+            original_record = vault.raw
+            rotations = []
+
+            def rotate():
+                rotations.append(paper_credentials.install(
+                    ROTATED_KEY, ROTATED_SECRET, confirm_store=True))
+
+            rotating = _RotatingOpener(raw, rotate)
+            failed = False
+            options = dict(expected_account_id=ACCOUNT,
+                initial_events_path=source,
+                cursor_path=root/'cursor.sqlite3',
+                budget_path=root/'budget.sqlite3',
+                order_journal_path=root/'orders.sqlite3',
+                expected_cursor_head=ZERO, expected_budget_head=ZERO,
+                reconnect_reason='CONNECTION_DROPPED',
+                confirm_reconnect_attempt=True,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True)
+            try:
+                operator.attempt(**options, opener=rotating,
+                    wall_clock=lambda:1000, elapsed_clock=lambda:50,
+                    outcome_clock=lambda:1000)
+            except ValueError as error:
+                failed = (str(error) ==
+                    'PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED')
+            review = _cold_status(root, 1001)
+            review_committed = _snapshot(root)
+            rotated_record = paper_credentials._decode(vault.raw)
+            denied = _Opener(raw)
+            denied_failed = False
+            retry_options = {**options,
+                'expected_cursor_head': review['cursor_head_sha256'],
+                'expected_budget_head': review[
+                    'reconnect_budget_head_sha256']}
+            try:
+                operator.attempt(**retry_options, opener=denied,
+                    wall_clock=lambda:1001, elapsed_clock=lambda:51,
+                    outcome_clock=lambda:1001)
+            except ValueError as error:
+                denied_failed = (str(error) ==
+                    'PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED')
+            after_denial = _cold_status(root, 1001)
+            checks = dict(
+                rotation_is_explicit_and_non_authoritative=(
+                    len(rotations) == 1 and
+                    rotations[0]['configured'] is True and
+                    rotations[0]['automatic_requests'] is False and
+                    rotations[0]['ready_for_routing'] is False and
+                    rotations[0]['live_orders_enabled'] is False and
+                    rotations[0]['money_movement_enabled'] is False),
+                rotated_pair_replaces_original_record=(
+                    vault.raw != original_record and
+                    rotated_record['api_key'] == ROTATED_KEY and
+                    rotated_record['api_secret'] == ROTATED_SECRET and
+                    KEY not in vault.raw and SECRET not in vault.raw),
+                inflight_rotation_fails_after_one_get=(
+                    failed and len(rotating.requests) == 1),
+                inflight_rotation_withholds_checkpoint=(
+                    review['cursor_initialized'] is False and
+                    review['retained_checkpoints'] == 0 and
+                    review['complete_review_counts_bound'] is False),
+                inflight_rotation_requires_durable_review=(
+                    review['reconnect_attempt_number'] == 1 and
+                    review['reconnect_review_required'] is True and
+                    review['reconnect_budget_completed'] is False and
+                    review['one_attempt_eligible'] is False),
+                rotated_retry_denied_before_get=(
+                    denied_failed and len(denied.requests) == 0),
+                denied_retry_preserves_exact_durable_state=(
+                    review_committed == _snapshot(root) and
+                    after_denial['cursor_head_sha256'] ==
+                        review['cursor_head_sha256'] and
+                    after_denial['reconnect_budget_head_sha256'] ==
+                        review['reconnect_budget_head_sha256'] and
+                    after_denial['reconnect_attempt_number'] == 1 and
+                    after_denial['reconnect_review_required'] is True and
+                    after_denial['one_attempt_eligible'] is False),
+                cold_status_is_vault_network_and_write_silent=(
+                    review['credential_operations'] == 0 and
+                    review['external_connections'] == 0 and
+                    review['journals_unchanged'] is True and
+                    after_denial['credential_operations'] == 0 and
+                    after_denial['external_connections'] == 0 and
+                    after_denial['journals_unchanged'] is True),
+                private_input_unchanged=source.read_bytes() == source_before,
+                no_order_journal_created=not (root/'orders.sqlite3').exists(),
+                no_automatic_retry_or_continuation=(
+                    review['automatic_retry'] is False and
+                    review['automatic_continuation'] is False and
+                    after_denial['automatic_retry'] is False and
+                    after_denial['automatic_continuation'] is False and
+                    len(rotating.requests) + len(denied.requests) == 1))
+            return dict(
+                source=
+                    'SYNTHETIC_INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT_FIXTURE',
                 passed=all(checks.values()), **checks,
                 actual_provider_access=False,
                 actual_stream_connection=False,

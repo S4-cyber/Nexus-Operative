@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.179
+## Current candidate: v0.340.180
+
+The installed Activity SSE recovery evidence now covers an explicit saved-pair rotation during response consumption. The old generation is revoked after one bounded GET, no cursor checkpoint is accepted, the durable reconnect budget enters manual review, and another confirmed attempt is denied before network access despite the valid replacement pair. Cold review remains vault/network/storage-write silent.
+
+The remote v0.340.179 head `a0e9e0af25b63de9cf3887516e1cb94fa2f7513a` remained current when this candidate began. GitHub exposed no workflow-run records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the full-history Gitleaks scan reaching two high-entropy synthetic literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected source does not contain them, and the forbidden destructive history rewrite was not performed. Fresh exact-source v0.340.180 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,324 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the Activity SSE/release/evidence/version/roadmap focus passed 439 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `73d62b6fca877eaad91f80ee56892666f4707b8a734908c9654c7d8e938d651a`; report SHA256 is `295d6e97a78fb9c67ff870522aa8e0150177d8e9163736eb785384cd6eb87b98`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.180 and has SHA256 `ff6ec3647f14adb0bf871ed181a5fa18dff96fd1b6c6fbadb255f401b6316083`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the beginner tabs and black/bright-purple bottom-right hover help remain unchanged. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any trading, funding, live/cloud or release permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.179
 
 The installed Activity SSE recovery evidence now covers credential revocation at the durable retry boundary. One injected GET fails, the explicit saved-pair removal is recorded as non-authoritative, the due retry fails before any GET without consuming attempt two, and only explicit restoration plus a new confirmation completes the retained retry. Cold status remains vault/network/storage-write silent and final completion denies a third attempt.
 

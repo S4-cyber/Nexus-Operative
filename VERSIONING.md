@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.179 (pre-release).**
+**Current development build: 0.340.180 (pre-release).**
+
+## v0.340.180 Activity SSE in-flight credential-rotation review
+
+The mandatory installed recovery fixture now rotates the explicit saved paper credential pair while one injected Activity SSE response is being consumed. The old credential generation is revoked after exactly one bounded GET, no cursor checkpoint is accepted, and the reconnect budget enters durable manual review. A subsequent confirmed attempt is denied before any GET even though the replacement pair is valid; fresh review status remains vault/network/storage-write silent.
+
+This is disposable local injected secret-lifecycle evidence only. It does not prove cross-process coordination or physical/native Windows vault durability, attest a provider or source, accept a broker account, prove delivery coverage or market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+The remote v0.340.179 head `a0e9e0af25b63de9cf3887516e1cb94fa2f7513a` remained current when this candidate began. GitHub exposed no workflow-run records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the required full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain them, and removing the reachable commit would require a destructive history rewrite. Fresh v0.340.180 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,324 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 439 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `73d62b6fca877eaad91f80ee56892666f4707b8a734908c9654c7d8e938d651a`; `validation/release_trials_0_340_180.json` SHA256 is `295d6e97a78fb9c67ff870522aa8e0150177d8e9163736eb785384cd6eb87b98`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.180, retained the in-flight rotation evidence and has SHA256 `ff6ec3647f14adb0bf871ed181a5fa18dff96fd1b6c6fbadb255f401b6316083`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
+
 
 ## v0.340.179 Activity SSE credential-revocation recovery
 

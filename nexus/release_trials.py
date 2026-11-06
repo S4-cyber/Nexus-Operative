@@ -712,7 +712,9 @@ def _execute(profile):
             failure_fixture_report as activity_sse_failure_fixture,
             fixture_report as activity_sse_acceptance_fixture,
             retry_fixture_report as activity_sse_retry_fixture,
-            revoked_retry_fixture_report as activity_sse_revoked_retry_fixture)
+            revoked_retry_fixture_report as activity_sse_revoked_retry_fixture,
+            rotated_inflight_fixture_report as
+                activity_sse_rotated_inflight_fixture)
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_account_response']=account_response_fixture()
         result['exact_activity_response']=activity_response_fixture()
@@ -731,6 +733,7 @@ def _execute(profile):
         result['installed_activity_sse_failure_recovery']=activity_sse_failure_fixture()
         result['installed_activity_sse_explicit_retry']=activity_sse_retry_fixture()
         result['installed_activity_sse_revoked_retry']=activity_sse_revoked_retry_fixture()
+        result['installed_activity_sse_rotated_inflight']=activity_sse_rotated_inflight_fixture()
         return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
@@ -1490,6 +1493,30 @@ def _validate(profile, result):
             (*ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS,
              'actual_provider_access','actual_stream_connection')),
             'INSTALLED_ACTIVITY_SSE_REVOKED_RETRY_AUTHORITY')
+        installed_sse_rotated=result[
+            'installed_activity_sse_rotated_inflight']
+        _require(installed_sse_rotated['source']==
+            'SYNTHETIC_INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT_FIXTURE' and
+            all(installed_sse_rotated[k] is True for k in ('passed',
+                'rotation_is_explicit_and_non_authoritative',
+                'rotated_pair_replaces_original_record',
+                'inflight_rotation_fails_after_one_get',
+                'inflight_rotation_withholds_checkpoint',
+                'inflight_rotation_requires_durable_review',
+                'rotated_retry_denied_before_get',
+                'denied_retry_preserves_exact_durable_state',
+                'cold_status_is_vault_network_and_write_silent',
+                'private_input_unchanged','no_order_journal_created',
+                'no_automatic_retry_or_continuation')) and
+            installed_sse_rotated[
+                'retained_private_evidence_published'] is False and
+            installed_sse_rotated[
+                'historical_or_synthetic_performance_predicts_profit'] is False,
+            'INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT')
+        _require(all(installed_sse_rotated[k] is False for k in
+            (*ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS,
+             'actual_provider_access','actual_stream_connection')),
+            'INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

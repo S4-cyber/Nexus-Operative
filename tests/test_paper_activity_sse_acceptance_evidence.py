@@ -2,7 +2,7 @@
 
 from nexus.paper_activity_sse_acceptance_evidence import (
     failure_fixture_report, fixture_report, retry_fixture_report,
-    revoked_retry_fixture_report)
+    revoked_retry_fixture_report, rotated_inflight_fixture_report)
 
 
 def test_fixture_proves_installed_attempt_restart_without_authority():
@@ -70,6 +70,23 @@ def test_revoked_retry_fixture_preserves_due_state_until_explicit_restore():
     assert result['restored_retry_makes_one_get'] is True
     assert result['restored_retry_checkpoint_completed'] is True
     assert result['completed_restart_denies_third_attempt'] is True
+    assert result['no_automatic_retry_or_continuation'] is True
+    assert result['actual_provider_access'] is False
+    assert result['ready_for_routing'] is False
+    assert result['release_approved'] is False
+
+
+def test_rotated_inflight_fixture_requires_review_without_another_get():
+    result = rotated_inflight_fixture_report()
+    assert result['passed'] is True
+    assert result['rotation_is_explicit_and_non_authoritative'] is True
+    assert result['rotated_pair_replaces_original_record'] is True
+    assert result['inflight_rotation_fails_after_one_get'] is True
+    assert result['inflight_rotation_withholds_checkpoint'] is True
+    assert result['inflight_rotation_requires_durable_review'] is True
+    assert result['rotated_retry_denied_before_get'] is True
+    assert result['denied_retry_preserves_exact_durable_state'] is True
+    assert result['cold_status_is_vault_network_and_write_silent'] is True
     assert result['no_automatic_retry_or_continuation'] is True
     assert result['actual_provider_access'] is False
     assert result['ready_for_routing'] is False

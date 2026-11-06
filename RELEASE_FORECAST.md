@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.169
+## Current candidate: v0.340.170
+
+The installed one-attempt Activity SSE API now requires a stable, fully valid and eligible cursor/budget pair before credential coordination. Exact heads, cross-store binding, complete initialized-cursor counts, idle budget state, remaining capacity and due retry time all fail closed at the public boundary.
+
+Exact-source v0.340.169 commit `24921532216eeb0ad69c6e6b04c632b369efb994` passed public-security run 42133130038 plus browser-help and saved-evidence jobs in research run 42133130231. Its full regression and Windows run 42133129972 remained active at the predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.170 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,230-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 442 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `db9893e303914fbd85d1915f37a3b6cefed62894f061696587e14087da54f1b9`; `validation/release_trials_0_340_170.json` SHA256 is `ffa63cceacc8b5665b3b09f5d22ee1dca1191c3fe6037ff2136c276a87111597`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `f9d6615d24db96353000507982ca1093ad33e94fbf16041c89d7b0c4498a114c`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.169
 
 Installed local-only Activity SSE status now binds pending reconnect reservations to exact durable BEGIN/prior-retry semantics and the stable retained cursor. Initial and retry-pending contradictions fail closed; legitimate two-read changes remain inconsistent snapshots rather than malformed-state failures.
 

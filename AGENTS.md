@@ -1,5 +1,16 @@
 # Nexus Operative continuity instructions
 
+## v0.340.170 Activity SSE attempt-admission lifecycle
+
+The installed one-attempt Activity SSE API now validates the complete cursor and reconnect-budget schemas, stable cross-store head binding, initialized-cursor review completeness, idle nonterminal budget state, remaining attempt capacity and due retry time before credential coordination. Exact caller heads remain mandatory. A coherent due fresh or retry state still proceeds; malformed, pending, review, completed, exhausted or early state fails at the fixed public diagnostic.
+
+Six direct regressions cover cross-store disagreement, an initialized legacy cursor without complete counts, an early retry and pending/review/completed budgets. Every refusal occurs before credential-vault or provider access and creates no journal. This is local attempt-admission hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.169 commit `24921532216eeb0ad69c6e6b04c632b369efb994` passed public-security run 42133130038 plus browser-help and saved-evidence jobs in research run 42133130231. Its complete offline regression and Windows run 42133129972 remained active at this candidate checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.170 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,230-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 442 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `db9893e303914fbd85d1915f37a3b6cefed62894f061696587e14087da54f1b9`; `validation/release_trials_0_340_170.json` SHA256 is `ffa63cceacc8b5665b3b09f5d22ee1dca1191c3fe6037ff2136c276a87111597`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `f9d6615d24db96353000507982ca1093ad33e94fbf16041c89d7b0c4498a114c`. No actual provider/account/native Windows acceptance was performed.
+
+
 ## v0.340.169 Activity SSE pending-reservation reconciliation
 
 Installed local-only Activity SSE status now binds every pending reconnect reservation to the stable retained cursor and its exact durable history. A first reservation must retain the zero predecessor head. A reservation after a retry must retain distinct attempt and result heads, bind its BEGIN to that result head, and make the provider-directed-delay flag agree exactly with the requested detail and delay. A stable pending-budget/cursor disagreement fails closed, while a changing two-read pair remains a non-throwing inconsistent snapshot.

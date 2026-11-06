@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.169'
+REVISION = '0.340.170'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.169 binds every installed Activity SSE pending reconnect reservation to its stable retained cursor and exact BEGIN/prior-retry semantics. Initial reservations must retain the zero predecessor head; retry reservations must retain distinct attempt/result heads, exact provider-delay evidence and the prior result head. Stable cross-store contradictions fail closed, while changing two-read pairs remain non-throwing inconsistent snapshots. Exact-source v0.340.168 commit `e69cf33902104e9f5e6ed8184e140dcbc125db48` passed public-security run 42130284085 and the browser-help job in research run 42130284030; full regression/evidence and Windows run 42130284005 remained active at this candidate checkpoint and are not claimed as passed. This is local pending-reservation reconciliation, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.170 moves the complete installed Activity SSE cursor/budget lifecycle into one-attempt admission before credential coordination. The stable sampled pair must satisfy both public schemas, cross-store head binding, complete initialized-cursor review counts, an idle nonterminal budget, remaining capacity and a due retry time in addition to exact caller heads. Six direct regressions stop pair disagreement, incomplete legacy cursor state, early retry and pending/review/completed budgets before credential or provider access and journal creation. Exact-source v0.340.169 commit `24921532216eeb0ad69c6e6b04c632b369efb994` passed public-security run 42133130038 plus browser-help and saved-evidence jobs in research run 42133130231; its full regression and Windows run 42133129972 remained active at this candidate checkpoint and are not claimed as passed. This is local attempt-admission hardening, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

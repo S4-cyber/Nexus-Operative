@@ -603,37 +603,42 @@ def _status_file_sample(path, maximum_bytes, prefix):
 
 
 def _attempt_head_preflight(cursor, budget, expected_cursor_head,
-        expected_budget_head):
-    """Require one stable exact-head snapshot before credential access."""
+        expected_budget_head, evaluated_at):
+    """Require one stable, eligible exact-head snapshot before credentials."""
     if not _digest(expected_cursor_head) or not _digest(expected_budget_head):
         _fail()
     try:
-        cursor_before = cursor.inspect()
+        cursor_before = _status_store_inspect(cursor, 'cursor')
         cursor_file_before = _status_file_sample(cursor.path,
             MAX_CURSOR_DATABASE_BYTES,
             'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
-        budget_before = budget.inspect()
+        budget_before = _status_store_inspect(budget, 'budget')
         budget_file_before = _status_file_sample(budget.path,
             MAX_BUDGET_DATABASE_BYTES,
             'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
-        cursor_after = cursor.inspect()
+        cursor_after = _status_store_inspect(cursor, 'cursor')
         cursor_file_after = _status_file_sample(cursor.path,
             MAX_CURSOR_DATABASE_BYTES,
             'PAPER_ACTIVITY_SSE_ACCEPTANCE_CURSOR_')
-        budget_after = budget.inspect()
+        budget_after = _status_store_inspect(budget, 'budget')
         budget_file_after = _status_file_sample(budget.path,
             MAX_BUDGET_DATABASE_BYTES,
             'PAPER_ACTIVITY_SSE_ACCEPTANCE_BUDGET_')
     except Exception:
         _fail()
-    if (type(cursor_before) is not dict or
-            type(budget_before) is not dict or
-            cursor_file_before is None or budget_file_before is None or
+    if (cursor_file_before is None or budget_file_before is None or
             cursor_before != cursor_after or budget_before != budget_after or
             cursor_file_before != cursor_file_after or
             budget_file_before != budget_file_after or
+            not _status_pair_lifecycle(cursor_before, budget_before) or
             cursor_before.get('head_sha256') != expected_cursor_head or
-            budget_before.get('head_sha256') != expected_budget_head):
+            budget_before.get('head_sha256') != expected_budget_head or
+            (cursor_before['initialized'] and
+                not cursor_before['complete_review_counts_bound']) or
+            budget_before['pending_token'] is not None or
+            budget_before['review_required'] or budget_before['completed'] or
+            budget_before['attempts'] >= budget_before['max_attempts'] or
+            evaluated_at < budget_before['next_allowed_at']):
         _fail()
 
 
@@ -863,7 +868,7 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
         _fail()
     evaluated_at = _attempt_clock(wall_clock)
     _attempt_head_preflight(cursor, budget, expected_cursor_head,
-        expected_budget_head)
+        expected_budget_head, evaluated_at)
     if not _journal_scope_matches(*journal_scope):
         _fail()
     coordinator_started = True

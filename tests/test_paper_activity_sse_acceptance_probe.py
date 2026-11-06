@@ -1740,6 +1740,115 @@ def test_attempt_incoherent_head_preflight_fails_before_vault(
     assert not options['budget_path'].exists()
 
 
+def test_attempt_pair_mismatch_fails_before_credential_coordinator(
+        tmp_path,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=subject.ActivitySSEReconnectBudget.inspect
+
+    def mismatched(store):
+        value=_budget_lifecycle_view(original,store,'retry')
+        value['expected_cursor_head_sha256']='b'*64
+        return value
+
+    monkeypatch.setattr(subject.ActivitySSEReconnectBudget,'inspect',
+        mismatched)
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        lambda **kwargs:pytest.fail('credential coordinator reached'))
+    options['expected_budget_head']='f'*64
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1001,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1001)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
+def test_attempt_incomplete_initialized_cursor_fails_before_credentials(
+        tmp_path,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=subject.ActivitySSECursorStore.inspect
+
+    def incomplete(store):
+        value=_completed_cursor_view(original,store)
+        value['complete_review_counts_bound']=False
+        return value
+
+    monkeypatch.setattr(subject.ActivitySSECursorStore,'inspect',incomplete)
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        lambda **kwargs:pytest.fail('credential coordinator reached'))
+    options['expected_cursor_head']='c'*64
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
+def test_attempt_not_due_retry_fails_before_credential_coordinator(
+        tmp_path,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=subject.ActivitySSEReconnectBudget.inspect
+
+    def waiting(store):
+        return _budget_lifecycle_view(original,store,'retry')
+
+    monkeypatch.setattr(subject.ActivitySSEReconnectBudget,'inspect',waiting)
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        lambda **kwargs:pytest.fail('credential coordinator reached'))
+    options['expected_budget_head']='f'*64
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
+@pytest.mark.parametrize('kind',('pending','review','completed'))
+def test_attempt_ineligible_budget_state_fails_before_credentials(
+        tmp_path,monkeypatch,kind):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    cursor_original=subject.ActivitySSECursorStore.inspect
+    budget_original=subject.ActivitySSEReconnectBudget.inspect
+
+    if kind == 'pending':
+        def budget_view(store):
+            return _pending_budget_view(budget_original,store,'initial')
+        options['expected_budget_head']='f'*64
+    else:
+        def budget_view(store):
+            return _budget_lifecycle_view(budget_original,store,kind)
+        options['expected_budget_head']='f'*64
+    if kind == 'completed':
+        monkeypatch.setattr(subject.ActivitySSECursorStore,'inspect',
+            lambda store:_completed_cursor_view(cursor_original,store))
+        options['expected_cursor_head']='c'*64
+
+    monkeypatch.setattr(subject.ActivitySSEReconnectBudget,'inspect',
+        budget_view)
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        lambda **kwargs:pytest.fail('credential coordinator reached'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1010,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1010)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
+
+
 @pytest.mark.parametrize('store_name',('cursor','budget'))
 @pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
 def test_attempt_head_preflight_preserves_process_control_before_vault(

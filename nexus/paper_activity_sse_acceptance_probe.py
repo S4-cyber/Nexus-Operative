@@ -16,14 +16,17 @@ import stat
 import sys
 import time
 
-from nexus import emergency_intent, paper_credentials
+from nexus import (alpaca_activity_sse_checkpoint as sse_checkpoint,
+    emergency_intent, paper_credentials)
 from nexus.alpaca_activity_sse_cursor_store import (
     ActivitySSECursorStore, FLAGS as CURSOR_FLAGS,
     MAX_CHECKPOINTS as MAX_CURSOR_CHECKPOINTS,
     MAX_DATABASE_BYTES as MAX_CURSOR_DATABASE_BYTES, ZERO)
 from nexus.alpaca_activity_sse_reconnect_budget import (
     ActivitySSEReconnectBudget, BACKOFF_SECONDS,
-    BUDGET_VIEW_KEYS, FLAGS as BUDGET_FLAGS,
+    BUDGET_VIEW_KEYS, CHECKPOINT_ACK_COUNTS, CHECKPOINT_ACK_KEYS,
+    CHECKPOINT_BINDING_FALSE, CHECKPOINT_BINDING_KEYS,
+    FLAGS as BUDGET_FLAGS,
     MAX_ATTEMPTS as MAX_RECONNECT_ATTEMPTS,
     MAX_DATABASE_BYTES as MAX_BUDGET_DATABASE_BYTES,
     MAX_PROVIDER_RETRY_AFTER, OUTCOMES, POLICY as RECONNECT_BUDGET_POLICY,
@@ -38,6 +41,13 @@ from nexus.sqlite_journal_guard import (capture_file_fingerprints,
 
 
 ATTEMPT_SOURCES = frozenset(('INJECTED_UNATTESTED', 'PAPER_HTTPS_READS'))
+ATTEMPT_ACK_KEYS = CHECKPOINT_ACK_KEYS | frozenset((
+    'reconnect_budget_policy', 'reconnect_attempt_number',
+    'reconnect_attempt_cap', 'bounded_backoff_enforced',
+    'caller_driven_attempt', 'emergency_stop_admission_fenced',
+    'emergency_stop_sampled_before_reservation',
+    'result_acknowledgement_recovered',
+    'reconnect_budget_head_sha256', 'reconnect_budget_completed'))
 CURSOR_VIEW_KEYS = frozenset((
     'mode', 'status', 'initialized', 'account_sha256', 'head_sha256',
     'current_event_id', 'current_cursor_sha256', 'retained_checkpoints',
@@ -223,8 +233,7 @@ def _attempt_result(value, account_sha256, expected_actual_provider_access):
     untrusted acknowledgement: malformed values must never escape as raw
     indexing/type errors or be rendered as partial success after a commit.
     """
-    counts = ('initial_events_reviewed', 'replay_events_reviewed',
-        'redelivered_events_deduplicated', 'new_events_processed')
+    counts = CHECKPOINT_ACK_COUNTS
     required_true = ('single_get_attempt', 'single_reconnect_attempt',
         'explicit_read_authorization', 'explicit_checkpoint_authorization',
         'cursor_checkpoint_eligible', 'cursor_written',
@@ -237,7 +246,7 @@ def _attempt_result(value, account_sha256, expected_actual_provider_access):
     required_false = ('duplicate_checkpoint', 'automatic_retry',
         'automatic_reconnect_performed', 'automatic_backoff_verified',
         'ledger_applied', *BUDGET_FLAGS)
-    if (type(value) is not dict or
+    if (type(value) is not dict or set(value) != ATTEMPT_ACK_KEYS or
             type(expected_actual_provider_access) is not bool or
             value.get('mode') !=
                 'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT' or
@@ -245,9 +254,14 @@ def _attempt_result(value, account_sha256, expected_actual_provider_access):
             value.get('account_sha256') != account_sha256 or
             value.get('reconnect_budget_policy') !=
                 RECONNECT_BUDGET_POLICY or
+            value.get('policy') != sse_checkpoint.POLICY or
+            value.get('limitations') != sse_checkpoint.LIMITATIONS or
             value.get('source') not in ATTEMPT_SOURCES or
-            not _digest(value.get('checkpoint_head_sha256')) or
-            not _digest(value.get('reconnect_budget_head_sha256')) or
+            any(not _digest(value.get(key)) for key in (
+                'transport_input_sha256', 'reconnect_input_sha256',
+                'checkpoint_head_sha256', 'checkpoint_receipt_sha256',
+                'checkpoint_cursor_sha256',
+                'reconnect_budget_head_sha256')) or
             any(type(value.get(key)) is not int or
                 not 0 < value[key] <= 2000 for key in counts) or
             value.get('replay_events_reviewed') !=
@@ -272,6 +286,60 @@ def _attempt_result(value, account_sha256, expected_actual_provider_access):
             value.get('source') != ('PAPER_HTTPS_READS'
                 if expected_actual_provider_access else
                 'INJECTED_UNATTESTED')):
+        _fail()
+    return value
+
+
+def _final_checkpoint_binding(cursor, result, after_cursor, after_budget,
+        expected_cursor_head):
+    """Bind the final acknowledgement to one exact replayed checkpoint.
+
+    The coordinator already validates this relation before closing its
+    reconnect budget.  The installed operator boundary repeats the durable
+    evidence check because a returned aggregate is not itself a checkpoint.
+    Private journal faults collapse to the fixed public diagnostic while
+    process-control signals remain observable.
+    """
+    try:
+        value = cursor.latest_checkpoint_binding()
+    except Exception:
+        _fail()
+    if (type(value) is not dict or set(value) != CHECKPOINT_BINDING_KEYS or
+            any(not _digest(value.get(key)) for key in (
+                'head_sha256', 'expected_head_sha256',
+                'checkpoint_receipt_sha256', 'cursor_sha256',
+                'transport_input_sha256', 'review_input_sha256',
+                'reconnect_reservation_sha256')) or
+            value.get('mode') !=
+                'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING' or
+            value.get('status') != 'REVIEW_REQUIRED' or
+            value.get('account_sha256') != cursor.account_sha256 or
+            value.get('head_sha256') !=
+                result['checkpoint_head_sha256'] or
+            value.get('head_sha256') != after_cursor['head_sha256'] or
+            value.get('expected_head_sha256') != expected_cursor_head or
+            value.get('checkpoint_receipt_sha256') !=
+                result['checkpoint_receipt_sha256'] or
+            value.get('checkpoint_receipt_sha256') !=
+                after_budget['checkpoint_receipt_sha256'] or
+            value.get('cursor_sha256') !=
+                result['checkpoint_cursor_sha256'] or
+            value.get('cursor_sha256') !=
+                after_cursor['current_cursor_sha256'] or
+            value.get('transport_input_sha256') !=
+                result['transport_input_sha256'] or
+            value.get('review_input_sha256') !=
+                result['reconnect_input_sha256'] or
+            value.get('reconnect_reservation_sha256') !=
+                sha(after_budget['last_attempt_head_sha256']) or
+            any(value.get(key) != result[key]
+                for key in CHECKPOINT_ACK_COUNTS) or
+            value.get('transport_input_bound') is not True or
+            value.get('reconnect_reservation_bound') is not True or
+            value.get('complete_review_counts_bound') is not True or
+            value.get('read_only') is not True or
+            any(value.get(key) is not False
+                for key in CHECKPOINT_BINDING_FALSE)):
         _fail()
     return value
 
@@ -914,6 +982,10 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     if not _final_storage_matches(final_storage_scope) or stop_active():
         _fail()
     after_budget = _status_store_inspect(budget, 'budget')
+    if not _final_storage_matches(final_storage_scope) or stop_active():
+        _fail()
+    _final_checkpoint_binding(cursor, result, after_cursor, after_budget,
+        expected_cursor_head)
     if not _final_storage_matches(final_storage_scope) or stop_active():
         _fail()
     if (not _status_pair_lifecycle(after_cursor, after_budget) or

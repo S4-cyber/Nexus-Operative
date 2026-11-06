@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.173 (pre-release).**
+**Current development build: 0.340.174 (pre-release).**
+
+## v0.340.174 Activity SSE final evidence binding
+
+The installed one-attempt Activity SSE API now requires the exact final acknowledgement schema and independently binds its checkpoint policy and limitations, transport/review input digests, checkpoint receipt, cursor digest, complete count tuple, reconnect reservation and false authority claims to one replayed durable cursor binding before success can leave the installed boundary.
+
+Forty-two direct regressions alter returned or retained evidence after the coordinator has committed, exercise ordinary private binding failures and preserve process-control signals. Every refusal follows exactly one request, retains the completed cursor and reconnect budget, and performs no retry or automatic continuation. This is local final evidence-identity hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.173 commit `61a93c10a598406c052fcc4c95f4758528384edf` passed public-security run 42152009292 and complete offline-regression/browser-help/saved-evidence run 42152009389. Windows run 42152009533 remained active at this candidate checkpoint and is not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.174 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,319-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 531 tests and the direct boundary suite passed 291 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `f45cb15e7c96eb08d2a105447748c120904a4f1cee660f5fdb3d9525d423ff8c`; `validation/release_trials_0_340_174.json` SHA256 is `d8fd9081a386e510c73e81fa47570ea71d62a27888688117f6375039c2cda064`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 160-member wheel reported v0.340.174, retained the final evidence binding and has SHA256 `296fed8018cbe3e125c8b5d6ac1b59ab8916383c860ceba321155c7f2dac41a4`. No actual provider/account/native Windows acceptance was performed.
 
 ## v0.340.173 Activity SSE final control acknowledgement
 

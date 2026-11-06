@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.173'
+REVISION = '0.340.174'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.173 requires the installed Activity SSE final acknowledgement to revalidate its explicit authorization, single-request/reconnect, checkpoint eligibility and writes, durable binding, emergency fences, caller-driven bounded budget, no-automatic-action and no-ledger-mutation claims. Reconnect policy, recovered-acknowledgement shape, actual reconnect semantics and every authority flag must also remain exact. Twenty-nine direct regressions withhold success for contradictory final control claims after one committed request while preserving completed durable evidence and preventing retry. Exact-source v0.340.172 commit `4dff5b95e788272b65431744d372fb8b6c681c10` passed public-security run 42149577126; research/browser/evidence run 42149577042 and Windows run 42149577079 remained active at this candidate checkpoint and are not claimed as passed. This is local final control-acknowledgement hardening, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.174 requires the installed Activity SSE final acknowledgement to use the exact expected schema and bind its checkpoint policy, limitations, transport/review input digests, checkpoint receipt, cursor digest, complete count tuple, reconnect reservation and false authority claims to one replayed durable cursor binding. Forty-two direct regressions withhold success for contradictory returned or retained evidence after one committed request, hide ordinary private binding failures and preserve process-control signals without retry. Exact-source v0.340.173 commit `61a93c10a598406c052fcc4c95f4758528384edf` passed public-security run 42152009292 and complete offline-regression/browser-help/saved-evidence run 42152009389; Windows run 42152009533 remained active at this candidate checkpoint and is not claimed as passed. This is local final evidence-identity hardening, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

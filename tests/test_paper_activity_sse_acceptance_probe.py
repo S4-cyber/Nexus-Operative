@@ -1578,6 +1578,131 @@ def test_attempt_final_acknowledgement_counts_match_durable_budget(
     assert not replay['one_attempt_eligible']
 
 
+@pytest.mark.parametrize(('field','replacement'),(
+    ('mode','WRONG'),('status','READY'),('account_sha256','0'*64),
+    ('head_sha256','e'*64),('expected_head_sha256','e'*64),
+    ('checkpoint_receipt_sha256','e'*64),('cursor_sha256','e'*64),
+    ('transport_input_sha256','e'*64),('review_input_sha256','e'*64),
+    ('initial_events_reviewed',4),('replay_events_reviewed',3),
+    ('redelivered_events_deduplicated',2),('new_events_processed',2),
+    ('reconnect_reservation_sha256','e'*64),
+    ('transport_input_bound',False),
+    ('reconnect_reservation_bound',False),
+    ('complete_review_counts_bound',False),('read_only',False),
+    ('unexpected_final_field',False),
+    *((flag,True) for flag in subject.CHECKPOINT_BINDING_FALSE)))
+def test_attempt_final_checkpoint_binding_must_match_acknowledgement(
+        tmp_path,saved_pair,monkeypatch,field,replacement):
+    options,raw=paths(tmp_path);opener=Opener(raw);final_phase=False
+    original_collect=paper_credentials.collect_activity_sse_saved
+    original_binding=subject.ActivitySSECursorStore.latest_checkpoint_binding
+
+    def complete_then_enter_final_phase(**kwargs):
+        nonlocal final_phase
+        result=original_collect(**kwargs)
+        final_phase=True
+        return result
+
+    def contradictory(self):
+        result=original_binding(self)
+        if final_phase:
+            result=dict(result);result[field]=replacement
+        return result
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        complete_then_enter_final_phase)
+    monkeypatch.setattr(subject.ActivitySSECursorStore,
+        'latest_checkpoint_binding',contradictory)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    final_phase=False
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
+def test_attempt_final_checkpoint_binding_failure_hides_private_detail(
+        tmp_path,saved_pair,monkeypatch):
+    options,raw=paths(tmp_path);opener=Opener(raw);final_phase=False
+    original_collect=paper_credentials.collect_activity_sse_saved
+    original_binding=subject.ActivitySSECursorStore.latest_checkpoint_binding
+
+    def complete_then_enter_final_phase(**kwargs):
+        nonlocal final_phase
+        result=original_collect(**kwargs)
+        final_phase=True
+        return result
+
+    def unavailable(self):
+        if final_phase:
+            raise PermissionError('PRIVATE_FINAL_BINDING_DETAIL')
+        return original_binding(self)
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        complete_then_enter_final_phase)
+    monkeypatch.setattr(subject.ActivitySSECursorStore,
+        'latest_checkpoint_binding',unavailable)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    final_phase=False
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
+@pytest.mark.parametrize('signal',(KeyboardInterrupt,SystemExit))
+def test_attempt_final_checkpoint_binding_preserves_process_control(
+        tmp_path,saved_pair,monkeypatch,signal):
+    options,raw=paths(tmp_path);opener=Opener(raw);final_phase=False
+    original_collect=paper_credentials.collect_activity_sse_saved
+    original_binding=subject.ActivitySSECursorStore.latest_checkpoint_binding
+
+    def complete_then_enter_final_phase(**kwargs):
+        nonlocal final_phase
+        result=original_collect(**kwargs)
+        final_phase=True
+        return result
+
+    def interrupted(self):
+        if final_phase:
+            raise signal()
+        return original_binding(self)
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        complete_then_enter_final_phase)
+    monkeypatch.setattr(subject.ActivitySSECursorStore,
+        'latest_checkpoint_binding',interrupted)
+    with pytest.raises(signal):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    final_phase=False
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
 def test_attempt_pins_resolved_private_input_across_parent_alias_swap(
         tmp_path,saved_pair,monkeypatch):
     first=tmp_path/'first';second=tmp_path/'second';journals=tmp_path/'journals'
@@ -2043,7 +2168,11 @@ def test_coordinator_post_commit_process_control_remains_observable(
 
 @pytest.mark.parametrize(('field','replacement'),(
     ('mode','WRONG'),('status','READY'),('source','PRIVATE_SECRET'),
+    ('policy','WRONG'),('limitations','WRONG'),
     ('account_sha256','0'*64),('checkpoint_head_sha256','bad'),
+    ('transport_input_sha256','bad'),('reconnect_input_sha256','bad'),
+    ('checkpoint_receipt_sha256','bad'),
+    ('checkpoint_cursor_sha256','bad'),
     ('reconnect_budget_head_sha256','bad'),
     ('initial_events_reviewed',True),('replay_events_reviewed',0),
     ('redelivered_events_deduplicated',2001),
@@ -2069,6 +2198,7 @@ def test_coordinator_post_commit_process_control_remains_observable(
     ('reconnect_budget_policy','WRONG'),
     ('result_acknowledgement_recovered','false'),
     ('actual_reconnect_performed',True),
+    ('unexpected_final_field',False),
     *((flag,True) for flag in subject.BUDGET_FLAGS)))
 def test_malformed_saved_pair_acknowledgement_fails_fixed_after_one_commit(
         tmp_path,saved_pair,monkeypatch,field,replacement):
@@ -2100,8 +2230,14 @@ def test_malformed_saved_pair_acknowledgement_fails_fixed_after_one_commit(
 def _attempt_acknowledgement(**changes):
     result=dict(mode='EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT',
         status='REVIEW_REQUIRED',source='INJECTED_UNATTESTED',
-        account_sha256='a'*64,
-        checkpoint_head_sha256='b'*64,reconnect_budget_head_sha256='c'*64,
+        policy=subject.sse_checkpoint.POLICY,
+        limitations=subject.sse_checkpoint.LIMITATIONS,
+        account_sha256='a'*64,transport_input_sha256='d'*64,
+        reconnect_input_sha256='e'*64,
+        checkpoint_head_sha256='b'*64,
+        checkpoint_receipt_sha256='f'*64,
+        checkpoint_cursor_sha256='1'*64,
+        reconnect_budget_head_sha256='c'*64,
         initial_events_reviewed=1,replay_events_reviewed=2,
         redelivered_events_deduplicated=1,new_events_processed=1,
         reconnect_attempt_number=1,reconnect_attempt_cap=3,

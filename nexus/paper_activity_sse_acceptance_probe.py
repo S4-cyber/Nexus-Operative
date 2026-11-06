@@ -376,6 +376,14 @@ def _private_input_scope(value):
         _fail()
 
 
+def _input_boundary(item, *, host=None):
+    """Comparable retained-input metadata across path and handle APIs."""
+    host = os.name if host is None else host
+    return (stat.S_IFMT(item.st_mode), item.st_dev, item.st_ino,
+        item.st_size, item.st_mtime_ns,
+        item.st_ctime_ns if host != 'nt' else None, item.st_nlink)
+
+
 def _private_journal_path(value):
     """Pin one journal parent plus any safe existing leaf identity.
 
@@ -593,17 +601,21 @@ def _load_events(path):
             _fail()
         with path.open('rb') as stream:
             opened = os.fstat(stream.fileno())
-            if ((opened.st_dev, opened.st_ino, opened.st_size) !=
-                    (observed.st_dev, observed.st_ino, observed.st_size)):
+            if (_input_boundary(opened) != _input_boundary(observed) or
+                    not stat.S_ISREG(opened.st_mode) or
+                    opened.st_nlink != 1):
                 _fail()
             raw = stream.read(MAX_INPUT_BYTES + 1)
             closed = os.fstat(stream.fileno())
         final = path.lstat()
         if (len(raw) > MAX_INPUT_BYTES or
-                (closed.st_dev, closed.st_ino, closed.st_size) !=
-                    (opened.st_dev, opened.st_ino, opened.st_size) or
-                (final.st_dev, final.st_ino, final.st_size) !=
-                    (observed.st_dev, observed.st_ino, observed.st_size)):
+                _input_boundary(closed) != _input_boundary(opened) or
+                _input_boundary(final) != _input_boundary(observed) or
+                opened.st_ctime_ns != closed.st_ctime_ns or
+                observed.st_ctime_ns != final.st_ctime_ns or
+                not stat.S_ISREG(closed.st_mode) or
+                not stat.S_ISREG(final.st_mode) or
+                closed.st_nlink != 1 or final.st_nlink != 1):
             _fail()
 
         def pairs(items):

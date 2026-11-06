@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 6, 2026. Development candidate: **v0.340.193**. Reviewed source baseline: `a82d9699d188968cc67c2a7594b8654302093425` (v0.340.192).
+Report date: November 6, 2026. Development candidate: **v0.340.194**. Reviewed source baseline: `c399b9d5d813d28b7c8d8ad4f2d89a259dae179b` (v0.340.193).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -26,9 +26,18 @@ The v0.340.191 source reports 5,359 local passing tests, one expected non-Window
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.193 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42290610033); its research and Windows workflows remained active at this candidate's recovery.
 - v0.340.190 [Windows installer/distribution checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833513).
 - v0.340.190 [research regression, browser and saved-evidence checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833448).
 - Its [security workflow failed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833307) on two historical synthetic fixture findings. A passed installer is not an all-green release candidate.
+
+## v0.340.194 retained-input descriptor stability
+
+The installed one-attempt Activity SSE operator now refuses a same-inode, same-size retained-input mutation restored between its outer fingerprint checks. File type, link count, identity, size, modification metadata and creation metadata must remain stable across the path and open descriptor samples, with separate same-handle and same-path creation-time comparisons for Windows portability. The regression first failed against the prior implementation and the full 292-test acceptance-probe module passed after the fix.
+
+This is a fail-closed implementation improvement, not authorized paper-account, provider-source, received-coverage, sustained-market, native-storage, fee/hold/funds, live/cloud or release acceptance. It changes no Portal control, editable parameter or authority default. The estimate remains about 40% (30–45%, low confidence), with 0/9 major operational stages accepted.
+
+Final local validation passed 5,393 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 435 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `226ece33d61f63d6e5b0bc417575c6a3f2b9158420d05c0ad0df2ecee9b91fe0`; `validation/release_trials_0_340_194.json` SHA256 is `85b9a1a40d4dbd4466ce57938cbdc6c6d22094f01582ae23ea830aa690471f76`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.194 and has SHA256 `2ccec439a51e9dc9fb62fd81caf298166996cca5517d6f6454d1e6e8439c0380`. The final staged 913-path / 80,078,300-byte public-artifact audit found zero findings; local Gitleaks is unavailable, while exact-source v0.340.193 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
 ## v0.340.193 security review hardening
 

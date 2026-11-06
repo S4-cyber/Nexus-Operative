@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.194
+
+The retained Activity SSE initial-segment loader now rejects same-inode, same-size mutation restored between its surrounding fingerprints by binding stable path/descriptor metadata throughout the read. Exact-source v0.340.193 security passed; research and Windows remained active at recovery. Fresh v0.340.194 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis Oct 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,393 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 435 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `226ece33d61f63d6e5b0bc417575c6a3f2b9158420d05c0ad0df2ecee9b91fe0`; `validation/release_trials_0_340_194.json` SHA256 is `85b9a1a40d4dbd4466ce57938cbdc6c6d22094f01582ae23ea830aa690471f76`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.194 and has SHA256 `2ccec439a51e9dc9fb62fd81caf298166996cca5517d6f6454d1e6e8439c0380`. The final staged 913-path / 80,078,300-byte public-artifact audit found zero findings; local Gitleaks is unavailable, while exact-source v0.340.193 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.193
 
 The historical secret-review gate now requires both exact reviewed coordinates whenever either is present. A one-sided result is incomplete; a complete pair plus any new finding remains blocking. The scanner and exact-byte proof are unchanged, and no history or detector is excluded. Exact-source v0.340.192 security passed; research and Windows were not both complete at recovery. Fresh v0.340.193 hosted checks remain required.

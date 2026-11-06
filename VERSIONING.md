@@ -1,6 +1,20 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.193 (pre-release).**
+**Current development build: 0.340.194 (pre-release).**
+
+## v0.340.194 retained-input descriptor stability
+
+The installed one-attempt Activity SSE operator now rejects a retained initial-segment file that changes through the same inode at the same size while it is being read, even if the original bytes are restored before the surrounding fingerprint check. The loader binds file type, single-link state, device/inode, size, modification metadata and creation metadata across the pathname and open descriptor; same-handle and same-path creation-time comparisons preserve the Windows path/handle precision boundary. A regression first reproduced the prior acceptance of changed parsed bytes and now requires the fixed diagnostic.
+
+Exact-source v0.340.193 security run 42290610033 passed. Research/browser/evidence run 42290610028 and Windows/installer run 42290610055 remained active at candidate recovery; browser help and offline evidence jobs had passed, but their complete workflows are not claimed. Fresh v0.340.194 hosted checks remain required.
+
+This is local injected race evidence, not actual provider/source, paper-account, delivery-coverage, genuine-feed, native Windows/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the Oct 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,393 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 435 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `226ece33d61f63d6e5b0bc417575c6a3f2b9158420d05c0ad0df2ecee9b91fe0`; `validation/release_trials_0_340_194.json` SHA256 is `85b9a1a40d4dbd4466ce57938cbdc6c6d22094f01582ae23ea830aa690471f76`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.194 and has SHA256 `2ccec439a51e9dc9fb62fd81caf298166996cca5517d6f6454d1e6e8439c0380`. The final staged 913-path / 80,078,300-byte public-artifact audit found zero findings; local Gitleaks is unavailable, while exact-source v0.340.193 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+**Previous development build: 0.340.193 (pre-release).**
 
 ## v0.340.193 atomic historical finding-set review
 

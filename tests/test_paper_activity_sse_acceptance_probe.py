@@ -1783,6 +1783,34 @@ def test_attempt_refuses_private_input_leaf_replacement_after_scope(
     assert not (private/'budget.sqlite3').exists()
 
 
+def test_private_input_loader_rejects_same_inode_restored_mutation(
+        tmp_path,monkeypatch):
+    initial,_=segments();source=tmp_path/'initial.json'
+    original=canonical(initial).encode('utf-8')
+    changed=original.replace(b'11111111-1111-1111-1111-111111111111',
+        b'91111111-1111-1111-1111-111111111111',1)
+    assert len(changed)==len(original) and changed!=original
+    source.write_bytes(original)
+    original_fstat=subject.os.fstat;calls=0
+
+    def mutate_between_descriptor_samples(descriptor):
+        nonlocal calls
+        calls+=1
+        if calls==1:
+            observed=original_fstat(descriptor)
+            source.write_bytes(changed)
+            return observed
+        if calls==2:
+            source.write_bytes(original)
+        return original_fstat(descriptor)
+
+    monkeypatch.setattr(subject.os,'fstat',mutate_between_descriptor_samples)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject._load_events(source)
+    assert calls==2 and source.read_bytes()==original
+
+
 def test_attempt_keeps_rejecting_private_input_leaf_symlink(
         tmp_path,saved_pair):
     private=tmp_path/'private';private.mkdir()

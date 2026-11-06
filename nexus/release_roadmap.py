@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.193'
+REVISION = '0.340.194'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -792,7 +792,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.193 makes the exact historical synthetic-finding allowance atomic: if either reviewed coordinate appears, both exact coordinates must be present. Either line alone is an incomplete review with a nonzero incomplete exit; the complete pair plus a new finding remains blocking. Clean scans and new-only findings keep their prior semantics. Exact-source v0.340.192 security run 42284818158 passed; its research/browser/evidence run 42284817987 remained active and Windows/installer run 42284817944 was queued at recovery, while exact-source v0.340.191 Windows/installer run 42279837266 passed. Full blob proof, report hardening and the unchanged full-history scan remain required; no detector, path, commit or history is excluded. This is public-repository release-gate hardening, not provider/account acceptance, sustained market realism, fee/hold/funds reconciliation, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.194 hardens the installed one-attempt Activity SSE retained-input loader against a same-inode, same-size mutation restored between the surrounding fingerprints. Path and open descriptor samples now bind file type, single-link state, identity, size and modification/creation metadata; same-handle and same-path creation-time checks remain explicit for Windows portability. The regression first reproduced acceptance of mutated parsed bytes on v0.340.193, then passed after the fix. Exact-source v0.340.193 security passed; its research/browser/evidence and Windows/installer workflows remained active at candidate recovery. This is local injected race evidence, not provider/account acceptance, delivery coverage, sustained market realism, native durability, fee/hold/funds reconciliation, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

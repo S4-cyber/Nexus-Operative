@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.188
+## Current candidate: v0.340.189
+
+The Activity SSE transport now preserves the fixed HTTP classification and bounded provider-directed delay when cleanup of the unentered HTTP error response raises an ordinary exception. Validated 429/503 `Retry-After` backoff survives with one attempted GET, no cursor write and no automatic retry or sleep; private cleanup detail stays hidden and process-control signals remain visible. Mandatory transport, reconnect-budget and release fixtures pin the boundary.
+
+Exact-source v0.340.188 research run 42253058670 passed its complete Windows regression, Portal browser help and saved release evidence. Windows/installer run 42253059044 remained active when this candidate was finalized. Security run 42253058799 passed the current/reachable audit across 8,671 blobs, 997 commits and 925 paths with zero findings, but required full-history Gitleaks still finds the two known literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`. Fresh v0.340.189 workflows remain required.
+
+Final local verification passed 5,348 tests with one expected non-Windows skip and one existing warning; the finalized focus passed 1,048. All sixteen profiles match 399 source files / `3d4cf8d99f94854354d0e447392499cee10499cc2e36a51f17ebac167e621768`; report SHA256 is `67688702b4ccda67f38a5b15175db4400e14050e1ce57d19a31473125a000efd`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen controllers passed. The 161-member wheel reports v0.340.189 and has SHA256 `2f005cd4243fef35acb5e7f88bb5a909b5a9d57dc80477715565bdea3087e4f5`.
+
+No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. This does not establish a launch date, release approval or trading/funding/live/cloud permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.188
 
 The Activity SSE transport now closes an already-open provider response if its context admission fails. It preserves the fixed failure diagnostic, reads no body, advances no cursor and leaves exactly one bounded caller-driven retry; ordinary cleanup errors are suppressed without suppressing process-control signals. Mandatory transport and reconnect-budget fixtures pin the boundary.
 

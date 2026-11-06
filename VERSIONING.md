@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.188 (pre-release).**
+**Current development build: 0.340.189 (pre-release).**
+
+## v0.340.189 Activity SSE HTTP cleanup/backoff preservation
+
+The Activity SSE transport now preserves the fixed HTTP classification and bounded provider-directed delay even if cleanup of the unentered HTTP error response raises an ordinary exception. A 429 or 503 therefore retains its validated `Retry-After` backoff, one attempted GET, no cursor write and no automatic retry or sleep; private cleanup detail cannot replace the public diagnostic. The response is still closed, while `KeyboardInterrupt` and `SystemExit` remain unsuppressed. Mandatory transport, reconnect-budget and release fixtures pin the boundary.
+
+This is bounded injected cleanup/backoff evidence. It does not attest a provider/source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, demonstrate native Windows or physical power-loss durability, authorize trading/funding/live/cloud use, prove profitability or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.188 research run 42253058670 passed its complete Windows regression, Portal browser help and saved release evidence. Windows/installer run 42253059044 remained active in install/test when this candidate was finalized. Public-security run 42253058799 passed the current/reachable artifact audit across 8,671 blobs, 997 commits and 925 paths with zero findings, but failed required full-history Gitleaks on the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; removing them would require the prohibited destructive history rewrite. Fresh v0.340.189 exact-source hosted workflows remain required.
+
+Final local verification passed 5,348 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 1,048 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `3d4cf8d99f94854354d0e447392499cee10499cc2e36a51f17ebac167e621768`; `validation/release_trials_0_340_189.json` SHA256 is `67688702b4ccda67f38a5b15175db4400e14050e1ce57d19a31473125a000efd`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.189, retains the cleanup/backoff fixture and has SHA256 `2f005cd4243fef35acb5e7f88bb5a909b5a9d57dc80477715565bdea3087e4f5`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
 
 ## v0.340.188 Activity SSE response-admission cleanup
 

@@ -2389,6 +2389,42 @@ def test_response_entry_failure_closes_response_and_retains_bounded_retry(
     assert not state['automatic_retry'] and not state['automatic_sleep']
 
 
+def test_http_error_close_failure_retains_provider_directed_backoff(tmp_path):
+    cursor, budget = stores(tmp_path)
+
+    class CloseFailureHTTPError(HTTPError):
+        closed = False
+        def close(self):
+            self.closed = True
+            raise RuntimeError('private HTTP cleanup detail')
+
+    class HTTPFailureOpener(Opener):
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            headers = Message()
+            headers['Retry-After'] = '120'
+            self.error = CloseFailureHTTPError(request.full_url, 429,
+                'private HTTP reason', headers, None)
+            raise self.error
+
+    opener = HTTPFailureOpener([])
+    with pytest.raises(ValueError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget), outcome_clock=lambda: 1007)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'
+    assert 'private' not in str(raised.value)
+    assert len(opener.requests) == 1 and opener.error.closed
+    assert not cursor.path.exists()
+    state = budget.inspect()
+    assert state['last_outcome'] == 'RETRY_REQUIRED'
+    assert state['last_detail_code'] == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'
+    assert state['last_requested_retry_after_seconds'] == 120
+    assert state['last_applied_backoff_seconds'] == 120
+    assert state['attempts'] == 1 and state['next_allowed_at'] == 1127
+    assert not state['automatic_retry'] and not state['automatic_sleep']
+
+
 @pytest.mark.parametrize('store_name', ('cursor', 'budget'))
 def test_failure_final_file_change_withholds_provider_failure_acknowledgement(
         tmp_path, monkeypatch, store_name):

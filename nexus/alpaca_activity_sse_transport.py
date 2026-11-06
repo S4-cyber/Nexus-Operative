@@ -325,7 +325,11 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
             _http_failure(error.code, error.headers, error.geturl(), target,
                 previous[0])
         finally:
-            error.close()
+            # ``HTTPError`` is also the unentered response. Its cleanup must
+            # not replace the fixed status classification or discard a
+            # provider-directed bounded delay. Process-control signals remain
+            # independently visible through the shared cleanup helper.
+            _close_unentered_response(error)
     except (TimeoutError, URLError, OSError):
         _fail('TRANSPORT_UNAVAILABLE')
     except Exception:
@@ -372,6 +376,7 @@ def fixture_report():
     """Injected aggregate-only transport fixture with zero provider access."""
     import io
     import json
+    from email.message import Message
     from nexus.alpaca_activity_sse_review import _event
     from nexus.alpaca_paper_contract import canonical
 
@@ -434,6 +439,33 @@ def fixture_report():
             credential_check=lambda: True)
     except ActivitySSETransportError as error:
         entry_code = str(error)
+    class CloseFailureHTTPError(HTTPError):
+        closed = False
+        def close(self):
+            self.closed = True
+            raise RuntimeError('private HTTP cleanup detail')
+    class HTTPFailureOpener(Opener):
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            headers = Message()
+            headers['Retry-After'] = '120'
+            self.response = CloseFailureHTTPError(request.full_url, 429,
+                'private HTTP reason', headers, None)
+            raise self.response
+    http_opener = HTTPFailureOpener()
+    http_code = None
+    http_delay = None
+    try:
+        collect_once('fixture_key_only_123', 'fixture_secret_only_123',
+            expected_account_id=account, since_id=cursor,
+            confirm_read_only_paper=True, opener=http_opener,
+            wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+            permission_check=lambda: True,
+            emergency_stop_check=lambda: False,
+            credential_check=lambda: True)
+    except ActivitySSETransportError as error:
+        http_code = str(error)
+        http_delay = error.provider_retry_after_seconds
     request, timeout = opener.requests[0]
     encoded = json.dumps(result, sort_keys=True)
     checks = dict(
@@ -450,6 +482,11 @@ def fixture_report():
             and len(entry_opener.requests) == 1
             and entry_opener.response.closed
             and entry_opener.response.body.tell() == 0,
+        failed_http_cleanup_preserves_backoff=http_code ==
+            'ALPACA_ACTIVITY_SSE_TRANSPORT_RATE_LIMITED'
+            and http_delay == 120
+            and len(http_opener.requests) == 1
+            and http_opener.response.closed,
         no_identifier_or_credential_echo=all(token not in encoded for token in
             (account, cursor, 'fixture_key_only_123', 'fixture_secret_only_123',
              '11111111', '22222222')),

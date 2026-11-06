@@ -250,6 +250,48 @@ def test_http_error_is_closed_unread_and_not_retried():
     assert len(opener.requests) == 1
 
 
+@pytest.mark.parametrize(('status','code','retry_after','delay'), [
+    (401, 'HTTP_STATUS_REVIEW', None, 0),
+    (429, 'RATE_LIMITED', '120', 120),
+    (503, 'SERVICE_UNAVAILABLE', '120', 120),
+])
+def test_http_error_ordinary_close_failure_preserves_fixed_classification(
+        status, code, retry_after, delay):
+    headers = Message()
+    if retry_after is not None:
+        headers['Retry-After'] = retry_after
+
+    class CloseFailureHTTPError(HTTPError):
+        closed = False
+        def close(self):
+            self.closed = True
+            raise RuntimeError('private HTTP cleanup detail')
+
+    error = CloseFailureHTTPError(wire_review.activity_url(CURSOR), status,
+        SECRET, headers, None)
+    with pytest.raises(subject.ActivitySSETransportError,
+            match=code) as caught:
+        collect(Opener(error))
+    assert caught.value.provider_retry_after_seconds == delay
+    assert error.closed and SECRET not in str(caught.value)
+    assert 'private' not in str(caught.value)
+
+
+@pytest.mark.parametrize('signal', (KeyboardInterrupt, SystemExit))
+def test_http_error_cleanup_preserves_process_control(signal):
+    class SignalingHTTPError(HTTPError):
+        closed = False
+        def close(self):
+            self.closed = True
+            raise signal()
+
+    error = SignalingHTTPError(wire_review.activity_url(CURSOR), 401,
+        SECRET, {}, None)
+    with pytest.raises(signal):
+        collect(Opener(error))
+    assert error.closed
+
+
 @pytest.mark.parametrize(('status','code'), [
     (429, 'RATE_LIMITED'),
     (503, 'SERVICE_UNAVAILABLE'),

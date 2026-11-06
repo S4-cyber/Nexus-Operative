@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.186
+## Current candidate: v0.340.187
+
+The exceptional Activity SSE ownership-release evidence now uses a platform-neutral late identity-failure injection after one response opens, while retaining the real OS-backed cursor lease. It requires response closure, no cursor advance, no retry and durable non-retryable review. This fixes the hosted Windows fixture without weakening the production guard or claiming native/provider acceptance.
+
+Exact-source v0.340.186 Portal browser help passed. Its Windows regression failed two tests after 5,313 passes and its offline release trial failed because Windows refused the fixture's attempted rename of an open locked file, producing transport-unavailable before the intended release proof. Windows/installer run 42234572407 remained active in install/test. Security run 42234572297 failed only on the two known full-history findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; its current/reachable artifact audit passed 8,645 blobs, 995 commits and 923 paths with zero findings. Fresh v0.340.187 workflows remain required.
+
+Final local verification passed 5,337 tests with one expected non-Windows skip and one existing warning; the finalized focus passed 693. All sixteen profiles match 399 source files / `1962f80ee2f5037cf6fdd8e569b8bed9492c1508d227b45350a7667e010883c5`; report SHA256 is `3e36163343c95be40c865b9faf6812dc9e870df026259eae5cafafdbac3368d1`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen controllers passed. The 161-member wheel reports v0.340.187 and has SHA256 `edc928430dd3d3698a849726d424c24c7c4a1be7d38da227543e45a52e5941b8`.
+
+No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. This does not establish a launch date, release approval or trading/funding/live/cloud permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.186
 
 The Activity SSE transport now deterministically closes an already-open provider response if the cursor ownership guard cannot prove a clean release. The attempt makes exactly one injected request, advances no cursor, does not retry, returns the fixed guard diagnostic and retains durable non-retryable manual review. This is local injected exceptional-path evidence, not native Windows/network-filesystem or physical power-loss acceptance.
 

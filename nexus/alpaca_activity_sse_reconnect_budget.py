@@ -3055,18 +3055,34 @@ def fixture_report():
             root / 'release-budget.sqlite3', account)
         release_lock = release_cursor.path.resolve().with_name(
             release_cursor.path.name + '.owner.lock')
-        release_displaced = root / 'release-displaced-owner.lock'
-        class ReplacingOwnerOpener(Opener):
+        class OwnerReleaseFailureOpener(Opener):
             def __init__(self):
                 super().__init__(raw)
                 self.response = None
             def open(self, request, timeout):
                 self.requests.append((request, timeout))
-                release_lock.rename(release_displaced)
-                release_lock.write_bytes(b'0')
                 self.response = Response(request.full_url)
                 return self.response
-        release_opener = ReplacingOwnerOpener()
+        release_opener = OwnerReleaseFailureOpener()
+        original_release_ownership = release_cursor.ownership
+        class OwnerReleaseFailure:
+            """Portable late lease-release identity failure fixture."""
+            def __init__(self):
+                self.owner = original_release_ownership()
+            def __enter__(self):
+                entered = self.owner.__enter__()
+                original_validate = entered.validate
+                def validate():
+                    if release_opener.response is not None:
+                        raise ValueError(
+                            'ALPACA_ACTIVITY_SSE_CURSOR_STORE_'
+                            'OWNER_FILE_CHANGED')
+                    return original_validate()
+                entered.validate = validate
+                return entered
+            def __exit__(self, *args):
+                return self.owner.__exit__(*args)
+        release_cursor.ownership = OwnerReleaseFailure
         release_code = None
         try:
             collect_and_checkpoint_due(
@@ -3613,7 +3629,7 @@ def fixture_report():
                     'REVIEW_REQUIRED' and
                 release_budget_retained['last_detail_code'] ==
                     'NONRETRYABLE_FAILURE' and
-                release_lock.is_file() and release_displaced.is_file(),
+                release_lock.is_file(),
             due_second_attempt_explicit_and_single=
                 result['reconnect_attempt_number'] == 2 and
                 len(second.requests) == 1,

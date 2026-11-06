@@ -963,20 +963,42 @@ def test_owner_release_failure_closes_open_response_and_requires_review(
     cursor, budget = stores(tmp_path)
     lock_path = cursor.path.resolve().with_name(
         cursor.path.name + '.owner.lock')
-    displaced = tmp_path / 'displaced-cursor-owner.lock'
 
-    class ReplacingOwnerOpener:
+    class OwnerReleaseFailureOpener:
         def __init__(self):
             self.requests = []
             self.response = None
         def open(self, request, timeout):
             self.requests.append((request, timeout))
-            lock_path.rename(displaced)
-            lock_path.write_bytes(b'0')
             self.response = Response(raw, request.full_url)
             return self.response
 
-    opener = ReplacingOwnerOpener()
+    opener = OwnerReleaseFailureOpener()
+    original_ownership = cursor.ownership
+
+    class OwnerReleaseFailure:
+        """Inject the portable equivalent of a late identity failure."""
+
+        def __init__(self):
+            self.owner = original_ownership()
+
+        def __enter__(self):
+            entered = self.owner.__enter__()
+            original_validate = entered.validate
+
+            def validate():
+                if opener.response is not None:
+                    raise ValueError(
+                        'ALPACA_ACTIVITY_SSE_CURSOR_STORE_OWNER_FILE_CHANGED')
+                return original_validate()
+
+            entered.validate = validate
+            return entered
+
+        def __exit__(self, *args):
+            return self.owner.__exit__(*args)
+
+    cursor.ownership = OwnerReleaseFailure
     with pytest.raises(subject.ActivitySSETransportError,
             match='ALPACA_ACTIVITY_SSE_TRANSPORT_PRE_OPEN_GUARD_FAILED'):
         call(tmp_path, opener, stores=(cursor, budget))
@@ -988,7 +1010,7 @@ def test_owner_release_failure_closes_open_response_and_requires_review(
     assert retained['attempts'] == 1
     assert retained['last_outcome'] == 'REVIEW_REQUIRED'
     assert retained['last_detail_code'] == 'NONRETRYABLE_FAILURE'
-    assert lock_path.is_file() and displaced.is_file()
+    assert lock_path.is_file()
 
 
 def test_stop_callback_result_at_preopen_fence_blocks_provider_io(tmp_path):

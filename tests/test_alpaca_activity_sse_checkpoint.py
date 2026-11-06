@@ -122,6 +122,7 @@ def test_single_get_review_and_exact_head_checkpoint_are_aggregate_only(tmp_path
     ('reconnect_reservation_token', 'bad',
         'RECONNECT_RESERVATION_INVALID'),
     ('permission_check', None, 'CHECK_INVALID'),
+    ('pre_open_check', 0, 'CHECK_INVALID'),
 ])
 def test_invalid_admission_is_network_and_storage_silent(
         tmp_path, option, value, code):

@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.182 (pre-release).**
+**Current development build: 0.340.183 (pre-release).**
+
+## v0.340.183 Activity SSE final cursor/reservation pre-open fence
+
+The Activity SSE coordinator now installs a dedicated final pre-open check between the last permission, emergency-stop and saved-credential samples and provider IO. That check independently replays the current durable cursor head and the exact pending reconnect reservation. A legitimate concurrent cursor checkpoint from an untrusted callback can no longer allow one stale GET before later reconciliation notices the changed head; it returns the fixed cursor-head diagnostic with zero provider requests and retains the pending reservation for explicit review.
+
+This is disposable local injected concurrency evidence only. It does not prove cross-process/native-vault coordination or physical power-loss durability, attest a provider or source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.182 head `08e6dbdb5e08fe396a9a1109f3aadf2c09dfe922` remained current when this candidate began. GitHub exposed no workflow-run or commit-status records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the required full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a destructive history rewrite. Fresh v0.340.183 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,330 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 602 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `46d57b5ae941d17c29b8b2d053bde63d07767eac06e01517a49784f6528c7dc5`; `validation/release_trials_0_340_183.json` SHA256 is `da06e248a7c7031a88283488965a5a5d2688738cc31176ba4acd136ddc89936e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.183, retains the transport/checkpoint/reconnect fence and has SHA256 `28c150616ffc3a1abdb5bbd79b11badb31f971d61462e56ea3ba644f13227e65`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
+
 
 ## v0.340.182 Activity SSE post-control reservation fence
 

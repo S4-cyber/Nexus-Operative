@@ -124,7 +124,7 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
         confirm_read_only_paper=False, opener=None, wall_clock=time.time,
         elapsed_clock=time.monotonic, permission_check=None,
         emergency_stop_check=None, credential_check=None,
-        private_events=False):
+        private_events=False, pre_open_check=None):
     """Read one bounded finite segment for aggregate or private composition.
 
     ``opener`` is an injected test seam.  Without it, proxies are disabled and
@@ -141,6 +141,8 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
     target = wire.activity_url(since_id)
     if not all(callable(item) for item in (wall_clock, elapsed_clock,
             permission_check, emergency_stop_check, credential_check)):
+        _fail('CHECK_INVALID')
+    if pre_open_check is not None and not callable(pre_open_check):
         _fail('CHECK_INVALID')
     injected = opener is not None
     reader = opener or build_opener(ProxyHandler({}), _NoRedirect())
@@ -178,6 +180,14 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
         return max(0.001, min(REQUEST_TIMEOUT, TOTAL_SECONDS - elapsed))
 
     timeout = checkpoint()
+    if pre_open_check is not None:
+        try:
+            if pre_open_check() is not True:
+                _fail('PRE_OPEN_REVOKED')
+        except ActivitySSETransportError:
+            raise
+        except Exception:
+            _fail('PRE_OPEN_CHECK_FAILED')
     request = Request(target, method='GET', headers={
         'APCA-API-KEY-ID': api_key,
         'APCA-API-SECRET-KEY': api_secret,

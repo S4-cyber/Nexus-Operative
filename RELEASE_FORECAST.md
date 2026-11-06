@@ -1,16 +1,24 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.182
+## Current candidate: v0.340.183
 
-The one-attempt Activity SSE coordinator now replays the exact pending reservation and store bindings after every untrusted permission, emergency-stop and saved-credential callback. A callback that retires or retargets the grant at the final pre-open fence now produces fixed uncertainty with zero provider requests. Invalid permission or credential controls create no cursor or reconnect-budget storage.
+The Activity SSE coordinator now installs a dedicated final pre-open check between the last permission, emergency-stop and saved-credential samples and provider IO. It independently replays the current durable cursor head and exact pending reconnect reservation. A legitimate concurrent cursor checkpoint from an untrusted callback now returns the fixed cursor-head diagnostic with zero provider requests and retains the pending reservation for explicit review.
 
-Exact-source v0.340.181 head `247fd3d94e90adb9a5f2903d48617c53dddd66ea` remained current when this candidate began. GitHub exposed no workflow-run or commit-status records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the full-history Gitleaks scan reaching two high-entropy synthetic literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected source does not contain them, and the forbidden destructive history rewrite was not performed. Fresh exact-source v0.340.182 hosted workflows and actual authorized-account acceptance remain required.
+Exact-source v0.340.182 head `08e6dbdb5e08fe396a9a1109f3aadf2c09dfe922` remained current when this candidate began. GitHub exposed no workflow-run or commit-status records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the full-history Gitleaks scan reaching two high-entropy synthetic literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected source does not contain them, and the forbidden destructive history rewrite was not performed. Fresh exact-source v0.340.183 hosted workflows and actual authorized-account acceptance remain required.
 
-Final local verification passed 5,328 tests with one expected non-Windows skip and one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `abe9161835f7066b9f91018e1c53ab940a23d4b80e60f2f3bf0d73dad5555ca8`; report SHA256 is `17f484a1a740b660621d1eeef149be2914a7034295348c8db0f9bcc5338b2f0e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.182 and has SHA256 `00eb12c3d9986d15426036f69c229c235088cfa3c3a953fd0b150fc39a9cfa78`. No actual provider/account/native Windows acceptance was performed.
+Final local verification passed 5,330 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 602 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `46d57b5ae941d17c29b8b2d053bde63d07767eac06e01517a49784f6528c7dc5`; report SHA256 is `da06e248a7c7031a88283488965a5a5d2688738cc31176ba4acd136ddc89936e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.183 and has SHA256 `28c150616ffc3a1abdb5bbd79b11badb31f971d61462e56ea3ba644f13227e65`. No actual provider/account/native Windows acceptance was performed.
 
 No Portal control or editable parameter changed; the beginner tabs and black/bright-purple bottom-right hover help remain unchanged. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any trading, funding, live/cloud or release permission. Historical results and synthetic scores are not future profit predictions.
 
-## Previous candidate: v0.340.181
+## Previous candidate: v0.340.182
+
+The one-attempt Activity SSE coordinator replays the exact pending reservation and store bindings after every untrusted permission, emergency-stop and saved-credential callback. A callback that retires or retargets the grant at the final pre-open fence produces fixed uncertainty with zero provider requests. Invalid permission or credential controls create no cursor or reconnect-budget storage.
+
+Exact-source v0.340.181 head `247fd3d94e90adb9a5f2903d48617c53dddd66ea` remained current when that candidate began. GitHub exposed no workflow-run or commit-status records for that exact commit, so no hosted success was inferred.
+
+Final local verification passed 5,328 tests with one expected non-Windows skip and one existing warning. All sixteen profiles matched 399 source files / `abe9161835f7066b9f91018e1c53ab940a23d4b80e60f2f3bf0d73dad5555ca8`; report SHA256 was `17f484a1a740b660621d1eeef149be2914a7034295348c8db0f9bcc5338b2f0e`. The 161-member wheel reported v0.340.182 and had SHA256 `00eb12c3d9986d15426036f69c229c235088cfa3c3a953fd0b150fc39a9cfa78`.
+
+## Earlier candidate: v0.340.181
 
 The installed Activity SSE recovery evidence joins in-flight saved-pair rotation with the standalone emergency-stop process. After rotation forces durable manual review without a cursor checkpoint, the separate process publishes emergency intent before order halt, remains Portal/vault/network silent, preserves the cursor/reconnect heads and attempt count, and prevents another confirmed GET despite valid replacement credentials.
 

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.182'
+REVISION = '0.340.183'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -620,7 +620,7 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.remaining) for item in MILESTONES)
 
 DELIVERY_STAGES = tuple((dict(stage,
-    progress=stage['progress'] + ' Mandatory installed joint-failure evidence now invokes the standalone emergency-stop process after an in-flight saved-pair rotation has forced durable manual review. The stop creates no Portal, vault or network activity, preserves the exact cursor/reconnect heads and attempt count, and keeps a subsequent confirmed attempt from reaching network despite valid replacement credentials. This is disposable local injected evidence, not native power-loss proof, provider identity, broker acceptance, sustained-market coverage, reconciliation or routing authority.')
+    progress=stage['progress'] + ' Mandatory installed concurrency evidence now advances the durable Activity SSE cursor from an untrusted final control callback while leaving the reconnect reservation untouched. The dedicated pre-open fence detects the stale cursor, performs zero GETs and retains the pending reservation for explicit review. This is disposable local injected evidence, not native power-loss proof, provider identity, broker acceptance, sustained-market coverage, reconciliation or routing authority.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -788,7 +788,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.182 closes a final Activity SSE provider-request race across permission, emergency-stop and saved-credential controls. Each untrusted callback is now followed by exact store-binding and pending-reservation replay before one bounded GET may open; a callback that retires or retargets the grant produces fixed uncertainty with zero provider requests. Malformed permission and credential controls are storage- and network-silent. GitHub exposed no workflow-run or commit-status records for exact-source v0.340.181 when this candidate began, so no hosted success is inferred. The standing public-security blocker remains the full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a forbidden destructive history rewrite. This is local injected concurrency evidence, not provider/source attestation, cross-process/native-vault or physical power-loss proof, broker acceptance, sustained market realism, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.183 adds a dedicated Activity SSE final pre-open fence that independently replays both the durable cursor head and exact pending reconnect reservation after the last permission, emergency-stop and saved-credential callbacks but before provider IO. A callback that commits a legitimate concurrent cursor advance now returns the fixed cursor-head diagnostic with zero GETs; the pending reservation remains retained for explicit review rather than being misclassified or retried. GitHub exposed no workflow-run or commit-status records for exact-source v0.340.182 when this candidate began, so no hosted success is inferred. The standing public-security blocker remains the full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a forbidden destructive history rewrite. This is local injected concurrency evidence, not provider/source attestation, cross-process/native-vault or physical power-loss proof, broker acceptance, sustained market realism, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -2107,43 +2107,18 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
     # process after BEGIN acknowledgement; a stale token must never retain
     # provider-request authority in that interval.
     reservation_state_uncertain = False
+    cursor_state_uncertain = False
+    cursor_head_changed = False
     store_binding_changed = False
-    def guarded_control_check(callback):
-        """Re-prove the pending grant after each untrusted callback.
 
-        Transport samples permission, stop and credential callbacks in that
-        order immediately before ``opener.open``.  Any one of those callbacks
-        can run foreign code, so checking only before the callback leaves a
-        final mutation window.  Always perform the binding and exact-token
-        proof after the callback, including when it returns a veto or raises.
-        """
+    def prove_control_state():
+        """Re-prove the pending grant after one foreign callback."""
         nonlocal reservation_state_uncertain, store_binding_changed
-        try:
-            decision = callback()
-        except Exception:
-            if not _store_bindings_match(cursor_store, reconnect_budget,
-                    cursor_binding=cursor_binding,
-                    budget_binding=budget_binding):
-                store_binding_changed = True
-            else:
-                try:
-                    current = _budget_state_for_attempt(reconnect_budget)
-                    exact = _exact_pending_reservation(current,
-                        token=token, attempt=attempt,
-                        cursor_head=cursor_head,
-                        expected_budget_head=expected_budget_head,
-                        evaluated_at=evaluated_at,
-                        reconnect_reason=reconnect_reason)
-                except Exception:
-                    exact = False
-                if not exact:
-                    reservation_state_uncertain = True
-            raise
         if not _store_bindings_match(cursor_store, reconnect_budget,
                 cursor_binding=cursor_binding,
                 budget_binding=budget_binding):
             store_binding_changed = True
-            return None
+            return False
         try:
             current = _budget_state_for_attempt(reconnect_budget)
             exact = _exact_pending_reservation(current,
@@ -2155,6 +2130,44 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
             exact = False
         if not exact:
             reservation_state_uncertain = True
+            return False
+        return True
+
+    def request_pre_open_check():
+        """Final provider-IO fence for both cursor and reservation stores."""
+        nonlocal cursor_state_uncertain, cursor_head_changed
+        nonlocal store_binding_changed
+        if not _store_bindings_match(cursor_store, reconnect_budget,
+                cursor_binding=cursor_binding,
+                budget_binding=budget_binding):
+            store_binding_changed = True
+            return None
+        try:
+            current_cursor_head = _cursor_head_for_attempt(cursor_store)
+        except Exception:
+            cursor_state_uncertain = True
+            return None
+        if current_cursor_head != expected_cursor_head:
+            cursor_head_changed = True
+            return None
+        return True if prove_control_state() else None
+
+    def guarded_control_check(callback):
+        """Re-prove the pending grant after each callback.
+
+        Transport samples permission, stop and credential callbacks in that
+        order immediately before ``opener.open``.  Any one of those callbacks
+        can run foreign code, so checking only before the callback leaves a
+        final mutation window.  Always perform the store and exact-token proof
+        after the callback, including on veto or exception.  The transport's
+        dedicated final pre-open fence separately binds the cursor head.
+        """
+        try:
+            decision = callback()
+        except Exception:
+            prove_control_state()
+            raise
+        if not prove_control_state():
             return None
         return decision
 
@@ -2174,7 +2187,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         confirm_cursor_checkpoint=confirm_cursor_checkpoint, opener=opener,
         permission_check=request_permission_check,
         emergency_stop_check=request_emergency_stop_check,
-        credential_check=request_credential_check)
+        credential_check=request_credential_check,
+        pre_open_check=request_pre_open_check)
     options['reconnect_reservation_token'] = token
     if wall_clock is not None:
         options['wall_clock'] = wall_clock
@@ -2189,6 +2203,10 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
                     cursor_binding=cursor_binding,
                     budget_binding=budget_binding)):
             _fail('STORE_BINDING_CHANGED')
+        if cursor_state_uncertain:
+            _fail('CURSOR_STATE_UNCERTAIN')
+        if cursor_head_changed:
+            _fail('CURSOR_HEAD_CHANGED')
         if reservation_state_uncertain:
             # The durable BEGIN no longer grants this caller authority.  Do
             # not overwrite a concurrent result or infer a retryable outcome.
@@ -2894,6 +2912,51 @@ def fixture_report():
         except ActivitySSEReconnectBudgetError as error:
             control_code = str(error)
         control_state = control_budget.inspect()
+        cursor_control_cursor = ActivitySSECursorStore(
+            root / 'cursor-control-cursor.sqlite3', account)
+        cursor_control_budget = ActivitySSEReconnectBudget(
+            root / 'cursor-control-budget.sqlite3', account)
+        cursor_control_opener = Opener(raw)
+        first_replay = [copy.deepcopy(first_fee), copy.deepcopy(later_trade)]
+        first_review = checkpoint.reconnect.review(
+            [first_trade, first_fee], first_replay,
+            expected_account_id=account,
+            persisted_event_id=first_fee['event_id'],
+            reconnect_since_id=first_fee['event_id'],
+            reconnect_reason='CONNECTION_DROPPED')
+        cursor_control_first = cursor_control_cursor.checkpoint(first_review,
+            previous_cursor=first_fee['event_id'],
+            next_cursor=later_trade['event_id'], expected_head=ZERO)
+        later_replay = [copy.deepcopy(later_trade), copy.deepcopy(later_fee)]
+        later_review = checkpoint.reconnect.review(initial, later_replay,
+            expected_account_id=account,
+            persisted_event_id=later_trade['event_id'],
+            reconnect_since_id=later_trade['event_id'],
+            reconnect_reason='CONNECTION_DROPPED')
+        cursor_control_samples = []
+        def advance_cursor_from_permission_check():
+            cursor_control_samples.append(True)
+            if len(cursor_control_samples) == 2:
+                cursor_control_cursor.checkpoint(later_review,
+                    previous_cursor=later_trade['event_id'],
+                    next_cursor=later_fee['event_id'],
+                    expected_head=cursor_control_first['head_sha256'])
+            return True
+        cursor_control_code = None
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=999, opener=cursor_control_opener,
+                **dict(common, cursor_store=cursor_control_cursor,
+                    reconnect_budget=cursor_control_budget,
+                    expected_cursor_head=
+                        cursor_control_first['head_sha256'],
+                    permission_check=advance_cursor_from_permission_check,
+                    wall_clock=lambda: 999))
+        except ActivitySSEReconnectBudgetError as error:
+            cursor_control_code = str(error)
+        cursor_control_state = cursor_control_budget.inspect()
+        cursor_control_retained = cursor_control_cursor.inspect()
         try:
             collect_and_checkpoint_due('fixture_key_only_123',
                 'fixture_secret_only_123', expected_budget_head=ZERO,
@@ -3378,6 +3441,17 @@ def fixture_report():
                 control_state['review_required'] and
                 control_state['last_detail_code'] ==
                     'CONCURRENT_CREDENTIAL_REVIEW',
+            control_callback_cursor_advance_blocks_before_provider_request=
+                cursor_control_code is not None and
+                cursor_control_code.endswith('CURSOR_HEAD_CHANGED') and
+                cursor_control_samples == [True, True] and
+                not cursor_control_opener.requests and
+                cursor_control_retained['head_sha256'] !=
+                    cursor_control_first['head_sha256'] and
+                cursor_control_state['pending_token'] ==
+                    cursor_control_state['head_sha256'] and
+                cursor_control_state['attempts'] == 1 and
+                cursor_control_state['last_outcome'] is None,
             due_second_attempt_explicit_and_single=
                 result['reconnect_attempt_number'] == 2 and
                 len(second.requests) == 1,

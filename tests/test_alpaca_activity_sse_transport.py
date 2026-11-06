@@ -249,6 +249,53 @@ def test_response_metadata_is_checked_before_body(response, code):
     assert response.closed and response.reads == 0
 
 
+@pytest.mark.parametrize('cleanup', ('suppress', 'fail'))
+def test_response_scope_cleanup_cannot_suppress_or_replace_fixed_failure(
+        cleanup):
+    class HostileExitResponse(Response):
+        def __exit__(self, *args):
+            self.closed = True
+            if cleanup == 'suppress':
+                return True
+            raise RuntimeError('private response cleanup detail')
+
+    response = HostileExitResponse(status=204)
+    with pytest.raises(subject.ActivitySSETransportError) as raised:
+        collect(Opener(response))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_HTTP_STATUS_REVIEW'
+    assert 'private' not in str(raised.value)
+    assert response.closed and response.reads == 0
+
+
+@pytest.mark.parametrize('signal', (KeyboardInterrupt, SystemExit))
+def test_response_scope_cleanup_preserves_process_control(signal):
+    class SignalingExitResponse(Response):
+        def __exit__(self, *args):
+            self.closed = True
+            raise signal()
+
+    response = SignalingExitResponse(status=204)
+    with pytest.raises(signal):
+        collect(Opener(response))
+    assert response.closed and response.reads == 0
+
+
+def test_successful_response_cleanup_failure_is_fixed_and_private():
+    class FailingExitResponse(Response):
+        def __exit__(self, *args):
+            self.closed = True
+            raise RuntimeError('private response cleanup detail')
+
+    response = FailingExitResponse()
+    with pytest.raises(subject.ActivitySSETransportError) as raised:
+        collect(Opener(response))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED'
+    assert 'private' not in str(raised.value)
+    assert response.closed and response.reads > 0
+
+
 def test_declared_length_requires_exact_complete_body():
     raw = payload(); response = Response(raw,
         headers={'Content-Type': 'text/event-stream',

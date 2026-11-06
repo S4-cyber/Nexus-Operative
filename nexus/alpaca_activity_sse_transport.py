@@ -70,8 +70,18 @@ def _response_context(response):
     try:
         yield response
     except BaseException as error:
-        if not response.__exit__(type(error), error, error.__traceback__):
+        try:
+            response.__exit__(type(error), error, error.__traceback__)
+        except (KeyboardInterrupt, SystemExit):
             raise
+        except Exception:
+            pass
+        # A response implementation must not suppress or replace the fixed
+        # safety failure that ended the bounded read.  Suppression here could
+        # otherwise continue with partially initialized review state, while
+        # an ordinary cleanup exception could disclose private provider
+        # detail.  Process-control signals from cleanup remain visible.
+        raise
     else:
         response.__exit__(None, None, None)
 
@@ -420,6 +430,28 @@ def fixture_report():
         permission_check=lambda: True,
         emergency_stop_check=lambda: False,
         credential_check=lambda: True)
+    class SuppressingFailureResponse(Response):
+        status = 204
+        def __exit__(self, *args):
+            self.closed = True
+            return True
+    class SuppressingFailureOpener(Opener):
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            self.response = SuppressingFailureResponse(request.full_url)
+            return self.response
+    suppressing_opener = SuppressingFailureOpener()
+    suppressing_code = None
+    try:
+        collect_once('fixture_key_only_123', 'fixture_secret_only_123',
+            expected_account_id=account, since_id=cursor,
+            confirm_read_only_paper=True, opener=suppressing_opener,
+            wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+            permission_check=lambda: True,
+            emergency_stop_check=lambda: False,
+            credential_check=lambda: True)
+    except ActivitySSETransportError as error:
+        suppressing_code = str(error)
     class EntryFailureResponse(Response):
         def __enter__(self):
             raise RuntimeError('private response admission detail')
@@ -492,6 +524,11 @@ def fixture_report():
         bounded_segment_reviewed=result['bounded_segment_complete']
             and result['events_reviewed'] == 2 and 0 < timeout <= REQUEST_TIMEOUT,
         injected_response_closed=opener.response.closed,
+        failed_scope_cleanup_preserves_failure=suppressing_code ==
+            'ALPACA_ACTIVITY_SSE_TRANSPORT_HTTP_STATUS_REVIEW'
+            and len(suppressing_opener.requests) == 1
+            and suppressing_opener.response.closed
+            and suppressing_opener.response.body.tell() == 0,
         failed_entry_response_closed=entry_code ==
             'ALPACA_ACTIVITY_SSE_TRANSPORT_TRANSPORT_FAILED'
             and len(entry_opener.requests) == 1

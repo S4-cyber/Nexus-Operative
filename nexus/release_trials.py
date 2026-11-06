@@ -1330,6 +1330,7 @@ def _validate(profile, result):
             all(transport[k] is True for k in ('passed','exact_single_get',
                 'fixed_activity_target','fixed_stream_headers',
                 'bounded_segment_reviewed','injected_response_closed',
+                'failed_scope_cleanup_preserves_failure',
                 'failed_entry_response_closed',
                 'failed_http_cleanup_preserves_backoff',
                 'failed_redirect_cleanup_preserves_denial',

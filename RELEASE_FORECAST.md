@@ -1,6 +1,18 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.190
+## Current candidate: v0.340.191
+
+The bounded Activity SSE response scope now preserves the original fixed safety failure even if a hostile response context returns a truthy suppression value or raises an ordinary cleanup exception. It cannot continue with partially initialized review state or replace the fixed diagnostic with private provider detail. Process-control signals remain visible. Durable reconnect state records the one attempted GET as non-retryable manual review with no body read, cursor advance, provider backoff, automatic retry or sleep.
+
+Exact-source v0.340.190 research run 42270833448 passed its complete Windows regression, Portal browser help and saved evidence, and Windows/installer run 42270833513 passed its full package, install, upgrade, recovery and evidence lane. Security run 42270833307 passed the current/reachable audit across 8,699 blobs, 999 commits and 927 paths with zero findings, but required full-history Gitleaks still finds the two known literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`. Fresh v0.340.191 workflows remain required.
+
+Final local verification passed 5,359 tests with one expected non-Windows skip and one existing warning; the finalized eleven-file focus passed 763. All sixteen profiles match 399 source files / `7bd1b3b5196fc52ae5f51e066403ee116085b00e29265502c343ee723de1f35a`; report SHA256 is `3e4d164a78817138631b5f1b2a03c2374a9ac1c26194dadb39b9ff6514b17493`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen controllers passed. The finalized 161-member wheel reports v0.340.191. The current candidate audit checked 907 paths and 79,462,154 bytes with zero findings.
+
+Final wheel SHA256 is `67cd75dfd9203140a1c2aaded7817e0a9db4830ce1984bff0b45bade80fe9f60`.
+
+No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. This does not establish a launch date, release approval or trading/funding/live/cloud permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.190
 
 The Activity SSE redirect handler now cleans up an already-open rejected response without allowing an ordinary close exception to replace fixed `REDIRECT_DENIED` or expose private response detail. Process-control signals remain visible. Durable reconnect state records the one attempted GET as non-retryable manual review with no cursor advance, provider backoff, automatic retry or sleep.
 
@@ -10,7 +22,7 @@ Final local verification passed 5,352 tests with one expected non-Windows skip a
 
 No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. This does not establish a launch date, release approval or trading/funding/live/cloud permission. Historical results and synthetic scores are not future profit predictions.
 
-## Previous candidate: v0.340.189
+## Older candidate: v0.340.189
 
 The Activity SSE transport now preserves the fixed HTTP classification and bounded provider-directed delay when cleanup of the unentered HTTP error response raises an ordinary exception. Validated 429/503 `Retry-After` backoff survives with one attempted GET, no cursor write and no automatic retry or sleep; private cleanup detail stays hidden and process-control signals remain visible. Mandatory transport, reconnect-budget and release fixtures pin the boundary.
 

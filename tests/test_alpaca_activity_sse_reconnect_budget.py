@@ -1048,6 +1048,45 @@ def test_redirect_close_failure_preserves_denial_and_requires_review(tmp_path):
     assert not retained['automatic_retry'] and not retained['automatic_sleep']
 
 
+@pytest.mark.parametrize('cleanup', ('suppress', 'fail'))
+def test_response_scope_cleanup_preserves_nonretryable_failure_and_budget(
+        tmp_path, cleanup):
+    cursor, budget = stores(tmp_path)
+
+    class HostileExitResponse(Response):
+        status = 204
+        def __exit__(self, *args):
+            self.closed = True
+            if cleanup == 'suppress':
+                return True
+            raise RuntimeError('private response cleanup detail')
+
+    class HostileExitOpener:
+        def __init__(self):
+            self.requests = []
+            self.response = None
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            self.response = HostileExitResponse(b'', request.full_url)
+            return self.response
+
+    opener = HostileExitOpener()
+    with pytest.raises(subject.ActivitySSETransportError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_TRANSPORT_HTTP_STATUS_REVIEW'
+    assert 'private' not in str(raised.value)
+    assert len(opener.requests) == 1 and opener.response.closed
+    assert opener.response.body.tell() == 0
+    assert cursor.inspect()['head_sha256'] == ZERO
+    retained = budget.inspect()
+    assert retained['attempts'] == 1
+    assert retained['last_outcome'] == 'REVIEW_REQUIRED'
+    assert retained['last_detail_code'] == 'NONRETRYABLE_FAILURE'
+    assert retained['last_applied_backoff_seconds'] == 0
+    assert not retained['automatic_retry'] and not retained['automatic_sleep']
+
+
 def test_stop_callback_result_at_preopen_fence_blocks_provider_io(tmp_path):
     cursor, budget = stores(tmp_path)
     opener = Opener([b'private provider response'])

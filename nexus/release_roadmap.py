@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.190'
+REVISION = '0.340.191'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -233,6 +233,10 @@ DELIVERY_STAGES = tuple((dict(stage,
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the bounded Activity SSE response scope now preserves the original fixed safety failure even when a hostile response context attempts to suppress it or raises an ordinary cleanup exception, while process-control signals remain independently visible; the durable reconnect budget records the one GET as non-retryable review with no cursor advance, retry or sleep' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; failed fresh activity-acceptance connection, pragma, transaction, schema and baseline writes now remove only their exact newly created empty sidecar-free pathname so one explicit bind retry can initialize cleanly, while replacement or close uncertainty remains retained and blocked' if item.id=='M8' else ''),
@@ -788,7 +792,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.190 preserves fixed redirect denial even if cleanup of the already-open rejected response fails. Ordinary close exceptions can no longer replace `REDIRECT_DENIED` or expose private response detail; process-control signals remain visible. The durable reconnect budget records the one attempted GET as non-retryable manual review with no cursor write, backoff, automatic retry or sleep. Exact-source v0.340.189 research run 42262053404 passed its complete regression, browser-help and saved-evidence jobs; Windows/installer run 42262053467 remains active. Security failed only because full-history Gitleaks still reaches two synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; its 8,685-blob, 998-commit, 926-path artifact audit passed. Removing that reachable historical commit would require a forbidden destructive history rewrite. This is bounded injected redirect-cleanup evidence, not provider/account acceptance, sustained market realism, fee/hold/funds reconciliation, physical power-loss proof, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.191 prevents a hostile Activity SSE response context from suppressing or replacing the fixed safety failure that ended a bounded read. Truthy `__exit__` returns and ordinary cleanup exceptions can no longer continue with partially initialized review state or expose private provider detail; process-control signals remain visible. The durable reconnect budget records the one attempted GET as non-retryable manual review with no cursor write, backoff, automatic retry or sleep. Exact-source v0.340.190 research run 42270833448 passed its complete regression, browser-help and saved-evidence jobs, and Windows/installer run 42270833513 passed its full package, install, upgrade, recovery and evidence lane. Security run 42270833307 failed only because full-history Gitleaks still reaches two synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; its current/reachable audit passed 8,699 blobs, 999 commits and 927 paths with zero findings. Removing that reachable historical commit would require a forbidden destructive history rewrite. This is bounded injected response-scope cleanup evidence, not provider/account acceptance, sustained market realism, fee/hold/funds reconciliation, physical power-loss proof, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

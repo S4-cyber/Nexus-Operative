@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.171
+## Current candidate: v0.340.172
+
+The installed one-attempt Activity SSE API now binds its final source and provider/stream access acknowledgement to the actual request mode. Injected access remains explicitly unattested and provider-silent; the production default must acknowledge both the HTTPS provider request and stream connection.
+
+Exact-source v0.340.171 commit `dc5b2e929bee63d194928d61841cabf9d2f86c69` passed public-security run 42143612475. Research/browser/evidence run 42143612474 and Windows run 42143612469 remained active at the predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.172 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,248-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 460 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `05d67af1760c1c870d5cbbbdb5d7adea9f180cda695b318ba9b8287c0a9625b0`; `validation/release_trials_0_340_172.json` SHA256 is `6537541c1faf234fb2df6d45f10afb223d68439f3f75c5dcc39ceb6155013190`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `b8871d70dd3dc9767edce6886d13efff709e0d1905c35ac2f7ef6d0768ea8951`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.171
 
 The installed one-attempt Activity SSE API now requires its final durable cursor and budget to remain schema-exact, lifecycle-coherent and cross-store bound before acknowledging the completed provider attempt. Durable attempt count and cap must agree with the coordinator acknowledgement.
 

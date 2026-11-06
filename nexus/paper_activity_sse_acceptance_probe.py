@@ -215,7 +215,7 @@ def _status_pair_lifecycle(cursor, budget):
         budget['expected_cursor_head_sha256'])
 
 
-def _attempt_result(value, account_sha256):
+def _attempt_result(value, account_sha256, expected_actual_provider_access):
     """Validate the saved-pair acknowledgement before using any field.
 
     The durable coordinator owns the detailed protocol validation.  This
@@ -230,6 +230,7 @@ def _attempt_result(value, account_sha256):
         'reconnect_budget_completed', 'actual_vault_access')
     required_false = ('automatic_retry',)
     if (type(value) is not dict or
+            type(expected_actual_provider_access) is not bool or
             value.get('mode') !=
                 'EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT' or
             value.get('status') != 'REVIEW_REQUIRED' or
@@ -250,8 +251,13 @@ def _attempt_result(value, account_sha256):
             any(value.get(key) is not False for key in required_false) or
             type(value.get('actual_provider_access')) is not bool or
             type(value.get('actual_stream_connection')) is not bool or
-            (value['actual_stream_connection'] and
-                not value['actual_provider_access'])):
+            value['actual_provider_access'] is not
+                expected_actual_provider_access or
+            value['actual_stream_connection'] is not
+                expected_actual_provider_access or
+            value.get('source') != ('PAPER_HTTPS_READS'
+                if expected_actual_provider_access else
+                'INJECTED_UNATTESTED')):
         _fail()
     return value
 
@@ -879,7 +885,8 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     coordinator_completed = True
     active_journal_scope = _final_journal_scope(*journal_scope)
     final_storage_scope = _final_storage_scope(cursor, budget)
-    result = _attempt_result(result, cursor.account_sha256)
+    result = _attempt_result(result, cursor.account_sha256,
+        opener is None)
     # The coordinator has already made its one provider attempt and may have
     # committed the checkpoint.  Independently resample the external cut and
     # retained-input identity around every final journal read: a late stop or

@@ -2083,12 +2083,12 @@ def test_malformed_saved_pair_acknowledgement_fails_fixed_after_one_commit(
     assert not replay['one_attempt_eligible']
 
 
-def test_stream_connection_cannot_claim_no_provider_access():
+def _attempt_acknowledgement(**changes):
     result=dict(mode='EXPLICIT_ALPACA_ACTIVITY_SSE_RECONNECT_ATTEMPT',
         status='REVIEW_REQUIRED',source='INJECTED_UNATTESTED',
         account_sha256='a'*64,
         checkpoint_head_sha256='b'*64,reconnect_budget_head_sha256='c'*64,
-        initial_events_reviewed=1,replay_events_reviewed=1,
+        initial_events_reviewed=1,replay_events_reviewed=2,
         redelivered_events_deduplicated=1,new_events_processed=1,
         reconnect_attempt_number=1,reconnect_attempt_cap=3,
         local_cursor_checkpoint_committed=True,
@@ -2096,9 +2096,73 @@ def test_stream_connection_cannot_claim_no_provider_access():
         reconnect_budget_completed=True,actual_vault_access=True,
         automatic_retry=False,actual_provider_access=False,
         actual_stream_connection=True)
+    result.update(changes)
+    return result
+
+
+def test_stream_connection_cannot_claim_no_provider_access():
     with pytest.raises(ValueError,
             match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
-        subject._attempt_result(result,'a'*64)
+        subject._attempt_result(_attempt_acknowledgement(),'a'*64,False)
+
+
+@pytest.mark.parametrize(('expected_provider','source','provider','stream'),(
+    (False,'PAPER_HTTPS_READS',False,False),
+    (False,'INJECTED_UNATTESTED',True,True),
+    (False,'INJECTED_UNATTESTED',True,False),
+    (True,'INJECTED_UNATTESTED',True,True),
+    (True,'PAPER_HTTPS_READS',False,False),
+    (True,'PAPER_HTTPS_READS',True,False)))
+def test_acknowledgement_source_and_access_must_match_request_mode(
+        expected_provider,source,provider,stream):
+    result=_attempt_acknowledgement(source=source,
+        actual_provider_access=provider,actual_stream_connection=stream)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject._attempt_result(result,'a'*64,expected_provider)
+
+
+@pytest.mark.parametrize(('expected_provider','source'),(
+    (False,'INJECTED_UNATTESTED'),(True,'PAPER_HTTPS_READS')))
+def test_acknowledgement_accepts_exact_request_mode(
+        expected_provider,source):
+    result=_attempt_acknowledgement(source=source,
+        actual_provider_access=expected_provider,
+        actual_stream_connection=expected_provider)
+    assert subject._attempt_result(result,'a'*64,
+        expected_provider) is result
+
+
+@pytest.mark.parametrize(('source','provider','stream'),(
+    ('PAPER_HTTPS_READS',False,False),
+    ('INJECTED_UNATTESTED',True,True),
+    ('INJECTED_UNATTESTED',True,False)))
+def test_false_request_mode_acknowledgement_fails_after_one_commit(
+        tmp_path,saved_pair,monkeypatch,source,provider,stream):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=paper_credentials.collect_activity_sse_saved
+
+    def relabel(**kwargs):
+        result=original(**kwargs)
+        result.update(source=source,actual_provider_access=provider,
+            actual_stream_connection=stream)
+        return result
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        relabel)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,elapsed_clock=lambda:50,
+            outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
 
 
 def test_post_commit_emergency_cut_withholds_success_without_second_get(

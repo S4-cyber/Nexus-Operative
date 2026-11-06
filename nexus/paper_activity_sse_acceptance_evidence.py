@@ -41,6 +41,9 @@ class _Vault:
     def get_password(self, service, account):
         return self.raw
 
+    def delete_password(self, service, account):
+        self.raw = None
+
 
 class _Response:
     status = 200
@@ -547,6 +550,152 @@ def retry_fixture_report():
                     len(failed.requests) + len(retry.requests) == 2))
             return dict(
                 source='SYNTHETIC_INSTALLED_ACTIVITY_SSE_RETRY_FIXTURE',
+                passed=all(checks.values()), **checks,
+                actual_provider_access=False,
+                actual_stream_connection=False,
+                retained_private_evidence_published=False,
+                historical_or_synthetic_performance_predicts_profit=False,
+                **{flag: False for flag in AUTHORITY_FLAGS})
+    finally:
+        paper_credentials._vault = original_vault
+        paper_credentials._epoch = original_epoch
+        paper_credentials._blocked = original_blocked
+
+
+def revoked_retry_fixture_report():
+    """Prove revoked saved credentials cannot consume a due retry attempt."""
+    original_vault = paper_credentials._vault
+    original_epoch = paper_credentials._epoch
+    original_blocked = paper_credentials._blocked
+    try:
+        with tempfile.TemporaryDirectory(
+                prefix='nexus-activity-sse-revoked-retry-evidence-') as directory:
+            root = Path(directory)
+            initial, raw = _segments()
+            source = root/'initial.json'
+            source.write_text(canonical(initial), encoding='utf-8')
+            source_before = source.read_bytes()
+            vault = _Vault()
+            paper_credentials._vault = lambda: vault
+            paper_credentials._epoch = 0
+            paper_credentials._blocked = False
+            paper_credentials.install(KEY, SECRET, confirm_store=True)
+            failed = _FailingOpener()
+            first_failed = False
+            options = dict(expected_account_id=ACCOUNT,
+                initial_events_path=source,
+                cursor_path=root/'cursor.sqlite3',
+                budget_path=root/'budget.sqlite3',
+                order_journal_path=root/'orders.sqlite3',
+                expected_cursor_head=ZERO, expected_budget_head=ZERO,
+                reconnect_reason='CONNECTION_DROPPED',
+                confirm_reconnect_attempt=True,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True)
+            try:
+                operator.attempt(**options, opener=failed,
+                    wall_clock=lambda:1000, elapsed_clock=lambda:50,
+                    outcome_clock=lambda:1000)
+            except ValueError as error:
+                first_failed = (str(error) ==
+                    'PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED')
+            due = _cold_status(root, 1001)
+            due_committed = _snapshot(root)
+            removed = paper_credentials.remove(confirm_remove=True)
+            denied = _Opener(raw)
+            revoked_failed = False
+            retry_options = {**options,
+                'expected_cursor_head': due['cursor_head_sha256'],
+                'expected_budget_head': due[
+                    'reconnect_budget_head_sha256']}
+            try:
+                operator.attempt(**retry_options, opener=denied,
+                    wall_clock=lambda:1001, elapsed_clock=lambda:51,
+                    outcome_clock=lambda:1001)
+            except ValueError as error:
+                revoked_failed = (str(error) ==
+                    'PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED')
+            revoked_committed = _snapshot(root)
+            revoked_status = _cold_status(root, 1001)
+            installed = paper_credentials.install(
+                KEY, SECRET, confirm_store=True)
+            retry = _Opener(raw)
+            result = operator.attempt(**retry_options, opener=retry,
+                wall_clock=lambda:1001, elapsed_clock=lambda:51,
+                outcome_clock=lambda:1001)
+            completed_committed = _snapshot(root)
+            completed = _cold_status(root, 1002)
+            checks = dict(
+                failed_attempt_reaches_due_state=(
+                    first_failed and len(failed.requests) == 1 and
+                    due['one_attempt_eligible'] is True and
+                    due['reconnect_attempt_number'] == 1 and
+                    due['reconnect_budget_completed'] is False),
+                credential_removal_is_explicit_and_non_authoritative=(
+                    removed['configured'] is False and
+                    removed['automatic_requests'] is False and
+                    removed['ready_for_routing'] is False and
+                    removed['live_orders_enabled'] is False and
+                    removed['money_movement_enabled'] is False),
+                revoked_retry_fails_before_get=(
+                    revoked_failed and len(denied.requests) == 0),
+                revoked_retry_preserves_exact_durable_state=(
+                    due_committed == revoked_committed and
+                    revoked_status['snapshot_consistent'] is True and
+                    revoked_status['storage_snapshot_consistent'] is True and
+                    revoked_status['one_attempt_eligible'] is True and
+                    revoked_status['reconnect_attempt_number'] == 1 and
+                    revoked_status['cursor_head_sha256'] ==
+                        due['cursor_head_sha256'] and
+                    revoked_status['reconnect_budget_head_sha256'] ==
+                        due['reconnect_budget_head_sha256']),
+                revoked_cold_status_is_vault_and_network_silent=(
+                    revoked_status['credential_operations'] == 0 and
+                    revoked_status['external_connections'] == 0 and
+                    revoked_status['journals_unchanged'] is True),
+                credential_restore_is_explicit_and_non_authoritative=(
+                    installed['configured'] is True and
+                    installed['automatic_requests'] is False and
+                    installed['ready_for_routing'] is False and
+                    installed['live_orders_enabled'] is False and
+                    installed['money_movement_enabled'] is False),
+                restored_retry_makes_one_get=(
+                    len(retry.requests) == 1 and
+                    result['reconnect_attempt_number'] == 2 and
+                    result['reconnect_attempt_cap'] == 4),
+                restored_retry_checkpoint_completed=(
+                    result['local_cursor_checkpoint_committed'] is True and
+                    result['process_restart_recoverable'] is True and
+                    result['complete_review_counts_bound'] is True and
+                    completed['reconnect_budget_completed'] is True and
+                    completed['reconnect_attempt_number'] == 2 and
+                    completed['cursor_head_sha256'] ==
+                        result['cursor_head_sha256'] and
+                    completed['reconnect_budget_head_sha256'] ==
+                        result['reconnect_budget_head_sha256']),
+                completed_restart_denies_third_attempt=
+                    completed['one_attempt_eligible'] is False,
+                completed_cold_status_is_vault_and_network_silent=(
+                    completed['credential_operations'] == 0 and
+                    completed['external_connections'] == 0 and
+                    completed['journals_unchanged'] is True and
+                    completed_committed == _snapshot(root)),
+                private_input_unchanged=source.read_bytes() == source_before,
+                no_order_journal_created=not (root/'orders.sqlite3').exists(),
+                no_automatic_retry_or_continuation=(
+                    result['automatic_retry'] is False and
+                    result['automatic_sleep'] is False and
+                    due['automatic_retry'] is False and
+                    due['automatic_continuation'] is False and
+                    revoked_status['automatic_retry'] is False and
+                    revoked_status['automatic_continuation'] is False and
+                    completed['automatic_retry'] is False and
+                    completed['automatic_continuation'] is False and
+                    len(failed.requests) + len(denied.requests) +
+                        len(retry.requests) == 2))
+            return dict(
+                source=
+                    'SYNTHETIC_INSTALLED_ACTIVITY_SSE_REVOKED_RETRY_FIXTURE',
                 passed=all(checks.values()), **checks,
                 actual_provider_access=False,
                 actual_stream_connection=False,

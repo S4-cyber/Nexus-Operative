@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.178'
+REVISION = '0.340.179'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -599,6 +599,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Mandatory installed Activity SSE recovery evidence now executes the full local failure-to-success lifecycle: one failed injected GET is retained, pre-deadline restart is denied, due-time status remains read-only, one separately explicit retry creates the only checkpoint, and a fresh process replays attempt two as completed without vault/network access or third-attempt eligibility. This is disposable local injected recovery evidence, not provider identity, delivery coverage, broker acceptance, native durability, reconciliation or routing authority.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; mandatory installed secret-lifecycle evidence removes the saved pair after a failed GET, proves a due retry fails before network access without consuming its durable attempt, and requires explicit non-authoritative credential restoration before one confirmed completion' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Mandatory installed Activity SSE secret-lifecycle evidence now removes the saved credential pair after a failed GET and retained backoff. The due retry fails before any network request and leaves the exact cursor/reconnect snapshot eligible and unchanged; only explicit credential restoration plus a fresh confirmation can complete attempt two. Removal, restoration and completion grant no routing, funds, live or release authority. This is disposable local injected evidence, not provider identity, broker acceptance, native-vault durability, sustained-market coverage or reconciliation acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -764,7 +772,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.178 makes explicit failed-GET recovery evidence mandatory for the installed Activity SSE path. One injected GET fails and retains an exact retry deadline; a fresh pre-deadline process denies retry, due-time status remains vault/network/storage-write silent, one separately confirmed retry makes exactly one GET and one checkpoint, and a final fresh process replays attempt two as completed while denying a third attempt. Exact-source v0.340.177 research/browser/evidence run 42174016167 passed. Windows run 42174016160 remained active when this work began. Public-security run 42174016184 failed only because the full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a forbidden destructive history rewrite. This is disposable local injected recovery evidence, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.179 makes credential-revocation recovery evidence mandatory for the installed Activity SSE path. One injected GET fails and retains an exact retry deadline; explicit saved-pair removal then makes the due retry fail before any GET while preserving the exact durable snapshot and attempt eligibility. Only explicit non-authoritative credential restoration plus a new confirmation makes one GET and completes attempt two; cold status remains vault/network/storage-write silent and denies a third attempt. Exact-source v0.340.178 security run 42181271891 failed only because the full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a forbidden destructive history rewrite. Research/browser/evidence run 42181271970 and Windows run 42181271862 were still in progress when this candidate began. This is disposable local injected secret-lifecycle evidence, not provider/source attestation, broker acceptance, sustained market realism, physical/native-vault durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -1,7 +1,8 @@
 """Release evidence for the installed Activity SSE operator."""
 
 from nexus.paper_activity_sse_acceptance_evidence import (
-    failure_fixture_report, fixture_report, retry_fixture_report)
+    failure_fixture_report, fixture_report, retry_fixture_report,
+    revoked_retry_fixture_report)
 
 
 def test_fixture_proves_installed_attempt_restart_without_authority():
@@ -51,6 +52,24 @@ def test_retry_fixture_proves_explicit_due_retry_and_completed_cold_replay():
     assert result['cold_statuses_are_vault_silent'] is True
     assert result['cold_statuses_are_network_silent'] is True
     assert result['completed_journals_are_cold_read_stable'] is True
+    assert result['no_automatic_retry_or_continuation'] is True
+    assert result['actual_provider_access'] is False
+    assert result['ready_for_routing'] is False
+    assert result['release_approved'] is False
+
+
+def test_revoked_retry_fixture_preserves_due_state_until_explicit_restore():
+    result = revoked_retry_fixture_report()
+    assert result['passed'] is True
+    assert result['failed_attempt_reaches_due_state'] is True
+    assert result['credential_removal_is_explicit_and_non_authoritative'] is True
+    assert result['revoked_retry_fails_before_get'] is True
+    assert result['revoked_retry_preserves_exact_durable_state'] is True
+    assert result['revoked_cold_status_is_vault_and_network_silent'] is True
+    assert result['credential_restore_is_explicit_and_non_authoritative'] is True
+    assert result['restored_retry_makes_one_get'] is True
+    assert result['restored_retry_checkpoint_completed'] is True
+    assert result['completed_restart_denies_third_attempt'] is True
     assert result['no_automatic_retry_or_continuation'] is True
     assert result['actual_provider_access'] is False
     assert result['ready_for_routing'] is False

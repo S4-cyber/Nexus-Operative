@@ -711,7 +711,8 @@ def _execute(profile):
         from nexus.paper_activity_sse_acceptance_evidence import (
             failure_fixture_report as activity_sse_failure_fixture,
             fixture_report as activity_sse_acceptance_fixture,
-            retry_fixture_report as activity_sse_retry_fixture)
+            retry_fixture_report as activity_sse_retry_fixture,
+            revoked_retry_fixture_report as activity_sse_revoked_retry_fixture)
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_account_response']=account_response_fixture()
         result['exact_activity_response']=activity_response_fixture()
@@ -729,6 +730,7 @@ def _execute(profile):
         result['installed_activity_sse_acceptance']=activity_sse_acceptance_fixture()
         result['installed_activity_sse_failure_recovery']=activity_sse_failure_fixture()
         result['installed_activity_sse_explicit_retry']=activity_sse_retry_fixture()
+        result['installed_activity_sse_revoked_retry']=activity_sse_revoked_retry_fixture()
         return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
@@ -1463,6 +1465,31 @@ def _validate(profile, result):
             (*ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS,
              'actual_provider_access','actual_stream_connection')),
             'INSTALLED_ACTIVITY_SSE_EXPLICIT_RETRY_AUTHORITY')
+        installed_sse_revoked=result['installed_activity_sse_revoked_retry']
+        _require(installed_sse_revoked['source']==
+            'SYNTHETIC_INSTALLED_ACTIVITY_SSE_REVOKED_RETRY_FIXTURE' and
+            all(installed_sse_revoked[k] is True for k in ('passed',
+                'failed_attempt_reaches_due_state',
+                'credential_removal_is_explicit_and_non_authoritative',
+                'revoked_retry_fails_before_get',
+                'revoked_retry_preserves_exact_durable_state',
+                'revoked_cold_status_is_vault_and_network_silent',
+                'credential_restore_is_explicit_and_non_authoritative',
+                'restored_retry_makes_one_get',
+                'restored_retry_checkpoint_completed',
+                'completed_restart_denies_third_attempt',
+                'completed_cold_status_is_vault_and_network_silent',
+                'private_input_unchanged','no_order_journal_created',
+                'no_automatic_retry_or_continuation')) and
+            installed_sse_revoked[
+                'retained_private_evidence_published'] is False and
+            installed_sse_revoked[
+                'historical_or_synthetic_performance_predicts_profit'] is False,
+            'INSTALLED_ACTIVITY_SSE_REVOKED_RETRY')
+        _require(all(installed_sse_revoked[k] is False for k in
+            (*ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS,
+             'actual_provider_access','actual_stream_connection')),
+            'INSTALLED_ACTIVITY_SSE_REVOKED_RETRY_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

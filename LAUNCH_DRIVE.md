@@ -1,5 +1,18 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.179 Activity SSE credential-revocation recovery
+
+The mandatory installed recovery fixture now removes the saved paper credential pair after one injected failed GET has committed its retry deadline. At due time the retry fails before any GET, leaves the exact cursor/reconnect snapshot unchanged and does not consume attempt two. Only explicit credential restoration plus a new paper-read confirmation makes one GET and completes attempt two; fresh completed status remains vault/network/storage-write silent and denies a third attempt.
+
+This is disposable local injected secret-lifecycle evidence only. It does not attest a provider or source, accept a broker account, prove delivery coverage or market realism, reconcile fees, holds or funds, demonstrate physical/native Windows vault durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.178 public-security run 42181271891 failed because its required full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals. Removing the reachable commit would require a destructive development-branch history rewrite and was not performed. Research/browser/evidence run 42181271970 and Windows run 42181271862 remained in progress when this candidate began. Fresh v0.340.179 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,323 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 438 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `17d27d48bd5a4e213ae9515ae2a06038d02575e2d634d0e4f02d6e8a46962320`; `validation/release_trials_0_340_179.json` SHA256 is `e04a77746e0a2fadbade85acaa52629dff6db94ae5a98f6852f849c04fe6ada0`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.179, retained the revoked-retry evidence and has SHA256 `bf84dc3fdb5ae85a22238adddbfec5449f582a00398cb8138a9d5475e8cc2453`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
+
+
 ## v0.340.178 explicit due-time Activity SSE retry recovery
 
 The mandatory installed recovery fixture now carries one failed injected GET through the full caller-driven lifecycle. The failed attempt retains its exact retry deadline; a fresh pre-deadline process denies retry, and a fresh due-time status reports eligibility without a request, sleep, credential access, network access or storage write. One separately confirmed retry then makes exactly one GET, commits exactly one checkpoint as attempt two, and a final fresh process replays the completed state while denying a third attempt.

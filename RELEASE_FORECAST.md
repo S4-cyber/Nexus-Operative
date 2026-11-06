@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.195
+
+The retained Activity SSE input must now return two byte-identical reads from its already-open descriptor in addition to stable path/descriptor metadata. This closes a reproducible Windows creation-time gap without adding provider access, retry, authority or a UI control. Exact-source v0.340.194 security, research/browser/evidence and Windows/installer workflows passed. Fresh v0.340.195 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,394 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 453 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `c4e393b5082d8fbaa2e8b1bd54e889f3d36d63c67583e626abfb4424dd0a926e`; `validation/release_trials_0_340_195.json` SHA256 is `6e619022b8f460c6a2c317a042893d0c40cf7e84fe8378610a89cdf31274f019`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.195 and has SHA256 `66ad255015106353de5a4bea3f3a2893f658b45b4d45d8134e9fc28c717141be`. The final staged 914-path / 80,278,463-byte public-artifact audit found zero findings; local Gitleaks is unavailable, while exact-source v0.340.194 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.194
 
 The retained Activity SSE initial-segment loader now rejects same-inode, same-size mutation restored between its surrounding fingerprints by binding stable path/descriptor metadata throughout the read. Exact-source v0.340.193 security passed; research and Windows remained active at recovery. Fresh v0.340.194 hosted checks remain required.

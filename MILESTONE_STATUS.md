@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 6, 2026. Development candidate: **v0.340.194**. Reviewed source baseline: `c399b9d5d813d28b7c8d8ad4f2d89a259dae179b` (v0.340.193).
+Report date: November 6, 2026. Development candidate: **v0.340.195**. Reviewed source baseline: `db7c4d7c385f377c428bd368a279c587e2f73b0c` (v0.340.194).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,14 +22,23 @@ Report date: November 6, 2026. Development candidate: **v0.340.194**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.191 source reports 5,359 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 532 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
+The v0.340.195 source reports 5,394 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 567 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
 
 Verified prior-source hosted checkpoints:
 
-- v0.340.193 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42290610033); its research and Windows workflows remained active at this candidate's recovery.
+- v0.340.194 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42296516134), [research/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42296515957), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42296515986).
+- v0.340.193 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42290610033), and its research and Windows workflows subsequently passed.
 - v0.340.190 [Windows installer/distribution checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833513).
 - v0.340.190 [research regression, browser and saved-evidence checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833448).
 - Its [security workflow failed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833307) on two historical synthetic fixture findings. A passed installer is not an all-green release candidate.
+
+## v0.340.195 byte-consistent retained-input reads
+
+The installed one-attempt Activity SSE loader now requires two byte-identical bounded reads from the already-open retained-input descriptor in addition to the stable metadata/identity fence. The new regression models a Windows creation-time host where same-inode, same-size substituted bytes have restored modification and creation metadata; v0.340.194 accepted those parsed bytes, while this candidate returns the fixed failure. The complete 293-test acceptance-probe module passed after the fix.
+
+This is a fail-closed implementation improvement, not authorized paper-account, provider-source, received-coverage, sustained-market, native-storage, fee/hold/funds, live/cloud or release acceptance. It changes no Portal control, editable parameter or authority default. The estimate remains about 40% (30–45%, low confidence), with 0/9 major operational stages accepted.
+
+Final local validation passed 5,394 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 453 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `c4e393b5082d8fbaa2e8b1bd54e889f3d36d63c67583e626abfb4424dd0a926e`; `validation/release_trials_0_340_195.json` SHA256 is `6e619022b8f460c6a2c317a042893d0c40cf7e84fe8378610a89cdf31274f019`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.195 and has SHA256 `66ad255015106353de5a4bea3f3a2893f658b45b4d45d8134e9fc28c717141be`. The final staged 914-path / 80,278,463-byte public-artifact audit found zero findings; local Gitleaks is unavailable, while exact-source v0.340.194 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
 ## v0.340.194 retained-input descriptor stability
 

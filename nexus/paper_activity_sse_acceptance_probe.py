@@ -606,15 +606,22 @@ def _load_events(path):
                     opened.st_nlink != 1):
                 _fail()
             raw = stream.read(MAX_INPUT_BYTES + 1)
+            after_first = os.fstat(stream.fileno())
+            stream.seek(0)
+            verified = stream.read(MAX_INPUT_BYTES + 1)
             closed = os.fstat(stream.fileno())
         final = path.lstat()
-        if (len(raw) > MAX_INPUT_BYTES or
+        if (len(raw) > MAX_INPUT_BYTES or raw != verified or
+                _input_boundary(after_first) != _input_boundary(opened) or
                 _input_boundary(closed) != _input_boundary(opened) or
                 _input_boundary(final) != _input_boundary(observed) or
+                opened.st_ctime_ns != after_first.st_ctime_ns or
                 opened.st_ctime_ns != closed.st_ctime_ns or
                 observed.st_ctime_ns != final.st_ctime_ns or
+                not stat.S_ISREG(after_first.st_mode) or
                 not stat.S_ISREG(closed.st_mode) or
                 not stat.S_ISREG(final.st_mode) or
+                after_first.st_nlink != 1 or
                 closed.st_nlink != 1 or final.st_nlink != 1):
             _fail()
 

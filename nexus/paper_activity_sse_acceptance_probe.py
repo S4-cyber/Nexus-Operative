@@ -642,24 +642,6 @@ def _attempt_head_preflight(cursor, budget, expected_cursor_head,
         _fail()
 
 
-def _attempt_store_inspect(store, digest_fields):
-    """Read one final durable-store snapshot without leaking local detail.
-
-    The provider boundary may already have completed before this read.  An
-    ordinary SQLite/filesystem failure must therefore withhold the aggregate
-    acknowledgement with the fixed probe result, while process-control
-    signals remain observable and no second provider request is attempted.
-    """
-    try:
-        value = store.inspect()
-    except Exception:
-        _fail()
-    if (type(value) is not dict or
-            any(not _digest(value.get(field)) for field in digest_fields)):
-        _fail()
-    return value
-
-
 def _status_store_inspect(store, role):
     """Read one local-only store status without exposing private faults."""
     try:
@@ -907,16 +889,19 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
             not _final_storage_matches(final_storage_scope) or
             stop_active()):
         _fail()
-    after_cursor = _attempt_store_inspect(cursor,
-        ('head_sha256', 'current_cursor_sha256'))
+    after_cursor = _status_store_inspect(cursor, 'cursor')
     if not _final_storage_matches(final_storage_scope) or stop_active():
         _fail()
-    after_budget = _attempt_store_inspect(budget, ('head_sha256',))
+    after_budget = _status_store_inspect(budget, 'budget')
     if not _final_storage_matches(final_storage_scope) or stop_active():
         _fail()
-    if (result['checkpoint_head_sha256'] != after_cursor['head_sha256'] or
+    if (not _status_pair_lifecycle(after_cursor, after_budget) or
+            after_budget['completed'] is not True or
+            result['checkpoint_head_sha256'] != after_cursor['head_sha256'] or
             result['reconnect_budget_head_sha256'] !=
                 after_budget['head_sha256'] or
+            result['reconnect_attempt_number'] != after_budget['attempts'] or
+            result['reconnect_attempt_cap'] != after_budget['max_attempts'] or
             result['reconnect_budget_completed'] is not True or
             result['automatic_retry'] is not False or
             result['actual_vault_access'] is not True):

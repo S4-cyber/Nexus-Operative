@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.170
+## Current candidate: v0.340.171
+
+The installed one-attempt Activity SSE API now requires its final durable cursor and budget to remain schema-exact, lifecycle-coherent and cross-store bound before acknowledging the completed provider attempt. Durable attempt count and cap must agree with the coordinator acknowledgement.
+
+Exact-source v0.340.170 commit `e3a9f87074a4486db88f44d6a74e19371a737cc8` passed public-security run 42137587555 and complete research/browser/evidence run 42137587314. Windows run 42137587513 remained active in install/test at the predecessor checkpoint and is not claimed as passed. Fresh exact-source v0.340.171 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,237-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 449 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `5212760e8a97bbea2dda05dfb98ef5a8e7654ea81436a4d1e465e8e42fc562ac`; `validation/release_trials_0_340_171.json` SHA256 is `d686c204c9482172db6a7aee85e211b68bb11c0d67eb56ab9237920733d3f17f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `e0b874a7e77ab132b314c159b4cc744ce3e2ee2f135a4e23d1fa71cbf5fdbcab`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.170
 
 The installed one-attempt Activity SSE API now requires a stable, fully valid and eligible cursor/budget pair before credential coordination. Exact heads, cross-store binding, complete initialized-cursor counts, idle budget state, remaining capacity and due retry time all fail closed at the public boundary.
 

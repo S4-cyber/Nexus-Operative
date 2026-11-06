@@ -1,5 +1,16 @@
 # Nexus Operative continuity instructions
 
+## v0.340.171 Activity SSE final lifecycle acknowledgement
+
+The installed one-attempt Activity SSE API now revalidates the complete cursor and reconnect-budget schemas after its single provider attempt. The final completed pair must retain complete cursor review state, bind the budget checkpoint to that cursor, and make the durable attempt count and fixed cap agree with the coordinator acknowledgement before success can leave the direct API.
+
+Seven direct regressions cover malformed final schemas, incomplete cursor review state, cross-store checkpoint disagreement, durable attempt-count disagreement, and false coordinator attempt count or cap. Every refusal follows exactly one request, preserves the committed checkpoint and completed budget, and performs no retry or automatic continuation. This is local final-acknowledgement hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
+
+Exact-source v0.340.170 commit `e3a9f87074a4486db88f44d6a74e19371a737cc8` passed public-security run 42137587555 and complete offline-regression/browser-help/saved-evidence run 42137587314. Windows run 42137587513 remained active in install/test at this candidate checkpoint and is not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.171 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,237-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 449 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `5212760e8a97bbea2dda05dfb98ef5a8e7654ea81436a4d1e465e8e42fc562ac`; `validation/release_trials_0_340_171.json` SHA256 is `d686c204c9482172db6a7aee85e211b68bb11c0d67eb56ab9237920733d3f17f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `e0b874a7e77ab132b314c159b4cc744ce3e2ee2f135a4e23d1fa71cbf5fdbcab`. No actual provider/account/native Windows acceptance was performed.
+
+
 ## v0.340.170 Activity SSE attempt-admission lifecycle
 
 The installed one-attempt Activity SSE API now validates the complete cursor and reconnect-budget schemas, stable cross-store head binding, initialized-cursor review completeness, idle nonterminal budget state, remaining attempt capacity and due retry time before credential coordination. Exact caller heads remain mandatory. A coherent due fresh or retry state still proceeds; malformed, pending, review, completed, exhausted or early state fails at the fixed public diagnostic.

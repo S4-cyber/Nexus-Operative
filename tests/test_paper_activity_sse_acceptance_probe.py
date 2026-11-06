@@ -1506,6 +1506,78 @@ def test_attempt_final_store_inspection_preserves_process_control(
     assert not replay['one_attempt_eligible']
 
 
+@pytest.mark.parametrize(('store_type','field','replacement'),(
+    (subject.ActivitySSECursorStore,'complete_review_counts_bound',False),
+    (subject.ActivitySSECursorStore,'unexpected_final_field',False),
+    (subject.ActivitySSEReconnectBudget,'checkpoint_head_sha256','e'*64),
+    (subject.ActivitySSEReconnectBudget,'attempts',2),
+    (subject.ActivitySSEReconnectBudget,'unexpected_final_field',False)))
+def test_attempt_final_store_requires_complete_coherent_lifecycle(
+        tmp_path,saved_pair,monkeypatch,store_type,field,replacement):
+    options,raw=paths(tmp_path);opener=Opener(raw);final_phase=False
+    original_collect=paper_credentials.collect_activity_sse_saved
+    original_inspect=store_type.inspect
+
+    def complete_then_enter_final_phase(**kwargs):
+        nonlocal final_phase
+        result=original_collect(**kwargs)
+        final_phase=True
+        return result
+
+    def contradictory(self):
+        result=original_inspect(self)
+        if final_phase:
+            result=dict(result);result[field]=replacement
+        return result
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        complete_then_enter_final_phase)
+    monkeypatch.setattr(store_type,'inspect',contradictory)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    final_phase=False
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
+@pytest.mark.parametrize(('field','replacement'),(
+    ('reconnect_attempt_number',2),('reconnect_attempt_cap',5)))
+def test_attempt_final_acknowledgement_counts_match_durable_budget(
+        tmp_path,saved_pair,monkeypatch,field,replacement):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    original=paper_credentials.collect_activity_sse_saved
+
+    def contradictory(**kwargs):
+        result=original(**kwargs)
+        result[field]=replacement
+        return result
+
+    monkeypatch.setattr(paper_credentials,'collect_activity_sse_saved',
+        contradictory)
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert len(opener.requests)==1
+    replay=subject.status(expected_account_id=ACCOUNT,
+        cursor_path=options['cursor_path'],budget_path=options['budget_path'],
+        order_journal_path=options['order_journal_path'],clock=lambda:1001)
+    assert replay['reconnect_completed']
+    assert replay['retained_checkpoints']==1
+    assert not replay['one_attempt_eligible']
+
+
 def test_attempt_pins_resolved_private_input_across_parent_alias_swap(
         tmp_path,saved_pair,monkeypatch):
     first=tmp_path/'first';second=tmp_path/'second';journals=tmp_path/'journals'

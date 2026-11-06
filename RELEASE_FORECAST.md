@@ -1,5 +1,11 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.192
+
+This cycle addresses the recurring full-history security blocker with a narrowly pinned synthetic-finding review; all history and detectors remain scanned, and raw findings remain visible in counts. See MILESTONE_STATUS.md for the Nov 6 accomplishment report. Exact v0.340.190 Windows/installer and research/browser/evidence workflows passed; its security job remained blocked by the two historical synthetic findings. Fresh v0.340.192 hosted security, Windows and research checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis Oct 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Authorized connected-paper and sustained genuine-feed trials remain the next major gate. Funding, live execution and computer-off cloud operation are unfinished. Historical conditional ranges below are not a delivery commitment.
+
 ## Current candidate: v0.340.191
 
 The bounded Activity SSE response scope now preserves the original fixed safety failure even if a hostile response context returns a truthy suppression value or raises an ordinary cleanup exception. It cannot continue with partially initialized review state or replace the fixed diagnostic with private provider detail. Process-control signals remain visible. Durable reconnect state records the one attempted GET as non-retryable manual review with no body read, cursor advance, provider backoff, automatic retry or sleep.

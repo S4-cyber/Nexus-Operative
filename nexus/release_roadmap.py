@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.191'
+REVISION = '0.340.192'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -792,7 +792,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.191 prevents a hostile Activity SSE response context from suppressing or replacing the fixed safety failure that ended a bounded read. Truthy `__exit__` returns and ordinary cleanup exceptions can no longer continue with partially initialized review state or expose private provider detail; process-control signals remain visible. The durable reconnect budget records the one attempted GET as non-retryable manual review with no cursor write, backoff, automatic retry or sleep. Exact-source v0.340.190 research run 42270833448 passed its complete regression, browser-help and saved-evidence jobs, and Windows/installer run 42270833513 passed its full package, install, upgrade, recovery and evidence lane. Security run 42270833307 failed only because full-history Gitleaks still reaches two synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; its current/reachable audit passed 8,699 blobs, 999 commits and 927 paths with zero findings. Removing that reachable historical commit would require a forbidden destructive history rewrite. This is bounded injected response-scope cleanup evidence, not provider/account acceptance, sustained market realism, fee/hold/funds reconciliation, physical power-loss proof, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.192 adds an exact historical synthetic-finding review after the unchanged full-history Gitleaks scan. Only two pinned rule/commit/path/line/column matches in one byte-verified historical fixture qualify; raw findings remain counted, and new or changed findings, missing blob proof, malformed reports and scanner failures block. No history rewrite, detector exclusion or fixture-directory exemption is added. A source-controlled milestone accomplishment report separates implemented foundations from unaccepted external gates. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted; the underlying scope estimates are dated 2026-10-18. Existing OFF defaults, risk limits, independent emergency stop and all broker/funding/live/cloud/release restrictions remain unchanged. Fresh exact-source hosted checks are required.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

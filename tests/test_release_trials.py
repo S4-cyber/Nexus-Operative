@@ -627,6 +627,8 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('explicit_activity_sse_reconnect_budget','uncertain_outcome_closes_without_retry_or_external_access'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','uncertain_outcome_close_replay_is_byte_stable'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','ready_for_routing'),True,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_AUTHORITY'),
+        (('installed_activity_sse_acceptance','cold_restart_replays_completed_state'),False,'INSTALLED_ACTIVITY_SSE_ACCEPTANCE'),
+        (('installed_activity_sse_acceptance','provider_source_attested'),True,'INSTALLED_ACTIVITY_SSE_ACCEPTANCE_AUTHORITY'),
         (('exact_response_bundle','session_tail_required'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','full_private_file_set_rechecked'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','semantic_reader_failures_rechecked'),False,'EXACT_RESPONSE_BUNDLE'),

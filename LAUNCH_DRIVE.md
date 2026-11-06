@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.175 installed Activity SSE restart evidence
+
+The bounded offline reconciliation profile now includes a synthetic installed-operator proof for the one-attempt Activity SSE path. It performs exactly one injected GET through the saved-pair boundary, checks exact replay and deduplication counts, and then starts a fresh process that replays the completed cursor and reconnect-budget state without vault or network access. The cold replay leaves every private temporary file unchanged and the completed budget denies a second attempt.
+
+This is disposable local acceptance evidence only. It does not attest a provider or source, prove historical delivery coverage, accept a broker account, reconcile fees, holds or funds, demonstrate native Windows durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.174 commit `3f1c5c6cd0b68b519474226901c73fa342273eb3` passed public-security run 42157751181. Research/browser/evidence run 42157751202 and Windows run 42157751255 remained active at this candidate checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.175 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,320-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized release/version/roadmap/workflow focus passed 132 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `61bb75b1a266c6d4ba3894aa52f65e7d3c38ac3f4e9dd69089d56942d8630434`; `validation/release_trials_0_340_175.json` SHA256 is `533943ea59c6bcfed980febf57c173d6a8e4a7cd5ae226a92d4b83fb7ee430f2`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 161-member wheel reported v0.340.175, retained the restart evidence fixture and has SHA256 `6b415f27b83249a1eb9af2d12b1c5b8b31af976f369f34f482efcec3b7d6e50a`. No actual provider/account/native Windows acceptance was performed.
+
 ## v0.340.174 Activity SSE final evidence binding
 
 The installed one-attempt Activity SSE API now requires the exact final acknowledgement schema and independently binds its checkpoint policy and limitations, transport/review input digests, checkpoint receipt, cursor digest, complete count tuple, reconnect reservation and false authority claims to one replayed durable cursor binding before success can leave the installed boundary.

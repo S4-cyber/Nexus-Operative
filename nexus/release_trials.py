@@ -708,6 +708,7 @@ def _execute(profile):
         from nexus.alpaca_activity_sse_transport import fixture_report as activity_sse_transport_fixture
         from nexus.alpaca_activity_sse_checkpoint import fixture_report as activity_sse_checkpoint_fixture
         from nexus.alpaca_activity_sse_reconnect_budget import fixture_report as activity_sse_reconnect_budget_fixture
+        from nexus.paper_activity_sse_acceptance_evidence import fixture_report as activity_sse_acceptance_fixture
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_account_response']=account_response_fixture()
         result['exact_activity_response']=activity_response_fixture()
@@ -721,7 +722,8 @@ def _execute(profile):
         result['supplied_activity_sse_wire_session']=activity_sse_wire_fixture()
         result['explicit_activity_sse_transport']=activity_sse_transport_fixture()
         result['explicit_activity_sse_checkpoint']=activity_sse_checkpoint_fixture()
-        result['explicit_activity_sse_reconnect_budget']=activity_sse_reconnect_budget_fixture();return result
+        result['explicit_activity_sse_reconnect_budget']=activity_sse_reconnect_budget_fixture()
+        result['installed_activity_sse_acceptance']=activity_sse_acceptance_fixture();return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -1183,6 +1185,7 @@ def _validate(profile, result):
         from nexus.alpaca_activity_sse_wire_review import FLAGS as ACTIVITY_SSE_WIRE_FLAGS
         from nexus.alpaca_activity_sse_checkpoint import FLAGS as ACTIVITY_SSE_CHECKPOINT_FLAGS
         from nexus.alpaca_activity_sse_reconnect_budget import FLAGS as ACTIVITY_SSE_RECONNECT_BUDGET_FLAGS
+        from nexus.paper_activity_sse_acceptance_evidence import AUTHORITY_FLAGS as ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS
         from nexus.paper_response_bundle_review import FLAGS as RESPONSE_FLAGS
         bundle=result['account_evidence_bundle']
         _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','guarded_declared_source_summary_checked','guarded_collection_timing_summary_checked','journal_file_fingerprints_rechecked','semantic_reader_failures_rechecked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
@@ -1379,6 +1382,30 @@ def _validate(profile, result):
             (*ACTIVITY_SSE_RECONNECT_BUDGET_FLAGS,'actual_provider_access',
              'actual_stream_connection','actual_vault_access')),
             'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_AUTHORITY')
+        installed_sse=result['installed_activity_sse_acceptance']
+        _require(installed_sse['source']==
+            'SYNTHETIC_INSTALLED_ACTIVITY_SSE_ACCEPTANCE_FIXTURE' and
+            all(installed_sse[k] is True for k in ('passed',
+                'one_injected_get_completed',
+                'installed_result_review_required',
+                'injected_source_remains_unattested',
+                'exact_replay_counts_retained',
+                'checkpoint_and_restart_claims_retained',
+                'cold_restart_replays_completed_state',
+                'completed_state_denies_second_attempt',
+                'fresh_process_journals_unchanged',
+                'fresh_process_vault_silent',
+                'fresh_process_network_silent',
+                'private_input_unchanged','no_order_journal_created',
+                'no_automatic_retry')) and
+            installed_sse['retained_private_evidence_published'] is False and
+            installed_sse[
+                'historical_or_synthetic_performance_predicts_profit'] is False,
+            'INSTALLED_ACTIVITY_SSE_ACCEPTANCE')
+        _require(all(installed_sse[k] is False for k in
+            (*ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS,
+             'actual_provider_access','actual_stream_connection')),
+            'INSTALLED_ACTIVITY_SSE_ACCEPTANCE_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

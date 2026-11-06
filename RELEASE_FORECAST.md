@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.174
+## Current candidate: v0.340.175
+
+The installed one-attempt Activity SSE boundary now has mandatory synthetic restart evidence in the bounded offline reconciliation profile. One injected GET is checkpointed, then a fresh process must replay the completed state without vault/network access or private-file changes and must deny another attempt.
+
+Exact-source v0.340.174 commit `3f1c5c6cd0b68b519474226901c73fa342273eb3` passed public-security run 42157751181. Research/browser/evidence run 42157751202 and Windows run 42157751255 remained active at the predecessor checkpoint and are not claimed as passed. Fresh exact-source v0.340.175 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed the complete 5,320-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized release/version/roadmap/workflow focus passed 132 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `61bb75b1a266c6d4ba3894aa52f65e7d3c38ac3f4e9dd69089d56942d8630434`; `validation/release_trials_0_340_175.json` SHA256 is `533943ea59c6bcfed980febf57c173d6a8e4a7cd5ae226a92d4b83fb7ee430f2`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 161-member wheel reported v0.340.175, retained the restart evidence fixture and has SHA256 `6b415f27b83249a1eb9af2d12b1c5b8b31af976f369f34f482efcec3b7d6e50a`. No actual provider/account/native Windows acceptance was performed.
+
+The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
+
+## Previous candidate: v0.340.174
 
 The installed one-attempt Activity SSE API now requires an exact final schema and binds its input, checkpoint receipt, cursor, counts, reconnect reservation and false-authority evidence to one replayed durable cursor binding before acknowledging success.
 

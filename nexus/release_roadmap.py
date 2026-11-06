@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.174'
+REVISION = '0.340.175'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -756,7 +756,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.174 requires the installed Activity SSE final acknowledgement to use the exact expected schema and bind its checkpoint policy, limitations, transport/review input digests, checkpoint receipt, cursor digest, complete count tuple, reconnect reservation and false authority claims to one replayed durable cursor binding. Forty-two direct regressions withhold success for contradictory returned or retained evidence after one committed request, hide ordinary private binding failures and preserve process-control signals without retry. Exact-source v0.340.173 commit `61a93c10a598406c052fcc4c95f4758528384edf` passed public-security run 42152009292 and complete offline-regression/browser-help/saved-evidence run 42152009389; Windows run 42152009533 remained active at this candidate checkpoint and is not claimed as passed. This is local final evidence-identity hardening, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.175 makes an installed one-attempt Activity SSE restart proof mandatory in the bounded offline reconciliation profile. The synthetic fixture performs exactly one injected GET through the installed saved-pair boundary, checks exact replay/deduplication counts, then starts a fresh process that replays the completed cursor/reconnect-budget state without vault or network access, leaves every private temporary file unchanged and denies a second attempt. Exact-source v0.340.174 commit `3f1c5c6cd0b68b519474226901c73fa342273eb3` passed public-security run 42157751181; research/browser/evidence run 42157751202 and Windows run 42157751255 remained active at this candidate checkpoint and are not claimed as passed. This is disposable local acceptance-evidence integration, not provider/source attestation, broker acceptance, sustained market realism, physical/native durability, fees/holds/funds reconciliation, live/cloud readiness or release. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

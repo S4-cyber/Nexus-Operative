@@ -72,6 +72,15 @@ class _Opener:
         return _Response(self.raw, request.full_url)
 
 
+class _FailingOpener:
+    def __init__(self):
+        self.requests = []
+
+    def open(self, request, timeout):
+        self.requests.append((request.get_method(), request.full_url, timeout))
+        raise OSError('SYNTHETIC_ACTIVITY_STREAM_UNAVAILABLE')
+
+
 def _segments():
     first_trade = _event('01K00000000000000000000001',
         '11111111-1111-1111-1111-111111111111', 'TRD')
@@ -106,13 +115,13 @@ def _snapshot(root):
     return tuple(result)
 
 
-def _cold_status(root):
+def _cold_status(root, clock=1001):
     expression = r'''
 import hashlib,json,sys
 from pathlib import Path
 from nexus import paper_credentials
 from nexus.paper_activity_sse_acceptance_probe import status
-root=Path(sys.argv[1]);account=sys.argv[2]
+root=Path(sys.argv[1]);account=sys.argv[2];evaluated=float(sys.argv[3])
 attempts={'external_connections':0,'credential_operations':0}
 def audit(event,args):
  if event=='socket.connect':
@@ -131,7 +140,7 @@ sys.addaudithook(audit);paper_credentials._vault=denied
 before=snapshot()
 value=status(expected_account_id=account,cursor_path=root/'cursor.sqlite3',
  budget_path=root/'budget.sqlite3',order_journal_path=root/'orders.sqlite3',
- clock=lambda:1001)
+ clock=lambda:evaluated)
 after=snapshot()
 print(json.dumps({'snapshot_consistent':value['snapshot_consistent'],
  'storage_snapshot_consistent':value['storage_snapshot_consistent'],
@@ -140,11 +149,16 @@ print(json.dumps({'snapshot_consistent':value['snapshot_consistent'],
  'reconnect_budget_head_sha256':value['reconnect_budget_head_sha256'],
  'reconnect_budget_completed':value['reconnect_completed'],
  'reconnect_attempt_number':value['reconnect_attempts'],
+ 'reconnect_next_allowed_at':value['reconnect_next_allowed_at'],
+ 'reconnect_pending':value['reconnect_pending'],
+ 'reconnect_review_required':value['reconnect_review_required'],
+ 'automatic_retry':value['automatic_retry'],
+ 'automatic_continuation':value['automatic_continuation'],
  'journals_unchanged':before==after,**attempts},sort_keys=True))
 '''
     try:
         child = subprocess.run([sys.executable, '-c', expression, str(root),
-            ACCOUNT], capture_output=True, text=True, timeout=20)
+            ACCOUNT, str(clock)], capture_output=True, text=True, timeout=20)
     except (OSError, subprocess.SubprocessError):
         raise ValueError('PAPER_ACTIVITY_SSE_ACCEPTANCE_EVIDENCE_RESTART') from None
     if child.returncode != 0:
@@ -226,6 +240,100 @@ def fixture_report():
                     len(opener.requests) == 1)
             return dict(
                 source='SYNTHETIC_INSTALLED_ACTIVITY_SSE_ACCEPTANCE_FIXTURE',
+                passed=all(checks.values()), **checks,
+                actual_provider_access=False,
+                actual_stream_connection=False,
+                retained_private_evidence_published=False,
+                historical_or_synthetic_performance_predicts_profit=False,
+                **{flag: False for flag in AUTHORITY_FLAGS})
+    finally:
+        paper_credentials._vault = original_vault
+        paper_credentials._epoch = original_epoch
+        paper_credentials._blocked = original_blocked
+
+
+def failure_fixture_report():
+    """Exercise one failed GET and cold-read its durable retry admission."""
+    original_vault = paper_credentials._vault
+    original_epoch = paper_credentials._epoch
+    original_blocked = paper_credentials._blocked
+    try:
+        with tempfile.TemporaryDirectory(
+                prefix='nexus-activity-sse-failure-evidence-') as directory:
+            root = Path(directory)
+            initial, _ = _segments()
+            source = root/'initial.json'
+            source.write_text(canonical(initial), encoding='utf-8')
+            source_before = source.read_bytes()
+            vault = _Vault()
+            paper_credentials._vault = lambda: vault
+            paper_credentials._epoch = 0
+            paper_credentials._blocked = False
+            paper_credentials.install(KEY, SECRET, confirm_store=True)
+            opener = _FailingOpener()
+            fixed_failure = False
+            try:
+                operator.attempt(expected_account_id=ACCOUNT,
+                    initial_events_path=source,
+                    cursor_path=root/'cursor.sqlite3',
+                    budget_path=root/'budget.sqlite3',
+                    order_journal_path=root/'orders.sqlite3',
+                    expected_cursor_head=ZERO, expected_budget_head=ZERO,
+                    reconnect_reason='CONNECTION_DROPPED',
+                    confirm_reconnect_attempt=True,
+                    confirm_read_only_paper=True,
+                    confirm_cursor_checkpoint=True,
+                    opener=opener, wall_clock=lambda:1000,
+                    elapsed_clock=lambda:50, outcome_clock=lambda:1000)
+            except ValueError as error:
+                fixed_failure = (str(error) ==
+                    'PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED')
+            committed = _snapshot(root)
+            before_due = _cold_status(root, 1000)
+            due = _cold_status(root,
+                before_due['reconnect_next_allowed_at'])
+            checks = dict(
+                one_injected_failed_get=len(opener.requests) == 1,
+                installed_failure_is_fixed_diagnostic=fixed_failure,
+                failed_attempt_retained_for_restart=(
+                    before_due['snapshot_consistent'] is True and
+                    before_due['storage_snapshot_consistent'] is True and
+                    before_due['reconnect_attempt_number'] == 1 and
+                    before_due['reconnect_budget_completed'] is False and
+                    before_due['reconnect_pending'] is False and
+                    before_due['reconnect_review_required'] is False and
+                    before_due['reconnect_next_allowed_at'] == 1001 and
+                    before_due['cursor_head_sha256'] == ZERO),
+                before_due_restart_denies_attempt=
+                    before_due['one_attempt_eligible'] is False,
+                due_restart_requires_explicit_attempt=(
+                    due['snapshot_consistent'] is True and
+                    due['storage_snapshot_consistent'] is True and
+                    due['one_attempt_eligible'] is True and
+                    due['reconnect_attempt_number'] == 1 and
+                    due['reconnect_budget_head_sha256'] ==
+                        before_due['reconnect_budget_head_sha256'] and
+                    due['cursor_head_sha256'] == ZERO),
+                cold_statuses_are_vault_silent=(
+                    before_due['credential_operations'] == 0 and
+                    due['credential_operations'] == 0),
+                cold_statuses_are_network_silent=(
+                    before_due['external_connections'] == 0 and
+                    due['external_connections'] == 0),
+                failed_journals_remain_unchanged=(
+                    before_due['journals_unchanged'] is True and
+                    due['journals_unchanged'] is True and
+                    _snapshot(root) == committed),
+                private_input_unchanged=source.read_bytes() == source_before,
+                no_order_journal_created=not (root/'orders.sqlite3').exists(),
+                no_automatic_retry_or_continuation=(
+                    before_due['automatic_retry'] is False and
+                    before_due['automatic_continuation'] is False and
+                    due['automatic_retry'] is False and
+                    due['automatic_continuation'] is False and
+                    len(opener.requests) == 1))
+            return dict(
+                source='SYNTHETIC_INSTALLED_ACTIVITY_SSE_FAILURE_FIXTURE',
                 passed=all(checks.values()), **checks,
                 actual_provider_access=False,
                 actual_stream_connection=False,

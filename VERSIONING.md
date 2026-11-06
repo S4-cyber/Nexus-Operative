@@ -1,8 +1,21 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.175 (pre-release).**
+**Current development build: 0.340.176 (pre-release).**
 
-+## v0.340.175 installed Activity SSE restart evidence
+## v0.340.176 installed Activity SSE failed-attempt recovery evidence
+
+The bounded offline reconciliation profile now requires a second synthetic installed-operator proof for the failed one-attempt Activity SSE path. It performs exactly one injected failed GET through the saved-pair boundary, retains the failed attempt and retry deadline, then starts fresh processes without vault or network access. A pre-deadline restart denies another attempt. At the exact deadline, status reports only caller-driven eligibility and performs no request, sleep, retry or continuation. Both cold reads preserve every private temporary file, and every broker, funds, routing, live, cloud and release authority remains false.
+
+This is disposable local acceptance evidence only. It does not attest a provider or source, prove delivery coverage or market realism, accept a broker account, reconcile fees, holds or funds, demonstrate physical/native Windows durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+Corrected v0.340.175 head `c21b32292ea889890c51ed2ee5aa54648b4e4e63` remained current when this candidate began. Research/browser/evidence run 42164166046 was active and Windows run 42164165820 was pending. Public-security run 42164165907 failed because its full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected head source does not contain those literals. Removing the reachable commit would require a destructive development-branch history rewrite and was not performed. Fresh v0.340.176 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed 5,321 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized release/evidence/version/roadmap/workflow focus passed 151 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `beacc06e20b0dc149219a96bb4182b895ae1d1633b34817b5785d896188eda98`; `validation/release_trials_0_340_176.json` SHA256 is `1a42f7833637fced42a5b2c693ffb3af11622cef95eeeb193202fd34ebd5dd18`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 161-member wheel reported v0.340.176, retained the success and failed-attempt evidence fixtures and has SHA256 `90303445d74125d2d998402e5dcec3d5187a09418186cfc871822d5cbe1e2357`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
+
+
+## v0.340.175 installed Activity SSE restart evidence
 
 The bounded offline reconciliation profile now includes a synthetic installed-operator proof for the one-attempt Activity SSE path. It performs exactly one injected GET through the saved-pair boundary, checks exact replay and deduplication counts, and then starts a fresh process that replays the completed cursor and reconnect-budget state without vault or network access. The cold replay leaves every private temporary file unchanged and the completed budget denies a second attempt.
 

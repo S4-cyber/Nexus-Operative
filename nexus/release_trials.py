@@ -708,7 +708,9 @@ def _execute(profile):
         from nexus.alpaca_activity_sse_transport import fixture_report as activity_sse_transport_fixture
         from nexus.alpaca_activity_sse_checkpoint import fixture_report as activity_sse_checkpoint_fixture
         from nexus.alpaca_activity_sse_reconnect_budget import fixture_report as activity_sse_reconnect_budget_fixture
-        from nexus.paper_activity_sse_acceptance_evidence import fixture_report as activity_sse_acceptance_fixture
+        from nexus.paper_activity_sse_acceptance_evidence import (
+            failure_fixture_report as activity_sse_failure_fixture,
+            fixture_report as activity_sse_acceptance_fixture)
         result=fixture_report();result['account_evidence_bundle']=bundle_fixture()
         result['exact_account_response']=account_response_fixture()
         result['exact_activity_response']=activity_response_fixture()
@@ -723,7 +725,9 @@ def _execute(profile):
         result['explicit_activity_sse_transport']=activity_sse_transport_fixture()
         result['explicit_activity_sse_checkpoint']=activity_sse_checkpoint_fixture()
         result['explicit_activity_sse_reconnect_budget']=activity_sse_reconnect_budget_fixture()
-        result['installed_activity_sse_acceptance']=activity_sse_acceptance_fixture();return result
+        result['installed_activity_sse_acceptance']=activity_sse_acceptance_fixture()
+        result['installed_activity_sse_failure_recovery']=activity_sse_failure_fixture()
+        return result
     if profile == 'encrypted_observation':
         from nexus.encrypted_observation import fixture_report
         return fixture_report()
@@ -1406,6 +1410,29 @@ def _validate(profile, result):
             (*ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS,
              'actual_provider_access','actual_stream_connection')),
             'INSTALLED_ACTIVITY_SSE_ACCEPTANCE_AUTHORITY')
+        installed_sse_failure=result['installed_activity_sse_failure_recovery']
+        _require(installed_sse_failure['source']==
+            'SYNTHETIC_INSTALLED_ACTIVITY_SSE_FAILURE_FIXTURE' and
+            all(installed_sse_failure[k] is True for k in ('passed',
+                'one_injected_failed_get',
+                'installed_failure_is_fixed_diagnostic',
+                'failed_attempt_retained_for_restart',
+                'before_due_restart_denies_attempt',
+                'due_restart_requires_explicit_attempt',
+                'cold_statuses_are_vault_silent',
+                'cold_statuses_are_network_silent',
+                'failed_journals_remain_unchanged',
+                'private_input_unchanged','no_order_journal_created',
+                'no_automatic_retry_or_continuation')) and
+            installed_sse_failure[
+                'retained_private_evidence_published'] is False and
+            installed_sse_failure[
+                'historical_or_synthetic_performance_predicts_profit'] is False,
+            'INSTALLED_ACTIVITY_SSE_FAILURE_RECOVERY')
+        _require(all(installed_sse_failure[k] is False for k in
+            (*ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS,
+             'actual_provider_access','actual_stream_connection')),
+            'INSTALLED_ACTIVITY_SSE_FAILURE_RECOVERY_AUTHORITY')
         response=result['exact_response_bundle']
         _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',

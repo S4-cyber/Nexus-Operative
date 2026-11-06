@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.175
+## Current candidate: v0.340.176
+
+Installed failed-attempt Activity SSE recovery is now mandatory in the bounded offline reconciliation profile. One injected GET fails, the retry deadline persists, a fresh pre-deadline process denies another attempt, and a fresh process at the exact deadline reports only explicit caller-driven eligibility without a request, sleep, retry, continuation, vault access or file change.
+
+Corrected v0.340.175 head `c21b32292ea889890c51ed2ee5aa54648b4e4e63` remained current when this candidate began. Research/browser/evidence run 42164166046 was active and Windows run 42164165820 was pending. Public-security run 42164165907 failed only because its full-history Gitleaks scan still reaches two high-entropy synthetic literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected source does not contain them, and the forbidden destructive history rewrite was not performed. Fresh exact-source v0.340.176 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local source verification passed 5,321 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release/evidence/version/roadmap/workflow focus passed 151 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `beacc06e20b0dc149219a96bb4182b895ae1d1633b34817b5785d896188eda98`; report SHA256 is `1a42f7833637fced42a5b2c693ffb3af11622cef95eeeb193202fd34ebd5dd18`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.176 and has SHA256 `90303445d74125d2d998402e5dcec3d5187a09418186cfc871822d5cbe1e2357`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the beginner tabs and black/bright-purple bottom-right hover help remain unchanged. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any trading, funding, live/cloud or release permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.175
 
 The installed one-attempt Activity SSE boundary now has mandatory synthetic restart evidence in the bounded offline reconciliation profile. One injected GET is checkpointed, then a fresh process must replay the completed state without vault/network access or private-file changes and must deny another attempt.
 

@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.183
+## Current candidate: v0.340.184
+
+The Activity SSE coordinator now repeats its final durable proof as a crossed cursor/reservation sample: cursor, exact pending reservation, cursor again, then reservation again. A cooperating cursor writer that commits during the first reservation replay is caught before provider IO with the fixed cursor-head diagnostic. The advanced cursor and pending attempt remain durable for explicit review. This is sampled local evidence, not atomic cross-process locking; a mutation after the final sample remains outside the proof.
+
+Exact-source v0.340.183 public-security run 42215582390 failed because its required full-history Gitleaks scan reaches two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; its current/reachable public-artifact audit passed across 8,598 blobs, 992 commits and 920 paths with zero artifact findings. Research/browser/evidence run 42215582480 was active and Windows run 42215582506 was pending when this candidate began; neither is claimed as passed. Removing the historical findings would require the prohibited destructive history rewrite. Fresh exact-source v0.340.184 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,331 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 601 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `93a2808fc930b0261666bf287d4b65e38f75ef1940ab30b9015e0ca249c0ecdd`; report SHA256 is `1c58dd308daf306d0c3ade9955442c2b79f2558aa5aec6c992a5ce3bbbc272f9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.184 and has SHA256 `5bde01d1d6bcf782e3a434e4e124fbaefd0b0f8c9d320be36486c8774c391cad`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the beginner tabs and black/bright-purple bottom-right hover help remain unchanged. The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any trading, funding, live/cloud or release permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.183
 
 The Activity SSE coordinator now installs a dedicated final pre-open check between the last permission, emergency-stop and saved-credential samples and provider IO. It independently replays the current durable cursor head and exact pending reconnect reservation. A legitimate concurrent cursor checkpoint from an untrusted callback now returns the fixed cursor-head diagnostic with zero provider requests and retains the pending reservation for explicit review.
 

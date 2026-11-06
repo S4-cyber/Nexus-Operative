@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.183 (pre-release).**
+**Current development build: 0.340.184 (pre-release).**
+
+## v0.340.184 Activity SSE crossed pre-open store proof
+
+The Activity SSE coordinator now repeats its final durable proof as a crossed cursor/reservation sample: cursor, exact pending reservation, cursor again, then reservation again. A cooperating cursor writer that commits while the first reservation replay is in progress is now caught before provider IO with the fixed cursor-head diagnostic. The advanced cursor and pending attempt remain durable for explicit review; the failed attempt is not falsely completed or consumed.
+
+This is sampled local injected concurrency evidence, not an atomic cross-process lock. A mutation after the final sample remains outside this proof. It does not prove native-vault coordination or physical power-loss durability, attest a provider or source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.183 public-security run 42215582390 failed because its required full-history Gitleaks scan reaches two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`. Its current/reachable public-artifact audit passed across 8,598 blobs, 992 commits and 920 paths with zero artifact findings. Research/browser/evidence run 42215582480 was active and Windows run 42215582506 was pending when this candidate began; neither is claimed as passed. Removing the reachable historical findings would require the prohibited destructive history rewrite. Fresh v0.340.184 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,331 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 601 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `93a2808fc930b0261666bf287d4b65e38f75ef1940ab30b9015e0ca249c0ecdd`; `validation/release_trials_0_340_184.json` SHA256 is `1c58dd308daf306d0c3ade9955442c2b79f2558aa5aec6c992a5ce3bbbc272f9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.184, retains the crossed pre-open proof and has SHA256 `5bde01d1d6bcf782e3a434e4e124fbaefd0b0f8c9d320be36486c8774c391cad`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
 
 ## v0.340.183 Activity SSE final cursor/reservation pre-open fence
 

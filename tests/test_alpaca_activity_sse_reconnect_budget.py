@@ -837,6 +837,60 @@ def test_control_callback_cursor_advance_at_preopen_blocks_provider_io(
     assert state['attempts'] == 1 and state['last_outcome'] is None
 
 
+def test_preopen_cross_store_sampling_catches_cursor_advance(
+        tmp_path, monkeypatch):
+    initial, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+
+    first_replay = [copy.deepcopy(initial[1]), copy.deepcopy(initial[2])]
+    first_review = subject.checkpoint.reconnect.review(initial[:2],
+        first_replay, expected_account_id=ACCOUNT,
+        persisted_event_id=initial[1]['event_id'],
+        reconnect_since_id=initial[1]['event_id'],
+        reconnect_reason='CONNECTION_DROPPED')
+    first = cursor.checkpoint(first_review,
+        previous_cursor=initial[1]['event_id'],
+        next_cursor=initial[2]['event_id'], expected_head=ZERO)
+    later_replay = [json.loads(line[6:]) for line in raw.decode().splitlines()
+        if line.startswith('data: ')]
+    later_review = subject.checkpoint.reconnect.review(initial,
+        later_replay, expected_account_id=ACCOUNT,
+        persisted_event_id=initial[-1]['event_id'],
+        reconnect_since_id=initial[-1]['event_id'],
+        reconnect_reason='CONNECTION_DROPPED')
+    original_inspect = budget.inspect
+    state = {'armed': False, 'advanced': False}
+
+    def arm_after_final_control_samples():
+        state['armed'] = True
+        return 50
+
+    def advance_cursor_during_reservation_replay():
+        retained = original_inspect()
+        if state['armed'] and not state['advanced']:
+            state['advanced'] = True
+            cursor.checkpoint(later_review,
+                previous_cursor=initial[-1]['event_id'],
+                next_cursor=later_replay[-1]['event_id'],
+                expected_head=first['head_sha256'])
+        return retained
+
+    monkeypatch.setattr(budget, 'inspect',
+        advance_cursor_during_reservation_replay)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError) as raised:
+        call(tmp_path, opener, stores=(cursor, budget),
+            expected_cursor_head=first['head_sha256'],
+            elapsed_clock=arm_after_final_control_samples)
+    assert str(raised.value) == \
+        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_CURSOR_HEAD_CHANGED'
+    assert state['advanced'] and not opener.requests
+    assert cursor.inspect()['head_sha256'] != first['head_sha256']
+    retained = original_inspect()
+    assert retained['pending_token'] == retained['head_sha256']
+    assert retained['attempts'] == 1 and retained['last_outcome'] is None
+
+
 def test_stop_callback_result_at_preopen_fence_blocks_provider_io(tmp_path):
     cursor, budget = stores(tmp_path)
     opener = Opener([b'private provider response'])

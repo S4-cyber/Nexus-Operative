@@ -2134,23 +2134,41 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         return True
 
     def request_pre_open_check():
-        """Final provider-IO fence for both cursor and reservation stores."""
+        """Final crossed two-sample fence for both durable stores.
+
+        A cooperating cursor writer can commit while the reservation journal
+        is being replayed.  One cursor-then-budget sample would consequently
+        return a stale cursor decision.  Repeat the crossed pair and require
+        both exact values so a change during the first pair is observed before
+        provider IO.  A change after the final sample remains outside this
+        local sampled proof and is not represented as cross-process locking.
+        """
         nonlocal cursor_state_uncertain, cursor_head_changed
         nonlocal store_binding_changed
-        if not _store_bindings_match(cursor_store, reconnect_budget,
-                cursor_binding=cursor_binding,
-                budget_binding=budget_binding):
-            store_binding_changed = True
+
+        def prove_cursor_state():
+            nonlocal cursor_state_uncertain, cursor_head_changed
+            nonlocal store_binding_changed
+            if not _store_bindings_match(cursor_store, reconnect_budget,
+                    cursor_binding=cursor_binding,
+                    budget_binding=budget_binding):
+                store_binding_changed = True
+                return False
+            try:
+                current_cursor_head = _cursor_head_for_attempt(cursor_store)
+            except Exception:
+                cursor_state_uncertain = True
+                return False
+            if current_cursor_head != expected_cursor_head:
+                cursor_head_changed = True
+                return False
+            return True
+
+        if not prove_cursor_state() or not prove_control_state():
             return None
-        try:
-            current_cursor_head = _cursor_head_for_attempt(cursor_store)
-        except Exception:
-            cursor_state_uncertain = True
+        if not prove_cursor_state() or not prove_control_state():
             return None
-        if current_cursor_head != expected_cursor_head:
-            cursor_head_changed = True
-            return None
-        return True if prove_control_state() else None
+        return True
 
     def guarded_control_check(callback):
         """Re-prove the pending grant after each callback.
@@ -2957,6 +2975,44 @@ def fixture_report():
             cursor_control_code = str(error)
         cursor_control_state = cursor_control_budget.inspect()
         cursor_control_retained = cursor_control_cursor.inspect()
+        cross_cursor = ActivitySSECursorStore(
+            root / 'cross-cursor.sqlite3', account)
+        cross_budget = ActivitySSEReconnectBudget(
+            root / 'cross-budget.sqlite3', account)
+        cross_opener = Opener(raw)
+        cross_first = cross_cursor.checkpoint(first_review,
+            previous_cursor=first_fee['event_id'],
+            next_cursor=later_trade['event_id'], expected_head=ZERO)
+        cross_original_inspect = cross_budget.inspect
+        cross_sample = {'armed': False, 'advanced': False}
+        def arm_cross_sample():
+            cross_sample['armed'] = True
+            return 50
+        def advance_cursor_during_budget_replay():
+            retained = cross_original_inspect()
+            if cross_sample['armed'] and not cross_sample['advanced']:
+                cross_sample['advanced'] = True
+                cross_cursor.checkpoint(later_review,
+                    previous_cursor=later_trade['event_id'],
+                    next_cursor=later_fee['event_id'],
+                    expected_head=cross_first['head_sha256'])
+            return retained
+        cross_budget.inspect = advance_cursor_during_budget_replay
+        cross_code = None
+        try:
+            collect_and_checkpoint_due('fixture_key_only_123',
+                'fixture_secret_only_123', expected_budget_head=ZERO,
+                evaluated_at=999, opener=cross_opener,
+                **dict(common, cursor_store=cross_cursor,
+                    reconnect_budget=cross_budget,
+                    expected_cursor_head=cross_first['head_sha256'],
+                    elapsed_clock=arm_cross_sample,
+                    wall_clock=lambda: 999))
+        except ActivitySSEReconnectBudgetError as error:
+            cross_code = str(error)
+        cross_budget.inspect = cross_original_inspect
+        cross_cursor_retained = cross_cursor.inspect()
+        cross_budget_retained = cross_budget.inspect()
         try:
             collect_and_checkpoint_due('fixture_key_only_123',
                 'fixture_secret_only_123', expected_budget_head=ZERO,
@@ -3403,7 +3459,7 @@ def fixture_report():
                 retry_stop_state, rate_state, service_state,
                 automatic_uncertain_state, checkpoint_uncertain_closed,
                 checkpoint_uncertain_state, uncertain_closed,
-                uncertain_replay, uncertain_state],
+                uncertain_replay, uncertain_state, cross_budget_retained],
             sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
@@ -3452,6 +3508,17 @@ def fixture_report():
                     cursor_control_state['head_sha256'] and
                 cursor_control_state['attempts'] == 1 and
                 cursor_control_state['last_outcome'] is None,
+            preopen_cross_store_cursor_advance_blocks_provider_request=
+                cross_code is not None and
+                cross_code.endswith('CURSOR_HEAD_CHANGED') and
+                cross_sample == {'armed': True, 'advanced': True} and
+                not cross_opener.requests and
+                cross_cursor_retained['head_sha256'] !=
+                    cross_first['head_sha256'] and
+                cross_budget_retained['pending_token'] ==
+                    cross_budget_retained['head_sha256'] and
+                cross_budget_retained['attempts'] == 1 and
+                cross_budget_retained['last_outcome'] is None,
             due_second_attempt_explicit_and_single=
                 result['reconnect_attempt_number'] == 2 and
                 len(second.requests) == 1,

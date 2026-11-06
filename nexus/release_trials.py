@@ -1368,6 +1368,7 @@ def _validate(profile, result):
                 'control_callback_cursor_advance_blocks_before_provider_request',
                 'preopen_cross_store_cursor_advance_blocks_provider_request',
                 'provider_open_cursor_owner_blocks_competing_checkpoint',
+                'provider_open_owner_release_failure_closes_response',
                 'due_second_attempt_explicit_and_single',
                 'checkpoint_and_budget_recover_together',
                 'success_exception_rechecks_settled_files',

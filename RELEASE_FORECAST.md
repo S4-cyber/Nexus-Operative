@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.185
+## Current candidate: v0.340.186
+
+The Activity SSE transport now deterministically closes an already-open provider response if the cursor ownership guard cannot prove a clean release. The attempt makes exactly one injected request, advances no cursor, does not retry, returns the fixed guard diagnostic and retains durable non-retryable manual review. This is local injected exceptional-path evidence, not native Windows/network-filesystem or physical power-loss acceptance.
+
+At candidate start, exact-source v0.340.185 research run 42228285744 remained active: offline evidence and Portal browser help passed while full regression remained in progress. Windows run 42228285765 remained active in install/test. Public-security run 42228285688 failed only because full-history Gitleaks reaches the two known findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; its current/reachable artifact audit passed 8,630 blobs, 994 commits and 922 paths with zero findings. Fresh v0.340.186 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,337 tests with one expected non-Windows skip and one existing warning; the finalized focus passed 693. All sixteen profiles match 399 source files / `3056d63977d0af4b8515106bcb16ccbd6abdb7d0a45bdc21a93f94787e771212`; report SHA256 is `8ff8255eb009a10bc2d38495c8a4da9e4d0a7c401adaad0f800d393231650c9a`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen controllers passed. The 161-member wheel reports v0.340.186 and has SHA256 `3b96a019d1baae3be255137647ff846655a218b421dd903e7030308f1a7c97a9`.
+
+No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. This does not establish a launch date, release approval or trading/funding/live/cloud permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.185
 
 The Activity SSE coordinator now holds an OS-backed cursor ownership lease across the final crossed cursor/reservation proof and provider request open. Every cooperating durable cursor checkpoint takes the same lease, closing the last sample-to-open interval. The lease ends after the response opens; exact-head checks still guard consumption and completion. This is local injected process-coordination evidence, not native Windows/network-filesystem or physical power-loss acceptance.
 

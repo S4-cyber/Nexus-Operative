@@ -184,31 +184,53 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
 
     timeout = checkpoint()
     chunks = []
+    response = None
     try:
-        guard = (nullcontext() if pre_open_guard is None else
-            pre_open_guard())
-        with guard:
-            # Keep the caller's bounded ownership lease across both the final
-            # durable proof and the actual provider-open call. Cooperating
-            # cursor writers use the same lease and therefore cannot commit
-            # in the former sample-to-open interval.
-            if pre_open_check is not None:
+        try:
+            guard = (nullcontext() if pre_open_guard is None else
+                pre_open_guard())
+            with guard:
+                # Keep the caller's bounded ownership lease across both the
+                # final durable proof and the actual provider-open call.
+                # Cooperating cursor writers use the same lease and cannot
+                # commit in the former sample-to-open interval.
+                if pre_open_check is not None:
+                    try:
+                        if pre_open_check() is not True:
+                            _fail('PRE_OPEN_REVOKED')
+                    except ActivitySSETransportError:
+                        raise
+                    except Exception:
+                        _fail('PRE_OPEN_CHECK_FAILED')
+                request = Request(target, method='GET', headers={
+                    'APCA-API-KEY-ID': api_key,
+                    'APCA-API-SECRET-KEY': api_secret,
+                    'Accept': 'text/event-stream',
+                    'Accept-Encoding': 'identity',
+                    'Cache-Control': 'no-cache',
+                    'User-Agent': 'NexusOperativePaperActivitySSE/0.x',
+                })
+                response = reader.open(request, timeout=timeout)
+        except BaseException:
+            # ``open`` can succeed before a guard's exit proof fails. Close
+            # that unentered response deterministically so a failed ownership
+            # release cannot leak the bounded connection. Preserve process
+            # control signals from cleanup; suppress only ordinary close
+            # detail in favor of the original fixed public diagnostic.
+            if response is not None:
                 try:
-                    if pre_open_check() is not True:
-                        _fail('PRE_OPEN_REVOKED')
-                except ActivitySSETransportError:
+                    closer = getattr(response, 'close', None)
+                    if callable(closer):
+                        closer()
+                    else:
+                        exit_response = getattr(response, '__exit__', None)
+                        if callable(exit_response):
+                            exit_response(None, None, None)
+                except (KeyboardInterrupt, SystemExit):
                     raise
                 except Exception:
-                    _fail('PRE_OPEN_CHECK_FAILED')
-            request = Request(target, method='GET', headers={
-                'APCA-API-KEY-ID': api_key,
-                'APCA-API-SECRET-KEY': api_secret,
-                'Accept': 'text/event-stream',
-                'Accept-Encoding': 'identity',
-                'Cache-Control': 'no-cache',
-                'User-Agent': 'NexusOperativePaperActivitySSE/0.x',
-            })
-            response = reader.open(request, timeout=timeout)
+                    pass
+            raise
         with response:
             # The lease is intentionally released once the single request has
             # opened. Later cursor changes are still caught by the existing

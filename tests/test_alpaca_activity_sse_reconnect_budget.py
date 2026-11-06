@@ -957,6 +957,40 @@ def test_preheld_cursor_owner_blocks_request_and_requires_review(tmp_path):
     assert retained['last_detail_code'] == 'NONRETRYABLE_FAILURE'
 
 
+def test_owner_release_failure_closes_open_response_and_requires_review(
+        tmp_path):
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    lock_path = cursor.path.resolve().with_name(
+        cursor.path.name + '.owner.lock')
+    displaced = tmp_path / 'displaced-cursor-owner.lock'
+
+    class ReplacingOwnerOpener:
+        def __init__(self):
+            self.requests = []
+            self.response = None
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            lock_path.rename(displaced)
+            lock_path.write_bytes(b'0')
+            self.response = Response(raw, request.full_url)
+            return self.response
+
+    opener = ReplacingOwnerOpener()
+    with pytest.raises(subject.ActivitySSETransportError,
+            match='ALPACA_ACTIVITY_SSE_TRANSPORT_PRE_OPEN_GUARD_FAILED'):
+        call(tmp_path, opener, stores=(cursor, budget))
+
+    assert len(opener.requests) == 1
+    assert opener.response is not None and opener.response.closed
+    assert cursor.inspect()['head_sha256'] == ZERO
+    retained = budget.inspect()
+    assert retained['attempts'] == 1
+    assert retained['last_outcome'] == 'REVIEW_REQUIRED'
+    assert retained['last_detail_code'] == 'NONRETRYABLE_FAILURE'
+    assert lock_path.is_file() and displaced.is_file()
+
+
 def test_stop_callback_result_at_preopen_fence_blocks_provider_io(tmp_path):
     cursor, budget = stores(tmp_path)
     opener = Opener([b'private provider response'])

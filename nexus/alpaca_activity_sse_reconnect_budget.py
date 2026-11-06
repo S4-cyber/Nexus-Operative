@@ -2822,8 +2822,9 @@ def fixture_report():
         def __init__(self, target):
             self.target = target
             self.body = io.BytesIO(raw)
+            self.closed = False
         def __enter__(self): return self
-        def __exit__(self, *args): return None
+        def __exit__(self, *args): self.closed = True
         def geturl(self): return self.target
         def read(self, size): return self.body.read(size)
 
@@ -3048,6 +3049,37 @@ def fixture_report():
                 wall_clock=lambda: 999))
         owner_cursor_retained = owner_cursor.inspect()
         owner_budget_retained = owner_budget.inspect()
+        release_cursor = ActivitySSECursorStore(
+            root / 'release-cursor.sqlite3', account)
+        release_budget = ActivitySSEReconnectBudget(
+            root / 'release-budget.sqlite3', account)
+        release_lock = release_cursor.path.resolve().with_name(
+            release_cursor.path.name + '.owner.lock')
+        release_displaced = root / 'release-displaced-owner.lock'
+        class ReplacingOwnerOpener(Opener):
+            def __init__(self):
+                super().__init__(raw)
+                self.response = None
+            def open(self, request, timeout):
+                self.requests.append((request, timeout))
+                release_lock.rename(release_displaced)
+                release_lock.write_bytes(b'0')
+                self.response = Response(request.full_url)
+                return self.response
+        release_opener = ReplacingOwnerOpener()
+        release_code = None
+        try:
+            collect_and_checkpoint_due(
+                'fixture_key_only_123', 'fixture_secret_only_123',
+                expected_budget_head=ZERO, evaluated_at=999,
+                opener=release_opener,
+                **dict(common, cursor_store=release_cursor,
+                    reconnect_budget=release_budget,
+                    wall_clock=lambda: 999))
+        except ActivitySSETransportError as error:
+            release_code = str(error)
+        release_cursor_retained = release_cursor.inspect()
+        release_budget_retained = release_budget.inspect()
         try:
             collect_and_checkpoint_due('fixture_key_only_123',
                 'fixture_secret_only_123', expected_budget_head=ZERO,
@@ -3495,7 +3527,8 @@ def fixture_report():
                 automatic_uncertain_state, checkpoint_uncertain_closed,
                 checkpoint_uncertain_state, uncertain_closed,
                 uncertain_replay, uncertain_state, cross_budget_retained,
-                owner_result, owner_budget_retained],
+                owner_result, owner_budget_retained,
+                release_budget_retained],
             sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
@@ -3568,6 +3601,19 @@ def fixture_report():
                     'CHECKPOINT_COMMITTED' and
                 owner_budget_retained['checkpoint_head_sha256'] ==
                     owner_cursor_retained['head_sha256'],
+            provider_open_owner_release_failure_closes_response=
+                release_code is not None and release_code.endswith(
+                    'PRE_OPEN_GUARD_FAILED') and
+                len(release_opener.requests) == 1 and
+                release_opener.response is not None and
+                release_opener.response.closed and
+                release_cursor_retained['head_sha256'] == ZERO and
+                release_budget_retained['attempts'] == 1 and
+                release_budget_retained['last_outcome'] ==
+                    'REVIEW_REQUIRED' and
+                release_budget_retained['last_detail_code'] ==
+                    'NONRETRYABLE_FAILURE' and
+                release_lock.is_file() and release_displaced.is_file(),
             due_second_attempt_explicit_and_single=
                 result['reconnect_attempt_number'] == 2 and
                 len(second.requests) == 1,

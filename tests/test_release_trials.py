@@ -630,6 +630,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('installed_activity_sse_acceptance','cold_restart_replays_completed_state'),False,'INSTALLED_ACTIVITY_SSE_ACCEPTANCE'),
         (('installed_activity_sse_acceptance','provider_source_attested'),True,'INSTALLED_ACTIVITY_SSE_ACCEPTANCE_AUTHORITY'),
         (('installed_activity_sse_failure_recovery','before_due_restart_denies_attempt'),False,'INSTALLED_ACTIVITY_SSE_FAILURE_RECOVERY'),
+        (('installed_activity_sse_failure_recovery','stopped_restart_denies_due_attempt'),False,'INSTALLED_ACTIVITY_SSE_FAILURE_RECOVERY'),
         (('installed_activity_sse_failure_recovery','ready_for_routing'),True,'INSTALLED_ACTIVITY_SSE_FAILURE_RECOVERY_AUTHORITY'),
         (('exact_response_bundle','session_tail_required'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','full_private_file_set_rechecked'),False,'EXACT_RESPONSE_BUNDLE'),

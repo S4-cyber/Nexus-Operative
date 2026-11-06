@@ -1,5 +1,18 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.177 independent emergency stop after failed Activity SSE attempt
+
+The mandatory installed failure-recovery fixture now activates the standalone emergency-stop process after exactly one injected failed Activity SSE GET and a durable retry schedule. The independent process publishes its intent before durable order halt without starting the Portal, requesting credentials, opening a network connection or enabling automatic restart. A fresh process at the exact retry deadline observes the latch, keeps the retained cursor/reconnect heads and attempt count unchanged, and denies another attempt.
+
+This is disposable local safety evidence only. It does not attest a provider or source, prove historical delivery or market realism, accept a broker account, reconcile fees, holds or funds, demonstrate physical/native Windows durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
+
+Exact-source v0.340.176 research/browser/evidence run 42168513347 passed. Windows run 42168513457 remained queued when this candidate began. Public-security run 42168513336 failed because its required full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals. Removing the reachable commit would require a destructive development-branch history rewrite and was not performed. Fresh v0.340.177 exact-source hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,321 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized release/evidence/version/roadmap/workflow focus passed 151 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `0ed3f2a8dba95ebf9f0f557be25f3cbaa35fa19adc092be2de0badfb2e111926`; `validation/release_trials_0_340_177.json` SHA256 is `1286acf8c526f9de3e449e446524b54b0de8584bbafe72a2b9959abe5b60b965`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.177, retained the independent-stop evidence and has SHA256 `c7709fe6b5a169057305cace349e73752379fe929883aef4a7afc227b6ecbc75`. No actual provider/account/native Windows acceptance was performed.
+
+No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
+
+
 ## v0.340.176 installed Activity SSE failed-attempt recovery evidence
 
 The bounded offline reconciliation profile now requires a second synthetic installed-operator proof for the failed one-attempt Activity SSE path. It performs exactly one injected failed GET through the saved-pair boundary, retains the failed attempt and retry deadline, then starts fresh processes without vault or network access. A pre-deadline restart denies another attempt. At the exact deadline, status reports only caller-driven eligibility and performs no request, sleep, retry or continuation. Both cold reads preserve every private temporary file, and every broker, funds, routing, live, cloud and release authority remains false.

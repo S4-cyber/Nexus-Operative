@@ -8,6 +8,7 @@ import copy
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -115,13 +116,14 @@ def _snapshot(root):
     return tuple(result)
 
 
-def _cold_status(root, clock=1001):
+def _cold_status(root, clock=1001, order_name='orders.sqlite3'):
     expression = r'''
 import hashlib,json,sys
 from pathlib import Path
 from nexus import paper_credentials
 from nexus.paper_activity_sse_acceptance_probe import status
 root=Path(sys.argv[1]);account=sys.argv[2];evaluated=float(sys.argv[3])
+order_name=sys.argv[4]
 attempts={'external_connections':0,'credential_operations':0}
 def audit(event,args):
  if event=='socket.connect':
@@ -139,7 +141,7 @@ def snapshot():
 sys.addaudithook(audit);paper_credentials._vault=denied
 before=snapshot()
 value=status(expected_account_id=account,cursor_path=root/'cursor.sqlite3',
- budget_path=root/'budget.sqlite3',order_journal_path=root/'orders.sqlite3',
+ budget_path=root/'budget.sqlite3',order_journal_path=root/order_name,
  clock=lambda:evaluated)
 after=snapshot()
 print(json.dumps({'snapshot_consistent':value['snapshot_consistent'],
@@ -152,17 +154,56 @@ print(json.dumps({'snapshot_consistent':value['snapshot_consistent'],
  'reconnect_next_allowed_at':value['reconnect_next_allowed_at'],
  'reconnect_pending':value['reconnect_pending'],
  'reconnect_review_required':value['reconnect_review_required'],
+ 'emergency_cut_latch_active':value['emergency_cut_latch_active'],
+ 'emergency_cut_scope_consistent':value['emergency_cut_scope_consistent'],
  'automatic_retry':value['automatic_retry'],
  'automatic_continuation':value['automatic_continuation'],
  'journals_unchanged':before==after,**attempts},sort_keys=True))
 '''
     try:
         child = subprocess.run([sys.executable, '-c', expression, str(root),
-            ACCOUNT, str(clock)], capture_output=True, text=True, timeout=20)
+            ACCOUNT, str(clock), order_name], capture_output=True, text=True,
+            timeout=20)
     except (OSError, subprocess.SubprocessError):
         raise ValueError('PAPER_ACTIVITY_SSE_ACCEPTANCE_EVIDENCE_RESTART') from None
     if child.returncode != 0:
         raise ValueError('PAPER_ACTIVITY_SSE_ACCEPTANCE_EVIDENCE_RESTART')
+    return json.loads(child.stdout)
+
+
+def _independent_stop(root):
+    expression = r'''
+import json,sys
+from nexus import paper_credentials
+from nexus.emergency_cut_tool import activate
+attempts={'external_connections':0,'credential_operations':0}
+def audit(event,args):
+ if event=='socket.connect':
+  attempts['external_connections']+=1
+  raise RuntimeError('NETWORK_DENIED')
+def denied():
+ attempts['credential_operations']+=1
+ raise RuntimeError('VAULT_DENIED')
+sys.addaudithook(audit);paper_credentials._vault=denied
+value=activate(sys.argv[1])
+print(json.dumps({'passed':value['passed'],'halted':value['halted'],
+ 'intent_preceded_durable_halt':value['intent_preceded_durable_halt'],
+ 'emergency_intent_present':value['emergency_intent_present'],
+ 'durable_order_halt_confirmed':value['durable_order_halt_confirmed'],
+ 'desktop_started':value['desktop_started'],
+ 'network_requested':value['network_requested'],
+ 'credential_access_requested':value['credential_access_requested'],
+ 'automatic_restart':value['automatic_restart'],**attempts},sort_keys=True))
+'''
+    try:
+        child = subprocess.run([sys.executable, '-c', expression, str(root)],
+            capture_output=True, text=True, timeout=20,
+            env={**os.environ, 'NEXUS_PORTABLE_DATA': str(root)})
+    except (OSError, subprocess.SubprocessError):
+        raise ValueError(
+            'PAPER_ACTIVITY_SSE_ACCEPTANCE_EVIDENCE_STOP') from None
+    if child.returncode != 0:
+        raise ValueError('PAPER_ACTIVITY_SSE_ACCEPTANCE_EVIDENCE_STOP')
     return json.loads(child.stdout)
 
 
@@ -271,13 +312,14 @@ def failure_fixture_report():
             paper_credentials._blocked = False
             paper_credentials.install(KEY, SECRET, confirm_store=True)
             opener = _FailingOpener()
+            order = root/'order_lifecycle.sqlite3'
             fixed_failure = False
             try:
                 operator.attempt(expected_account_id=ACCOUNT,
                     initial_events_path=source,
                     cursor_path=root/'cursor.sqlite3',
                     budget_path=root/'budget.sqlite3',
-                    order_journal_path=root/'orders.sqlite3',
+                    order_journal_path=order,
                     expected_cursor_head=ZERO, expected_budget_head=ZERO,
                     reconnect_reason='CONNECTION_DROPPED',
                     confirm_reconnect_attempt=True,
@@ -289,9 +331,17 @@ def failure_fixture_report():
                 fixed_failure = (str(error) ==
                     'PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED')
             committed = _snapshot(root)
-            before_due = _cold_status(root, 1000)
+            before_due = _cold_status(root, 1000,
+                'order_lifecycle.sqlite3')
             due = _cold_status(root,
-                before_due['reconnect_next_allowed_at'])
+                before_due['reconnect_next_allowed_at'],
+                'order_lifecycle.sqlite3')
+            no_order_before_stop = not order.exists()
+            stop = _independent_stop(root)
+            stopped_committed = _snapshot(root)
+            stopped = _cold_status(root,
+                before_due['reconnect_next_allowed_at'],
+                'order_lifecycle.sqlite3')
             checks = dict(
                 one_injected_failed_get=len(opener.requests) == 1,
                 installed_failure_is_fixed_diagnostic=fixed_failure,
@@ -314,23 +364,51 @@ def failure_fixture_report():
                     due['reconnect_budget_head_sha256'] ==
                         before_due['reconnect_budget_head_sha256'] and
                     due['cursor_head_sha256'] == ZERO),
+                independent_stop_process_is_local_only=(
+                    stop['passed'] is True and stop['halted'] is True and
+                    stop['intent_preceded_durable_halt'] is True and
+                    stop['emergency_intent_present'] is True and
+                    stop['durable_order_halt_confirmed'] is True and
+                    stop['desktop_started'] is False and
+                    stop['network_requested'] is False and
+                    stop['credential_access_requested'] is False and
+                    stop['automatic_restart'] is False and
+                    stop['external_connections'] == 0 and
+                    stop['credential_operations'] == 0),
+                stopped_restart_denies_due_attempt=(
+                    stopped['snapshot_consistent'] is True and
+                    stopped['storage_snapshot_consistent'] is True and
+                    stopped['emergency_cut_latch_active'] is True and
+                    stopped['emergency_cut_scope_consistent'] is True and
+                    stopped['one_attempt_eligible'] is False and
+                    stopped['reconnect_attempt_number'] == 1 and
+                    stopped['reconnect_budget_head_sha256'] ==
+                        before_due['reconnect_budget_head_sha256'] and
+                    stopped['cursor_head_sha256'] == ZERO),
                 cold_statuses_are_vault_silent=(
                     before_due['credential_operations'] == 0 and
-                    due['credential_operations'] == 0),
+                    due['credential_operations'] == 0 and
+                    stopped['credential_operations'] == 0),
                 cold_statuses_are_network_silent=(
                     before_due['external_connections'] == 0 and
-                    due['external_connections'] == 0),
+                    due['external_connections'] == 0 and
+                    stopped['external_connections'] == 0),
                 failed_journals_remain_unchanged=(
                     before_due['journals_unchanged'] is True and
                     due['journals_unchanged'] is True and
-                    _snapshot(root) == committed),
+                    stopped['journals_unchanged'] is True and
+                    stopped_committed == _snapshot(root) and
+                    committed != stopped_committed),
                 private_input_unchanged=source.read_bytes() == source_before,
-                no_order_journal_created=not (root/'orders.sqlite3').exists(),
+                no_order_journal_created_before_explicit_stop=
+                    no_order_before_stop,
                 no_automatic_retry_or_continuation=(
                     before_due['automatic_retry'] is False and
                     before_due['automatic_continuation'] is False and
                     due['automatic_retry'] is False and
                     due['automatic_continuation'] is False and
+                    stopped['automatic_retry'] is False and
+                    stopped['automatic_continuation'] is False and
                     len(opener.requests) == 1))
             return dict(
                 source='SYNTHETIC_INSTALLED_ACTIVITY_SSE_FAILURE_FIXTURE',

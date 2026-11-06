@@ -28,6 +28,8 @@ def test_failure_fixture_proves_durable_backoff_without_automatic_retry():
     assert result['failed_attempt_retained_for_restart'] is True
     assert result['before_due_restart_denies_attempt'] is True
     assert result['due_restart_requires_explicit_attempt'] is True
+    assert result['independent_stop_process_is_local_only'] is True
+    assert result['stopped_restart_denies_due_attempt'] is True
     assert result['cold_statuses_are_vault_silent'] is True
     assert result['cold_statuses_are_network_silent'] is True
     assert result['failed_journals_remain_unchanged'] is True

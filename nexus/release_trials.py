@@ -1419,10 +1419,13 @@ def _validate(profile, result):
                 'failed_attempt_retained_for_restart',
                 'before_due_restart_denies_attempt',
                 'due_restart_requires_explicit_attempt',
+                'independent_stop_process_is_local_only',
+                'stopped_restart_denies_due_attempt',
                 'cold_statuses_are_vault_silent',
                 'cold_statuses_are_network_silent',
                 'failed_journals_remain_unchanged',
-                'private_input_unchanged','no_order_journal_created',
+                'private_input_unchanged',
+                'no_order_journal_created_before_explicit_stop',
                 'no_automatic_retry_or_continuation')) and
             installed_sse_failure[
                 'retained_private_evidence_published'] is False and

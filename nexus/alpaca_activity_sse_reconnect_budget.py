@@ -2206,7 +2206,8 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         permission_check=request_permission_check,
         emergency_stop_check=request_emergency_stop_check,
         credential_check=request_credential_check,
-        pre_open_check=request_pre_open_check)
+        pre_open_check=request_pre_open_check,
+        pre_open_guard=cursor_store.ownership)
     options['reconnect_reservation_token'] = token
     if wall_clock is not None:
         options['wall_clock'] = wall_clock
@@ -2992,7 +2993,10 @@ def fixture_report():
             retained = cross_original_inspect()
             if cross_sample['armed'] and not cross_sample['advanced']:
                 cross_sample['advanced'] = True
-                cross_cursor.checkpoint(later_review,
+                # Deliberately bypass the cooperating ownership wrapper so
+                # the crossed sample continues to cover an internal/unowned
+                # writer independently of the new provider-open lease.
+                cross_cursor._checkpoint_owned(later_review,
                     previous_cursor=later_trade['event_id'],
                     next_cursor=later_fee['event_id'],
                     expected_head=cross_first['head_sha256'])
@@ -3013,6 +3017,37 @@ def fixture_report():
         cross_budget.inspect = cross_original_inspect
         cross_cursor_retained = cross_cursor.inspect()
         cross_budget_retained = cross_budget.inspect()
+        owner_cursor = ActivitySSECursorStore(
+            root / 'owner-cursor.sqlite3', account)
+        owner_budget = ActivitySSEReconnectBudget(
+            root / 'owner-budget.sqlite3', account)
+        owner_first = owner_cursor.checkpoint(first_review,
+            previous_cursor=first_fee['event_id'],
+            next_cursor=later_trade['event_id'], expected_head=ZERO)
+        class CompetingCheckpointOpener(Opener):
+            def __init__(self):
+                super().__init__(raw)
+                self.competing_error = None
+            def open(self, request, timeout):
+                try:
+                    owner_cursor.checkpoint(later_review,
+                        previous_cursor=later_trade['event_id'],
+                        next_cursor=later_fee['event_id'],
+                        expected_head=owner_first['head_sha256'])
+                except ValueError as error:
+                    self.competing_error = str(error)
+                return super().open(request, timeout)
+        owner_opener = CompetingCheckpointOpener()
+        owner_result = collect_and_checkpoint_due(
+            'fixture_key_only_123', 'fixture_secret_only_123',
+            expected_budget_head=ZERO, evaluated_at=999,
+            opener=owner_opener,
+            **dict(common, cursor_store=owner_cursor,
+                reconnect_budget=owner_budget,
+                expected_cursor_head=owner_first['head_sha256'],
+                wall_clock=lambda: 999))
+        owner_cursor_retained = owner_cursor.inspect()
+        owner_budget_retained = owner_budget.inspect()
         try:
             collect_and_checkpoint_due('fixture_key_only_123',
                 'fixture_secret_only_123', expected_budget_head=ZERO,
@@ -3459,7 +3494,8 @@ def fixture_report():
                 retry_stop_state, rate_state, service_state,
                 automatic_uncertain_state, checkpoint_uncertain_closed,
                 checkpoint_uncertain_state, uncertain_closed,
-                uncertain_replay, uncertain_state, cross_budget_retained],
+                uncertain_replay, uncertain_state, cross_budget_retained,
+                owner_result, owner_budget_retained],
             sort_keys=True)
         checks = dict(first_failure_retained_without_retry=
                 after_timeout['last_outcome'] == 'RETRY_REQUIRED' and
@@ -3519,6 +3555,19 @@ def fixture_report():
                     cross_budget_retained['head_sha256'] and
                 cross_budget_retained['attempts'] == 1 and
                 cross_budget_retained['last_outcome'] is None,
+            provider_open_cursor_owner_blocks_competing_checkpoint=
+                owner_opener.competing_error ==
+                    'ALPACA_ACTIVITY_SSE_CURSOR_STORE_'
+                    'OWNER_BUSY_OR_UNAVAILABLE' and
+                len(owner_opener.requests) == 1 and
+                owner_result['reconnect_attempt_number'] == 1 and
+                owner_cursor_retained['head_sha256'] !=
+                    owner_first['head_sha256'] and
+                owner_budget_retained['completed'] and
+                owner_budget_retained['last_outcome'] ==
+                    'CHECKPOINT_COMMITTED' and
+                owner_budget_retained['checkpoint_head_sha256'] ==
+                    owner_cursor_retained['head_sha256'],
             due_second_attempt_explicit_and_single=
                 result['reconnect_attempt_number'] == 2 and
                 len(second.requests) == 1,

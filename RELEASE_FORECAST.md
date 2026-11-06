@@ -1,6 +1,16 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-## Current candidate: v0.340.184
+## Current candidate: v0.340.185
+
+The Activity SSE coordinator now holds an OS-backed cursor ownership lease across the final crossed cursor/reservation proof and provider request open. Every cooperating durable cursor checkpoint takes the same lease, closing the last sample-to-open interval. The lease ends after the response opens; exact-head checks still guard consumption and completion. This is local injected process-coordination evidence, not native Windows/network-filesystem or physical power-loss acceptance.
+
+Exact-source v0.340.184 research/browser/evidence run 42219791973 passed. Windows run 42219793345 remained in progress. Public-security run 42219791919 failed only because required full-history Gitleaks reaches the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; its current/reachable artifact audit passed 8,612 blobs, 993 commits and 921 paths with zero findings. Fresh exact-source v0.340.185 hosted workflows and actual authorized-account acceptance remain required.
+
+Final local verification passed 5,336 tests with one expected non-Windows skip and one existing warning; the finalized focus passed 692. All sixteen profiles match 399 source files / `9d1ec9050d437fe48be0c44a89c6d1dbaf50531668a22c9789b56b01387186b7`; report SHA256 is `e7faea0a1d59685c38ae2d8ef7acc01094ead71ed97f708ab08da56d13015db8`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen controllers passed. The 161-member wheel reports v0.340.185 and has SHA256 `dcdc4d129fcbd8ee5772562d9bb6d67c0f36a5700e5e3d825a799319a79b28c9`.
+
+No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. This does not establish a launch date, release approval or trading/funding/live/cloud permission. Historical results and synthetic scores are not future profit predictions.
+
+## Previous candidate: v0.340.184
 
 The Activity SSE coordinator now repeats its final durable proof as a crossed cursor/reservation sample: cursor, exact pending reservation, cursor again, then reservation again. A cooperating cursor writer that commits during the first reservation replay is caught before provider IO with the fixed cursor-head diagnostic. The advanced cursor and pending attempt remain durable for explicit review. This is sampled local evidence, not atomic cross-process locking; a mutation after the final sample remains outside the proof.
 

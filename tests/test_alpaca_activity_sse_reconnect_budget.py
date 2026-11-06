@@ -870,7 +870,9 @@ def test_preopen_cross_store_sampling_catches_cursor_advance(
         retained = original_inspect()
         if state['armed'] and not state['advanced']:
             state['advanced'] = True
-            cursor.checkpoint(later_review,
+            # Bypass the cooperating ownership wrapper to retain coverage for
+            # the crossed-sample defense against an unowned/internal writer.
+            cursor._checkpoint_owned(later_review,
                 previous_cursor=initial[-1]['event_id'],
                 next_cursor=later_replay[-1]['event_id'],
                 expected_head=first['head_sha256'])
@@ -889,6 +891,70 @@ def test_preopen_cross_store_sampling_catches_cursor_advance(
     retained = original_inspect()
     assert retained['pending_token'] == retained['head_sha256']
     assert retained['attempts'] == 1 and retained['last_outcome'] is None
+
+
+def test_provider_open_holds_cursor_owner_against_competing_checkpoint(
+        tmp_path):
+    initial, raw = segments()
+    cursor, budget = stores(tmp_path)
+
+    first_replay = [copy.deepcopy(initial[1]), copy.deepcopy(initial[2])]
+    first_review = subject.checkpoint.reconnect.review(initial[:2],
+        first_replay, expected_account_id=ACCOUNT,
+        persisted_event_id=initial[1]['event_id'],
+        reconnect_since_id=initial[1]['event_id'],
+        reconnect_reason='CONNECTION_DROPPED')
+    first = cursor.checkpoint(first_review,
+        previous_cursor=initial[1]['event_id'],
+        next_cursor=initial[2]['event_id'], expected_head=ZERO)
+    later_replay = [json.loads(line[6:]) for line in raw.decode().splitlines()
+        if line.startswith('data: ')]
+    later_review = subject.checkpoint.reconnect.review(initial,
+        later_replay, expected_account_id=ACCOUNT,
+        persisted_event_id=initial[-1]['event_id'],
+        reconnect_since_id=initial[-1]['event_id'],
+        reconnect_reason='CONNECTION_DROPPED')
+
+    class CompetingCheckpointOpener(Opener):
+        def __init__(self):
+            super().__init__([raw])
+            self.competing_error = None
+        def open(self, request, timeout):
+            try:
+                cursor.checkpoint(later_review,
+                    previous_cursor=initial[-1]['event_id'],
+                    next_cursor=later_replay[-1]['event_id'],
+                    expected_head=first['head_sha256'])
+            except ValueError as error:
+                self.competing_error = str(error)
+            return super().open(request, timeout)
+
+    opener = CompetingCheckpointOpener()
+    result, _, _ = call(tmp_path, opener, stores=(cursor, budget),
+        expected_cursor_head=first['head_sha256'])
+    assert opener.competing_error == \
+        'ALPACA_ACTIVITY_SSE_CURSOR_STORE_OWNER_BUSY_OR_UNAVAILABLE'
+    assert len(opener.requests) == 1
+    assert result['reconnect_attempt_number'] == 1
+    assert budget.inspect()['last_outcome'] == 'CHECKPOINT_COMMITTED'
+    assert cursor.inspect()['head_sha256'] != first['head_sha256']
+
+
+def test_preheld_cursor_owner_blocks_request_and_requires_review(tmp_path):
+    cursor, budget = stores(tmp_path)
+    opener = Opener([b'private provider response'])
+
+    with cursor.ownership() as owner:
+        owner.validate()
+        with pytest.raises(subject.ActivitySSETransportError,
+                match='ALPACA_ACTIVITY_SSE_TRANSPORT_PRE_OPEN_GUARD_FAILED'):
+            call(tmp_path, opener, stores=(cursor, budget))
+
+    assert opener.requests == []
+    retained = budget.inspect()
+    assert retained['attempts'] == 1
+    assert retained['last_outcome'] == 'REVIEW_REQUIRED'
+    assert retained['last_detail_code'] == 'NONRETRYABLE_FAILURE'
 
 
 def test_stop_callback_result_at_preopen_fence_blocks_provider_io(tmp_path):

@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 
 from nexus.alpaca_activity_normalizer import _uuid
 from nexus.alpaca_activity_sse_reconnect_review import (
@@ -109,12 +110,100 @@ def _store_binding_matches(store, binding):
         return False
 
 
+class _CursorOwnership:
+    """One bounded OS-backed lease shared by cursor checkpoint writers."""
+
+    def __init__(self, store):
+        self.store = store
+        self.store_binding = (store.path, store.account_sha256)
+        self.path = store.path.resolve().with_name(
+            store.path.name + '.owner.lock')
+        self.fd = None
+
+    def validate(self):
+        if self.fd is None:
+            _fail('OWNER_REQUIRED')
+        if not _store_binding_matches(self.store, self.store_binding):
+            _fail('STORE_BINDING_CHANGED')
+        try:
+            if self.path.is_symlink():
+                _fail('OWNER_FILE_CHANGED')
+            current, opened = self.path.stat(), os.fstat(self.fd)
+        except OSError:
+            _fail('OWNER_FILE_CHANGED')
+        if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or
+                opened.st_size != 1 or
+                (current.st_dev, current.st_ino) !=
+                (opened.st_dev, opened.st_ino)):
+            _fail('OWNER_FILE_CHANGED')
+
+    def __enter__(self):
+        if self.fd is not None:
+            _fail('OWNER_ALREADY_HELD')
+        if not _store_binding_matches(self.store, self.store_binding):
+            _fail('STORE_BINDING_CHANGED')
+        self.store._check()
+        if self.path.is_symlink():
+            _fail('OWNER_SYMLINK')
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(self.path,
+            os.O_RDWR | os.O_CREAT | getattr(os, 'O_NOFOLLOW', 0), 0o600)
+        try:
+            opened = os.fstat(fd)
+            if not stat.S_ISREG(opened.st_mode):
+                _fail('OWNER_FILE_INVALID')
+            if opened.st_size == 0:
+                os.write(fd, b'0')
+            os.lseek(fd, 0, os.SEEK_SET)
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.fd = fd
+            self.validate()
+            return self
+        except BaseException as error:
+            self.fd = None
+            os.close(fd)
+            if isinstance(error, OSError):
+                _fail('OWNER_BUSY_OR_UNAVAILABLE')
+            raise
+
+    def __exit__(self, *args):
+        fd = self.fd
+        if fd is None:
+            return
+        exit_error = None
+        try:
+            # A replaced lock pathname could otherwise admit another writer
+            # before this descriptor is released. Never acknowledge that
+            # interval as a valid ownership proof.
+            self.validate()
+        except BaseException as error:
+            exit_error = error
+        finally:
+            self.fd = None
+            try:
+                os.close(fd)
+            except BaseException:
+                if exit_error is None:
+                    raise
+        if exit_error is not None:
+            raise exit_error
+
+
 class ActivitySSECursorStore:
     """One account-bound, exact-head Activity SSE cursor journal."""
 
     def __init__(self, path, paper_account_id):
         self.path = Path(path)
         self.account_sha256 = sha(_account(paper_account_id))
+
+    def ownership(self):
+        """Return the process-crash-released cursor checkpoint lease."""
+        return _CursorOwnership(self)
 
     def _check(self):
         check_existing(self.path, MAX_DATABASE_BYTES,
@@ -486,6 +575,20 @@ class ActivitySSECursorStore:
             read_only=True, **{flag: False for flag in FLAGS})
 
     def checkpoint(self, review, *, previous_cursor, next_cursor,
+            expected_head, admission=None, reconnect_reservation_token=None,
+            transport_input_sha256=None):
+        """Commit one reviewed advance under the shared cursor lease."""
+        with self.ownership() as owner:
+            owner.validate()
+            result = self._checkpoint_owned(review,
+                previous_cursor=previous_cursor, next_cursor=next_cursor,
+                expected_head=expected_head, admission=admission,
+                reconnect_reservation_token=reconnect_reservation_token,
+                transport_input_sha256=transport_input_sha256)
+            owner.validate()
+            return result
+
+    def _checkpoint_owned(self, review, *, previous_cursor, next_cursor,
             expected_head, admission=None, reconnect_reservation_token=None,
             transport_input_sha256=None):
         """Commit one reviewed advance; exact lost-ack replay is idempotent."""

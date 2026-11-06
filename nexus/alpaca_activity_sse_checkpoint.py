@@ -193,7 +193,7 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         opener=None, wall_clock=None, elapsed_clock=None,
         permission_check=None, emergency_stop_check=None,
         credential_check=None, reconnect_reservation_token=None,
-        pre_open_check=None):
+        pre_open_check=None, pre_open_guard=None):
     """Perform one explicit resumption GET and exact-head cursor checkpoint.
 
     ``initial_events`` remains private caller evidence and must end at the
@@ -213,6 +213,8 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
             permission_check, emergency_stop_check, credential_check)):
         _fail('CHECK_INVALID')
     if pre_open_check is not None and not callable(pre_open_check):
+        _fail('CHECK_INVALID')
+    if pre_open_guard is not None and not callable(pre_open_guard):
         _fail('CHECK_INVALID')
     initial = _checked_store_call(
         lambda: _frozen_events(initial_events, 'INITIAL_EVENTS_INVALID'),
@@ -254,7 +256,7 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         permission_check=permission_check,
         emergency_stop_check=emergency_stop_check,
         credential_check=credential_check,
-        pre_open_check=pre_open_check)
+        pre_open_check=pre_open_check, pre_open_guard=pre_open_guard)
     if wall_clock is not None:
         options['wall_clock'] = wall_clock
     if elapsed_clock is not None:

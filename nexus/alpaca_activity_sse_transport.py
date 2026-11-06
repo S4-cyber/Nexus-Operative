@@ -5,6 +5,7 @@ The callable in this module opens only the fixed Alpaca paper Activity SSE
 wire review.  It never retries, reconnects, advances a cursor, stores a
 credential, applies a ledger entry, or submits an order.
 """
+from contextlib import nullcontext
 import math
 import re
 import time
@@ -124,7 +125,7 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
         confirm_read_only_paper=False, opener=None, wall_clock=time.time,
         elapsed_clock=time.monotonic, permission_check=None,
         emergency_stop_check=None, credential_check=None,
-        private_events=False, pre_open_check=None):
+        private_events=False, pre_open_check=None, pre_open_guard=None):
     """Read one bounded finite segment for aggregate or private composition.
 
     ``opener`` is an injected test seam.  Without it, proxies are disabled and
@@ -143,6 +144,8 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
             permission_check, emergency_stop_check, credential_check)):
         _fail('CHECK_INVALID')
     if pre_open_check is not None and not callable(pre_open_check):
+        _fail('CHECK_INVALID')
+    if pre_open_guard is not None and not callable(pre_open_guard):
         _fail('CHECK_INVALID')
     injected = opener is not None
     reader = opener or build_opener(ProxyHandler({}), _NoRedirect())
@@ -180,25 +183,36 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
         return max(0.001, min(REQUEST_TIMEOUT, TOTAL_SECONDS - elapsed))
 
     timeout = checkpoint()
-    if pre_open_check is not None:
-        try:
-            if pre_open_check() is not True:
-                _fail('PRE_OPEN_REVOKED')
-        except ActivitySSETransportError:
-            raise
-        except Exception:
-            _fail('PRE_OPEN_CHECK_FAILED')
-    request = Request(target, method='GET', headers={
-        'APCA-API-KEY-ID': api_key,
-        'APCA-API-SECRET-KEY': api_secret,
-        'Accept': 'text/event-stream',
-        'Accept-Encoding': 'identity',
-        'Cache-Control': 'no-cache',
-        'User-Agent': 'NexusOperativePaperActivitySSE/0.x',
-    })
     chunks = []
     try:
-        with reader.open(request, timeout=timeout) as response:
+        guard = (nullcontext() if pre_open_guard is None else
+            pre_open_guard())
+        with guard:
+            # Keep the caller's bounded ownership lease across both the final
+            # durable proof and the actual provider-open call. Cooperating
+            # cursor writers use the same lease and therefore cannot commit
+            # in the former sample-to-open interval.
+            if pre_open_check is not None:
+                try:
+                    if pre_open_check() is not True:
+                        _fail('PRE_OPEN_REVOKED')
+                except ActivitySSETransportError:
+                    raise
+                except Exception:
+                    _fail('PRE_OPEN_CHECK_FAILED')
+            request = Request(target, method='GET', headers={
+                'APCA-API-KEY-ID': api_key,
+                'APCA-API-SECRET-KEY': api_secret,
+                'Accept': 'text/event-stream',
+                'Accept-Encoding': 'identity',
+                'Cache-Control': 'no-cache',
+                'User-Agent': 'NexusOperativePaperActivitySSE/0.x',
+            })
+            response = reader.open(request, timeout=timeout)
+        with response:
+            # The lease is intentionally released once the single request has
+            # opened. Later cursor changes are still caught by the existing
+            # post-IO exact-head and checkpoint admission proofs.
             checkpoint()
             if response.geturl() != target:
                 _fail('RESPONSE_URL_CHANGED')
@@ -249,6 +263,14 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
         raise
     except wire.ActivitySSEWireReviewError:
         _fail('WIRE_REVIEW_FAILED')
+    except ValueError as error:
+        # The coordinator's ownership implementation is intentionally hidden
+        # behind a callable seam. Its fixed local-store diagnostics must not
+        # become a retryable provider failure or expose implementation detail.
+        if str(error).startswith(
+                'ALPACA_ACTIVITY_SSE_CURSOR_STORE_OWNER_'):
+            _fail('PRE_OPEN_GUARD_FAILED')
+        _fail('TRANSPORT_FAILED')
     except HTTPError as error:
         try:
             checkpoint()

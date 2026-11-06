@@ -1,6 +1,7 @@
 """Private Activity SSE cursor checkpoint durability tests."""
 import copy
 import json
+import os
 from pathlib import Path
 import sqlite3
 
@@ -51,6 +52,56 @@ def checkpoint(store, report=None, before=None, after=None, **changes):
         expected_head=subject.ZERO)
     args.update(changes)
     return store.checkpoint(report, **args)
+
+
+def test_checkpoint_writer_obeys_exclusive_cursor_ownership(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = subject.ActivitySSECursorStore(path, ACCOUNT)
+    first_report, first_before, first_after = checked()
+    first = checkpoint(store, first_report, first_before, first_after)
+    initial = pair(2, 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        'fixture_client_2')
+    later = pair(4, 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+        'fixture_client_3')
+    second_report, second_before, second_after = checked(initial, later)
+
+    with store.ownership() as owner:
+        owner.validate()
+        with pytest.raises(ValueError,
+                match='ALPACA_ACTIVITY_SSE_CURSOR_STORE_OWNER_BUSY_OR_UNAVAILABLE'):
+            store.checkpoint(second_report, previous_cursor=second_before,
+                next_cursor=second_after,
+                expected_head=first['head_sha256'])
+        assert store.inspect()['head_sha256'] == first['head_sha256']
+
+    recovered = store.checkpoint(second_report,
+        previous_cursor=second_before, next_cursor=second_after,
+        expected_head=first['head_sha256'])
+    assert recovered['head_sha256'] != first['head_sha256']
+
+
+@pytest.mark.parametrize('body_error', (False, True))
+def test_cursor_ownership_rechecks_lock_path_on_context_exit(
+        tmp_path, body_error, monkeypatch):
+    store = subject.ActivitySSECursorStore(
+        tmp_path / 'cursor.sqlite3', ACCOUNT)
+    lock_path = store.path.resolve().with_name(
+        store.path.name + '.owner.lock')
+    displaced = tmp_path / 'displaced-cursor-owner.lock'
+    with pytest.raises(ValueError,
+            match='ALPACA_ACTIVITY_SSE_CURSOR_STORE_OWNER_FILE_CHANGED'):
+        with store.ownership() as owner:
+            owner.validate()
+            if os.name == 'nt':
+                monkeypatch.setattr(owner, 'validate',
+                    lambda: subject._fail('OWNER_FILE_CHANGED'))
+            else:
+                lock_path.rename(displaced)
+                lock_path.write_bytes(b'0')
+            if body_error:
+                raise RuntimeError('private lower context failure')
+    assert lock_path.is_file()
+    assert displaced.is_file() is (os.name != 'nt')
 
 
 def rewrite_checkpoint(path, mutation):

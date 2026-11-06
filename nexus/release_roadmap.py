@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.192'
+REVISION = '0.340.193'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -792,7 +792,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.192 adds an exact historical synthetic-finding review after the unchanged full-history Gitleaks scan. Only two pinned rule/commit/path/line/column matches in one byte-verified historical fixture qualify; raw findings remain counted, and new or changed findings, missing blob proof, malformed reports and scanner failures block. No history rewrite, detector exclusion or fixture-directory exemption is added. A source-controlled milestone accomplishment report separates implemented foundations from unaccepted external gates. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted; the underlying scope estimates are dated 2026-10-18. Existing OFF defaults, risk limits, independent emergency stop and all broker/funding/live/cloud/release restrictions remain unchanged. Fresh exact-source hosted checks are required.'
+CURRENT_HARDENING = 'v0.340.193 makes the exact historical synthetic-finding allowance atomic: if either reviewed coordinate appears, both exact coordinates must be present. Either line alone is an incomplete review with a nonzero incomplete exit; the complete pair plus a new finding remains blocking. Clean scans and new-only findings keep their prior semantics. Exact-source v0.340.192 security run 42284818158 passed; its research/browser/evidence run 42284817987 remained active and Windows/installer run 42284817944 was queued at recovery, while exact-source v0.340.191 Windows/installer run 42279837266 passed. Full blob proof, report hardening and the unchanged full-history scan remain required; no detector, path, commit or history is excluded. This is public-repository release-gate hardening, not provider/account acceptance, sustained market realism, fee/hold/funds reconciliation, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -78,7 +78,7 @@ def review(rows, *, scan_exit_code, repository):
     if type(rows) is not list or len(rows) > MAX_FINDINGS or bool(rows) != (scan_exit_code == 1):
         _fail()
     blocking = []
-    reviewed = 0
+    reviewed_locations = set()
     seen = set()
     proof_checked = False
     for row in rows:
@@ -106,13 +106,23 @@ def review(rows, *, scan_exit_code, repository):
             if not proof_checked:
                 _fixture_proof(repository)
                 proof_checked = True
-            reviewed += 1
+            reviewed_locations.add(location)
         else:
             blocking.append(dict(rule=rule, commit=commit, line=location[0],
                 file_sha256=hashlib.sha256(path.encode()).hexdigest()))
-    return dict(mode=MODE, scan_complete=True, passed=not blocking,
+    # A partial view of the reviewed historical fixture is not a valid green
+    # scan.  It can otherwise make a truncated/filtered report look clean by
+    # presenting either one of the two individually valid locations.  New-only
+    # reports remain ordinary blocking findings, while any reviewed location
+    # requires the complete atomic set.
+    reviewed_scope_complete = (not reviewed_locations or
+        reviewed_locations == REVIEWED_LOCATIONS)
+    return dict(mode=MODE, scan_complete=reviewed_scope_complete,
+        reviewed_scope_complete=reviewed_scope_complete,
+        passed=reviewed_scope_complete and not blocking,
         scanner_exit_code=scan_exit_code, raw_findings=len(rows),
-        reviewed_synthetic_findings=reviewed, blocking_findings=len(blocking), locations=blocking,
+        reviewed_synthetic_findings=len(reviewed_locations),
+        blocking_findings=len(blocking), locations=blocking,
         history_rewritten=False, scan_exclusions_added=False,
         limitations='Two exact historical synthetic findings only; all other findings block. '
             'A completed scan/review is not a guarantee that no secret exists.')
@@ -137,7 +147,7 @@ def main(argv=None):
             reason='SECRET_SCAN_REVIEW_INCOMPLETE'), sort_keys=True))
         return 2
     print(json.dumps(result, sort_keys=True))
-    return 0 if result['passed'] else 1
+    return 0 if result['passed'] else (1 if result['scan_complete'] else 2)
 
 
 if __name__ == '__main__':

@@ -26,10 +26,53 @@ def test_two_exact_findings_require_one_complete_blob_proof(monkeypatch):
     result=policy.review([finding(),finding(25)],scan_exit_code=1,repository='repo')
     assert proofs==['repo']
     assert result['passed'] and result['scan_complete']
+    assert result['reviewed_scope_complete']
     assert result['raw_findings']==result['reviewed_synthetic_findings']==2
     assert result['blocking_findings']==0 and result['locations']==[]
     assert not result['history_rewritten'] and not result['scan_exclusions_added']
     assert 'PRIVATE' not in json.dumps(result)
+
+
+@pytest.mark.parametrize('line',[24,25])
+def test_one_sided_historical_result_is_incomplete(monkeypatch,line):
+    proofs=[]
+    monkeypatch.setattr(policy,'_fixture_proof',lambda repository:proofs.append(repository))
+    result=policy.review([finding(line)],scan_exit_code=1,repository='repo')
+    assert proofs==['repo']
+    assert not result['passed'] and not result['scan_complete']
+    assert not result['reviewed_scope_complete']
+    assert result['raw_findings']==result['reviewed_synthetic_findings']==1
+    assert result['blocking_findings']==0 and result['locations']==[]
+
+
+def test_one_sided_historical_cli_uses_incomplete_exit(tmp_path,monkeypatch,capsys):
+    monkeypatch.setattr(policy,'_fixture_proof',lambda _:None)
+    path=tmp_path/'scan.json';path.write_text(json.dumps([finding()]))
+    assert policy.main(['--report',str(path),'--repository','PRIVATE_REPO',
+        '--scan-exit-code','1'])==2
+    output=capsys.readouterr();assert 'PRIVATE' not in output.out+output.err
+    result=json.loads(output.out)
+    assert not result['passed'] and not result['scan_complete']
+    assert not result['reviewed_scope_complete']
+
+
+def test_complete_reviewed_scope_plus_new_finding_is_blocking_not_incomplete(monkeypatch):
+    monkeypatch.setattr(policy,'_fixture_proof',lambda _:None)
+    row=finding();row['Commit']='d'*40;refingerprint(row)
+    result=policy.review([finding(),finding(25),row],scan_exit_code=1,repository='repo')
+    assert result['scan_complete'] and result['reviewed_scope_complete']
+    assert not result['passed'] and result['blocking_findings']==1
+
+
+@pytest.mark.parametrize('line',[24,25])
+def test_one_sided_review_plus_new_finding_remains_incomplete(monkeypatch,line):
+    monkeypatch.setattr(policy,'_fixture_proof',lambda _:None)
+    row=finding();row['Commit']='e'*40;refingerprint(row)
+    result=policy.review([finding(line),row],scan_exit_code=1,repository='repo')
+    assert not result['passed'] and not result['scan_complete']
+    assert not result['reviewed_scope_complete']
+    assert result['reviewed_synthetic_findings']==1
+    assert result['blocking_findings']==1
 
 
 @pytest.mark.parametrize('change',['commit','path','rule','line','column'])
@@ -77,7 +120,8 @@ def test_malformed_or_duplicate_reports_are_incomplete(monkeypatch,change):
 
 def test_clean_scan_does_not_need_historical_source(monkeypatch):
     monkeypatch.setattr(policy,'_fixture_proof',lambda _:pytest.fail('unneeded Git access'))
-    assert policy.review([],scan_exit_code=0,repository='missing')['passed']
+    result=policy.review([],scan_exit_code=0,repository='missing')
+    assert result['passed'] and result['scan_complete'] and result['reviewed_scope_complete']
 
 
 def test_blob_proof_requires_exact_bytes_bounded_size_and_fixed_git_reference(monkeypatch):

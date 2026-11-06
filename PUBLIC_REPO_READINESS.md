@@ -2,6 +2,8 @@
 
 ## November 6 security candidate update
 
+v0.340.193 closes a fail-open report-shape edge in the exact historical review: if either reviewed coordinate is reported, the other must also be present or the review is incomplete. The complete reviewed pair plus any new finding still blocks. This keeps the review narrow without adding a detector, path, commit or history exclusion. Exact-source v0.340.192 security run 42284818158 passed; fresh v0.340.193 hosted security is required.
+
 v0.340.192 retains the complete raw Gitleaks scan and adds a separately trusted, exact historical synthetic-finding review. The two explicitly fixture-labelled constants in one superseded offline module are bound by immutable commit, path, rule, exact coordinates/fingerprint and full historical blob SHA256. The summary reports two raw findings, two reviewed synthetic findings and zero blocking findings only after the source proof succeeds. New commits/paths/locations/rules, changed bytes, malformed reports or scanner failures remain blocking. No fixture directory, entire commit, detector or history is excluded; no history is rewritten, and raw secret/match fields are never logged or uploaded. Fresh hosted CI must verify this policy before it is treated as a passed release check.
 
 GitHub was observed **public** after the v0.111 application push; the owner changed visibility during this audit. The assistant did not change visibility or rewrite history. Repository-side hardening and scoped scans are implemented, but the owner-only checks below remain and must now be completed on the public repository. This is not an unconditional security clearance.
@@ -76,7 +78,6 @@ Standalone RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW reports are private oper
 ## v0.117 operator acceptance probe privacy
 
 The explicit source CLI uses an already saved pair and named private local pacing journal, with separately confirmed read or vault-silent local status. No secret argument, raw path/token output, order/funds/cloud action or approval is added. The scanner now blocks standalone PAPER_ACCOUNT_ACCEPTANCE_PROBE and PAPER_ACCEPTANCE_PACING_STATUS JSON even renamed. Private stdout and SQLite journals remain unencrypted; keep them outside Git in private OS-protected storage. Actual profile/provider scope/account/fee/hold/sustained/financial/cloud/independent release acceptance and owner default-branch/admin/historical review remain open.
-
 
 ## v0.118 managed paper-read pacing in Accounts
 

@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.193
+
+The historical secret-review gate now requires both exact reviewed coordinates whenever either is present. A one-sided result is incomplete; a complete pair plus any new finding remains blocking. The scanner and exact-byte proof are unchanged, and no history or detector is excluded. Exact-source v0.340.192 security passed; research and Windows were not both complete at recovery. Fresh v0.340.193 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis Oct 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,392 tests with one expected non-Windows skip and one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `0d3e227fc5115ca7e2f7b81a74fa1f6659926089ce22550b763330e6a3a5cdb2`; `validation/release_trials_0_340_193.json` SHA256 is `d4225a4e4c886d17d0dcd305152b34bb3423b56dfac34aea21c132413ca792e4`. Compilation, dependency integrity, deterministic roadmap, Portal/controller syntax and the 132-test release-trial/evidence verification passed. The 161-member wheel reports v0.340.193 and has SHA256 `24c52a27617a3cea1b3b90194d464c4c680a53f19ab31ed99fe3860d2192805c`. The current 907-path / 79,462,154-byte public-artifact scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.192
 
 This cycle addresses the recurring full-history security blocker with a narrowly pinned synthetic-finding review; all history and detectors remain scanned, and raw findings remain visible in counts. See MILESTONE_STATUS.md for the Nov 6 accomplishment report. Exact v0.340.190 Windows/installer and research/browser/evidence workflows passed; its security job remained blocked by the two historical synthetic findings. Fresh v0.340.192 hosted security, Windows and research checks remain required.
@@ -313,7 +321,6 @@ The installed Activity SSE operator now contains ordinary final cursor and recon
 Exact-source v0.340.160 commit `8fb3069d62321e64f6f099f5e542a9641114bdc8` passed public-security run 42058990679 plus browser-help and saved-evidence jobs in run 42058990497. Its complete offline regression remained active and Windows run 42058990637 had exposed no jobs at the predecessor checkpoint, so neither is claimed as passed. Fresh exact-source v0.340.161 hosted workflows and actual authorized-account acceptance remain required.
 
 The rough implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This does not establish a launch date or any new trading, funding, live/cloud or release permission.
-
 
 Final local source verification passed the complete 5,144-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 356 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `2c6d9188319007359c67ba814a85c588e0bb02387521d5195a85b1de6b75107c`; `validation/release_trials_0_340_161.json` SHA256 is `32fc03d2093a1d85977d9b1a3791ba7b40abf154b61d4499d2565f3a48447eb6`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `f7395051b1a45d448dd5b2d6fed8f1709e1980c60d3768e803833b3de131167e`. No actual provider/account/native Windows acceptance was performed.
 

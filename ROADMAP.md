@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.192. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.193. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.192 adds an exact historical synthetic-finding review after the unchanged full-history Gitleaks scan. Only two pinned rule/commit/path/line/column matches in one byte-verified historical fixture qualify; raw findings remain counted, and new or changed findings, missing blob proof, malformed reports and scanner failures block. No history rewrite, detector exclusion or fixture-directory exemption is added. A source-controlled milestone accomplishment report separates implemented foundations from unaccepted external gates. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted; the underlying scope estimates are dated 2026-10-18. Existing OFF defaults, risk limits, independent emergency stop and all broker/funding/live/cloud/release restrictions remain unchanged. Fresh exact-source hosted checks are required.
+Current hardening: v0.340.193 makes the exact historical synthetic-finding allowance atomic: if either reviewed coordinate appears, both exact coordinates must be present. Either line alone is an incomplete review with a nonzero incomplete exit; the complete pair plus a new finding remains blocking. Clean scans and new-only findings keep their prior semantics. Exact-source v0.340.192 security run 42284818158 passed; its research/browser/evidence run 42284817987 remained active and Windows/installer run 42284817944 was queued at recovery, while exact-source v0.340.191 Windows/installer run 42279837266 passed. Full blob proof, report hardening and the unchanged full-history scan remain required; no detector, path, commit or history is excluded. This is public-repository release-gate hardening, not provider/account acceptance, sustained market realism, fee/hold/funds reconciliation, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

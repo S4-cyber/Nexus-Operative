@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 6, 2026. Development candidate: **v0.340.192**. Reviewed source baseline: `3a2d784980ff6a1db9261c061f7d386c82b09803` (v0.340.191).
+Report date: November 6, 2026. Development candidate: **v0.340.193**. Reviewed source baseline: `a82d9699d188968cc67c2a7594b8654302093425` (v0.340.192).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -30,7 +30,13 @@ Verified prior-source hosted checkpoints:
 - v0.340.190 [research regression, browser and saved-evidence checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833448).
 - Its [security workflow failed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833307) on two historical synthetic fixture findings. A passed installer is not an all-green release candidate.
 
-## Development completed in this cycle
+## v0.340.193 security review hardening
+
+The exact historical review is now atomic: a result containing either reviewed fixture coordinate must contain both. A one-sided result is explicitly incomplete and cannot turn green; a complete reviewed pair plus a new finding remains blocking. This closes a fail-open report-shape edge without changing the scanner, excluding history or broadening the two byte-verified historical matches. Exact-source v0.340.192 security passed; its research and Windows workflows were not both complete at recovery, so no all-green candidate claim is made.
+
+Final local validation passed 5,392 tests with one expected non-Windows skip and one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `0d3e227fc5115ca7e2f7b81a74fa1f6659926089ce22550b763330e6a3a5cdb2`; `validation/release_trials_0_340_193.json` SHA256 is `d4225a4e4c886d17d0dcd305152b34bb3423b56dfac34aea21c132413ca792e4`. Compilation, dependency integrity, deterministic roadmap, Portal/controller syntax and the 132-test release-trial/evidence verification passed. The 161-member wheel reports v0.340.193 and has SHA256 `24c52a27617a3cea1b3b90194d464c4c680a53f19ab31ed99fe3860d2192805c`. The current 907-path / 79,462,154-byte public-artifact scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+## Development completed in the prior cycle
 
 v0.340.192 adds a separately trusted review after the unchanged full-history Gitleaks scan. Only two exact findings in one immutable, byte-verified historical synthetic fixture qualify. Commit, file, rule, fingerprint and exact line/column coordinates must match. New or altered findings remain blocking; missing proof, duplicate/malformed reports and scanner failures fail closed. The raw finding count remains visible: two raw findings, two reviewed synthetic findings, zero blocking findings only after source proof. No history is rewritten, no detector or fixture directory is excluded, and raw secret/match values are not logged or uploaded.
 

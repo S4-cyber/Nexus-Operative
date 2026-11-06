@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.192 (pre-release).**
+**Current development build: 0.340.193 (pre-release).**
+
+## v0.340.193 atomic historical finding-set review
+
+The trusted historical reviewer now requires its two reviewed synthetic coordinates as an atomic set. Either known line alone produces `scan_complete=false`, `reviewed_scope_complete=false` and CLI exit 2. The complete pair plus a new finding remains blocking with exit 1; clean scans and new-only findings retain their prior behavior. Exact blob proof and report/schema hardening remain mandatory, and the full-history Gitleaks command remains unchanged. No exclusion or history rewrite is added.
+
+Exact-source v0.340.192 security run 42284818158 passed. Its research/browser/evidence run 42284817987 remained active and Windows/installer run 42284817944 was queued at recovery; v0.340.191 Windows/installer run 42279837266 passed. Fresh v0.340.193 hosted checks remain required.
+
+No runtime/UI or financial authority changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted; release approval, trading permission and launch timing remain separate.
+
+Final local validation passed 5,392 tests with one expected non-Windows skip and one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `0d3e227fc5115ca7e2f7b81a74fa1f6659926089ce22550b763330e6a3a5cdb2`; `validation/release_trials_0_340_193.json` SHA256 is `d4225a4e4c886d17d0dcd305152b34bb3423b56dfac34aea21c132413ca792e4`. Compilation, dependency integrity, deterministic roadmap, Portal/controller syntax and the 132-test release-trial/evidence verification passed. The 161-member wheel reports v0.340.193 and has SHA256 `24c52a27617a3cea1b3b90194d464c4c680a53f19ab31ed99fe3860d2192805c`. The current 907-path / 79,462,154-byte public-artifact scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+**Previous development build: 0.340.192 (pre-release).**
 
 ## v0.340.192 exact historical synthetic secret-finding review
 
@@ -27,7 +39,6 @@ Final local verification passed 5,359 tests with one expected non-Windows skip a
 Final wheel SHA256 is `67cd75dfd9203140a1c2aaded7817e0a9db4830ce1984bff0b45bade80fe9f60`.
 
 No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
 
 ## v0.340.190 Activity SSE redirect-cleanup denial
 

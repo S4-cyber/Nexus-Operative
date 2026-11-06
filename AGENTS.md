@@ -1,5 +1,15 @@
 # Nexus Operative continuity instructions
 
+## v0.340.193 atomic historical finding-set review
+
+The historical synthetic-finding allowance is now atomic. If either reviewed coordinate appears in a non-empty Gitleaks result, both exact reviewed coordinates must be present; either line alone is an incomplete review with `scan_complete=false`, `reviewed_scope_complete=false` and CLI exit 2. The complete pair plus any new finding remains a completed blocking review with exit 1. Clean scans and new-only findings retain their prior semantics. Full blob proof, exact rule/commit/path/coordinates/fingerprints, redaction, report hardening and the unchanged full-history scanner remain required. No detector, path, commit or history is excluded.
+
+Exact-source v0.340.192 security run 42284818158 passed. Its research/browser/evidence run 42284817987 remained active and its Windows/installer run 42284817944 was queued at recovery; exact-source v0.340.191 Windows/installer run 42279837266 subsequently passed. Fresh v0.340.193 hosted checks remain required. This change adds no runtime/provider request, Portal control, editable parameter, saved credential, retry, order route, funding/live/cloud authority or release approval. Seven beginner tabs, black/bright-purple bottom-right help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut are unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This security hardening does not independently justify revising the Oct 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,392 tests with one expected non-Windows skip and one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `0d3e227fc5115ca7e2f7b81a74fa1f6659926089ce22550b763330e6a3a5cdb2`; `validation/release_trials_0_340_193.json` SHA256 is `d4225a4e4c886d17d0dcd305152b34bb3423b56dfac34aea21c132413ca792e4`. Compilation, dependency integrity, deterministic roadmap, Portal/controller syntax and the 132-test release-trial/evidence verification passed. The 161-member wheel reports v0.340.193 and has SHA256 `24c52a27617a3cea1b3b90194d464c4c680a53f19ab31ed99fe3860d2192805c`. The current 907-path / 79,462,154-byte public-artifact scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## v0.340.192 exact historical synthetic secret-finding review
 
 The full reachable-history Gitleaks command, default/provider detectors, decoding, redaction and disabled inline/ignore bypasses remain unchanged. A separate trusted-policy reviewer now recognizes only the two exact generic-api-key locations in immutable fixture commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`. Rule, commit, pathname, start/end line and column, fingerprint and redacted-secret shape must match, and Git must return the complete historical fixture with SHA256 `e7f156518badf1a1334a58599043ab61c228297105e39c380a854b6cb61be05b`. Any other finding blocks; missing/changed proof, duplicate/malformed/oversized reports and scanner failures fail closed. Public summaries retain raw=2, reviewed-synthetic=2 and blocking=0 rather than claiming zero raw findings. No history rewrite, scanner exclusion, detector suppression, fixture-directory exemption or raw finding upload is added. See `tools/review_secret_scan.py` and `tests/test_secret_scan_review.py`.
@@ -23,7 +33,6 @@ Final local verification passed 5,359 tests with one expected non-Windows skip a
 Final wheel SHA256 is `67cd75dfd9203140a1c2aaded7817e0a9db4830ce1984bff0b45bade80fe9f60`.
 
 No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
 
 ## v0.340.190 Activity SSE redirect-cleanup denial
 

@@ -21,8 +21,8 @@ from nexus.alpaca_paper_contract import canonical
 
 
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
-KEY = 'synthetic_fixture_key_123'
-SECRET = 'synthetic_fixture_secret_123'
+KEY = 'K' * 24
+SECRET = 'S' * 32
 AUTHORITY_FLAGS = (
     'provider_source_attested', 'activity_coverage_verified',
     'fee_execution_links_verified', 'broker_account_reconciled',

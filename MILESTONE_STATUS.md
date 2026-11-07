@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 6, 2026. Development candidate: **v0.340.197**. Reviewed source baseline: `13e11f50717c61d28a67229a8473b621ff51398d` (v0.340.196).
+Report date: November 6, 2026. Development candidate: **v0.340.198**. Reviewed source baseline: `b6a72da9d46d656d64d19905872bffcddc0e759a` (v0.340.197).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 6, 2026. Development candidate: **v0.340.197**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.197 source reports 5,402 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 575 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
+The v0.340.198 source reports 5,411 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 584 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.197 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42318522411); its [research workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42318522353) passed saved evidence and browser help while the complete regression remained active, and its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42318523087) remained active at candidate recovery.
 - v0.340.196 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42310927960), [research/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42310927815), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42310927721).
 - v0.340.195 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42305251659), [research/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42305251712), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42305251661).
 - v0.340.194 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42296516134), [research/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42296515957), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42296515986).
@@ -33,6 +34,14 @@ Verified prior-source hosted checkpoints:
 - v0.340.190 [Windows installer/distribution checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833513).
 - v0.340.190 [research regression, browser and saved-evidence checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833448).
 - Its [security workflow failed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833307) on two historical synthetic fixture findings. A passed installer is not an all-green release candidate.
+
+## v0.340.198 strict reconciliation component projections
+
+The provider-POST reconciliation composer now validates every projected field from its POST/activity and guarded-account component results. Regressions first demonstrated that v0.340.197 could leak a raw `KeyError` for a missing projected field and accept malformed hashes, booleans as counts, negative counts, or counts inconsistent with retained history. Exact lowercase SHA-256 projections and exact nonnegative integer/count relationships are now required before composition.
+
+This is a fail-closed implementation improvement, not authorized paper-account, provider-source, received-coverage, sustained-market, native-storage, fee/hold/funds, live/cloud or release acceptance. It changes no Portal control, editable parameter or authority default. The estimate remains about 40% (30–45%, low confidence), with 0/9 major operational stages accepted.
+
+Final local validation passed 5,411 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 268 tests. Sixteen offline profiles match 401 source files / `b41d63c23fccf165fad27e4175259606911df476a725897c1b846dc0eaf9f433`; report SHA256 is `aa09b16ae991358b082cbadc9fb1f1c845ce0d9fe69fdc0286b36ca87dc598a7`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.198 wheel SHA256 is `0d7124ff8cec15286a251010fd94938d5a844d58183320b5b1caf70c2389859c`. The final staged 917-path artifact and introduced-line high-confidence secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
 ## v0.340.197 bounded provider-POST residual arithmetic
 

@@ -31,6 +31,7 @@ JOURNAL_LIMITS = (POST_DATABASE_BYTES, REQUEST_DATABASE_BYTES,
 FLAGS = tuple(dict.fromkeys((*post_activity.FLAGS, *evidence.FLAGS,
     'provider_account_accepted', 'balance_reconciled',
     'spendable_funds_verified', 'automatic_retry', 'automatic_continuation')))
+SHA256_PATTERN = re.compile(r'[0-9a-f]{64}')
 
 
 def _fail(code):
@@ -92,6 +93,14 @@ def _frozen_path(value, code):
         _fail(code)
 
 
+def _component_sha256(value):
+    return type(value) is str and SHA256_PATTERN.fullmatch(value) is not None
+
+
+def _component_count(value):
+    return type(value) is int and value >= 0
+
+
 def review(post_budget, *, expected_post_head, account_id, journal,
            expected_request_head, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
@@ -148,10 +157,16 @@ def review(post_budget, *, expected_post_head, account_id, journal,
 
     posts = stable_read(lambda: post_activity.review(post_budget,
         expected_post_head=expected_post_head, account_bindings=[binding]))
+    post_counts = tuple(posts.get(key) for key in (
+        'post_attempts', 'exact_activity_bindings',
+        'exact_not_sent_bindings'))
     if (posts.get('status') != 'COMPLETE_LOCAL_POST_ACTIVITY_CONSISTENT' or
             posts.get('read_only') is not True or
             posts.get('complete_local_post_activity_consistent') is not True or
             posts.get('account_histories') != 1 or posts.get('reasons') != [] or
+            any(not _component_count(value) for value in post_counts) or
+            post_counts[0] != len(attempts) or
+            post_counts[1] + post_counts[2] != post_counts[0] or
             any(posts.get(flag) is not False for flag in post_activity.FLAGS)):
         _fail('POST_ACTIVITY_INCOMPLETE')
 
@@ -178,6 +193,14 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         'journal_files_rechecked_unchanged',
         'semantic_reader_failures_rechecked',
         'inventory_arithmetic_evaluated')
+    account_hashes = tuple(account.get(key) for key in (
+        'pacing_head_sha256', 'acceptance_head_sha256',
+        'pre_opening_manifest_sha256', 'opening_manifest_sha256',
+        'closing_manifest_sha256', 'post_closing_manifest_sha256'))
+    account_counts = tuple(account.get(key) for key in (
+        'original_requests_reviewed', 'explicit_fills_reviewed'))
+    request_rows = first_request.get('requests')
+    retained_activities = first_activity.get('retained_activities')
     if (account.get('mode') !=
             'PAPER_ACCOUNT_EVIDENCE_STABILITY_GUARD_REVIEW' or
             account.get('status') != 'REVIEW_REQUIRED' or
@@ -186,6 +209,12 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             account.get('request_head_sha256') != expected_request_head or
             account.get('activity_head_sha256') != expected_activity_head or
             any(account.get(key) is not True for key in required) or
+            any(not _component_sha256(value) for value in account_hashes) or
+            any(not _component_count(value) for value in account_counts) or
+            type(request_rows) is not list or
+            not _component_count(retained_activities) or
+            account_counts[0] != len(request_rows) or
+            account_counts[1] > retained_activities or
             any(account.get(flag) is not False for flag in evidence.FLAGS)):
         _fail('ACCOUNT_EVIDENCE_INVALID')
 

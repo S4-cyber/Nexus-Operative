@@ -149,6 +149,56 @@ def test_malformed_gross_residual_shape_fails_closed(tmp_path, monkeypatch,
         subject.review(**options)
 
 
+@pytest.mark.parametrize(('field', 'value'), (
+    ('post_attempts', None),
+    ('post_attempts', 3),
+    ('exact_activity_bindings', True),
+    ('exact_not_sent_bindings', -1),
+))
+def test_malformed_post_component_projection_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.post_activity.review
+
+    def malformed(*args, **kwargs):
+        result = original(*args, **kwargs)
+        if value is None:
+            result.pop(field)
+        else:
+            result[field] = value
+        return result
+
+    monkeypatch.setattr(subject.post_activity, 'review', malformed)
+    with pytest.raises(ValueError, match='POST_ACTIVITY_INCOMPLETE'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('pacing_head_sha256', None),
+    ('acceptance_head_sha256', {'private': 'shape'}),
+    ('pre_opening_manifest_sha256', 'A' * 64),
+    ('original_requests_reviewed', True),
+    ('explicit_fills_reviewed', -1),
+))
+def test_malformed_account_component_projection_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        if value is None:
+            result.pop(field)
+        else:
+            result[field] = value
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 def test_final_request_race_refuses(tmp_path, monkeypatch):
     options = subject._fixture(tmp_path)
     original = subject.evidence.review_with_stability_guards

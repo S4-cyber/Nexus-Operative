@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.198
+
+The provider-POST reconciliation composer now strictly validates the heads, observation manifests and counts it projects from its component reviews. Missing fields, malformed hashes, boolean/negative counts and counts inconsistent with retained POST/request/activity histories fail closed with fixed diagnostics. Exact-source v0.340.197 security, saved evidence and browser help passed; its long regression and Windows/installer workflow remained active at recovery. Fresh v0.340.198 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,411 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 268 tests. Sixteen offline profiles match 401 source files / `b41d63c23fccf165fad27e4175259606911df476a725897c1b846dc0eaf9f433`; report SHA256 is `aa09b16ae991358b082cbadc9fb1f1c845ce0d9fe69fdc0286b36ca87dc598a7`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.198 wheel SHA256 is `0d7124ff8cec15286a251010fd94938d5a844d58183320b5b1caf70c2389859c`. The final staged 917-path artifact and introduced-line high-confidence secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.197
 
 The provider-POST reconciliation composer now requires the gross-only residual to be an exact `USD`/`BTC` object with bounded plain-decimal values. Non-finite values and malformed shapes fail closed instead of entering a reviewed result as ordinary diagnostics. Exact-source v0.340.196 security, research/browser/evidence and Windows/installer workflows passed. Fresh v0.340.197 hosted checks remain required.

@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.197 (pre-release).**
+**Current development build: 0.340.198 (pre-release).**
+
+## v0.340.198 strict reconciliation component projections
+
+The provider-POST reconciliation composer now requires exact lowercase SHA-256 projected heads/manifests and non-boolean nonnegative projected counts consistent with retained POST, request and activity histories. Missing fields, malformed hashes and inconsistent counts return fixed component failures instead of leaking `KeyError` or entering a malformed reviewed diagnostic. No provider access, retry, UI control or authority is added.
+
+Exact-source v0.340.197 public security, saved evidence and browser help passed. Its complete regression and Windows/installer workflows remained active at candidate recovery; fresh v0.340.198 hosted checks remain required.
+
+No operational gate is newly accepted. Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 stages accepted. Release approval, trading permission and launch timing remain separate; historical results and synthetic scores are not future profit predictions. No Portal control or editable parameter changed, so beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+Final local validation passed 5,411 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 268 tests. Sixteen offline profiles match 401 source files / `b41d63c23fccf165fad27e4175259606911df476a725897c1b846dc0eaf9f433`; report SHA256 is `aa09b16ae991358b082cbadc9fb1f1c845ce0d9fe69fdc0286b36ca87dc598a7`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.198 wheel SHA256 is `0d7124ff8cec15286a251010fd94938d5a844d58183320b5b1caf70c2389859c`. The final staged 917-path artifact and introduced-line high-confidence secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+**Previous development build: 0.340.197 (pre-release).**
 
 ## v0.340.197 bounded provider-POST residual arithmetic
 

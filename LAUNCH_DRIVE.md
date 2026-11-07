@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.198 strict reconciliation component projections
+
+The provider-POST reconciliation composer now validates every projected field from its POST/activity and guarded-account components before emitting a reviewed result. Projected heads and manifests require exact lowercase SHA-256 strings; projected attempt/binding/request/fill counts require non-boolean nonnegative integers and must agree with retained histories. Missing fields, malformed hashes and inconsistent counts return fixed component-specific failures instead of leaking `KeyError` or entering a malformed diagnostic.
+
+Exact-source v0.340.197 public security, saved evidence and browser help passed. Its complete regression and Windows/installer workflows remained active at candidate recovery; fresh v0.340.198 hosted checks remain required.
+
+This is bounded local component-contract evidence, not actual provider/source, paper-account, delivery-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,411 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 268 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `b41d63c23fccf165fad27e4175259606911df476a725897c1b846dc0eaf9f433`; `validation/release_trials_0_340_198.json` SHA256 is `aa09b16ae991358b082cbadc9fb1f1c845ce0d9fe69fdc0286b36ca87dc598a7`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.198 and has SHA256 `0d7124ff8cec15286a251010fd94938d5a844d58183320b5b1caf70c2389859c`. The final staged 917-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## v0.340.197 bounded provider-POST residual arithmetic
 
 The installed provider-POST reconciliation composer now admits `gross_only_minus_observed` only when it is an exact two-key `USD`/`BTC` object and both values use a bounded plain-decimal grammar. Missing or extra currencies, exponent notation, oversized integers and non-finite `NaN`/`Infinity` values fail closed before composition. Finite nonzero residuals remain non-authoritative diagnostics and cannot establish account acceptance.

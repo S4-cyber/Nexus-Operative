@@ -6,6 +6,7 @@ grants no order, ledger, funding or release authority.
 """
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+import re
 
 from nexus.alpaca_paper_contract import sha
 from nexus import paper_account_evidence_review as evidence
@@ -204,22 +205,20 @@ def review(post_budget, *, expected_post_head, account_id, journal,
 
     gross = account.get('gross_only_minus_observed')
     try:
-        gross_absent = (type(gross) is dict and bool(gross) and
-            all(type(value) is str and Decimal(value) == 0
-                for value in gross.values()))
+        if (type(gross) is not dict or set(gross) != {'USD', 'BTC'} or
+                any(type(value) is not str or re.fullmatch(
+                    r'-?(?:0|[1-9][0-9]{0,63})(?:\.[0-9]{1,36})?',
+                    value) is None for value in gross.values())):
+            _fail('ACCOUNT_EVIDENCE_INVALID')
+        gross_values = tuple(Decimal(value) for value in gross.values())
     except (InvalidOperation, ValueError, TypeError):
         _fail('ACCOUNT_EVIDENCE_INVALID')
-    if not gross_absent:
-        # Preserve a legitimate nonzero residual as diagnostic.  Only malformed
-        # component arithmetic is invalid; disagreement never becomes authority.
-        try:
-            if (type(gross) is not dict or not gross or
-                    any(type(value) is not str for value in gross.values())):
-                _fail('ACCOUNT_EVIDENCE_INVALID')
-            for value in gross.values():
-                Decimal(value)
-        except (InvalidOperation, ValueError, TypeError):
-            _fail('ACCOUNT_EVIDENCE_INVALID')
+    if any(not value.is_finite() for value in gross_values):
+        _fail('ACCOUNT_EVIDENCE_INVALID')
+    # Preserve a legitimate finite nonzero residual as a diagnostic.  A
+    # disagreement never becomes authority, while NaN/infinities cannot enter
+    # a reviewed arithmetic result merely because Decimal can parse them.
+    gross_absent = all(value == 0 for value in gross_values)
     scope = dict(policy=POLICY, account_sha256=journal_account,
         post_head_sha256=expected_post_head,
         request_head_sha256=expected_request_head,

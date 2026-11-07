@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.196. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.197. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.196 binds the installed one-attempt Activity SSE parsed bytes to the exact SHA-256 captured by its private pre-attempt input fingerprint. Two matching descriptor reads and stable metadata alone could still admit coordinated same-inode substitution if the original bytes were restored before the closing sample; the new regression reproduced that v0.340.195 acceptance and now requires the fixed failure. Exact-source v0.340.195 security passed, browser help and saved evidence passed, and its full regression plus Windows/installer workflow remained active at candidate recovery. This is local injected race evidence, not provider/account acceptance, delivery coverage, sustained market realism, native durability, fee/hold/funds reconciliation, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.197 makes the exact provider-POST reconciliation composition reject malformed gross residual arithmetic. The component result must contain exactly bounded USD and BTC decimal strings, and NaN, positive/negative infinity, exponent forms, missing currencies, extra private keys and oversized integer forms fail closed instead of entering a reviewed reconciliation diagnostic. Exact-source v0.340.196 security, research/browser/evidence and Windows/installer workflows passed. This is local injected component-boundary evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

@@ -109,6 +109,46 @@ def test_component_cannot_claim_guarded_evidence_without_arithmetic(tmp_path, mo
         subject.review(**options)
 
 
+@pytest.mark.parametrize('residual', ('NaN', 'Infinity', '-Infinity'))
+def test_nonfinite_gross_residual_fails_closed(tmp_path, monkeypatch,
+        residual):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def nonfinite(**kwargs):
+        result = original(**kwargs)
+        result['gross_only_minus_observed'] = {
+            'USD': residual, 'BTC': '0'}
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', nonfinite)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('gross', (
+    {'USD': '0'},
+    {'USD': '0', 'BTC': '0', 'private': '1'},
+    {'USD': '1e3', 'BTC': '0'},
+    {'USD': '0' * 65, 'BTC': '0'},
+))
+def test_malformed_gross_residual_shape_fails_closed(tmp_path, monkeypatch,
+        gross):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result['gross_only_minus_observed'] = gross
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 def test_final_request_race_refuses(tmp_path, monkeypatch):
     options = subject._fixture(tmp_path)
     original = subject.evidence.review_with_stability_guards

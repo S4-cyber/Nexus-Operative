@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.197
+
+The provider-POST reconciliation composer now requires the gross-only residual to be an exact `USD`/`BTC` object with bounded plain-decimal values. Non-finite values and malformed shapes fail closed instead of entering a reviewed result as ordinary diagnostics. Exact-source v0.340.196 security, research/browser/evidence and Windows/installer workflows passed. Fresh v0.340.197 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,402 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 259 tests. Sixteen offline profiles match 401 source files / `da675dc173a6b80c1bfe68070dfc34cfe25c344a7b0a311b3f8cdcd6e05f06f9`; report SHA256 is `5655558282e9184666c48133a91bb8ef982ea5db022c134b78b1f4c9b81bccd5`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.197 wheel SHA256 is `63a8d0f60a160e34dc012ea1c89ad5e41528ce50ef4816cd862b93db7e640800`. The final staged 916-path artifact and introduced-line high-confidence secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.196
 
 The retained Activity SSE bytes now must match the exact pre-attempt private-input SHA-256, closing a coordinated dual-read substitution that could satisfy byte-consistency and restored metadata checks. Exact-source v0.340.195 security, research/browser/evidence and Windows/installer workflows passed. Fresh v0.340.196 hosted checks remain required.

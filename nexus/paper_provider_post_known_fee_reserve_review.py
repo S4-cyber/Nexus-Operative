@@ -371,6 +371,7 @@ def fixture_report():
             balance_disagreement_rejected=failures['balance'],
             insufficient_known_fee_funding_rejected=failures['funding'],
             missing_fee_history_rejected=failures['missing'],
+            primary_replay_matches=result == repeated,
             repeat_review_matches=result == repeated,
             journals_unchanged=unchanged,
             output_never_authoritative=

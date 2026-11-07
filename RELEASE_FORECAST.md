@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.219
+
+The saved reconciliation-acceptance profile now requires the terminal known-fee reserve fixture to prove its primary result matches the distinct complete replay. Two regressions reproduced the missing and forged-false assertion before implementation. Exact-source v0.340.218 security passed; research and Windows remained active at this checkpoint. Exact-source v0.340.217 research/security passed, while its Windows run was cancelled and is not acceptance. Fresh v0.340.219 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the component/release-trial focus passed 150 tests. Sixteen offline profiles match 401 source files / `502330a7bcd85d6f196d36a25cdc78a2dcd9fc7283ca401767dab5d4160a8601`; report SHA256 is `e784e1ead082b2fbdb5956b0b7911d2dbadfd6cc8d743ac209564a8bcc681051`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.219 wheel SHA256 is `ec33d253a2656227358a70ae38e7dd0e81d9cfdf16dfbe44b49b1e9b9321ab65`. The 938-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.218
 
 The terminal known-fee reserve review now has a separately named complete replay over its exact fail-closed core, and the aggregate fixture compares primary and replay results. The missing seam was reproduced before implementation and direct equivalence is covered. Exact-source v0.340.217 security and all research jobs passed; its Windows test/build was cancelled and is not acceptance. Exact-source v0.340.216 security, research and Windows/installer workflows passed. Fresh v0.340.218 hosted checks remain required.

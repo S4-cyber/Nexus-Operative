@@ -1266,6 +1266,7 @@ def _validate(profile, result):
                 'balance_disagreement_rejected',
                 'insufficient_known_fee_funding_rejected',
                 'missing_fee_history_rejected',
+                'primary_replay_matches',
                 'repeat_review_matches','journals_unchanged',
                 'output_never_authoritative')),
             'PROVIDER_POST_KNOWN_FEE_RESERVE')

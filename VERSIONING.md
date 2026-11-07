@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.218 (pre-release).**
+**Current development build: 0.340.219 (pre-release).**
+
+## v0.340.219 release evidence consumes fee-reserve replay proof
+
+The saved reconciliation-acceptance profile now explicitly consumes the terminal known-fee reserve replay proof. The aggregate fixture publishes `primary_replay_matches`, and release-trial validation rejects the assertion when absent or false. Two regressions first reproduced v0.340.218 omitting the proof and accepting a forged false proof; both now fail closed with the fixed known-fee reserve evidence diagnostic.
+
+Exact-source v0.340.218 public-security run 42407102094 passed. Research/regression/browser/evidence run 42407102084 and Windows packaging/installer run 42407102095 remained active at this checkpoint and are not claimed as passed. Exact-source v0.340.217 security and research passed; its Windows workflow was cancelled and is not acceptance. Fresh v0.340.219 hosted checks remain required.
+
+This is bounded synthetic release-evidence contract hardening, not actual provider/source, paper-account, complete or verified fee/reference coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-contract hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the component/release-trial focus passed 150 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `502330a7bcd85d6f196d36a25cdc78a2dcd9fc7283ca401767dab5d4160a8601`; `validation/release_trials_0_340_219.json` SHA256 is `e784e1ead082b2fbdb5956b0b7911d2dbadfd6cc8d743ac209564a8bcc681051`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.219 and has SHA256 `ec33d253a2656227358a70ae38e7dd0e81d9cfdf16dfbe44b49b1e9b9321ab65`. The 938-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 
 ## v0.340.218 terminal known-fee reserve replay seam
 

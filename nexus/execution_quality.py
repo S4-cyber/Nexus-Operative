@@ -43,8 +43,8 @@ def _text(value):
     return result.rstrip('0').rstrip('.') if '.' in result else result
 
 
-def review(*,product,side,requested_quantity,decision_mid,decision_at_ns,
-           arrival_bid,arrival_ask,arrival_at_ns,end_at_ns,fills,unfilled_mark=None):
+def _review_exact(*,product,side,requested_quantity,decision_mid,decision_at_ns,
+                  arrival_bid,arrival_ask,arrival_at_ns,end_at_ns,fills,unfilled_mark=None):
     """Decompose one supplied order's benchmark shortfall; never infer P/L.
 
     All prices/quantities/fees are bounded decimal strings; fees are USD debit
@@ -119,6 +119,24 @@ def review(*,product,side,requested_quantity,decision_mid,decision_at_ns,
             timestamp_scope='SUPPLIED_SAME_CLOCK_DOMAIN_ASSUMPTION_NOT_MEASURED_BROKER_LATENCY',
             **{k:False for k in FLAGS},
             limitations='Supplied BTC/USD observations only, no source/account/order binding or status/eligibility/coverage attestation. Positive shortfall is worse than the supplied decision benchmark, negative is better; neither is realized profit. Residual is not causally identified market impact. Fee totals use explicit USD debits only; None stays unknown and explicit zero does not prove actual zero fees. Unfilled opportunity uses a caller-supplied end mark, never a hypothetical executable fill. Nanosecond precision does not attest clock synchronization or fill speed. No routing or automatic policy promotion. Reports with actual amounts are private.')
+
+
+def review(*,product,side,requested_quantity,decision_mid,decision_at_ns,
+           arrival_bid,arrival_ask,arrival_at_ns,end_at_ns,fills,unfilled_mark=None):
+    """Primary bounded arithmetic entry point."""
+    return _review_exact(product=product,side=side,requested_quantity=requested_quantity,
+        decision_mid=decision_mid,decision_at_ns=decision_at_ns,arrival_bid=arrival_bid,
+        arrival_ask=arrival_ask,arrival_at_ns=arrival_at_ns,end_at_ns=end_at_ns,
+        fills=fills,unfilled_mark=unfilled_mark)
+
+
+def replay(*,product,side,requested_quantity,decision_mid,decision_at_ns,
+           arrival_bid,arrival_ask,arrival_at_ns,end_at_ns,fills,unfilled_mark=None):
+    """Independently named exact replay for distrustful parent composers."""
+    return _review_exact(product=product,side=side,requested_quantity=requested_quantity,
+        decision_mid=decision_mid,decision_at_ns=decision_at_ns,arrival_bid=arrival_bid,
+        arrival_ask=arrival_ask,arrival_at_ns=arrival_at_ns,end_at_ns=end_at_ns,
+        fills=fills,unfilled_mark=unfilled_mark)
 
 
 def _fixture(**changes):

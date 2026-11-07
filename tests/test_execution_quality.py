@@ -56,6 +56,11 @@ def test_nanoseconds_do_not_round_through_float_and_order_does_not_change_result
     assert not r['clock_domains_verified'] and not r['broker_latency_measured']
 
 
+def test_independently_named_replay_matches_the_primary_complete_report():
+    args=subject._fixture()
+    assert subject.replay(**args)==subject.review(**args)
+
+
 def test_matching_duplicate_is_canonical_and_conflicting_duplicate_is_not_rewritten():
     args=subject._fixture();r=subject.review(**args)
     args['fills'].append(dict(args['fills'][0],quantity='1.0',price='102.0'))

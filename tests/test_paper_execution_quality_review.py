@@ -108,6 +108,25 @@ def test_promoted_accepted_component_is_rejected(tmp_path,monkeypatch,field):
     with pytest.raises(ValueError,match='ACCEPTED_REQUEST_AGREEMENT_REQUIRED'):subject.review(**args)
 
 
+@pytest.mark.parametrize(('field', 'value'), (
+    ('mode', 'FORGED_MODE'),
+    ('status', 'FORGED_STATUS'),
+    ('policy', 'forged.policy'),
+    ('input_sha256', 'f' * 64),
+    ('request_origin_bound_transitions', 999),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_accepted_component_requires_independent_complete_replay(
+        tmp_path, monkeypatch, field, value):
+    args=subject._fixture(tmp_path);original=subject.accepted.review
+    def changed(**kw):
+        result=original(**kw);result[field]=value;return result
+    monkeypatch.setattr(subject.accepted,'review',changed)
+    with pytest.raises(ValueError,match='ACCEPTED_COMPONENT_INVALID'):
+        subject.review(**args)
+
+
 @pytest.mark.parametrize('field,value',[('ready_for_routing',True),('actual_fee_coverage_verified',True),
     ('signed_shortfall_with_supplied_fees_usd','0'),('all_supplied_fees_explicit',True),('unique_fills',1)])
 def test_quality_component_cannot_drop_fills_invent_fees_or_promote_authority(tmp_path,monkeypatch,field,value):
@@ -118,6 +137,30 @@ def test_quality_component_cannot_drop_fills_invent_fees_or_promote_authority(tm
         return r
     monkeypatch.setattr(subject.quality,'review',changed)
     with pytest.raises(ValueError,match='QUALITY_COMPONENT_DISAGREEMENT'):subject.review(**args)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('input_scope', 'FORGED_SCOPE'),
+    ('duplicate_rows_ignored', 1),
+    ('fill_vwap', '100'),
+    ('signed_gross_shortfall_usd', '0'),
+    ('delay_component_usd', '1'),
+    ('arrival_spread_component_usd', '0'),
+    ('post_arrival_residual_usd', '0'),
+    ('decision_to_arrival_ns', 0),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_quality_component_requires_independent_complete_replay(
+        tmp_path, monkeypatch, field, value):
+    args=subject._fixture(tmp_path);original=subject.quality.review
+    def changed(**kw):
+        result=original(**kw)
+        if kw['fills']:result[field]=value
+        return result
+    monkeypatch.setattr(subject.quality,'review',changed)
+    with pytest.raises(ValueError,match='QUALITY_COMPONENT_INVALID'):
+        subject.review(**args)
 
 
 def test_missing_journals_and_aliased_paths_never_initialize_storage(tmp_path):

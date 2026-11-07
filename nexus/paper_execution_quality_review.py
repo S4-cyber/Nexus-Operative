@@ -79,6 +79,8 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
     if (before.get('read_only') is not True or before.get('complete_accepted_history_replayed') is not True or
         before.get('local_request_activity_agreement') is not True or
         any(before.get(k) is not False for k in accepted.FLAGS)):_fail('ACCEPTED_REQUEST_AGREEMENT_REQUIRED')
+    replayed_before=accepted.replay(**common)
+    if type(replayed_before) is not dict or replayed_before!=before:_fail('ACCEPTED_COMPONENT_INVALID')
     journal=BrokerRequestJournal(request_journal_path,expected_account_id)
     store=BrokerActivityStore(activity_store_path,expected_account_id)
     requests=original._requests(journal);recovery=journal.recovery();retained=store.inspect()
@@ -105,8 +107,9 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
     fills=[dict(execution_id='rest:'+r['activity_id'],quantity=r['quantity'],price=r['price'],
         filled_at_ns=_instant_ns(r['occurred_at']),fee_usd=None) for r in records]
     quality_benchmark={key:value for key,value in benchmark.items() if key!='request_event_at_ns'}
-    result=quality.review(product='BTC-USD',side=payload['side'].upper(),requested_quantity=payload['qty'],
+    quality_inputs=dict(product='BTC-USD',side=payload['side'].upper(),requested_quantity=payload['qty'],
         fills=fills,**quality_benchmark)
+    result=quality.review(**quality_inputs)
     if (result.get('mode')!='SUPPLIED_EXECUTION_QUALITY_REVIEW' or result.get('policy')!=quality.POLICY or
         result.get('status')!='RESEARCH_REVIEW_REQUIRED' or any(result.get(k) is not False for k in quality.FLAGS) or
         result.get('unique_fills')!=len(records) or result.get('filled_quantity')!=selected[0]['explicit_fill_quantity'] or
@@ -114,6 +117,8 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
         any(result.get(k) is not None for k in ('supplied_fee_total_usd','signed_shortfall_with_supplied_fees_usd',
             'executed_shortfall_with_supplied_fees_bps','signed_whole_order_shortfall_usd','whole_order_shortfall_bps'))):
         _fail('QUALITY_COMPONENT_DISAGREEMENT')
+    replayed_result=quality.replay(**quality_inputs)
+    if type(replayed_result) is not dict or replayed_result!=result:_fail('QUALITY_COMPONENT_INVALID')
     after=accepted.review(**common)
     if (after!=before or original._requests(journal)!=requests or journal.recovery()!=recovery or store.inspect()!=retained):
         _fail('JOURNALS_CHANGED_DURING_REVIEW')

@@ -393,6 +393,7 @@ def test_rollback_sidecar_fails_before_outer_activity_inspection(
 def test_fixture_is_public_aggregate_only():
     result = subject.fixture_report()
     assert result['passed']
+    assert set(result) == subject.PUBLIC_FIXTURE_KEYS
     assert all(result[flag] is False for flag in subject.FLAGS)
     encoded = json.dumps(result)
     assert all(token not in encoded for token in (

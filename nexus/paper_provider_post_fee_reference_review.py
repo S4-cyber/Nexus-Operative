@@ -26,6 +26,16 @@ FLAGS = tuple(dict.fromkeys((*reconciliation.FLAGS, *accepted.FLAGS,
     'retained_fee_references_verified', 'fee_execution_links_verified',
     'fee_coverage_complete', 'fee_posting_interval_verified',
     'fee_debits_allocated_to_interval', 'fee_reserved_funding_verified')))
+PUBLIC_FIXTURE_KEYS = frozenset(('source', 'passed',
+    'post_reconciliation_bound', 'complete_accepted_history_replayed',
+    'accepted_receipt_partition_complete',
+    'all_retained_fees_explicitly_referenced',
+    'references_resolve_to_accepted_original_fills',
+    'journal_file_fingerprints_rechecked',
+    'semantic_reader_failures_rechecked', 'date_only_scope_preserved',
+    'missing_fee_history_rejected', 'unreferenced_fee_rejected',
+    'unknown_execution_reference_rejected', 'repeat_review_matches',
+    'journals_unchanged', 'output_never_authoritative', *FLAGS))
 
 
 def _fail(code):

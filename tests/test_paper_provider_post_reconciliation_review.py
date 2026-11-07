@@ -1397,6 +1397,7 @@ def test_post_budget_rollback_sidecar_fails_before_account_review(
 def test_fixture_is_private_and_never_authoritative():
     result = subject.fixture_report()
     assert result['passed']
+    assert set(result) == subject.PUBLIC_FIXTURE_KEYS
     for key in ('exact_post_activity_bound',
                 'guarded_account_evidence_bound',
                 'accepted_history_replayed',

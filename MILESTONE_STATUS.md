@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 7, 2026. Development candidate: **v0.340.220**. Reviewed source baseline: `f77b07d8c18d6e4ea1e2ce67bbf27195b32fec1a` (v0.340.219).
+Report date: November 7, 2026. Development candidate: **v0.340.221**. Reviewed source baseline: `f76709a4ce6d6cf2b5fb64ab63549359ccf11311` (v0.340.220).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 7, 2026. Development candidate: **v0.340.220**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.220 source requires the terminal known-fee reserve aggregate to match an immutable 51-field public schema before saved reconciliation evidence is accepted. It reports 5,774 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles, but neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.221 source additionally requires the lower provider-POST reconciliation and retained fee-reference aggregates to match immutable 44-field and 49-field public schemas before saved reconciliation evidence is accepted. It reports 5,774 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles, but neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.220 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42416398217), its complete [research/regression/browser/evidence workflow passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42416398240), and its complete [Windows packaging/installer workflow passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42416398237).
 - v0.340.219 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42411727784), and its saved-evidence and browser-help jobs in the [research workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42411727862) passed; complete regression and the [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42411727905) remained active and are not claimed as passed.
 - v0.340.218 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42407102094); its [research workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42407102084) and [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42407102095) were cancelled and are not acceptance.
 - v0.340.217 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42401210322), and every [regression, saved-evidence and browser-help job passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42401210207); its [Windows test/build workflow was cancelled](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42401210140) and is not acceptance.

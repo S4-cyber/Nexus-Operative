@@ -1,5 +1,18 @@
 # Nexus Operative continuity instructions
 
+## v0.340.221 strict lower reconciliation public schemas
+
+The lower provider-POST reconciliation and retained fee-reference aggregate fixtures now declare immutable 44-field and 49-field public schemas. Saved reconciliation validation requires exact plain dictionaries with precisely those schemas before trusting either dependency or the terminal known-fee reserve evidence. Four regressions first reproduced v0.340.220 lacking both schema contracts and accepting arbitrary `private_extension` fields; all now fail closed with the fixed component diagnostics.
+
+Exact-source v0.340.220 public-security run 42416398217, complete research/regression/browser/evidence run 42416398240 and Windows packaging/installer run 42416398237 passed. Exact-source v0.340.219 security passed; its research and Windows workflows were cancelled and are not acceptance. Fresh v0.340.221 hosted checks remain required.
+
+This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, verified fee/reference coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete affected reconciliation/release-trial focus passed 544 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `2fbc0a5a48b329055c55e92249a9dc988ca82a51ba7fccd766746cf804913f44`; `validation/release_trials_0_340_221.json` SHA256 is `d80aa52ac62f3a3173dbff81bc60a64766bed068b9afdc95f4292c207b4d5fea`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.221 and has SHA256 `d9c82e7b6bbdf84f119f9deb1227a35ad44b2b08e85466a69d9d613af95ddbe1`. The 940-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## v0.340.220 strict known-fee reserve public schema
 
 The terminal known-fee reserve aggregate now declares an immutable 51-field public fixture schema, and the saved reconciliation-acceptance validator requires an exact plain dictionary with precisely those fields before trusting any claim. Two regressions first reproduced v0.340.219 lacking a schema contract and accepting an arbitrary `private_extension`; both now fail closed with the fixed known-fee reserve evidence diagnostic.

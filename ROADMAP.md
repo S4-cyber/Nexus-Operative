@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.220. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.221. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.220 gives the terminal known-fee reserve aggregate a strict immutable 51-field public schema and makes saved reconciliation validation require an exact plain dictionary with precisely that schema. Unknown extensions and missing fields now fail closed before claims are trusted. This is bounded synthetic evidence-schema hardening, not provider/account acceptance, complete or verified fee/reference coverage, posting/hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.221 gives the lower provider-POST reconciliation and retained fee-reference aggregates strict immutable 44-field and 49-field public schemas. Saved reconciliation validation now requires exact plain dictionaries with precisely those schemas before the terminal known-fee reserve evidence can be trusted. Unknown extensions and missing fields fail closed. This is bounded synthetic evidence-schema hardening, not provider/account acceptance, verified fee/reference coverage, posting/hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

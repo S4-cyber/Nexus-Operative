@@ -1187,8 +1187,12 @@ def _validate(profile, result):
             CHECKS as ACCOUNT_RESPONSE_CHECKS,FLAGS as ACCOUNT_RESPONSE_FLAGS)
         from nexus.paper_activity_response_review import (
             CHECKS as ACTIVITY_RESPONSE_CHECKS,FLAGS as ACTIVITY_RESPONSE_FLAGS)
-        from nexus.paper_provider_post_reconciliation_review import FLAGS as POST_RECONCILIATION_FLAGS
-        from nexus.paper_provider_post_fee_reference_review import FLAGS as POST_FEE_FLAGS
+        from nexus.paper_provider_post_reconciliation_review import (
+            FLAGS as POST_RECONCILIATION_FLAGS,
+            PUBLIC_FIXTURE_KEYS as POST_RECONCILIATION_PUBLIC_KEYS)
+        from nexus.paper_provider_post_fee_reference_review import (
+            FLAGS as POST_FEE_FLAGS,
+            PUBLIC_FIXTURE_KEYS as POST_FEE_PUBLIC_KEYS)
         from nexus.paper_provider_post_known_fee_reserve_review import (
             FLAGS as POST_FEE_RESERVE_FLAGS,
             PUBLIC_FIXTURE_KEYS as POST_FEE_RESERVE_PUBLIC_KEYS)
@@ -1220,7 +1224,9 @@ def _validate(profile, result):
         _require(all(activity_response[key] is False
             for key in ACTIVITY_RESPONSE_FLAGS),'EXACT_ACTIVITY_RESPONSE_AUTHORITY')
         post_reconciliation=result['provider_post_reconciliation']
-        _require(post_reconciliation['source']==
+        _require(type(post_reconciliation) is dict and
+            set(post_reconciliation)==POST_RECONCILIATION_PUBLIC_KEYS and
+            post_reconciliation['source']==
             'SYNTHETIC_LOCAL_PROVIDER_POST_RECONCILIATION_FIXTURE' and
             all(post_reconciliation[k] is True for k in ('passed',
                 'exact_post_activity_bound','guarded_account_evidence_bound',
@@ -1235,7 +1241,9 @@ def _validate(profile, result):
              'actual_vault_access')),
             'PROVIDER_POST_RECONCILIATION_AUTHORITY')
         post_fees=result['provider_post_fee_references']
-        _require(post_fees['source']==
+        _require(type(post_fees) is dict and
+            set(post_fees)==POST_FEE_PUBLIC_KEYS and
+            post_fees['source']==
             'SYNTHETIC_LOCAL_PROVIDER_POST_FEE_REFERENCE_FIXTURE' and
             all(post_fees[k] is True for k in ('passed',
                 'post_reconciliation_bound',

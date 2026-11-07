@@ -33,6 +33,12 @@ JOURNAL_LIMITS = (POST_DATABASE_BYTES, REQUEST_DATABASE_BYTES,
 FLAGS = tuple(dict.fromkeys((*post_activity.FLAGS, *evidence.FLAGS,
     'provider_account_accepted', 'balance_reconciled',
     'spendable_funds_verified', 'automatic_retry', 'automatic_continuation')))
+PUBLIC_FIXTURE_KEYS = frozenset(('source', 'passed',
+    'exact_post_activity_bound', 'guarded_account_evidence_bound',
+    'accepted_history_replayed', 'journal_file_fingerprints_rechecked',
+    'semantic_reader_failures_rechecked', 'gross_only_residual_checked',
+    'unresolved_unknown_rejected', 'repeat_review_matches',
+    'journals_unchanged', 'output_never_authoritative', *FLAGS))
 SHA256_PATTERN = re.compile(r'[0-9a-f]{64}')
 RETAINED_RECONCILIATION_ASSURANCES = (
     'journals_rechecked_unchanged',

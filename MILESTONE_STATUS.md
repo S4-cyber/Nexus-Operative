@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 7, 2026. Development candidate: **v0.340.201**. Reviewed source baseline: `4c9c48d08522608ac9744b70a33482e555c4b75a` (v0.340.200).
+Report date: November 7, 2026. Development candidate: **v0.340.202**. Reviewed source baseline: `e109f6d3df4f105e64677689b694e0844dbcfaf1` (v0.340.201).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 7, 2026. Development candidate: **v0.340.201**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.201 source reports 5,443 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 616 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
+The v0.340.202 source reports 5,455 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 628 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.201 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42333627167), [research/regression/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42333627118), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42333627145).
 - v0.340.200 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42328787863), [research/regression/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42328787875), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42328787753).
 - v0.340.199 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42324220362), [research/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42324220310), and its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42324220303) remained active after successful install/test, Portal syntax and standalone packaging at candidate recovery.
 - v0.340.198 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42321428593); its [research workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42321428550) passed saved evidence and browser help while the complete regression remained active, and its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42321428584) remained active at candidate recovery.

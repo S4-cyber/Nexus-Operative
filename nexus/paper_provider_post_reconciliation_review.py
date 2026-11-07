@@ -10,6 +10,7 @@ import re
 
 from nexus.alpaca_paper_contract import sha
 from nexus import paper_account_evidence_review as evidence
+from nexus import paper_observation_review as observation
 from nexus import paper_provider_post_activity_review as post_activity
 from nexus.broker_activity_store import MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES
 from nexus.broker_request_journal import BrokerRequestJournal
@@ -108,6 +109,73 @@ def _component_digest(value, code):
         _fail(code)
 
 
+def _retained_reconciliation_envelope(value, account_review, guard_review):
+    accepted = guard_review.get('accepted_reconciliation_review')
+    if type(accepted) is not dict:
+        return False
+    retained_observation = accepted.get('observation_review')
+    if (type(retained_observation) is not dict or
+            accepted.get('mode') !=
+                'PAPER_RECONCILIATION_ACCEPTANCE_REVIEW' or
+            accepted.get('policy') != evidence.inventory.POLICY or
+            accepted.get('status') != 'REVIEW_REQUIRED' or
+            accepted.get('read_only') is not True or
+            retained_observation.get('mode') !=
+                'PORTABLE_OBSERVATION_RETAINED_ACTIVITY_REVIEW' or
+            retained_observation.get('policy') != observation.POLICY or
+            retained_observation.get('status') != 'REVIEW_REQUIRED' or
+            retained_observation.get('read_only') is not True):
+        return False
+    accepted_hashes = tuple(accepted.get(key) for key in (
+        'input_sha256', 'account_sha256', 'pacing_head_sha256',
+        'activity_head_sha256', 'acceptance_head_sha256',
+        'declared_collection_window_union_sha256',
+        'opening_manifest_sha256', 'closing_manifest_sha256',
+        'observation_review_sha256'))
+    observation_hashes = tuple(retained_observation.get(key) for key in (
+        'input_sha256', 'account_sha256', 'head_sha256',
+        'opening_manifest_sha256', 'closing_manifest_sha256'))
+    if (any(not _component_sha256(item) for item in (
+            *accepted_hashes, *observation_hashes)) or
+            not _component_count(accepted.get('accepted_transitions'))):
+        return False
+    accepted_scope = {key: accepted.get(key) for key in (
+        'policy', 'account_sha256', 'pacing_head_sha256',
+        'activity_head_sha256', 'acceptance_head_sha256',
+        'declared_collection_window_union_sha256', 'accepted_transitions',
+        'opening_manifest_sha256', 'closing_manifest_sha256',
+        'observation_review_sha256')}
+    observation_scope = {key: retained_observation.get(key) for key in (
+        'policy', 'account_sha256', 'head_sha256',
+        'opening_manifest_sha256', 'closing_manifest_sha256')}
+    if (any(accepted.get(key) != value.get(key) for key in (
+            'account_sha256', 'pacing_head_sha256',
+            'activity_head_sha256', 'acceptance_head_sha256',
+            'opening_manifest_sha256', 'closing_manifest_sha256')) or
+            accepted.get('accepted_transitions') !=
+                account_review.get('accepted_transitions') or
+            accepted.get('accepted_transitions') !=
+                value.get('accepted_transitions') or
+            retained_observation.get('account_sha256') !=
+                value.get('account_sha256') or
+            retained_observation.get('head_sha256') !=
+                value.get('activity_head_sha256') or
+            any(retained_observation.get(key) != value.get(key) for key in (
+                'opening_manifest_sha256', 'closing_manifest_sha256'))):
+        return False
+    try:
+        return (retained_observation.get('input_sha256') ==
+                sha(observation_scope) and
+            accepted.get('observation_review_sha256') ==
+                retained_observation.get('input_sha256') and
+            accepted.get('input_sha256') == sha(accepted_scope) and
+            guard_review.get('accepted_reconciliation_sha256') ==
+                accepted.get('input_sha256') and
+            account_review.get('inventory_review_sha256') == sha(accepted))
+    except (TypeError, ValueError, OverflowError, RecursionError):
+        return False
+
+
 def _account_component_envelope(value):
     account_review = value.get('account_evidence_review')
     guard_review = value.get('stability_guard_review')
@@ -121,7 +189,9 @@ def _account_component_envelope(value):
                 'PAPER_RECONCILIATION_STABILITY_GUARD_REVIEW' or
             guard_review.get('policy') != evidence.inventory.STABILITY_POLICY or
             guard_review.get('status') != 'REVIEW_REQUIRED' or
-            guard_review.get('read_only') is not True):
+            guard_review.get('read_only') is not True or
+            not _retained_reconciliation_envelope(
+                value, account_review, guard_review)):
         return False
     account_hash = value.get('account_evidence_sha256')
     guard_hash = value.get('stability_guard_sha256')

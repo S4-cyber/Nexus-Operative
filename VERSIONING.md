@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.201 (pre-release).**
+**Current development build: 0.340.202 (pre-release).**
+
+## v0.340.202 retained reconciliation envelope integrity
+
+The complete retained accepted-reconciliation and portable-observation envelopes are now validated at the provider-POST reconciliation boundary. Their exact identities, read-only states, declared scope hashes, complete accepted-review digest and projected account, pacing, activity, acceptance and manifest fields must agree with the outer component. Twelve v0.340.201 accepting cases now fail closed with the fixed account-evidence diagnostic.
+
+Exact-source v0.340.201 public-security run 42333627167, research/regression/browser/evidence run 42333627118 and Windows/installer run 42333627145 passed. Fresh v0.340.202 hosted checks remain required.
+
+This is local injected component-coherence evidence, not actual provider/account, sustained genuine-feed, fee/hold/funds, native Windows, live, cloud or release acceptance. Version 1.0 remains blocked on every documented independent gate and explicit owner release approval. No UI control, editable parameter or permission default changed.
+
+Final local validation passed 5,455 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 312 tests. Sixteen offline profiles match 401 source files / `bf12480a0ac97cac4021b6ac893d02fc648f3f3da1ead68a4b19a003cff3fe07`; report SHA256 is `0f4cfe947b98d982ea5b6999188e06482569441ed6433abe0dc0019fba5456c0`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.202 wheel SHA256 is `505f580f5ff96cec8b307ab654a3c3d03e6d5c4b1d0a4366c5b9a8778a6d080d`. The final staged 921-path artifact and introduced-line secret scans found zero findings.
 
 ## v0.340.201 nested reconciliation scope coherence
 

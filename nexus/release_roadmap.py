@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.201'
+REVISION = '0.340.202'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -792,7 +792,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.201 recomputes both nested guarded-account review scope hashes before composing provider-POST reconciliation and requires their projected account/activity heads and observation manifests to agree with the outer component. Stale nested scopes and internally rehashed nested disagreement now return the fixed account-evidence failure instead of entering a reviewed result. Exact-source v0.340.200 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected component-coherence evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.202 validates the complete retained accepted-reconciliation and portable-observation envelopes before composing provider-POST reconciliation. It recomputes both nested scope hashes, verifies the complete retained reconciliation digest and requires their account, pacing, activity, acceptance and manifest projections to agree with the outer component. Twelve v0.340.201 accepting cases now fail closed with the fixed account-evidence diagnostic. Exact-source v0.340.201 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected component-coherence evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

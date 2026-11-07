@@ -60,6 +60,36 @@ def _rebind_outer_account(result):
     result['input_sha256'] = subject.sha(scope)
 
 
+def _rebind_observation_review(result):
+    accepted = result['stability_guard_review'][
+        'accepted_reconciliation_review']
+    review = accepted['observation_review']
+    scope = {key: review[key] for key in (
+        'policy', 'account_sha256', 'head_sha256',
+        'opening_manifest_sha256', 'closing_manifest_sha256')}
+    review['input_sha256'] = subject.sha(scope)
+    accepted['observation_review_sha256'] = review['input_sha256']
+
+
+def _rebind_accepted_reconciliation(result):
+    review = result['stability_guard_review'][
+        'accepted_reconciliation_review']
+    scope = {key: review[key] for key in (
+        'policy', 'account_sha256', 'pacing_head_sha256',
+        'activity_head_sha256', 'acceptance_head_sha256',
+        'declared_collection_window_union_sha256', 'accepted_transitions',
+        'opening_manifest_sha256', 'closing_manifest_sha256',
+        'observation_review_sha256')}
+    review['input_sha256'] = subject.sha(scope)
+    result['stability_guard_review'][
+        'accepted_reconciliation_sha256'] = review['input_sha256']
+    result['account_evidence_review'][
+        'inventory_review_sha256'] = subject.sha(review)
+    _rebind_account_review(result)
+    _rebind_stability_guard(result)
+    _rebind_outer_account(result)
+
+
 def test_exact_post_activity_and_guarded_balance_evidence_bind_without_writes(tmp_path):
     options = subject._fixture(tmp_path)
     before = files(tmp_path)
@@ -410,6 +440,123 @@ def test_rehashed_nested_component_disagreement_fails_closed(
         else:
             _rebind_stability_guard(result)
         _rebind_outer_account(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('field', (
+    'declared_collection_window_union_sha256',
+    'accepted_transitions',
+))
+def test_stale_retained_reconciliation_scope_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        review = result['stability_guard_review'][
+            'accepted_reconciliation_review']
+        review[field] = ('0' * 64 if field.endswith('_sha256')
+            else review[field] + 1)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('mode', 'WRONG_COMPONENT_MODE'),
+    ('policy', 'wrong.reconciliation.policy'),
+    ('status', 'COMPLETE'),
+    ('read_only', False),
+))
+def test_rehashed_retained_reconciliation_identity_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result['stability_guard_review'][
+            'accepted_reconciliation_review'][field] = value
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('field', (
+    'pacing_head_sha256',
+    'acceptance_head_sha256',
+))
+def test_rehashed_retained_reconciliation_projection_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result['stability_guard_review'][
+            'accepted_reconciliation_review'][field] = '0' * 64
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    (None, []),
+    ('mode', 'WRONG_OBSERVATION_MODE'),
+))
+def test_stale_retained_observation_envelope_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        accepted = result['stability_guard_review'][
+            'accepted_reconciliation_review']
+        if field is None:
+            accepted['observation_review'] = value
+        else:
+            accepted['observation_review'][field] = value
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('field', (
+    'head_sha256',
+    'opening_manifest_sha256',
+))
+def test_rehashed_retained_observation_projection_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result['stability_guard_review']['accepted_reconciliation_review'][
+            'observation_review'][field] = '0' * 64
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
         return result
 
     monkeypatch.setattr(subject.evidence,

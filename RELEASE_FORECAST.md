@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.202
+
+The provider-POST reconciliation boundary now validates the complete retained accepted-reconciliation and portable-observation envelopes, recomputes both scope hashes, verifies the complete retained accepted-review digest and requires every nested head/manifest projection to agree with the outer component. Exact-source v0.340.201 security, complete regression, saved evidence, browser help and Windows/installer workflows passed. Fresh v0.340.202 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,455 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 312 tests. Sixteen offline profiles match 401 source files / `bf12480a0ac97cac4021b6ac893d02fc648f3f3da1ead68a4b19a003cff3fe07`; report SHA256 is `0f4cfe947b98d982ea5b6999188e06482569441ed6433abe0dc0019fba5456c0`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.202 wheel SHA256 is `505f580f5ff96cec8b307ab654a3c3d03e6d5c4b1d0a4366c5b9a8778a6d080d`. The final staged 921-path artifact and introduced-line secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.201
 
 The provider-POST reconciliation boundary now recomputes both nested guarded-account scope hashes and requires their projected heads/manifests to agree with the outer component. Exact-source v0.340.200 security, complete regression, saved evidence, browser help and Windows/installer workflows passed. Fresh v0.340.201 hosted checks remain required.

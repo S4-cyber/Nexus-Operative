@@ -877,6 +877,46 @@ def test_rehashed_retained_activity_replay_disagreement_fails_closed(
         subject.review(**options)
 
 
+@pytest.mark.parametrize(('path', 'value'), (
+    (('observation_windows',), {'private': 'forged'}),
+    (('sampled_balance_changes',), {'cash': '999'}),
+    (('change_scope',), 'PROVIDER_SETTLEMENT_ATTESTED'),
+    (('boundary_fill_events',), 1),
+    (('boundary_fills_by_window',), {'opening': 1, 'closing': 0}),
+    (('boundary_fill_samples',), [{'private': 'forged'}]),
+    (('boundary_sample_limit',), 19),
+    (('boundary_samples_truncated',), True),
+    (('review_reasons',), []),
+    (('source',), 'PROVIDER_ATTESTED'),
+    (('limitations',), 'forged limitation'),
+    (('private_extension',), 'forged'),
+    (('retained_balance_review', 'review_reasons'), []),
+    (('retained_balance_review', 'limitations'), 'forged limitation'),
+    (('retained_balance_review', 'private_extension'), 'forged'),
+))
+def test_rehashed_retained_observation_replay_disagreement_fails_closed(
+        tmp_path, monkeypatch, path, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        observation = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review']
+        target = observation
+        for key in path[:-1]:
+            target = target[key]
+        target[path[-1]] = value
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 @pytest.mark.parametrize(('field', 'value'), (
     ('gross_execution_ending_balances', {'USD': '999', 'BTC': '2'}),
     ('gross_minus_supplied_observed', {'USD': '1', 'BTC': '0'}),

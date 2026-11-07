@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.207 retained portable-observation replay
+
+The provider-POST reconciliation composer now independently recomputes the complete retained portable observation from the exact guarded activity database and the same supplied opening/closing manifests. Observation windows, sampled balance changes, boundary-fill diagnostics, declared scope/source, reasons, limitations, extensions and retained-balance diagnostics must match that stable replay exactly. Fifteen v0.340.206 accepting mutations now return the fixed account-evidence diagnostic.
+
+Exact-source v0.340.206 public-security run 42353271055 passed. Its saved-evidence and Portal browser-help jobs in research run 42353271064 passed while complete offline regression remained active; Windows/installer run 42353271054 was pending at this checkpoint and is not claimed as passed. Fresh v0.340.207 hosted checks remain required.
+
+This is bounded local retained-store and supplied-manifest replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,620 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 448 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `8a8d5fe3cea3383eadea859716330e8e687ba66d5cdebe8d512f3d4e19770951`; `validation/release_trials_0_340_207.json` SHA256 is `46ec8abffc6ef08c3d70edf9e57c784139e1c3eba6e9ab88d085414c6c2210f0`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.207 and has SHA256 `72bf8270ee94464726b250c0a190a9833cef363d9c505cbdce3549f1538c9ea0`. The final staged public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## v0.340.206 retained activity review replay
 
 The provider-POST reconciliation composer now independently replays the complete retained activity review from the exact guarded activity database. The nested counts, ambiguity/revision diagnostics, normalization, collection observations, requested-window summaries, reasons, limitations and extensions must match that stable replay exactly. Twenty-one v0.340.205 accepting mutations now return the fixed account-evidence diagnostic.

@@ -98,6 +98,32 @@ def test_activity_row_disagreement_is_separate_from_post_history(monkeypatch,
     assert result['reasons'] == ['POST_ACTIVITY_BINDING_DISAGREEMENT']
 
 
+@pytest.mark.parametrize(('field', 'value'), (
+    ('mode', 'FORGED_MODE'),
+    ('status', 'REVIEW_REQUIRED'),
+    ('read_only', False),
+    ('reasons', ['FORGED_REASON']),
+    ('unbound_post_attempts', 1),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_post_history_component_requires_independent_complete_replay(
+        tmp_path, monkeypatch, field, value):
+    budget, head, binding = prepared(tmp_path)
+    original = subject.posts.review
+
+    def malformed(*args, **kwargs):
+        result = original(*args, **kwargs)
+        result[field] = value
+        return result
+
+    monkeypatch.setattr(subject.posts, 'review', malformed)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_ACTIVITY_POST_COMPONENT_INVALID'):
+        subject.review(budget, expected_post_head=head,
+            account_bindings=[binding])
+
+
 def test_stale_post_head_and_aliased_paths_fail_before_mutation(tmp_path):
     budget, head, binding = prepared(tmp_path)
     before = files(tmp_path)

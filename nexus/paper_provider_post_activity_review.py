@@ -181,10 +181,18 @@ def _review_exact(post_budget, *, expected_post_head, account_bindings):
             len(recoveries) != first_post['recoveries']):
         _fail('POST_HISTORY_CHANGED')
 
+    post_bindings = [dict(journal=item['journal'],
+        expected_head=item['expected_request_head']) for item in bindings]
     post_result = stable_read(lambda: posts.review(post_budget,
         expected_post_head=expected_post_head,
-        request_bindings=[dict(journal=item['journal'],
-            expected_head=item['expected_request_head']) for item in bindings]))
+        request_bindings=post_bindings))
+    if type(post_result) is not dict:
+        _fail('POST_COMPONENT_INVALID')
+    replayed_post_result = stable_read(lambda: posts.replay(post_budget,
+        expected_post_head=expected_post_head,
+        request_bindings=post_bindings))
+    if type(replayed_post_result) is not dict or post_result != replayed_post_result:
+        _fail('POST_COMPONENT_INVALID')
     reasons = []
     if not post_result['complete_local_history_consistent']:
         reasons.append('POST_HISTORY_INCOMPLETE')

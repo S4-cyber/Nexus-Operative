@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.212
+
+The provider-POST/activity boundary now independently reconstructs the complete lower provider-POST history component from the exact shared provider budget and request journals and requires the primary component to match it in full. Seven v0.340.211 accepting mode, status, read-only, reason, unbound-attempt, limitation and extension mutations now fail closed. Exact-source v0.340.211 security and research/regression/browser/evidence workflows passed; its Windows packaging/installer workflow remained active at this checkpoint. Fresh v0.340.212 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,710 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the downstream reconciliation/release-trials focus passed 513 tests and the component/version/roadmap focus passed 87. Sixteen offline profiles match 401 source files / `6f4e7404ddb0c05399fe977f2afeb5038460969c284926c891d519a1c7cc99fc`; report SHA256 is `aeea3951d25fee3a327bd6225c0ac75c44a09233451c6cb9f28b6c45fd9b8e10`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.212 wheel SHA256 is `c5d4e6fe74414a4faf94af07ef006e082cc218b93863cad668ebdb247cc9927f`. The 931-path public-artifact audit found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.211
 
 The provider-POST reconciliation boundary now independently reconstructs the complete provider-POST/activity component from the exact shared provider budget plus request, pacing, activity and acceptance journals and requires the primary component to match it in full. Seven v0.340.210 accepting diagnostic, limitation and extension mutations now fail closed. Exact-source v0.340.210 security, research/regression/browser/evidence and complete Windows packaging/installer/reinstall/uninstall/distribution workflows passed. Fresh v0.340.211 hosted checks remain required.

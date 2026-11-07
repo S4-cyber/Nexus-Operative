@@ -89,7 +89,7 @@ def _stable_reader(post_budget, bindings, store_binding, paths,
     return read
 
 
-def review(post_budget, *, expected_post_head, request_bindings):
+def _review_exact(post_budget, *, expected_post_head, request_bindings):
     """Replay and compare every retained checked POST attempt.
 
     ``request_bindings`` is a bounded list of exact dictionaries containing a
@@ -302,6 +302,23 @@ def review(post_budget, *, expected_post_head, request_bindings):
         semantic_reader_failures_rechecked=True,
         **{flag: False for flag in FLAGS},
         limitations='Exact-head local replay for explicitly selected cooperating journals only. Recovery binding confirms a retained terminal local request prefix, not provider identity or complete reconciliation. It does not bind raw provider bytes, resolve interrupted attempts, discover another path, credential, process, host or machine, attest broker quotas or source, reconcile fills, fees, holds or funds, or grant routing or release authority.')
+
+
+def review(post_budget, *, expected_post_head, request_bindings):
+    """Return the primary exact-head provider-POST history review."""
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        request_bindings=request_bindings)
+
+
+def replay(post_budget, *, expected_post_head, request_bindings):
+    """Reconstruct the complete review from the selected exact inputs.
+
+    The distinct entry point lets an outer composer compare the complete
+    primary component with an independent store replay instead of trusting a
+    selected field, digest or extension-bearing primary result.
+    """
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        request_bindings=request_bindings)
 
 
 def fixture_report():

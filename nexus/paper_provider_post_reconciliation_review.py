@@ -414,11 +414,11 @@ def _account_component_envelope(value, replayed_account, replayed_guard,
         return False
 
 
-def review(post_budget, *, expected_post_head, account_id, journal,
-           expected_request_head, pacing_path, activity_store_path,
-           acceptance_store_path, expected_activity_head,
-           pre_opening_observation, opening_observation, closing_observation,
-           post_closing_observation):
+def _review_exact(post_budget, *, expected_post_head, account_id, journal,
+                  expected_request_head, pacing_path, activity_store_path,
+                  acceptance_store_path, expected_activity_head,
+                  pre_opening_observation, opening_observation,
+                  closing_observation, post_closing_observation):
     """Compose exact POST/activity history with four-observation evidence.
 
     A complete result means only that the selected local histories agree.  In
@@ -640,6 +640,42 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         gross_only_difference_absent=gross_absent,
         uncertainty_preserved=True, **{flag: False for flag in FLAGS},
         limitations='One private exact-head local composition binds the selected provider POST history to complete accepted request/activity replay and four supplied guarded balance observations. The five selected journal files are sampled repeatedly with bounded private fingerprints, not held as an atomic snapshot or under writer exclusion. A zero gross-only residual omits fee obligations and proves neither complete activity, fee links, holds, settled/spendable funds, provider source, broker-account acceptance nor profitability. This performs no provider/vault IO, retry, continuation, ledger write, routing, funding, live trading or release approval.')
+
+
+def review(post_budget, *, expected_post_head, account_id, journal,
+           expected_request_head, pacing_path, activity_store_path,
+           acceptance_store_path, expected_activity_head,
+           pre_opening_observation, opening_observation, closing_observation,
+           post_closing_observation):
+    """Return the primary exact provider-POST reconciliation review."""
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        account_id=account_id, journal=journal,
+        expected_request_head=expected_request_head, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path,
+        expected_activity_head=expected_activity_head,
+        pre_opening_observation=pre_opening_observation,
+        opening_observation=opening_observation,
+        closing_observation=closing_observation,
+        post_closing_observation=post_closing_observation)
+
+
+def replay(post_budget, *, expected_post_head, account_id, journal,
+           expected_request_head, pacing_path, activity_store_path,
+           acceptance_store_path, expected_activity_head,
+           pre_opening_observation, opening_observation, closing_observation,
+           post_closing_observation):
+    """Independently named complete replay for distrustful composers."""
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        account_id=account_id, journal=journal,
+        expected_request_head=expected_request_head, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path,
+        expected_activity_head=expected_activity_head,
+        pre_opening_observation=pre_opening_observation,
+        opening_observation=opening_observation,
+        closing_observation=closing_observation,
+        post_closing_observation=post_closing_observation)
 
 
 def _fixture(root, *, resolve_unknown=True, fee_mode=None):

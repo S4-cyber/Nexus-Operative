@@ -132,6 +132,9 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     base = stable_read(lambda: reconciliation.review(**options))
     if not _component_valid(base):
         _fail('RECONCILIATION_INVALID')
+    replayed_base = stable_read(lambda: reconciliation.replay(**options))
+    if type(replayed_base) is not dict or replayed_base != base:
+        _fail('RECONCILIATION_COMPONENT_INVALID')
 
     common = dict(expected_account_id=account_id,
         request_journal_path=journal_path, pacing_path=pacing_path,
@@ -144,6 +147,9 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             activity.get('complete_accepted_history_replayed') is not True or
             any(activity.get(flag) is not False for flag in accepted.FLAGS)):
         _fail('ACCEPTED_ACTIVITY_INVALID')
+    replayed_activity = stable_read(lambda: accepted.replay(**common))
+    if type(replayed_activity) is not dict or replayed_activity != activity:
+        _fail('ACCEPTED_ACTIVITY_COMPONENT_INVALID')
 
     store = BrokerActivityStore(activity_store_path, account_id)
     retained = stable_read(store.inspect)

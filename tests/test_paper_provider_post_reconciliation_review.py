@@ -125,6 +125,11 @@ def test_exact_post_activity_and_guarded_balance_evidence_bind_without_writes(tm
     assert subject.review(**options) == result
 
 
+def test_independently_named_replay_matches_complete_primary_report(tmp_path):
+    args = subject._fixture(tmp_path)
+    assert subject.replay(**args) == subject.review(**args)
+
+
 def test_unresolved_post_outcome_refuses_before_balance_promotion(tmp_path):
     options = subject._fixture(tmp_path, resolve_unknown=False)
     before = files(tmp_path)

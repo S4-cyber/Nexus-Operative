@@ -86,6 +86,72 @@ def test_component_authority_promotion_is_rejected(tmp_path, monkeypatch, field)
         subject.review(**args)
 
 
+@pytest.mark.parametrize(('field', 'value'), (
+    ('policy', 'forged.policy'),
+    ('account_sha256', 'f' * 64),
+    ('input_sha256', 'f' * 64),
+    ('post_attempts', 999),
+    ('original_requests_reviewed', 999),
+    ('gross_only_difference_absent', False),
+    ('uncertainty_preserved', False),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_reconciliation_requires_independent_complete_component_replay(
+        tmp_path, monkeypatch, field, value):
+    args = subject._fixture(tmp_path)
+    original = subject.reconciliation.review
+
+    def changed(**kwargs):
+        result = original(**kwargs)
+        result[field] = value
+        return result
+
+    monkeypatch.setattr(subject.reconciliation, 'review', changed)
+    with pytest.raises(ValueError, match='RECONCILIATION_COMPONENT_INVALID'):
+        subject.review(**args)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('mode', 'FORGED_MODE'),
+    ('status', 'FORGED_STATUS'),
+    ('policy', 'forged.policy'),
+    ('input_sha256', 'f' * 64),
+    ('request_origin_bound_transitions', 999),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_accepted_activity_requires_independent_complete_component_replay(
+        tmp_path, monkeypatch, field, value):
+    args = subject._fixture(tmp_path)
+    original = subject.accepted.review
+    original_reconciliation = subject.reconciliation.review
+    original_reconciliation_replay = subject.reconciliation.replay
+
+    def changed(**kwargs):
+        result = original(**kwargs)
+        result[field] = value
+        return result
+
+    def reconciliation_without_outer_mutation(**kwargs):
+        with monkeypatch.context() as isolated:
+            isolated.setattr(subject.accepted, 'review', original)
+            return original_reconciliation(**kwargs)
+
+    def replay_without_outer_mutation(**kwargs):
+        with monkeypatch.context() as isolated:
+            isolated.setattr(subject.accepted, 'review', original)
+            return original_reconciliation_replay(**kwargs)
+
+    monkeypatch.setattr(subject.reconciliation, 'review',
+        reconciliation_without_outer_mutation)
+    monkeypatch.setattr(subject.reconciliation, 'replay',
+        replay_without_outer_mutation)
+    monkeypatch.setattr(subject.accepted, 'review', changed)
+    with pytest.raises(ValueError, match='ACCEPTED_ACTIVITY_COMPONENT_INVALID'):
+        subject.review(**args)
+
+
 def test_request_append_during_final_recheck_is_retained_and_refused(
         tmp_path, monkeypatch):
     args = subject._fixture(tmp_path)

@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 7, 2026. Development candidate: **v0.340.215**. Reviewed source baseline: `ef553d97469cf62f37b770c02aaa159e393bc14b` (v0.340.214).
+Report date: November 7, 2026. Development candidate: **v0.340.216**. Reviewed source baseline: `5076b6b9d57f454a1e68ebdd865c3234ea68187e` (v0.340.215).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 7, 2026. Development candidate: **v0.340.215**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.215 source independently replays the complete accepted-history and supplied execution-quality arithmetic components and adds seventeen fail-closed mutation regressions plus a direct arithmetic replay-equivalence check. It reports 5,745 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles, but neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.216 source independently replays the complete provider-POST reconciliation and accepted-history components at the retained fee-reference boundary and adds sixteen fail-closed mutation regressions plus direct reconciliation replay-equivalence coverage. It reports 5,762 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles, but neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.215 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42391221875), every [regression, saved-evidence and browser-help job passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42391221972), and the complete [Windows packaging/installer workflow passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42391221829).
 - v0.340.214 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42386090438), and every [regression, saved-evidence and browser-help job passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42386090362); its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42386090371) remained active in install/test at this checkpoint and is not claimed as passed.
 - v0.340.213 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42381505683), and every [regression, saved-evidence and browser-help job passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42381505700); its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42381505714) remained active in install/test at this checkpoint and is not claimed as passed.
 - v0.340.212 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42377373741), and its [saved evidence plus browser help passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42377373712); the complete regression job in that run and its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42377373784) remained active at this checkpoint and are not claimed as passed.

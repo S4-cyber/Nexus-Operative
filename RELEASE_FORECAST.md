@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.216
+
+The retained fee-reference boundary now independently reconstructs the complete provider-POST reconciliation and accepted-history components from the same exact inputs and requires each primary result to match its distinct stable replay in full. Sixteen v0.340.215 accepting policy, identity, digest, count, arithmetic, uncertainty, limitation and extension mutations now fail closed. Exact-source v0.340.215 security, research/regression/browser/evidence and complete Windows packaging/installer workflows passed. Fresh v0.340.216 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,762 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused selections passed 393 and 173 tests. Sixteen offline profiles match 401 source files / `effdb846c36421941e308f40bd41da5463ee5faf80de22be3c3a32143fd5ff4c`; report SHA256 is `d6ec0e16a62a80d84b2a36ac0189eaa58449b2ec3d68aa3110cdf47c67ad522f`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.216 wheel SHA256 is `d2e7618de534578b3439966e5f7023e7a5d8da5e84f52add4c81ea35c5fcf3a8`. The 935-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.215
 
 The private execution-quality boundary now independently reconstructs both the complete accepted-history result and the supplied execution-quality arithmetic result from the same exact inputs and requires each primary component to match its distinct stable replay in full. Seventeen v0.340.214 accepting identity, origin, metric, decomposition, timing, limitation and extension mutations now fail closed. Exact-source v0.340.214 security and all regression, saved-evidence and browser-help checks passed; its Windows/installer check remained active in install/test at this checkpoint. Fresh v0.340.215 hosted checks remain required.

@@ -113,6 +113,16 @@ def test_fresh_process_review_matches_without_mutation(tmp_path):
     assert actual==expected and before=={p.name:p.read_bytes() for p in tmp_path.iterdir()}
 
 
+def test_distinct_replay_matches_complete_primary_review(tmp_path):
+    j,s,_,_=stores(tmp_path)
+    request_head=j.recovery()['head_sha256']
+    activity_head=s.inspect()['head_sha256']
+    expected=module.review(j,s,expected_request_head=request_head,
+        expected_activity_head=activity_head)
+    assert module.replay(j,s,expected_request_head=request_head,
+        expected_activity_head=activity_head)==expected
+
+
 def test_disposable_release_fixture():
     r=module.fixture_report();assert r['passed'] and r['offsetting_bad_price_detected'] and r['journals_unchanged']
     assert all(r[k] is False for k in module.FLAGS)

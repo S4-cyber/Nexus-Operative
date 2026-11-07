@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 7, 2026. Development candidate: **v0.340.213**. Reviewed source baseline: `ca67dd6dbba3c0f30e02448dace4d6c0689ef07a` (v0.340.212).
+Report date: November 7, 2026. Development candidate: **v0.340.214**. Reviewed source baseline: `cc24fc79485ddbfb7f08d82bd401fa91932f79f3` (v0.340.213).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 7, 2026. Development candidate: **v0.340.213**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.213 source independently replays the complete accepted request/activity component and adds seven fail-closed mutation regressions. It reports 5,717 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles, but neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.214 source independently replays the complete lower original-request/retained-activity component and adds nine fail-closed mutation regressions plus a direct replay-equivalence check. It reports 5,727 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles, but neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.213 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42381505683), and every [regression, saved-evidence and browser-help job passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42381505700); its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42381505714) remained active in install/test at this checkpoint and is not claimed as passed.
 - v0.340.212 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42377373741), and its [saved evidence plus browser help passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42377373712); the complete regression job in that run and its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42377373784) remained active at this checkpoint and are not claimed as passed.
 - v0.340.211 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42373346720), and [research/regression/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42373346725); its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42373346713) was cancelled and is not acceptance.
 - v0.340.205 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42351609742), and [saved evidence plus browser help passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42351609278); its complete regression and [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42351609272) remained active at this checkpoint and are not claimed as passed.

@@ -27,7 +27,7 @@ def _requests(journal):
         marked=r['uncertain'],snapshot=r['tracker'].status()['latest']) for key,r in requests.items()})
 
 
-def review(journal,store,*,expected_request_head,expected_activity_head):
+def _review_exact(journal,store,*,expected_request_head,expected_activity_head):
     """Bind two replayed local heads; cross-database reads are not atomic/attested."""
     if type(journal) is not BrokerRequestJournal or type(store) is not BrokerActivityStore:_fail('STORES_REQUIRED')
     for head in (expected_request_head,expected_activity_head):
@@ -85,6 +85,20 @@ def review(journal,store,*,expected_request_head,expected_activity_head):
         request_reviews=rows,untracked_activity_order_ids=untracked,review_reasons=reasons,
         **{flag:False for flag in FLAGS},
         limitations='Supplied local histories only. Exact replayed heads and explicit fill/limit checks do not attest source or complete activity/fees, verify funds/holds, make two databases atomic, detect deleted tails or authorize routing. No price is inferred from cumulative averages; no ledger or journal is written.')
+
+
+def review(journal,store,*,expected_request_head,expected_activity_head):
+    """Return the primary original-request/retained-activity review."""
+    return _review_exact(journal,store,
+        expected_request_head=expected_request_head,
+        expected_activity_head=expected_activity_head)
+
+
+def replay(journal,store,*,expected_request_head,expected_activity_head):
+    """Reconstruct the complete component from the selected exact heads."""
+    return _review_exact(journal,store,
+        expected_request_head=expected_request_head,
+        expected_activity_head=expected_activity_head)
 
 
 def fixture_report():

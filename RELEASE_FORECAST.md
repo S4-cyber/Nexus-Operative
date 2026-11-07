@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.214
+
+The accepted-history boundary now independently reconstructs the complete original-request/retained-activity component from the exact request and activity journal heads and requires the primary component to match a distinct stable replay in full. Nine v0.340.213 accepting mode, status, read-only, blocker, request-row, untracked-ID, reason, limitation and extension mutations now fail closed. Exact-source v0.340.213 security and all regression, saved-evidence and browser-help checks passed; its Windows/installer check remained active in install/test at this checkpoint. Fresh v0.340.214 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,727 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused selections passed 403 and 59 tests. Sixteen offline profiles match 401 source files / `8101b6df3c30a7a181950d154854f19a316539be38b6415958d69c3576ee6d86`; report SHA256 is `fa76176e3d4c917af3541c47c33b12f45175d31d4c2573daeb53763d6841e439`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.214 wheel SHA256 is `1016564688ffca6ff160ce777dcb8a714ba0da0e70c9cc5de72adf6ddb0af78b`. The 933-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.213
 
 The provider-POST/activity boundary now independently reconstructs the complete accepted request/activity component from the exact request, pacing, activity and acceptance journals and requires the primary component to match a distinct stable replay in full. Seven v0.340.212 accepting mode, policy, input-digest, completeness, legacy-baseline, limitation and extension mutations now fail closed. Exact-source v0.340.212 security, saved-evidence and browser-help checks passed; its complete regression and Windows/installer checks remained active at this checkpoint. The preceding v0.340.211 Windows run was cancelled and is not acceptance. Fresh v0.340.213 hosted checks remain required.

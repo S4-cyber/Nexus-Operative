@@ -180,6 +180,33 @@ def test_individual_bad_fill_price_remains_a_component_blocker(tmp_path):
     assert 'INDIVIDUAL_FILL_LIMIT_DISAGREEMENT' in result['request_activity_review']['agreement_blockers']
 
 
+@pytest.mark.parametrize(('field', 'value'), (
+    ('mode', 'FORGED_MODE'),
+    ('status', 'FORGED_STATUS'),
+    ('read_only', False),
+    ('agreement_blockers', ['FORGED_BLOCKER']),
+    ('request_reviews', []),
+    ('untracked_activity_order_ids', ['forged-order']),
+    ('review_reasons', ['FORGED_REASON']),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_request_activity_component_requires_independent_complete_replay(
+        tmp_path, monkeypatch, field, value):
+    options,_,_=prepared(tmp_path)
+    original=subject.request_review.review
+
+    def malformed(*args, **kwargs):
+        result=original(*args, **kwargs)
+        result[field]=value
+        return result
+
+    monkeypatch.setattr(subject.request_review, 'review', malformed)
+    with pytest.raises(ValueError, match=
+            'PAPER_REQUEST_ACTIVITY_ACCEPTANCE_COMPONENT_INVALID'):
+        subject.review(**options)
+
+
 @pytest.mark.parametrize('field,value',[('cross_journal_recovery_state','UNBOUND_CROSS_JOURNAL_TRANSITION_REVIEW_REQUIRED'),
     ('preexisting_history_unverified',True),('all_collection_cursor_sequences_complete',False),
     ('all_accepted_transitions_replayed',False)])

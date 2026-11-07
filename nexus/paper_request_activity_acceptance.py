@@ -122,9 +122,17 @@ def _review_exact(*, expected_account_id, request_journal_path, pacing_path,
     store = BrokerActivityStore(activity_store_path, expected_account_id)
     origins=stable_read(lambda: _request_origins(journal,store,
         acceptance_store_path,expected_account_id,expected_request_head))
+    component_inputs = dict(expected_request_head=expected_request_head,
+        expected_activity_head=expected_activity_head)
     component = stable_read(lambda: request_review.review(journal, store,
-        expected_request_head=expected_request_head,
-        expected_activity_head=expected_activity_head))
+        **component_inputs))
+    if type(component) is not dict:
+        _fail('COMPONENT_INVALID')
+    replayed_component = stable_read(lambda: request_review.replay(
+        journal, store, **component_inputs))
+    if (type(replayed_component) is not dict or
+            component != replayed_component):
+        _fail('COMPONENT_INVALID')
 
     after = stable_read(lambda: acceptance_status(
         expected_account_id=expected_account_id, pacing_path=pacing_path,

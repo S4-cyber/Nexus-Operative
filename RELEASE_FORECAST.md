@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.200
+
+The guarded-account component's outer input hash now binds both nested review hashes before provider-POST reconciliation, and malformed nested account/stability envelopes fail closed. Exact-source v0.340.199 security, complete regression, saved evidence and browser help passed; its Windows/installer workflow remained active after successful install/test, Portal syntax and standalone packaging. Fresh v0.340.200 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,435 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 292 tests. Sixteen offline profiles match 401 source files / `384b8e3ff4d368e7654e3088f198e74c4b22d39d64fd5597c64a4010bc365cd4`; report SHA256 is `3ef63f462c1a379d08433e3a6f5bee48b4b43297ec7c80ad029ca84a9eea0b45`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.200 wheel SHA256 is `54e59db03b5397227c3e5c8307270e4ddb4c4a99dc70a37bcb4fa51f45fae6b7`. The final staged 919-path artifact and introduced-line secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.199
 
 Complete provider-POST reconciliation component envelopes now fail closed before field projection when a result is not a mapping, identifies the wrong mode or policy, denies required recheck/uncertainty claims, or cannot be canonically hashed. Exact-source v0.340.198 saved evidence and browser help passed while its regression and Windows workflow remained active; exact-source v0.340.197 Windows/installer acceptance subsequently passed. Fresh v0.340.199 hosted checks remain required.

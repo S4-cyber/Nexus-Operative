@@ -108,6 +108,42 @@ def _component_digest(value, code):
         _fail(code)
 
 
+def _account_component_envelope(value):
+    account_review = value.get('account_evidence_review')
+    guard_review = value.get('stability_guard_review')
+    if (type(account_review) is not dict or type(guard_review) is not dict or
+            account_review.get('mode') !=
+                'PAPER_ACCOUNT_EVIDENCE_BUNDLE_REVIEW' or
+            account_review.get('policy') != evidence.POLICY or
+            account_review.get('status') != 'REVIEW_REQUIRED' or
+            account_review.get('read_only') is not True or
+            guard_review.get('mode') !=
+                'PAPER_RECONCILIATION_STABILITY_GUARD_REVIEW' or
+            guard_review.get('policy') != evidence.inventory.STABILITY_POLICY or
+            guard_review.get('status') != 'REVIEW_REQUIRED' or
+            guard_review.get('read_only') is not True):
+        return False
+    account_hash = value.get('account_evidence_sha256')
+    guard_hash = value.get('stability_guard_sha256')
+    input_hash = value.get('input_sha256')
+    if (any(not _component_sha256(item) for item in (
+            account_hash, guard_hash, input_hash)) or
+            account_review.get('input_sha256') != account_hash or
+            guard_review.get('input_sha256') != guard_hash):
+        return False
+    component_scope = dict(policy=value.get('policy'),
+        **{key: value.get(key) for key in evidence.HEADS},
+        account_evidence_sha256=account_hash,
+        stability_guard_sha256=guard_hash,
+        **{key: value.get(key) for key in (
+            'pre_opening_manifest_sha256', 'opening_manifest_sha256',
+            'closing_manifest_sha256', 'post_closing_manifest_sha256')})
+    try:
+        return input_hash == sha(component_scope)
+    except (TypeError, ValueError, OverflowError, RecursionError):
+        return False
+
+
 def review(post_budget, *, expected_post_head, account_id, journal,
            expected_request_head, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
@@ -222,6 +258,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             account.get('policy') != evidence.STABILITY_POLICY or
             account.get('status') != 'REVIEW_REQUIRED' or
             account.get('read_only') is not True or
+            not _account_component_envelope(account) or
             account.get('account_sha256') != journal_account or
             account.get('request_head_sha256') != expected_request_head or
             account.get('activity_head_sha256') != expected_activity_head or

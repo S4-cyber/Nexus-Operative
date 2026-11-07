@@ -258,6 +258,81 @@ def test_invalid_account_component_envelope_fails_closed(
         subject.review(**options)
 
 
+@pytest.mark.parametrize('field', (
+    'input_sha256',
+    'account_evidence_sha256',
+    'stability_guard_sha256',
+))
+def test_mismatched_account_component_binding_hash_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result[field] = '0' * 64
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    (None, []),
+    ('mode', 'WRONG_COMPONENT_MODE'),
+    ('policy', 'wrong.account.policy'),
+    ('status', 'COMPLETE'),
+    ('read_only', False),
+    ('input_sha256', '0' * 64),
+))
+def test_invalid_nested_account_evidence_envelope_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        if field is None:
+            result['account_evidence_review'] = value
+        else:
+            result['account_evidence_review'][field] = value
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    (None, []),
+    ('mode', 'WRONG_COMPONENT_MODE'),
+    ('policy', 'wrong.guard.policy'),
+    ('status', 'COMPLETE'),
+    ('read_only', False),
+    ('input_sha256', '0' * 64),
+))
+def test_invalid_nested_stability_guard_envelope_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        if field is None:
+            result['stability_guard_review'] = value
+        else:
+            result['stability_guard_review'][field] = value
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 def test_final_request_race_refuses(tmp_path, monkeypatch):
     options = subject._fixture(tmp_path)
     original = subject.evidence.review_with_stability_guards

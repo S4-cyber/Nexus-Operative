@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 6, 2026. Development candidate: **v0.340.199**. Reviewed source baseline: `4fc1879fc2b5594145ba14b3f5f71e72870a74e2` (v0.340.198).
+Report date: November 6, 2026. Development candidate: **v0.340.200**. Reviewed source baseline: `59a0af9a838b4108bf2b655767d421a2761de814` (v0.340.199).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 6, 2026. Development candidate: **v0.340.199**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.199 source reports 5,420 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 593 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
+The v0.340.200 source reports 5,435 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 608 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.199 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42324220362), [research/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42324220310), and its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42324220303) remained active after successful install/test, Portal syntax and standalone packaging at candidate recovery.
 - v0.340.198 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42321428593); its [research workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42321428550) passed saved evidence and browser help while the complete regression remained active, and its [Windows/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42321428584) remained active at candidate recovery.
 - v0.340.197 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42318522411), [research/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42318522353), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42318523087).
 - v0.340.196 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42310927960), [research/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42310927815), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42310927721).
@@ -35,6 +36,14 @@ Verified prior-source hosted checkpoints:
 - v0.340.190 [Windows installer/distribution checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833513).
 - v0.340.190 [research regression, browser and saved-evidence checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833448).
 - Its [security workflow failed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833307) on two historical synthetic fixture findings. A passed installer is not an all-green release candidate.
+
+## v0.340.200 nested reconciliation component bindings
+
+The provider-POST reconciliation composer now verifies that the guarded-account component's declared outer input hash binds both nested review hashes and that both nested review envelopes retain their exact identity and read-only contract. Fifteen regressions first demonstrated that v0.340.199 accepted mismatched hashes, non-mapping nested reviews and wrong nested modes, policies, statuses or read-only claims. Each now returns the fixed account-evidence failure.
+
+This is a fail-closed implementation improvement, not authorized paper-account, provider-source, received-coverage, sustained-market, native-storage, fee/hold/funds, live/cloud or release acceptance. It changes no Portal control, editable parameter or authority default. The estimate remains about 40% (30–45%, low confidence), with 0/9 major operational stages accepted.
+
+Final local validation passed 5,435 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 292 tests. Sixteen offline profiles match 401 source files / `384b8e3ff4d368e7654e3088f198e74c4b22d39d64fd5597c64a4010bc365cd4`; report SHA256 is `3ef63f462c1a379d08433e3a6f5bee48b4b43297ec7c80ad029ca84a9eea0b45`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.200 wheel SHA256 is `54e59db03b5397227c3e5c8307270e4ddb4c4a99dc70a37bcb4fa51f45fae6b7`. The final staged 919-path artifact and introduced-line secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
 ## v0.340.199 strict reconciliation component envelopes
 

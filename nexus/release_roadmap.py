@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.207'
+REVISION = '0.340.208'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.207 independently recomputes the complete retained portable observation from the exact guarded activity database and supplied opening/closing manifests, then requires the nested provider-POST reconciliation component to match it structurally. Fifteen v0.340.206 accepting mutations now fail closed, covering observation windows, balance changes, boundary-fill diagnostics, source/scope, reasons, limitations, extensions and retained-balance diagnostics. This is local retained-store and supplied-manifest replay evidence, not provider/account acceptance, fee-link/posting/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.208 independently reconstructs the complete retained reconciliation acceptance from the exact guarded pacing, activity and acceptance journals plus supplied opening/closing manifests, then requires the nested provider-POST reconciliation component to match that replay in full. Five v0.340.207 accepting mutations now fail closed, covering declared coverage scope, requested-boundary verification, recovery state, limitations and arbitrary extensions. This is local retained-store and supplied-manifest replay evidence, not provider/account acceptance, fee-link/posting/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

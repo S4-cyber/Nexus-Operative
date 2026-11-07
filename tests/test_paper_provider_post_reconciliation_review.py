@@ -615,6 +615,31 @@ def test_rehashed_retained_reconciliation_assurance_fails_closed(
         subject.review(**options)
 
 
+@pytest.mark.parametrize(('field', 'value'), (
+    ('declared_window_coverage_scope', 'PROVIDER_RECEIVED_COVERAGE'),
+    ('requested_window_boundaries_verified', True),
+    ('acceptance_recovery_state', 'FORGED_ACCEPTED'),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_rehashed_retained_reconciliation_replay_disagreement_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result['stability_guard_review'][
+            'accepted_reconciliation_review'][field] = value
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 @pytest.mark.parametrize('field', subject.RETAINED_OBSERVATION_DENIALS)
 def test_rehashed_retained_observation_authority_fails_closed(
         tmp_path, monkeypatch, field):

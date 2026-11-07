@@ -13,7 +13,6 @@ from nexus import paper_account_evidence_review as evidence
 from nexus import paper_observation_review as observation
 from nexus import paper_provider_post_activity_review as post_activity
 from nexus import retained_balance_review
-from nexus.broker_activity_store import BrokerActivityStore
 from nexus.broker_activity_store import MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.broker_request_journal import MAX_DATABASE_BYTES as REQUEST_DATABASE_BYTES
@@ -266,13 +265,13 @@ def _retained_observation_components(retained_observation, value):
 
 
 def _retained_reconciliation_envelope(value, account_review, guard_review,
-                                      replayed_observation):
+                                      replayed_reconciliation):
     accepted = guard_review.get('accepted_reconciliation_review')
-    if type(accepted) is not dict:
+    if (type(accepted) is not dict or
+            accepted != replayed_reconciliation):
         return False
     retained_observation = accepted.get('observation_review')
     if (type(retained_observation) is not dict or
-            retained_observation != replayed_observation or
             accepted.get('mode') !=
                 'PAPER_RECONCILIATION_ACCEPTANCE_REVIEW' or
             accepted.get('policy') != evidence.inventory.POLICY or
@@ -344,7 +343,7 @@ def _retained_reconciliation_envelope(value, account_review, guard_review,
         return False
 
 
-def _account_component_envelope(value, replayed_observation):
+def _account_component_envelope(value, replayed_reconciliation):
     account_review = value.get('account_evidence_review')
     guard_review = value.get('stability_guard_review')
     if (type(account_review) is not dict or type(guard_review) is not dict or
@@ -359,7 +358,8 @@ def _account_component_envelope(value, replayed_observation):
             guard_review.get('status') != 'REVIEW_REQUIRED' or
             guard_review.get('read_only') is not True or
             not _retained_reconciliation_envelope(
-                value, account_review, guard_review, replayed_observation)):
+                value, account_review, guard_review,
+                replayed_reconciliation)):
         return False
     account_hash = value.get('account_evidence_sha256')
     guard_hash = value.get('stability_guard_sha256')
@@ -496,10 +496,12 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         opening_observation=opening_observation,
         closing_observation=closing_observation,
         post_closing_observation=post_closing_observation))
-    replayed_observation = stable_read(lambda: observation.review(
-        BrokerActivityStore(activity_store_path, account_id),
+    replayed_reconciliation = stable_read(lambda: evidence.inventory.review(
         expected_account_id=account_id,
-        expected_head=expected_activity_head,
+        pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path,
+        expected_activity_head=expected_activity_head,
         opening_observation=opening_observation,
         closing_observation=closing_observation))
     if type(account) is not dict:
@@ -530,7 +532,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             account.get('policy') != evidence.STABILITY_POLICY or
             account.get('status') != 'REVIEW_REQUIRED' or
             account.get('read_only') is not True or
-            not _account_component_envelope(account, replayed_observation) or
+            not _account_component_envelope(account,
+                replayed_reconciliation) or
             account.get('account_sha256') != journal_account or
             account.get('request_head_sha256') != expected_request_head or
             account.get('activity_head_sha256') != expected_activity_head or

@@ -1,5 +1,18 @@
 # Nexus Operative continuity instructions
 
+## v0.340.208 complete retained-reconciliation replay
+
+The provider-POST reconciliation composer now independently reconstructs the complete retained reconciliation acceptance from the exact guarded pacing, activity and acceptance journals plus the same supplied opening/closing manifests. The nested accepted review must equal that stable replay in full, so declared coverage scope, requested-boundary verification, acceptance recovery state, limitations and arbitrary extensions cannot be changed behind recomputed outer hashes. Five regressions first reproduced v0.340.207 accepting those mutations; all now return the fixed account-evidence diagnostic.
+
+Exact-source v0.340.207 public-security run 42355458708 passed. Its saved-evidence and Portal browser-help jobs in research run 42355458808 passed while complete offline regression remained active; Windows/installer run 42355458709 remained active in install/test at this checkpoint and is not claimed as passed. Fresh v0.340.208 hosted checks remain required.
+
+This is bounded local retained-store and supplied-manifest replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,625 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 453 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `40be9837c5fe765faf7158e0847efa62dec085954aa03f9d790d628fefac7234`; `validation/release_trials_0_340_208.json` SHA256 is `39bca44ce4ff9f08ff4d4686dc07c07b345d1828f2df2857ec3a7af33f68a0d3`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.208 and has SHA256 `d221a82a947a0523c4969ff4cd4dd834370a52adff3233c9b3b5f6e9789083c0`. The final staged public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## v0.340.207 retained portable-observation replay
 
 The provider-POST reconciliation composer now independently recomputes the complete portable observation from the exact guarded activity database and the same supplied opening/closing manifests after composing account evidence. The nested observation must equal that stable replay in full, so observation windows, sampled balance changes, boundary-fill diagnostics, declared scope/source, reasons, limitations, extensions and retained-balance diagnostics cannot be changed behind recomputed outer hashes. Fifteen regressions first reproduced v0.340.206 accepting those mutations; all now return the fixed account-evidence diagnostic.

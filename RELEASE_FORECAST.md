@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.208
+
+The provider-POST reconciliation boundary now independently reconstructs the complete retained reconciliation acceptance from the exact guarded pacing, activity and acceptance journals plus supplied boundary manifests and requires the nested review to match it in full. Five v0.340.207 accepting scope, boundary-verification, recovery-state, limitation and extension mutations now fail closed. Exact-source v0.340.207 security, saved evidence and browser help passed; its full regression and Windows/installer workflows remained active at this checkpoint. Fresh v0.340.208 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,625 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 453 tests. Sixteen offline profiles match 401 source files / `40be9837c5fe765faf7158e0847efa62dec085954aa03f9d790d628fefac7234`; report SHA256 is `39bca44ce4ff9f08ff4d4686dc07c07b345d1828f2df2857ec3a7af33f68a0d3`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.208 wheel SHA256 is `d221a82a947a0523c4969ff4cd4dd834370a52adff3233c9b3b5f6e9789083c0`. The final staged public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.207
 
 The provider-POST reconciliation boundary now independently recomputes the complete retained portable observation from the exact guarded activity database and supplied boundary manifests and requires the nested review to match it in full. Fifteen v0.340.206 accepting observation-window, balance-change, boundary-fill, scope/source, reason, limitation, extension and retained-balance mutations now fail closed. Exact-source v0.340.206 security, saved evidence and browser help passed; its full regression remained active and Windows/installer was pending at this checkpoint. Fresh v0.340.207 hosted checks remain required.

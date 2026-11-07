@@ -1189,7 +1189,9 @@ def _validate(profile, result):
             CHECKS as ACTIVITY_RESPONSE_CHECKS,FLAGS as ACTIVITY_RESPONSE_FLAGS)
         from nexus.paper_provider_post_reconciliation_review import FLAGS as POST_RECONCILIATION_FLAGS
         from nexus.paper_provider_post_fee_reference_review import FLAGS as POST_FEE_FLAGS
-        from nexus.paper_provider_post_known_fee_reserve_review import FLAGS as POST_FEE_RESERVE_FLAGS
+        from nexus.paper_provider_post_known_fee_reserve_review import (
+            FLAGS as POST_FEE_RESERVE_FLAGS,
+            PUBLIC_FIXTURE_KEYS as POST_FEE_RESERVE_PUBLIC_KEYS)
         from nexus.alpaca_activity_sse_review import FLAGS as ACTIVITY_SSE_FLAGS
         from nexus.alpaca_activity_sse_reconnect_review import FLAGS as ACTIVITY_SSE_RECONNECT_FLAGS
         from nexus.alpaca_activity_sse_cursor_store import FLAGS as ACTIVITY_SSE_CURSOR_FLAGS
@@ -1254,7 +1256,9 @@ def _validate(profile, result):
             (*POST_FEE_FLAGS,'actual_provider_access','actual_vault_access')),
             'PROVIDER_POST_FEE_REFERENCES_AUTHORITY')
         post_fee_reserve=result['provider_post_known_fee_reserve']
-        _require(post_fee_reserve['source']==
+        _require(type(post_fee_reserve) is dict and
+            set(post_fee_reserve)==POST_FEE_RESERVE_PUBLIC_KEYS and
+            post_fee_reserve['source']==
             'SYNTHETIC_LOCAL_PROVIDER_POST_KNOWN_FEE_RESERVE_FIXTURE' and
             all(post_fee_reserve[k] is True for k in ('passed',
                 'fee_reference_component_bound',

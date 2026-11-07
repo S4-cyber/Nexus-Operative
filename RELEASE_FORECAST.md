@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.220
+
+The terminal known-fee reserve aggregate now has an immutable 51-field public schema, and saved reconciliation validation requires an exact plain dictionary with precisely those fields. Two regressions reproduced the absent schema contract and an accepted arbitrary extension before implementation. Exact-source v0.340.219 security, saved evidence and browser help passed; full regression and Windows remained active at this checkpoint. Exact-source v0.340.218 research and Windows were cancelled and are not acceptance. Fresh v0.340.220 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the component/release-trial focus passed 150 tests. Sixteen offline profiles match 401 source files / `a547e2a5c1bf45583d36c012ebacacd0dc5e3f53f58ab00de25a9cd81ab6fb2f`; report SHA256 is `7cfcf3a0186caf739324676be2cd7afd65837d0f0cd99ce5f927c2b963f44219`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.220 wheel SHA256 is `e054de6a8babbd7ebe631e2aee1511c9b3ef5460943e48921f06549858b2f50a`. The 939-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.219
 
 The saved reconciliation-acceptance profile now requires the terminal known-fee reserve fixture to prove its primary result matches the distinct complete replay. Two regressions reproduced the missing and forged-false assertion before implementation. Exact-source v0.340.218 security passed; research and Windows remained active at this checkpoint. Exact-source v0.340.217 research/security passed, while its Windows run was cancelled and is not acceptance. Fresh v0.340.219 hosted checks remain required.

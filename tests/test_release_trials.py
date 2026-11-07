@@ -587,6 +587,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('provider_post_known_fee_reserve','journal_file_fingerprints_rechecked'),False,'PROVIDER_POST_KNOWN_FEE_RESERVE'),
         (('provider_post_known_fee_reserve','semantic_reader_failures_rechecked'),False,'PROVIDER_POST_KNOWN_FEE_RESERVE'),
         (('provider_post_known_fee_reserve','primary_replay_matches'),False,'PROVIDER_POST_KNOWN_FEE_RESERVE'),
+        (('provider_post_known_fee_reserve','private_extension'),True,'PROVIDER_POST_KNOWN_FEE_RESERVE'),
         (('provider_post_known_fee_reserve','spendable_funds_verified'),True,'PROVIDER_POST_KNOWN_FEE_RESERVE_AUTHORITY'),
         (('supplied_activity_sse_links','exact_parent_link_bound'),False,'SUPPLIED_ACTIVITY_SSE_LINKS'),
         (('supplied_activity_sse_links','provider_source_attested'),True,'SUPPLIED_ACTIVITY_SSE_LINKS_AUTHORITY'),

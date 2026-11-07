@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.219'
+REVISION = '0.340.220'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.219 makes the saved reconciliation-acceptance profile explicitly consume the terminal known-fee reserve replay proof. The aggregate fixture publishes primary_replay_matches, and release-trial validation now rejects a missing or false assertion. This is bounded synthetic evidence-contract hardening, not provider/account acceptance, complete or verified fee/reference coverage, posting/hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.220 gives the terminal known-fee reserve aggregate a strict immutable 51-field public schema and makes saved reconciliation validation require an exact plain dictionary with precisely that schema. Unknown extensions and missing fields now fail closed before claims are trusted. This is bounded synthetic evidence-schema hardening, not provider/account acceptance, complete or verified fee/reference coverage, posting/hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

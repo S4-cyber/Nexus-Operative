@@ -25,6 +25,18 @@ FLAGS = tuple(dict.fromkeys((*references.FLAGS,
     'known_fee_coverage_complete', 'known_fee_posting_verified',
     'retained_fee_reserve_path_verified', 'spendable_funds_verified',
     'broker_account_reconciled', 'ready_for_routing', 'release_approved')))
+PUBLIC_FIXTURE_KEYS = frozenset(('source', 'passed',
+    'fee_reference_component_bound',
+    'retained_known_fee_reservations_applied',
+    'retained_known_fee_debits_covered',
+    'known_fee_adjusted_closing_balances_match',
+    'journal_file_fingerprints_rechecked',
+    'semantic_reader_failures_rechecked',
+    'balance_disagreement_rejected',
+    'insufficient_known_fee_funding_rejected',
+    'missing_fee_history_rejected', 'primary_replay_matches',
+    'repeat_review_matches', 'journals_unchanged',
+    'output_never_authoritative', *FLAGS))
 
 
 def _fail(code):

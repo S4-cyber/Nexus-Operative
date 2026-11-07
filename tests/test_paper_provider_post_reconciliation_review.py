@@ -71,6 +71,16 @@ def _rebind_observation_review(result):
     accepted['observation_review_sha256'] = review['input_sha256']
 
 
+def _rebind_retained_balance_review(result):
+    review = result['stability_guard_review'][
+        'accepted_reconciliation_review']['observation_review'][
+            'retained_balance_review']
+    scope = {key: review[key] for key in (
+        'policy', 'account_sha256', 'head_sha256', 'opening_balances',
+        'opening_at', 'observed_balances', 'observed_at')}
+    review['input_sha256'] = subject.sha(scope)
+
+
 def _rebind_accepted_reconciliation(result):
     review = result['stability_guard_review'][
         'accepted_reconciliation_review']
@@ -646,6 +656,174 @@ def test_rehashed_retained_observation_assurance_fails_closed(
 
     monkeypatch.setattr(subject.evidence,
         'review_with_stability_guards', incomplete)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('component', (
+    'retained_balance_review',
+    'retained_activity_review',
+))
+def test_rehashed_malformed_retained_observation_component_fails_closed(
+        tmp_path, monkeypatch, component):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        observation = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review']
+        observation[component] = []
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('mode', 'WRONG_BALANCE_MODE'),
+    ('policy', 'wrong.balance.policy'),
+    ('status', 'COMPLETE'),
+    ('read_only', False),
+    ('source', 'SOURCE_ATTESTED'),
+    ('retained_activity_review_location', 'EMBEDDED_DUPLICATE'),
+    ('account_sha256', '0' * 64),
+    ('head_sha256', '0' * 64),
+))
+def test_rehashed_retained_balance_envelope_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        balance = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review'][
+                'retained_balance_review']
+        balance[field] = value
+        _rebind_retained_balance_review(result)
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('field', (
+    'head_rechecked',
+    'arithmetic_evaluated',
+))
+def test_rehashed_retained_balance_assurance_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def incomplete(**kwargs):
+        result = original(**kwargs)
+        balance = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review'][
+                'retained_balance_review']
+        balance[field] = False
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', incomplete)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('field', (
+    'admission_reserved', 'atomic_snapshot', 'source_coverage_verified',
+    'fee_coverage_complete', 'fee_execution_links_verified',
+    'holds_reconciled', 'broker_account_reconciled',
+    'spendable_funds_verified', 'ledger_applied', 'ready_for_routing',
+    'broker_connected', 'live_orders_enabled', 'automatic_retry',
+    'automatic_continuation',
+))
+def test_rehashed_retained_balance_authority_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def authoritative(**kwargs):
+        result = original(**kwargs)
+        balance = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review'][
+                'retained_balance_review']
+        balance[field] = True
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', authoritative)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('mode', 'WRONG_ACTIVITY_MODE'),
+    ('status', 'COMPLETE'),
+    ('read_only', False),
+    ('source', 'SOURCE_ATTESTED'),
+    ('snapshot_selection', 'PROVIDER_SEQUENCE_ATTESTED'),
+    ('normalization_evaluated', False),
+    ('account_sha256', '0' * 64),
+    ('head_sha256', '0' * 64),
+))
+def test_rehashed_retained_activity_envelope_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        activity = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review'][
+                'retained_activity_review']
+        activity[field] = value
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('field', (
+    'activity_coverage_verified', 'fee_coverage_complete',
+    'broker_account_reconciled', 'spendable_funds_verified',
+    'ledger_applied', 'broker_connected', 'ready_for_routing',
+    'live_orders_enabled', 'automatic_continuation',
+))
+def test_rehashed_retained_activity_authority_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def authoritative(**kwargs):
+        result = original(**kwargs)
+        activity = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review'][
+                'retained_activity_review']
+        activity[field] = True
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', authoritative)
     with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
         subject.review(**options)
 

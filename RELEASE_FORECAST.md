@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.204
+
+The provider-POST reconciliation boundary now validates the shared retained gross-balance and activity subreviews inside its portable observation. Forty-three v0.340.203 accepting cases reproduced malformed subreviews, rehashed identity disagreement, assurance removal or nested authority promotion; all now fail closed. Exact-source v0.340.203 security, complete regression, saved evidence, browser help and Windows/installer workflows passed. Fresh v0.340.204 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,551 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 442 tests. Sixteen offline profiles match 401 source files / `6ab810bedc6df1cbe6b48728e7fe3b012f8191e592d5d1a72bde4efb13bd4e2d`; report SHA256 is `8027fbc159aa7bb0acff9735d58fb489d4e02c5dcea4d62248cba5cc534dee4d`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.204 wheel SHA256 is `197638981164aed71af7bed8ee30ba47e9160de811100d9f12760335df61f432`. The final staged 923-path artifact and introduced-line secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.203
 
 The provider-POST reconciliation boundary now validates every denied authority and mandatory replay/arithmetic assurance in its retained accepted-reconciliation and portable-observation evidence. Fourteen representative v0.340.202 accepting cases reproduced the defect, while 53 field-level regressions now fail closed. Exact-source v0.340.202 security, complete regression, saved evidence, browser help and Windows/installer workflows passed. Fresh v0.340.203 hosted checks remain required.

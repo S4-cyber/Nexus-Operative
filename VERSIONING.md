@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.203 (pre-release).**
+**Current development build: 0.340.204 (pre-release).**
+
++## v0.340.204 retained observation subreview contract
+
+The provider-POST reconciliation composer now validates both shared subreviews inside its retained portable observation. The gross-balance review must retain its exact mode, policy, review-only state, shared-review layout, account/activity identity, replayed input hash and arithmetic/head assurances. The retained activity review must preserve its unverified identity, normalized structure, bounded counts and denied authority. Forty-three regressions first reproduced v0.340.203 accepting malformed, rehashed identity disagreement, assurance removal or nested source/broker/funds/ledger/routing/retry/live promotion; all now return the fixed account-evidence diagnostic.
+
+Exact-source v0.340.203 public-security run 42342230332, research/regression/browser/evidence run 42342230320 and Windows/installer run 42342230319 passed. Fresh v0.340.204 hosted checks remain required.
+
+This is bounded local nested-component evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,551 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 442 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `6ab810bedc6df1cbe6b48728e7fe3b012f8191e592d5d1a72bde4efb13bd4e2d`; `validation/release_trials_0_340_204.json` SHA256 is `8027fbc159aa7bb0acff9735d58fb489d4e02c5dcea4d62248cba5cc534dee4d`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.204 and has SHA256 `197638981164aed71af7bed8ee30ba47e9160de811100d9f12760335df61f432`. The final staged 923-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 
 ## v0.340.203 retained nested authority contract
 

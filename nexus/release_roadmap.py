@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.203'
+REVISION = '0.340.204'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -233,6 +233,10 @@ DELIVERY_STAGES = tuple((dict(stage,
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the provider-POST reconciliation boundary now validates the retained observation\'s shared gross-balance and activity subreviews, binds both account/activity heads to the outer observation, replays the gross-balance scope hash and rejects nested authority promotion or removed replay/arithmetic assurances' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the bounded Activity SSE response scope now preserves the original fixed safety failure even when a hostile response context attempts to suppress it or raises an ordinary cleanup exception, while process-control signals remain independently visible; the durable reconnect budget records the one GET as non-retryable review with no cursor advance, retry or sleep' if item.id == 'M8' else ''),
@@ -792,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.203 requires the retained accepted-reconciliation and portable-observation evidence inside provider-POST reconciliation to preserve every denied authority flag and every mandatory replay/arithmetic assurance. Fourteen representative v0.340.202 cases accepted rehashed authority promotion or assurance removal before the fix; 53 field-level regressions now fail closed with the fixed account-evidence diagnostic. Exact-source v0.340.202 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected nested-authority evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.204 validates both retained gross-balance and activity subreviews inside the portable observation used by provider-POST reconciliation. It binds their account/activity heads to the outer observation, replays the gross-balance scope hash, requires the shared-review layout and mandatory arithmetic/head assurances, and denies nested source, broker, funds, ledger, routing, retry, continuation and live-order authority. Forty-three v0.340.203 accepting cases now fail closed with the fixed account-evidence diagnostic. Exact-source v0.340.203 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected nested-component evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -12,6 +12,7 @@ from nexus.alpaca_paper_contract import sha
 from nexus import paper_account_evidence_review as evidence
 from nexus import paper_observation_review as observation
 from nexus import paper_provider_post_activity_review as post_activity
+from nexus import retained_balance_review
 from nexus.broker_activity_store import MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.broker_request_journal import MAX_DATABASE_BYTES as REQUEST_DATABASE_BYTES
@@ -68,6 +69,20 @@ RETAINED_OBSERVATION_DENIALS = (
     'broker_account_reconciled', 'spendable_funds_verified',
     'ledger_applied', 'ready_for_routing', 'broker_connected',
     'live_orders_enabled', 'automatic_retry', 'automatic_continuation',
+)
+RETAINED_BALANCE_DENIALS = (
+    'admission_reserved', 'atomic_snapshot', 'source_coverage_verified',
+    'fee_coverage_complete', 'fee_execution_links_verified',
+    'holds_reconciled', 'broker_account_reconciled',
+    'spendable_funds_verified', 'ledger_applied', 'ready_for_routing',
+    'broker_connected', 'live_orders_enabled', 'automatic_retry',
+    'automatic_continuation',
+)
+RETAINED_ACTIVITY_DENIALS = (
+    'activity_coverage_verified', 'fee_coverage_complete',
+    'broker_account_reconciled', 'spendable_funds_verified',
+    'ledger_applied', 'broker_connected', 'ready_for_routing',
+    'live_orders_enabled', 'automatic_continuation',
 )
 
 
@@ -145,6 +160,60 @@ def _component_digest(value, code):
         _fail(code)
 
 
+def _retained_observation_components(retained_observation):
+    """Require both shared retained subreviews to remain non-authoritative."""
+    balance = retained_observation.get('retained_balance_review')
+    activity = retained_observation.get('retained_activity_review')
+    if (type(balance) is not dict or type(activity) is not dict or
+            balance.get('mode') !=
+                'HEAD_BOUND_RETAINED_GROSS_BALANCE_REVIEW' or
+            balance.get('policy') != retained_balance_review.POLICY or
+            balance.get('status') != 'REVIEW_REQUIRED' or
+            balance.get('read_only') is not True or
+            balance.get('source') != 'SUPPLIED_UNATTESTED' or
+            balance.get('retained_activity_review_location') !=
+                'TOP_LEVEL_SHARED_REVIEW' or
+            'retained_activity_review' in balance or
+            balance.get('head_rechecked') is not True or
+            balance.get('arithmetic_evaluated') is not True or
+            type(balance.get('gross_fill_review')) is not dict or
+            type(balance.get('review_reasons')) is not list or
+            any(balance.get(key) is not False
+                for key in RETAINED_BALANCE_DENIALS) or
+            activity.get('mode') != 'UNATTESTED_RETAINED_ACTIVITY_REVIEW' or
+            activity.get('status') != 'REVIEW_REQUIRED' or
+            activity.get('read_only') is not True or
+            activity.get('source') != 'SUPPLIED_UNATTESTED' or
+            activity.get('snapshot_selection') !=
+                'REPORTED_UPDATED_AT_DIAGNOSTIC_ONLY' or
+            activity.get('normalization_evaluated') is not True or
+            type(activity.get('activity_normalization')) is not dict or
+            type(activity.get('collection_observation_review')) is not dict or
+            type(activity.get('requested_window_review')) is not dict or
+            type(activity.get('review_reasons')) is not list or
+            any(not _component_count(activity.get(key)) for key in (
+                'retained_batches', 'retained_activities', 'distinct_orders',
+                'distinct_order_snapshots')) or
+            any(activity.get(key) is not False
+                for key in RETAINED_ACTIVITY_DENIALS)):
+        return False
+    account = retained_observation.get('account_sha256')
+    head = retained_observation.get('head_sha256')
+    if (balance.get('account_sha256') != account or
+            balance.get('head_sha256') != head or
+            activity.get('account_sha256') != account or
+            activity.get('head_sha256') != head or
+            not _component_sha256(balance.get('input_sha256'))):
+        return False
+    balance_scope = {key: balance.get(key) for key in (
+        'policy', 'account_sha256', 'head_sha256', 'opening_balances',
+        'opening_at', 'observed_balances', 'observed_at')}
+    try:
+        return balance.get('input_sha256') == sha(balance_scope)
+    except (TypeError, ValueError, OverflowError, RecursionError):
+        return False
+
+
 def _retained_reconciliation_envelope(value, account_review, guard_review):
     accepted = guard_review.get('accepted_reconciliation_review')
     if type(accepted) is not dict:
@@ -168,7 +237,8 @@ def _retained_reconciliation_envelope(value, account_review, guard_review):
             retained_observation.get('head_rechecked') is not True or
             retained_observation.get('arithmetic_evaluated') is not True or
             any(retained_observation.get(key) is not False
-                for key in RETAINED_OBSERVATION_DENIALS)):
+                for key in RETAINED_OBSERVATION_DENIALS) or
+            not _retained_observation_components(retained_observation)):
         return False
     accepted_hashes = tuple(accepted.get(key) for key in (
         'input_sha256', 'account_sha256', 'pacing_head_sha256',

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.205. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.206. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.205 replays the complete retained gross-fill arithmetic inside provider-POST reconciliation and binds its ending balances, observed residual, debit-coverage result, retained fee totals and fee counts to the outer guarded-account projections. Thirty-three v0.340.204 accepting mutations now fail closed, including rehashed arithmetic/count/scope/authority changes and unbound outer projections. Exact-source v0.340.204 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected arithmetic-consistency evidence, not provider/account acceptance, fee-link/posting/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.206 independently replays the complete retained activity review from the exact guarded activity database and requires the nested provider-POST reconciliation component to match it structurally. Twenty-one v0.340.205 accepting mutations now fail closed, covering counts, ambiguity/revision diagnostics, normalization projections, collection observations, requested-window summaries, reasons, limitations and extensions. This is local retained-store replay evidence, not provider/account acceptance, fee-link/posting/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

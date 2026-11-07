@@ -828,6 +828,55 @@ def test_rehashed_retained_activity_authority_fails_closed(
         subject.review(**options)
 
 
+@pytest.mark.parametrize(('path', 'value'), (
+    (('retained_batches',), 2),
+    (('retained_activities',), 3),
+    (('distinct_orders',), 2),
+    (('distinct_order_snapshots',), 2),
+    (('ambiguous_order_ids',), ['forged-order']),
+    (('snapshot_revision_order_ids',), ['forged-order']),
+    (('review_reasons',), []),
+    (('limitations',), 'forged limitation'),
+    (('private_extension',), 'forged'),
+    (('activity_normalization', 'mode'), 'FORGED_NORMALIZATION'),
+    (('activity_normalization', 'input_sha256'), '0' * 64),
+    (('activity_normalization', 'executions'), []),
+    (('activity_normalization', 'fee_debits'), [{'private': 'forged'}]),
+    (('activity_normalization', 'recognized_fee_debits'),
+        {'USD': '1', 'BTC': '0'}),
+    (('activity_normalization', 'duplicate_activities_ignored'), 1),
+    (('activity_normalization', 'review_reasons'), []),
+    (('activity_normalization', 'limitations'), 'forged limitation'),
+    (('collection_observation_review', 'retained_pages'), 2),
+    (('collection_observation_review', 'declared_transports'),
+        ['PAPER_HTTPS_READS']),
+    (('requested_window_review', 'unique_windows'), 2),
+    (('requested_window_review', 'components'), []),
+))
+def test_rehashed_retained_activity_replay_disagreement_fails_closed(
+        tmp_path, monkeypatch, path, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        activity = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review'][
+                'retained_activity_review']
+        target = activity
+        for key in path[:-1]:
+            target = target[key]
+        target[path[-1]] = value
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 @pytest.mark.parametrize(('field', 'value'), (
     ('gross_execution_ending_balances', {'USD': '999', 'BTC': '2'}),
     ('gross_minus_supplied_observed', {'USD': '1', 'BTC': '0'}),

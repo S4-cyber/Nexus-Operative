@@ -1,8 +1,20 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.205 (pre-release).**
+**Current development build: 0.340.206 (pre-release).**
 
-+## v0.340.205 retained gross-fill arithmetic replay
+## v0.340.206 retained activity review replay
+
+The provider-POST reconciliation composer now independently replays the complete retained activity review from the exact guarded activity database. The nested counts, ambiguity/revision diagnostics, normalization, collection observations, requested-window summaries, reasons, limitations and extensions must match that stable replay exactly. Twenty-one regressions first reproduced v0.340.205 accepting those mutations; all now return the fixed account-evidence diagnostic.
+
+Exact-source v0.340.205 public-security run 42351609742 plus saved-evidence and Portal browser-help jobs in research run 42351609278 passed. Its complete offline regression and Windows/installer run 42351609272 remained active at this checkpoint and are not claimed as passed. Fresh v0.340.206 hosted checks remain required.
+
+This is bounded local retained-store replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,605 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 433 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `4f841d2e46fa3974c9a84a32f9cc50ddc562938192991bf86a02cc15faf6493c`; `validation/release_trials_0_340_206.json` SHA256 is `5ef3aeeddae5d3f53087704ed99f82b472bbb9b56285d502991279b91d6d5a0a`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.206 and has SHA256 `f0039f87712e6ee7c7385ba74e0d510dcb11df51494b36fc3e6486104ab2e63a`. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+## v0.340.205 retained gross-fill arithmetic replay
 
 The provider-POST reconciliation composer now replays the complete retained gross-fill arithmetic from its exact normalized activities and canonical balance interval. The nested arithmetic/count/scope/authority result and its five outer guarded-account projections must agree exactly. Thirty-three v0.340.204 accepting mutations now fail closed with the fixed account-evidence diagnostic.
 
@@ -14,7 +26,7 @@ The rough weighted implementation estimate remains about 40% (30–45%, low conf
 
 Final local validation passed 5,584 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 475 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `97da422a5ae873627fda480789c119611009bc8d097ea00144bb927dc38862f4`; `validation/release_trials_0_340_205.json` SHA256 is `b3e0c2e519b006a1e0f37d06130fb68738af22f91724433998b6a05bbbdd66ad`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.205 and has SHA256 `99758e56f1c78cb8789e14eada1089e0a4f8308f69aa6ce6a4b6156c6f52a89e`. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
-+## v0.340.204 retained observation subreview contract
+## v0.340.204 retained observation subreview contract
 
 The provider-POST reconciliation composer now validates both shared subreviews inside its retained portable observation. The gross-balance review must retain its exact mode, policy, review-only state, shared-review layout, account/activity identity, replayed input hash and arithmetic/head assurances. The retained activity review must preserve its unverified identity, normalized structure, bounded counts and denied authority. Forty-three regressions first reproduced v0.340.203 accepting malformed, rehashed identity disagreement, assurance removal or nested source/broker/funds/ledger/routing/retry/live promotion; all now return the fixed account-evidence diagnostic.
 

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.198. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.199. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.198 validates every projected provider-POST and guarded-account component field before composing a reconciliation result. Missing fields, malformed or uppercase hashes, boolean/negative counts and counts inconsistent with retained request or POST history now return fixed component-specific failures instead of leaking KeyError or entering a reviewed diagnostic. Exact-source v0.340.197 security, saved evidence and browser help passed; its complete regression and Windows/installer workflow remained active at candidate recovery. This is local injected component-boundary evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.199 validates complete provider-POST and guarded-account component envelopes before composing reconciliation. Non-mapping results, wrong component mode or policy, false recheck or uncertainty claims and non-canonical values now return fixed component-specific failures rather than leaking AttributeError or TypeError or entering a reviewed result. Exact-source v0.340.198 saved evidence and browser help passed; its complete regression and Windows/installer workflows remained active at candidate recovery, while exact-source v0.340.197 Windows/installer acceptance passed. This is local injected component-boundary evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

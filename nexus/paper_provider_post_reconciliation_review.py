@@ -101,6 +101,13 @@ def _component_count(value):
     return type(value) is int and value >= 0
 
 
+def _component_digest(value, code):
+    try:
+        return sha(value)
+    except (TypeError, ValueError, OverflowError, RecursionError):
+        _fail(code)
+
+
 def review(post_budget, *, expected_post_head, account_id, journal,
            expected_request_head, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
@@ -157,18 +164,25 @@ def review(post_budget, *, expected_post_head, account_id, journal,
 
     posts = stable_read(lambda: post_activity.review(post_budget,
         expected_post_head=expected_post_head, account_bindings=[binding]))
+    if type(posts) is not dict:
+        _fail('POST_ACTIVITY_INCOMPLETE')
     post_counts = tuple(posts.get(key) for key in (
         'post_attempts', 'exact_activity_bindings',
         'exact_not_sent_bindings'))
-    if (posts.get('status') != 'COMPLETE_LOCAL_POST_ACTIVITY_CONSISTENT' or
+    if (posts.get('mode') != 'READ_ONLY_PAPER_PROVIDER_POST_ACTIVITY_REVIEW' or
+            posts.get('status') != 'COMPLETE_LOCAL_POST_ACTIVITY_CONSISTENT' or
             posts.get('read_only') is not True or
             posts.get('complete_local_post_activity_consistent') is not True or
+            posts.get('journal_files_rechecked_unchanged') is not True or
+            posts.get('semantic_reader_failures_rechecked') is not True or
+            posts.get('uncertainty_preserved') is not True or
             posts.get('account_histories') != 1 or posts.get('reasons') != [] or
             any(not _component_count(value) for value in post_counts) or
             post_counts[0] != len(attempts) or
             post_counts[1] + post_counts[2] != post_counts[0] or
             any(posts.get(flag) is not False for flag in post_activity.FLAGS)):
         _fail('POST_ACTIVITY_INCOMPLETE')
+    posts_digest = _component_digest(posts, 'POST_ACTIVITY_INCOMPLETE')
 
     account = stable_read(lambda: evidence.review_with_stability_guards(
         expected_account_id=account_id, request_journal_path=journal.path,
@@ -180,6 +194,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         opening_observation=opening_observation,
         closing_observation=closing_observation,
         post_closing_observation=post_closing_observation))
+    if type(account) is not dict:
+        _fail('ACCOUNT_EVIDENCE_INVALID')
     required = ('complete_accepted_history_replayed', 'component_heads_agree',
         'stability_guard_bound', 'guard_manifests_distinct',
         'guard_windows_ordered', 'adjacent_guard_balances_stable',
@@ -203,6 +219,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     retained_activities = first_activity.get('retained_activities')
     if (account.get('mode') !=
             'PAPER_ACCOUNT_EVIDENCE_STABILITY_GUARD_REVIEW' or
+            account.get('policy') != evidence.STABILITY_POLICY or
             account.get('status') != 'REVIEW_REQUIRED' or
             account.get('read_only') is not True or
             account.get('account_sha256') != journal_account or
@@ -217,6 +234,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             account_counts[1] > retained_activities or
             any(account.get(flag) is not False for flag in evidence.FLAGS)):
         _fail('ACCOUNT_EVIDENCE_INVALID')
+    account_digest = _component_digest(account, 'ACCOUNT_EVIDENCE_INVALID')
 
     current_activity = stable_read(lambda: acceptance_status(
         expected_account_id=account_id, pacing_path=pacing_path,
@@ -254,8 +272,8 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         activity_head_sha256=expected_activity_head,
         pacing_head_sha256=account['pacing_head_sha256'],
         acceptance_head_sha256=account['acceptance_head_sha256'],
-        provider_post_activity_sha256=sha(posts),
-        account_evidence_sha256=sha(account),
+        provider_post_activity_sha256=posts_digest,
+        account_evidence_sha256=account_digest,
         pre_opening_manifest_sha256=account['pre_opening_manifest_sha256'],
         opening_manifest_sha256=account['opening_manifest_sha256'],
         closing_manifest_sha256=account['closing_manifest_sha256'],

@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.199
+
+Complete provider-POST reconciliation component envelopes now fail closed before field projection when a result is not a mapping, identifies the wrong mode or policy, denies required recheck/uncertainty claims, or cannot be canonically hashed. Exact-source v0.340.198 saved evidence and browser help passed while its regression and Windows workflow remained active; exact-source v0.340.197 Windows/installer acceptance subsequently passed. Fresh v0.340.199 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,420 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 277 tests. Sixteen offline profiles match 401 source files / `d5c33e2e36dd67eba8e6c8d77d30b42d97b3b5ed079ea20660a69b7d4fb4e03e`; report SHA256 is `cd4fa8c353ac5058ed5505ad95816967933c4d05dda5696ca1c51b5072727ef6`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.199 wheel SHA256 is `d06613d16b6cc7a747b366ec130273a0f93a4f4b0cdfdbf1f2aaf5576884b624`. The final staged 918-path artifact and introduced-line secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.198
 
 The provider-POST reconciliation composer now strictly validates the heads, observation manifests and counts it projects from its component reviews. Missing fields, malformed hashes, boolean/negative counts and counts inconsistent with retained POST/request/activity histories fail closed with fixed diagnostics. Exact-source v0.340.197 security, saved evidence and browser help passed; its long regression and Windows/installer workflow remained active at recovery. Fresh v0.340.198 hosted checks remain required.

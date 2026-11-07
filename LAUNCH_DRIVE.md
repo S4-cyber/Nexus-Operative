@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.199 strict reconciliation component envelopes
+
+The provider-POST reconciliation composer now validates complete component envelopes before projecting fields. Non-mapping POST/activity or guarded-account results, wrong component mode or policy, false recheck/uncertainty claims and non-canonical values fail closed with fixed component-specific diagnostics instead of leaking runtime exceptions or entering a reviewed result.
+
+Exact-source v0.340.198 saved evidence and browser help passed; its complete regression and Windows/installer workflows remained active at candidate recovery. Exact-source v0.340.197 Windows/installer acceptance subsequently passed. Fresh v0.340.199 hosted checks remain required.
+
+This is bounded local component-contract evidence, not actual provider/source, paper-account, delivery-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,420 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/component/release/evidence/version/roadmap focus passed 277 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `d5c33e2e36dd67eba8e6c8d77d30b42d97b3b5ed079ea20660a69b7d4fb4e03e`; `validation/release_trials_0_340_199.json` SHA256 is `cd4fa8c353ac5058ed5505ad95816967933c4d05dda5696ca1c51b5072727ef6`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.199 and has SHA256 `d06613d16b6cc7a747b366ec130273a0f93a4f4b0cdfdbf1f2aaf5576884b624`. The final staged 918-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## v0.340.198 strict reconciliation component projections
 
 The provider-POST reconciliation composer now validates every projected field from its POST/activity and guarded-account components before emitting a reviewed result. Projected heads and manifests require exact lowercase SHA-256 strings; projected attempt/binding/request/fill counts require non-boolean nonnegative integers and must agree with retained histories. Missing fields, malformed hashes and inconsistent counts return fixed component-specific failures instead of leaking `KeyError` or entering a malformed diagnostic.

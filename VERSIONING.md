@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.198 (pre-release).**
+**Current development build: 0.340.199 (pre-release).**
+
+## v0.340.199 strict reconciliation component envelopes
+
+Complete POST/activity and guarded-account component envelopes are now validated before reconciliation fields are projected. Non-mapping results, wrong component identity, false recheck/uncertainty claims and non-canonical values fail closed with fixed diagnostics. Exact-source v0.340.198 saved evidence and browser help passed while its complete regression and Windows workflow remained active; exact-source v0.340.197 Windows/installer acceptance subsequently passed. Fresh v0.340.199 hosted checks remain required.
+
+This is local injected component-contract evidence, not actual provider/account, sustained genuine-feed, fee/hold/funds, native Windows, live, cloud or release acceptance. Version 1.0 remains blocked on every documented independent gate and explicit owner release approval. No UI control, editable parameter or permission default changed.
+
+Final local validation passed 5,420 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 277 tests. Sixteen offline profiles match 401 source files / `d5c33e2e36dd67eba8e6c8d77d30b42d97b3b5ed079ea20660a69b7d4fb4e03e`; report SHA256 is `cd4fa8c353ac5058ed5505ad95816967933c4d05dda5696ca1c51b5072727ef6`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.199 wheel SHA256 is `d06613d16b6cc7a747b366ec130273a0f93a4f4b0cdfdbf1f2aaf5576884b624`. The final staged 918-path artifact and introduced-line secret scans found zero findings.
 
 ## v0.340.198 strict reconciliation component projections
 

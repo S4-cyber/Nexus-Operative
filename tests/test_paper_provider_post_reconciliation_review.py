@@ -199,6 +199,65 @@ def test_malformed_account_component_projection_fails_closed(
         subject.review(**options)
 
 
+@pytest.mark.parametrize(('component', 'diagnostic'), (
+    ('post_activity', 'POST_ACTIVITY_INCOMPLETE'),
+    ('account_evidence', 'ACCOUNT_EVIDENCE_INVALID'),
+))
+def test_non_mapping_component_envelope_fails_closed(
+        tmp_path, monkeypatch, component, diagnostic):
+    options = subject._fixture(tmp_path)
+    if component == 'post_activity':
+        monkeypatch.setattr(subject.post_activity, 'review',
+            lambda *args, **kwargs: [])
+    else:
+        monkeypatch.setattr(subject.evidence,
+            'review_with_stability_guards', lambda **kwargs: [])
+    with pytest.raises(ValueError, match=diagnostic):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('mode', 'WRONG_COMPONENT_MODE'),
+    ('journal_files_rechecked_unchanged', False),
+    ('semantic_reader_failures_rechecked', False),
+    ('uncertainty_preserved', False),
+    ('private_uncanonical_value', 'object'),
+))
+def test_invalid_post_component_envelope_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.post_activity.review
+
+    def malformed(*args, **kwargs):
+        result = original(*args, **kwargs)
+        result[field] = object() if value == 'object' else value
+        return result
+
+    monkeypatch.setattr(subject.post_activity, 'review', malformed)
+    with pytest.raises(ValueError, match='POST_ACTIVITY_INCOMPLETE'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('policy', 'wrong.account.policy'),
+    ('private_uncanonical_value', 'object'),
+))
+def test_invalid_account_component_envelope_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result[field] = object() if value == 'object' else value
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 def test_final_request_race_refuses(tmp_path, monkeypatch):
     options = subject._fixture(tmp_path)
     original = subject.evidence.review_with_stability_guards

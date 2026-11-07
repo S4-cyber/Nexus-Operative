@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.203 retained nested authority contract
+
+The provider-POST reconciliation composer now rejects rehashed retained evidence that promotes any denied authority or removes any mandatory acceptance/observation assurance. Fourteen representative v0.340.202 accepting cases reproduced the defect; 53 field-level regressions cover the complete contract.
+
+Exact-source v0.340.202 public-security run 42338525419, research/regression/browser/evidence run 42338525392 and Windows/installer run 42338525453 passed. Fresh v0.340.203 hosted checks remain required.
+
+This is bounded local nested-authority evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,508 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/component/release/evidence/version/roadmap focus passed 365 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `b04ee124e7e86d53a5922cc2c14b3074888a9c489022ae4a68aa70bfd3bc6174`; `validation/release_trials_0_340_203.json` SHA256 is `76a13a0244581b5406fe77351774260aced87683dcdc1999e594e72096003ddc`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.203 and has SHA256 `6a1c5bc620f9d25f483b86a0df1493bf22a72739d4d63ec856c513055c8b4c31`. The final staged 922-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## v0.340.202 retained reconciliation envelope integrity
 
 The provider-POST reconciliation composer now validates the complete retained accepted-reconciliation and portable-observation envelopes. It recomputes both nested scope hashes, verifies the complete accepted-review digest and requires the nested account, pacing, activity, acceptance and manifest projections to agree with the outer component. Twelve v0.340.201 accepting cases now fail closed.

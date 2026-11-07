@@ -33,6 +33,42 @@ FLAGS = tuple(dict.fromkeys((*post_activity.FLAGS, *evidence.FLAGS,
     'provider_account_accepted', 'balance_reconciled',
     'spendable_funds_verified', 'automatic_retry', 'automatic_continuation')))
 SHA256_PATTERN = re.compile(r'[0-9a-f]{64}')
+RETAINED_RECONCILIATION_ASSURANCES = (
+    'journals_rechecked_unchanged',
+    'journal_files_rechecked_unchanged',
+    'journal_file_identities_rechecked',
+    'journal_store_bindings_rechecked',
+    'semantic_reader_failures_rechecked',
+    'complete_accepted_history_replayed',
+    'legacy_baseline_absent',
+    'complete_pacing_sessions_accepted',
+    'accepted_pacing_operations_typed',
+    'accepted_pacing_result_receipts_bound',
+    'accepted_pacing_request_targets_bound',
+    'complete_retained_batches_accepted',
+    'complete_collection_observations_accepted',
+    'all_collection_cursor_sequences_complete',
+    'declared_collection_windows_cover_observation_envelope',
+)
+RETAINED_RECONCILIATION_DENIALS = (
+    'admission_reserved', 'source_attested', 'source_coverage_verified',
+    'activity_coverage_verified', 'fee_coverage_complete',
+    'fee_execution_links_verified', 'balance_instants_verified',
+    'observation_windows_verified_quiet', 'holds_reconciled',
+    'broker_account_reconciled', 'spendable_funds_verified',
+    'ledger_applied', 'ready_for_routing', 'broker_connected',
+    'live_orders_enabled', 'money_movement_enabled', 'automatic_retry',
+    'automatic_continuation', 'release_approved',
+)
+RETAINED_OBSERVATION_DENIALS = (
+    'admission_reserved', 'source_attested', 'source_coverage_verified',
+    'balance_instants_verified', 'observation_windows_verified_quiet',
+    'atomic_snapshot', 'fee_coverage_complete',
+    'fee_execution_links_verified', 'holds_reconciled',
+    'broker_account_reconciled', 'spendable_funds_verified',
+    'ledger_applied', 'ready_for_routing', 'broker_connected',
+    'live_orders_enabled', 'automatic_retry', 'automatic_continuation',
+)
 
 
 def _fail(code):
@@ -124,7 +160,15 @@ def _retained_reconciliation_envelope(value, account_review, guard_review):
                 'PORTABLE_OBSERVATION_RETAINED_ACTIVITY_REVIEW' or
             retained_observation.get('policy') != observation.POLICY or
             retained_observation.get('status') != 'REVIEW_REQUIRED' or
-            retained_observation.get('read_only') is not True):
+            retained_observation.get('read_only') is not True or
+            any(accepted.get(key) is not True
+                for key in RETAINED_RECONCILIATION_ASSURANCES) or
+            any(accepted.get(key) is not False
+                for key in RETAINED_RECONCILIATION_DENIALS) or
+            retained_observation.get('head_rechecked') is not True or
+            retained_observation.get('arithmetic_evaluated') is not True or
+            any(retained_observation.get(key) is not False
+                for key in RETAINED_OBSERVATION_DENIALS)):
         return False
     accepted_hashes = tuple(accepted.get(key) for key in (
         'input_sha256', 'account_sha256', 'pacing_head_sha256',

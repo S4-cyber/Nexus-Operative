@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.202. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.203. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.202 validates the complete retained accepted-reconciliation and portable-observation envelopes before composing provider-POST reconciliation. It recomputes both nested scope hashes, verifies the complete retained reconciliation digest and requires their account, pacing, activity, acceptance and manifest projections to agree with the outer component. Twelve v0.340.201 accepting cases now fail closed with the fixed account-evidence diagnostic. Exact-source v0.340.201 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected component-coherence evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.203 requires the retained accepted-reconciliation and portable-observation evidence inside provider-POST reconciliation to preserve every denied authority flag and every mandatory replay/arithmetic assurance. Fourteen representative v0.340.202 cases accepted rehashed authority promotion or assurance removal before the fix; 53 field-level regressions now fail closed with the fixed account-evidence diagnostic. Exact-source v0.340.202 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected nested-authority evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

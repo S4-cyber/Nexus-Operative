@@ -565,6 +565,91 @@ def test_rehashed_retained_observation_projection_fails_closed(
         subject.review(**options)
 
 
+@pytest.mark.parametrize(
+    'field', subject.RETAINED_RECONCILIATION_DENIALS)
+def test_rehashed_retained_reconciliation_authority_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def authoritative(**kwargs):
+        result = original(**kwargs)
+        result['stability_guard_review'][
+            'accepted_reconciliation_review'][field] = True
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', authoritative)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(
+    'field', subject.RETAINED_RECONCILIATION_ASSURANCES)
+def test_rehashed_retained_reconciliation_assurance_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def incomplete(**kwargs):
+        result = original(**kwargs)
+        result['stability_guard_review'][
+            'accepted_reconciliation_review'][field] = False
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', incomplete)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('field', subject.RETAINED_OBSERVATION_DENIALS)
+def test_rehashed_retained_observation_authority_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def authoritative(**kwargs):
+        result = original(**kwargs)
+        observation = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review']
+        observation[field] = True
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', authoritative)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize('field', (
+    'head_rechecked',
+    'arithmetic_evaluated',
+))
+def test_rehashed_retained_observation_assurance_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def incomplete(**kwargs):
+        result = original(**kwargs)
+        observation = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review']
+        observation[field] = False
+        _rebind_observation_review(result)
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', incomplete)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 def test_final_request_race_refuses(tmp_path, monkeypatch):
     options = subject._fixture(tmp_path)
     original = subject.evidence.review_with_stability_guards

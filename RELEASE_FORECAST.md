@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.203
+
+The provider-POST reconciliation boundary now validates every denied authority and mandatory replay/arithmetic assurance in its retained accepted-reconciliation and portable-observation evidence. Fourteen representative v0.340.202 accepting cases reproduced the defect, while 53 field-level regressions now fail closed. Exact-source v0.340.202 security, complete regression, saved evidence, browser help and Windows/installer workflows passed. Fresh v0.340.203 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,508 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 365 tests. Sixteen offline profiles match 401 source files / `b04ee124e7e86d53a5922cc2c14b3074888a9c489022ae4a68aa70bfd3bc6174`; report SHA256 is `76a13a0244581b5406fe77351774260aced87683dcdc1999e594e72096003ddc`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.203 wheel SHA256 is `6a1c5bc620f9d25f483b86a0df1493bf22a72739d4d63ec856c513055c8b4c31`. The final staged 922-path artifact and introduced-line secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.202
 
 The provider-POST reconciliation boundary now validates the complete retained accepted-reconciliation and portable-observation envelopes, recomputes both scope hashes, verifies the complete retained accepted-review digest and requires every nested head/manifest projection to agree with the outer component. Exact-source v0.340.201 security, complete regression, saved evidence, browser help and Windows/installer workflows passed. Fresh v0.340.202 hosted checks remain required.

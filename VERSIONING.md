@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.202 (pre-release).**
+**Current development build: 0.340.203 (pre-release).**
+
+## v0.340.203 retained nested authority contract
+
+The retained accepted-reconciliation and portable-observation evidence inside provider-POST reconciliation must now keep every permission/attestation field false and every mandatory replay/arithmetic assurance true. Fourteen representative v0.340.202 accepting cases reproduced rehashed authority promotion or assurance removal; 53 field-level regressions now fail closed.
+
+Exact-source v0.340.202 public-security run 42338525419, research/regression/browser/evidence run 42338525392 and Windows/installer run 42338525453 passed. Fresh v0.340.203 hosted checks remain required.
+
+This is local injected nested-authority evidence, not actual provider/account, sustained genuine-feed, fee/hold/funds, native Windows, live, cloud or release acceptance. Version 1.0 remains blocked on every documented independent gate and explicit owner release approval. No UI control, editable parameter or permission default changed.
+
+Final local validation passed 5,508 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 365 tests. Sixteen offline profiles match 401 source files / `b04ee124e7e86d53a5922cc2c14b3074888a9c489022ae4a68aa70bfd3bc6174`; report SHA256 is `76a13a0244581b5406fe77351774260aced87683dcdc1999e594e72096003ddc`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.203 wheel SHA256 is `6a1c5bc620f9d25f483b86a0df1493bf22a72739d4d63ec856c513055c8b4c31`. The final staged 922-path artifact and introduced-line secret scans found zero findings.
 
 ## v0.340.202 retained reconciliation envelope integrity
 

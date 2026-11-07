@@ -1,8 +1,20 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.212 (pre-release).**
+**Current development build: 0.340.213 (pre-release).**
 
-+## v0.340.212 complete provider-POST history replay
+## v0.340.213 complete accepted-activity replay
+
+The provider-POST/activity composer now independently reconstructs the complete accepted request/activity component from the exact request, pacing, activity and acceptance journals before trusting any primary result field. The primary component must equal a distinct stable replay in full, so mode, policy, input digest, complete-collection observation state, legacy-baseline state, limitations and extensions cannot be altered while retaining forged outer consistency. Seven regressions first reproduced v0.340.212 accepting those mutations; all now return the fixed activity-component diagnostic.
+
+Exact-source v0.340.212 public-security run 42377373741 passed. Its saved offline evidence and real-browser control-help jobs in research run 42377373712 passed, while the complete regression job and Windows packaging/installer run 42377373784 remained active at this checkpoint and are not claimed as passed. The preceding v0.340.211 Windows run 42373346713 was cancelled and is not acceptance. Fresh v0.340.213 hosted checks remain required.
+
+This is bounded local retained-store replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This integrity hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,717 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the downstream reconciliation/release-trials focus passed 540 tests and the component/version/roadmap focus passed 114. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `8af564cac1c0519aef6585329d28e64102ddd451de8d267fd0d88fa7c1032f9f`; `validation/release_trials_0_340_213.json` SHA256 is `15eee8aaf10087d2a3cf797e5914223adddb131da748d1624dbd6ff93e5f471d`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.213 and has SHA256 `9375b197bbd707bc51de1c34b88f1fec6535648a454a54398d2ad66061e14995`. The 932-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+## v0.340.212 complete provider-POST history replay
 
 The provider-POST/activity composer now independently reconstructs the complete lower provider-POST history component from the exact shared provider budget and request journals before trusting any primary result field. The primary component must equal that separate stable replay in full, so mode, status, read-only state, reasons, unbound-attempt diagnostics, limitations and extensions cannot be changed while retaining a forged complete boolean. Seven regressions first reproduced v0.340.211 accepting those mutations; all now return the fixed POST-component diagnostic.
 

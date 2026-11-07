@@ -203,14 +203,21 @@ def _review_exact(post_budget, *, expected_post_head, account_bindings):
     untracked_activity_orders = 0
     unexpected_activity_blockers = 0
     for item in bindings:
-        component = stable_read(lambda item=item: activity.review(
-            expected_account_id=item['account_id'],
+        activity_inputs = dict(expected_account_id=item['account_id'],
             request_journal_path=item['journal'].path,
             pacing_path=item['pacing_path'],
             activity_store_path=item['activity_store_path'],
             acceptance_store_path=item['acceptance_store_path'],
             expected_request_head=item['expected_request_head'],
-            expected_activity_head=item['expected_activity_head']))
+            expected_activity_head=item['expected_activity_head'])
+        component = stable_read(lambda: activity.review(**activity_inputs))
+        if type(component) is not dict:
+            _fail('ACTIVITY_COMPONENT_INVALID')
+        replayed_component = stable_read(
+            lambda: activity.replay(**activity_inputs))
+        if (type(replayed_component) is not dict or
+                component != replayed_component):
+            _fail('ACTIVITY_COMPONENT_INVALID')
         nested = component.get('request_activity_review')
         valid = (component.get('read_only') is True and
             component.get('status') == 'REVIEW_REQUIRED' and

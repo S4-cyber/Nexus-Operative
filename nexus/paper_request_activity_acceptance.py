@@ -78,9 +78,9 @@ def _request_origins(journal,store,acceptance_path,account,expected_head):
     return result
 
 
-def review(*, expected_account_id, request_journal_path, pacing_path,
-           activity_store_path, acceptance_store_path,
-           expected_request_head, expected_activity_head):
+def _review_exact(*, expected_account_id, request_journal_path, pacing_path,
+                  activity_store_path, acceptance_store_path,
+                  expected_request_head, expected_activity_head):
     """Review immutable request terms/fills only after full accepted-history replay."""
     paths = check_path_set((request_journal_path, pacing_path,
         activity_store_path, acceptance_store_path),
@@ -160,6 +160,30 @@ def review(*, expected_account_id, request_journal_path, pacing_path,
         request_activity_review=component,
         **{flag:False for flag in FLAGS},
         limitations='Complete local accepted-history replay binds this exact request head to one exact retained activity head and rechecks all cooperating journals. This is sampled local consistency only: it does not attest provider source or complete activity/fee coverage, make the request journal atomic with collection, verify holds or spendable funds, authorize transport, write a ledger or approve release. Keep all private journals and reports outside Git.')
+
+
+def review(*, expected_account_id, request_journal_path, pacing_path,
+           activity_store_path, acceptance_store_path,
+           expected_request_head, expected_activity_head):
+    """Return the primary accepted request/activity history review."""
+    return _review_exact(expected_account_id=expected_account_id,
+        request_journal_path=request_journal_path, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path,
+        expected_request_head=expected_request_head,
+        expected_activity_head=expected_activity_head)
+
+
+def replay(*, expected_account_id, request_journal_path, pacing_path,
+           activity_store_path, acceptance_store_path,
+           expected_request_head, expected_activity_head):
+    """Reconstruct the complete component from the selected exact inputs."""
+    return _review_exact(expected_account_id=expected_account_id,
+        request_journal_path=request_journal_path, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path,
+        expected_request_head=expected_request_head,
+        expected_activity_head=expected_activity_head)
 
 
 def _fixture(root,*,submission_admission=None,fee_mode=None):

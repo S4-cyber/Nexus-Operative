@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.213
+
+The provider-POST/activity boundary now independently reconstructs the complete accepted request/activity component from the exact request, pacing, activity and acceptance journals and requires the primary component to match a distinct stable replay in full. Seven v0.340.212 accepting mode, policy, input-digest, completeness, legacy-baseline, limitation and extension mutations now fail closed. Exact-source v0.340.212 security, saved-evidence and browser-help checks passed; its complete regression and Windows/installer checks remained active at this checkpoint. The preceding v0.340.211 Windows run was cancelled and is not acceptance. Fresh v0.340.213 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,717 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the two focused selections passed 540 and 114 tests. Sixteen offline profiles match 401 source files / `8af564cac1c0519aef6585329d28e64102ddd451de8d267fd0d88fa7c1032f9f`; report SHA256 is `15eee8aaf10087d2a3cf797e5914223adddb131da748d1624dbd6ff93e5f471d`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.213 wheel SHA256 is `9375b197bbd707bc51de1c34b88f1fec6535648a454a54398d2ad66061e14995`. The 932-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.212
 
 The provider-POST/activity boundary now independently reconstructs the complete lower provider-POST history component from the exact shared provider budget and request journals and requires the primary component to match it in full. Seven v0.340.211 accepting mode, status, read-only, reason, unbound-attempt, limitation and extension mutations now fail closed. Exact-source v0.340.211 security and research/regression/browser/evidence workflows passed; its Windows packaging/installer workflow remained active at this checkpoint. Fresh v0.340.212 hosted checks remain required.

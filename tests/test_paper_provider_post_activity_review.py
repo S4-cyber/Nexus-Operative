@@ -81,7 +81,7 @@ def test_unbound_prepared_request_row_requires_review(tmp_path):
     assert 'UNBOUND_REQUEST_ACTIVITY_ROW' in result['reasons']
 
 
-def test_activity_row_disagreement_is_separate_from_post_history(monkeypatch,
+def test_activity_row_mutation_fails_complete_component_replay(monkeypatch,
         tmp_path):
     budget, head, binding = prepared(tmp_path)
     original = subject.activity.review
@@ -91,11 +91,10 @@ def test_activity_row_disagreement_is_separate_from_post_history(monkeypatch,
         rows[0]['payload_sha256'] = 'f' * 64
         return result
     monkeypatch.setattr(subject.activity, 'review', changed)
-    result = subject.review(budget, expected_post_head=head,
-        account_bindings=[binding])
-    assert not result['complete_local_post_activity_consistent']
-    assert result['attempt_activity_disagreements'] == 1
-    assert result['reasons'] == ['POST_ACTIVITY_BINDING_DISAGREEMENT']
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_ACTIVITY_ACTIVITY_COMPONENT_INVALID'):
+        subject.review(budget, expected_post_head=head,
+            account_bindings=[binding])
 
 
 @pytest.mark.parametrize(('field', 'value'), (
@@ -120,6 +119,32 @@ def test_post_history_component_requires_independent_complete_replay(
     monkeypatch.setattr(subject.posts, 'review', malformed)
     with pytest.raises(ValueError, match=
             'PAPER_PROVIDER_POST_ACTIVITY_POST_COMPONENT_INVALID'):
+        subject.review(budget, expected_post_head=head,
+            account_bindings=[binding])
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('mode', 'FORGED_MODE'),
+    ('policy', 'forged.policy'),
+    ('input_sha256', 'f' * 64),
+    ('complete_collection_observations_accepted', False),
+    ('legacy_baseline_absent', False),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_activity_component_requires_independent_complete_replay(
+        tmp_path, monkeypatch, field, value):
+    budget, head, binding = prepared(tmp_path)
+    original = subject.activity.review
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result[field] = value
+        return result
+
+    monkeypatch.setattr(subject.activity, 'review', malformed)
+    with pytest.raises(ValueError, match=
+            'PAPER_PROVIDER_POST_ACTIVITY_ACTIVITY_COMPONENT_INVALID'):
         subject.review(budget, expected_post_head=head,
             account_bindings=[binding])
 

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.217. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.218. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.217 independently reconstructs the complete retained fee-reference component before the known-fee reserve composer trusts any primary result field. Ten v0.340.216 accepting policy, identity, digest, count, uncertainty-scope, limitation and extension mutations now fail closed with a fixed component diagnostic. This is local retained-store replay evidence, not provider/account acceptance, verified fee-reference semantics or coverage, posting/hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.218 exposes a separately named complete replay of the terminal retained known-fee reserve review and makes its aggregate fixture compare the primary result with that replay. This is a stable distrustful-composition seam over bounded local retained history, not provider/account acceptance, complete or verified fee/reference coverage, posting/hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

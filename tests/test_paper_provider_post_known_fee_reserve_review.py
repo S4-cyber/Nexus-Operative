@@ -47,6 +47,11 @@ def test_known_fee_reserve_path_matches_supplied_closing_without_writes(tmp_path
     assert snapshot(tmp_path) == before
 
 
+def test_independently_named_replay_matches_complete_primary_report(tmp_path):
+    args = subject._fixture(tmp_path)
+    assert subject.replay(**args) == subject.review(**args)
+
+
 def test_date_only_fee_is_reserved_without_inventing_posting_time(tmp_path):
     result = subject.review(**subject._fixture(tmp_path, fee_mode='linked'))
     assert result['retained_known_fee_reservations_applied']

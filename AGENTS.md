@@ -1,5 +1,18 @@
 # Nexus Operative continuity instructions
 
+## v0.340.218 terminal known-fee reserve replay seam
+
+The terminal known-fee reserve composer now exposes a separately named complete replay entry point over its exact fail-closed review core. A regression first reproduced the missing replay seam; direct equivalence coverage now requires the replay to reconstruct the full primary report, and the public aggregate fixture compares the primary result with that replay. This gives future distrustful composers a stable reconstruction boundary without adding any authority.
+
+Exact-source v0.340.217 public-security run 42401210322 and all three research/regression/browser/evidence jobs in run 42401210207 passed. Windows packaging/installer run 42401210140 was cancelled and is not acceptance. Exact-source v0.340.216 security, research and Windows/installer runs passed. Fresh v0.340.218 hosted checks remain required.
+
+This is bounded local retained-store replay evidence, not actual provider/source, paper-account, complete or verified fee/reference coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This replay seam does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the component/release-trial focus passed 150 tests and the release/version/roadmap/evidence focus passed 143. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `626cd8a15487a99c5e8bf94f58c7ac294fb527be9fa968f1a0308784ac3610df`; `validation/release_trials_0_340_218.json` SHA256 is `83149c3fb1daa5e79f0174407f5d7d885a96da82544de9d52aae79848c0e95f6`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.218 and has SHA256 `1fab9cb73ccaab2087f2fa528c4df4631f1e8c3f3fc9871f20d9ac8eb2fd8912`. The 937-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## v0.340.217 complete fee-reference replay at reserve boundary
 
 The known-fee reserve composer now independently reconstructs the complete retained fee-reference result from the same exact selected journal heads and supplied observations before trusting any primary component field. Ten regressions first reproduced v0.340.216 accepting forged policy, identity, digest, fee counts, timestamp/date scope, uncertainty, limitations and extensions; all now fail closed with the fixed reference-component diagnostic. The fee-reference module exposes a distinct replay entry point with direct equivalence coverage.

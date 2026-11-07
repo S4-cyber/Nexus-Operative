@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.218
+
+The terminal known-fee reserve review now has a separately named complete replay over its exact fail-closed core, and the aggregate fixture compares primary and replay results. The missing seam was reproduced before implementation and direct equivalence is covered. Exact-source v0.340.217 security and all research jobs passed; its Windows test/build was cancelled and is not acceptance. Exact-source v0.340.216 security, research and Windows/installer workflows passed. Fresh v0.340.218 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused selections passed 150 and 143 tests. Sixteen offline profiles match 401 source files / `626cd8a15487a99c5e8bf94f58c7ac294fb527be9fa968f1a0308784ac3610df`; report SHA256 is `83149c3fb1daa5e79f0174407f5d7d885a96da82544de9d52aae79848c0e95f6`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.218 wheel SHA256 is `1fab9cb73ccaab2087f2fa528c4df4631f1e8c3f3fc9871f20d9ac8eb2fd8912`. The 937-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.217
 
 The known-fee reserve boundary now independently reconstructs the complete retained fee-reference component from the same exact inputs and requires the primary result to match its distinct stable replay in full. Ten v0.340.216 accepting policy, identity, digest, fee-count, timestamp/date-scope, uncertainty, limitation and extension mutations now fail closed. Exact-source v0.340.216 security, saved-evidence and browser-help checks passed; its full regression and Windows/installer checks remained active at this checkpoint. Fresh v0.340.217 hosted checks remain required.

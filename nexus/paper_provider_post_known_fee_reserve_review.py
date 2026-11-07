@@ -172,11 +172,11 @@ def _reserve_path(records, opening):
         fee_counts=fee_counts, orders=len(fill_orders))
 
 
-def review(post_budget, *, expected_post_head, account_id, journal,
-           expected_request_head, pacing_path, activity_store_path,
-           acceptance_store_path, expected_activity_head,
-           pre_opening_observation, opening_observation, closing_observation,
-           post_closing_observation):
+def _review_exact(post_budget, *, expected_post_head, account_id, journal,
+                  expected_request_head, pacing_path, activity_store_path,
+                  acceptance_store_path, expected_activity_head,
+                  pre_opening_observation, opening_observation,
+                  closing_observation, post_closing_observation):
     """Compose reference binding with a conservative retained-fee cash path."""
     if type(post_budget) is not PaperProviderPostBudget:
         _fail('POST_BUDGET_REQUIRED')
@@ -273,6 +273,42 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         limitations='Retrospective private local consistency over only retained, explicitly referenced fee obligations. Known fees are conservatively reserved at their accepted fill group, independent of their unverified reported posting date. This neither proves complete fee/activity coverage nor provider source/reference semantics, fee posting, exact balance instants, holds, settlement or spendable funds. Separate journals are not atomic or distributed. No provider/vault IO, write, retry, continuation, ledger, routing, funding, live trading or release approval.')
 
 
+def review(post_budget, *, expected_post_head, account_id, journal,
+           expected_request_head, pacing_path, activity_store_path,
+           acceptance_store_path, expected_activity_head,
+           pre_opening_observation, opening_observation, closing_observation,
+           post_closing_observation):
+    """Return the primary exact retained known-fee reserve review."""
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        account_id=account_id, journal=journal,
+        expected_request_head=expected_request_head, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path,
+        expected_activity_head=expected_activity_head,
+        pre_opening_observation=pre_opening_observation,
+        opening_observation=opening_observation,
+        closing_observation=closing_observation,
+        post_closing_observation=post_closing_observation)
+
+
+def replay(post_budget, *, expected_post_head, account_id, journal,
+           expected_request_head, pacing_path, activity_store_path,
+           acceptance_store_path, expected_activity_head,
+           pre_opening_observation, opening_observation, closing_observation,
+           post_closing_observation):
+    """Independently named complete replay for distrustful composers."""
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        account_id=account_id, journal=journal,
+        expected_request_head=expected_request_head, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path,
+        expected_activity_head=expected_activity_head,
+        pre_opening_observation=pre_opening_observation,
+        opening_observation=opening_observation,
+        closing_observation=closing_observation,
+        post_closing_observation=post_closing_observation)
+
+
 def _fixture(root, *, closing_cash='801', opening_cash='1000',
              fee_mode='linked'):
     from nexus.paper_observation_review import _fixture_observation
@@ -302,7 +338,7 @@ def fixture_report():
         before = {path.relative_to(root): path.read_bytes()
             for path in root.rglob('*') if path.is_file()}
         result = review(**options)
-        repeated = review(**options)
+        repeated = replay(**options)
         unchanged = before == {path.relative_to(root): path.read_bytes()
             for path in root.rglob('*') if path.is_file()}
         failures = {}

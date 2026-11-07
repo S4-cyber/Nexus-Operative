@@ -213,6 +213,9 @@ def review(post_budget, *, expected_post_head, account_id, journal,
     base = stable_read(lambda: references.review(**options))
     if not _component_valid(base):
         _fail('REFERENCE_COMPONENT_INVALID')
+    replayed_base = stable_read(lambda: references.replay(**options))
+    if type(replayed_base) is not dict or replayed_base != base:
+        _fail('REFERENCE_COMPONENT_INVALID')
     opening_manifest, opening = stable_read(
         lambda: _totals(opening_observation))
     closing_manifest, closing = stable_read(

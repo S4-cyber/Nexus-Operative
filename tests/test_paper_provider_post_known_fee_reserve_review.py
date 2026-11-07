@@ -96,6 +96,33 @@ def test_reference_component_authority_promotion_is_rejected(
         subject.review(**args)
 
 
+@pytest.mark.parametrize(('field', 'value'), (
+    ('policy', 'forged.policy'),
+    ('account_sha256', 'f' * 64),
+    ('input_sha256', 'f' * 64),
+    ('retained_fee_records', 999),
+    ('explicitly_referenced_fee_records', 999),
+    ('timestamped_fee_references', 999),
+    ('date_only_fee_references', 999),
+    ('reference_semantics_unverified', False),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_reference_requires_independent_complete_component_replay(
+        tmp_path, monkeypatch, field, value):
+    args = subject._fixture(tmp_path)
+    original = subject.references.review
+
+    def changed(**kwargs):
+        result = original(**kwargs)
+        result[field] = value
+        return result
+
+    monkeypatch.setattr(subject.references, 'review', changed)
+    with pytest.raises(ValueError, match='REFERENCE_COMPONENT_INVALID'):
+        subject.review(**args)
+
+
 def test_concurrent_activity_change_is_retained_and_refused(tmp_path, monkeypatch):
     args = subject._fixture(tmp_path)
     original = subject._reserve_path

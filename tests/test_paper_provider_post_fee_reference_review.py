@@ -45,6 +45,11 @@ def test_binds_every_retained_fee_reference_without_writes(tmp_path):
     assert snapshot(tmp_path) == before
 
 
+def test_independently_named_replay_matches_complete_primary_report(tmp_path):
+    args = subject._fixture(tmp_path)
+    assert subject.replay(**args) == subject.review(**args)
+
+
 def test_timestamped_fee_reference_at_or_after_fill_is_counted(tmp_path):
     args = subject._fixture(tmp_path, fee_mode='linked_timestamp')
     result = subject.review(**args)

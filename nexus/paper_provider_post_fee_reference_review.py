@@ -90,11 +90,11 @@ def _frozen_path(value, code):
         _fail(code)
 
 
-def review(post_budget, *, expected_post_head, account_id, journal,
-           expected_request_head, pacing_path, activity_store_path,
-           acceptance_store_path, expected_activity_head,
-           pre_opening_observation, opening_observation, closing_observation,
-           post_closing_observation):
+def _review_exact(post_budget, *, expected_post_head, account_id, journal,
+                  expected_request_head, pacing_path, activity_store_path,
+                  acceptance_store_path, expected_activity_head,
+                  pre_opening_observation, opening_observation,
+                  closing_observation, post_closing_observation):
     """Require complete local fee-reference partition after exact reconciliation."""
     if type(post_budget) is not PaperProviderPostBudget:
         _fail('POST_BUDGET_REQUIRED')
@@ -238,6 +238,42 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         reference_semantics_unverified=True,
         **{flag: False for flag in FLAGS},
         limitations='One private exact-head local composition binds every retained fee reference pair to an accepted original fill after provider POST, request/activity and guarded balance reconciliation. REST order/execution reference fields remain unverified hints; date-only fees have no posting instant. This does not prove provider source, fee completeness, fee allocation to the observed balance interval, holds, settled/spendable funds, profitability or broker-account acceptance. Separate journals are not atomic or distributed. No provider/vault IO, write, retry, continuation, ledger, routing, funding, live trading or release approval.')
+
+
+def review(post_budget, *, expected_post_head, account_id, journal,
+           expected_request_head, pacing_path, activity_store_path,
+           acceptance_store_path, expected_activity_head,
+           pre_opening_observation, opening_observation, closing_observation,
+           post_closing_observation):
+    """Return the primary exact retained fee-reference review."""
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        account_id=account_id, journal=journal,
+        expected_request_head=expected_request_head, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path,
+        expected_activity_head=expected_activity_head,
+        pre_opening_observation=pre_opening_observation,
+        opening_observation=opening_observation,
+        closing_observation=closing_observation,
+        post_closing_observation=post_closing_observation)
+
+
+def replay(post_budget, *, expected_post_head, account_id, journal,
+           expected_request_head, pacing_path, activity_store_path,
+           acceptance_store_path, expected_activity_head,
+           pre_opening_observation, opening_observation, closing_observation,
+           post_closing_observation):
+    """Independently named complete replay for distrustful composers."""
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        account_id=account_id, journal=journal,
+        expected_request_head=expected_request_head, pacing_path=pacing_path,
+        activity_store_path=activity_store_path,
+        acceptance_store_path=acceptance_store_path,
+        expected_activity_head=expected_activity_head,
+        pre_opening_observation=pre_opening_observation,
+        opening_observation=opening_observation,
+        closing_observation=closing_observation,
+        post_closing_observation=post_closing_observation)
 
 
 def _fixture(root, *, fee_mode='linked'):

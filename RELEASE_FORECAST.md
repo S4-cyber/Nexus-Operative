@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.217
+
+The known-fee reserve boundary now independently reconstructs the complete retained fee-reference component from the same exact inputs and requires the primary result to match its distinct stable replay in full. Ten v0.340.216 accepting policy, identity, digest, fee-count, timestamp/date-scope, uncertainty, limitation and extension mutations now fail closed. Exact-source v0.340.216 security, saved-evidence and browser-help checks passed; its full regression and Windows/installer checks remained active at this checkpoint. Fresh v0.340.217 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,773 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused selections passed 105 and 173 tests. Sixteen offline profiles match 401 source files / `ae7af9ec818d897c8f462aa81dc9c9fe057cd0a6761d4cbe446f2f8c42fbcabe`; report SHA256 is `ef7017fa848dd1ade5743084e5ee6fb05880dc0fd0fd201cdcbbc76acb8d5eda`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.217 wheel SHA256 is `bdbc32a27595cb95979a254274266f4fe151f6180d4583918b60b4a1c9942244`. The 936-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.216
 
 The retained fee-reference boundary now independently reconstructs the complete provider-POST reconciliation and accepted-history components from the same exact inputs and requires each primary result to match its distinct stable replay in full. Sixteen v0.340.215 accepting policy, identity, digest, count, arithmetic, uncertainty, limitation and extension mutations now fail closed. Exact-source v0.340.215 security, research/regression/browser/evidence and complete Windows packaging/installer workflows passed. Fresh v0.340.216 hosted checks remain required.

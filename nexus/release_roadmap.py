@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.216'
+REVISION = '0.340.217'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.216 independently reconstructs the complete provider-POST reconciliation and accepted-history components before the retained fee-reference composer trusts any primary component field. Sixteen v0.340.215 accepting policy, identity, digest, count, arithmetic, uncertainty, limitation and extension mutations now fail closed with fixed component diagnostics. This is local retained-store replay evidence, not provider/account acceptance, verified fee-reference semantics or coverage, posting/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.217 independently reconstructs the complete retained fee-reference component before the known-fee reserve composer trusts any primary result field. Ten v0.340.216 accepting policy, identity, digest, count, uncertainty-scope, limitation and extension mutations now fail closed with a fixed component diagnostic. This is local retained-store replay evidence, not provider/account acceptance, verified fee-reference semantics or coverage, posting/hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -343,13 +343,14 @@ def _retained_reconciliation_envelope(value, account_review, guard_review,
         return False
 
 
-def _account_component_envelope(value, replayed_account,
+def _account_component_envelope(value, replayed_account, replayed_guard,
                                 replayed_reconciliation):
     account_review = value.get('account_evidence_review')
     guard_review = value.get('stability_guard_review')
     if (type(account_review) is not dict or
             account_review != replayed_account or
             type(guard_review) is not dict or
+            guard_review != replayed_guard or
             account_review.get('mode') !=
                 'PAPER_ACCOUNT_EVIDENCE_BUNDLE_REVIEW' or
             account_review.get('policy') != evidence.POLICY or
@@ -509,6 +510,17 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         expected_activity_head=expected_activity_head,
         opening_observation=opening_observation,
         closing_observation=closing_observation))
+    replayed_guard = stable_read(lambda:
+        evidence.inventory.review_with_stability_guards(
+            expected_account_id=account_id,
+            pacing_path=pacing_path,
+            activity_store_path=activity_store_path,
+            acceptance_store_path=acceptance_store_path,
+            expected_activity_head=expected_activity_head,
+            pre_opening_observation=pre_opening_observation,
+            opening_observation=opening_observation,
+            closing_observation=closing_observation,
+            post_closing_observation=post_closing_observation))
     replayed_reconciliation = stable_read(lambda: evidence.inventory.review(
         expected_account_id=account_id,
         pacing_path=pacing_path,
@@ -547,6 +559,7 @@ def review(post_budget, *, expected_post_head, account_id, journal,
             account.get('read_only') is not True or
             not _account_component_envelope(account,
                 replayed_account,
+                replayed_guard,
                 replayed_reconciliation) or
             account.get('account_sha256') != journal_account or
             account.get('request_head_sha256') != expected_request_head or

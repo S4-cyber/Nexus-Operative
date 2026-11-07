@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.210
+
+The provider-POST reconciliation boundary now independently reconstructs the complete four-observation stability-guard review from the exact pacing, activity and acceptance journals plus supplied pre-opening, opening, closing and post-closing manifests and requires the nested guard to match it in full. Thirty-six v0.340.209 accepting authority, window, assurance, count, limitation and extension mutations now fail closed. Exact-source v0.340.209 security and all research/regression/browser/evidence jobs passed; its Windows/installer workflow remained active at this checkpoint. Fresh v0.340.210 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,696 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 524 tests. Sixteen offline profiles match 401 source files / `2520d8ae272ed4bdb15268567644b127c367b23d687738d6fd1da955925ce067`; report SHA256 is `b1d7728f6428a3428bcc22df244afaae3609fbcd5f1216f4edd0400216a3a222`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.210 wheel SHA256 is `e6653d8e679619a0e932fc6e9fa1f01def2e7a77de22185cd80404282566f51f`. The final 929-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.209
 
 The provider-POST reconciliation boundary now independently reconstructs the complete nested account-evidence bundle from the exact guarded request, pacing, activity and acceptance journals plus supplied boundary manifests and requires the nested bundle to match it in full. Thirty-five v0.340.208 accepting authority, agreement, origin, count, arithmetic, reason, limitation and extension mutations now fail closed. Exact-source v0.340.208 security, saved evidence and browser help passed; its full regression and Windows/installer workflows remained active at this checkpoint. Fresh v0.340.209 hosted checks remain required.

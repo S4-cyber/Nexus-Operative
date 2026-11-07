@@ -458,6 +458,63 @@ def test_invalid_nested_stability_guard_envelope_fails_closed(
         subject.review(**options)
 
 
+@pytest.mark.parametrize('field',
+    subject.RETAINED_RECONCILIATION_DENIALS)
+def test_rehashed_nested_stability_guard_authority_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def authoritative(**kwargs):
+        result = original(**kwargs)
+        result['stability_guard_review'][field] = True
+        _rebind_stability_guard(result)
+        _rebind_outer_account(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', authoritative)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('guard_windows', {'forged': {'started_at': 'forged'}}),
+    ('guard_manifests_distinct', False),
+    ('guard_windows_ordered', False),
+    ('adjacent_guard_balances_stable', False),
+    ('guard_declared_sources_agree', False),
+    ('accepted_declared_windows_cover_guard_envelope', False),
+    ('journals_rechecked_unchanged', False),
+    ('journal_files_rechecked_unchanged', False),
+    ('journal_file_identities_rechecked', False),
+    ('journal_store_bindings_rechecked', False),
+    ('semantic_reader_failures_rechecked', False),
+    ('guard_retained_fill_events', 999),
+    ('guard_collection_observed_fill_events', 999),
+    ('guard_collection_observed_fee_events', 999),
+    ('guard_retained_fee_date_overlaps', 999),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_rehashed_nested_stability_guard_replay_disagreement_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result['stability_guard_review'][field] = value
+        _rebind_stability_guard(result)
+        _rebind_outer_account(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 @pytest.mark.parametrize(('component', 'field'), (
     ('account_evidence_review', 'request_review_sha256'),
     ('account_evidence_review', 'inventory_review_sha256'),

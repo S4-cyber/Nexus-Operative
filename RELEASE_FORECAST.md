@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.222
+
+The upstream account-evidence aggregate now has an immutable 47-field public schema, and saved reconciliation validation requires an exact plain dictionary before any account-evidence claim or downstream provider-POST evidence can be trusted. Two regressions reproduced the absent schema contract and accepted arbitrary extension before implementation. Exact-source v0.340.221 security, browser help and saved evidence passed; complete regression and Windows remained active at this checkpoint. Fresh v0.340.222 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the account-evidence/release-trial focus passed 163 tests. Sixteen offline profiles match 401 source files / `0637fb794a0c961bb54f9c00f435b5fab1d416564031137253876c2913d6c0f6`; report SHA256 is `e3b1b53a6e805121c9b2f674ca726fb1a96d5df3074f66fda3f0c1041415a0ae`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.222 wheel SHA256 is `4afee0de5b0d8de07148f97c89c269a6103ffedee6e732b0a6eb55150664c756`. The 941-path public-artifact audit and 4,127 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.221
 
 The lower provider-POST reconciliation and retained fee-reference aggregates now have immutable 44-field and 49-field public schemas, and saved reconciliation validation requires exact plain dictionaries before either dependency can support terminal known-fee reserve evidence. Four regressions reproduced both absent schema contracts and both accepted arbitrary extensions before implementation. Exact-source v0.340.220 security, complete research/regression/browser/evidence and Windows packaging/installer workflows passed. Exact-source v0.340.219 research and Windows were cancelled and are not acceptance. Fresh v0.340.221 hosted checks remain required.

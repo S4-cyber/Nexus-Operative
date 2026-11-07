@@ -29,6 +29,16 @@ FLAGS=tuple(dict.fromkeys((*requests.FLAGS,'source_coverage_verified','balance_i
     'observation_windows_verified_quiet','atomic_snapshot','automatic_submission',
     'fee_posting_interval_verified','fee_debits_allocated_to_interval','fee_reserved_funding_verified')))
 HEADS=('account_sha256','request_head_sha256','activity_head_sha256','pacing_head_sha256','acceptance_head_sha256')
+PUBLIC_FIXTURE_KEYS=frozenset(('source','passed','component_heads_bound',
+    'original_terms_and_two_fills_checked','observation_arithmetic_evaluated',
+    'gross_only_zero_difference_observed','changed_balance_difference_preserved',
+    'zero_fee_records_not_promoted','repeat_review_matches',
+    'current_head_review_matches','public_summary_checked','stability_guard_bound',
+    'guarded_repeat_review_matches','guarded_current_head_review_matches',
+    'guarded_public_summary_checked','guarded_declared_source_summary_checked',
+    'guarded_collection_timing_summary_checked','journal_file_fingerprints_rechecked',
+    'semantic_reader_failures_rechecked','journals_unchanged',
+    'actual_provider_access','actual_vault_access',*FLAGS))
 
 
 def _fail(code):raise ValueError('PAPER_ACCOUNT_EVIDENCE_'+code)

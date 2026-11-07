@@ -1182,7 +1182,9 @@ def _validate(profile, result):
             'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled',
             'money_movement_enabled','release_approved')), 'ACTIVITY_ACCEPTANCE_AUTHORITY')
     if profile == 'reconciliation_acceptance':
-        from nexus.paper_account_evidence_review import FLAGS as BUNDLE_FLAGS
+        from nexus.paper_account_evidence_review import (
+            FLAGS as BUNDLE_FLAGS,
+            PUBLIC_FIXTURE_KEYS as BUNDLE_PUBLIC_KEYS)
         from nexus.paper_account_response_review import (
             CHECKS as ACCOUNT_RESPONSE_CHECKS,FLAGS as ACCOUNT_RESPONSE_FLAGS)
         from nexus.paper_activity_response_review import (
@@ -1205,7 +1207,8 @@ def _validate(profile, result):
         from nexus.paper_activity_sse_acceptance_evidence import AUTHORITY_FLAGS as ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS
         from nexus.paper_response_bundle_review import FLAGS as RESPONSE_FLAGS
         bundle=result['account_evidence_bundle']
-        _require(bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','guarded_declared_source_summary_checked','guarded_collection_timing_summary_checked','journal_file_fingerprints_rechecked','semantic_reader_failures_rechecked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
+        _require(type(bundle) is dict and set(bundle)==BUNDLE_PUBLIC_KEYS and
+            bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','guarded_declared_source_summary_checked','guarded_collection_timing_summary_checked','journal_file_fingerprints_rechecked','semantic_reader_failures_rechecked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
         _require(all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY')
         account_response=result['exact_account_response']
         _require(account_response['source']==

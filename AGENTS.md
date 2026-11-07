@@ -1,5 +1,18 @@
 # Nexus Operative continuity instructions
 
+## v0.340.222 strict account-evidence public schema
+
+The upstream account-evidence aggregate fixture now declares an immutable 47-field public schema. Saved reconciliation validation requires an exact plain dictionary with precisely that schema before trusting any account-evidence claim or downstream provider-POST reconciliation evidence. Two regressions first reproduced v0.340.221 lacking the schema contract and accepting an arbitrary `private_extension`; both now fail closed with the fixed account-evidence diagnostic.
+
+Exact-source v0.340.221 public-security run 42421738290, Portal browser-help job and saved-evidence job passed. Its full offline regression and Windows packaging/installer jobs remained active at this checkpoint and are not claimed as passed. Exact-source v0.340.220 security, complete research/regression/browser/evidence and Windows workflows passed. Fresh v0.340.222 hosted checks remain required.
+
+This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, verified fee/reference coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the account-evidence/release-trial focus passed 163 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `0637fb794a0c961bb54f9c00f435b5fab1d416564031137253876c2913d6c0f6`; `validation/release_trials_0_340_222.json` SHA256 is `e3b1b53a6e805121c9b2f674ca726fb1a96d5df3074f66fda3f0c1041415a0ae`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.222 and has SHA256 `4afee0de5b0d8de07148f97c89c269a6103ffedee6e732b0a6eb55150664c756`. The 941-path public-artifact audit and 4,127 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## v0.340.221 strict lower reconciliation public schemas
 
 The lower provider-POST reconciliation and retained fee-reference aggregate fixtures now declare immutable 44-field and 49-field public schemas. Saved reconciliation validation requires exact plain dictionaries with precisely those schemas before trusting either dependency or the terminal known-fee reserve evidence. Four regressions first reproduced v0.340.220 lacking both schema contracts and accepting arbitrary `private_extension` fields; all now fail closed with the fixed component diagnostics.

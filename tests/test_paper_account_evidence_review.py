@@ -335,6 +335,7 @@ def test_cli_bad_input_and_unknown_secret_argument_do_not_echo_private_values(tm
 
 def test_public_fixture_omits_account_balances_and_original_ids():
     r=subject.fixture_report();assert r['passed']
+    assert set(r)==subject.PUBLIC_FIXTURE_KEYS
     assert all(r[k] is False for k in subject.FLAGS)
     assert all(token not in json.dumps(r) for token in ('01234567-89ab-cdef-0123-456789abcdef','nx_accept_fixture','802','1000'))
 

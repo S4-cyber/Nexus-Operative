@@ -1,5 +1,17 @@
 # Nexus Operative continuity instructions
 
+## v0.340.201 nested reconciliation scope coherence
+
+The provider-POST reconciliation composer now recomputes the complete declared scope hash for both nested guarded-account reviews and requires their account/activity heads and observation manifests to agree with the outer guarded-account component. Eight regressions first reproduced v0.340.200 accepting stale nested fields or internally rehashed nested disagreement; all now return the fixed account-evidence diagnostic.
+
+Exact-source v0.340.200 public-security run 42328787863, research/regression/browser/evidence run 42328787875 and Windows/installer run 42328787753 passed. Fresh v0.340.201 hosted checks remain required.
+
+This is bounded local component-coherence evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,443 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/component/release/evidence/version/roadmap focus passed 300 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `674c72f4dbe057342929993ed3879d986df23b5cd084fdbcf9e16678e3d5b2bf`; `validation/release_trials_0_340_201.json` SHA256 is `98699730a4e51a1551fab6a28b340b4455963ab0bcf26cc3f59a2e211d942d43`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.201 and has SHA256 `6336d749878df0161fad42a83af211e3cc9ba747e6daa30f8b24a4812cff8679`. The final staged 920-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## v0.340.200 nested reconciliation component bindings
 
 The provider-POST reconciliation composer now binds the guarded-account component's outer input hash to its declared account-evidence and stability-guard hashes and validates both nested review envelopes. Mismatched outer or nested hashes, non-mapping nested reviews, and wrong nested modes, policies, statuses or read-only claims return the fixed account-evidence diagnostic. Fifteen regressions first reproduced every v0.340.199 acceptance and now pass with the fail-closed binding checks.

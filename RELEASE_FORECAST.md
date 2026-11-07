@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.201
+
+The provider-POST reconciliation boundary now recomputes both nested guarded-account scope hashes and requires their projected heads/manifests to agree with the outer component. Exact-source v0.340.200 security, complete regression, saved evidence, browser help and Windows/installer workflows passed. Fresh v0.340.201 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,443 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 300 tests. Sixteen offline profiles match 401 source files / `674c72f4dbe057342929993ed3879d986df23b5cd084fdbcf9e16678e3d5b2bf`; report SHA256 is `98699730a4e51a1551fab6a28b340b4455963ab0bcf26cc3f59a2e211d942d43`. Compilation, dependency integrity, roadmap equality and fourteen Node controllers passed. The 161-member v0.340.201 wheel SHA256 is `6336d749878df0161fad42a83af211e3cc9ba747e6daa30f8b24a4812cff8679`. The final staged 920-path artifact and introduced-line secret scans found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.200
 
 The guarded-account component's outer input hash now binds both nested review hashes before provider-POST reconciliation, and malformed nested account/stability envelopes fail closed. Exact-source v0.340.199 security, complete regression, saved evidence and browser help passed; its Windows/installer workflow remained active after successful install/test, Portal syntax and standalone packaging. Fresh v0.340.200 hosted checks remain required.

@@ -24,6 +24,42 @@ class MutablePath:
         return str(self.path)
 
 
+def _rebind_account_review(result):
+    review = result['account_evidence_review']
+    scope = dict(policy=review['policy'],
+        **{key: review[key] for key in subject.evidence.HEADS},
+        accepted_transitions=review['accepted_transitions'],
+        opening_manifest_sha256=review['opening_manifest_sha256'],
+        closing_manifest_sha256=review['closing_manifest_sha256'],
+        request_review_sha256=review['request_review_sha256'],
+        inventory_review_sha256=review['inventory_review_sha256'])
+    review['input_sha256'] = subject.sha(scope)
+    result['account_evidence_sha256'] = review['input_sha256']
+
+
+def _rebind_stability_guard(result):
+    review = result['stability_guard_review']
+    scope = {key: review[key] for key in (
+        'policy', 'account_sha256', 'activity_head_sha256',
+        'accepted_reconciliation_sha256', 'pre_opening_manifest_sha256',
+        'opening_manifest_sha256', 'closing_manifest_sha256',
+        'post_closing_manifest_sha256',
+        'declared_guard_window_union_sha256')}
+    review['input_sha256'] = subject.sha(scope)
+    result['stability_guard_sha256'] = review['input_sha256']
+
+
+def _rebind_outer_account(result):
+    scope = dict(policy=result['policy'],
+        **{key: result[key] for key in subject.evidence.HEADS},
+        account_evidence_sha256=result['account_evidence_sha256'],
+        stability_guard_sha256=result['stability_guard_sha256'],
+        **{key: result[key] for key in (
+            'pre_opening_manifest_sha256', 'opening_manifest_sha256',
+            'closing_manifest_sha256', 'post_closing_manifest_sha256')})
+    result['input_sha256'] = subject.sha(scope)
+
+
 def test_exact_post_activity_and_guarded_balance_evidence_bind_without_writes(tmp_path):
     options = subject._fixture(tmp_path)
     before = files(tmp_path)
@@ -325,6 +361,55 @@ def test_invalid_nested_stability_guard_envelope_fails_closed(
             result['stability_guard_review'] = value
         else:
             result['stability_guard_review'][field] = value
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('component', 'field'), (
+    ('account_evidence_review', 'request_review_sha256'),
+    ('account_evidence_review', 'inventory_review_sha256'),
+    ('stability_guard_review', 'accepted_reconciliation_sha256'),
+    ('stability_guard_review', 'declared_guard_window_union_sha256'),
+))
+def test_stale_nested_component_scope_hash_fails_closed(
+        tmp_path, monkeypatch, component, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result[component][field] = '0' * 64
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('component', 'field'), (
+    ('account_evidence_review', 'account_sha256'),
+    ('account_evidence_review', 'opening_manifest_sha256'),
+    ('stability_guard_review', 'activity_head_sha256'),
+    ('stability_guard_review', 'post_closing_manifest_sha256'),
+))
+def test_rehashed_nested_component_disagreement_fails_closed(
+        tmp_path, monkeypatch, component, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result[component][field] = '0' * 64
+        if component == 'account_evidence_review':
+            _rebind_account_review(result)
+        else:
+            _rebind_stability_guard(result)
+        _rebind_outer_account(result)
         return result
 
     monkeypatch.setattr(subject.evidence,

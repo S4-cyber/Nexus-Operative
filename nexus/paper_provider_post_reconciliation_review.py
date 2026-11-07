@@ -131,6 +131,32 @@ def _account_component_envelope(value):
             account_review.get('input_sha256') != account_hash or
             guard_review.get('input_sha256') != guard_hash):
         return False
+    account_scope = dict(policy=account_review.get('policy'),
+        **{key: account_review.get(key) for key in evidence.HEADS},
+        accepted_transitions=account_review.get('accepted_transitions'),
+        opening_manifest_sha256=account_review.get(
+            'opening_manifest_sha256'),
+        closing_manifest_sha256=account_review.get(
+            'closing_manifest_sha256'),
+        request_review_sha256=account_review.get('request_review_sha256'),
+        inventory_review_sha256=account_review.get(
+            'inventory_review_sha256'))
+    guard_scope = {key: guard_review.get(key) for key in (
+        'policy', 'account_sha256', 'activity_head_sha256',
+        'accepted_reconciliation_sha256', 'pre_opening_manifest_sha256',
+        'opening_manifest_sha256', 'closing_manifest_sha256',
+        'post_closing_manifest_sha256',
+        'declared_guard_window_union_sha256')}
+    if (any(account_review.get(key) != value.get(key)
+            for key in evidence.HEADS) or
+            any(account_review.get(key) != value.get(key) for key in (
+                'opening_manifest_sha256', 'closing_manifest_sha256')) or
+            any(guard_review.get(key) != value.get(key) for key in (
+                'account_sha256', 'activity_head_sha256',
+                'pre_opening_manifest_sha256',
+                'opening_manifest_sha256', 'closing_manifest_sha256',
+                'post_closing_manifest_sha256'))):
+        return False
     component_scope = dict(policy=value.get('policy'),
         **{key: value.get(key) for key in evidence.HEADS},
         account_evidence_sha256=account_hash,
@@ -139,7 +165,9 @@ def _account_component_envelope(value):
             'pre_opening_manifest_sha256', 'opening_manifest_sha256',
             'closing_manifest_sha256', 'post_closing_manifest_sha256')})
     try:
-        return input_hash == sha(component_scope)
+        return (account_hash == sha(account_scope) and
+            guard_hash == sha(guard_scope) and
+            input_hash == sha(component_scope))
     except (TypeError, ValueError, OverflowError, RecursionError):
         return False
 

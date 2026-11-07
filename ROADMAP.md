@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.200. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.201. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.200 binds the guarded-account component scope to both nested review hashes before composing provider-POST reconciliation. Mismatched outer or nested hashes, non-mapping nested reviews and wrong nested modes, policies, statuses or read-only claims now return the fixed account-evidence failure instead of entering a reviewed result. Exact-source v0.340.199 public security, full regression, saved evidence and browser help passed; its Windows/installer workflow remained active at candidate recovery. This is local injected component-binding evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.201 recomputes both nested guarded-account review scope hashes before composing provider-POST reconciliation and requires their projected account/activity heads and observation manifests to agree with the outer component. Stale nested scopes and internally rehashed nested disagreement now return the fixed account-evidence failure instead of entering a reviewed result. Exact-source v0.340.200 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected component-coherence evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

@@ -472,6 +472,10 @@ def review(post_budget, *, expected_post_head, account_id, journal,
         expected_post_head=expected_post_head, account_bindings=[binding]))
     if type(posts) is not dict:
         _fail('POST_ACTIVITY_INCOMPLETE')
+    replayed_posts = stable_read(lambda: post_activity.replay(post_budget,
+        expected_post_head=expected_post_head, account_bindings=[binding]))
+    if type(replayed_posts) is not dict or posts != replayed_posts:
+        _fail('POST_ACTIVITY_INCOMPLETE')
     post_counts = tuple(posts.get(key) for key in (
         'post_attempts', 'exact_activity_bindings',
         'exact_not_sent_bindings'))

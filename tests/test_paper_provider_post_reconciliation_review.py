@@ -250,6 +250,30 @@ def test_malformed_post_component_projection_fails_closed(
 
 
 @pytest.mark.parametrize(('field', 'value'), (
+    ('unresolved_unknown_attempts', 999),
+    ('attempt_activity_disagreements', 999),
+    ('unbound_request_activity_rows', 999),
+    ('untracked_activity_orders', 999),
+    ('unexpected_activity_blockers', 999),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_rehashed_post_activity_replay_disagreement_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.post_activity.review
+
+    def malformed(*args, **kwargs):
+        result = original(*args, **kwargs)
+        result[field] = value
+        return result
+
+    monkeypatch.setattr(subject.post_activity, 'review', malformed)
+    with pytest.raises(ValueError, match='POST_ACTIVITY_INCOMPLETE'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
     ('pacing_head_sha256', None),
     ('acceptance_head_sha256', {'private': 'shape'}),
     ('pre_opening_manifest_sha256', 'A' * 64),

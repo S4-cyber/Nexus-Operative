@@ -1,5 +1,18 @@
 # Nexus Operative continuity instructions
 
+## v0.340.211 complete provider-POST/activity replay
+
+The provider-POST reconciliation composer now independently reconstructs the complete provider-POST/activity component from the exact shared provider budget plus request, pacing, activity and acceptance journals. The primary component must equal that stable replay in full, so unresolved-attempt, disagreement, unbound-row, untracked-order and blocker diagnostics plus limitations and extensions cannot be changed behind a recomputed outer component hash. Seven regressions first reproduced v0.340.210 accepting those mutations; all now return the fixed POST/activity diagnostic.
+
+Exact-source v0.340.210 public-security run 42369175319, all research/regression/browser/evidence jobs in run 42369175449 and the complete Windows packaging/installer/reinstall/uninstall/distribution run 42369175341 passed. Fresh v0.340.211 hosted checks remain required.
+
+This is bounded local retained-store replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,703 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 517 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `f20a2b4944919877bf088a78539a635c793f880859705f742d95f4f577195afc`; `validation/release_trials_0_340_211.json` SHA256 is `2a88c05fdbe1d94d8838d56c15f18d3e28905a38a2bba0f0239a1c27bcae53a9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.211 and has SHA256 `ee4f71fb994702ef9ef8b3e56ed6401bb94b13859784c7d89a7ff2d575383817`. The final 930-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## v0.340.210 complete stability-guard replay
 
 The provider-POST reconciliation composer now independently reconstructs the complete four-observation stability-guard review from the exact pacing, activity and acceptance journals plus the same supplied pre-opening, opening, closing and post-closing manifests. The nested guard must equal that stable replay in full, so routing, broker, funds, live-order, retry and release authorities plus guard windows, journal/file/identity/store assurances, overlap counts, limitations and extensions cannot be changed behind recomputed component hashes. Thirty-six regressions first reproduced v0.340.209 accepting those mutations; all now return the fixed account-evidence diagnostic.

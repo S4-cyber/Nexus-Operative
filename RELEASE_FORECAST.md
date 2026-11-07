@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.211
+
+The provider-POST reconciliation boundary now independently reconstructs the complete provider-POST/activity component from the exact shared provider budget plus request, pacing, activity and acceptance journals and requires the primary component to match it in full. Seven v0.340.210 accepting diagnostic, limitation and extension mutations now fail closed. Exact-source v0.340.210 security, research/regression/browser/evidence and complete Windows packaging/installer/reinstall/uninstall/distribution workflows passed. Fresh v0.340.211 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,703 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 517 tests. Sixteen offline profiles match 401 source files / `f20a2b4944919877bf088a78539a635c793f880859705f742d95f4f577195afc`; report SHA256 is `2a88c05fdbe1d94d8838d56c15f18d3e28905a38a2bba0f0239a1c27bcae53a9`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.211 wheel SHA256 is `ee4f71fb994702ef9ef8b3e56ed6401bb94b13859784c7d89a7ff2d575383817`. The final 930-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.210
 
 The provider-POST reconciliation boundary now independently reconstructs the complete four-observation stability-guard review from the exact pacing, activity and acceptance journals plus supplied pre-opening, opening, closing and post-closing manifests and requires the nested guard to match it in full. Thirty-six v0.340.209 accepting authority, window, assurance, count, limitation and extension mutations now fail closed. Exact-source v0.340.209 security and all research/regression/browser/evidence jobs passed; its Windows/installer workflow remained active at this checkpoint. Fresh v0.340.210 hosted checks remain required.

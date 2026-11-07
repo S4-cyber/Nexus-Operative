@@ -109,7 +109,7 @@ def _stable_reader(post_budget, bindings, store_binding, paths,
     return read
 
 
-def review(post_budget, *, expected_post_head, account_bindings):
+def _review_exact(post_budget, *, expected_post_head, account_bindings):
     """Join exact POST outcomes to fully replayed accepted activity histories.
 
     Results expose aggregate counts and fixed reasons only.  Account, client
@@ -346,6 +346,23 @@ def review(post_budget, *, expected_post_head, account_bindings):
         semantic_reader_failures_rechecked=True,
         **{flag: False for flag in FLAGS},
         limitations='Exact-head local composition over explicitly selected cooperating journals only. Observed/recovered POST attempts must agree with complete accepted local activity history; NOT_SENT attempts must retain no observation or fills. This does not attest provider source or activity/fee completeness, make journals atomic, verify fee links, holds, balances or spendable funds, coordinate another credential/process/host, authorize transport, apply a ledger or approve release.')
+
+
+def review(post_budget, *, expected_post_head, account_bindings):
+    """Return the primary exact-head POST/activity component review."""
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        account_bindings=account_bindings)
+
+
+def replay(post_budget, *, expected_post_head, account_bindings):
+    """Reconstruct the complete component from the selected exact inputs.
+
+    This separate entry point lets an outer composer compare the complete
+    primary result with a fresh store replay rather than trusting a digest or
+    a selected projection of the primary component object.
+    """
+    return _review_exact(post_budget, expected_post_head=expected_post_head,
+        account_bindings=account_bindings)
 
 
 def _case(root, *, resolve_unknown, fee_mode=None):

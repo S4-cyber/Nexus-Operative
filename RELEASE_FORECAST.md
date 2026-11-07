@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.209
+
+The provider-POST reconciliation boundary now independently reconstructs the complete nested account-evidence bundle from the exact guarded request, pacing, activity and acceptance journals plus supplied boundary manifests and requires the nested bundle to match it in full. Thirty-five v0.340.208 accepting authority, agreement, origin, count, arithmetic, reason, limitation and extension mutations now fail closed. Exact-source v0.340.208 security, saved evidence and browser help passed; its full regression and Windows/installer workflows remained active at this checkpoint. Fresh v0.340.209 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,660 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 488 tests. Sixteen offline profiles match 401 source files / `ab9e78a1ac21a2941aa4d74af6d325f47dc904fbf273c6a77bfb9511fd0ec715`; report SHA256 is `2ecf69375dd82a6d70cb4a3edae98182f0300e2f44ae6df69056fac13ff20369`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.209 wheel SHA256 is `1fb32949940515eaffd65139ba28bc484769a4864d48577143f2be00c9bcc87d`. The final staged public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.208
 
 The provider-POST reconciliation boundary now independently reconstructs the complete retained reconciliation acceptance from the exact guarded pacing, activity and acceptance journals plus supplied boundary manifests and requires the nested review to match it in full. Five v0.340.207 accepting scope, boundary-verification, recovery-state, limitation and extension mutations now fail closed. Exact-source v0.340.207 security, saved evidence and browser help passed; its full regression and Windows/installer workflows remained active at this checkpoint. Fresh v0.340.208 hosted checks remain required.

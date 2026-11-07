@@ -382,6 +382,55 @@ def test_invalid_nested_account_evidence_envelope_fails_closed(
         subject.review(**options)
 
 
+@pytest.mark.parametrize('field', subject.evidence.FLAGS)
+def test_rehashed_nested_account_evidence_authority_fails_closed(
+        tmp_path, monkeypatch, field):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def authoritative(**kwargs):
+        result = original(**kwargs)
+        result['account_evidence_review'][field] = True
+        _rebind_account_review(result)
+        _rebind_outer_account(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', authoritative)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('local_request_terms_agree', True),
+    ('all_retained_request_origins_bound', True),
+    ('request_agreement_blockers', ['FORGED_BLOCKER']),
+    ('review_reasons', ['FORGED_REASON']),
+    ('original_requests_reviewed', 999),
+    ('explicit_fills_reviewed', 999),
+    ('inventory_arithmetic_evaluated', False),
+    ('gross_only_minus_observed', {'USD': '0', 'BTC': '999'}),
+    ('limitations', 'forged limitation'),
+    ('private_extension', 'forged'),
+))
+def test_rehashed_nested_account_evidence_replay_disagreement_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result['account_evidence_review'][field] = value
+        _rebind_account_review(result)
+        _rebind_outer_account(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 @pytest.mark.parametrize(('field', 'value'), (
     (None, []),
     ('mode', 'WRONG_COMPONENT_MODE'),

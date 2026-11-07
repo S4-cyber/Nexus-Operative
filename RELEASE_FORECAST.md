@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.205
+
+The provider-POST reconciliation boundary now replays the complete retained gross-fill arithmetic and requires its ending balances, residual, debit-coverage result, fee totals and fee counts to match the outer guarded-account projections. Thirty-three v0.340.204 accepting mutations now fail closed. Exact-source v0.340.204 security, complete regression, saved evidence, browser help and Windows/installer workflows passed. Fresh v0.340.205 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,584 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 475 tests. Sixteen offline profiles match 401 source files / `97da422a5ae873627fda480789c119611009bc8d097ea00144bb927dc38862f4`; report SHA256 is `b3e0c2e519b006a1e0f37d06130fb68738af22f91724433998b6a05bbbdd66ad`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.205 wheel SHA256 is `99758e56f1c78cb8789e14eada1089e0a4f8308f69aa6ce6a4b6156c6f52a89e`. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.204
 
 The provider-POST reconciliation boundary now validates the shared retained gross-balance and activity subreviews inside its portable observation. Forty-three v0.340.203 accepting cases reproduced malformed subreviews, rehashed identity disagreement, assurance removal or nested authority promotion; all now fail closed. Exact-source v0.340.203 security, complete regression, saved evidence, browser help and Windows/installer workflows passed. Fresh v0.340.204 hosted checks remain required.

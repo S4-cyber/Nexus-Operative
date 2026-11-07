@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.204 (pre-release).**
+**Current development build: 0.340.205 (pre-release).**
+
++## v0.340.205 retained gross-fill arithmetic replay
+
+The provider-POST reconciliation composer now replays the complete retained gross-fill arithmetic from its exact normalized activities and canonical balance interval. The nested arithmetic/count/scope/authority result and its five outer guarded-account projections must agree exactly. Thirty-three v0.340.204 accepting mutations now fail closed with the fixed account-evidence diagnostic.
+
+Exact-source v0.340.204 public-security run 42347215756, research/regression/browser/evidence run 42347215854 and Windows/installer run 42347215753 passed. Fresh v0.340.205 hosted checks remain required.
+
+This is bounded local arithmetic-consistency evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,584 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 475 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `97da422a5ae873627fda480789c119611009bc8d097ea00144bb927dc38862f4`; `validation/release_trials_0_340_205.json` SHA256 is `b3e0c2e519b006a1e0f37d06130fb68738af22f91724433998b6a05bbbdd66ad`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.205 and has SHA256 `99758e56f1c78cb8789e14eada1089e0a4f8308f69aa6ce6a4b6156c6f52a89e`. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
 +## v0.340.204 retained observation subreview contract
 

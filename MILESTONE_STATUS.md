@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 6, 2026. Development candidate: **v0.340.204**. Reviewed source baseline: `b93ec8adfb30c423e3eaa18d29048691a415722c` (v0.340.203).
+Report date: November 6, 2026. Development candidate: **v0.340.205**. Reviewed source baseline: `427921eccb03b31a306d720480ce5b51a361f88c` (v0.340.204).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 6, 2026. Development candidate: **v0.340.204**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.204 source reports 5,551 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 724 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
+The v0.340.205 source reports 5,584 local passing tests, one expected non-Windows skip and sixteen source-bound offline profiles. This is 757 more passing tests than the v0.340.111 handoff, without implying a corresponding percentage increase.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.204 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42347215756), [research/regression/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42347215854), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42347215753).
 - v0.340.203 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42342230332), [research/regression/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42342230320), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42342230319).
 - v0.340.202 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42338525419), [research/regression/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42338525392), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42338525453).
 - v0.340.201 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42333627167), [research/regression/browser/evidence passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42333627118), and [Windows/installer passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42333627145).
@@ -40,6 +41,16 @@ Verified prior-source hosted checkpoints:
 - v0.340.190 [Windows installer/distribution checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833513).
 - v0.340.190 [research regression, browser and saved-evidence checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833448).
 - Its [security workflow failed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42270833307) on two historical synthetic fixture findings. A passed installer is not an all-green release candidate.
+
++## v0.340.205 retained gross-fill arithmetic replay
+
+The provider-POST reconciliation composer now reconstructs the full retained gross-fill result from the exact normalized activities and canonical supplied balance interval. Every nested arithmetic, count, shortfall, fee-total, fee-scope and denied-authority field must match the replay, and all five outer guarded-account projections must agree. Thirty-three regressions first reproduced v0.340.204 accepting rehashed arithmetic changes or unbound outer projections; all now fail closed.
+
+Exact-source v0.340.204 public-security run 42347215756, research/regression/browser/evidence run 42347215854 and Windows/installer run 42347215753 passed. Fresh v0.340.205 hosted checks remain required.
+
+This is a fail-closed implementation improvement, not authorized paper-account, provider-source, received-coverage, sustained-market, native-storage, fee-link/posting/hold/funds, live/cloud or release acceptance. It changes no Portal control, editable parameter or authority default. The estimate remains about 40% (30–45%, low confidence), with 0/9 major operational stages accepted.
+
+Final local validation passed 5,584 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized focus passed 475 tests. Sixteen offline profiles match 401 source files / `97da422a5ae873627fda480789c119611009bc8d097ea00144bb927dc38862f4`; report SHA256 is `b3e0c2e519b006a1e0f37d06130fb68738af22f91724433998b6a05bbbdd66ad`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.205 wheel SHA256 is `99758e56f1c78cb8789e14eada1089e0a4f8308f69aa6ce6a4b6156c6f52a89e`. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
 +## v0.340.204 retained observation subreview contract
 

@@ -160,7 +160,56 @@ def _component_digest(value, code):
         _fail(code)
 
 
-def _retained_observation_components(retained_observation):
+def _retained_gross_fill_arithmetic(value, balance, activity):
+    """Replay retained gross arithmetic and bind every outer projection."""
+    normalization = activity.get('activity_normalization')
+    gross = balance.get('gross_fill_review')
+    if type(normalization) is not dict or type(gross) is not dict:
+        return False
+    records = normalization.get('normalized_activities')
+    if (type(records) is not list or
+            len(records) > retained_balance_review.adapter.MAX_ACTIVITIES or
+            any(type(record) is not dict for record in records)):
+        return False
+    try:
+        opening = retained_balance_review.balances(
+            balance.get('opening_balances'))
+        observed = retained_balance_review.balances(
+            balance.get('observed_balances'))
+        start = retained_balance_review.adapter._instant(
+            balance.get('opening_at'))
+        end = retained_balance_review.adapter._instant(
+            balance.get('observed_at'))
+        if (any(retained_balance_review.text(opening[asset]) !=
+                balance['opening_balances'][asset] for asset in ('USD', 'BTC')) or
+                any(retained_balance_review.text(observed[asset]) !=
+                balance['observed_balances'][asset]
+                for asset in ('USD', 'BTC')) or
+                start != balance.get('opening_at') or
+                end != balance.get('observed_at') or
+                retained_balance_review._time_key(end) <
+                    retained_balance_review._time_key(start)):
+            return False
+        expected = retained_balance_review._gross_review(
+            records, opening, observed, start, end)
+        projections = {
+            'gross_only_ending_balances':
+                'gross_execution_ending_balances',
+            'gross_only_minus_observed': 'gross_minus_supplied_observed',
+            'gross_only_debits_covered': 'gross_only_debits_covered',
+            'retained_unallocated_fee_debits':
+                'all_retained_unallocated_fee_debits',
+            'retained_fee_record_counts': 'retained_fee_records_by_asset',
+        }
+        return (gross == expected and
+            all(value.get(outer) == expected[inner]
+                for outer, inner in projections.items()))
+    except (AttributeError, KeyError, TypeError, ValueError,
+            ArithmeticError, OverflowError, RecursionError):
+        return False
+
+
+def _retained_observation_components(retained_observation, value):
     """Require both shared retained subreviews to remain non-authoritative."""
     balance = retained_observation.get('retained_balance_review')
     activity = retained_observation.get('retained_activity_review')
@@ -195,7 +244,8 @@ def _retained_observation_components(retained_observation):
                 'retained_batches', 'retained_activities', 'distinct_orders',
                 'distinct_order_snapshots')) or
             any(activity.get(key) is not False
-                for key in RETAINED_ACTIVITY_DENIALS)):
+                for key in RETAINED_ACTIVITY_DENIALS) or
+            not _retained_gross_fill_arithmetic(value, balance, activity)):
         return False
     account = retained_observation.get('account_sha256')
     head = retained_observation.get('head_sha256')
@@ -238,7 +288,8 @@ def _retained_reconciliation_envelope(value, account_review, guard_review):
             retained_observation.get('arithmetic_evaluated') is not True or
             any(retained_observation.get(key) is not False
                 for key in RETAINED_OBSERVATION_DENIALS) or
-            not _retained_observation_components(retained_observation)):
+            not _retained_observation_components(retained_observation,
+                value)):
         return False
     accepted_hashes = tuple(accepted.get(key) for key in (
         'input_sha256', 'account_sha256', 'pacing_head_sha256',

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.204'
+REVISION = '0.340.205'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.204 validates both retained gross-balance and activity subreviews inside the portable observation used by provider-POST reconciliation. It binds their account/activity heads to the outer observation, replays the gross-balance scope hash, requires the shared-review layout and mandatory arithmetic/head assurances, and denies nested source, broker, funds, ledger, routing, retry, continuation and live-order authority. Forty-three v0.340.203 accepting cases now fail closed with the fixed account-evidence diagnostic. Exact-source v0.340.203 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected nested-component evidence, not provider/account acceptance, fee/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.205 replays the complete retained gross-fill arithmetic inside provider-POST reconciliation and binds its ending balances, observed residual, debit-coverage result, retained fee totals and fee counts to the outer guarded-account projections. Thirty-three v0.340.204 accepting mutations now fail closed, including rehashed arithmetic/count/scope/authority changes and unbound outer projections. Exact-source v0.340.204 public security, full regression, saved evidence, browser help and Windows/installer workflows passed. This is local injected arithmetic-consistency evidence, not provider/account acceptance, fee-link/posting/hold/funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

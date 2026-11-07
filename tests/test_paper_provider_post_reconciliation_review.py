@@ -828,6 +828,79 @@ def test_rehashed_retained_activity_authority_fails_closed(
         subject.review(**options)
 
 
+@pytest.mark.parametrize(('field', 'value'), (
+    ('gross_execution_ending_balances', {'USD': '999', 'BTC': '2'}),
+    ('gross_minus_supplied_observed', {'USD': '1', 'BTC': '0'}),
+    ('gross_only_debits_covered', False),
+    ('gross_only_minimum_group_end_balances', {'USD': '0', 'BTC': '0'}),
+    ('execution_groups', 999),
+    ('executions', True),
+    ('equal_nanosecond_groups', -1),
+    ('gross_only_shortfalls', [{'private': 'forged'}]),
+    ('gross_only_shortfall_events', 1),
+    ('shortfall_sample_limit', 19),
+    ('shortfall_samples_truncated', True),
+    ('all_retained_unallocated_fee_debits', {'USD': '1', 'BTC': '0'}),
+    ('retained_fee_records_by_asset', {'USD': 1, 'BTC': 0}),
+    ('residual_equals_all_retained_fee_debits', {'USD': False, 'BTC': False}),
+    ('exact_interval_fee_debits', {'USD': '1', 'BTC': '0'}),
+    ('exact_interval_fee_records_by_asset', {'USD': 1, 'BTC': 0}),
+    ('date_only_fee_records_by_asset', {'USD': 1, 'BTC': 0}),
+    ('exact_fee_records_outside_interval_by_asset', {'USD': 1, 'BTC': 0}),
+    ('fee_temporal_scope_complete_by_asset', {'USD': True, 'BTC': True}),
+    ('residual_equals_exact_interval_fee_debits', {'USD': True, 'BTC': True}),
+    ('fee_scope', 'PROVIDER_POSTING_VERIFIED'),
+    ('arithmetic_scope', 'FEES_ALLOCATED_AND_SPENT'),
+    ('time_scope', 'BROKER_ATOMIC_SEQUENCE'),
+    ('fee_posting_interval_verified', True),
+    ('fee_debits_allocated_to_interval', True),
+    ('fee_execution_links_verified', True),
+    ('fee_reserved_funding_verified', True),
+    ('private_extension', 'forged'),
+))
+def test_rehashed_retained_gross_fill_arithmetic_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        gross = result['stability_guard_review'][
+            'accepted_reconciliation_review']['observation_review'][
+                'retained_balance_review']['gross_fill_review']
+        gross[field] = value
+        _rebind_accepted_reconciliation(result)
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
+@pytest.mark.parametrize(('field', 'value'), (
+    ('gross_only_ending_balances', {'USD': '999', 'BTC': '2'}),
+    ('gross_only_minus_observed', {'USD': '1', 'BTC': '0'}),
+    ('gross_only_debits_covered', False),
+    ('retained_unallocated_fee_debits', {'USD': '1', 'BTC': '0'}),
+    ('retained_fee_record_counts', {'USD': 1, 'BTC': 0}),
+))
+def test_outer_gross_projection_disagreement_fails_closed(
+        tmp_path, monkeypatch, field, value):
+    options = subject._fixture(tmp_path)
+    original = subject.evidence.review_with_stability_guards
+
+    def malformed(**kwargs):
+        result = original(**kwargs)
+        result[field] = value
+        return result
+
+    monkeypatch.setattr(subject.evidence,
+        'review_with_stability_guards', malformed)
+    with pytest.raises(ValueError, match='ACCOUNT_EVIDENCE_INVALID'):
+        subject.review(**options)
+
+
 def test_final_request_race_refuses(tmp_path, monkeypatch):
     options = subject._fixture(tmp_path)
     original = subject.evidence.review_with_stability_guards

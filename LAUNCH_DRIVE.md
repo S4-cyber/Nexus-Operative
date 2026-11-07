@@ -1,5 +1,18 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.223 strict exact-response public schemas
+
+The exact account-response and exact activity-response aggregate fixtures now declare immutable 22-field public schemas. Saved reconciliation validation requires exact plain dictionaries with precisely those schemas before trusting either private-file replay claim or downstream reconciliation evidence. Four regressions first reproduced v0.340.222 lacking both schema contracts and accepting arbitrary `private_extension` fields; all now fail closed with the fixed exact-response diagnostics.
+
+Exact-source v0.340.222 public-security run 42423813771 passed; its research/regression/browser/evidence run 42423813770 remained active and Windows packaging/installer run 42423813798 remained queued at this checkpoint. Exact-source v0.340.221 Portal browser-help and saved-evidence jobs passed while its complete regression and Windows jobs remained active and are not claimed as passed. Fresh v0.340.223 hosted checks remain required.
+
+This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, verified response provenance or coverage, fee/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the exact-response/release-trial focus passed 129 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `b1d5318d20ec8d8a32d5dd83c6136a872481dd75a0e378f8911b45f2e1841e9f`; `validation/release_trials_0_340_223.json` SHA256 is `46773d9d48b178f167a5d24cc917f486875a1d4ca6e7c90947f9f712dd970958`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.223 and has SHA256 `0a16b1fa8a68d0285e2f174629cf6dfe6c7f9f9279aac68be1c7fb2b179629e5`. The 942-path public-artifact audit and 4,126 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## v0.340.222 strict account-evidence public schema
 
 The upstream account-evidence aggregate fixture now declares an immutable 47-field public schema. Saved reconciliation validation requires an exact plain dictionary with precisely that schema before trusting any account-evidence claim or downstream provider-POST reconciliation evidence. Two regressions first reproduced v0.340.221 lacking the schema contract and accepting an arbitrary `private_extension`; both now fail closed with the fixed account-evidence diagnostic.

@@ -569,6 +569,8 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('account_evidence_bundle','semantic_reader_failures_rechecked'),False,'ACCOUNT_EVIDENCE_BUNDLE'),
         (('account_evidence_bundle','private_extension'),True,'ACCOUNT_EVIDENCE_BUNDLE'),
         (('account_evidence_bundle','ready_for_routing'),True,'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY'),
+        (('exact_account_response','private_extension'),True,'EXACT_ACCOUNT_RESPONSE'),
+        (('exact_activity_response','private_extension'),True,'EXACT_ACTIVITY_RESPONSE'),
         (('provider_post_reconciliation','exact_post_activity_bound'),False,'PROVIDER_POST_RECONCILIATION'),
         (('provider_post_reconciliation','guarded_account_evidence_bound'),False,'PROVIDER_POST_RECONCILIATION'),
         (('provider_post_reconciliation','gross_only_residual_checked'),False,'PROVIDER_POST_RECONCILIATION'),

@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.223
+
+The exact account-response and exact activity-response aggregates now have immutable 22-field public schemas, and saved reconciliation validation requires exact plain dictionaries before either private-file replay claim can support downstream evidence. Four regressions reproduced both absent schema contracts and both accepted arbitrary extensions before implementation. Exact-source v0.340.222 security passed; research remained active and Windows queued at this checkpoint. Fresh v0.340.223 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the exact-response/release-trial focus passed 129 tests. Sixteen offline profiles match 401 source files / `b1d5318d20ec8d8a32d5dd83c6136a872481dd75a0e378f8911b45f2e1841e9f`; report SHA256 is `46773d9d48b178f167a5d24cc917f486875a1d4ca6e7c90947f9f712dd970958`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.223 wheel SHA256 is `0a16b1fa8a68d0285e2f174629cf6dfe6c7f9f9279aac68be1c7fb2b179629e5`. The 942-path public-artifact audit and 4,126 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.222
 
 The upstream account-evidence aggregate now has an immutable 47-field public schema, and saved reconciliation validation requires an exact plain dictionary before any account-evidence claim or downstream provider-POST evidence can be trusted. Two regressions reproduced the absent schema contract and accepted arbitrary extension before implementation. Exact-source v0.340.221 security, browser help and saved evidence passed; complete regression and Windows remained active at this checkpoint. Fresh v0.340.222 hosted checks remain required.

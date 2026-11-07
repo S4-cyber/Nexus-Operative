@@ -1186,9 +1186,11 @@ def _validate(profile, result):
             FLAGS as BUNDLE_FLAGS,
             PUBLIC_FIXTURE_KEYS as BUNDLE_PUBLIC_KEYS)
         from nexus.paper_account_response_review import (
-            CHECKS as ACCOUNT_RESPONSE_CHECKS,FLAGS as ACCOUNT_RESPONSE_FLAGS)
+            CHECKS as ACCOUNT_RESPONSE_CHECKS,FLAGS as ACCOUNT_RESPONSE_FLAGS,
+            PUBLIC_FIXTURE_KEYS as ACCOUNT_RESPONSE_PUBLIC_KEYS)
         from nexus.paper_activity_response_review import (
-            CHECKS as ACTIVITY_RESPONSE_CHECKS,FLAGS as ACTIVITY_RESPONSE_FLAGS)
+            CHECKS as ACTIVITY_RESPONSE_CHECKS,FLAGS as ACTIVITY_RESPONSE_FLAGS,
+            PUBLIC_FIXTURE_KEYS as ACTIVITY_RESPONSE_PUBLIC_KEYS)
         from nexus.paper_provider_post_reconciliation_review import (
             FLAGS as POST_RECONCILIATION_FLAGS,
             PUBLIC_FIXTURE_KEYS as POST_RECONCILIATION_PUBLIC_KEYS)
@@ -1211,7 +1213,9 @@ def _validate(profile, result):
             bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','guarded_declared_source_summary_checked','guarded_collection_timing_summary_checked','journal_file_fingerprints_rechecked','semantic_reader_failures_rechecked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
         _require(all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'ACCOUNT_EVIDENCE_BUNDLE_AUTHORITY')
         account_response=result['exact_account_response']
-        _require(account_response['source']==
+        _require(type(account_response) is dict and
+            set(account_response)==ACCOUNT_RESPONSE_PUBLIC_KEYS and
+            account_response['source']==
             'TEMPORARY_INJECTED_ACCOUNT_RESPONSE_REVIEW' and
             account_response['passed'] is True and
             all(account_response[key] is True for key in ACCOUNT_RESPONSE_CHECKS),
@@ -1219,7 +1223,9 @@ def _validate(profile, result):
         _require(all(account_response[key] is False
             for key in ACCOUNT_RESPONSE_FLAGS),'EXACT_ACCOUNT_RESPONSE_AUTHORITY')
         activity_response=result['exact_activity_response']
-        _require(activity_response['source']==
+        _require(type(activity_response) is dict and
+            set(activity_response)==ACTIVITY_RESPONSE_PUBLIC_KEYS and
+            activity_response['source']==
             'TEMPORARY_INJECTED_ACTIVITY_RESPONSE_REVIEW' and
             activity_response['passed'] is True and
             all(activity_response[key] is True for key in ACTIVITY_RESPONSE_CHECKS),

@@ -134,6 +134,7 @@ def test_store_retarget_is_refused_at_outer_boundary(tmp_path,monkeypatch,target
 
 def test_fixture_report_makes_file_set_guarantee_release_visible():
     result=subject.fixture_report()
+    assert set(result)==subject.PUBLIC_FIXTURE_KEYS
     assert result['source']=='TEMPORARY_INJECTED_ACTIVITY_RESPONSE_REVIEW'
     assert result['passed'] and all(result[key] for key in subject.CHECKS)
     assert all(result[flag] is False for flag in subject.FLAGS)

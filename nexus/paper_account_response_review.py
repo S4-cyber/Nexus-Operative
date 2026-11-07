@@ -36,6 +36,7 @@ FLAGS=('source_attested','source_coverage_verified','activity_coverage_verified'
     'automatic_retry','automatic_continuation','release_approved')
 CHECKS=('review_checked','private_file_set_rechecked',
     'semantic_reader_failures_rechecked','source_files_preserved')
+PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,*FLAGS))
 
 
 def _fail(code):

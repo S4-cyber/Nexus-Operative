@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.237 (pre-release).**
+**Current development build: 0.340.238 (pre-release).**
+
+## v0.340.238 strict operations/offload release schemas
+
+The disposable scripted-operations release profile now declares immutable 18-field root and 33-field physical-offload schemas. Saved release validation consumes the exact synthetic limitations, fixed nine-count operating scope, reconciled/deduplicated/no-history-loss state, every offload integrity check, six exact generation/retired-ID metrics and every denied authority field. Seventeen adversarial mutations cover root or nested extensions, mapping subclasses, altered scope, boolean-as-integer substitutions, changed counts, promoted source and changed authority evidence.
+
+The exact-source v0.340.237 remote commit `692dadb0b1db2695075642409d14d9ed5a9a50b2` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.237 result is pre-claimed. Fresh exact-source v0.340.238 public-security, research/browser/evidence and Windows installer checks remain required.
+
+This is bounded temporary-database and scripted-fixture evidence hardening, not physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This operations-contract hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,802 tests with one expected non-Windows skip; the complete release-trial module passed 128 tests and the release/operations/version/installer focus passed 232. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `af347819870fdc47d47bcfc57583d5ff473176dbb65e25ba083245b80fcfeb26`; `validation/release_trials_0_340_238.json` SHA256 is `0cd7d578f42bfe0eca86755342cf2b8e40232ab4df88ef8b0497049c598ea359`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.238 and has SHA256 `2dcc3b5969cdccb48f9cd61c22a389de48be127c444e4afc316e2a8b524fd6e1`. The 957-path proposed-candidate public-artifact audit and 4,179 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
 ## v0.340.237 strict cross-database recovery release schemas
 

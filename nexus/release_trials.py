@@ -2130,24 +2130,43 @@ def _validate(profile, result):
             re.fullmatch('[a-f0-9]{64}',coverage['evidence_snapshot_sha256']) is not None,
             'FORWARD_COVERAGE_EVIDENCE')
     if profile == 'operations':
-        _require(result['cycles'] == result['buy_fills'] == result['sell_fills'] == result['tier_vetoes'] == 24, 'OPERATION_COUNTS')
-        _require(result['history_deleted'] is False and result['old_id_deduplicated'] is True, 'HISTORY_LOSS')
         # Reject an authority claim before reading the new nested evidence so
         # malformed legacy-shaped results still fail on the safety invariant.
         for name in ('broker_connected', 'live_orders_enabled', 'release_approved', 'application_accounts_changed'):
             if name in result: _require(result[name] is False, 'UNEXPECTED_AUTHORITY')
+        from nexus.operation_drill import LIMITATIONS as OPERATION_LIMITATIONS, PUBLIC_KEYS as OPERATION_KEYS
+        _require(type(result) is dict and frozenset(result)==
+            OPERATION_KEYS|frozenset(('order_physical_offload',)),
+            'OPERATION_PROFILE_SCHEMA')
+        _require(result['mode']=='SCRIPTED_OFFLINE_OPERATION_DRILL' and
+            result['passed'] is True and result['limitations']==OPERATION_LIMITATIONS,
+            'OPERATION_SCOPE')
+        counts=dict(cycles=24,buy_fills=24,hold_checks=24,sell_fills=24,
+            tier_vetoes=24,halted_restart_checks=24,archive_batches=24,
+            archived_orders=48,retained_commands=266)
+        _require(all(type(result[key]) is int and result[key]==value
+            for key,value in counts.items()), 'OPERATION_COUNTS')
+        _require(result['history_deleted'] is False and
+            result['old_id_deduplicated'] is True and
+            result['portfolio_reconciled'] is True,
+            'OPERATION_RECOVERY')
         from nexus.order_offload import (CHECKS as OFFLOAD_CHECKS,AUTHORITY_FLAGS as OFFLOAD_FLAGS,
-            MULTI_EPOCH_FIXTURE_GENERATIONS,MULTI_EPOCH_FIXTURE_ORDERS)
+            MULTI_EPOCH_FIXTURE_GENERATIONS,MULTI_EPOCH_FIXTURE_ORDERS,
+            PUBLIC_FIXTURE_KEYS as OFFLOAD_KEYS)
         offload=result['order_physical_offload']
-        _require(offload['source']=='TEMPORARY_OFFLINE_ORDER_OFFLOAD_FIXTURE' and offload['passed'] is True and
-                 all(offload[key] is True for key in OFFLOAD_CHECKS),'ORDER_OFFLOAD')
-        _require(offload['multi_epoch_generations']==MULTI_EPOCH_FIXTURE_GENERATIONS and
-                 offload['multi_epoch_orders']==MULTI_EPOCH_FIXTURE_GENERATIONS*MULTI_EPOCH_FIXTURE_ORDERS and
-                 offload['multi_epoch_retired_id_fingerprint_count']==offload['multi_epoch_orders'] and
-                 offload['multi_epoch_max_live_commands']==4 and
-                 type(offload['multi_epoch_max_source_commands']) is int and
-                 4<offload['multi_epoch_max_source_commands']<100,
-                 'ORDER_OFFLOAD_MULTI_EPOCH')
+        _require(type(offload) is dict and frozenset(offload)==OFFLOAD_KEYS,
+            'ORDER_OFFLOAD_SCHEMA')
+        _require(offload['source']=='TEMPORARY_OFFLINE_ORDER_OFFLOAD_FIXTURE' and
+            offload['passed'] is True and
+            all(offload[key] is True for key in OFFLOAD_CHECKS),'ORDER_OFFLOAD')
+        offload_counts=dict(multi_epoch_generations=MULTI_EPOCH_FIXTURE_GENERATIONS,
+            multi_epoch_orders=MULTI_EPOCH_FIXTURE_GENERATIONS*MULTI_EPOCH_FIXTURE_ORDERS,
+            multi_epoch_retired_id_fingerprint_count=
+                MULTI_EPOCH_FIXTURE_GENERATIONS*MULTI_EPOCH_FIXTURE_ORDERS,
+            multi_epoch_max_live_commands=4,multi_epoch_max_source_commands=55,
+            legacy_baseline_retired_id_fingerprint_count=2)
+        _require(all(type(offload[key]) is int and offload[key]==value
+            for key,value in offload_counts.items()), 'ORDER_OFFLOAD_MULTI_EPOCH')
         _require(all(offload[key] is False for key in OFFLOAD_FLAGS),'ORDER_OFFLOAD_AUTHORITY')
     if profile == 'recovery':
         from nexus.paper_policy import POLICY, admit

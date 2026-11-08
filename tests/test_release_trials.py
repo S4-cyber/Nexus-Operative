@@ -178,6 +178,36 @@ def test_multi_epoch_order_offload_metrics_are_mandatory():
             trials._validate('operations',changed)
 
 
+def test_operations_trial_consumes_exact_durable_scope():
+    result=trials._execute('operations');trials._validate('operations',result)
+    class ReportMapping(dict):pass
+    for changed,code in ((dict(result,unconsumed=True),'OPERATION_PROFILE_SCHEMA'),
+        (ReportMapping(result),'OPERATION_PROFILE_SCHEMA')):
+        with pytest.raises(ValueError,match=code):trials._validate('operations',changed)
+    offload=result['order_physical_offload']
+    changed={**result,'order_physical_offload':{**offload,'unconsumed':True}}
+    with pytest.raises(ValueError,match='ORDER_OFFLOAD_SCHEMA'):
+        trials._validate('operations',changed)
+    changed={**result,'order_physical_offload':ReportMapping(offload)}
+    with pytest.raises(ValueError,match='ORDER_OFFLOAD_SCHEMA'):
+        trials._validate('operations',changed)
+    for field,value,code in (('mode','BROKER_OPERATION_DRILL','OPERATION_SCOPE'),
+        ('limitations','broader','OPERATION_SCOPE'),('cycles',True,'OPERATION_COUNTS'),
+        ('archive_batches',23,'OPERATION_COUNTS'),('archived_orders',47,'OPERATION_COUNTS'),
+        ('retained_commands',265,'OPERATION_COUNTS'),
+        ('portfolio_reconciled',1,'OPERATION_RECOVERY')):
+        changed={**result,field:value}
+        with pytest.raises(ValueError,match=code):trials._validate('operations',changed)
+    for field,value,code in (('source','PROVIDER_ORDER_OFFLOAD','ORDER_OFFLOAD'),
+        ('copy_verified',1,'ORDER_OFFLOAD'),
+        ('multi_epoch_generations',True,'ORDER_OFFLOAD_MULTI_EPOCH'),
+        ('multi_epoch_max_source_commands',54,'ORDER_OFFLOAD_MULTI_EPOCH'),
+        ('legacy_baseline_retired_id_fingerprint_count',1,'ORDER_OFFLOAD_MULTI_EPOCH'),
+        ('broker_connected',0,'ORDER_OFFLOAD_AUTHORITY')):
+        changed={**result,'order_physical_offload':{**offload,field:value}}
+        with pytest.raises(ValueError,match=code):trials._validate('operations',changed)
+
+
 def test_source_fingerprint_tracks_source_test_and_workflow_changes(tmp_path):
     for name in ('nexus','tests','tools','.github/workflows','dashboard','installer'):
         (tmp_path/name).mkdir(parents=True)

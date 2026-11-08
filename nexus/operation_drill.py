@@ -12,6 +12,12 @@ from nexus.tier_permissions import configure
 from nexus import order_checkpoints
 
 _LOCK=threading.Lock()
+LIMITATIONS=('Scripted synthetic fixture with reconstructed gateway instances; not live-data '
+    'strategy operation, real process death, network-outage validation or market performance evidence.')
+PUBLIC_KEYS=frozenset(('mode','passed','cycles','buy_fills','hold_checks','sell_fills',
+    'tier_vetoes','halted_restart_checks','archive_batches','archived_orders','retained_commands',
+    'old_id_deduplicated','portfolio_reconciled','history_deleted',
+    'application_accounts_changed','live_orders_enabled','limitations'))
 
 
 def drill(cycles=12):
@@ -63,5 +69,5 @@ def drill(cycles=12):
                         retained_commands=report['commands'],old_id_deduplicated=True,
                         portfolio_reconciled=report['portfolio_reconciled'],history_deleted=False,
                         application_accounts_changed=False,live_orders_enabled=False,
-                        limitations='Scripted synthetic fixture with reconstructed gateway instances; not live-data strategy operation, real process death, network-outage validation or market performance evidence.')
+                        limitations=LIMITATIONS)
     finally:_LOCK.release()

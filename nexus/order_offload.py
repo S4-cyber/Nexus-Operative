@@ -56,6 +56,10 @@ CHECKS=('copy_verified','source_unchanged','archived_order_replay',
         'legacy_baseline_migration_fenced')
 MULTI_EPOCH_FIXTURE_GENERATIONS=4
 MULTI_EPOCH_FIXTURE_ORDERS=12
+PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,
+    'multi_epoch_generations','multi_epoch_orders','multi_epoch_max_live_commands',
+    'multi_epoch_max_source_commands','multi_epoch_retired_id_fingerprint_count',
+    'legacy_baseline_retired_id_fingerprint_count',*AUTHORITY_FLAGS))
 
 
 def _fail(code):

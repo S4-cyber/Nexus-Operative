@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.237**. Reviewed remote source baseline: `00970d8d565d18cfa93a8c269c2629e22f1e1aa6` (v0.340.236).
+Report date: November 8, 2026. Development candidate: **v0.340.238**. Reviewed remote source baseline: `692dadb0b1db2695075642409d14d9ed5a9a50b2` (v0.340.237).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 8, 2026. Development candidate: **v0.340.237**. Reviewed r
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.237 source additionally requires the disposable cross-database recovery report to match immutable 8-field root and 14-field recovered-state schemas. Its temporary five-file scope, denied authority, session-bound order identifiers, stopped/halted/reconciled state, retained accounting, injected-only source, four evidence digests and current policy binding are consumed. Final local validation passed 5,801 tests with one expected non-Windows skip, the 127-test complete release-trial module, the 8-test direct recovery focus, the 194-test release/recovery/version/installer focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.238 source additionally requires the disposable scripted-operations report and nested physical-offload fixture to match immutable 18-field and 33-field schemas. Its synthetic scope, nine fixed integer counts, reconciled/deduplicated/no-history-loss state, every offload check, six exact generation/retired-ID metrics and every denied authority field are consumed. Seventeen adversarial mutations cover extension, subclass, scope, type, count, source and authority changes. Final local validation passed 5,802 tests with one expected non-Windows skip, the 128-test complete release-trial module, the 232-test release/operations/version/installer focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.237 was published as `692dadb0b1db2695075642409d14d9ed5a9a50b2`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.236 was published as `00970d8d565d18cfa93a8c269c2629e22f1e1aa6`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.235 was published as `0a644f5af3cafba2ed957439d2dfb36c3bcd38b7`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.234 was published as `a44569e07c5efcffda3ac9440e34e1841f1eb857`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.

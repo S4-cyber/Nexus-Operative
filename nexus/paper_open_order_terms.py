@@ -9,6 +9,13 @@ MAX_ORDERS = 128
 SCOPE = 'QUANTITY_BTC_USD_SIMPLE_IOC_LIMIT_TERMS_NOT_PROVIDER_HOLDS_OR_EXECUTION_PRICES'
 FLAGS = ('source_attested','order_coverage_verified','holds_reconciled','spendable_funds_verified',
          'ready_for_routing','ledger_applied','broker_connected','live_orders_enabled')
+REPORT_PUBLIC_KEYS = frozenset(('mode','status','scope','reported_rows',
+    'supported_unique_orders','duplicate_rows_ignored','unsupported_rows',
+    'terms_complete','remaining_buy_limit_principal_cap_usd',
+    'remaining_sell_quantity_btc','normalized_terms_sha256','review_reasons',
+    *FLAGS,'summary_sha256'))
+PUBLIC_FIXTURE_KEYS = frozenset(('passed','observed','unsupported','source',
+    'broker_connected','live_orders_enabled'))
 
 
 def _row(raw, account):

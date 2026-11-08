@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.233. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.234. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.233 gives the portable-observation release aggregate and both successful and boundary-blocked reviews strict immutable 9-field and 41-field public schemas, while also requiring exact embedded retained-activity, retained-balance and gross-fill envelopes. Saved release validation recomputes both review input hashes and the retained-balance input hash, binds account/head/opening-manifest scope across the pair, consumes every authority field and independently reconstructs gross arithmetic from normalized retained activity. Unknown fields, mapping subclasses, altered limitations and substituted arithmetic now fail closed. This is bounded synthetic reconciliation evidence hardening, not provider observation/source acceptance, verified coverage, holds or spendable funds, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.234 gives the fixed open-order-terms release aggregate and both its complete and unsupported reports strict immutable 6-field and 21-field public schemas. Saved release validation consumes every count, status, reason, arithmetic result, normalized-terms digest and false authority field; pins the fixed supplied-only scope; and independently replays each summary hash. Unknown fields, mapping subclasses, altered scope, substituted digests and unconsumed fail-closed evidence now fail closed. This is bounded synthetic open-IOC evidence hardening, not provider order/source acceptance, verified coverage, holds or spendable funds, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

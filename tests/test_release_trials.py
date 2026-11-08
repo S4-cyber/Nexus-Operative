@@ -1198,6 +1198,49 @@ def test_open_terms_trial_rejects_partial_totals_or_promoted_hold_authority():
         with pytest.raises(ValueError,match='OPEN_TERMS_AUTHORITY'):trials._validate('open_order_terms',changed)
 
 
+def test_open_terms_trial_requires_exact_public_schemas():
+    from nexus.paper_open_order_terms import fixture_report
+    class OpenTermsMapping(dict): pass
+    result=fixture_report()
+    for path in (('private_extension',),('observed','private_extension'),
+            ('unsupported','private_extension')):
+        changed=copy.deepcopy(result);target=changed
+        for key in path[:-1]: target=target[key]
+        target[path[-1]]=True
+        code='OPEN_TERMS_PROFILE_SCHEMA' if len(path)==1 else 'OPEN_TERMS_REPORT_SCHEMA'
+        with pytest.raises(ValueError,match=code):
+            trials._validate('open_order_terms',changed)
+    with pytest.raises(ValueError,match='OPEN_TERMS_PROFILE_SCHEMA'):
+        trials._validate('open_order_terms',OpenTermsMapping(result))
+    changed=copy.deepcopy(result);changed['observed']=OpenTermsMapping(changed['observed'])
+    with pytest.raises(ValueError,match='OPEN_TERMS_REPORT_SCHEMA'):
+        trials._validate('open_order_terms',changed)
+
+
+@pytest.mark.parametrize(('path','value','code'),(
+    (('source',),'BROADER_FIXTURE','OPEN_TERMS_PROFILE'),
+    (('broker_connected',),True,'OPEN_TERMS_PROFILE_AUTHORITY'),
+    (('observed','scope'),'BROADER_SCOPE','OPEN_TERMS_SCOPE'),
+    (('observed','status'),'REVIEW_REQUIRED','OPEN_TERMS_OBSERVED'),
+    (('observed','unsupported_rows'),1,'OPEN_TERMS_OBSERVED'),
+    (('observed','review_reasons'),['PRIVATE_REASON'],'OPEN_TERMS_OBSERVED'),
+    (('observed','normalized_terms_sha256'),'0'*64,'OPEN_TERMS_OBSERVED'),
+    (('observed','summary_sha256'),'0'*64,'OPEN_TERMS_SUMMARY'),
+    (('unsupported','reported_rows'),3,'OPEN_TERMS_UNSUPPORTED'),
+    (('unsupported','supported_unique_orders'),2,'OPEN_TERMS_UNSUPPORTED'),
+    (('unsupported','duplicate_rows_ignored'),1,'OPEN_TERMS_UNSUPPORTED'),
+    (('unsupported','review_reasons'),[],'OPEN_TERMS_UNSUPPORTED'),
+    (('unsupported','summary_sha256'),'0'*64,'OPEN_TERMS_SUMMARY'),
+))
+def test_open_terms_trial_consumes_all_fixed_evidence(path,value,code):
+    from nexus.paper_open_order_terms import fixture_report
+    changed=copy.deepcopy(fixture_report());target=changed
+    for key in path[:-1]: target=target[key]
+    target[path[-1]]=value
+    with pytest.raises(ValueError,match=code):
+        trials._validate('open_order_terms',changed)
+
+
 def test_encrypted_observation_profile_cannot_claim_password_storage_or_replaced_originals():
     from nexus.encrypted_observation import fixture_report
     result=fixture_report();trials._validate('encrypted_observation',result)

@@ -875,17 +875,55 @@ def _validate(profile, result):
         _require(all(result[k] is False for k in ('password_saved','vault_accessed','external_connections','original_plaintext_deleted',
             'output_file_writes','ready_for_routing','live_orders_enabled')), 'ENCRYPTED_OBSERVATION_AUTHORITY')
     if profile == 'open_order_terms':
-        from nexus.paper_open_order_terms import FLAGS
+        from nexus.alpaca_paper_contract import sha
+        from nexus.paper_open_order_terms import (FLAGS,PUBLIC_FIXTURE_KEYS,
+            REPORT_PUBLIC_KEYS,SCOPE)
+        _require(type(result) is dict and frozenset(result)==PUBLIC_FIXTURE_KEYS,
+            'OPEN_TERMS_PROFILE_SCHEMA')
+        _require(result['passed'] is True and
+            result['source']=='FIXED_SUPPLIED_OPEN_IOC_TERMS',
+            'OPEN_TERMS_PROFILE')
+        _require(result['broker_connected'] is result['live_orders_enabled'] is False,
+            'OPEN_TERMS_PROFILE_AUTHORITY')
         observed, unsupported = result['observed'], result['unsupported']
-        _require(observed['terms_complete'] is True and observed['reported_rows'] == 3 and
-            observed['supported_unique_orders'] == 2 and observed['duplicate_rows_ignored'] == 1 and
+        _require(all(type(item) is dict and frozenset(item)==REPORT_PUBLIC_KEYS
+            for item in (observed,unsupported)), 'OPEN_TERMS_REPORT_SCHEMA')
+        _require(all(item['mode']=='REPORTED_OPEN_IOC_LIMIT_TERMS' and
+            item['scope']==SCOPE for item in (observed,unsupported)),
+            'OPEN_TERMS_SCOPE')
+        _require(observed['status']=='TERMS_OBSERVED_SOURCE_UNVERIFIED' and
+            observed['terms_complete'] is True and
+            type(observed['reported_rows']) is int and observed['reported_rows'] == 3 and
+            type(observed['supported_unique_orders']) is int and
+            observed['supported_unique_orders'] == 2 and
+            type(observed['duplicate_rows_ignored']) is int and
+            observed['duplicate_rows_ignored'] == 1 and
+            type(observed['unsupported_rows']) is int and
+            observed['unsupported_rows'] == 0 and observed['review_reasons']==[] and
             observed['remaining_buy_limit_principal_cap_usd'] == '250' and
-            observed['remaining_sell_quantity_btc'] == '0.5', 'OPEN_TERMS_ARITHMETIC')
-        _require(unsupported['terms_complete'] is False and unsupported['status'] == 'REVIEW_REQUIRED' and
+            observed['remaining_sell_quantity_btc'] == '0.5' and
+            observed['normalized_terms_sha256']==
+                '7cc247698946fabe1cc092ed123e9420fe3a7daf4636f9d02e4c621f67e4e69f',
+            'OPEN_TERMS_OBSERVED')
+        _require(unsupported['terms_complete'] is False and
+            unsupported['status'] == 'REVIEW_REQUIRED' and
+            type(unsupported['reported_rows']) is int and unsupported['reported_rows']==2 and
+            type(unsupported['supported_unique_orders']) is int and
+            unsupported['supported_unique_orders']==1 and
+            type(unsupported['duplicate_rows_ignored']) is int and
+            unsupported['duplicate_rows_ignored']==0 and
+            type(unsupported['unsupported_rows']) is int and
+            unsupported['unsupported_rows']==1 and
+            unsupported['review_reasons']==['UNSUPPORTED_OR_INVALID_OPEN_ORDER_TERMS'],
+            'OPEN_TERMS_UNSUPPORTED')
+        _require(
             unsupported['remaining_buy_limit_principal_cap_usd'] is None and
             unsupported['remaining_sell_quantity_btc'] is None and unsupported['normalized_terms_sha256'] is None,
             'OPEN_TERMS_UNKNOWN')
         _require(all(all(r[k] is False for k in FLAGS) for r in (observed,unsupported)), 'OPEN_TERMS_AUTHORITY')
+        for item in (observed,unsupported):
+            summary=dict(item);claimed=summary.pop('summary_sha256')
+            _require(claimed==sha(summary),'OPEN_TERMS_SUMMARY')
     if profile == 'observation_review':
         from nexus.alpaca_paper_contract import sha
         from nexus.broker_activity_review import (REVIEW_FLAGS as ACTIVITY_FLAGS,

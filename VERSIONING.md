@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.233 (pre-release).**
+**Current development build: 0.340.234 (pre-release).**
+
+## v0.340.234 strict open-order-terms release schemas
+
+The fixed open-order-terms release aggregate and both its complete and unsupported reports now declare immutable 6-field and 21-field public schemas. Saved release validation consumes every count, status, reason, arithmetic result, normalized-terms digest and false authority field; pins the fixed supplied-only scope; and independently replays each summary hash. Eighteen regression mutations cover root or nested extensions, mapping subclasses, altered scope, status, counts, reasons, digests and summary hashes.
+
+The exact-source v0.340.233 commit `5785a49c59583faf3b6f033f16fb5ce9d4082fcc` has no connector-visible pull-request workflow runs or combined-status records at this checkpoint, so no hosted v0.340.233 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.234 hosted checks remain required.
+
+This is bounded synthetic open-IOC evidence hardening, not actual provider order/source, paper-account, verified coverage, holds or spendable funds, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained order or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This release-evidence hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,794 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 120 tests, the affected open-order/release focus passed 158 and the release/version/installer/package focus passed 284. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `e795f12d299f653f71677e5f06d919d7f2eb5f82b35f7e211dddc1a6b4e8aafb`; `validation/release_trials_0_340_234.json` SHA256 is `6e153a5da5e5780fd2fd45b6e7f40792f452fce78d35a9cf25624114fb918de9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.234 and has SHA256 `78802186c8aaff508f01f2b994e1388739647d3d75f813c6aabf004cd2192daf`. The 953-path candidate-tree public-artifact audit and 4,204 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 
 ## v0.340.233 strict portable-observation reconciliation release schemas
 

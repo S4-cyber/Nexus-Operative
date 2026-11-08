@@ -15,6 +15,51 @@ from nexus.alpaca_paper_contract import number, text, sha
 
 POLICY = 'nexus.retained-gross-fill-residual-review.v2'
 MAX_SAMPLES = 20
+LIMITATIONS = ('Read-only diagnostic of one retained head plus supplied TOTAL '
+    'balances. Gross fills omit all fee obligations; a passing gross path is '
+    'not spendable funding. All-retained residual equality is explicitly '
+    'unallocated. Exact fee timestamps permit filtering only when every '
+    'retained fee for an asset is inside the selected interval; neither form '
+    'verifies provider posting, source completeness, associations or settled '
+    'balances. No guessed fee links, date-to-instant conversion, cancellation, '
+    'account write, reservation or resume permission. Final head recheck is a '
+    'sample only, not protection from later changes, rewritten hashes or '
+    'valid-tail deletion.')
+GROSS_FEE_SCOPE = ('EXACT_TIMESTAMP_FILTERED_OR_ALL_RETAINED_UNALLOCATED_'
+    'DEBITS_NEITHER_VERIFIES_PROVIDER_POSTING')
+GROSS_ARITHMETIC_SCOPE = 'EXPLICIT_GROSS_FILLS_ONLY_FEES_NEVER_SPENT_OR_ALLOCATED'
+GROSS_TIME_SCOPE = ('CANONICAL_UTC_UP_TO_NANOSECONDS_EQUAL_INSTANT_DEBITS_'
+    'REQUIRE_PRE_GROUP_FUNDS')
+GROSS_AUTHORITY_FLAGS = ('fee_posting_interval_verified',
+    'fee_debits_allocated_to_interval','fee_execution_links_verified',
+    'fee_reserved_funding_verified')
+GROSS_PUBLIC_KEYS = frozenset(('gross_execution_ending_balances',
+    'gross_minus_supplied_observed','gross_only_debits_covered',
+    'gross_only_minimum_group_end_balances','execution_groups','executions',
+    'equal_nanosecond_groups','gross_only_shortfalls',
+    'gross_only_shortfall_events','shortfall_sample_limit',
+    'shortfall_samples_truncated','all_retained_unallocated_fee_debits',
+    'retained_fee_records_by_asset','residual_equals_all_retained_fee_debits',
+    'exact_interval_fee_debits','exact_interval_fee_records_by_asset',
+    'date_only_fee_records_by_asset','exact_fee_records_outside_interval_by_asset',
+    'fee_temporal_scope_complete_by_asset',
+    'residual_equals_exact_interval_fee_debits','fee_scope',
+    'arithmetic_scope','time_scope',*GROSS_AUTHORITY_FLAGS))
+REVIEW_AUTHORITY_FLAGS = ('admission_reserved','atomic_snapshot',
+    'source_coverage_verified','fee_coverage_complete',
+    'fee_execution_links_verified','holds_reconciled',
+    'broker_account_reconciled','spendable_funds_verified','ledger_applied',
+    'ready_for_routing','broker_connected','live_orders_enabled',
+    'automatic_retry','automatic_continuation')
+REVIEW_PUBLIC_KEYS = frozenset(('mode','status','read_only','policy',
+    'account_sha256','head_sha256','opening_balances','opening_at',
+    'observed_balances','observed_at','input_sha256','head_rechecked',
+    'arithmetic_evaluated','gross_fill_review','retained_activity_review',
+    'review_reasons','source','limitations',*REVIEW_AUTHORITY_FLAGS))
+PUBLIC_FIXTURE_KEYS = frozenset(('passed','stale_head_rejected',
+    'date_only_fee_residual_not_promoted',
+    'exact_timestamped_fee_residual_compared','review','source',
+    'broker_connected','live_orders_enabled'))
 
 
 def _fail(code):
@@ -76,9 +121,8 @@ def _gross_review(records, opening, observed, start, end):
         exact_interval_fee_records_by_asset=exact_counts, date_only_fee_records_by_asset=date_counts,
         exact_fee_records_outside_interval_by_asset=outside_counts, fee_temporal_scope_complete_by_asset=complete,
         residual_equals_exact_interval_fee_debits={k:residual[k]==exact_fees[k] if complete[k] else None for k in fees},
-        fee_scope='EXACT_TIMESTAMP_FILTERED_OR_ALL_RETAINED_UNALLOCATED_DEBITS_NEITHER_VERIFIES_PROVIDER_POSTING',
-        arithmetic_scope='EXPLICIT_GROSS_FILLS_ONLY_FEES_NEVER_SPENT_OR_ALLOCATED',
-        time_scope='CANONICAL_UTC_UP_TO_NANOSECONDS_EQUAL_INSTANT_DEBITS_REQUIRE_PRE_GROUP_FUNDS',
+        fee_scope=GROSS_FEE_SCOPE, arithmetic_scope=GROSS_ARITHMETIC_SCOPE,
+        time_scope=GROSS_TIME_SCOPE,
         fee_posting_interval_verified=False, fee_debits_allocated_to_interval=False,
         fee_execution_links_verified=False, fee_reserved_funding_verified=False)
 
@@ -119,7 +163,7 @@ def _review_snapshot(retained, *, account, expected_head, opening, observed, sta
         holds_reconciled=False, broker_account_reconciled=False, spendable_funds_verified=False,
         ledger_applied=False, ready_for_routing=False, broker_connected=False, live_orders_enabled=False,
         automatic_retry=False, automatic_continuation=False,
-        limitations='Read-only diagnostic of one retained head plus supplied TOTAL balances. Gross fills omit all fee obligations; a passing gross path is not spendable funding. All-retained residual equality is explicitly unallocated. Exact fee timestamps permit filtering only when every retained fee for an asset is inside the selected interval; neither form verifies provider posting, source completeness, associations or settled balances. No guessed fee links, date-to-instant conversion, cancellation, account write, reservation or resume permission. Final head recheck is a sample only, not protection from later changes, rewritten hashes or valid-tail deletion.')
+        limitations=LIMITATIONS)
 
 
 def review(store, *, expected_account_id, expected_head, opening_balances, opening_at,

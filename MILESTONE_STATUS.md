@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.231**. Reviewed source baseline: `9f5ec82611a766c50c3e9bec762de5634def1bf5` (v0.340.230).
+Report date: November 8, 2026. Development candidate: **v0.340.232**. Reviewed source baseline: `cdda7fd0f2c3c20289f94d6f9eab3dde21d47085` (v0.340.231).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 8, 2026. Development candidate: **v0.340.231**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.231 source additionally requires the retained paper-activity collection release aggregate and request-derived collection child to match immutable 16-field and 38-field public schemas. Every collection result, request-origin check and false authority/access field is consumed; extensions, mapping subclasses and altered injected-only limitations fail closed at both layers. Final local validation passed 5,778 tests with one expected non-Windows skip, the 104-test complete release-trial module, the 298-test affected collection/request/release focus, the 81-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.232 source additionally requires the retained-balance release aggregate, review and gross-fill arithmetic to match immutable 8-field, 32-field and 27-field public schemas plus the exact embedded retained-activity schema. The complete gross result is recomputed from normalized retained records; the review input hash, head/account scope, read-only limitations and all false authority fields are consumed. Final local validation passed 5,779 tests with one expected non-Windows skip, the 105-test complete release-trial module, the 191-test affected retained-balance/activity/fee/release focus, the 81-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.231 was published as `cdda7fd0f2c3c20289f94d6f9eab3dde21d47085`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.230 was published as `9f5ec82611a766c50c3e9bec762de5634def1bf5`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.229 was published as `be6007a2123b5159882e7e1f0c374f23e840b664`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.228 was published as `6f500e6e3eef9317c543785d4705636b333b288a`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.

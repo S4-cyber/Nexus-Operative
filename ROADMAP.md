@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.231. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.232. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.231 gives the retained paper-activity collection release aggregate and its request-derived activity child strict immutable 16-field and 38-field public schemas. Saved release validation requires exact plain dictionaries, consumes every collection result, request-origin check and false authority/access field, and rejects unknown fields, mapping subclasses or altered injected-only limitations. This is bounded synthetic broker-read collection evidence hardening, not provider/account acceptance, authenticated activity or fee coverage, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.232 gives the head-bound retained-balance release aggregate, review and gross-fill arithmetic strict immutable 8-field, 32-field and 27-field public schemas, while also requiring an exact embedded retained-activity envelope. Saved release validation recomputes the complete gross result from its normalized retained records, binds the review input hash and head/account scope, consumes every authority field, and rejects unknown fields, mapping subclasses or altered read-only limitations. This is bounded synthetic reconciliation evidence hardening, not provider balance/source acceptance, verified fee allocation, holds or spendable funds, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

@@ -1035,6 +1035,68 @@ def test_retained_balance_trial_rejects_stale_or_authorized_gross_fee_inference(
         with pytest.raises(ValueError,match='RETAINED_BALANCE_AUTHORITY'): trials._validate('retained_balance',changed)
 
 
+def test_retained_balance_trial_requires_exact_bound_reconciliation_schemas():
+    from nexus.broker_activity_review import (REVIEW_PUBLIC_KEYS as
+        ACTIVITY_REVIEW_PUBLIC_KEYS)
+    from nexus.retained_balance_review import (GROSS_PUBLIC_KEYS,LIMITATIONS,
+        PUBLIC_FIXTURE_KEYS,REVIEW_PUBLIC_KEYS)
+    result=trials._execute('retained_balance')
+    trials._validate('retained_balance',result)
+    assert type(result) is dict and frozenset(result)==PUBLIC_FIXTURE_KEYS
+    assert type(result['review']) is dict
+    assert frozenset(result['review'])==REVIEW_PUBLIC_KEYS
+    assert result['review']['limitations']==LIMITATIONS
+    assert type(result['review']['gross_fill_review']) is dict
+    assert frozenset(result['review']['gross_fill_review'])==GROSS_PUBLIC_KEYS
+    assert type(result['review']['retained_activity_review']) is dict
+    assert frozenset(result['review']['retained_activity_review'])==ACTIVITY_REVIEW_PUBLIC_KEYS
+    class BalanceMapping(dict):
+        pass
+    changed=copy.deepcopy(result);changed['private_extension']=True
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_PROFILE_SCHEMA'):
+        trials._validate('retained_balance',changed)
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_PROFILE_SCHEMA'):
+        trials._validate('retained_balance',BalanceMapping(result))
+    changed=copy.deepcopy(result);changed['review']['private_extension']=True
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_REVIEW_SCHEMA'):
+        trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result);changed['review']=BalanceMapping(changed['review'])
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_REVIEW_SCHEMA'):
+        trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result);changed['review']['limitations']='Broader scope.'
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_REVIEW_SCOPE'):
+        trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result)
+    changed['review']['gross_fill_review']['private_extension']=True
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_GROSS_SCHEMA'):
+        trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result)
+    changed['review']['gross_fill_review']=BalanceMapping(
+        changed['review']['gross_fill_review'])
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_GROSS_SCHEMA'):
+        trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result)
+    changed['review']['retained_activity_review']['private_extension']=True
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_ACTIVITY_SCHEMA'):
+        trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result)
+    changed['review']['retained_activity_review']=BalanceMapping(
+        changed['review']['retained_activity_review'])
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_ACTIVITY_SCHEMA'):
+        trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result)
+    changed['review']['retained_activity_review']['limitations']='Broader scope.'
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_ACTIVITY_SCOPE'):
+        trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result);changed['review']['input_sha256']='0'*64
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_REVIEW_BINDING'):
+        trials._validate('retained_balance',changed)
+    changed=copy.deepcopy(result)
+    changed['review']['gross_fill_review']['gross_only_minimum_group_end_balances']['USD']='901'
+    with pytest.raises(ValueError,match='RETAINED_BALANCE_REPLAY'):
+        trials._validate('retained_balance',changed)
+
+
 def test_inspection_inventory_trial_preserves_unknown_units_and_denies_authority():
     result=trials._inspection_inventory_trial();trials._validate('inspection_inventory',result)
     changed=copy.deepcopy(result);changed['observations'][1]['observed_inventory']['cash']='1000'

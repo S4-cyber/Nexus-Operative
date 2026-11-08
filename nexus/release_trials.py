@@ -943,20 +943,110 @@ def _validate(profile, result):
         from nexus.portable_paper_observation import create, validate
         _require(all(validate(r['portable_observation']) == create(r) for r in result['observations']), 'INVENTORY_EXPORT_BINDING')
     if profile == 'retained_balance':
-        reviewed = result['review']; gross = reviewed['gross_fill_review']
-        _require(reviewed['arithmetic_evaluated'] is True and reviewed['head_rechecked'] is True and
-            result['stale_head_rejected'] is True, 'RETAINED_BALANCE_FENCES')
-        _require(gross['executions'] == 2 and gross['execution_groups'] == 2 and
-            gross['gross_execution_ending_balances'] == {'USD':'1009.89','BTC':'0.001'} and
-            gross['residual_equals_all_retained_fee_debits'] == {'USD':True,'BTC':True} and
-            gross['residual_equals_exact_interval_fee_debits'] == {'USD':None,'BTC':None} and
+        from nexus.retained_balance_review import (GROSS_ARITHMETIC_SCOPE,
+            GROSS_AUTHORITY_FLAGS,GROSS_FEE_SCOPE,GROSS_PUBLIC_KEYS,
+            GROSS_TIME_SCOPE,LIMITATIONS,POLICY,PUBLIC_FIXTURE_KEYS,
+            REVIEW_AUTHORITY_FLAGS,REVIEW_PUBLIC_KEYS,_gross_review)
+        _require(type(result) is dict and frozenset(result)==PUBLIC_FIXTURE_KEYS,
+            'RETAINED_BALANCE_PROFILE_SCHEMA')
+        _require(result['source']=='FIXED_SYNTHETIC_RETAINED_REST_FIXTURE' and
+            result['passed'] is True,
+            'RETAINED_BALANCE_PROFILE')
+        _require(result['broker_connected'] is result['live_orders_enabled'] is False,
+            'RETAINED_BALANCE_PROFILE_AUTHORITY')
+        reviewed=result['review']
+        _require(type(reviewed) is dict and
+            frozenset(reviewed)==REVIEW_PUBLIC_KEYS,
+            'RETAINED_BALANCE_REVIEW_SCHEMA')
+        _require(reviewed['mode']=='HEAD_BOUND_RETAINED_GROSS_BALANCE_REVIEW' and
+            reviewed['status']=='REVIEW_REQUIRED' and reviewed['read_only'] is True and
+            reviewed['policy']==POLICY and reviewed['source']=='SUPPLIED_UNATTESTED' and
+            reviewed['limitations']==LIMITATIONS,
+            'RETAINED_BALANCE_REVIEW_SCOPE')
+        _require(reviewed['arithmetic_evaluated'] is True and
+            reviewed['head_rechecked'] is True and
+            result['stale_head_rejected'] is True,
+            'RETAINED_BALANCE_FENCES')
+        _require(all(reviewed[k] is False for k in REVIEW_AUTHORITY_FLAGS),
+            'RETAINED_BALANCE_AUTHORITY')
+        from nexus.alpaca_paper_contract import sha
+        scope={k:reviewed[k] for k in ('policy','account_sha256','head_sha256',
+            'opening_balances','opening_at','observed_balances','observed_at')}
+        _require(reviewed['input_sha256']==sha(scope) and
+            reviewed['review_reasons']==['ACTIVITY_COVERAGE_UNVERIFIED',
+                'FEE_DEBITS_NOT_ALLOCATED_TO_EXECUTIONS_OR_INTERVAL',
+                'FEE_LINK_AND_TIMING_UNVERIFIED',
+                'GROSS_FUNDING_EXCLUDES_FEE_OBLIGATIONS',
+                'OPENING_AND_OBSERVED_BALANCES_UNATTESTED'],
+            'RETAINED_BALANCE_REVIEW_BINDING')
+        gross=reviewed['gross_fill_review']
+        _require(type(gross) is dict and frozenset(gross)==GROSS_PUBLIC_KEYS,
+            'RETAINED_BALANCE_GROSS_SCHEMA')
+        _require(gross['executions']==2 and gross['execution_groups']==2 and
+            gross['gross_execution_ending_balances']==
+                {'USD':'1009.89','BTC':'0.001'} and
+            gross['residual_equals_all_retained_fee_debits']==
+                {'USD':True,'BTC':True} and
+            gross['residual_equals_exact_interval_fee_debits']==
+                {'USD':None,'BTC':None} and
             result['date_only_fee_residual_not_promoted'] is True and
-            result['exact_timestamped_fee_residual_compared'] is True, 'RETAINED_BALANCE_ARITHMETIC')
-        _require(reviewed['status'] == 'REVIEW_REQUIRED' and all(reviewed[k] is False for k in
-            ('source_coverage_verified', 'fee_coverage_complete', 'fee_execution_links_verified', 'holds_reconciled',
-             'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing', 'ledger_applied', 'live_orders_enabled', 'admission_reserved'))
-            and all(gross[k] is False for k in ('fee_posting_interval_verified','fee_debits_allocated_to_interval','fee_execution_links_verified',
-                'fee_reserved_funding_verified')), 'RETAINED_BALANCE_AUTHORITY')
+            result['exact_timestamped_fee_residual_compared'] is True,
+            'RETAINED_BALANCE_ARITHMETIC')
+        _require(gross['fee_scope']==GROSS_FEE_SCOPE and
+            gross['arithmetic_scope']==GROSS_ARITHMETIC_SCOPE and
+            gross['time_scope']==GROSS_TIME_SCOPE,
+            'RETAINED_BALANCE_GROSS_SCOPE')
+        _require(all(gross[k] is False for k in GROSS_AUTHORITY_FLAGS),
+            'RETAINED_BALANCE_AUTHORITY')
+        retained=reviewed['retained_activity_review']
+        from nexus.broker_activity_review import (REVIEW_FLAGS as
+            ACTIVITY_REVIEW_FLAGS, REVIEW_LIMITATIONS as
+            ACTIVITY_REVIEW_LIMITATIONS, REVIEW_PUBLIC_KEYS as
+            ACTIVITY_REVIEW_PUBLIC_KEYS)
+        _require(type(retained) is dict and
+            frozenset(retained)==ACTIVITY_REVIEW_PUBLIC_KEYS,
+            'RETAINED_BALANCE_ACTIVITY_SCHEMA')
+        _require(retained['mode']=='UNATTESTED_RETAINED_ACTIVITY_REVIEW' and
+            retained['status']=='REVIEW_REQUIRED' and retained['read_only'] is True and
+            retained['source']=='SUPPLIED_UNATTESTED' and
+            retained['snapshot_selection']=='REPORTED_UPDATED_AT_DIAGNOSTIC_ONLY' and
+            retained['limitations']==ACTIVITY_REVIEW_LIMITATIONS,
+            'RETAINED_BALANCE_ACTIVITY_SCOPE')
+        _require(retained['account_sha256']==reviewed['account_sha256'] and
+            retained['head_sha256']==reviewed['head_sha256'] and
+            retained['retained_batches']==1 and retained['retained_activities']==4 and
+            retained['distinct_orders']==2 and retained['distinct_order_snapshots']==2 and
+            retained['ambiguous_order_ids']==[] and
+            retained['snapshot_revision_order_ids']==[] and
+            retained['normalization_evaluated'] is True and
+            retained['review_reasons']==['ACTIVITY_COVERAGE_UNVERIFIED',
+                'FEE_LINK_AND_TIMING_UNVERIFIED'],
+            'RETAINED_BALANCE_ACTIVITY_BINDING')
+        _require(all(retained[k] is False for k in ACTIVITY_REVIEW_FLAGS),
+            'RETAINED_BALANCE_ACTIVITY_AUTHORITY')
+        _require(retained['collection_observation_review']==dict(
+                retained_observations=0,retained_pages=0,
+                short_last_page_observed=0,batches_without_observations=1,
+                declared_transports=[],source_attested=False,
+                activity_coverage_verified=False,automatic_continuation=False) and
+            retained['requested_window_review']==dict(
+                scope='CALLER_DECLARED_CREATION_WINDOWS_ONLY',unique_windows=1,
+                components=[dict(after='2026-10-17T00:00:00Z',
+                    until='2026-10-18T00:00:00Z')],
+                gaps_between_requested_windows=[],
+                boundary_semantics_verified=False,
+                activity_coverage_verified=False),
+            'RETAINED_BALANCE_ACTIVITY_SCOPE')
+        from nexus.broker_fee_projection import balances
+        try:
+            expected_gross=_gross_review(
+                retained['activity_normalization']['normalized_activities'],
+                balances(reviewed['opening_balances']),
+                balances(reviewed['observed_balances']),reviewed['opening_at'],
+                reviewed['observed_at'])
+        except (ArithmeticError,KeyError,TypeError,ValueError):
+            raise ReleaseTrialError('RELEASE_TRIAL_RETAINED_BALANCE_REPLAY') from None
+        _require(gross==expected_gross,'RETAINED_BALANCE_REPLAY')
     if profile == 'collection':
         from nexus.activity_collection_evidence import (LIMITATIONS as
             COLLECTION_LIMITATIONS, PUBLIC_FIXTURE_KEYS as COLLECTION_KEYS)

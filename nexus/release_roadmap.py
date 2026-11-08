@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.231'
+REVISION = '0.340.232'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.231 gives the retained paper-activity collection release aggregate and its request-derived activity child strict immutable 16-field and 38-field public schemas. Saved release validation requires exact plain dictionaries, consumes every collection result, request-origin check and false authority/access field, and rejects unknown fields, mapping subclasses or altered injected-only limitations. This is bounded synthetic broker-read collection evidence hardening, not provider/account acceptance, authenticated activity or fee coverage, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.232 gives the head-bound retained-balance release aggregate, review and gross-fill arithmetic strict immutable 8-field, 32-field and 27-field public schemas, while also requiring an exact embedded retained-activity envelope. Saved release validation recomputes the complete gross result from its normalized retained records, binds the review input hash and head/account scope, consumes every authority field, and rejects unknown fields, mapping subclasses or altered read-only limitations. This is bounded synthetic reconciliation evidence hardening, not provider balance/source acceptance, verified fee allocation, holds or spendable funds, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

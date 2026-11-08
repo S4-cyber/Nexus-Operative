@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.231 (pre-release).**
+**Current development build: 0.340.232 (pre-release).**
+
+## v0.340.232 strict head-bound retained-balance release schemas
+
+The head-bound retained-balance release aggregate, review and gross-fill arithmetic now declare immutable 8-field, 32-field and 27-field public schemas, and the embedded retained-activity review must match its exact existing 28-field schema. Saved release validation recomputes the complete gross result from normalized retained records, binds the review input hash and head/account scope, consumes every false authority field and rejects unknown fields, mapping subclasses or altered read-only limitations. Seven regressions reproduce root, review or gross extension and mapping-subclass acceptance plus altered scope language; additional regressions cover the embedded activity schema, input binding and gross replay.
+
+The exact-source v0.340.231 commit `cdda7fd0f2c3c20289f94d6f9eab3dde21d47085` has no connector-visible pull-request workflow runs or combined-status records at this checkpoint, so no hosted v0.340.231 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.232 hosted checks remain required.
+
+This is bounded synthetic retained-balance reconciliation evidence hardening, not actual provider balance/source, paper-account, verified fee allocation, holds or spendable funds, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This reconciliation-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,779 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 105 tests, the affected retained-balance/activity/fee/release focus passed 191 and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `85299e8caafe9fe990d8b50539f396324dda8cb4d4ff6280aacfedbf4422f0a2`; `validation/release_trials_0_340_232.json` SHA256 is `cca258cb25c22c3c2f641455ca0da6a698e93a8c7616b81c7f0491de563a3579`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.232 and has SHA256 `e4be2835a3e4d10b490a347846ffedb97612c3233dee0761581f5caa291be28f`. The 951-path candidate-tree public-artifact audit and 4,320 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
 ## v0.340.231 strict retained-activity collection release schemas
 

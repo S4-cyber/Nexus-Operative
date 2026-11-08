@@ -15,7 +15,8 @@ ROOT=Path(__file__).resolve().parents[1]
 CHECKS=('account_response_normalization_checked','activity_response_normalization_checked','exact_response_bundle_checked','provider_results_review_checked','provider_results_changed_result_denied','provider_history_review_checked','provider_history_profile_confusion_denied','provider_budget_recovery_checked','account_pacing_recovery_checked','catalog_allowlist_checked','observation_crypto_checked','missing_account_probe_preserved','missing_recovery_preserved','missing_activity_preserved','missing_activity_sse_preserved',
         'private_account_review_checked','public_current_account_review_checked','private_execution_quality_checked','private_quote_status_checked','unconfirmed_quote_read_denied','encrypted_quote_evidence_checked','invalid_quote_export_denied','private_files_unchanged','invalid_command_denied',
         'emergency_stop_independent','emergency_stop_storage_contention',
-        'emergency_stop_cpu_pressure','order_offload_checked','default_data_not_created')
+        'emergency_stop_cpu_pressure','emergency_stop_data_root_pinned',
+        'order_offload_checked','default_data_not_created')
 
 
 def _require(condition,code):
@@ -51,6 +52,11 @@ def _json_call(command,args,env,*,timeout=30):
     _require(code==0 and not stderr,'CHILD_FAILED')
     try:return json.loads(stdout)
     except (ValueError,TypeError):raise ValueError('PACKAGED_PAPER_TOOLS_CHILD_JSON') from None
+
+
+def _emergency_stop_schema(value):
+    from nexus.emergency_cut_tool import PUBLIC_KEYS
+    return type(value) is dict and frozenset(value)==PUBLIC_KEYS
 
 
 def _cpu_pressure_workers():
@@ -124,8 +130,10 @@ def _contended_emergency_stop(command,env,root,cpu_pressure=False):
     try:cut=json.loads(stdout)
     except (ValueError,TypeError):raise ValueError('PACKAGED_PAPER_TOOLS_CHILD_JSON') from None
     recovered=DurableOrderGateway(order_path).recovery_report()
-    _require(cut['passed'] is True and cut['emergency_cut_state']=='VERIFIED' and
-        cut['intent_preceded_durable_halt'] is True and recovered['halted'] is True and
+    _require(_emergency_stop_schema(cut) and cut['passed'] is True and
+        cut['emergency_cut_state']=='VERIFIED' and
+        cut['intent_preceded_durable_halt'] is True and
+        cut['data_root_path_pinned'] is True and recovered['halted'] is True and
         len(recovered['orders'])==1 and recovered['orders'][0]['status']=='SIMULATED_CANCELLED',
         'EMERGENCY_STOP_CONTENTION')
     if cpu_pressure:
@@ -154,7 +162,8 @@ def _windows_read_only_emergency_stop(command,env,root):
         _require(code==2 and not stderr,'EMERGENCY_STOP_READ_ONLY_STORAGE')
         try:cut=json.loads(stdout)
         except (ValueError,TypeError):raise ValueError('PACKAGED_PAPER_TOOLS_CHILD_JSON') from None
-        _require(cut['passed'] is False and cut['halted'] is True and
+        _require(_emergency_stop_schema(cut) and cut['passed'] is False and
+            cut['halted'] is True and
             cut['emergency_cut_state']=='UNCONFIRMED' and
             cut['intent_preceded_durable_halt'] is True and
             cut['emergency_intent_present'] is True and
@@ -484,9 +493,11 @@ def run(command):
         _require(code==2 and stdout=='' and stderr.strip()=='NEXUS_PAPER_TOOL_USAGE_ERROR','INVALID_COMMAND')
         cut_root=root/'explicit-emergency-cut';cut_env=dict(env,NEXUS_PORTABLE_DATA=str(cut_root))
         cut=_json_call(command,['--emergency-stop'],cut_env)
-        _require(cut['mode']=='NEXUS_LOCAL_PAPER_EMERGENCY_STOP' and cut['passed'] is True and
+        _require(_emergency_stop_schema(cut) and
+            cut['mode']=='NEXUS_LOCAL_PAPER_EMERGENCY_STOP' and cut['passed'] is True and
             cut['emergency_cut_state']=='VERIFIED' and cut['intent_preceded_durable_halt'] is True and
             cut['emergency_intent_present'] is True and cut['durable_order_halt_confirmed'] is True and
+            cut['data_root_path_pinned'] is True and
             all(cut[k] is False for k in ('desktop_started','network_requested','credential_access_requested',
                 'broker_connected','live_orders_enabled','money_movement_enabled','reset_available','automatic_restart')) and
             (cut_root/'emergency_cut.intent').is_file() and (cut_root/'order_lifecycle.sqlite3').is_file(),

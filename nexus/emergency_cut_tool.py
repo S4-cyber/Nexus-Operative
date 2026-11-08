@@ -8,17 +8,41 @@ order cancellation remains the authoritative cleanup acknowledgment.
 import json
 import os
 import sqlite3
+import stat
 from pathlib import Path
 
 from nexus import emergency_intent
 from nexus import emergency_priority
 from nexus.durable_orders import DurableOrderGateway
 
+PUBLIC_KEYS = frozenset(('mode','passed','halted','emergency_cut_state',
+    'intent_preceded_durable_halt','emergency_intent_present',
+    'durable_order_halt_confirmed','emergency_priority_attempted',
+    'emergency_priority_confirmed','emergency_priority_class',
+    'data_root_path_pinned','desktop_started','network_requested',
+    'credential_access_requested','broker_connected','live_orders_enabled',
+    'money_movement_enabled','reset_available','automatic_restart','scope'))
+
+
+def _resolved_data_root(data_root):
+    """Pin one non-symlink data-root target before any cut storage access."""
+    candidate = Path(data_root or os.environ.get('NEXUS_PORTABLE_DATA',
+        str(Path.home()/'.nexus-operative'))).expanduser()
+    if candidate.is_symlink():raise ValueError('DATA_ROOT_SYMLINK')
+    try:before = candidate.lstat()
+    except FileNotFoundError:
+        return candidate.resolve(strict=False)
+    if not stat.S_ISDIR(before.st_mode):raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
+    resolved = candidate.resolve(strict=True)
+    after = candidate.lstat()
+    if candidate.is_symlink() or not os.path.samestat(before,after):
+        raise ValueError('DATA_ROOT_CHANGED')
+    return resolved
+
 
 def activate(data_root=None):
+    root = _resolved_data_root(data_root)
     priority = emergency_priority.request()
-    root = Path(data_root or os.environ.get('NEXUS_PORTABLE_DATA',
-        str(Path.home()/'.nexus-operative'))).expanduser()
     order_path = root/'order_lifecycle.sqlite3'
     if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
     intent_preceded = durable_halt = final_intent = False
@@ -48,6 +72,7 @@ def activate(data_root=None):
         emergency_priority_attempted=priority['attempted'],
         emergency_priority_confirmed=priority['confirmed'],
         emergency_priority_class=priority['priority_class'],
+        data_root_path_pinned=True,
         desktop_started=False,network_requested=False,credential_access_requested=False,
         broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
         reset_available=False,automatic_restart=False,

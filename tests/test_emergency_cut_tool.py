@@ -10,6 +10,7 @@ import pytest
 
 from nexus import emergency_intent
 from nexus import emergency_priority
+from nexus.emergency_cut_tool import PUBLIC_KEYS
 from nexus.durable_orders import DurableOrderGateway
 from nexus.paper_forward import PaperForwardRunner
 from nexus.tier_permissions import configure
@@ -27,12 +28,14 @@ def test_standalone_command_durably_cuts_without_starting_desktop_or_network(tmp
     result=command(tmp_path)
     assert result.returncode==0 and not result.stderr
     report=json.loads(result.stdout)
+    assert type(report) is dict and frozenset(report)==PUBLIC_KEYS
     assert report['passed'] and report['emergency_cut_state']=='VERIFIED'
     assert report['intent_preceded_durable_halt'] and report['emergency_intent_present']
     assert report['durable_order_halt_confirmed'] and report['halted']
     assert report['emergency_priority_attempted'] is (os.name=='nt')
     assert report['emergency_priority_confirmed'] is (os.name=='nt')
     assert report['emergency_priority_class']==('HIGH' if os.name=='nt' else 'STANDARD')
+    assert report['data_root_path_pinned'] is True
     assert all(report[key] is False for key in ('desktop_started','network_requested',
         'credential_access_requested','broker_connected','live_orders_enabled',
         'money_movement_enabled','reset_available','automatic_restart'))
@@ -99,6 +102,34 @@ def test_priority_failure_never_prevents_latch_or_durable_halt(tmp_path,monkeypa
     assert report['passed'] and report['durable_order_halt_confirmed']
     assert report['emergency_priority_attempted'] and not report['emergency_priority_confirmed']
     assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
+
+
+def test_data_root_leaf_symlink_is_rejected_before_priority_or_storage(tmp_path,monkeypatch):
+    actual=tmp_path/'actual';actual.mkdir();alias=tmp_path/'alias'
+    try:alias.symlink_to(actual,target_is_directory=True)
+    except OSError:pytest.skip('directory symlink unavailable')
+    monkeypatch.setattr(emergency_priority,'request',lambda:pytest.fail('priority requested'))
+    from nexus.emergency_cut_tool import activate
+    with pytest.raises(ValueError,match='DATA_ROOT_SYMLINK'):activate(alias)
+    assert not list(actual.iterdir())
+
+
+def test_parent_alias_is_pinned_before_priority_and_cut_storage(tmp_path,monkeypatch):
+    first=tmp_path/'first';second=tmp_path/'second';first.mkdir();second.mkdir()
+    alias=tmp_path/'alias'
+    try:alias.symlink_to(first,target_is_directory=True)
+    except OSError:pytest.skip('directory symlink unavailable')
+    original=emergency_priority.request
+    def retarget():
+        alias.unlink();alias.symlink_to(second,target_is_directory=True)
+        return original()
+    monkeypatch.setattr(emergency_priority,'request',retarget)
+    from nexus.emergency_cut_tool import activate
+    report=activate(alias/'nested')
+    assert report['passed'] and report['data_root_path_pinned'] is True
+    assert emergency_intent.requested(first/'nested'/'order_lifecycle.sqlite3')
+    assert DurableOrderGateway(first/'nested'/'order_lifecycle.sqlite3').recovery_report()['halted']
+    assert not list(second.iterdir())
 
 
 def test_storage_failure_retains_cut_until_explicit_retry_finishes_cleanup(tmp_path,monkeypatch):

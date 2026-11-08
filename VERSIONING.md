@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.240 (pre-release).**
+**Current development build: 0.340.241 (pre-release).**
+
+## v0.340.241 pinned standalone emergency data root
+
+The process-independent local paper emergency command now resolves and pins one non-symlink data-root target before requesting priority or touching the intent latch and order journal. A configured root symlink is refused before priority or storage access, while changing a parent alias after resolution cannot redirect the latch or durable halt. Its public result now has an immutable 20-field schema; the packaged release smoke consumes the path-pinning check alongside independent, SQLite-contention, CPU-pressure and native Windows read-only-journal evidence.
+
+The exact-source v0.340.240 remote commit `0d6bcb0b80088b9c655409ebdf2514c450079785` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.240 result is pre-claimed. Fresh exact-source v0.340.241 public-security, research/browser/evidence and Windows installer checks remain required.
+
+This is sampled same-host path-scope and synthetic local paper evidence, not an ACL or administrator boundary, physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This emergency path-scope hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,806 tests with one expected non-Windows skip; the synchronized emergency/release/evidence/version/roadmap/installer/package focus passed 253 and the direct emergency lane/storage/intent focus passed 47. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `3f403fd43e7c2cb4fecd93fa5954a11daea0c01e422787d530b1df7cd942dce6`; `validation/release_trials_0_340_241.json` SHA256 is `b6223ec82967302658322a63074793be09c7c087d829053a010799ed2753a222`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.241 and has SHA256 `dfaa2883d4349e16ee7d399855545d0a0a93d7588fd3b4e4aa48fa9b3ae256d6`. The 960-path proposed-candidate public-artifact audit and 4,182 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
 
 ## v0.340.240 strict broker-paper inspection and inventory release schemas
 

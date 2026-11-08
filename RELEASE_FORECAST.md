@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.241
+
+The process-independent local paper emergency command now pins one resolved non-symlink data-root target before priority or storage access. A configured root symlink is rejected without touching storage, and a parent alias changed after resolution cannot redirect the latch or durable halt. The packaged release smoke consumes its exact 20-field result schema and path-pinning check. The exact-source v0.340.240 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.241 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,806 tests with one expected non-Windows skip; the synchronized emergency/release/evidence/version/roadmap/installer/package focus passed 253 and the direct emergency lane/storage/intent focus passed 47. Sixteen offline profiles match 401 source files / `3f403fd43e7c2cb4fecd93fa5954a11daea0c01e422787d530b1df7cd942dce6`; report SHA256 is `b6223ec82967302658322a63074793be09c7c087d829053a010799ed2753a222`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.241 wheel SHA256 is `dfaa2883d4349e16ee7d399855545d0a0a93d7588fd3b4e4aa48fa9b3ae256d6`. The 960-path proposed-candidate public-artifact audit and 4,182 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.240
 
 The disposable broker-paper inspection/inventory profile now has immutable root, quote-fixture, asset, observation, inventory, timing, open-order and portable schemas. Saved validation consumes the fixed injected request counts and account variants, exact account/asset scope, quote cryptographic policy, portable binding and every denied authority field. Nineteen adversarial mutations cover previously accepted extension, subclass, type, policy, count and authority changes. The exact-source v0.340.239 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.240 checks remain required.

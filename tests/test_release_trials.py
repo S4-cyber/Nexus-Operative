@@ -963,17 +963,57 @@ def test_pacing_trial_requires_exact_root_and_typed_operation_schemas():
 
 
 def test_collection_trial_keeps_page_cap_and_cursor_evidence_without_coverage_authority():
-    from nexus.activity_collection_evidence import fixture_report
+    from nexus.activity_collection_evidence import (LIMITATIONS,
+        PUBLIC_FIXTURE_KEYS)
     result=trials._execute('collection');trials._validate('collection',result)
-    for field in ('source_attested','activity_coverage_verified','ready_for_routing','automatic_continuation'):
+    assert type(result) is dict
+    assert frozenset(result)==PUBLIC_FIXTURE_KEYS|{'request_derived_collection'}
+    assert result['limitations']==LIMITATIONS
+    assert type(result['request_derived_collection']) is dict
+    assert frozenset(result['request_derived_collection'])==trials.REQUEST_COLLECTION_PUBLIC_KEYS
+    for field in ('source_attested','activity_coverage_verified','ready_for_routing',
+                  'automatic_continuation','broker_connected','live_orders_enabled'):
         with pytest.raises(ValueError,match='COLLECTION_AUTHORITY'): trials._validate('collection',dict(result,**{field:True}))
+    with pytest.raises(ValueError,match='PROFILE_FAILED'):
+        trials._validate('collection',dict(result,passed=False))
+    with pytest.raises(ValueError,match='COLLECTION_PROFILE'):
+        trials._validate('collection',dict(result,source='BROADER_SOURCE'))
     with pytest.raises(ValueError,match='COLLECTION_SCOPE'): trials._validate('collection',dict(result,cursor_chain_preserved=False))
     with pytest.raises(ValueError,match='COLLECTION_RETENTION'): trials._validate('collection',dict(result,retained_pages=1))
-    for field in ('request_origin_head_persisted','historical_request_prefix_after_append_replayed',
-                  'request_status_origin_replayed','request_status_after_append_replayed',
-                  'fresh_process_origin_replayed','request_status_journal_unchanged'):
+    for field in trials.REQUEST_COLLECTION_CHECKS:
         altered=copy.deepcopy(result);altered['request_derived_collection'][field]=False
         with pytest.raises(ValueError,match='REQUEST_DERIVED_COLLECTION'):trials._validate('collection',altered)
+    from nexus.paper_activity_acceptance_probe import FLAGS
+    for field in (*FLAGS,'actual_provider_access','actual_vault_access'):
+        altered=copy.deepcopy(result);altered['request_derived_collection'][field]=True
+        with pytest.raises(ValueError,match='REQUEST_DERIVED_COLLECTION_AUTHORITY'):
+            trials._validate('collection',altered)
+
+
+def test_collection_trial_rejects_extensions_mapping_subclasses_and_altered_scope():
+    result=trials._execute('collection')
+    changed=copy.deepcopy(result);del changed['request_derived_collection']
+    with pytest.raises(ValueError,match='COLLECTION_PROFILE_SCOPE'):
+        trials._validate('collection',changed)
+    changed=copy.deepcopy(result);changed['private_extension']=True
+    with pytest.raises(ValueError,match='COLLECTION_PROFILE_SCOPE'):
+        trials._validate('collection',changed)
+    class CollectionMapping(dict):
+        pass
+    with pytest.raises(ValueError,match='COLLECTION_PROFILE_SCOPE'):
+        trials._validate('collection',CollectionMapping(result))
+    changed=copy.deepcopy(result);changed['limitations']='Broader scope.'
+    with pytest.raises(ValueError,match='COLLECTION_PROFILE_SCOPE'):
+        trials._validate('collection',changed)
+    changed=copy.deepcopy(result)
+    changed['request_derived_collection']['private_extension']=True
+    with pytest.raises(ValueError,match='REQUEST_DERIVED_COLLECTION_SCHEMA'):
+        trials._validate('collection',changed)
+    changed=copy.deepcopy(result)
+    changed['request_derived_collection']=CollectionMapping(
+        changed['request_derived_collection'])
+    with pytest.raises(ValueError,match='REQUEST_DERIVED_COLLECTION_SCHEMA'):
+        trials._validate('collection',changed)
 
 
 def test_retained_balance_trial_rejects_stale_or_authorized_gross_fee_inference():

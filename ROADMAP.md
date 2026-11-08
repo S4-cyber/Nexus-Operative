@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.230. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.231. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.230 gives the local paper-read pacing release aggregate and its typed-operation evidence strict immutable 31-field and 36-field public schemas. Saved release validation requires exact plain dictionaries, consumes every typed check and false authority field, and rejects unknown fields, mapping subclasses or altered local-only limitations. This is bounded synthetic broker-read pacing evidence hardening, not provider/account acceptance, broker-wide quota verification, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.231 gives the retained paper-activity collection release aggregate and its request-derived activity child strict immutable 16-field and 38-field public schemas. Saved release validation requires exact plain dictionaries, consumes every collection result, request-origin check and false authority/access field, and rejects unknown fields, mapping subclasses or altered injected-only limitations. This is bounded synthetic broker-read collection evidence hardening, not provider/account acceptance, authenticated activity or fee coverage, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

@@ -42,6 +42,25 @@ PACING_PUBLIC_KEYS = frozenset(('read_completion','snapshot_time',
     'interrupted_full_day_cooldown','wal_read_rejected_before_sqlite',
     'wal_write_rejected_before_conversion','wal_rejection_preserved_files',
     'broker_wide_quota_verified','ready_for_routing','limitations'))
+REQUEST_COLLECTION_CHECKS = ('request_origin_head_persisted',
+    'historical_request_prefix_after_append_replayed',
+    'request_status_origin_replayed','request_status_after_append_replayed',
+    'fresh_process_origin_replayed','request_status_journal_unchanged',
+    'request_head_bound','original_orders_derived',
+    'two_explicit_fills_retained','acceptance_replayed',
+    'accepted_operation_typed','accepted_result_receipt_bound',
+    'request_journal_unchanged','stale_head_denied_before_vault_and_io',
+    'manual_order_file_not_created')
+REQUEST_COLLECTION_PUBLIC_KEYS = frozenset(('source','passed',
+    *REQUEST_COLLECTION_CHECKS,'injected_get_requests',
+    'actual_provider_access','actual_vault_access','account_reconciled',
+    'automatic_continuation','automatic_retry','broker_connected',
+    'broker_paper_accepted','broker_wide_quota_verified','cloud_deployed',
+    'holds_reconciled','ledger_applied','live_orders_enabled',
+    'money_movement_enabled','provider_key_permissions_verified',
+    'ready_for_routing','release_approved','source_attested',
+    'source_coverage_verified','spendable_funds_verified',
+    'windows_profile_accepted'))
 SAFE_FAILURE_CODE = re.compile(r'RELEASE_TRIAL_[A-Z0-9_]+\Z')
 CHILD_FAILURE_LINE = re.compile(
     r'^nexus\.release_trials\.ReleaseTrialError: (RELEASE_TRIAL_[A-Z0-9_]+)$',
@@ -939,15 +958,29 @@ def _validate(profile, result):
             and all(gross[k] is False for k in ('fee_posting_interval_verified','fee_debits_allocated_to_interval','fee_execution_links_verified',
                 'fee_reserved_funding_verified')), 'RETAINED_BALANCE_AUTHORITY')
     if profile == 'collection':
+        from nexus.activity_collection_evidence import (LIMITATIONS as
+            COLLECTION_LIMITATIONS, PUBLIC_FIXTURE_KEYS as COLLECTION_KEYS)
         from nexus.paper_activity_acceptance_probe import FLAGS as REQUEST_COLLECTION_FLAGS
+        _require(type(result) is dict and
+            frozenset(result)==COLLECTION_KEYS|{'request_derived_collection'} and
+            result['limitations']==COLLECTION_LIMITATIONS,
+            'COLLECTION_PROFILE_SCOPE')
         linked=result['request_derived_collection']
-        _require(linked['source']=='SYNTHETIC_RETAINED_REQUEST_ACTIVITY_COLLECTION_FIXTURE' and linked['injected_get_requests']==3 and all(linked[k] is True for k in ('passed','request_origin_head_persisted','historical_request_prefix_after_append_replayed','request_status_origin_replayed','request_status_after_append_replayed','fresh_process_origin_replayed','request_status_journal_unchanged','request_head_bound','original_orders_derived','two_explicit_fills_retained','acceptance_replayed','accepted_operation_typed','accepted_result_receipt_bound','request_journal_unchanged','stale_head_denied_before_vault_and_io','manual_order_file_not_created')),'REQUEST_DERIVED_COLLECTION')
+        _require(type(linked) is dict and
+            frozenset(linked)==REQUEST_COLLECTION_PUBLIC_KEYS,
+            'REQUEST_DERIVED_COLLECTION_SCHEMA')
+        _require(result['passed'] is True and
+            result['source']=='INJECTED_COLLECTOR_AND_TEMPORARY_RETENTION',
+            'COLLECTION_PROFILE')
+        _require(linked['source']=='SYNTHETIC_RETAINED_REQUEST_ACTIVITY_COLLECTION_FIXTURE' and linked['injected_get_requests']==3 and linked['passed'] is True and all(linked[k] is True for k in REQUEST_COLLECTION_CHECKS),'REQUEST_DERIVED_COLLECTION')
         _require(all(linked[k] is False for k in (*REQUEST_COLLECTION_FLAGS,'actual_provider_access','actual_vault_access')),'REQUEST_DERIVED_COLLECTION_AUTHORITY')
         _require(result['get_requests'] == 4 and result['retained_activities'] == 200 and
             result['retained_observations'] == 1 and result['retained_pages'] == 2, 'COLLECTION_RETENTION')
         _require(result['page_cap_reported'] is True and result['cursor_chain_preserved'] is True, 'COLLECTION_SCOPE')
-        _require(all(result[k] is False for k in ('source_attested', 'activity_coverage_verified',
-            'ready_for_routing', 'automatic_continuation')), 'COLLECTION_AUTHORITY')
+        _require(all(result[k] is False for k in ('source_attested',
+            'activity_coverage_verified','ready_for_routing',
+            'automatic_continuation','broker_connected',
+            'live_orders_enabled')), 'COLLECTION_AUTHORITY')
     if profile == 'balance':
         from nexus.broker_balance_review import (NEGATIVE_CHECKS,
             PUBLIC_FIXTURE_KEYS as BALANCE_KEYS, REVIEW_FLAGS,

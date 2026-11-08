@@ -9,6 +9,14 @@ from nexus.alpaca_paper_contract import sha
 from nexus.broker_lookup_policy import clock
 
 SCHEMA = 'nexus.paper-activity-collection-observation.v1'
+LIMITATIONS = ('Injected page objects only; no actual provider account, '
+    'authenticated coverage, fee links or order authority.')
+PUBLIC_FIXTURE_KEYS = frozenset(('passed','source','get_requests',
+    'retained_activities','retained_observations','retained_pages',
+    'page_cap_reported','cursor_chain_preserved','source_attested',
+    'activity_coverage_verified','ready_for_routing',
+    'automatic_continuation','broker_connected','live_orders_enabled',
+    'limitations'))
 
 
 def _fail(code):
@@ -141,4 +149,4 @@ def fixture_report():
             source_attested=state['collection_source_attested'],activity_coverage_verified=state['activity_coverage_verified'],
             ready_for_routing=state['ready_for_routing'],automatic_continuation=state['automatic_continuation'],
             broker_connected=False,live_orders_enabled=False,
-            limitations='Injected page objects only; no actual provider account, authenticated coverage, fee links or order authority.')
+            limitations=LIMITATIONS)

@@ -235,7 +235,8 @@ def test_rejected_points_break_coverage_instead_of_bridging_outage(tmp_path,monk
     assert result['nonstopped_or_cleanup_review_sessions']==1
 
 
-@pytest.mark.parametrize('kind',['chain','policy','orphan','duplicate_json','regression','metadata_budget'])
+@pytest.mark.parametrize('kind',['chain','policy','orphan','duplicate_json','regression','terminal_time',
+    'point_before_session','point_after_session','metadata_budget'])
 def test_corrupt_or_incompatible_evidence_is_not_certified_or_repaired(tmp_path,monkeypatch,kind):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')])
     with closing(sqlite3.connect(path)) as db,db:
@@ -247,6 +248,15 @@ def test_corrupt_or_incompatible_evidence_is_not_certified_or_repaired(tmp_path,
             db.execute('UPDATE forward_quotes SET payload=? WHERE cycle=1',('{"cycle":999,'+payload[1:],))
         elif kind=='regression':
             db.execute('UPDATE sessions SET updated_at=started_at-1')
+        elif kind=='terminal_time':
+            last=json.loads(db.execute('SELECT last_json FROM sessions').fetchone()[0])
+            last['at']+=1;db.execute('UPDATE sessions SET last_json=?',(evidence.canonical(last),))
+        elif kind=='point_before_session':
+            db.execute('UPDATE sessions SET started_at=started_at+1')
+        elif kind=='point_after_session':
+            last=json.loads(db.execute('SELECT last_json FROM sessions').fetchone()[0])
+            last['at']-=1
+            db.execute('UPDATE sessions SET updated_at=updated_at-1,last_json=?',(evidence.canonical(last),))
         else:db.execute('UPDATE sessions SET counts_json=?',(' '*65537,))
     before=path.read_bytes()
     with pytest.raises((ValueError,KeyError)):run(path)

@@ -34,7 +34,8 @@ FLAGS=('source_attested','market_realism_authenticated','account_reconciled','br
 LIMITATIONS=('Private local operational evidence only. Coverage requires both a recorded eligible flag and replay of retained '
     'single-source feed, product, permission, numeric/spread/jump, receive/exchange-age and exchange-regression checks under '
     'the exact admitted policy at the recorded evaluation time. Rejected flags are never upgraded. Adjacent declared-public '
-    'valid points are clipped to the window and overlaps unioned once; gaps over10 seconds, invalid points and session '
+    'valid points are clipped to the window and overlaps unioned once; every point and terminal event must remain bound '
+    'to its recorded session lifecycle; gaps over10 seconds, invalid points and session '
     'boundaries are not bridged, and over-limit uncovered gaps remain operational incidents even when aggregate coverage '
     'exceeds 95%. This rechecks supplied content, not independent feeds, clock authenticity, genuine market '
     'data, uptime, broker execution, profitability, account reconciliation or a passed sustained trial. Labels/hashes are '
@@ -178,6 +179,7 @@ def _review(path, *, after, until):
         reasons={'SOURCE_LABELS_AND_HASHES_UNATTESTED','ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','EXECUTION_OWNERSHIP_NOT_CHECKED'}
         for sid,started,updated,state,policy_raw,counts_raw,last_raw in rows:
             policy,counts,last=forward_sessions.parse(started,updated,state,policy_raw,counts_raw,last_raw)
+            session_start,session_end=_number(started),_number(updated)
             expected=hashlib.sha256(forward_evidence.canonical({k:v for k,v in policy.items() if k!='policy_sha256'}).encode()).hexdigest()
             if expected!=policy['policy_sha256']:_fail()
             if policy!=admit(policy.get('id')):_fail()
@@ -189,6 +191,7 @@ def _review(path, *, after, until):
             for point in points:
                 if point['policy_sha256']!=expected or type(point['quote_eligible']) is not bool:_fail()
                 at=_number(point['evaluated_at']);source=point['source_mode']
+                if not session_start<=at<=session_end:_fail()
                 checked,previous_exchange=_quote_recheck(point,policy,guard,previous_exchange)
                 checked_eligible=point['quote_eligible'] is True and checked
                 good=checked_eligible and source==PUBLIC

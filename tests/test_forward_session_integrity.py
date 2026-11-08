@@ -11,7 +11,9 @@ def damage(root,column,value):
 
 @pytest.mark.parametrize('column,value',[
     ('counts_json','[]'),('counts_json','{"HOLD":true}'),('counts_json','{"HOLD":-1}'),
-    ('last_json','null'),('last_json','{"at":1}'),('state','UNKNOWN'),('updated_at',0)])
+    ('last_json','null'),('last_json','{"at":1}'),
+    ('last_json','{"at":1,"decision":"START","reason":"EXPERIMENTAL_MOMENTUM_PAPER_POLICY"}'),
+    ('state','UNKNOWN'),('updated_at',0)])
 def test_corrupt_session_pauses_before_fetch_and_keeps_evidence(tmp_path,monkeypatch,column,value):
     r,g,c=setup(tmp_path,monkeypatch);damage(tmp_path,column,value)
     calls=[];r.fetcher=lambda product:calls.append(product)

@@ -23,4 +23,7 @@ def parse(started,updated,state,policy_raw,counts_raw,last_raw):
         raise ValueError('INVALID_FORWARD_SESSION_METADATA')
     if not isinstance(policy,dict) or not isinstance(policy.get('policy_sha256'),str):
         raise ValueError('INVALID_FORWARD_SESSION_METADATA')
-    return policy,counts,event(last_raw)
+    last=event(last_raw)
+    if last['at']!=updated:
+        raise ValueError('INVALID_FORWARD_SESSION_METADATA')
+    return policy,counts,last

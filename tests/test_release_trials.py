@@ -1242,11 +1242,35 @@ def test_open_terms_trial_consumes_all_fixed_evidence(path,value,code):
 
 
 def test_encrypted_observation_profile_cannot_claim_password_storage_or_replaced_originals():
-    from nexus.encrypted_observation import fixture_report
+    from nexus.encrypted_observation import AUTHORITY_FLAGS, fixture_report
     result=fixture_report();trials._validate('encrypted_observation',result)
-    for field in ('password_saved','original_plaintext_deleted','vault_accessed','external_connections','ready_for_routing','live_orders_enabled'):
+    for field in AUTHORITY_FLAGS:
         changed=copy.deepcopy(result);changed[field]=True
         with pytest.raises(ValueError,match='ENCRYPTED_OBSERVATION_AUTHORITY'):trials._validate('encrypted_observation',changed)
+
+
+def test_encrypted_observation_trial_requires_exact_public_schema():
+    from nexus.encrypted_observation import fixture_report
+    class EncryptedObservationMapping(dict): pass
+    result=fixture_report();changed=copy.deepcopy(result);changed['private_extension']=True
+    with pytest.raises(ValueError,match='ENCRYPTED_OBSERVATION_SCHEMA'):
+        trials._validate('encrypted_observation',changed)
+    with pytest.raises(ValueError,match='ENCRYPTED_OBSERVATION_SCHEMA'):
+        trials._validate('encrypted_observation',EncryptedObservationMapping(result))
+
+
+@pytest.mark.parametrize(('field','value','code'),(
+    ('source','BROADER_SOURCE','ENCRYPTED_OBSERVATION_SCOPE'),
+    ('limitations','Broader acceptance.','ENCRYPTED_OBSERVATION_SCOPE'),
+    ('kdf','SCRYPT_PROVIDER_SELECTED','ENCRYPTED_OBSERVATION_POLICY'),
+    ('cipher','AES256GCM_REUSED_NONCE','ENCRYPTED_OBSERVATION_POLICY'),
+    ('roundtrip_matches',1,'ENCRYPTED_OBSERVATION_CRYPTO'),
+))
+def test_encrypted_observation_trial_consumes_fixed_scope(field,value,code):
+    from nexus.encrypted_observation import fixture_report
+    changed=copy.deepcopy(fixture_report());changed[field]=value
+    with pytest.raises(ValueError,match=code):
+        trials._validate('encrypted_observation',changed)
 
 
 def test_security_policy_files_are_bound_to_source_fingerprint(tmp_path):

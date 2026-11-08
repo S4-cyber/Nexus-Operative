@@ -870,10 +870,20 @@ def _validate(profile, result):
         _require(all(paper[k] is False for k in ('actual_vault_access','actual_broker_access','ready_for_routing',
             'live_orders_enabled','money_movement_enabled','release_approved')), 'HTTP_PAPER_AUTHORITY')
     if profile == 'encrypted_observation':
-        _require(all(result[k] is True for k in ('roundtrip_matches','wrong_password_rejected','ciphertext_randomized')), 'ENCRYPTED_OBSERVATION_CRYPTO')
-        _require(result['kdf'] == 'SCRYPT_N131072_R8_P1' and result['cipher'] == 'AES256GCM_RANDOM_NONCE12_SALT16', 'ENCRYPTED_OBSERVATION_POLICY')
-        _require(all(result[k] is False for k in ('password_saved','vault_accessed','external_connections','original_plaintext_deleted',
-            'output_file_writes','ready_for_routing','live_orders_enabled')), 'ENCRYPTED_OBSERVATION_AUTHORITY')
+        from nexus.encrypted_observation import (AUTHORITY_FLAGS,CIPHER_POLICY,
+            CRYPTO_CHECKS,FIXTURE_LIMITATIONS,FIXTURE_SOURCE,KDF_POLICY,
+            PUBLIC_FIXTURE_KEYS)
+        _require(type(result) is dict and frozenset(result)==PUBLIC_FIXTURE_KEYS,
+            'ENCRYPTED_OBSERVATION_SCHEMA')
+        _require(result['source']==FIXTURE_SOURCE and
+            result['limitations']==FIXTURE_LIMITATIONS,
+            'ENCRYPTED_OBSERVATION_SCOPE')
+        _require(all(result[k] is True for k in CRYPTO_CHECKS),
+            'ENCRYPTED_OBSERVATION_CRYPTO')
+        _require(result['kdf']==KDF_POLICY and result['cipher']==CIPHER_POLICY,
+            'ENCRYPTED_OBSERVATION_POLICY')
+        _require(all(result[k] is False for k in AUTHORITY_FLAGS),
+            'ENCRYPTED_OBSERVATION_AUTHORITY')
     if profile == 'open_order_terms':
         from nexus.alpaca_paper_contract import sha
         from nexus.paper_open_order_terms import (FLAGS,PUBLIC_FIXTURE_KEYS,

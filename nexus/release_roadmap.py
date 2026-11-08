@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.234'
+REVISION = '0.340.235'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.234 gives the fixed open-order-terms release aggregate and both its complete and unsupported reports strict immutable 6-field and 21-field public schemas. Saved release validation consumes every count, status, reason, arithmetic result, normalized-terms digest and false authority field; pins the fixed supplied-only scope; and independently replays each summary hash. Unknown fields, mapping subclasses, altered scope, substituted digests and unconsumed fail-closed evidence now fail closed. This is bounded synthetic open-IOC evidence hardening, not provider order/source acceptance, verified coverage, holds or spendable funds, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.235 gives the real-cryptography synthetic encrypted-observation release report a strict immutable 15-field public schema. Saved release validation consumes the exact synthetic-only source and limitations, fixed Scrypt/AES-GCM policy, all three positive cryptographic checks and every false credential, IO and routing authority field. Unknown fields, mapping subclasses and broadened scope now fail closed. This is bounded in-memory cryptographic evidence hardening, not private-file retention, OS ACL/disk-encryption/native-profile acceptance, provider/account access, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

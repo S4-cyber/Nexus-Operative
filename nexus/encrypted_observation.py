@@ -24,6 +24,18 @@ SALT_BYTES=16
 NONCE_BYTES=12
 MAX_BYTES=len(MAGIC)+SALT_BYTES+NONCE_BYTES+portable.MAX_BYTES+16
 ROOT=Path(__file__).resolve().parents[1]
+CRYPTO_CHECKS=('roundtrip_matches','ciphertext_randomized','wrong_password_rejected')
+AUTHORITY_FLAGS=('password_saved','vault_accessed','external_connections',
+    'original_plaintext_deleted','output_file_writes','ready_for_routing',
+    'live_orders_enabled')
+KDF_POLICY='SCRYPT_N131072_R8_P1'
+CIPHER_POLICY='AES256GCM_RANDOM_NONCE12_SALT16'
+FIXTURE_SOURCE='SYNTHETIC_OBSERVATION_REAL_AUTHENTICATED_ENCRYPTION'
+FIXTURE_LIMITATIONS=('In-memory synthetic observation only. No key/password/ciphertext retained '
+    'in this report. Existing downloads/databases stay plaintext. No OS ACL/disk-encryption/'
+    'native-profile acceptance or trading permission.')
+PUBLIC_FIXTURE_KEYS=frozenset(('passed',*CRYPTO_CHECKS,'kdf','cipher',
+    *AUTHORITY_FLAGS,'source','limitations'))
 
 
 def _fail():raise ValueError('ENCRYPTED_OBSERVATION_FAILED') from None
@@ -77,11 +89,10 @@ def fixture_report():
     except ValueError:rejected=True
     return dict(passed=unseal(first,phrase)==raw and first!=second and rejected,
         roundtrip_matches=unseal(first,phrase)==raw,ciphertext_randomized=first!=second,wrong_password_rejected=rejected,
-        kdf='SCRYPT_N131072_R8_P1',cipher='AES256GCM_RANDOM_NONCE12_SALT16',
+        kdf=KDF_POLICY,cipher=CIPHER_POLICY,
         password_saved=False,vault_accessed=False,external_connections=False,original_plaintext_deleted=False,
         output_file_writes=False,ready_for_routing=False,live_orders_enabled=False,
-        source='SYNTHETIC_OBSERVATION_REAL_AUTHENTICATED_ENCRYPTION',
-        limitations='In-memory synthetic observation only. No key/password/ciphertext retained in this report. Existing downloads/databases stay plaintext. No OS ACL/disk-encryption/native-profile acceptance or trading permission.')
+        source=FIXTURE_SOURCE,limitations=FIXTURE_LIMITATIONS)
 
 
 def _read(path,cap):

@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.234**. Reviewed source baseline: `5785a49c59583faf3b6f033f16fb5ce9d4082fcc` (v0.340.233).
+Report date: November 8, 2026. Development candidate: **v0.340.235**. Reviewed source baseline: `a44569e07c5efcffda3ac9440e34e1841f1eb857` (v0.340.234).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 8, 2026. Development candidate: **v0.340.234**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.234 source additionally requires the fixed open-order-terms release aggregate and both complete and unsupported reports to match immutable 6-field and 21-field public schemas. Every fixed count, status, reason, arithmetic result, normalized digest and false authority field is consumed, the supplied-only scope is pinned and both summary hashes are independently replayed. Final local validation passed 5,794 tests with one expected non-Windows skip, the 120-test complete release-trial module, the 158-test affected open-order/release focus, the 284-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.235 source additionally requires the real-cryptography synthetic encrypted-observation report to match an immutable 15-field public schema. Its synthetic-only source and limitations, fixed Scrypt/AES-GCM policy, three positive cryptographic checks and all false credential, IO and routing authority fields are consumed. Final local validation passed 5,800 tests with one expected non-Windows skip, the 126-test complete release-trial module, the 145-test affected encrypted-observation/release focus, the 271-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.234 was published as `a44569e07c5efcffda3ac9440e34e1841f1eb857`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.233 was published as `5785a49c59583faf3b6f033f16fb5ce9d4082fcc`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.232 was published as `e355b24bd15ef87567c98e55cd10f62c6d9c8689`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.231 was published as `cdda7fd0f2c3c20289f94d6f9eab3dde21d47085`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.

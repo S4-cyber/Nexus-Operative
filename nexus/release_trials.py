@@ -887,23 +887,133 @@ def _validate(profile, result):
             'OPEN_TERMS_UNKNOWN')
         _require(all(all(r[k] is False for k in FLAGS) for r in (observed,unsupported)), 'OPEN_TERMS_AUTHORITY')
     if profile == 'observation_review':
+        from nexus.alpaca_paper_contract import sha
+        from nexus.broker_activity_review import (REVIEW_FLAGS as ACTIVITY_FLAGS,
+            REVIEW_LIMITATIONS as ACTIVITY_LIMITATIONS,
+            REVIEW_PUBLIC_KEYS as ACTIVITY_PUBLIC_KEYS)
+        from nexus.broker_fee_projection import balances
+        from nexus.paper_observation_review import (BOUNDARY_COUNTS_PUBLIC_KEYS,
+            BOUNDARY_SAMPLE_PUBLIC_KEYS, CHANGE_SCOPE, LIMITATIONS, MAX_SAMPLES,
+            OBSERVATION_BALANCE_REVIEW_PUBLIC_KEYS, POLICY,
+            PUBLIC_FIXTURE_KEYS, REVIEW_AUTHORITY_FLAGS, REVIEW_PUBLIC_KEYS,
+            WINDOW_PUBLIC_KEYS)
+        from nexus.portable_paper_observation import AMOUNTS
+        from nexus.retained_balance_review import (GROSS_ARITHMETIC_SCOPE,
+            GROSS_AUTHORITY_FLAGS,GROSS_FEE_SCOPE,GROSS_PUBLIC_KEYS,
+            GROSS_TIME_SCOPE,LIMITATIONS as BALANCE_LIMITATIONS,
+            POLICY as BALANCE_POLICY,
+            REVIEW_AUTHORITY_FLAGS as BALANCE_AUTHORITY_FLAGS,_gross_review)
+        _require(type(result) is dict and frozenset(result)==PUBLIC_FIXTURE_KEYS,
+            'OBSERVATION_REVIEW_PROFILE_SCHEMA')
+        _require(result['source']=='FIXED_SYNTHETIC_PORTABLE_RETAINED_FIXTURE' and
+            result['passed'] is True,
+            'OBSERVATION_REVIEW_PROFILE')
+        _require(result['broker_connected'] is result['live_orders_enabled'] is False,
+            'OBSERVATION_REVIEW_PROFILE_AUTHORITY')
         reviewed, boundary = result['review'], result['boundary_review']
+        for item in (reviewed,boundary):
+            _require(type(item) is dict and frozenset(item)==REVIEW_PUBLIC_KEYS,
+                'OBSERVATION_REVIEW_SCHEMA')
+            _require(item['mode']=='PORTABLE_OBSERVATION_RETAINED_ACTIVITY_REVIEW' and
+                item['status']=='REVIEW_REQUIRED' and item['read_only'] is True and
+                item['policy']==POLICY and item['source']=='PORTABLE_SUPPLIED_UNATTESTED' and
+                item['change_scope']==CHANGE_SCOPE and item['limitations']==LIMITATIONS and
+                item['boundary_sample_limit']==MAX_SAMPLES,
+                'OBSERVATION_REVIEW_SCOPE')
+            scope=dict(policy=item['policy'],account_sha256=item['account_sha256'],
+                head_sha256=item['head_sha256'],
+                opening_manifest_sha256=item['opening_manifest_sha256'],
+                closing_manifest_sha256=item['closing_manifest_sha256'])
+            _require(item['input_sha256']==sha(scope),
+                'OBSERVATION_REVIEW_BINDING')
+            _require(all(item[k] is False for k in REVIEW_AUTHORITY_FLAGS),
+                'OBSERVATION_REVIEW_AUTHORITY')
+            windows=item['observation_windows']
+            _require(type(windows) is dict and frozenset(windows)==
+                BOUNDARY_COUNTS_PUBLIC_KEYS and all(type(window) is dict and
+                frozenset(window)==WINDOW_PUBLIC_KEYS for window in windows.values()),
+                'OBSERVATION_REVIEW_WINDOWS_SCHEMA')
+            _require(type(item['sampled_balance_changes']) is dict and
+                frozenset(item['sampled_balance_changes'])==frozenset(AMOUNTS),
+                'OBSERVATION_REVIEW_CHANGES_SCHEMA')
+            counts=item['boundary_fills_by_window']
+            samples=item['boundary_fill_samples']
+            _require(type(counts) is dict and frozenset(counts)==
+                BOUNDARY_COUNTS_PUBLIC_KEYS and type(samples) is list and
+                all(type(sample) is dict and frozenset(sample)==
+                    BOUNDARY_SAMPLE_PUBLIC_KEYS and type(sample['windows']) is list
+                    for sample in samples), 'OBSERVATION_REVIEW_BOUNDARY_SCHEMA')
+            activity=item['retained_activity_review']
+            _require(type(activity) is dict and
+                frozenset(activity)==ACTIVITY_PUBLIC_KEYS,
+                'OBSERVATION_REVIEW_ACTIVITY_SCHEMA')
+            _require(activity['account_sha256']==item['account_sha256'] and
+                activity['head_sha256']==item['head_sha256'],
+                'OBSERVATION_REVIEW_ACTIVITY_BINDING')
+            _require(activity['limitations']==ACTIVITY_LIMITATIONS,
+                'OBSERVATION_REVIEW_ACTIVITY_SCOPE')
+            _require(activity['mode']=='UNATTESTED_RETAINED_ACTIVITY_REVIEW' and
+                activity['status']=='REVIEW_REQUIRED' and activity['read_only'] is True and
+                activity['source']=='SUPPLIED_UNATTESTED' and
+                activity['snapshot_selection']=='REPORTED_UPDATED_AT_DIAGNOSTIC_ONLY' and
+                activity['normalization_evaluated'] is True,
+                'OBSERVATION_REVIEW_ACTIVITY_SCOPE')
+            _require(all(activity[k] is False for k in ACTIVITY_FLAGS),
+                'OBSERVATION_REVIEW_ACTIVITY_AUTHORITY')
         _require(result['encrypted_pair_review_matches'] is True and result['decrypted_file_writes'] is False,
             'OBSERVATION_REVIEW_ENCRYPTED_INPUTS')
+        _require(reviewed['account_sha256']==boundary['account_sha256'] and
+            reviewed['head_sha256']==boundary['head_sha256'] and
+            reviewed['opening_manifest_sha256']==boundary['opening_manifest_sha256'],
+            'OBSERVATION_REVIEW_PAIR_BINDING')
         _require(reviewed['arithmetic_evaluated'] is True and reviewed['head_rechecked'] is True and
             result['stale_head_rejected'] is True, 'OBSERVATION_REVIEW_HEAD')
+        balance=reviewed['retained_balance_review']
+        _require(type(balance) is dict and frozenset(balance)==
+            OBSERVATION_BALANCE_REVIEW_PUBLIC_KEYS,
+            'OBSERVATION_REVIEW_BALANCE_SCHEMA')
+        _require(balance['mode']=='HEAD_BOUND_RETAINED_GROSS_BALANCE_REVIEW' and
+            balance['status']=='REVIEW_REQUIRED' and balance['read_only'] is True and
+            balance['policy']==BALANCE_POLICY and balance['source']=='SUPPLIED_UNATTESTED' and
+            balance['arithmetic_evaluated'] is True and balance['head_rechecked'] is True and
+            balance['account_sha256']==reviewed['account_sha256'] and
+            balance['head_sha256']==reviewed['head_sha256'] and
+            balance['retained_activity_review_location']==
+                'TOP_LEVEL_SHARED_REVIEW' and balance['limitations']==
+                BALANCE_LIMITATIONS,
+            'OBSERVATION_REVIEW_BALANCE_BINDING')
+        balance_scope={k:balance[k] for k in ('policy','account_sha256',
+            'head_sha256','opening_balances','opening_at','observed_balances',
+            'observed_at')}
+        _require(balance['input_sha256']==sha(balance_scope),
+            'OBSERVATION_REVIEW_BALANCE_BINDING')
+        _require(all(balance[k] is False for k in BALANCE_AUTHORITY_FLAGS),
+            'OBSERVATION_REVIEW_BALANCE_AUTHORITY')
+        gross=balance['gross_fill_review']
+        _require(type(gross) is dict and frozenset(gross)==GROSS_PUBLIC_KEYS,
+            'OBSERVATION_REVIEW_GROSS_SCHEMA')
+        _require(gross['fee_scope']==GROSS_FEE_SCOPE and
+            gross['arithmetic_scope']==GROSS_ARITHMETIC_SCOPE and
+            gross['time_scope']==GROSS_TIME_SCOPE,
+            'OBSERVATION_REVIEW_GROSS_SCOPE')
+        _require(all(gross[k] is False for k in GROSS_AUTHORITY_FLAGS),
+            'OBSERVATION_REVIEW_GROSS_AUTHORITY')
+        try:
+            expected_gross=_gross_review(
+                reviewed['retained_activity_review']['activity_normalization'][
+                    'normalized_activities'], balances(balance['opening_balances']),
+                balances(balance['observed_balances']),balance['opening_at'],
+                balance['observed_at'])
+        except (ArithmeticError,KeyError,TypeError,ValueError):
+            raise ReleaseTrialError(
+                'RELEASE_TRIAL_OBSERVATION_REVIEW_GROSS_REPLAY') from None
+        _require(gross==expected_gross,'OBSERVATION_REVIEW_GROSS_REPLAY')
         _require(reviewed['sampled_balance_changes']['cash'] == '9.78011' and
-            reviewed['retained_balance_review']['gross_fill_review']['gross_minus_supplied_observed'] ==
+            gross['gross_minus_supplied_observed'] ==
                 {'USD':'0.10989','BTC':'0.001'}, 'OBSERVATION_REVIEW_ARITHMETIC')
         _require(boundary['arithmetic_evaluated'] is False and boundary['retained_balance_review'] is None and
             boundary['boundary_fill_events'] == 1 and
             'RETAINED_FILL_DURING_SEQUENTIAL_OBSERVATION' in boundary['review_reasons'], 'OBSERVATION_REVIEW_BOUNDARY')
-        flags = ('admission_reserved','source_attested','source_coverage_verified','balance_instants_verified',
-            'observation_windows_verified_quiet','atomic_snapshot','fee_coverage_complete','fee_execution_links_verified',
-            'holds_reconciled','broker_account_reconciled','spendable_funds_verified','ledger_applied',
-            'ready_for_routing','broker_connected','live_orders_enabled','automatic_retry','automatic_continuation')
-        _require(all(r['status']=='REVIEW_REQUIRED' and all(r[k] is False for k in flags)
-            for r in (reviewed,boundary)), 'OBSERVATION_REVIEW_AUTHORITY')
     if profile == 'inspection_inventory':
         from nexus.paper_quote_observation import CHECKS as QUOTE_CHECKS,FLAGS as QUOTE_FLAGS
         quote=result['btc_quote_observation']

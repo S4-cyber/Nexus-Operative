@@ -1135,6 +1135,59 @@ def test_portable_observation_review_trial_rejects_boundary_or_authority_promoti
         with pytest.raises(ValueError,match='OBSERVATION_REVIEW_AUTHORITY'):trials._validate('observation_review',changed)
 
 
+def test_portable_observation_review_trial_requires_exact_bound_schemas():
+    from nexus.broker_activity_review import REVIEW_PUBLIC_KEYS as ACTIVITY_PUBLIC_KEYS
+    from nexus.paper_observation_review import (OBSERVATION_BALANCE_REVIEW_PUBLIC_KEYS,
+        PUBLIC_FIXTURE_KEYS, REVIEW_PUBLIC_KEYS)
+    from nexus.retained_balance_review import GROSS_PUBLIC_KEYS
+    result=trials._execute('observation_review')
+    trials._validate('observation_review',result)
+    assert type(result) is dict and frozenset(result)==PUBLIC_FIXTURE_KEYS
+    for name in ('review','boundary_review'):
+        assert type(result[name]) is dict
+        assert frozenset(result[name])==REVIEW_PUBLIC_KEYS
+        assert type(result[name]['retained_activity_review']) is dict
+        assert frozenset(result[name]['retained_activity_review'])==ACTIVITY_PUBLIC_KEYS
+    assert type(result['review']['retained_balance_review']) is dict
+    assert frozenset(result['review']['retained_balance_review'])==OBSERVATION_BALANCE_REVIEW_PUBLIC_KEYS
+    assert type(result['review']['retained_balance_review']['gross_fill_review']) is dict
+    assert frozenset(result['review']['retained_balance_review']['gross_fill_review'])==GROSS_PUBLIC_KEYS
+    class ObservationMapping(dict): pass
+    cases=(
+        (('private_extension',),True,'OBSERVATION_REVIEW_PROFILE_SCHEMA'),
+        (('review','private_extension'),True,'OBSERVATION_REVIEW_SCHEMA'),
+        (('boundary_review','private_extension'),True,'OBSERVATION_REVIEW_SCHEMA'),
+        (('review','retained_activity_review','private_extension'),True,
+            'OBSERVATION_REVIEW_ACTIVITY_SCHEMA'),
+        (('review','retained_balance_review','private_extension'),True,
+            'OBSERVATION_REVIEW_BALANCE_SCHEMA'),
+        (('review','retained_balance_review','gross_fill_review','private_extension'),True,
+            'OBSERVATION_REVIEW_GROSS_SCHEMA'),
+        (('review','limitations'),'Broader scope.','OBSERVATION_REVIEW_SCOPE'),
+        (('review','input_sha256'),'0'*64,'OBSERVATION_REVIEW_BINDING'),
+        (('review','account_sha256'),'0'*64,'OBSERVATION_REVIEW_BINDING'),
+        (('review','retained_activity_review','head_sha256'),'0'*64,
+            'OBSERVATION_REVIEW_ACTIVITY_BINDING'),
+        (('review','retained_balance_review','input_sha256'),'0'*64,
+            'OBSERVATION_REVIEW_BALANCE_BINDING'),
+        (('review','retained_balance_review','gross_fill_review',
+            'gross_only_minimum_group_end_balances','USD'),'901',
+            'OBSERVATION_REVIEW_GROSS_REPLAY'),
+    )
+    for path,value,code in cases:
+        changed=copy.deepcopy(result);target=changed
+        for key in path[:-1]: target=target[key]
+        target[path[-1]]=value
+        with pytest.raises(ValueError,match=code):
+            trials._validate('observation_review',changed)
+    with pytest.raises(ValueError,match='OBSERVATION_REVIEW_PROFILE_SCHEMA'):
+        trials._validate('observation_review',ObservationMapping(result))
+    changed=copy.deepcopy(result)
+    changed['review']=ObservationMapping(changed['review'])
+    with pytest.raises(ValueError,match='OBSERVATION_REVIEW_SCHEMA'):
+        trials._validate('observation_review',changed)
+
+
 def test_open_terms_trial_rejects_partial_totals_or_promoted_hold_authority():
     from nexus.paper_open_order_terms import fixture_report, FLAGS
     result=fixture_report();trials._validate('open_order_terms',result)

@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.232**. Reviewed source baseline: `cdda7fd0f2c3c20289f94d6f9eab3dde21d47085` (v0.340.231).
+Report date: November 8, 2026. Development candidate: **v0.340.233**. Reviewed source baseline: `e355b24bd15ef87567c98e55cd10f62c6d9c8689` (v0.340.232).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 8, 2026. Development candidate: **v0.340.232**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.232 source additionally requires the retained-balance release aggregate, review and gross-fill arithmetic to match immutable 8-field, 32-field and 27-field public schemas plus the exact embedded retained-activity schema. The complete gross result is recomputed from normalized retained records; the review input hash, head/account scope, read-only limitations and all false authority fields are consumed. Final local validation passed 5,779 tests with one expected non-Windows skip, the 105-test complete release-trial module, the 191-test affected retained-balance/activity/fee/release focus, the 81-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.233 source additionally requires the portable-observation release aggregate and both arithmetic-success and boundary-blocked reviews to match immutable 9-field and 41-field public schemas plus exact embedded retained-activity, retained-balance and gross-fill schemas. Both observation input hashes and the retained-balance input hash are recomputed, account/head/opening-manifest pair scope is bound, all false authority fields are consumed and gross arithmetic is independently reconstructed from normalized retained activity. Final local validation passed 5,780 tests with one expected non-Windows skip, the 106-test complete release-trial module, the 102-test affected observation/reconciliation focus, the 81-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.232 was published as `e355b24bd15ef87567c98e55cd10f62c6d9c8689`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.231 was published as `cdda7fd0f2c3c20289f94d6f9eab3dde21d47085`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.230 was published as `9f5ec82611a766c50c3e9bec762de5634def1bf5`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.229 was published as `be6007a2123b5159882e7e1f0c374f23e840b664`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.

@@ -19,6 +19,40 @@ from nexus import portable_paper_observation as portable
 
 POLICY = 'nexus.portable-observation-retained-review.v1'
 MAX_SAMPLES = 20
+CHANGE_SCOPE = ('CLOSING_MINUS_OPENING_REPORTED_FIELDS_NOT_REALIZED_PNL_OR_'
+    'SPENDABLE_FUNDS')
+LIMITATIONS = ('Read-only supplied manifests plus one replay-validated local '
+    'history head. No retained fill in read windows does not prove no actual '
+    'activity. Boundary choices are diagnostic assumptions, not exact balance '
+    'measurement times. Gross fills omit fees; differences are not profit, cash '
+    'flows, verified holds or spending permission. No inferred fee links/posting '
+    'instants, source freshness/coverage, account mutation or resume. Final head '
+    'recheck is a sample only; hashes cannot attest source or prevent valid '
+    'history rewrites/tail deletion.')
+REVIEW_AUTHORITY_FLAGS = ('admission_reserved','source_attested',
+    'source_coverage_verified','balance_instants_verified',
+    'observation_windows_verified_quiet','atomic_snapshot',
+    'fee_coverage_complete','fee_execution_links_verified','holds_reconciled',
+    'broker_account_reconciled','spendable_funds_verified','ledger_applied',
+    'ready_for_routing','broker_connected','live_orders_enabled',
+    'automatic_retry','automatic_continuation')
+REVIEW_PUBLIC_KEYS = frozenset(('mode','status','read_only','policy',
+    'account_sha256','head_sha256','opening_manifest_sha256',
+    'closing_manifest_sha256','input_sha256','head_rechecked',
+    'observation_windows','sampled_balance_changes','change_scope',
+    'boundary_fill_events','boundary_fills_by_window','boundary_fill_samples',
+    'boundary_sample_limit','boundary_samples_truncated','arithmetic_evaluated',
+    'retained_balance_review','retained_activity_review','review_reasons',
+    'source','limitations',*REVIEW_AUTHORITY_FLAGS))
+PUBLIC_FIXTURE_KEYS = frozenset(('passed','review','boundary_review',
+    'stale_head_rejected','encrypted_pair_review_matches',
+    'decrypted_file_writes','source','broker_connected','live_orders_enabled'))
+OBSERVATION_BALANCE_REVIEW_PUBLIC_KEYS = frozenset(
+    (retained_balance_review.REVIEW_PUBLIC_KEYS - {'retained_activity_review'}) |
+    {'retained_activity_review_location'})
+WINDOW_PUBLIC_KEYS = frozenset(('started_at','completed_at'))
+BOUNDARY_COUNTS_PUBLIC_KEYS = frozenset(('opening','closing'))
+BOUNDARY_SAMPLE_PUBLIC_KEYS = frozenset(('activity_id','occurred_at','windows'))
 
 
 def _fail(code): raise ValueError('PAPER_OBSERVATION_REVIEW_' + code)
@@ -121,7 +155,7 @@ def review(store, *, expected_account_id, expected_head, opening_observation, cl
     return dict(mode='PORTABLE_OBSERVATION_RETAINED_ACTIVITY_REVIEW', status='REVIEW_REQUIRED', read_only=True,
         **scope, input_sha256=sha(scope), head_rechecked=True, admission_reserved=False,
         observation_windows=windows, sampled_balance_changes=changes,
-        change_scope='CLOSING_MINUS_OPENING_REPORTED_FIELDS_NOT_REALIZED_PNL_OR_SPENDABLE_FUNDS',
+        change_scope=CHANGE_SCOPE,
         boundary_fill_events=boundary_events, boundary_fills_by_window=counts, boundary_fill_samples=samples,
         boundary_sample_limit=MAX_SAMPLES, boundary_samples_truncated=boundary_events>len(samples),
         arithmetic_evaluated=calculated is not None and calculated['arithmetic_evaluated'],
@@ -132,7 +166,7 @@ def review(store, *, expected_account_id, expected_head, opening_observation, cl
         broker_account_reconciled=False, spendable_funds_verified=False, ledger_applied=False,
         ready_for_routing=False, broker_connected=False, live_orders_enabled=False,
         automatic_retry=False, automatic_continuation=False,
-        limitations='Read-only supplied manifests plus one replay-validated local history head. No retained fill in read windows does not prove no actual activity. Boundary choices are diagnostic assumptions, not exact balance measurement times. Gross fills omit fees; differences are not profit, cash flows, verified holds or spending permission. No inferred fee links/posting instants, source freshness/coverage, account mutation or resume. Final head recheck is a sample only; hashes cannot attest source or prevent valid history rewrites/tail deletion.')
+        limitations=LIMITATIONS)
 
 
 def _fixture_observation(account_id, cash, btc, start, end, *, available=None):

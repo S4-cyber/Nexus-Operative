@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.226'
+REVISION = '0.340.227'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.226 gives the upstream process-death activity-acceptance fixture a strict immutable 56-field public schema. Saved release validation now requires an exact plain dictionary, consumes all 40 positive recovery checks and 12 false authority flags, and rejects unknown fields, mapping subclasses or altered scope limitations before the activity-acceptance evidence can support downstream reconciliation. This is bounded synthetic process/journal evidence hardening, not provider/account acceptance, authenticated source or activity coverage, fee/hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.227 gives the accepted original-request/activity fixture a strict immutable 30-field public schema. Saved release validation now requires an exact plain dictionary, consumes all 10 positive binding checks and 19 false authority flags, and rejects unknown fields or mapping subclasses before this evidence can support the activity profile. This is bounded synthetic request/activity evidence hardening, not provider/account acceptance, authenticated source or activity coverage, fee/hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

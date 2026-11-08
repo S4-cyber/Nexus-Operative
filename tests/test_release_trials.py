@@ -554,15 +554,28 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
 
 
 def test_request_activity_acceptance_is_mandatory_in_activity_profile():
+    from nexus.paper_request_activity_acceptance import PUBLIC_FIXTURE_KEYS
     result=trials._execute('activity');trials._validate('activity',result)
     accepted=result['request_activity_acceptance']
+    assert type(accepted) is dict
+    assert frozenset(accepted)==PUBLIC_FIXTURE_KEYS
     assert accepted['accepted_history_bound'] and accepted['unbound_activity_rejected']
     for key in ('accepted_history_bound','unbound_activity_rejected',
-                'semantic_reader_failures_rechecked'):
+                'semantic_reader_failures_rechecked',
+                'accepted_pacing_request_targets_bound'):
         changed=copy.deepcopy(result);changed['request_activity_acceptance'][key]=False
         with pytest.raises(ValueError,match='REQUEST_ACTIVITY_ACCEPTANCE'):trials._validate('activity',changed)
     changed=copy.deepcopy(result);changed['request_activity_acceptance']['ready_for_routing']=True
     with pytest.raises(ValueError,match='REQUEST_ACTIVITY_ACCEPTANCE_AUTHORITY'):trials._validate('activity',changed)
+    changed=copy.deepcopy(result);changed['request_activity_acceptance']['private_extension']=True
+    with pytest.raises(ValueError,match='REQUEST_ACTIVITY_ACCEPTANCE_SCHEMA'):
+        trials._validate('activity',changed)
+    class RequestActivityAcceptanceMapping(dict):
+        pass
+    changed=copy.deepcopy(result)
+    changed['request_activity_acceptance']=RequestActivityAcceptanceMapping(accepted)
+    with pytest.raises(ValueError,match='REQUEST_ACTIVITY_ACCEPTANCE_SCHEMA'):
+        trials._validate('activity',changed)
 
 
 def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authority():

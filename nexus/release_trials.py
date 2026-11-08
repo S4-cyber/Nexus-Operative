@@ -1682,12 +1682,12 @@ def _validate(profile, result):
         _require(linked['source']=='TEMPORARY_REQUEST_ACTIVITY_LINK_FIXTURE' and all(linked[k] is True for k in ('passed','original_request_linked','explicit_fills_checked','offsetting_bad_price_detected','journals_unchanged')), 'REQUEST_ACTIVITY_LINK')
         _require(all(linked[k] is False for k in FLAGS),'REQUEST_ACTIVITY_AUTHORITY')
         accepted=result['request_activity_acceptance']
-        from nexus.paper_request_activity_acceptance import FLAGS as ACCEPTED_FLAGS
+        from nexus.paper_request_activity_acceptance import (CHECKS as ACCEPTED_CHECKS,
+            FLAGS as ACCEPTED_FLAGS, PUBLIC_FIXTURE_KEYS as ACCEPTED_KEYS)
+        _require(type(accepted) is dict and frozenset(accepted)==ACCEPTED_KEYS,
+            'REQUEST_ACTIVITY_ACCEPTANCE_SCHEMA')
         _require(accepted['source']=='SYNTHETIC_LOCAL_ACCEPTED_REQUEST_FILL_FIXTURE' and
-            all(accepted[k] is True for k in ('passed','accepted_history_bound','original_request_linked',
-                'accepted_pacing_operations_typed','accepted_pacing_result_receipts_bound',
-                'explicit_fills_checked','journals_unchanged','unbound_activity_rejected',
-                'semantic_reader_failures_rechecked')),
+            all(accepted[k] is True for k in ACCEPTED_CHECKS),
             'REQUEST_ACTIVITY_ACCEPTANCE')
         _require(all(accepted[k] is False for k in ACCEPTED_FLAGS) and
             accepted['actual_provider_access'] is accepted['actual_vault_access'] is False,

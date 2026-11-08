@@ -32,6 +32,14 @@ from nexus.sqlite_journal_guard import capture_file_fingerprints, check_path_set
 POLICY = 'nexus.paper-request-activity-acceptance.v1'
 FLAGS = tuple(dict.fromkeys((*request_review.FLAGS, 'admission_reserved',
     'automatic_continuation', 'requested_window_boundaries_verified')))
+CHECKS = ('passed', 'accepted_history_bound',
+    'accepted_pacing_operations_typed',
+    'accepted_pacing_result_receipts_bound',
+    'accepted_pacing_request_targets_bound', 'original_request_linked',
+    'explicit_fills_checked', 'journals_unchanged',
+    'unbound_activity_rejected', 'semantic_reader_failures_rechecked')
+PUBLIC_FIXTURE_KEYS = frozenset(('source', *CHECKS,
+    'actual_provider_access', 'actual_vault_access', *FLAGS))
 JOURNAL_LIMITS = (REQUEST_DATABASE_BYTES, PACING_DATABASE_BYTES,
     ACTIVITY_DATABASE_BYTES, ACCEPTANCE_DATABASE_BYTES)
 

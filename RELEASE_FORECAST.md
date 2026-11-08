@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.249
+
+The retained forward-trial review now counts every uncovered interval longer than the 10-second continuity limit as an operational incident and retains its bounded count and total duration. Raw 95% coverage remains separately visible, but a short outage cannot satisfy the incident-free diagnostic. The exact-source v0.340.248 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.249 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (read-only weighted index 38%; 30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,825 tests with one expected non-Windows skip; the affected trial-review/release profile passed 188, the synchronized release/evidence/version/installer/package focus passed 211 and the explicit Portal/controller focus passed 22 plus fourteen Node controllers. Sixteen offline profiles match 401 source files / `bad7d79c8915bf930d9a614e8511f15d684fbef6e5abe8637867bbbe9231f01d`; report SHA256 is `4b2c5288b5c9fecf66037a4b56a4e132b253c7ed574444e26641be94ef8f8450`. Compilation, dependency integrity and roadmap equality passed. The 161-member v0.340.249 wheel SHA256 is `89737bf6229b6471221f82442370eb0257f8ff8521b5db3dc3f768307f0aa0a2`. The 968-path candidate audit and 4,163 introduced-line high-confidence signature scan found zero findings; the locally reachable 13-commit history audit also found zero artifact findings. Local Gitleaks is unavailable and fresh hosted full-history security remains required. These are local/synthetic checks, not broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.248
 
 The retained forward-trial review now keeps raw declared-window coverage separate from incident-free coverage. Quote errors, non-manual stops, paused/running sessions and eligibility disagreements prevent a clean target even when declared time coverage is high. The exact-source v0.340.247 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.248 checks remain required.

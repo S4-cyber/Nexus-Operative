@@ -35,7 +35,8 @@ LIMITATIONS=('Private local operational evidence only. Coverage requires both a 
     'single-source feed, product, permission, numeric/spread/jump, receive/exchange-age and exchange-regression checks under '
     'the exact admitted policy at the recorded evaluation time. Rejected flags are never upgraded. Adjacent declared-public '
     'valid points are clipped to the window and overlaps unioned once; gaps over10 seconds, invalid points and session '
-    'boundaries are not bridged. This rechecks supplied content, not independent feeds, clock authenticity, genuine market '
+    'boundaries are not bridged, and over-limit uncovered gaps remain operational incidents even when aggregate coverage '
+    'exceeds 95%. This rechecks supplied content, not independent feeds, clock authenticity, genuine market '
     'data, uptime, broker execution, profitability, account reconciliation or a passed sustained trial. Labels/hashes are '
     'rewritable; snapshot is not an execution lock. No provider/credential access, account mutation, automatic start or '
     'release permission.')
@@ -48,7 +49,8 @@ PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_secon
     'nonstopped_or_cleanup_review_sessions','declared_public_covered_seconds','coverage_fraction','uncovered_seconds',
     'uncovered_intervals','longest_uncovered_seconds','declared_coverage_target_met',
     'clean_manual_stop_sessions','other_stopped_sessions','paused_sessions','running_sessions',
-    'sessions_with_quote_errors','quote_error_observations','operational_incidents_present',
+    'sessions_with_quote_errors','quote_error_observations','over_limit_coverage_gaps',
+    'over_limit_coverage_gap_seconds','operational_incidents_present',
     'incident_free_coverage_target_met','evidence_snapshot_sha256',
     *FLAGS,'review_reasons','limitations'))
 
@@ -225,8 +227,10 @@ def _review(path, *, after, until):
             cursor=max(cursor,right)
         if cursor<end:gaps.append(end-cursor)
         fraction=covered/duration
+        over_limit_gaps=[gap for gap in gaps if gap>MAX_GAP_SECONDS]
+        over_limit_gap_seconds=sum(over_limit_gaps,Decimal(0))
         target=duration>=MINIMUM_SECONDS and fraction>=Decimal('.95') and not flagged and not injected and not unknown and not disagreements and selected>0
-        incidents=bool(quote_errors or other_stopped or paused or running or disagreements)
+        incidents=bool(quote_errors or other_stopped or paused or running or disagreements or over_limit_gaps)
         incident_free_target=target and not incidents
         if duration<MINIMUM_SECONDS:reasons.add('REQUESTED_WINDOW_SHORTER_THAN_72_HOURS')
         if fraction<Decimal('.95'):reasons.add('DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT')
@@ -236,6 +240,7 @@ def _review(path, *, after, until):
         if disagreements:reasons.add('RECORDED_ELIGIBILITY_FAILS_RETAINED_QUOTE_RECHECK')
         if quote_errors:reasons.add('QUOTE_ERRORS_RETAINED_IN_WINDOW')
         if other_stopped:reasons.add('SESSION_TERMINATION_REQUIRES_REVIEW')
+        if over_limit_gaps:reasons.add('COVERAGE_GAP_EXCEEDS_MAXIMUM')
         if not selected:reasons.add('NO_OBSERVATIONS_IN_WINDOW')
         return dict(mode='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
             after=after,until=until,window_seconds=_text(duration),minimum_trial_seconds=MINIMUM_SECONDS,
@@ -253,6 +258,8 @@ def _review(path, *, after, until):
             clean_manual_stop_sessions=clean_stopped,other_stopped_sessions=other_stopped,
             paused_sessions=paused,running_sessions=running,
             sessions_with_quote_errors=quote_error_sessions,quote_error_observations=quote_errors,
+            over_limit_coverage_gaps=len(over_limit_gaps),
+            over_limit_coverage_gap_seconds=_text(over_limit_gap_seconds),
             operational_incidents_present=incidents,
             incident_free_coverage_target_met=incident_free_target,
             evidence_snapshot_sha256=binding,

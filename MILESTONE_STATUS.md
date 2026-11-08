@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.248**. Reviewed remote source baseline: `0f11c0fe36f4ee2096984cbe76af211eb1a3285b` (v0.340.247).
+Report date: November 8, 2026. Development candidate: **v0.340.249**. Reviewed remote source baseline: `36c5886edad993dc9c338fc4cb58735a750c5509` (v0.340.248).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 8, 2026. Development candidate: **v0.340.248**. Reviewed r
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.248 source additionally separates raw declared forward-trial coverage from an incident-free diagnostic and retains bounded quote-error and session-ending counts. High declared coverage no longer looks clean when retained quote errors, non-manual stops, paused/running sessions or eligibility disagreements remain. Final local validation passed 5,824 tests with one expected non-Windows skip, the 187-test affected profile, the 211-test synchronized release focus, the 22-test Portal focus plus fourteen Node controllers and sixteen source-bound offline profiles. This is injected/local diagnostic evidence, not an actual authorized paper-account trial, genuine-feed provenance, native Windows, funding or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.249 source additionally makes every retained uncovered interval longer than the 10-second continuity limit an operational incident, with bounded gap counts and duration shown separately from raw coverage. A 15-second regression gap inside an otherwise 99.9942%-covered 72-hour window now leaves incident-free coverage false. Final local validation passed 5,825 tests with one expected non-Windows skip, the 188-test affected profile, the 211-test synchronized release focus, the 22-test Portal focus plus fourteen Node controllers and sixteen source-bound offline profiles. This is local diagnostic evidence, not an actual authorized paper-account trial, genuine-feed provenance, native Windows, funding or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.248 was published as `36c5886edad993dc9c338fc4cb58735a750c5509`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.247 was published as `0f11c0fe36f4ee2096984cbe76af211eb1a3285b`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.240 was published as `0d6bcb0b80088b9c655409ebdf2514c450079785`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.239 was published as `6c41913cfeda4dbab394a41f852d0746180c8de4`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.

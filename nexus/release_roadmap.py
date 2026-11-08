@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.248'
+REVISION = '0.340.249'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.248 separates raw retained-feed coverage from a stricter incident-free sustained-trial diagnostic. The read-only 72-hour review now counts quote-error observations, sessions containing them, manual versus other stopped sessions, paused/running sessions and a bounded incident flag. High coverage can remain visible while incident-free coverage stays false until retained quote errors and non-manual terminations are reviewed. This is local supplied-history analysis, not source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.249 makes the incident-free sustained-trial diagnostic account for every uncovered interval longer than the 10-second continuity limit. The read-only review retains bounded over-limit gap counts and duration separately from raw 95% declared coverage, so a short outage cannot look incident-free merely because aggregate coverage remains high. This is local supplied-history analysis, not source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

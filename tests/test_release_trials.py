@@ -1426,7 +1426,8 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     changed=copy.deepcopy(result);changed['cycle_latency']['p50_ms']=changed['cycle_latency']['p99_ms']+1
     with pytest.raises(ValueError,match='FORWARD_LATENCY_SCHEMA'):trials._validate('forward',changed)
     for field,value in (('retained_observations',279),('after','1970-01-01T00:16:41Z'),
-        ('review_reasons',[]),('evidence_snapshot_sha256','0'*63)):
+        ('review_reasons',[]),('evidence_snapshot_sha256','0'*63),
+        ('over_limit_coverage_gaps',0),('over_limit_coverage_gap_seconds','1299')):
         changed=copy.deepcopy(result);changed['recovered']['coverage_review'][field]=value
         with pytest.raises(ValueError,match='FORWARD_COVERAGE_EVIDENCE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['recovered']['coverage_review']['declared_public_covered_seconds']='1'

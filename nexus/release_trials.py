@@ -2344,11 +2344,13 @@ def _validate(profile, result):
             'nonstopped_or_cleanup_review_sessions':20,'uncovered_intervals':1,
             'clean_manual_stop_sessions':0,'other_stopped_sessions':0,
             'paused_sessions':20,'running_sessions':0,
-            'sessions_with_quote_errors':20,'quote_error_observations':60}
+            'sessions_with_quote_errors':20,'quote_error_observations':60,
+            'over_limit_coverage_gaps':1}
         _require(all(type(coverage[key]) is int and coverage[key]==value
             for key,value in coverage_counts.items()) and
             coverage['after']=='1970-01-01T00:16:40Z' and coverage['until']=='1970-01-01T00:38:20Z' and
-            coverage['window_seconds']==coverage['uncovered_seconds']==coverage['longest_uncovered_seconds']=='1300' and
+            coverage['window_seconds']==coverage['uncovered_seconds']==coverage['longest_uncovered_seconds']==
+                coverage['over_limit_coverage_gap_seconds']=='1300' and
             coverage['required_coverage_fraction']=='0.95' and coverage['coverage_fraction']=='0.000000' and
             coverage['review_reasons']==list(COVERAGE_REVIEW_REASONS) and
             type(coverage['evidence_snapshot_sha256']) is str and

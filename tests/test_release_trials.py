@@ -877,6 +877,60 @@ def test_balance_trial_requires_both_accounting_and_negative_fences_without_spen
         with pytest.raises(ValueError,match='BALANCE_NEGATIVE_FENCES'): trials._validate('balance',altered)
 
 
+def test_balance_trial_requires_exact_public_schemas():
+    from nexus.broker_balance_review import (NEGATIVE_CHECKS,
+        PUBLIC_FIXTURE_KEYS, REVIEW_PUBLIC_KEYS)
+    from nexus.broker_fee_projection import TIMESTAMP_PUBLIC_KEYS
+    result=trials._execute('balance');trials._validate('balance',result)
+    assert type(result) is dict and frozenset(result)==PUBLIC_FIXTURE_KEYS
+    assert type(result['review']) is dict
+    assert frozenset(result['review'])==REVIEW_PUBLIC_KEYS
+    assert type(result['negative_checks']) is dict
+    assert frozenset(result['negative_checks'])==frozenset(NEGATIVE_CHECKS)
+    assert type(result['timestamp_profile']) is dict
+    assert frozenset(result['timestamp_profile'])==TIMESTAMP_PUBLIC_KEYS
+    changed=copy.deepcopy(result);changed['private_extension']=True
+    with pytest.raises(ValueError,match='BALANCE_PROFILE_SCHEMA'):
+        trials._validate('balance',changed)
+    class BalanceProfileMapping(dict):
+        pass
+    with pytest.raises(ValueError,match='BALANCE_PROFILE_SCHEMA'):
+        trials._validate('balance',BalanceProfileMapping(result))
+    changed=copy.deepcopy(result);changed['review']['private_extension']=True
+    with pytest.raises(ValueError,match='BALANCE_REVIEW_SCHEMA'):
+        trials._validate('balance',changed)
+    class BalanceReviewMapping(dict):
+        pass
+    changed=copy.deepcopy(result);changed['review']=BalanceReviewMapping(result['review'])
+    with pytest.raises(ValueError,match='BALANCE_REVIEW_SCHEMA'):
+        trials._validate('balance',changed)
+    changed=copy.deepcopy(result);changed['review']['limitations']='spendable funds verified'
+    with pytest.raises(ValueError,match='BALANCE_REVIEW_SCOPE'):
+        trials._validate('balance',changed)
+    changed=copy.deepcopy(result);changed['negative_checks']['private_extension']=True
+    with pytest.raises(ValueError,match='BALANCE_NEGATIVE_SCHEMA'):
+        trials._validate('balance',changed)
+    class BalanceNegativeMapping(dict):
+        pass
+    changed=copy.deepcopy(result)
+    changed['negative_checks']=BalanceNegativeMapping(result['negative_checks'])
+    with pytest.raises(ValueError,match='BALANCE_NEGATIVE_SCHEMA'):
+        trials._validate('balance',changed)
+    changed=copy.deepcopy(result);changed['timestamp_profile']['private_extension']=True
+    with pytest.raises(ValueError,match='BALANCE_TIMESTAMP_SCHEMA'):
+        trials._validate('balance',changed)
+    class BalanceTimestampMapping(dict):
+        pass
+    changed=copy.deepcopy(result)
+    changed['timestamp_profile']=BalanceTimestampMapping(result['timestamp_profile'])
+    with pytest.raises(ValueError,match='BALANCE_TIMESTAMP_SCHEMA'):
+        trials._validate('balance',changed)
+    for field in ('atomic_snapshot','broker_connected','automatic_retry'):
+        changed=copy.deepcopy(result);changed['review'][field]=True
+        with pytest.raises(ValueError,match='BALANCE_AUTHORITY'):
+            trials._validate('balance',changed)
+
+
 def test_collection_trial_keeps_page_cap_and_cursor_evidence_without_coverage_authority():
     from nexus.activity_collection_evidence import fixture_report
     result=trials._execute('collection');trials._validate('collection',result)

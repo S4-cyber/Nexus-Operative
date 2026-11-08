@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.228**. Reviewed source baseline: `c66ee551dc54d04557da6e31b1ec3626a10dff8f` (v0.340.227).
+Report date: November 8, 2026. Development candidate: **v0.340.229**. Reviewed source baseline: `6f500e6e3eef9317c543785d4705636b333b288a` (v0.340.228).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 8, 2026. Development candidate: **v0.340.228**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.228 source additionally requires the complete activity release profile, its retained-activity review and its original-request/fill link to match immutable 11-field, 28-field and 20-field public schemas. Every positive and false authority field is consumed; root, link and nested-review extensions, mapping subclasses and altered scope limitations fail closed. Final local validation passed 5,775 tests with one expected non-Windows skip, the 101-test complete release-trial module, the 47-test affected activity/link focus, the 81-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.229 source additionally requires the supplied balance release aggregate, its balance review, negative fences and timestamp profile to match immutable 7-field, 25-field, 2-field and 15-field public schemas. Every positive and false authority field is consumed; extensions, mapping subclasses and altered balance-review limitations fail closed at all four layers. Final local validation passed 5,776 tests with one expected non-Windows skip, the 102-test complete release-trial module, the 87-test affected balance/funding focus, the 81-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.228 was published as `6f500e6e3eef9317c543785d4705636b333b288a`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.227 was published as `c66ee551dc54d04557da6e31b1ec3626a10dff8f`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.226 was published as `926d0969fe1dfa29cb4787c1e8fe33823f04c063`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.225 was published as `c8173649885f3d141b01be10b25fae25de2b9da0`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.

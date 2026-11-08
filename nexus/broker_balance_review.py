@@ -16,6 +16,20 @@ from nexus.alpaca_activity_normalizer import _budget, MAX_INPUT_BYTES
 MAX_OPEN_ORDERS = 128
 MAX_POSITIONS = 128
 MAX_FEES = 2000
+REVIEW_FLAGS=('atomic_snapshot','source_coverage_verified',
+    'fee_coverage_complete','holds_reconciled','broker_account_reconciled',
+    'spendable_funds_verified','ready_for_routing','broker_connected',
+    'ledger_applied','live_orders_enabled','automatic_retry')
+REVIEW_PUBLIC_KEYS=frozenset(('mode','status','read_only','source',
+    'account_sha256','input_sha256','observed_inventory','open_order_terms',
+    'balance_projection_evaluated','linked_history_review',
+    'duplicate_records_ignored','review_reasons','account_fields_double_checked',
+    'limitations',*REVIEW_FLAGS))
+NEGATIVE_CHECKS=('missing_available_btc_is_unknown',
+    'cash_disagreement_detected')
+PUBLIC_FIXTURE_KEYS=frozenset(('passed','review','negative_checks',
+    'timestamp_profile','source','broker_connected','live_orders_enabled'))
+REVIEW_LIMITATIONS='Supplied sequential consistency only. Compare explicit fills/linked fees with total inventory, never availability. Quantity-minus-availability is an observed difference, not an authenticated hold ledger. Buy limit principal caps are not broker holds, required execution prices or fee-inclusive spendable funds; incoming buys/sell proceeds are not credited as available. Missing orders, transfers, settlement, fees, corrections and source coverage require independent acceptance. Microsecond linked-history profile only; no REST fee links or posting instants are invented.'
 
 
 def _fail(code):
@@ -193,7 +207,7 @@ def review(orders, executions, fees, *, expected_account_id, opening_balances, o
         source_coverage_verified=False, fee_coverage_complete=False, holds_reconciled=False,
         broker_account_reconciled=False, spendable_funds_verified=False, ready_for_routing=False,
         broker_connected=False, ledger_applied=False, live_orders_enabled=False, automatic_retry=False,
-        limitations='Supplied sequential consistency only. Compare explicit fills/linked fees with total inventory, never availability. Quantity-minus-availability is an observed difference, not an authenticated hold ledger. Buy limit principal caps are not broker holds, required execution prices or fee-inclusive spendable funds; incoming buys/sell proceeds are not credited as available. Missing orders, transfers, settlement, fees, corrections and source coverage require independent acceptance. Microsecond linked-history profile only; no REST fee links or posting instants are invented.')
+        limitations=REVIEW_LIMITATIONS)
 
 
 def fixture_report():

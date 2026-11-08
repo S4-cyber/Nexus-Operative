@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.228. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.229. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.228 gives the complete activity release profile, its retained-activity review and its original-request/fill link strict immutable 11-field, 28-field and 20-field public schemas. Saved release validation requires exact plain dictionaries, consumes every declared positive and false authority field, and rejects unknown fields, mapping subclasses or altered review limitations at all three layers. This is bounded synthetic request/activity evidence hardening, not provider/account acceptance, authenticated source or activity/fee coverage, hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.229 gives the supplied balance release aggregate, its balance review, negative fences and timestamp profile strict immutable 7-field, 25-field, 2-field and 15-field public schemas. Saved release validation requires exact plain dictionaries, consumes every positive and false authority field, and rejects unknown fields, mapping subclasses or altered review limitations at all four layers. This is bounded synthetic balance/funding evidence hardening, not provider/account acceptance, authenticated source or activity/fee coverage, hold/spendable-funds reconciliation, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

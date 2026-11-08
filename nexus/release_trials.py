@@ -933,19 +933,44 @@ def _validate(profile, result):
         _require(all(result[k] is False for k in ('source_attested', 'activity_coverage_verified',
             'ready_for_routing', 'automatic_continuation')), 'COLLECTION_AUTHORITY')
     if profile == 'balance':
-        from nexus.broker_fee_projection import TIMESTAMP_CHECKS,TIMESTAMP_FLAGS
+        from nexus.broker_balance_review import (NEGATIVE_CHECKS,
+            PUBLIC_FIXTURE_KEYS as BALANCE_KEYS, REVIEW_FLAGS,
+            REVIEW_LIMITATIONS, REVIEW_PUBLIC_KEYS)
+        _require(type(result) is dict and frozenset(result)==BALANCE_KEYS,
+            'BALANCE_PROFILE_SCHEMA')
+        _require(result['source']=='FIXED_SUPPLIED_LINKED_FEE_FIXTURE' and
+            result['passed'] is True, 'BALANCE_PROFILE')
+        _require(result['broker_connected'] is False and
+            result['live_orders_enabled'] is False, 'BALANCE_PROFILE_AUTHORITY')
+        from nexus.broker_fee_projection import (TIMESTAMP_CHECKS,
+            TIMESTAMP_FLAGS,TIMESTAMP_PUBLIC_KEYS)
         timing=result['timestamp_profile']
+        _require(type(timing) is dict and
+            frozenset(timing)==TIMESTAMP_PUBLIC_KEYS,
+            'BALANCE_TIMESTAMP_SCHEMA')
         _require(timing['source']=='SUPPLIED_TIMESTAMP_PROFILE_FIXTURE' and timing['passed'] is True and all(timing[k] is True for k in TIMESTAMP_CHECKS),'BALANCE_TIMESTAMP_PROFILE')
         _require(all(timing[k] is False for k in TIMESTAMP_FLAGS),'BALANCE_TIMESTAMP_AUTHORITY')
         reviewed = result['review']
+        _require(type(reviewed) is dict and
+            frozenset(reviewed)==REVIEW_PUBLIC_KEYS,
+            'BALANCE_REVIEW_SCHEMA')
+        _require(reviewed['mode']=='SUPPLIED_BTC_USD_BALANCE_REVIEW' and
+            reviewed['status']=='REVIEW_REQUIRED' and reviewed['read_only'] is True and
+            reviewed['source']=='SUPPLIED_UNATTESTED' and
+            reviewed['limitations']==REVIEW_LIMITATIONS,
+            'BALANCE_REVIEW_SCOPE')
         _require(reviewed['balance_projection_evaluated'] is True and
+            reviewed['account_fields_double_checked'] is True and
             reviewed['linked_history_review']['projection_matches_declared_balances'] is True and
             reviewed['linked_history_review']['cash_path']['declared_path_consistency_ok'] is True, 'BALANCE_ACCOUNTING')
-        _require(all(result['negative_checks'].get(k) is True for k in ('missing_available_btc_is_unknown',
-            'cash_disagreement_detected')), 'BALANCE_NEGATIVE_FENCES')
-        _require(reviewed['status'] == 'REVIEW_REQUIRED' and all(reviewed[k] is False for k in
-            ('holds_reconciled', 'broker_account_reconciled', 'spendable_funds_verified', 'ready_for_routing',
-             'source_coverage_verified', 'fee_coverage_complete', 'ledger_applied', 'live_orders_enabled')), 'BALANCE_AUTHORITY')
+        negative=result['negative_checks']
+        _require(type(negative) is dict and
+            frozenset(negative)==frozenset(NEGATIVE_CHECKS),
+            'BALANCE_NEGATIVE_SCHEMA')
+        _require(all(negative[k] is True for k in NEGATIVE_CHECKS),
+            'BALANCE_NEGATIVE_FENCES')
+        _require(all(reviewed[k] is False for k in REVIEW_FLAGS),
+            'BALANCE_AUTHORITY')
     if profile == 'pacing':
         from nexus.paper_read_pacing import OPERATION_CHECKS,OPERATION_FLAGS
         typed=result['typed_operations']

@@ -18,6 +18,8 @@ TIMESTAMP_CHECKS=('unsupported_precision_rejected','timezone_equivalents_dedupli
                   'timezone_canonical_digest_stable','rest_nanoseconds_preserved')
 TIMESTAMP_FLAGS=('actual_provider_access','broker_connected','broker_account_reconciled','spendable_funds_verified',
                  'ledger_applied','ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')
+TIMESTAMP_PUBLIC_KEYS=frozenset(('source','passed',*TIMESTAMP_CHECKS,
+    *TIMESTAMP_FLAGS))
 
 
 def _timestamp(value):

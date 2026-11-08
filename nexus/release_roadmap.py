@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.241'
+REVISION = '0.340.242'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.241 pins the standalone emergency command to one resolved non-symlink data-root target before priority or storage access. A configured root symlink fails before touching storage, while a parent-alias change after resolution cannot redirect the intent latch or durable order halt. The packaged release smoke consumes an exact 20-field emergency result schema and requires the path-pinning check alongside independent, contended, CPU-pressure and native Windows read-only-fault evidence. This is sampled same-host path-scope and synthetic local paper evidence, not an ACL or administrator boundary, physical power-loss proof, actual broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.242 pins the POSIX emergency-intent parent directory descriptor across latch creation, idempotent acknowledgement, removal and directory fsync. Entry operations are relative to that descriptor and success is refused if the public parent path no longer names the same directory. Windows retains the conservative standard-library fallback because Python cannot fsync directory handles there; native Windows storage-fault acceptance remains required. This is sampled same-host synthetic local paper evidence, not an ACL or administrator boundary, physical power-loss proof, actual broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

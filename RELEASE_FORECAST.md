@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.242
+
+The independent local paper emergency latch now pins one POSIX parent-directory descriptor across creation, idempotent acknowledgement, removal and directory fsync. Entry operations are descriptor-relative and refuse success after parent-path replacement. Deterministic tests cover persist and reset replacement races. Windows retains the conservative standard-library fallback, so native Windows storage-fault acceptance remains open. The exact-source v0.340.241 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.242 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,808 tests with one expected non-Windows skip; the synchronized emergency/release/evidence/version/roadmap/installer/security focus passed 369 and the direct emergency intent/cut/storage focus passed 32. Sixteen offline profiles match 401 source files / `35d431341fe0bffa377fbbd5d143d6b7b1c21983d6b861e2438d842aae96c3fc`; report SHA256 is `9254752492cc1a558c8818fa4527ca81d8f0c0f3aea2b6d6f1a8b90516f2e156`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.242 wheel SHA256 is `1ce008300a18c81573d95ae866ce6f52db8a92326e5c82f63624f37994c5ff81`. The 961-path proposed-candidate public-artifact audit and 4,212 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.241
 
 The process-independent local paper emergency command now pins one resolved non-symlink data-root target before priority or storage access. A configured root symlink is rejected without touching storage, and a parent alias changed after resolution cannot redirect the latch or durable halt. The packaged release smoke consumes its exact 20-field result schema and path-pinning check. The exact-source v0.340.240 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.241 checks remain required.

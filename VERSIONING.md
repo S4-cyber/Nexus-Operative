@@ -1,6 +1,20 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.241 (pre-release).**
+**Current development build: 0.340.242 (pre-release).**
+
+## v0.340.242 pinned emergency-intent directory durability
+
+The independent local paper emergency latch now pins one POSIX parent-directory descriptor across creation, idempotent acknowledgement, removal and directory fsync. Latch entry operations are relative to that descriptor, and the operation refuses success if the public parent path no longer names the same directory. Deterministic replacement-race tests cover both persist and reset boundaries. Windows retains the conservative standard-library fallback because Python cannot fsync directory handles there; native Windows storage-fault acceptance remains open.
+
+The exact-source v0.340.241 remote commit `43ee64e6d405e90e8732510df91527391d139064` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.241 result is pre-claimed. Fresh exact-source v0.340.242 public-security, research/browser/evidence and Windows installer checks remain required.
+
+This is sampled same-host POSIX path-identity and synthetic local paper evidence, not an ACL or administrator boundary, physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This emergency durability hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,808 tests with one expected non-Windows skip; the synchronized emergency/release/evidence/version/roadmap/installer/security focus passed 369 and the direct emergency intent/cut/storage focus passed 32. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `35d431341fe0bffa377fbbd5d143d6b7b1c21983d6b861e2438d842aae96c3fc`; `validation/release_trials_0_340_242.json` SHA256 is `9254752492cc1a558c8818fa4527ca81d8f0c0f3aea2b6d6f1a8b90516f2e156`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.242 and has SHA256 `1ce008300a18c81573d95ae866ce6f52db8a92326e5c82f63624f37994c5ff81`. The 961-path proposed-candidate public-artifact audit and 4,212 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
+
 
 ## v0.340.241 pinned standalone emergency data root
 

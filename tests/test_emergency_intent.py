@@ -1,4 +1,6 @@
 """Independent local intent durability and conservative startup; no external IO."""
+import os
+import stat
 import pytest
 from nexus import app as api, emergency_intent as intent
 from test_emergency_storage import control, rig
@@ -111,7 +113,7 @@ def test_windows_create_permission_error_only_accepts_existing_latch(tmp_path,mo
     if present:target.mkdir()
     original=intent.os.open
     def windows_open(path,*args,**kwargs):
-        if path==target:raise PermissionError('simulated Windows EACCES')
+        if path in (target,target.name):raise PermissionError('simulated Windows EACCES')
         return original(path,*args,**kwargs)
     monkeypatch.setattr(intent.os,'open',windows_open)
     if present:
@@ -121,3 +123,39 @@ def test_windows_create_permission_error_only_accepts_existing_latch(tmp_path,mo
     else:
         with pytest.raises(PermissionError):intent.persist(order)
         assert not target.exists()
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX directory descriptor contract')
+def test_persist_never_acknowledges_latch_in_replaced_parent(tmp_path,monkeypatch):
+    root=tmp_path/'state';order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    original=intent.os.fsync;swapped=False
+    def swap_after_file_sync(fd):
+        nonlocal swapped
+        if stat.S_ISREG(os.fstat(fd).st_mode) and not swapped:
+            swapped=True;root.rename(retired);root.mkdir()
+        return original(fd)
+    monkeypatch.setattr(intent.os,'fsync',swap_after_file_sync)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.persist(order)
+    assert swapped and (retired/'emergency_cut.intent').read_bytes()==intent.RECORD
+    assert not intent.requested(order)
+    monkeypatch.setattr(intent.os,'fsync',original)
+    intent.persist(order)
+    assert intent.requested(order)
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX directory descriptor contract')
+def test_clear_never_acknowledges_replaced_parent(tmp_path,monkeypatch):
+    root=tmp_path/'state';order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    intent.persist(order);original=intent.os.fsync;swapped=False
+    def swap_before_directory_sync(fd):
+        nonlocal swapped
+        if stat.S_ISDIR(os.fstat(fd).st_mode) and not swapped:
+            swapped=True;root.rename(retired);root.mkdir()
+            intent.path(order).write_bytes(intent.RECORD)
+        return original(fd)
+    monkeypatch.setattr(intent.os,'fsync',swap_before_directory_sync)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.clear(order)
+    assert swapped and intent.requested(order)
+    assert not (retired/'emergency_cut.intent').exists()

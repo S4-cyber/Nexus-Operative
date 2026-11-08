@@ -95,6 +95,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['reservation_and_marker_admission_windows_bound']
     assert result['response_observation_cold_replayed']
     assert result['response_budget_completion_cold_replayed']
+    assert result['post_response_persistence_stop_independent']
     assert result['post_response_local_completion_stop_independent']
     assert result['response_observation_completion_bracketed']
     assert result['response_and_safety_completion_windows_bound']
@@ -896,6 +897,35 @@ def test_post_transport_loss_preserves_unknown_and_cannot_retry(prepared):
     with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
         submit(prepared,second)
     assert not second.requests
+
+
+@pytest.mark.parametrize('control', ['permission', 'emergency_stop'])
+def test_parsed_response_persistence_does_not_require_control_reauthorization(
+        prepared, monkeypatch, control):
+    opener=Opener();response_returned=False;observed_during_control=[]
+    original=module._Session.request
+    def request(self,url,**kwargs):
+        nonlocal response_returned
+        result=original(self,url,**kwargs)
+        if url==module.ORDER_URL:response_returned=True
+        return result
+    monkeypatch.setattr(module._Session,'request',request)
+    def permission_check():
+        observed_during_control.append(response_returned)
+        return not response_returned if control=='permission' else True
+    def emergency_stop_check():
+        observed_during_control.append(response_returned)
+        return response_returned if control=='emergency_stop' else False
+    result=submit(prepared,opener,permission_check=permission_check,
+                  emergency_stop_check=emergency_stop_check)
+    retained=prepared[0].recovery()['requests'][0]
+    history=prepared[2].history()
+    assert result['post_response_persistence_stop_independent'] is True
+    assert response_returned and observed_during_control
+    assert not any(observed_during_control)
+    assert retained['snapshot']['status']=='new'
+    assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
 
 
 @pytest.mark.parametrize('control', ['permission', 'emergency_stop'])

@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
++## Current candidate: v0.340.247
+
+After the sole paper POST has returned a completely parsed response, durable response observation now uses repeated local store-binding and reservation proofs without requesting renewed engagement permission or emergency-stop admission. All preflight and in-flight controls remain mandatory, and no further provider IO occurs. The exact-source v0.340.246 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.247 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (read-only weighted index 38%; 30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,822 tests with one expected non-Windows skip; the complete submission/release-profile modules passed 193, the synchronized release/evidence/version/installer/package focus passed 211 and the explicit Portal/controller focus passed 22 plus fourteen Node controllers. Sixteen offline profiles match 401 source files / `81abb71636408081661b6bdbf04517b301cbbe11b656173084bb4bd56cc56638`; report SHA256 is `f1b5064396bccedd9c1408a60c3d1e81125ad19976598ebce4fbebc03dac94ba`. Compilation, dependency integrity and roadmap equality passed. The 161-member v0.340.247 wheel SHA256 is `f335141d144942adcf24b1e7764683bc29b8fca39225a48823f60ee17ecfc246`. The 966-path candidate audit and 4,156 introduced-line high-confidence signature scan found zero findings; the locally reachable 10-commit history audit also found zero artifact findings. Local Gitleaks is unavailable and fresh hosted full-history security remains required. These are local/synthetic checks, not broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.246
 
 After the exact single-attempt paper POST response is retained and cold-replayed, terminal local provider-budget reconciliation now reuses the final trusted transport timestamp instead of requesting renewed engagement permission or emergency-stop admission. This performs no provider IO and prevents a newly asserted stop from stranding a known result as pending. The exact-source v0.340.245 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.246 checks remain required.

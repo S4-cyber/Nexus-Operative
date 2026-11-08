@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.246'
+REVISION = '0.340.247'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.246 makes post-response local provider-budget reconciliation independent of renewed engagement permission and emergency-stop admission. After the exact paper response is retained and cold-replayed, completion reuses the final trusted transport timestamp, performs no further provider IO and remains exact-head/cold-replay checked. Mandatory pacing evidence asserts both permission revocation and emergency-stop activation would occur after response retention yet cannot strand the known result as a pending attempt. This is injected local reconciliation evidence, not actual provider/account access, broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, broker-wide coordination, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.247 makes durable persistence of a completely parsed paper response independent of renewed engagement permission and emergency-stop admission. All preflight and in-flight control checks remain mandatory; after parsing finishes, reconciliation performs no provider IO and uses repeated local store-binding and reservation proofs before the known response is written and cold-replayed. Mandatory pacing evidence asserts both permission revocation and emergency-stop activation would occur at that boundary yet cannot discard the known result as outcome-unknown. This is injected local reconciliation evidence, not actual provider/account access, broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, broker-wide coordination, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

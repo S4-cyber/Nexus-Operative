@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.246**. Reviewed remote source baseline: `ed4d518971594f4122f1b965b24d165932025252` (v0.340.245).
+Report date: November 8, 2026. Development candidate: **v0.340.247**. Reviewed remote source baseline: `d73764f403ac3759e2135bc6cd407cd35ac93f10` (v0.340.246).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,7 +22,7 @@ Report date: November 8, 2026. Development candidate: **v0.340.246**. Reviewed r
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.246 source additionally makes terminal local bookkeeping for an already retained paper POST response independent of renewed engagement permission and emergency-stop admission. Both post-response control cases now complete the exact local provider budget without another network request, while cold replay and cross-journal bindings remain mandatory. Final local validation passed 5,820 tests with one expected non-Windows skip, the 191-test complete submission/release-profile set, the 276-test synchronized release focus and sixteen source-bound offline profiles. This is injected local reconciliation evidence, not actual broker, genuine-feed, native Windows, funding or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.247 source additionally makes durable observation of a completely parsed paper POST response independent of renewed engagement permission and emergency-stop admission. Both parsed-response boundary cases now retain and cold-replay the known result without another network request, while repeated store/reservation proofs and terminal provider-budget completion remain mandatory. Final local validation passed 5,822 tests with one expected non-Windows skip, the 193-test complete submission/release-profile set, the 211-test synchronized release focus and sixteen source-bound offline profiles. This is injected local reconciliation evidence, not actual broker, genuine-feed, native Windows, funding or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 

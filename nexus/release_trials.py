@@ -1558,6 +1558,7 @@ def _validate(profile, result):
              'request_marker_admission_window_bound',
              'response_observation_cold_replayed',
              'response_budget_completion_cold_replayed',
+             'post_response_persistence_stop_independent',
              'post_response_local_completion_stop_independent',
              'response_observation_completion_bracketed',
              'response_completion_window_bound',

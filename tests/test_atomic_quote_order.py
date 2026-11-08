@@ -77,8 +77,8 @@ from pathlib import Path
 from nexus.durable_orders import DurableOrderGateway
 g=DurableOrderGateway(Path(os.environ['NEXUS_PORTABLE_DATA'])/'orders.sqlite3')
 original=g._connect
-def connect():
-    db=original();db.create_function('kill_process',0,lambda:os._exit(77));return db
+def connect(path=None):
+    db=original(path);db.create_function('kill_process',0,lambda:os._exit(77));return db
 g._connect=connect
 g.execute_quote_order('atomic','BTC-USD','BUY',50,tier='terrestrial',created_at=1000,ttl_seconds=10,
     quantity=1,bid=25,ask=25.1,available_quantity=2,quote_at=1001,evaluated_at=1001)

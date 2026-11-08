@@ -107,8 +107,8 @@ from nexus import order_checkpoints as cp
 from nexus.durable_orders import DurableOrderGateway
 cp.INTERVAL=2
 original=DurableOrderGateway._connect
-def connect(self):
-    db=original(self)
+def connect(self,path=None):
+    db=original(self,path)
     db.create_function('kill_process',0,lambda:os._exit(72))
     return db
 DurableOrderGateway._connect=connect

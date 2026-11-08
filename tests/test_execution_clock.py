@@ -75,8 +75,8 @@ def test_real_sqlite_writer_wait_refreshes_runtime_evaluation(tmp_path,monkeypat
     import threading
     g=atomic_setup(tmp_path,monkeypatch);now=[1001];connected=threading.Event();sampled=threading.Event()
     original=g._connect;errors=[]
-    def connect():
-        db=original();connected.set();return db
+    def connect(path=None):
+        db=original(path);connected.set();return db
     def clock():sampled.set();return now[0]
     def worker():
         try:execute(g,execution_clock=clock)

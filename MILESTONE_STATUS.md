@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.242**. Reviewed remote source baseline: `43ee64e6d405e90e8732510df91527391d139064` (v0.340.241).
+Report date: November 8, 2026. Development candidate: **v0.340.243**. Reviewed remote source baseline: `eeb4f5eef364c4e0d2b8c3c1c0a7177fe7b11865` (v0.340.242).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,7 +22,7 @@ Report date: November 8, 2026. Development candidate: **v0.340.242**. Reviewed r
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.242 source additionally pins one POSIX emergency-intent parent directory descriptor across creation, idempotent acknowledgement, removal and directory fsync. Entry operations are relative to the pinned descriptor and cannot acknowledge success after the public parent path is replaced; Windows retains its conservative standard-library fallback. Final local validation passed 5,808 tests with one expected non-Windows skip, the 369-test synchronized emergency/release/evidence/version/roadmap/installer/security focus, the 32-test direct emergency intent/cut/storage focus and sixteen source-bound offline profiles. This sampled same-host POSIX evidence is not native owner-profile/ACL, Windows storage-fault or physical power-loss acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.243 source additionally snapshots one portable-data root for each default durable-order operation and carries it through emergency-intent inspection, rotation checks, SQLite order state and attached portfolio reconciliation. Deterministic environment-change regressions cover latch, connection and linked-restore boundaries. Final local validation passed 5,811 tests with one expected non-Windows skip, the 417-test synchronized durable-order/release/evidence/version/installer/security focus, the 252-test broader affected set with one expected skip and sixteen source-bound offline profiles. This is deterministic local path-scope evidence, not actual broker, genuine-feed, native Windows, physical power-loss or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 

@@ -6,7 +6,7 @@ import sqlite3
 from fastapi.testclient import TestClient
 import pytest
 from nexus.durable_orders import DurableOrderGateway
-from nexus import execution_portfolio
+from nexus import emergency_intent, execution_portfolio
 from nexus.paper_forward import PaperForwardRunner
 from test_execution_portfolio import linked
 
@@ -53,6 +53,42 @@ def test_linked_recovery_uses_no_writable_schema_path_and_preserves_all_bytes(tm
     # All read handles must close for Windows backup/replacement workflows.
     for path in before:
         moved=path.with_suffix('.moved');path.rename(moved);moved.rename(path)
+
+
+def test_write_operation_pins_dynamic_root_before_emergency_check(tmp_path,monkeypatch):
+    first=tmp_path/'first';second=tmp_path/'second'
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(first));gateway=DurableOrderGateway();seen=[]
+    def retarget(path):
+        seen.append(path);monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(second));return False
+    monkeypatch.setattr(emergency_intent,'requested',retarget)
+    gateway.submit('one','BTC-USD','BUY',100,tier='terrestrial')
+    assert seen==[first/'order_lifecycle.sqlite3']
+    assert (first/'order_lifecycle.sqlite3').exists()
+    assert (first/'paper_portfolio.sqlite3').exists() and not second.exists()
+
+
+def test_write_operation_keeps_portfolio_with_opened_order_root(tmp_path,monkeypatch):
+    first=tmp_path/'first';second=tmp_path/'second'
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(first));gateway=DurableOrderGateway()
+    original=gateway._connect
+    def retarget_after_connect(path=None):
+        db=original(path);monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(second));return db
+    monkeypatch.setattr(gateway,'_connect',retarget_after_connect)
+    gateway.initialize_account(10000)
+    assert (first/'order_lifecycle.sqlite3').exists()
+    assert (first/'paper_portfolio.sqlite3').exists() and not second.exists()
+
+
+def test_linked_read_keeps_portfolio_with_opened_order_root(tmp_path,monkeypatch):
+    first=tmp_path/'first';second=tmp_path/'second'
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(first));gateway=DurableOrderGateway()
+    gateway.initialize_account(10000);gateway.link_portfolio();original=gateway._restore
+    def retarget_after_restore(db):
+        restored=original(db);monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(second));return restored
+    monkeypatch.setattr(gateway,'_restore',retarget_after_restore)
+    report=gateway.recovery_report()
+    assert report['portfolio_reconciled'] and report['journal_present']
+    assert not second.exists()
 
 
 @pytest.mark.parametrize('kind',['missing','corrupt','incomplete','symlink','fifo'])

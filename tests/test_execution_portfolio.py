@@ -92,8 +92,8 @@ def test_process_death_before_commit_recovers_both_databases(tmp_path,monkeypatc
 import os,sys
 from nexus.durable_orders import DurableOrderGateway
 original=DurableOrderGateway._connect
-def connect(self):
-    db=original(self)
+def connect(self,path=None):
+    db=original(self,path)
     db.create_function('kill_process',0,lambda:os._exit(71))
     return db
 DurableOrderGateway._connect=connect

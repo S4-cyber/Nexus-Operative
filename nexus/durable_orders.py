@@ -59,17 +59,18 @@ class DurableOrderGateway:
         root = Path(os.environ.get('NEXUS_PORTABLE_DATA', str(Path.home()/'.nexus-operative')))
         return root.expanduser()/'order_lifecycle.sqlite3'
 
-    def _require_rotation_clear(self):
+    def _require_rotation_clear(self,path=None):
         if self.rotation_recovery:return
-        marker=self._path().parent/ROTATION_MARKER
+        path=self._path() if path is None else Path(path)
+        marker=path.parent/ROTATION_MARKER
         try:marker.lstat()
         except FileNotFoundError:return
         except OSError:raise ValueError('ORDER_ROTATION_STATE_UNAVAILABLE') from None
         raise ValueError('ORDER_ROTATION_RECOVERY_REQUIRED')
 
-    def _connect(self):
-        self._require_rotation_clear()
-        path = self._path()
+    def _connect(self,path=None):
+        path=self._path() if path is None else Path(path)
+        self._require_rotation_clear(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         db = None
         try:
@@ -89,9 +90,9 @@ class DurableOrderGateway:
             raise
 
     @contextmanager
-    def _read_connection(self):
-        self._require_rotation_clear()
-        path=self._path()
+    def _read_connection(self,path=None):
+        path=self._path() if path is None else Path(path)
+        self._require_rotation_clear(path)
         if path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
         try:observed=path.stat()
         except FileNotFoundError:
@@ -111,13 +112,14 @@ class DurableOrderGateway:
         finally:
             if db is not None:db.close()
 
-    def _read_restore(self, db, *, compare_portfolio=False):
+    def _read_restore(self, db, *, compare_portfolio=False, path=None):
         if db is None:
             self.restore_diagnostics=dict(checkpoint_sequence=0,prefix_replayed=0,tail_replayed=0,cache_hit=False)
             return AccountingOrderGateway(clock=lambda:0),0
         gateway,count=self._restore(db)
         if compare_portfolio and gateway.portfolio_linked:
-            portfolio=execution_portfolio.attach_read_only(db,self._path().parent/'paper_portfolio.sqlite3')
+            path=self._path() if path is None else Path(path)
+            portfolio=execution_portfolio.attach_read_only(db,path.parent/'paper_portfolio.sqlite3')
             execution_portfolio.compare(portfolio,gateway.account)
         return gateway,count
 
@@ -153,8 +155,9 @@ class DurableOrderGateway:
         if execution_clock is not None and not callable(execution_clock):raise ValueError('INVALID_EXECUTION_CLOCK')
         steps=tuple(steps)
         if not steps or len(steps)>4:raise ValueError('INVALID_ORDER_TRANSACTION_SIZE')
+        path=self._path()
         if any(step[0] in ('submit','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps):
-            try:cut=emergency_intent.requested(self._path())
+            try:cut=emergency_intent.requested(path)
             except (ValueError,OSError):cut=True
             if cut:raise ValueError('EMERGENCY_CUT_REQUESTED')
         if len(steps)>1:
@@ -166,9 +169,9 @@ class DurableOrderGateway:
             if method not in METHODS:raise ValueError('INVALID_COMMAND')
             payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
             prepared.append((method,args,kwargs,payload))
-        with closing(self._connect()) as db:
+        with closing(self._connect(path)) as db:
             with _transaction(db):
-                portfolio=execution_portfolio.attach(db,self._path().parent/'paper_portfolio.sqlite3')
+                portfolio=execution_portfolio.attach(db,path.parent/'paper_portfolio.sqlite3')
                 db.execute('BEGIN IMMEDIATE')
                 gateway,count=self._restore(db)
                 results=[]
@@ -284,8 +287,9 @@ class DurableOrderGateway:
 
     def _retired_order_id_fingerprints(self):
         """Private rotation helper; public status exposes only count and set hash."""
-        with self._read_connection() as db:
-            gateway,_=self._read_restore(db)
+        path=self._path()
+        with self._read_connection(path) as db:
+            gateway,_=self._read_restore(db,path=path)
         return tuple(gateway.retired_order_id_fingerprints)
 
     def connections(self):
@@ -296,8 +300,9 @@ class DurableOrderGateway:
         import copy,re
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
         prefix='pf_'+session_id+'_'
-        with self._read_connection() as db:
-            gateway,_=self._read_restore(db,compare_portfolio=True)
+        path=self._path()
+        with self._read_connection(path) as db:
+            gateway,_=self._read_restore(db,compare_portfolio=True,path=path)
         records={**gateway.archived_intents,**gateway.intents}
         matched={key:dict(order=copy.deepcopy(record),quote_events=[]) for key,record in records.items() if key.startswith(prefix)}
         for (oid,_),detail in gateway.quote_events.items():
@@ -306,8 +311,9 @@ class DurableOrderGateway:
 
     def order_report(self,client_order_id):
         import copy
-        with self._read_connection() as db:
-            gateway,_=self._read_restore(db)
+        path=self._path()
+        with self._read_connection(path) as db:
+            gateway,_=self._read_restore(db,path=path)
             record=gateway.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             return dict(read_only=True,archived=client_order_id in gateway.archived_intents,
@@ -317,9 +323,10 @@ class DurableOrderGateway:
                         live_orders_enabled=False)
 
     def recovery_report(self):
-        with self._read_connection() as db:
+        path=self._path()
+        with self._read_connection(path) as db:
             present=db is not None
-            gateway,count=self._read_restore(db,compare_portfolio=True)
+            gateway,count=self._read_restore(db,compare_portfolio=True,path=path)
         return dict(mode='OFFLINE_ORDER_RECOVERY', status='REPLAY_VERIFIED' if present else 'NO_RETAINED_HISTORY',journal_present=present,
                     commands=count, halted=gateway.halted,
                     orders=list(gateway.intents.values()),execution_terms=gateway.order_terms,

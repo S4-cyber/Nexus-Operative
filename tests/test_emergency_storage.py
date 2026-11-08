@@ -82,8 +82,8 @@ def test_cut_signal_vetoes_fill_after_actual_sqlite_write_wait(control,monkeypat
     before=g.recovery_report();at_fill=threading.Event();allow=threading.Event();waiting=threading.Event()
     original_fill=g.simulate_quote_fill;original_connect=g._connect
     def hold(*a,**k):at_fill.set();assert allow.wait(5);return original_fill(*a,**k)
-    def connect():
-        db=original_connect()
+    def connect(path=None):
+        db=original_connect(path)
         def trace(sql):
             if sql=='BEGIN IMMEDIATE' and threading.current_thread().name.startswith('fixture-fill'):waiting.set()
         db.set_trace_callback(trace);return db
@@ -192,7 +192,7 @@ def test_busy_timeout_is_unconfirmed_and_explicit_retry_cancels_preserving_fills
     c,g,r,w,starts,obs=control;c.post('/api/portal',json={'enabled':True});c.post('/api/paper/forward/start',json=START)
     g.submit('partial','BTC-USD','BUY',100,tier='terrestrial');g.simulate_priced_fill('partial','f1',1,1,25)
     before=g.recovery_report();original=g._connect
-    def short_wait():db=original();db.execute('PRAGMA busy_timeout=20');return db
+    def short_wait(path=None):db=original(path);db.execute('PRAGMA busy_timeout=20');return db
     monkeypatch.setattr(g,'_connect',short_wait)
     writer=sqlite3.connect(g._path());writer.execute('BEGIN IMMEDIATE')
     try:

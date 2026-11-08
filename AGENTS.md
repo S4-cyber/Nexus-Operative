@@ -1,5 +1,18 @@
 # Nexus Operative continuity instructions
 
+## v0.340.243 single-root durable order operations
+
+Each default durable-order operation now resolves `NEXUS_PORTABLE_DATA` exactly once and carries that immutable path through emergency-intent inspection, rotation checks, the SQLite order journal and attached portfolio reconciliation. Read-only session/report/recovery paths use the same snapshot. Deterministic regressions change the environment at the latch, connection and linked-restore boundaries and prove that one acknowledged operation cannot split state between roots. This keeps engagement permissions OFF by default and does not add a control or broaden execution authority.
+
+The exact-source v0.340.242 remote commit `eeb4f5eef364c4e0d2b8c3c1c0a7177fe7b11865` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.242 result is pre-claimed. Fresh exact-source v0.340.243 public-security, research/browser/evidence and Windows installer checks remain required.
+
+This is deterministic local path-scope and synthetic paper evidence, not an ACL or administrator boundary, physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This reconciliation path-scope hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,811 tests with one expected non-Windows skip; the synchronized durable-order/release/evidence/version/installer/security focus passed 417 and the broader affected reconciliation set passed 252 with one expected skip. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `dba211d1e4ecfcb548cd63fbfb45f03e5aa8b897f02beed904fe3b7e3739ca93`; `validation/release_trials_0_340_243.json` SHA256 is `95e4748aaceb85b30769631349aa600057280286bfc1098ef7258940a3e4f8f2`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.243 and has SHA256 `642862b8b99c8bf020292d2be8d51deb2ae2f37da914ee783fef2f4c24cfd9ec`. The 962-path proposed-candidate public-artifact audit and 4,182 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
+
 ## v0.340.242 pinned emergency-intent directory durability
 
 The independent local paper emergency latch now pins one POSIX parent-directory descriptor across creation, idempotent acknowledgement, removal and directory fsync. Latch entry operations are relative to that descriptor, and the operation refuses success if the public parent path no longer names the same directory. Deterministic replacement-race tests cover both persist and reset boundaries. Windows retains the conservative standard-library fallback because Python cannot fsync directory handles there; native Windows storage-fault acceptance remains open.

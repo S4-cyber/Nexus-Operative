@@ -632,6 +632,8 @@ OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','fiv
     'completed_outcomes_preserved','restart_replay_matches','status_read_only')
 OPERATION_FLAGS=('operation_identity_attested','mixed_operation_acceptance_verified','broker_wide_quota_verified',
     'actual_provider_access','actual_vault_access','ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')
+OPERATION_PUBLIC_KEYS=frozenset(('source','passed',*OPERATION_CHECKS,
+    *OPERATION_FLAGS))
 
 COMPLETION_CHECKS=('original_lease_completes','reacquired_lease_refused','cold_instance_refused',
                    'pending_history_preserved','explicit_interruption_preserved')

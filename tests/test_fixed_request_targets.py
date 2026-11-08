@@ -181,6 +181,7 @@ def test_dynamic_or_unknown_purpose_is_not_given_fixed_target_acceptance(operati
 @pytest.mark.parametrize('field',['three_fixed_targets_matched','wrong_fixed_targets_refused','v1_fixed_targets_unverified'])
 def test_release_evidence_requires_each_fixed_target_check(field):
     from nexus import release_trials
-    result=pacing.typed_fixture_report();assert result[field] is True;result[field]=False
+    envelope=release_trials._execute('pacing');result=envelope['typed_operations']
+    assert result[field] is True;result[field]=False;result['passed']=False
     with pytest.raises(ValueError,match='TYPED_READ_OPERATIONS'):
-        release_trials._validate('pacing',dict(passed=True,typed_operations=result))
+        release_trials._validate('pacing',envelope)

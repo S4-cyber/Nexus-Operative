@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.230
+
+The local paper-read pacing release aggregate and its typed-operation evidence now have immutable 31-field and 36-field public schemas. Saved release validation requires exact plain dictionaries, consumes every typed check and false authority field, and rejects unknown fields, mapping subclasses or altered local-only limitations. Five regressions reproduced the previously accepted tampering before implementation. The exact-source v0.340.229 commit-scoped workflow and status queries exposed no records; predecessor v0.340.224 security and research passed while Windows was cancelled during install/test. Fresh v0.340.230 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,777 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 103 tests, the affected pacing/release focus passed 276 and the release/version/installer/package focus passed 81. Sixteen offline profiles match 401 source files / `a771ac26bed26203da32a8f6e2dcbd178669ec4da8e377cab50355cedb3f61ec`; report SHA256 is `e41ec9de883188ab587c2f87306fb109f009d9f8713808eff2c5b41ff1c5fce2`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.230 wheel SHA256 is `4bd25d6ada75ba084cad0a8ee1573b8ec1e1e77219be7696a213dbe49764174e`. The 949-path committed-tree public-artifact audit and 4,186 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.229
 
 The supplied balance release aggregate, its balance review, negative fences and timestamp profile now have immutable 7-field, 25-field, 2-field and 15-field public schemas. Saved release validation requires exact plain dictionaries, consumes every positive and false authority field, and rejects unknown fields, mapping subclasses or altered balance-review limitations at all four layers. Ten regressions reproduced the previously accepted tampering before implementation, and atomic-snapshot, broker-connection and automatic-retry authorities are now mandatory false claims. The exact-source v0.340.228 commit-scoped workflow and status queries exposed no records; predecessor v0.340.224 security and research passed while Windows was cancelled during install/test. Fresh v0.340.229 hosted checks remain required.

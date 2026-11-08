@@ -229,10 +229,11 @@ def test_legacy_typed_results_remain_readable_without_normalized_result_inventio
 
 def test_all_five_readers_and_release_evidence_require_normalized_binding():
     from nexus import release_trials
-    result=pacing.typed_fixture_report();assert result['five_normalized_results_bound'] is True
-    result['five_normalized_results_bound']=False
+    envelope=release_trials._execute('pacing');result=envelope['typed_operations']
+    assert result['five_normalized_results_bound'] is True
+    result['five_normalized_results_bound']=False;result['passed']=False
     with pytest.raises(ValueError,match='TYPED_READ_OPERATIONS'):
-        release_trials._validate('pacing',dict(passed=True,typed_operations=result))
+        release_trials._validate('pacing',envelope)
 
 
 @pytest.mark.parametrize('change,code',[('digest','RECEIPT_DIGEST'),('profile','RECEIPT_INVALID'),('missing','RECEIPT_INVALID')])

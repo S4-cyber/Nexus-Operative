@@ -26,6 +26,22 @@ PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
 APPLICATION_STOP_FENCE_ORDER = ('EMERGENCY_LANE_DRAINED',
     'PAPER_FORWARD_STOPPED', 'OBSERVER_STOPPED', 'REFRESH_STOPPED',
     'FOUND_MARKETS_STOPPED')
+PACING_LIMITATIONS = ('Disposable local journal policy only; no provider '
+    'requests, actual rate-limit acceptance, distributed ownership or '
+    'runtime default integration.')
+PACING_PUBLIC_KEYS = frozenset(('read_completion','snapshot_time',
+    'path_preflight','typed_operations','bounded_recovery_crash_drill',
+    'bounded_recovery_step','submission_admission',
+    'single_attempt_submission_transport','resolved_unknown_post_recovery',
+    'provider_read_budget_recovery','account_read_pacing_recovery',
+    'provider_read_history_review','account_read_history_review',
+    'provider_post_history_review','provider_post_activity_review','passed',
+    'source','completed_sessions','replayed_events','cooldown_enforced',
+    'retry_after_retained','authentication_block_retained',
+    'pending_read_not_auto_released','explicit_owned_interruption_retained',
+    'interrupted_full_day_cooldown','wal_read_rejected_before_sqlite',
+    'wal_write_rejected_before_conversion','wal_rejection_preserved_files',
+    'broker_wide_quota_verified','ready_for_routing','limitations'))
 SAFE_FAILURE_CODE = re.compile(r'RELEASE_TRIAL_[A-Z0-9_]+\Z')
 CHILD_FAILURE_LINE = re.compile(
     r'^nexus\.release_trials\.ReleaseTrialError: (RELEASE_TRIAL_[A-Z0-9_]+)$',
@@ -527,7 +543,7 @@ def _pacing_trial():
             wal_read_rejected_before_sqlite=wal_read, wal_write_rejected_before_conversion=wal_write,
             wal_rejection_preserved_files=no_sidecars,
             broker_wide_quota_verified=False, ready_for_routing=False,
-            limitations='Disposable local journal policy only; no provider requests, actual rate-limit acceptance, distributed ownership or runtime default integration.')
+            limitations=PACING_LIMITATIONS)
 
 
 def _inspection_inventory_trial():
@@ -972,19 +988,28 @@ def _validate(profile, result):
         _require(all(reviewed[k] is False for k in REVIEW_FLAGS),
             'BALANCE_AUTHORITY')
     if profile == 'pacing':
-        from nexus.paper_read_pacing import OPERATION_CHECKS,OPERATION_FLAGS
+        _require(type(result) is dict and frozenset(result)==PACING_PUBLIC_KEYS,
+            'PACING_PROFILE_SCHEMA')
+        _require(result['source']=='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE' and
+            result['limitations']==PACING_LIMITATIONS,
+            'PACING_PROFILE_SCOPE')
+        from nexus.paper_read_pacing import (OPERATION_CHECKS,
+            OPERATION_FLAGS,OPERATION_PUBLIC_KEYS)
         typed=result['typed_operations']
-        _require(typed.get('source')=='INJECTED_TYPED_PAPER_READ_BUDGET_FIXTURE',
+        _require(type(typed) is dict and
+            frozenset(typed)==OPERATION_PUBLIC_KEYS,
+            'TYPED_READ_OPERATIONS_SCHEMA')
+        _require(typed['source']=='INJECTED_TYPED_PAPER_READ_BUDGET_FIXTURE',
             'TYPED_READ_OPERATIONS_ENVELOPE')
         # Keep CI diagnostics fixed and content-free while identifying the
         # precise bounded invariant.  This never emits fixture values, paths,
         # account identifiers or arbitrary exception text.
         for name in OPERATION_CHECKS:
-            _require(typed.get(name) is True,'TYPED_READ_OPERATIONS_'+name.upper())
+            _require(typed[name] is True,'TYPED_READ_OPERATIONS_'+name.upper())
         # The summary is derived from the fixed checks above.  Validate it
         # after them so an intermittent failure reports the exact allowlisted
         # invariant instead of collapsing back to the aggregate envelope.
-        _require(typed.get('passed') is True,'TYPED_READ_OPERATIONS_SUMMARY')
+        _require(typed['passed'] is True,'TYPED_READ_OPERATIONS_SUMMARY')
         _require(all(typed[k] is False for k in OPERATION_FLAGS),'TYPED_READ_AUTHORITY')
         from nexus.sqlite_journal_guard import PATH_CHECKS,PATH_FLAGS
         paths=result['path_preflight']

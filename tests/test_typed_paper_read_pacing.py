@@ -321,16 +321,16 @@ def test_aggregate_fixture_covers_every_reader_without_provider_or_vault():
     ('mixed_operation_acceptance_verified',True,'TYPED_READ_AUTHORITY')])
 def test_release_evidence_requires_typed_checks_without_authority(field,value,code):
     from nexus import release_trials
-    r=pacing.typed_fixture_report();r[field]=value
-    if value is False:r['passed']=False
-    with pytest.raises(ValueError,match='RELEASE_TRIAL_'+code):release_trials._validate('pacing',dict(passed=True,typed_operations=r))
+    result=release_trials._execute('pacing');result['typed_operations'][field]=value
+    if value is False:result['typed_operations']['passed']=False
+    with pytest.raises(ValueError,match='RELEASE_TRIAL_'+code):release_trials._validate('pacing',result)
 
 
 def test_release_evidence_validates_derived_typed_summary_after_individual_checks():
     from nexus import release_trials
-    r=pacing.typed_fixture_report();r['passed']=False
+    result=release_trials._execute('pacing');result['typed_operations']['passed']=False
     with pytest.raises(ValueError,match='RELEASE_TRIAL_TYPED_READ_OPERATIONS_SUMMARY'):
-        release_trials._validate('pacing',dict(passed=True,typed_operations=r))
+        release_trials._validate('pacing',result)
 
 
 def test_activity_receipt_cannot_accept_a_different_declared_operation(tmp_path,monkeypatch):

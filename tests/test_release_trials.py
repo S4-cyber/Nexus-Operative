@@ -931,6 +931,37 @@ def test_balance_trial_requires_exact_public_schemas():
             trials._validate('balance',changed)
 
 
+def test_pacing_trial_requires_exact_root_and_typed_operation_schemas():
+    from nexus.paper_read_pacing import OPERATION_PUBLIC_KEYS
+    result=trials._execute('pacing');trials._validate('pacing',result)
+    assert type(result) is dict
+    assert frozenset(result)==trials.PACING_PUBLIC_KEYS
+    assert type(result['typed_operations']) is dict
+    assert frozenset(result['typed_operations'])==OPERATION_PUBLIC_KEYS
+    changed=copy.deepcopy(result);changed['private_extension']=True
+    with pytest.raises(ValueError,match='PACING_PROFILE_SCHEMA'):
+        trials._validate('pacing',changed)
+    class PacingProfileMapping(dict):
+        pass
+    with pytest.raises(ValueError,match='PACING_PROFILE_SCHEMA'):
+        trials._validate('pacing',PacingProfileMapping(result))
+    changed=copy.deepcopy(result)
+    changed['limitations']='broker-wide distributed quota verified'
+    with pytest.raises(ValueError,match='PACING_PROFILE_SCOPE'):
+        trials._validate('pacing',changed)
+    changed=copy.deepcopy(result)
+    changed['typed_operations']['private_extension']=True
+    with pytest.raises(ValueError,match='TYPED_READ_OPERATIONS_SCHEMA'):
+        trials._validate('pacing',changed)
+    class TypedOperationsMapping(dict):
+        pass
+    changed=copy.deepcopy(result)
+    changed['typed_operations']=TypedOperationsMapping(
+        result['typed_operations'])
+    with pytest.raises(ValueError,match='TYPED_READ_OPERATIONS_SCHEMA'):
+        trials._validate('pacing',changed)
+
+
 def test_collection_trial_keeps_page_cap_and_cursor_evidence_without_coverage_authority():
     from nexus.activity_collection_evidence import fixture_report
     result=trials._execute('collection');trials._validate('collection',result)

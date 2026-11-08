@@ -44,6 +44,40 @@ def _transaction(db):
         raise
 
 
+class _OrderRootIdentity:
+    """One physical storage root plus a fail-closed public-path identity fence."""
+    def __init__(self, configured_path, *, create):
+        configured_path=Path(configured_path)
+        parent=configured_path.parent
+        if create:
+            try:parent.mkdir(parents=True,exist_ok=True)
+            except FileExistsError:pass
+            except OSError:raise ValueError('ORDER_STORAGE_ROOT_UNAVAILABLE') from None
+        try:before=parent.lstat()
+        except FileNotFoundError:
+            if create:raise ValueError('ORDER_STORAGE_ROOT_UNAVAILABLE') from None
+            self.path=configured_path;self.parent=None;self.observed=None
+            return
+        if stat.S_ISLNK(before.st_mode):raise ValueError('ORDER_STORAGE_ROOT_SYMLINK')
+        if not stat.S_ISDIR(before.st_mode):raise ValueError('ORDER_STORAGE_ROOT_DIRECTORY_REQUIRED')
+        try:
+            resolved=parent.resolve(strict=True)
+            after=parent.lstat()
+        except OSError:raise ValueError('ORDER_STORAGE_ROOT_CHANGED') from None
+        if stat.S_ISLNK(after.st_mode) or not os.path.samestat(before,after):
+            raise ValueError('ORDER_STORAGE_ROOT_CHANGED')
+        self.path=resolved/configured_path.name
+        self.parent=parent
+        self.observed=before
+
+    def require_current(self):
+        if self.parent is None:return
+        try:current=self.parent.lstat()
+        except OSError:raise ValueError('ORDER_STORAGE_ROOT_CHANGED') from None
+        if stat.S_ISLNK(current.st_mode) or not os.path.samestat(self.observed,current):
+            raise ValueError('ORDER_STORAGE_ROOT_CHANGED')
+
+
 class DurableOrderGateway:
     def __init__(self, path=None, checkpoints_enabled=True, rotation_recovery=False):
         if type(checkpoints_enabled) is not bool:raise ValueError('INVALID_CHECKPOINT_OPTION')
@@ -71,7 +105,6 @@ class DurableOrderGateway:
     def _connect(self,path=None):
         path=self._path() if path is None else Path(path)
         self._require_rotation_clear(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
         db = None
         try:
             db = sqlite3.connect(path, timeout=DB_BUSY_TIMEOUT_MS/1000)
@@ -90,8 +123,11 @@ class DurableOrderGateway:
             raise
 
     @contextmanager
-    def _read_connection(self,path=None):
+    def _read_connection(self,path=None,root_guard=None):
         path=self._path() if path is None else Path(path)
+        root_guard=_OrderRootIdentity(path,create=False) if root_guard is None else root_guard
+        path=root_guard.path
+        root_guard.require_current()
         self._require_rotation_clear(path)
         if path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
         try:observed=path.stat()
@@ -105,22 +141,26 @@ class DurableOrderGateway:
                 timeout=DB_BUSY_TIMEOUT_MS/1000)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             db.execute('BEGIN')
+            root_guard.require_current()
             yield db
+            root_guard.require_current()
         except sqlite3.OperationalError as error:
             if _database_busy(error):_busy()
             raise
         finally:
             if db is not None:db.close()
 
-    def _read_restore(self, db, *, compare_portfolio=False, path=None):
+    def _read_restore(self, db, *, compare_portfolio=False, path=None, root_guard=None):
         if db is None:
             self.restore_diagnostics=dict(checkpoint_sequence=0,prefix_replayed=0,tail_replayed=0,cache_hit=False)
             return AccountingOrderGateway(clock=lambda:0),0
         gateway,count=self._restore(db)
         if compare_portfolio and gateway.portfolio_linked:
             path=self._path() if path is None else Path(path)
+            if root_guard is not None:root_guard.require_current()
             portfolio=execution_portfolio.attach_read_only(db,path.parent/'paper_portfolio.sqlite3')
             execution_portfolio.compare(portfolio,gateway.account)
+            if root_guard is not None:root_guard.require_current()
         return gateway,count
 
     def _restore(self, db):
@@ -155,11 +195,14 @@ class DurableOrderGateway:
         if execution_clock is not None and not callable(execution_clock):raise ValueError('INVALID_EXECUTION_CLOCK')
         steps=tuple(steps)
         if not steps or len(steps)>4:raise ValueError('INVALID_ORDER_TRANSACTION_SIZE')
-        path=self._path()
+        root_guard=_OrderRootIdentity(self._path(),create=True)
+        path=root_guard.path
+        root_guard.require_current()
         if any(step[0] in ('submit','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps):
             try:cut=emergency_intent.requested(path)
             except (ValueError,OSError):cut=True
             if cut:raise ValueError('EMERGENCY_CUT_REQUESTED')
+            root_guard.require_current()
         if len(steps)>1:
             if [step[0] for step in steps]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
                 raise ValueError('INVALID_QUOTE_ORDER_TRANSACTION')
@@ -170,8 +213,10 @@ class DurableOrderGateway:
             payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
             prepared.append((method,args,kwargs,payload))
         with closing(self._connect(path)) as db:
+            root_guard.require_current()
             with _transaction(db):
                 portfolio=execution_portfolio.attach(db,path.parent/'paper_portfolio.sqlite3')
+                root_guard.require_current()
                 db.execute('BEGIN IMMEDIATE')
                 gateway,count=self._restore(db)
                 results=[]
@@ -186,6 +231,7 @@ class DurableOrderGateway:
                         payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
                     result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
                     results.append(result)
+                root_guard.require_current()
         return results
 
     def _apply(self,db,portfolio,gateway,count,method,args,kwargs,payload):
@@ -287,9 +333,9 @@ class DurableOrderGateway:
 
     def _retired_order_id_fingerprints(self):
         """Private rotation helper; public status exposes only count and set hash."""
-        path=self._path()
-        with self._read_connection(path) as db:
-            gateway,_=self._read_restore(db,path=path)
+        root_guard=_OrderRootIdentity(self._path(),create=False);path=root_guard.path
+        with self._read_connection(path,root_guard) as db:
+            gateway,_=self._read_restore(db,path=path,root_guard=root_guard)
         return tuple(gateway.retired_order_id_fingerprints)
 
     def connections(self):
@@ -300,9 +346,9 @@ class DurableOrderGateway:
         import copy,re
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
         prefix='pf_'+session_id+'_'
-        path=self._path()
-        with self._read_connection(path) as db:
-            gateway,_=self._read_restore(db,compare_portfolio=True,path=path)
+        root_guard=_OrderRootIdentity(self._path(),create=False);path=root_guard.path
+        with self._read_connection(path,root_guard) as db:
+            gateway,_=self._read_restore(db,compare_portfolio=True,path=path,root_guard=root_guard)
         records={**gateway.archived_intents,**gateway.intents}
         matched={key:dict(order=copy.deepcopy(record),quote_events=[]) for key,record in records.items() if key.startswith(prefix)}
         for (oid,_),detail in gateway.quote_events.items():
@@ -311,9 +357,9 @@ class DurableOrderGateway:
 
     def order_report(self,client_order_id):
         import copy
-        path=self._path()
-        with self._read_connection(path) as db:
-            gateway,_=self._read_restore(db,path=path)
+        root_guard=_OrderRootIdentity(self._path(),create=False);path=root_guard.path
+        with self._read_connection(path,root_guard) as db:
+            gateway,_=self._read_restore(db,path=path,root_guard=root_guard)
             record=gateway.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             return dict(read_only=True,archived=client_order_id in gateway.archived_intents,
@@ -323,10 +369,10 @@ class DurableOrderGateway:
                         live_orders_enabled=False)
 
     def recovery_report(self):
-        path=self._path()
-        with self._read_connection(path) as db:
+        root_guard=_OrderRootIdentity(self._path(),create=False);path=root_guard.path
+        with self._read_connection(path,root_guard) as db:
             present=db is not None
-            gateway,count=self._read_restore(db,compare_portfolio=True,path=path)
+            gateway,count=self._read_restore(db,compare_portfolio=True,path=path,root_guard=root_guard)
         return dict(mode='OFFLINE_ORDER_RECOVERY', status='REPLAY_VERIFIED' if present else 'NO_RETAINED_HISTORY',journal_present=present,
                     commands=count, halted=gateway.halted,
                     orders=list(gateway.intents.values()),execution_terms=gateway.order_terms,

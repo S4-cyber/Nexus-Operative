@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.243**. Reviewed remote source baseline: `eeb4f5eef364c4e0d2b8c3c1c0a7177fe7b11865` (v0.340.242).
+Report date: November 8, 2026. Development candidate: **v0.340.244**. Reviewed remote source baseline: `8c9e8f8c388ba4b00a4e488fef307385a41b4293` (v0.340.243).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,7 +22,7 @@ Report date: November 8, 2026. Development candidate: **v0.340.243**. Reviewed r
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.243 source additionally snapshots one portable-data root for each default durable-order operation and carries it through emergency-intent inspection, rotation checks, SQLite order state and attached portfolio reconciliation. Deterministic environment-change regressions cover latch, connection and linked-restore boundaries. Final local validation passed 5,811 tests with one expected non-Windows skip, the 417-test synchronized durable-order/release/evidence/version/installer/security focus, the 252-test broader affected set with one expected skip and sixteen source-bound offline profiles. This is deterministic local path-scope evidence, not actual broker, genuine-feed, native Windows, physical power-loss or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.244 source additionally resolves one physical durable-order root and retains the configured directory identity through emergency admission, rotation inspection, SQLite order access and linked portfolio reconciliation. Symlink and non-directory roots plus tested replacement races fail closed before the replacement root can receive an acknowledged operation. Final local validation passed 5,816 tests with one expected non-Windows skip, the 422-test synchronized durable-order/release/evidence/version/installer/security focus, the 75-test direct durable-order/emergency/portfolio focus and sixteen source-bound offline profiles. This is deterministic local filesystem-race evidence, not actual broker, genuine-feed, native Windows, physical power-loss or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 

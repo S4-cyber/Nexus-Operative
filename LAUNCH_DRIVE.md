@@ -1,5 +1,18 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.244 durable order root identity fence
+
+Default durable-order reads and writes now resolve one physical storage root and retain the configured directory's identity through emergency admission, rotation inspection, SQLite order access and linked portfolio reconciliation. Symlink roots are rejected. Replacing the configured directory during the cut check, after order-journal open or during linked read-only replay fails closed before an operation can be acknowledged against the replacement root. Existing environment-retargeting behavior still keeps an operation on its original root.
+
+The exact-source v0.340.243 remote commit `8c9e8f8c388ba4b00a4e488fef307385a41b4293` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.243 result is pre-claimed. Fresh exact-source v0.340.244 public-security, research/browser/evidence and Windows installer checks remain required.
+
+This is deterministic local filesystem-race and synthetic paper evidence, not an ACL or administrator boundary, complete malicious-race proof, physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This durable-root identity hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,816 tests with one expected non-Windows skip; the synchronized durable-order/release/evidence/version/installer/security focus passed 422 and the direct durable-order/emergency/portfolio focus passed 75. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `00a4405ee0952754f7bdd876046987ec5598433bc89d88dcb0a25e095afe7f40`; `validation/release_trials_0_340_244.json` SHA256 is `0c904f51defee100d04e4fff52f348a8491714185cb5260b175377efcd2bffbe`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.244 and has SHA256 `d9517e39316f80a978cd0a3ba716606781338f65c81737c0baa94e8200a477e1`. The 963-path proposed-candidate public-artifact audit and 4,226 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
+
 ## v0.340.243 single-root durable order operations
 
 Each default durable-order operation now resolves `NEXUS_PORTABLE_DATA` exactly once and carries that immutable path through emergency-intent inspection, rotation checks, the SQLite order journal and attached portfolio reconciliation. Read-only session/report/recovery paths use the same snapshot. Deterministic regressions change the environment at the latch, connection and linked-restore boundaries and prove that one acknowledged operation cannot split state between roots. This keeps engagement permissions OFF by default and does not add a control or broaden execution authority.

@@ -91,6 +91,66 @@ def test_linked_read_keeps_portfolio_with_opened_order_root(tmp_path,monkeypatch
     assert not second.exists()
 
 
+def test_write_fails_closed_if_storage_root_replaced_during_cut_check(tmp_path,monkeypatch):
+    root=tmp_path/'state';root.mkdir();retired=tmp_path/'retired'
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(root));gateway=DurableOrderGateway()
+    def replace_root(path):
+        root.rename(retired);root.mkdir();return False
+    monkeypatch.setattr(emergency_intent,'requested',replace_root)
+    with pytest.raises(ValueError,match='ORDER_STORAGE_ROOT_CHANGED'):
+        gateway.submit('one','BTC-USD','BUY',100,tier='terrestrial')
+    assert not (root/'order_lifecycle.sqlite3').exists()
+    assert not (root/'paper_portfolio.sqlite3').exists()
+    assert not (retired/'order_lifecycle.sqlite3').exists()
+
+
+def test_write_fails_closed_if_storage_root_replaced_after_order_open(tmp_path,monkeypatch):
+    root=tmp_path/'state';root.mkdir();retired=tmp_path/'retired'
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(root));gateway=DurableOrderGateway();original=gateway._connect
+    def replace_after_connect(path=None):
+        db=original(path);root.rename(retired);root.mkdir();return db
+    monkeypatch.setattr(gateway,'_connect',replace_after_connect)
+    with pytest.raises(ValueError,match='ORDER_STORAGE_ROOT_CHANGED'):
+        gateway.initialize_account(10000)
+    assert not (root/'order_lifecycle.sqlite3').exists()
+    assert not (root/'paper_portfolio.sqlite3').exists()
+    assert (retired/'order_lifecycle.sqlite3').exists()
+    with sqlite3.connect(retired/'order_lifecycle.sqlite3') as db:
+        assert db.execute('SELECT COUNT(*) FROM commands').fetchone()==(0,)
+
+
+def test_linked_read_fails_closed_if_storage_root_replaced_during_restore(tmp_path,monkeypatch):
+    root=tmp_path/'state';root.mkdir();retired=tmp_path/'retired'
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(root));gateway=DurableOrderGateway()
+    gateway.initialize_account(10000);gateway.link_portfolio();original=gateway._restore
+    def replace_after_restore(db):
+        restored=original(db);root.rename(retired);root.mkdir();return restored
+    monkeypatch.setattr(gateway,'_restore',replace_after_restore)
+    with pytest.raises(ValueError,match='ORDER_STORAGE_ROOT_CHANGED'):
+        gateway.recovery_report()
+    assert not any(root.iterdir())
+    assert (retired/'order_lifecycle.sqlite3').exists()
+    assert (retired/'paper_portfolio.sqlite3').exists()
+
+
+def test_write_rejects_symlink_storage_root(tmp_path,monkeypatch):
+    target=tmp_path/'target';target.mkdir();alias=tmp_path/'alias'
+    try:alias.symlink_to(target,target_is_directory=True)
+    except (OSError,NotImplementedError):pytest.skip('directory symlink unavailable')
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(alias));gateway=DurableOrderGateway()
+    with pytest.raises(ValueError,match='ORDER_STORAGE_ROOT_SYMLINK'):
+        gateway.initialize_account(10000)
+    assert not any(target.iterdir())
+
+
+def test_write_rejects_non_directory_storage_root(tmp_path,monkeypatch):
+    root=tmp_path/'state';root.write_text('not a directory')
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(root));gateway=DurableOrderGateway()
+    with pytest.raises(ValueError,match='ORDER_STORAGE_ROOT_DIRECTORY_REQUIRED'):
+        gateway.initialize_account(10000)
+    assert root.read_text()=='not a directory'
+
+
 @pytest.mark.parametrize('kind',['missing','corrupt','incomplete','symlink','fifo'])
 def test_linked_accounting_failure_never_recreates_or_repairs_portfolio(tmp_path,monkeypatch,kind):
     if kind in ('symlink','fifo') and os.name=='nt':pytest.skip('No Windows symlink privilege or FIFO assumed')

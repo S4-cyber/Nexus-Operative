@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.243'
+REVISION = '0.340.244'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.243 captures one order-journal path at the start of every durable order read or write and threads it through the rotation marker, independent emergency latch, SQLite connection and linked portfolio attachment. Environment-root changes during cut admission, immediately after opening the order journal or during linked replay cannot split one acknowledged operation across roots. This is deterministic local process-scope evidence, not a retained directory descriptor, ACL or administrator boundary, physical power-loss proof, actual broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, broker-wide coordination, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.244 resolves one physical durable-order root and retains a public-path identity fence through emergency admission, rotation inspection, SQLite order access and linked portfolio reconciliation. A symlink root is rejected, and replacement of the configured directory before a write commit or during read-only linked restore fails closed with no acknowledged operation on the replacement root. This is deterministic local filesystem-race evidence, not an ACL or administrator boundary, complete malicious-race proof, physical power-loss proof, actual broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, broker-wide coordination, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

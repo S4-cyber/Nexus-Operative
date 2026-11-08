@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.250
+
+The retained forward-trial review now counts every recorded rejected observation in the selected window as an operational incident. Raw 95% coverage remains separately visible, but a rejected point cannot satisfy the incident-free diagnostic merely because aggregate coverage is high and no uncovered interval exceeds ten seconds. The exact-source v0.340.249 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.250 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (read-only weighted index 38%; 30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,826 tests with one expected non-Windows skip; the affected trial-review/release profile passed 189, the synchronized release/evidence/version/installer/package focus passed 211 and the explicit Portal/controller focus passed 28 plus fourteen Node controllers. Sixteen offline profiles match 401 source files / `31992bd5980340f7af1227a7f9fdf1f60889f4f512728441a49637ae9f0432b8`; report SHA256 is `87222b74ffdfbd50fd13812330619ee69da1ad806a0101206c0cded830b8e090`. Compilation, dependency integrity and roadmap equality passed. The 161-member v0.340.250 wheel SHA256 is `30f5b92c8a7af3bc1a5fdaf9fdf3ef7acbd94a473b9285054b4687134e0fb142`. The 969-path candidate audit and 4,149 introduced-line high-confidence signature scan found zero findings; the locally reachable 15-commit history audit also found zero artifact findings. Local Gitleaks is unavailable and fresh hosted full-history security remains required. Native Windows, installer execution and browser workflow acceptance were not available locally. These are local/synthetic checks, not broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.249
 
 The retained forward-trial review now counts every uncovered interval longer than the 10-second continuity limit as an operational incident and retains its bounded count and total duration. Raw 95% coverage remains separately visible, but a short outage cannot satisfy the incident-free diagnostic. The exact-source v0.340.248 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.249 checks remain required.

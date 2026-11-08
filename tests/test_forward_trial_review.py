@@ -162,6 +162,20 @@ def test_high_aggregate_coverage_does_not_hide_over_limit_feed_gap(tmp_path,monk
     assert 'COVERAGE_GAP_EXCEEDS_MAXIMUM' in result['review_reasons']
 
 
+def test_high_aggregate_coverage_does_not_hide_retained_rejection(tmp_path,monkeypatch):
+    points=[(i,i!=100) for i in range(0,72*3600+1,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
+    result=run(path,72*3600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['coverage_fraction']=='0.999961'
+    assert result['rejected_observations_in_window']==1
+    assert result['quote_error_observations']==0
+    assert result['over_limit_coverage_gaps']==0
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'REJECTED_OBSERVATIONS_RETAINED_IN_WINDOW' in result['review_reasons']
+
+
 def test_coverage_target_does_not_hide_retained_quote_incidents(tmp_path,monkeypatch):
     points=[(i,True) for i in range(0,72*3600+1,5)]
     path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])

@@ -230,7 +230,8 @@ def _review(path, *, after, until):
         over_limit_gaps=[gap for gap in gaps if gap>MAX_GAP_SECONDS]
         over_limit_gap_seconds=sum(over_limit_gaps,Decimal(0))
         target=duration>=MINIMUM_SECONDS and fraction>=Decimal('.95') and not flagged and not injected and not unknown and not disagreements and selected>0
-        incidents=bool(quote_errors or other_stopped or paused or running or disagreements or over_limit_gaps)
+        rejected=selected-eligible
+        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or over_limit_gaps)
         incident_free_target=target and not incidents
         if duration<MINIMUM_SECONDS:reasons.add('REQUESTED_WINDOW_SHORTER_THAN_72_HOURS')
         if fraction<Decimal('.95'):reasons.add('DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT')
@@ -238,6 +239,7 @@ def _review(path, *, after, until):
         if unknown:reasons.add('UNKNOWN_SOURCE_LABELS_IN_WINDOW')
         if flagged:reasons.add('NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS')
         if disagreements:reasons.add('RECORDED_ELIGIBILITY_FAILS_RETAINED_QUOTE_RECHECK')
+        if rejected:reasons.add('REJECTED_OBSERVATIONS_RETAINED_IN_WINDOW')
         if quote_errors:reasons.add('QUOTE_ERRORS_RETAINED_IN_WINDOW')
         if other_stopped:reasons.add('SESSION_TERMINATION_REQUIRES_REVIEW')
         if over_limit_gaps:reasons.add('COVERAGE_GAP_EXCEEDS_MAXIMUM')
@@ -245,7 +247,7 @@ def _review(path, *, after, until):
         return dict(mode='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
             after=after,until=until,window_seconds=_text(duration),minimum_trial_seconds=MINIMUM_SECONDS,
             maximum_covered_gap_seconds=MAX_GAP_SECONDS,required_coverage_fraction='0.95',
-            retained_observations=count,retained_sessions=n,observations_in_window=selected,eligible_observations_in_window=eligible,rejected_observations_in_window=selected-eligible,
+            retained_observations=count,retained_sessions=n,observations_in_window=selected,eligible_observations_in_window=eligible,rejected_observations_in_window=rejected,
             eligibility_count_scope='RECORDED_FLAGS_ONLY_SEE_REVALIDATED_COUNTS',
             retained_quote_recheck_applied=True,revalidated_eligible_observations_in_window=revalidated,
             revalidated_rejected_observations_in_window=selected-revalidated,

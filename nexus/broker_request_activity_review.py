@@ -13,6 +13,9 @@ FLAGS=('source_attested','activity_coverage_verified','fee_coverage_complete',
        'fee_execution_links_verified','holds_reconciled','broker_account_reconciled',
        'spendable_funds_verified','ledger_applied','ready_for_routing','broker_connected',
        'live_orders_enabled','money_movement_enabled','automatic_retry','release_approved')
+CHECKS=('passed','original_request_linked','explicit_fills_checked',
+        'offsetting_bad_price_detected','journals_unchanged')
+PUBLIC_FIXTURE_KEYS=frozenset(('source',*CHECKS,*FLAGS))
 
 
 def _fail(code):raise ValueError('BROKER_REQUEST_ACTIVITY_'+code)

@@ -8,6 +8,23 @@ from nexus.alpaca_paper_contract import TERMINAL, number, sha
 from nexus.broker_activity_store import BrokerActivityStore, _raw
 
 MAX_REVIEW_ORDERS = 1000
+REVIEW_FLAGS=('activity_coverage_verified','fee_coverage_complete',
+    'broker_account_reconciled','spendable_funds_verified','ledger_applied',
+    'broker_connected','ready_for_routing','live_orders_enabled',
+    'automatic_continuation')
+REVIEW_PUBLIC_KEYS=frozenset(('mode','status','read_only','account_sha256',
+    'head_sha256','retained_batches','retained_activities','distinct_orders',
+    'distinct_order_snapshots','ambiguous_order_ids',
+    'snapshot_revision_order_ids','snapshot_selection',
+    'normalization_evaluated','activity_normalization',
+    'collection_observation_review','requested_window_review','review_reasons',
+    'source','limitations',*REVIEW_FLAGS))
+FIXTURE_CHECKS=('passed','isolated_temporary_storage')
+FIXTURE_FLAGS=('application_accounts_changed','broker_connected',
+    'live_orders_enabled','release_approved')
+PUBLIC_FIXTURE_KEYS=frozenset(('mode','source','review',*FIXTURE_CHECKS,
+    *FIXTURE_FLAGS))
+REVIEW_LIMITATIONS='Retained supplied observations only. Latest reported order time is not an atomic broker snapshot or verified event order. Equal-time conflicts and quantity/terminal revisions require review. Requested-window unions/gaps describe collection intent, not received-page completeness, boundary inclusion, execution/fee coverage or source attestation. No guessed fee links, posting times, fills, holdings, spending or resume permission.'
 
 
 def review(store):
@@ -102,7 +119,7 @@ def _review_snapshot(retained, *, account):
         activity_coverage_verified=False, fee_coverage_complete=False, broker_account_reconciled=False,
         spendable_funds_verified=False, ledger_applied=False, broker_connected=False,
         ready_for_routing=False, live_orders_enabled=False, automatic_continuation=False,
-        limitations='Retained supplied observations only. Latest reported order time is not an atomic broker snapshot or verified event order. Equal-time conflicts and quantity/terminal revisions require review. Requested-window unions/gaps describe collection intent, not received-page completeness, boundary inclusion, execution/fee coverage or source attestation. No guessed fee links, posting times, fills, holdings, spending or resume permission.')
+        limitations=REVIEW_LIMITATIONS)
 
 
 def fixture_report():

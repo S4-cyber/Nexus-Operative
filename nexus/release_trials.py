@@ -1677,10 +1677,26 @@ def _validate(profile, result):
             'live_orders_enabled','money_movement_enabled','release_approved')),
             'RECONCILIATION_ACCEPTANCE_AUTHORITY')
     if profile == 'activity':
-        from nexus.broker_request_activity_review import FLAGS
+        from nexus.broker_activity_review import (FIXTURE_CHECKS as ACTIVITY_CHECKS,
+            FIXTURE_FLAGS as ACTIVITY_FLAGS, PUBLIC_FIXTURE_KEYS as ACTIVITY_KEYS,
+            REVIEW_FLAGS, REVIEW_LIMITATIONS, REVIEW_PUBLIC_KEYS)
+        _require(type(result) is dict and frozenset(result)==ACTIVITY_KEYS|frozenset((
+            'request_activity_link','request_activity_acceptance')),
+            'ACTIVITY_PROFILE_SCHEMA')
+        _require(result['mode']=='DISPOSABLE_MERGED_ACTIVITY_REVIEW' and
+            result['source']=='FIXED_SYNTHETIC_REST_EXAMPLE' and
+            all(result[key] is True for key in ACTIVITY_CHECKS),
+            'ACTIVITY_PROFILE')
+        _require(all(result[key] is False for key in ACTIVITY_FLAGS),
+            'ACTIVITY_PROFILE_AUTHORITY')
+        from nexus.broker_request_activity_review import (CHECKS as LINK_CHECKS,
+            FLAGS as LINK_FLAGS, PUBLIC_FIXTURE_KEYS as LINK_KEYS)
         linked=result['request_activity_link']
-        _require(linked['source']=='TEMPORARY_REQUEST_ACTIVITY_LINK_FIXTURE' and all(linked[k] is True for k in ('passed','original_request_linked','explicit_fills_checked','offsetting_bad_price_detected','journals_unchanged')), 'REQUEST_ACTIVITY_LINK')
-        _require(all(linked[k] is False for k in FLAGS),'REQUEST_ACTIVITY_AUTHORITY')
+        _require(type(linked) is dict and frozenset(linked)==LINK_KEYS,
+            'REQUEST_ACTIVITY_LINK_SCHEMA')
+        _require(linked['source']=='TEMPORARY_REQUEST_ACTIVITY_LINK_FIXTURE' and
+            all(linked[k] is True for k in LINK_CHECKS), 'REQUEST_ACTIVITY_LINK')
+        _require(all(linked[k] is False for k in LINK_FLAGS),'REQUEST_ACTIVITY_AUTHORITY')
         accepted=result['request_activity_acceptance']
         from nexus.paper_request_activity_acceptance import (CHECKS as ACCEPTED_CHECKS,
             FLAGS as ACCEPTED_FLAGS, PUBLIC_FIXTURE_KEYS as ACCEPTED_KEYS)
@@ -1693,10 +1709,19 @@ def _validate(profile, result):
             accepted['actual_provider_access'] is accepted['actual_vault_access'] is False,
             'REQUEST_ACTIVITY_ACCEPTANCE_AUTHORITY')
         reviewed = result['review']
+        _require(type(reviewed) is dict and frozenset(reviewed)==REVIEW_PUBLIC_KEYS,
+            'ACTIVITY_REVIEW_SCHEMA')
+        _require(reviewed['mode']=='UNATTESTED_RETAINED_ACTIVITY_REVIEW' and
+            reviewed['status']=='REVIEW_REQUIRED' and reviewed['read_only'] is True and
+            reviewed['source']=='SUPPLIED_UNATTESTED' and
+            reviewed['snapshot_selection']=='REPORTED_UPDATED_AT_DIAGNOSTIC_ONLY',
+            'ACTIVITY_REVIEW_SCOPE')
+        _require(reviewed['limitations']==REVIEW_LIMITATIONS,
+            'ACTIVITY_REVIEW_SCOPE')
         _require(reviewed['retained_batches'] == 2 and reviewed['retained_activities'] == 5
                  and reviewed['normalization_evaluated'] is True, 'ACTIVITY_MERGE')
-        _require(reviewed['activity_coverage_verified'] is False and reviewed['fee_coverage_complete'] is False
-                 and reviewed['ready_for_routing'] is False, 'ACTIVITY_AUTHORITY')
+        _require(all(reviewed[key] is False for key in REVIEW_FLAGS),
+            'ACTIVITY_AUTHORITY')
         _require(reviewed['review_reasons'] == ['ACTIVITY_COVERAGE_UNVERIFIED', 'FEE_LINK_AND_TIMING_UNVERIFIED'], 'ACTIVITY_CONSISTENCY')
     if profile == 'forward':
         coverage=result['recovered']['coverage_review']

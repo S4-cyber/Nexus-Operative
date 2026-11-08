@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.227**. Reviewed source baseline: `926d0969fe1dfa29cb4787c1e8fe33823f04c063` (v0.340.226).
+Report date: November 8, 2026. Development candidate: **v0.340.228**. Reviewed source baseline: `c66ee551dc54d04557da6e31b1ec3626a10dff8f` (v0.340.227).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 8, 2026. Development candidate: **v0.340.227**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.227 source additionally requires the accepted original-request/activity fixture to match an immutable 30-field public schema. All ten positive binding checks and nineteen false authority/access flags are consumed; extensions and mapping subclasses now fail closed, and the accepted pacing request-target proof is mandatory. Final local validation passed 5,774 tests with one expected non-Windows skip, the 100-test complete release-trial module, the 30-test affected request/activity focus, the 81-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.228 source additionally requires the complete activity release profile, its retained-activity review and its original-request/fill link to match immutable 11-field, 28-field and 20-field public schemas. Every positive and false authority field is consumed; root, link and nested-review extensions, mapping subclasses and altered scope limitations fail closed. Final local validation passed 5,775 tests with one expected non-Windows skip, the 101-test complete release-trial module, the 47-test affected activity/link focus, the 81-test release/version/installer/package focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.227 was published as `c66ee551dc54d04557da6e31b1ec3626a10dff8f`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.226 was published as `926d0969fe1dfa29cb4787c1e8fe33823f04c063`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.225 was published as `c8173649885f3d141b01be10b25fae25de2b9da0`; repeated commit-scoped workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.224 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42430062616), and every offline-regression, Portal browser-help and saved-evidence job in the [research workflow passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42430062703). Its [Windows packaging/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42430062646) was cancelled during install/test; later Portal syntax, standalone packaging, installer, reinstall/uninstall and distribution steps were skipped and are not acceptance.

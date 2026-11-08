@@ -578,6 +578,51 @@ def test_request_activity_acceptance_is_mandatory_in_activity_profile():
         trials._validate('activity',changed)
 
 
+def test_activity_profile_requires_exact_public_schemas():
+    from nexus.broker_activity_review import (PUBLIC_FIXTURE_KEYS,
+        REVIEW_PUBLIC_KEYS)
+    from nexus.broker_request_activity_review import (
+        PUBLIC_FIXTURE_KEYS as LINK_PUBLIC_FIXTURE_KEYS)
+    result=trials._execute('activity');trials._validate('activity',result)
+    assert type(result) is dict
+    assert frozenset(result)==PUBLIC_FIXTURE_KEYS|frozenset((
+        'request_activity_link','request_activity_acceptance'))
+    assert type(result['request_activity_link']) is dict
+    assert frozenset(result['request_activity_link'])==LINK_PUBLIC_FIXTURE_KEYS
+    assert type(result['review']) is dict
+    assert frozenset(result['review'])==REVIEW_PUBLIC_KEYS
+    changed=copy.deepcopy(result);changed['private_extension']=True
+    with pytest.raises(ValueError,match='ACTIVITY_PROFILE_SCHEMA'):
+        trials._validate('activity',changed)
+    class ActivityProfileMapping(dict):
+        pass
+    with pytest.raises(ValueError,match='ACTIVITY_PROFILE_SCHEMA'):
+        trials._validate('activity',ActivityProfileMapping(result))
+    changed=copy.deepcopy(result);changed['request_activity_link']['private_extension']=True
+    with pytest.raises(ValueError,match='REQUEST_ACTIVITY_LINK_SCHEMA'):
+        trials._validate('activity',changed)
+    class RequestActivityLinkMapping(dict):
+        pass
+    changed=copy.deepcopy(result)
+    changed['request_activity_link']=RequestActivityLinkMapping(
+        result['request_activity_link'])
+    with pytest.raises(ValueError,match='REQUEST_ACTIVITY_LINK_SCHEMA'):
+        trials._validate('activity',changed)
+    changed=copy.deepcopy(result);changed['review']['private_extension']=True
+    with pytest.raises(ValueError,match='ACTIVITY_REVIEW_SCHEMA'):
+        trials._validate('activity',changed)
+    class ActivityReviewMapping(dict):
+        pass
+    changed=copy.deepcopy(result)
+    changed['review']=ActivityReviewMapping(result['review'])
+    with pytest.raises(ValueError,match='ACTIVITY_REVIEW_SCHEMA'):
+        trials._validate('activity',changed)
+    changed=copy.deepcopy(result)
+    changed['review']['limitations']='synthetic evidence promoted'
+    with pytest.raises(ValueError,match='ACTIVITY_REVIEW_SCOPE'):
+        trials._validate('activity',changed)
+
+
 def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authority():
     from nexus.paper_reconciliation_acceptance import fixture_report
     result=trials._execute('reconciliation_acceptance');trials._validate('reconciliation_acceptance',result)

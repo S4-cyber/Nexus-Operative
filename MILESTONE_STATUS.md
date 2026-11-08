@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.244**. Reviewed remote source baseline: `8c9e8f8c388ba4b00a4e488fef307385a41b4293` (v0.340.243).
+Report date: November 8, 2026. Development candidate: **v0.340.245**. Reviewed remote source baseline: `0e9156d52f48831081954f6c1fcd68f9ef9caa7e` (v0.340.244).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,7 +22,7 @@ Report date: November 8, 2026. Development candidate: **v0.340.244**. Reviewed r
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.244 source additionally resolves one physical durable-order root and retains the configured directory identity through emergency admission, rotation inspection, SQLite order access and linked portfolio reconciliation. Symlink and non-directory roots plus tested replacement races fail closed before the replacement root can receive an acknowledged operation. Final local validation passed 5,816 tests with one expected non-Windows skip, the 422-test synchronized durable-order/release/evidence/version/installer/security focus, the 75-test direct durable-order/emergency/portfolio focus and sixteen source-bound offline profiles. This is deterministic local filesystem-race evidence, not actual broker, genuine-feed, native Windows, physical power-loss or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.245 source additionally closes the final sampled saved-credential interval before the internal one-attempt paper POST. A credential mutation or callback failure after the last permission/stop checkpoint now performs no POST, durably records `NOT_SENT` and leaves the request lookup-only. Final local validation passed 5,818 tests with one expected non-Windows skip, the 189-test complete submission/release-profile set, the 60-test focused transport/release set and sixteen source-bound offline profiles. This is injected local credential-lifecycle evidence, not actual broker, genuine-feed, native Windows, funding or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 

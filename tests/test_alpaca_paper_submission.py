@@ -85,6 +85,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['account_and_position_capacity_resampled']
     assert result['sequential_preflight_stable']
     assert result['post_reservation_risk_resampled']
+    assert result['post_transport_credentials_rechecked']
     assert result['request_and_post_budget_store_bindings_pinned']
     assert result['request_and_post_budget_file_identities_pinned']
     assert result['post_reservation_durable_heads_rechecked']
@@ -835,6 +836,49 @@ def test_post_reservation_risk_change_never_posts_and_never_rearms(
     assert prepared[2].history()[0]['actual_posts']==0
     with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
         submit(prepared,Opener())
+
+
+def test_credential_mutation_during_final_transport_checkpoint_never_posts(
+        prepared):
+    opener=Opener();credential_current=True;credential_samples=0
+    def credential_check():
+        nonlocal credential_samples
+        credential_samples += 1
+        return credential_current
+    def permission_check():
+        nonlocal credential_current
+        # The second explicit credential sample occurs after the final risk
+        # reads.  Mutate during the following POST-adjacent permission check,
+        # reproducing the interval that used to follow the last pair check.
+        if credential_samples >= 2 and len(opener.requests)==7:
+            credential_current=False
+        return True
+    with pytest.raises(module.PaperSubmissionError,
+                       match='CREDENTIALS_CHANGED_AT_TRANSPORT'):
+        submit(prepared,opener,permission_check=permission_check,
+               credential_check=credential_check)
+    retained=prepared[0].recovery()['requests'][0]
+    history=prepared[2].history()
+    assert credential_samples==3
+    assert retained['lookup_by_original_client_id_required']
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+def test_credential_check_exception_is_fixed_and_post_silent(prepared):
+    opener=Opener()
+    def failed_check():
+        raise RuntimeError('private vault detail')
+    with pytest.raises(module.PaperSubmissionError,
+                       match='PAPER_SUBMISSION_CREDENTIAL_CHECK_FAILED') as error:
+        submit(prepared,opener,credential_check=failed_check)
+    assert 'private vault detail' not in str(error.value)
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+    assert prepared[0].recovery()['requests'][0]['submission_attempt_marked'] is False
+    assert prepared[2].inspect()['attempts']==0
 
 
 def test_post_transport_loss_preserves_unknown_and_cannot_retry(prepared):

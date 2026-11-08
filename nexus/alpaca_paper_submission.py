@@ -482,18 +482,30 @@ def _response_observation_receipt(journal, store_binding_check, *,
 
 class _Session:
     def __init__(self, key, secret, *, opener, wall_clock, elapsed_clock,
-                 permission_check, emergency_stop_check, store_binding_check):
+                 permission_check, emergency_stop_check, credential_check,
+                 store_binding_check):
         self.key = key; self.secret = secret
         self.reader = opener or build_opener(ProxyHandler({}), inspection._NoRedirect())
         self.injected = opener is not None
         self.wall_clock = wall_clock; self.elapsed_clock = elapsed_clock
         self.permission_check = permission_check
         self.emergency_stop_check = emergency_stop_check
+        self.credential_check = credential_check
         self.store_binding_check = store_binding_check
         self.reservation_check = None
         self.start = self.previous = None
         self.requests = 0
         self.post_attempted = False
+
+    def credential_checkpoint(self, code):
+        """Sample the caller's exact credential binding with fixed errors."""
+        try:
+            if self.credential_check() is not True:
+                _fail(code)
+        except PaperSubmissionError:
+            raise
+        except Exception:
+            _fail('CREDENTIAL_CHECK_FAILED')
 
     def checkpoint(self):
         try:
@@ -546,6 +558,11 @@ class _Session:
         request = Request(url, data=data, headers=headers, method=method)
         timeout = self.checkpoint(); self.requests += 1
         if method == 'POST':
+            # ``checkpoint`` invokes caller-controlled permission and stop
+            # readers.  Re-sample the exact saved-pair binding after those
+            # callbacks and immediately before the sole transport attempt.
+            # A mutation here closes the durable reservation as NOT_SENT.
+            self.credential_checkpoint('CREDENTIALS_CHANGED_AT_TRANSPORT')
             self.post_attempted = True
         try:
             with self.reader.open(request, timeout=timeout) as response:
@@ -633,6 +650,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     session = _Session(api_key, api_secret, opener=opener, wall_clock=wall_clock,
                        elapsed_clock=elapsed_clock, permission_check=permission_check,
                        emergency_stop_check=emergency_stop_check,
+                       credential_check=credential_check,
                        store_binding_check=store_binding_check)
     session.checkpoint()
     account = session.request(ACCOUNT_URL)
@@ -653,8 +671,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     current_risk = _risk_snapshot(current_account, current_positions, expected_account_id)
     if current_risk != initial_risk:
         _fail('PREFLIGHT_STATE_CHANGED')
-    if credential_check() is not True:
-        _fail('CREDENTIALS_CHANGED')
+    session.credential_checkpoint('CREDENTIALS_CHANGED')
     # Materialize only the empty provider binding after permission, asset and
     # two stable risk samples have passed.  This lets the critical reservation
     # window pin both existing single-link database identities before either
@@ -734,8 +751,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 _fail('POST_RESERVATION_STATE_CHANGED')
             _account_and_funds(final_account, final_positions,
                                expected_account_id, payload)
-            if credential_check() is not True:
-                _fail('CREDENTIALS_CHANGED_AFTER_MARKER')
+            session.credential_checkpoint('CREDENTIALS_CHANGED_AFTER_MARKER')
             raw = session.request(ORDER_URL, payload=payload)
             session.checkpoint()
             # The POST outcome now has priority over the pre-POST reservation
@@ -856,6 +872,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         account_and_position_capacity_resampled=True,
         sequential_preflight_stable=True,
         post_reservation_risk_resampled=True,
+        post_transport_credentials_rechecked=True,
         request_and_post_budget_store_bindings_pinned=True,
         request_and_post_budget_file_identities_pinned=True,
         post_reservation_durable_heads_rechecked=True,
@@ -877,7 +894,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The provider-budget BEGIN and request-marker write returns are ignored; their exact durable records are accepted only after stable read-only replay, with the pending provider reservation additionally requiring the original in-process lease. A restart may inspect or explicitly close retained state but cannot silently resume provider IO. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay, and the immutable response observation is replayed again after the terminal budget write. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations='One explicitly confirmed Alpaca paper POST after fixed-endpoint asset checks, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The exact saved-pair binding is sampled again after the final permission/stop checkpoint and immediately before the sole transport attempt; callback failure or pair mutation closes the retained reservation as NOT_SENT. The provider-budget BEGIN and request-marker write returns are ignored; their exact durable records are accepted only after stable read-only replay, with the pending provider reservation additionally requiring the original in-process lease. A restart may inspect or explicitly close retained state but cannot silently resume provider IO. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay, and the immutable response observation is replayed again after the terminal budget write. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final sample and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
 
 
 def fixture_report():
@@ -1001,6 +1018,38 @@ def fixture_report():
                         replayed_head==history[0]['after_head_sha256'])
                 except PaperSubmissionError:
                     pass
+        credential_journal,credential_selected=prepared(root/'credential-change')
+        credential_budget=PaperProviderPostBudget(
+            root/'credential-change-post-budget.sqlite3')
+        credential_opener=Opener(credential_journal)
+        credential_current=True;credential_samples=0
+        def credential_check():
+            nonlocal credential_samples
+            credential_samples += 1
+            return credential_current
+        def credential_permission():
+            nonlocal credential_current
+            if credential_samples >= 2 and len(credential_opener.requests)==7:
+                credential_current=False
+            return True
+        post_transport_credential_change_blocked=False
+        try:submit_once(credential_journal,'nx_submit_fixture',key,secret,
+            **dict(options(credential_selected,credential_opener,
+                           credential_budget),
+                   permission_check=credential_permission,
+                   credential_check=credential_check))
+        except PaperSubmissionError as error:
+            credential_history=credential_budget.history()
+            post_transport_credential_change_blocked=(
+                str(error)=='PAPER_SUBMISSION_CREDENTIALS_CHANGED_AT_TRANSPORT'
+                and credential_samples==3
+                and credential_journal.recovery()['requests'][0]
+                    ['lookup_by_original_client_id_required']
+                and len(credential_history)==1
+                and credential_history[0]['outcome']=='NOT_SENT'
+                and credential_history[0]['actual_posts']==0
+                and not any(request.get_method()=='POST'
+                            for request in credential_opener.requests))
         binding_journal,binding_selected=prepared(root/'binding')
         binding_budget=PaperProviderPostBudget(root/'binding-post-budget.sqlite3')
         binding_request_path=binding_journal.path
@@ -1366,6 +1415,9 @@ def fixture_report():
                 result['sequential_preflight_stable'] is True,
             post_reservation_risk_resampled=
                 result['post_reservation_risk_resampled'] is True,
+            post_transport_credentials_rechecked=
+                result['post_transport_credentials_rechecked'] is True and
+                post_transport_credential_change_blocked,
             request_and_post_budget_store_bindings_pinned=
                 result['request_and_post_budget_store_bindings_pinned'] is True and
                 store_bindings_pinned,

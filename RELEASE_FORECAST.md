@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.245
+
+The internal explicit one-attempt paper submission boundary now rechecks the exact saved credential binding after the final permission/emergency-stop checkpoint and immediately before the sole POST transport attempt. A mutation or callback failure performs no POST, closes the durable provider budget as `NOT_SENT` and leaves the request original-client-ID lookup-only. The exact-source v0.340.244 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.245 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,818 tests with one expected non-Windows skip; the complete submission/release-profile modules passed 189, the focused transport/release set passed 60 and the finalized submission/release/evidence/version/installer/package set passed 250. Sixteen offline profiles match 401 source files / `b56fdf660acb1aa736ad39b30404f0a17ef0d812b1929199cdd8d245c5f4d9ff`; report SHA256 is `60d25a7aabf9aa2a3f2e36d986c73070faa7b8dc498d092755d139472d8e6464`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.245 wheel SHA256 is `506b08ce337af25eb0ad23692ddf303f56301fac75bdadbea5947f41c8fb90dc`. The 964-path candidate audit, 4,185 introduced-line high-confidence secret scan and locally reachable 95-commit artifact audit found zero findings; local Gitleaks is unavailable and fresh hosted full-history security remains required. These are local/synthetic checks, not broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.244
 
 Default durable-order operations now resolve one physical root and retain the configured directory identity through emergency admission, order-journal access and linked portfolio reconciliation. Symlink roots and tested directory-replacement races fail closed. The exact-source v0.340.243 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.244 checks remain required.

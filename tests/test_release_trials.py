@@ -372,6 +372,7 @@ def test_pacing_profile_requires_single_attempt_submission_transport_fences():
     for field in ('marker_committed_before_post','exactly_one_post','response_retained',
                   'account_and_position_capacity_resampled',
                   'post_reservation_risk_resampled',
+                  'post_transport_credentials_rechecked',
                   'request_and_post_budget_store_bindings_pinned',
                   'request_and_post_budget_file_identities_pinned',
                   'post_reservation_durable_heads_rechecked',

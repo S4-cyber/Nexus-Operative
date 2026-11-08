@@ -730,6 +730,7 @@ def test_component_authority_promotion_is_refused(tmp_path,monkeypatch):
 
 def test_fixture_report_makes_outer_file_set_guarantee_release_visible():
     result=subject.fixture_report()
+    assert set(result)==subject.PUBLIC_FIXTURE_KEYS
     assert result['passed']
     assert result['full_private_file_set_rechecked']
     assert result['semantic_reader_failures_rechecked']

@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 7, 2026. Development candidate: **v0.340.223**. Reviewed source baseline: `e91ddf6d0bcf30281e358831ff50ea08753ef065` (v0.340.222).
+Report date: November 7, 2026. Development candidate: **v0.340.224**. Reviewed source baseline: `01c9ce4b5b2b0c08669bd8d928d34f738d68ca76` (v0.340.223).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 7, 2026. Development candidate: **v0.340.223**. Reviewed s
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.223 source additionally requires both exact response aggregates to match immutable 22-field public schemas before saved reconciliation accepts either private-file replay claim. Final local validation passed 5,774 tests with one expected non-Windows skip, the 129-test exact-response/release-trial focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.224 source additionally requires the exact response-bundle aggregate to match an immutable 107-field public schema and consumes every one of its 87 positive checks before saved reconciliation accepts the bundle. Final local validation passed 5,774 tests with one expected non-Windows skip, the 187-test response-bundle/release-trial focus and sixteen source-bound offline profiles. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.223 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42425771483); its [research/regression/browser/evidence workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42425770993) and [Windows packaging/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42425770990) remained active at this checkpoint and are not claimed as passed.
 - v0.340.222 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42423813771); its [research/regression/browser/evidence workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42423813770) remained active and its [Windows packaging/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42423813798) remained queued at this checkpoint.
 - v0.340.221 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42421738290), and its browser-help and saved-evidence jobs in the [research workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42421738274) passed; complete offline regression and the [Windows packaging/installer workflow](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42421738236) remained active and are not claimed as passed.
 - v0.340.220 [security checks passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42416398217), its complete [research/regression/browser/evidence workflow passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42416398240), and its complete [Windows packaging/installer workflow passed](https://github.com/S4-cyber/Nexus-Operative/actions/runs/42416398237).

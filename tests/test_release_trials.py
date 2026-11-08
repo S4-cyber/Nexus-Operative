@@ -729,6 +729,9 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('exact_response_bundle','unreferenced_fee_timestamp_after_capture_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','fill_timestamp_after_page_receipt_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','fee_timestamp_after_page_receipt_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
+        (('exact_response_bundle','retained_activity_order_fill_semantics_bound'),False,'EXACT_RESPONSE_BUNDLE'),
+        (('exact_response_bundle','activity_only_order_fill_semantic_disagreement_rejected'),False,'EXACT_RESPONSE_BUNDLE'),
+        (('exact_response_bundle','private_extension'),True,'EXACT_RESPONSE_BUNDLE'),
         (('exact_response_bundle','ready_for_routing'),True,'EXACT_RESPONSE_BUNDLE_AUTHORITY'),
         (('journals_unchanged',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
         (('out_of_window_observations_rejected',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
@@ -758,6 +761,13 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         target[path[-1]]=value
         with pytest.raises(ValueError,match=code):
             trials._validate('reconciliation_acceptance',changed)
+    class ResponseBundleMapping(dict):
+        pass
+    changed=copy.deepcopy(result)
+    changed['exact_response_bundle']=ResponseBundleMapping(
+        changed['exact_response_bundle'])
+    with pytest.raises(ValueError,match='EXACT_RESPONSE_BUNDLE'):
+        trials._validate('reconciliation_acceptance',changed)
 
 
 def test_activity_acceptance_snapshot_covers_main_rollback_wal_and_shm_files(tmp_path):

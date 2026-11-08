@@ -1,5 +1,18 @@
 # Nexus Operative continuity instructions
 
+## v0.340.224 strict response-bundle public schema
+
+The exact account/activity response-bundle aggregate fixture now declares an immutable 107-field public schema, including all 87 positive semantic, timing, fee-scope, file-stability and negative-case checks. Saved reconciliation validation requires an exact plain dictionary with precisely that schema and consumes every positive check before trusting the bundle. Four regressions first reproduced v0.340.223 lacking the schema contract, accepting arbitrary `private_extension` fields and mapping subclasses, and not consuming two semantic checks; all now fail closed with the fixed bundle diagnostic.
+
+Exact-source v0.340.223 public-security run 42425771483 passed; its research/regression/browser/evidence run 42425770993 and Windows packaging/installer run 42425770990 remained active at this checkpoint. Fresh v0.340.224 hosted checks remain required.
+
+This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, verified response provenance or coverage, fee/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the response-bundle/release-trial focus passed 187 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `303488bfb8303c172fbf1da52133f06bca1f01a49f37f38eb797234f10d9d434`; `validation/release_trials_0_340_224.json` SHA256 is `d68112171170ec29efa7892ef63acec4d19509751d00e39a00e0115ecbaff27e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.224 and has SHA256 `1f0b5568734a5985013772162aad7f0589a6105550121c349c4b1bbcc8f682bb`. The 943-path public-artifact audit and 4,198 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## v0.340.223 strict exact-response public schemas
 
 The exact account-response and exact activity-response aggregate fixtures now declare immutable 22-field public schemas. Saved reconciliation validation requires exact plain dictionaries with precisely those schemas before trusting either private-file replay claim or downstream reconciliation evidence. Four regressions first reproduced v0.340.222 lacking both schema contracts and accepting arbitrary `private_extension` fields; all now fail closed with the fixed exact-response diagnostics.

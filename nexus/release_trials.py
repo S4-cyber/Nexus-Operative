@@ -1207,7 +1207,10 @@ def _validate(profile, result):
         from nexus.alpaca_activity_sse_checkpoint import FLAGS as ACTIVITY_SSE_CHECKPOINT_FLAGS
         from nexus.alpaca_activity_sse_reconnect_budget import FLAGS as ACTIVITY_SSE_RECONNECT_BUDGET_FLAGS
         from nexus.paper_activity_sse_acceptance_evidence import AUTHORITY_FLAGS as ACTIVITY_SSE_ACCEPTANCE_AUTHORITY_FLAGS
-        from nexus.paper_response_bundle_review import FLAGS as RESPONSE_FLAGS
+        from nexus.paper_response_bundle_review import (
+            FIXTURE_CHECKS as RESPONSE_FIXTURE_CHECKS,
+            FLAGS as RESPONSE_FLAGS,
+            PUBLIC_FIXTURE_KEYS as RESPONSE_PUBLIC_KEYS)
         bundle=result['account_evidence_bundle']
         _require(type(bundle) is dict and set(bundle)==BUNDLE_PUBLIC_KEYS and
             bundle['source']=='SYNTHETIC_LOCAL_ACCOUNT_EVIDENCE_BUNDLE_FIXTURE' and all(bundle[k] is True for k in ('passed','component_heads_bound','original_terms_and_two_fills_checked','observation_arithmetic_evaluated','gross_only_zero_difference_observed','changed_balance_difference_preserved','zero_fee_records_not_promoted','repeat_review_matches','current_head_review_matches','public_summary_checked','stability_guard_bound','guarded_repeat_review_matches','guarded_current_head_review_matches','guarded_public_summary_checked','guarded_declared_source_summary_checked','guarded_collection_timing_summary_checked','journal_file_fingerprints_rechecked','semantic_reader_failures_rechecked','journals_unchanged')),'ACCOUNT_EVIDENCE_BUNDLE')
@@ -1552,7 +1555,10 @@ def _validate(profile, result):
              'actual_provider_access','actual_stream_connection')),
             'INSTALLED_ACTIVITY_SSE_ROTATED_INFLIGHT_AUTHORITY')
         response=result['exact_response_bundle']
-        _require(response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
+        _require(type(response) is dict and
+            set(response)==RESPONSE_PUBLIC_KEYS and
+            response['source']=='SYNTHETIC_EXACT_RESPONSE_BUNDLE_FIXTURE' and
+            all(response[k] is True for k in ('passed',*RESPONSE_FIXTURE_CHECKS)) and
             all(response[k] is True for k in ('passed','exact_adjacent_sessions_bound',
                 'full_private_file_set_rechecked','semantic_reader_failures_rechecked',
                 'semantic_reader_mutation_rejected',

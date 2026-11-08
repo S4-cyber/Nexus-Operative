@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.224
+
+The exact account/activity response-bundle aggregate now has an immutable 107-field public schema. Saved reconciliation validation requires an exact plain dictionary and consumes all 87 positive semantic, timing, fee-scope, file-stability and negative-case checks before trusting the bundle. Four regressions reproduced the absent schema, accepted extension and mapping-subclass cases, and two previously unconsumed semantic checks before implementation. Exact-source v0.340.223 security passed; research and Windows remained active at this checkpoint. Fresh v0.340.224 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the response-bundle/release-trial focus passed 187 tests. Sixteen offline profiles match 401 source files / `303488bfb8303c172fbf1da52133f06bca1f01a49f37f38eb797234f10d9d434`; report SHA256 is `d68112171170ec29efa7892ef63acec4d19509751d00e39a00e0115ecbaff27e`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.224 wheel SHA256 is `1f0b5568734a5985013772162aad7f0589a6105550121c349c4b1bbcc8f682bb`. The 943-path public-artifact audit and 4,198 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.223
 
 The exact account-response and exact activity-response aggregates now have immutable 22-field public schemas, and saved reconciliation validation requires exact plain dictionaries before either private-file replay claim can support downstream evidence. Four regressions reproduced both absent schema contracts and both accepted arbitrary extensions before implementation. Exact-source v0.340.222 security passed; research remained active and Windows queued at this checkpoint. Fresh v0.340.223 hosted checks remain required.

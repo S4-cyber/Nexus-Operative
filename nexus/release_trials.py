@@ -836,7 +836,7 @@ def _validate(profile, result):
         for name in ('burst_treatment', 'atomic_burst_treatment'):
             _require(result[name]['accounting_consistent'] is True, 'BURST_ACCOUNTING')
         _require(result['target_validated'] is False, 'UNSUPPORTED_MARKET_SPEED_CLAIM')
-    else: _require(result.get('passed') is True, 'PROFILE_FAILED')
+    elif profile != 'forward': _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS
         tools=result['paper_tools_source']
@@ -2055,9 +2055,53 @@ def _validate(profile, result):
             'ACTIVITY_AUTHORITY')
         _require(reviewed['review_reasons'] == ['ACTIVITY_COVERAGE_UNVERIFIED', 'FEE_LINK_AND_TIMING_UNVERIFIED'], 'ACTIVITY_CONSISTENCY')
     if profile == 'forward':
-        coverage=result['recovered']['coverage_review']
-        from nexus.forward_trial_review import FLAGS as COVERAGE_FLAGS
-        _require(coverage['status']=='REVIEW_REQUIRED' and coverage['injected_observations']==result['cycles'] and
+        from nexus.forward_drill import (COVERAGE_REVIEW_REASONS,
+            LATENCY_PUBLIC_KEYS, LIMITATIONS, PUBLIC_KEYS,
+            RECOVERED_PUBLIC_KEYS, SESSION_PUBLIC_KEYS)
+        from nexus.forward_trial_review import (FLAGS as COVERAGE_FLAGS,
+            LIMITATIONS as COVERAGE_LIMITATIONS, PUBLIC_KEYS as COVERAGE_PUBLIC_KEYS)
+        _require(type(result) is dict and frozenset(result)==PUBLIC_KEYS,
+            'FORWARD_PROFILE_SCHEMA')
+        recovered=result['recovered']
+        _require(type(recovered) is dict and frozenset(recovered)==RECOVERED_PUBLIC_KEYS,
+            'FORWARD_RECOVERY_SCHEMA')
+        sessions=recovered['sessions'];latency=result['cycle_latency'];coverage=recovered['coverage_review']
+        _require(type(sessions) is list and len(sessions)==20 and all(
+            type(session) is dict and frozenset(session)==SESSION_PUBLIC_KEYS for session in sessions),
+            'FORWARD_SESSION_SCHEMA')
+        _require(type(latency) is dict and frozenset(latency)==LATENCY_PUBLIC_KEYS and
+            all(type(latency[key]) in (int,float) and latency[key]>=0 for key in LATENCY_PUBLIC_KEYS) and
+            latency['p50_ms']<=latency['p95_ms']<=latency['p99_ms'],
+            'FORWARD_LATENCY_SCHEMA')
+        _require(type(coverage) is dict and frozenset(coverage)==COVERAGE_PUBLIC_KEYS,
+            'FORWARD_COVERAGE_SCHEMA')
+        _require(result['mode']=='DISPOSABLE_FORWARD_RUNNER_DRILL' and result['passed'] is True and
+            result['rounds']==20 and type(result['rounds']) is int and
+            result['cycles']==280 and type(result['cycles']) is int and
+            result['isolated_temporary_storage'] is True and result['limitations']==LIMITATIONS,
+            'FORWARD_SCOPE')
+        _require(all(result[key] is False for key in ('application_accounts_changed','broker_connected',
+            'live_orders_enabled','release_approved','target_validated')),
+            'FORWARD_AUTHORITY')
+        hashes=[recovered['account_sha256']]
+        session_ids=[]
+        for session in sessions:
+            session_ids.append(session['session']);hashes.extend((session['orders_sha256'],session['evidence_sha256']))
+            _require(type(session['session']) is str and re.fullmatch('[a-f0-9]{16}',session['session']) is not None and
+                session['quote_observations']==14 and type(session['quote_observations']) is int and
+                session['modeled_buy_orders']==session['modeled_sell_orders']==1 and
+                type(session['modeled_buy_orders']) is int and type(session['modeled_sell_orders']) is int,
+                'FORWARD_SESSION_EVIDENCE')
+        _require(len(set(session_ids))==20 and all(type(value) is str and
+            re.fullmatch('[a-f0-9]{64}',value) is not None for value in hashes),
+            'FORWARD_SESSION_BINDING')
+        _require(type(recovered['commands']) is int and recovered['commands']==143 and
+            all(recovered[key] is True for key in ('forward_stopped','ownership_released','halted','flat','portfolio_reconciled')),
+            'FORWARD_RECOVERY')
+        _require(coverage['mode']=='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW' and
+            coverage['status']=='REVIEW_REQUIRED' and coverage['read_only'] is True and
+            coverage['limitations']==COVERAGE_LIMITATIONS and
+            coverage['injected_observations']==result['cycles'] and
             coverage['declared_public_covered_seconds']=='0' and coverage['declared_coverage_target_met'] is False,
             'FORWARD_COVERAGE_SCOPE')
         _require(coverage['retained_quote_recheck_applied'] is True and
@@ -2069,9 +2113,22 @@ def _validate(profile, result):
             coverage['revalidated_rejected_observations_in_window']==coverage['rejected_observations_in_window'],
             'FORWARD_COVERAGE_REVALIDATION')
         _require(all(coverage[k] is False for k in COVERAGE_FLAGS),'FORWARD_COVERAGE_AUTHORITY')
-        _require(result['rounds'] == 20 and len(result['recovered']['sessions']) == 20, 'FORWARD_SESSIONS')
-        _require(result['recovered']['flat'] is True and result['recovered']['forward_stopped'] is True
-                 and result['recovered']['portfolio_reconciled'] is True, 'FORWARD_RECOVERY')
+        coverage_counts={'minimum_trial_seconds':259200,'maximum_covered_gap_seconds':10,
+            'retained_observations':280,'retained_sessions':20,'observations_in_window':280,
+            'eligible_observations_in_window':220,'rejected_observations_in_window':60,
+            'revalidated_eligible_observations_in_window':220,'revalidated_rejected_observations_in_window':60,
+            'recorded_eligibility_disagreements_in_window':0,'declared_public_observations':0,
+            'injected_observations':280,'unknown_source_observations':0,'sessions_in_window':20,
+            'nonstopped_or_cleanup_review_sessions':20,'uncovered_intervals':1}
+        _require(all(type(coverage[key]) is int and coverage[key]==value
+            for key,value in coverage_counts.items()) and
+            coverage['after']=='1970-01-01T00:16:40Z' and coverage['until']=='1970-01-01T00:38:20Z' and
+            coverage['window_seconds']==coverage['uncovered_seconds']==coverage['longest_uncovered_seconds']=='1300' and
+            coverage['required_coverage_fraction']=='0.95' and coverage['coverage_fraction']=='0.000000' and
+            coverage['review_reasons']==list(COVERAGE_REVIEW_REASONS) and
+            type(coverage['evidence_snapshot_sha256']) is str and
+            re.fullmatch('[a-f0-9]{64}',coverage['evidence_snapshot_sha256']) is not None,
+            'FORWARD_COVERAGE_EVIDENCE')
     if profile == 'operations':
         _require(result['cycles'] == result['buy_fills'] == result['sell_fills'] == result['tier_vetoes'] == 24, 'OPERATION_COUNTS')
         _require(result['history_deleted'] is False and result['old_id_deduplicated'] is True, 'HISTORY_LOSS')

@@ -9,6 +9,20 @@ import tempfile
 import time
 from nexus.recovery_drill import fingerprint
 
+LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include runner, evidence and durable linked ledger. '
+    'No actual feed, worker scheduling, process-kill, streaming, broker or sustained-market throughput acceptance.')
+PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
+    'isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
+RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
+    'ownership_released','halted','flat','portfolio_reconciled'))
+SESSION_PUBLIC_KEYS=frozenset(('session','orders_sha256','evidence_sha256','quote_observations','modeled_buy_orders',
+    'modeled_sell_orders'))
+LATENCY_PUBLIC_KEYS=frozenset(('p50_ms','p95_ms','p99_ms'))
+COVERAGE_REVIEW_REASONS=('DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT','EXECUTION_OWNERSHIP_NOT_CHECKED',
+    'INJECTED_OBSERVATIONS_IN_WINDOW','NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS',
+    'ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','REQUESTED_WINDOW_SHORTER_THAN_72_HOURS',
+    'SOURCE_LABELS_AND_HASHES_UNATTESTED')
+
 
 def _require(condition,reason):
     if not condition:raise ValueError('FORWARD_DRILL_'+reason)
@@ -109,8 +123,7 @@ def run(rounds=3):
     return dict(mode='DISPOSABLE_FORWARD_RUNNER_DRILL',passed=True,rounds=rounds,cycles=baseline['cycles'],
                 cycle_latency=baseline['cycle_latency'],recovered=recovered,application_accounts_changed=False,
                 isolated_temporary_storage=True,broker_connected=False,live_orders_enabled=False,release_approved=False,
-                target_validated=False,
-                limitations='Serial injected quotes with synthetic time; cycle timings include runner, evidence and durable linked ledger. No actual feed, worker scheduling, process-kill, streaming, broker or sustained-market throughput acceptance.')
+                target_validated=False,limitations=LIMITATIONS)
 
 
 def main():

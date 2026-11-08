@@ -31,6 +31,23 @@ INJECTED='INJECTED_TRANSPORT_UNATTESTED'
 FLAGS=('source_attested','market_realism_authenticated','account_reconciled','broker_paper_accepted',
        'strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled',
        'money_movement_enabled','automatic_start','external_owner_checked')
+LIMITATIONS=('Private local operational evidence only. Coverage requires both a recorded eligible flag and replay of retained '
+    'single-source feed, product, permission, numeric/spread/jump, receive/exchange-age and exchange-regression checks under '
+    'the exact admitted policy at the recorded evaluation time. Rejected flags are never upgraded. Adjacent declared-public '
+    'valid points are clipped to the window and overlaps unioned once; gaps over10 seconds, invalid points and session '
+    'boundaries are not bridged. This rechecks supplied content, not independent feeds, clock authenticity, genuine market '
+    'data, uptime, broker execution, profitability, account reconciliation or a passed sustained trial. Labels/hashes are '
+    'rewritable; snapshot is not an execution lock. No provider/credential access, account mutation, automatic start or '
+    'release permission.')
+PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_seconds','minimum_trial_seconds',
+    'maximum_covered_gap_seconds','required_coverage_fraction','retained_observations','retained_sessions',
+    'observations_in_window','eligible_observations_in_window','rejected_observations_in_window','eligibility_count_scope',
+    'retained_quote_recheck_applied','revalidated_eligible_observations_in_window',
+    'revalidated_rejected_observations_in_window','recorded_eligibility_disagreements_in_window',
+    'declared_public_observations','injected_observations','unknown_source_observations','sessions_in_window',
+    'nonstopped_or_cleanup_review_sessions','declared_public_covered_seconds','coverage_fraction','uncovered_seconds',
+    'uncovered_intervals','longest_uncovered_seconds','declared_coverage_target_met','evidence_snapshot_sha256',
+    *FLAGS,'review_reasons','limitations'))
 
 
 def existing_history(path):
@@ -216,7 +233,7 @@ def _review(path, *, after, until):
             uncovered_seconds=_text(duration-covered),uncovered_intervals=len(gaps),longest_uncovered_seconds=_text(max(gaps,default=Decimal(0))),
             declared_coverage_target_met=target,evidence_snapshot_sha256=binding,
             **{flag:False for flag in FLAGS},review_reasons=sorted(reasons),
-            limitations='Private local operational evidence only. Coverage requires both a recorded eligible flag and replay of retained single-source feed, product, permission, numeric/spread/jump, receive/exchange-age and exchange-regression checks under the exact admitted policy at the recorded evaluation time. Rejected flags are never upgraded. Adjacent declared-public valid points are clipped to the window and overlaps unioned once; gaps over10 seconds, invalid points and session boundaries are not bridged. This rechecks supplied content, not independent feeds, clock authenticity, genuine market data, uptime, broker execution, profitability, account reconciliation or a passed sustained trial. Labels/hashes are rewritable; snapshot is not an execution lock. No provider/credential access, account mutation, automatic start or release permission.')
+            limitations=LIMITATIONS)
 
 
 class _Parser(argparse.ArgumentParser):

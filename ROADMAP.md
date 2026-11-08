@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.235. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.236. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.235 gives the real-cryptography synthetic encrypted-observation release report a strict immutable 15-field public schema. Saved release validation consumes the exact synthetic-only source and limitations, fixed Scrypt/AES-GCM policy, all three positive cryptographic checks and every false credential, IO and routing authority field. Unknown fields, mapping subclasses and broadened scope now fail closed. This is bounded in-memory cryptographic evidence hardening, not private-file retention, OS ACL/disk-encryption/native-profile acceptance, provider/account access, sustained market realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.236 gives the disposable forward-runner release profile strict immutable root, recovery, session, latency and retained-coverage schemas. Saved validation consumes exact synthetic-only limitations, session and evidence bindings, bounded counts and timing order, complete recovery state and every false authority field. Unknown fields, mapping subclasses, duplicate session bindings and broadened scope now fail closed. This is bounded injected-quote evidence hardening, not broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

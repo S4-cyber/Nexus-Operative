@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.236
+
+The disposable forward-runner release profile now has immutable root, recovery, per-session, latency and retained-coverage schemas. Saved validation consumes the exact injected-only scope, unique session/evidence bindings, bounded counts, ordered latency summary, complete stopped/flat/reconciled recovery and every false authority field. Thirteen new adversarial mutations cover previously accepted extension, type, duplicate-binding, timing-order and retained-coverage changes. The exact-source v0.340.235 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.236 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,800 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 126 tests, the affected forward-contract focus passed 54 and the release/forward/version/installer focus passed 239. Sixteen offline profiles match 401 source files / `710bd1b13c344d360e0e1ff7cf849cb6c73e5dcef73446467c300ebf4dacd59a`; report SHA256 is `131dfdab2a31f0cc5ccd07b57edd7d0324c0199cadc70696277a9936d84da8fb`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.236 wheel SHA256 is `19805ab2e75bf9eff1d66f15c6bcc2a3cc7d251877a6b762fb8b1aa6819c9094`. The 955-path proposed-candidate public-artifact audit and 4,232 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.235
 
 The real-cryptography synthetic encrypted-observation release report now has an immutable 15-field public schema. Saved validation consumes the exact synthetic-only source and limitations, fixed Scrypt/AES-GCM policy, all three positive cryptographic checks and every false credential, IO and routing authority field. Seven focused regressions cover the previously accepted extension, subclass and broadened-scope cases plus existing policy/type/authority rejection. The exact-source v0.340.234 commit has no connector-visible pull-request workflow runs or combined-status records; predecessor v0.340.224 security and research passed while Windows was cancelled during install/test. Fresh v0.340.235 hosted checks remain required.

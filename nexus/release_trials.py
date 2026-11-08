@@ -43,6 +43,13 @@ PACING_PUBLIC_KEYS = frozenset(('read_completion','snapshot_time',
     'interrupted_full_day_cooldown','wal_read_rejected_before_sqlite',
     'wal_write_rejected_before_conversion','wal_rejection_preserved_files',
     'broker_wide_quota_verified','ready_for_routing','limitations'))
+INSPECTION_LIMITATIONS=('Fixed response objects and clocks; no actual credentials, provider, '
+    'rendered UI, account reconciliation or spendable funds.')
+INSPECTION_PUBLIC_KEYS=frozenset(('passed','source','btc_quote_observation',
+    'btc_quote_retention','btc_quote_capture','btc_quote_bundle','asset_rules_observation',
+    'asset_get_requests','asset_shared_cooldown_checked','get_requests','observations',
+    'portable_roundtrips','portable_tamper_rejected','broker_connected','live_orders_enabled',
+    'limitations'))
 REQUEST_COLLECTION_CHECKS = ('request_origin_head_persisted',
     'historical_request_prefix_after_append_replayed',
     'request_status_origin_replayed','request_status_after_append_replayed',
@@ -612,7 +619,7 @@ def _inspection_inventory_trial():
     from nexus.paper_quote_bundle import fixture_report as quote_bundle_fixture
     return dict(passed=True,source='INJECTED_PAPER_INVENTORY_READER',btc_quote_observation=quote_fixture(),btc_quote_retention=quote_retention_fixture(),btc_quote_capture=quote_capture_fixture(),btc_quote_bundle=quote_bundle_fixture(),asset_rules_observation=asset_report,asset_get_requests=reader.requests,asset_shared_cooldown_checked=asset_cooldown,get_requests=requests,observations=reports, portable_roundtrips=len(exported), portable_tamper_rejected=tamper_rejected,
         broker_connected=False,live_orders_enabled=False,
-        limitations='Fixed response objects and clocks; no actual credentials, provider, rendered UI, account reconciliation or spendable funds.')
+        limitations=INSPECTION_LIMITATIONS)
 
 
 
@@ -1155,43 +1162,160 @@ def _validate(profile, result):
             boundary['boundary_fill_events'] == 1 and
             'RETAINED_FILL_DURING_SEQUENTIAL_OBSERVATION' in boundary['review_reasons'], 'OBSERVATION_REVIEW_BOUNDARY')
     if profile == 'inspection_inventory':
-        from nexus.paper_quote_observation import CHECKS as QUOTE_CHECKS,FLAGS as QUOTE_FLAGS
-        quote=result['btc_quote_observation']
-        _require(quote['source']=='INJECTED_ALPACA_BTC_QUOTE_OBSERVATION_FIXTURE' and quote['passed'] is True and
-            all(quote[k] is True for k in QUOTE_CHECKS),'BTC_QUOTE_OBSERVATION')
-        _require(all(quote[k] is False for k in (*QUOTE_FLAGS,'actual_provider_access','actual_vault_access')),'BTC_QUOTE_AUTHORITY')
-        from nexus.paper_quote_store import CHECKS as RETENTION_CHECKS
-        retention=result['btc_quote_retention']
-        _require(retention['source']=='SYNTHETIC_ORIGINAL_REQUEST_QUOTE_RETENTION_FIXTURE' and retention['passed'] is True and
-            all(retention[k] is True for k in RETENTION_CHECKS),'BTC_QUOTE_RETENTION')
-        _require(all(retention[k] is False for k in (*QUOTE_FLAGS,'actual_provider_access','actual_vault_access')),'BTC_QUOTE_RETENTION_AUTHORITY')
-        from nexus.paper_quote_capture import CHECKS as CAPTURE_CHECKS,FLAGS as CAPTURE_FLAGS
-        capture=result['btc_quote_capture']
-        _require(capture['source']=='INJECTED_PAPER_QUOTE_CAPTURE_FIXTURE' and capture['passed'] is True and
-            all(capture[k] is True for k in CAPTURE_CHECKS),'BTC_QUOTE_CAPTURE')
-        _require(all(capture[k] is False for k in (*CAPTURE_FLAGS,'actual_provider_access','actual_vault_access')),'BTC_QUOTE_CAPTURE_AUTHORITY')
-        from nexus.paper_quote_bundle import CHECKS as BUNDLE_CHECKS,FLAGS as BUNDLE_FLAGS
-        bundle=result['btc_quote_bundle']
-        _require(bundle['source']=='SYNTHETIC_ENCRYPTED_QUOTE_BUNDLE_FIXTURE' and bundle['passed'] is True and
-            all(bundle[k] is True for k in BUNDLE_CHECKS),'BTC_QUOTE_BUNDLE')
-        _require(all(bundle[k] is False for k in (*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access')),'BTC_QUOTE_BUNDLE_AUTHORITY')
-        from nexus.paper_asset_rules import FLAGS
+        from nexus.paper_quote_observation import (CHECKS as QUOTE_CHECKS,
+            FLAGS as QUOTE_FLAGS,PUBLIC_FIXTURE_KEYS as QUOTE_KEYS)
+        from nexus.paper_quote_store import (CHECKS as RETENTION_CHECKS,
+            PUBLIC_FIXTURE_KEYS as RETENTION_KEYS)
+        from nexus.paper_quote_capture import (CHECKS as CAPTURE_CHECKS,
+            FLAGS as CAPTURE_FLAGS,PUBLIC_FIXTURE_KEYS as CAPTURE_KEYS)
+        from nexus.paper_quote_bundle import (CHECKS as BUNDLE_CHECKS,
+            FLAGS as BUNDLE_FLAGS,PUBLIC_FIXTURE_KEYS as BUNDLE_KEYS)
+        fixture_specs=(('btc_quote_observation',QUOTE_KEYS,
+                'INJECTED_ALPACA_BTC_QUOTE_OBSERVATION_FIXTURE',QUOTE_CHECKS,
+                (*QUOTE_FLAGS,'actual_provider_access','actual_vault_access'),
+                'BTC_QUOTE_OBSERVATION'),
+            ('btc_quote_retention',RETENTION_KEYS,
+                'SYNTHETIC_ORIGINAL_REQUEST_QUOTE_RETENTION_FIXTURE',RETENTION_CHECKS,
+                (*QUOTE_FLAGS,'actual_provider_access','actual_vault_access'),
+                'BTC_QUOTE_RETENTION'),
+            ('btc_quote_capture',CAPTURE_KEYS,'INJECTED_PAPER_QUOTE_CAPTURE_FIXTURE',
+                CAPTURE_CHECKS,(*CAPTURE_FLAGS,'actual_provider_access','actual_vault_access'),
+                'BTC_QUOTE_CAPTURE'),
+            ('btc_quote_bundle',BUNDLE_KEYS,'SYNTHETIC_ENCRYPTED_QUOTE_BUNDLE_FIXTURE',
+                BUNDLE_CHECKS,(*BUNDLE_FLAGS,'actual_provider_access','actual_vault_access'),
+                'BTC_QUOTE_BUNDLE'))
+        for key,keys,source,checks,flags,code in fixture_specs:
+            if key not in result:continue
+            fixture=result[key]
+            _require(type(fixture) is dict and frozenset(fixture)==keys,
+                code+'_SCHEMA')
+            _require(fixture['source']==source and fixture['passed'] is True and
+                all(fixture[name] is True for name in checks),code)
+            authority_code=('BTC_QUOTE_AUTHORITY' if code=='BTC_QUOTE_OBSERVATION'
+                else code+'_AUTHORITY')
+            _require(all(fixture[name] is False for name in flags),authority_code)
+        if 'btc_quote_bundle' in result:
+            _require(result['btc_quote_bundle']['cipher']==
+                'AES256GCM_QUOTE_DOMAIN_RANDOM_NONCE12_SALT16' and
+                result['btc_quote_bundle']['kdf']=='SCRYPT_N131072_R8_P1',
+                'BTC_QUOTE_BUNDLE_POLICY')
+        partial=frozenset(('passed','btc_quote_observation','btc_quote_retention',
+            'btc_quote_capture','btc_quote_bundle'))
+        if frozenset(result) and frozenset(result)<=partial:return
+        _require(type(result) is dict and frozenset(result)==INSPECTION_PUBLIC_KEYS,
+            'INSPECTION_PROFILE_SCHEMA')
+        _require(result['passed'] is True and
+            result['source']=='INJECTED_PAPER_INVENTORY_READER' and
+            result['broker_connected'] is result['live_orders_enabled'] is False and
+            result['limitations']==INSPECTION_LIMITATIONS,
+            'INSPECTION_PROFILE_SCOPE')
+        from nexus.paper_asset_rules import (ASSET_KEYS,FLAGS,LIMITATIONS as ASSET_LIMITATIONS,
+            PUBLIC_KEYS as ASSET_PUBLIC_KEYS,TIMING_KEYS as ASSET_TIMING_KEYS)
+        from nexus.alpaca_paper_contract import sha
         asset=result['asset_rules_observation']
-        _require(result['asset_get_requests']==3 and result['asset_shared_cooldown_checked'] is True and asset['asset']['min_order_size']=='0.0001' and asset['reported_fields_observed'] is True and asset['account_fields_double_checked'] is True,'ASSET_RULES_READER')
+        _require(type(asset) is dict and frozenset(asset)==ASSET_PUBLIC_KEYS and
+            type(asset['asset']) is dict and frozenset(asset['asset'])==ASSET_KEYS and
+            type(asset['read_timing']) is dict and
+            frozenset(asset['read_timing'])==ASSET_TIMING_KEYS,
+            'ASSET_RULES_SCHEMA')
+        expected_asset=dict(id='11234567-89ab-cdef-0123-456789abcdef',symbol='BTC/USD',
+            asset_class='crypto',status='active',tradable=True,fractionable=True,
+            min_order_size='0.0001',min_trade_increment='0.0001',price_increment='1')
+        _require(asset['mode']=='READ_ONLY_PAPER_ASSET_RULES' and
+            asset['status']=='REVIEW_REQUIRED' and asset['source']=='INJECTED_UNATTESTED' and
+            asset['asset']==expected_asset and asset['review_reasons']==[] and
+            asset['reported_fields_observed'] is asset['account_fields_double_checked'] is True and
+            type(asset['requests_completed']) is int and asset['requests_completed']==3 and
+            asset['read_timing']==dict(started_at=1000,asset_received_at=1000,completed_at=1000) and
+            asset['limitations']==ASSET_LIMITATIONS,
+            'ASSET_RULES_READER')
+        asset_scope={k:asset[k] for k in ('account_id','source','asset',
+            'account_fields_sha256','read_timing')}
+        _require(asset['input_sha256']==sha(asset_scope),'ASSET_RULES_BINDING')
         _require(all(asset[k] is False for k in FLAGS),'ASSET_RULES_AUTHORITY')
-        _require(result['get_requests'] == 12 and len(result['observations']) == 3, 'INVENTORY_READ_SCOPE')
-        regular, foreign, missing = result['observations']
-        _require(regular['observed_inventory'] == dict(cash='1000', non_marginable_buying_power='900',
-            btc_total='2', btc_available='1.9', btc_unavailable_difference='0.1', scope_supported=True), 'INVENTORY_AMOUNTS')
-        _require(foreign['observed_inventory']['cash'] is None and foreign['observed_usd_ceiling'] is None and
-            missing['observed_inventory']['btc_available'] is None and missing['observed_inventory']['btc_unavailable_difference'] is None,
+        _require(type(result['asset_get_requests']) is int and result['asset_get_requests']==3 and
+            result['asset_shared_cooldown_checked'] is True and
+            type(result['get_requests']) is int and result['get_requests']==12,
+            'INVENTORY_READ_SCOPE')
+        _require(type(result['portable_roundtrips']) is int and
+            result['portable_roundtrips']==3 and result['portable_tamper_rejected'] is True,
+            'INVENTORY_EXPORT_FENCES')
+        from nexus.alpaca_paper_inspection import (INVENTORY_KEYS,READ_TIMING_KEYS,
+            REPORT_LIMITATIONS,REPORT_PUBLIC_KEYS)
+        from nexus.paper_open_order_terms import (FLAGS as OPEN_TERMS_FLAGS,
+            REPORT_PUBLIC_KEYS as OPEN_TERMS_KEYS,SCOPE as OPEN_TERMS_SCOPE)
+        from nexus.portable_paper_observation import (DIGEST_SCOPE,create,validate)
+        reports=result['observations']
+        _require(type(reports) is list and len(reports)==3 and all(type(item) is dict and
+            frozenset(item)==REPORT_PUBLIC_KEYS for item in reports),
+            'INVENTORY_REPORT_SCHEMA')
+        _require(all(type(item['observed_inventory']) is dict and
+            frozenset(item['observed_inventory'])==INVENTORY_KEYS and
+            type(item['read_timing']) is dict and
+            frozenset(item['read_timing'])==READ_TIMING_KEYS and
+            type(item['open_order_terms']) is dict and
+            frozenset(item['open_order_terms'])==OPEN_TERMS_KEYS for item in reports),
+            'INVENTORY_NESTED_SCHEMA')
+        expected=(
+            (dict(cash='1000',non_marginable_buying_power='900',btc_total='2',
+                btc_available='1.9',btc_unavailable_difference='0.1',scope_supported=True),
+                'OBSERVED_FIELDS_COVERED',[],'900','1.9'),
+            (dict(cash=None,non_marginable_buying_power=None,btc_total='2',
+                btc_available='1.9',btc_unavailable_difference='0.1',scope_supported=True),
+                'REVIEW_REQUIRED',['ACCOUNT_CURRENCY_OR_STATUS_REVIEW'],None,'1.9'),
+            (dict(cash='1000',non_marginable_buying_power='900',btc_total='2',
+                btc_available=None,btc_unavailable_difference=None,scope_supported=True),
+                'REVIEW_REQUIRED',['POSITION_AVAILABILITY_MISSING'],'900',None))
+        _require(reports[0]['observed_inventory']==expected[0][0],
+            'INVENTORY_AMOUNTS')
+        _require(reports[1]['observed_inventory']['cash'] is None and
+            reports[1]['observed_usd_ceiling'] is None and
+            reports[2]['observed_inventory']['btc_available'] is None and
+            reports[2]['observed_inventory']['btc_unavailable_difference'] is None,
             'INVENTORY_UNKNOWN_FIELDS')
-        _require(all(r['source'] == 'INJECTED_UNATTESTED' and all(r[k] is False for k in
-            ('ready_for_routing','spendable_funds_verified','broker_account_reconciled','broker_connected',
-             'ledger_applied','live_orders_enabled','atomic_snapshot')) for r in result['observations']), 'INVENTORY_AUTHORITY')
-        _require(result['portable_roundtrips'] == 3 and result['portable_tamper_rejected'] is True, 'INVENTORY_EXPORT_FENCES')
-        from nexus.portable_paper_observation import create, validate
-        _require(all(validate(r['portable_observation']) == create(r) for r in result['observations']), 'INVENTORY_EXPORT_BINDING')
+        for item,(inventory,checks,reasons,ceiling,available) in zip(reports,expected):
+            _require(type(item['observed_inventory']) is dict and
+                frozenset(item['observed_inventory'])==INVENTORY_KEYS and
+                type(item['read_timing']) is dict and
+                frozenset(item['read_timing'])==READ_TIMING_KEYS and
+                type(item['open_order_terms']) is dict and
+                frozenset(item['open_order_terms'])==OPEN_TERMS_KEYS,
+                'INVENTORY_NESTED_SCHEMA')
+            _require(item['mode']=='READ_ONLY_PAPER_INSPECTION' and
+                item['source']=='INJECTED_UNATTESTED' and item['checks']==checks and
+                item['review_reasons']==reasons and item['observed_inventory']==inventory and
+                item['observed_usd_ceiling']==ceiling and
+                item['observed_btc_available']==available and
+                type(item['position_count']) is int and item['position_count']==1 and
+                type(item['open_order_count']) is int and item['open_order_count']==0 and
+                item['sequential_account_fields_stable'] is True and
+                item['read_timing']==dict(started_at=1000,completed_at=1000,elapsed_seconds=0) and
+                item['fingerprint_scope']==
+                    'NORMALIZED_ACCOUNT_AND_REPORTED_INVENTORY_ONLY_NOT_RAW_SOURCE_ATTESTATION' and
+                item['observation_digest_scope']==DIGEST_SCOPE and
+                item['limitations']==REPORT_LIMITATIONS,
+                'INVENTORY_REPORT_SCOPE')
+            terms=item['open_order_terms']
+            _require(terms['mode']=='REPORTED_OPEN_IOC_LIMIT_TERMS' and
+                terms['status']=='TERMS_OBSERVED_SOURCE_UNVERIFIED' and
+                terms['scope']==OPEN_TERMS_SCOPE and terms['terms_complete'] is True and
+                all(type(terms[key]) is int and terms[key]==0 for key in
+                    ('reported_rows','supported_unique_orders','duplicate_rows_ignored',
+                     'unsupported_rows')) and terms['review_reasons']==[] and
+                terms['remaining_buy_limit_principal_cap_usd']=='0' and
+                terms['remaining_sell_quantity_btc']=='0' and
+                terms['normalized_terms_sha256']==
+                    '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945' and
+                all(terms[key] is False for key in OPEN_TERMS_FLAGS),
+                'INVENTORY_OPEN_TERMS')
+            summary=dict(terms);claimed=summary.pop('summary_sha256')
+            _require(claimed==sha(summary),'INVENTORY_OPEN_TERMS')
+            _require(all(item[k] is False for k in ('ready_for_routing',
+                'spendable_funds_verified','broker_account_reconciled','broker_connected',
+                'ledger_applied','live_orders_enabled','atomic_snapshot','automatic_retry')),
+                'INVENTORY_AUTHORITY')
+            _require(validate(item['portable_observation'])==create(item),
+                'INVENTORY_EXPORT_BINDING')
     if profile == 'retained_balance':
         from nexus.retained_balance_review import (GROSS_ARITHMETIC_SCOPE,
             GROSS_AUTHORITY_FLAGS,GROSS_FEE_SCOPE,GROSS_PUBLIC_KEYS,

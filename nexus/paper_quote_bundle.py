@@ -25,6 +25,8 @@ MAX_ENCRYPTED_BYTES=HEADER_BYTES+MAX_PLAINTEXT_BYTES+16
 FLAGS=(*capture.FLAGS,'bundle_source_attested','bundle_imported','original_plaintext_deleted','password_saved','plaintext_file_written','current_source_history_verified','exporter_identity_verified')
 CHECKS=('full_three_journal_replay','historical_prefixes_preserved','local_capture_bindings_checked',
     'normalized_result_binding_checked','normalized_result_disagreement_refused','encrypted_roundtrip','randomized_ciphertext','wrong_password_rejected','tampering_rejected','source_files_unchanged')
+PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,'cipher','kdf',
+    'actual_provider_access','actual_vault_access',*FLAGS))
 
 
 def _fail(code):raise ValueError('PAPER_QUOTE_BUNDLE_'+code)

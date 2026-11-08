@@ -110,6 +110,8 @@ def inspect_quote(api_key,api_secret,*,expected_account_id,confirm_read_only_pap
 
 CHECKS=('three_fixed_gets_checked','exchange_nanoseconds_preserved','same_account_checked',
     'shared_cooldown_preserved','quote_fields_allowlisted','pacing_result_retained')
+PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,'actual_provider_access',
+    'actual_vault_access',*FLAGS))
 
 
 def fixture_report():

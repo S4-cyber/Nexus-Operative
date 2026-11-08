@@ -21,6 +21,8 @@ from nexus.paper_read_projection import matches as projection_matches
 FLAGS=(*observation.FLAGS,'capture_source_attested','pacing_causality_attested','broker_wide_quota_verified','windows_profile_accepted')
 CHECKS=('three_fixed_gets','one_local_transition_bound','quote_retained','offline_status_matches',
     'cooldown_blocks_without_vault','original_journal_unchanged','authority_withheld')
+PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,'actual_provider_access',
+    'actual_vault_access',*FLAGS))
 
 
 def _fail(code):raise ValueError('PAPER_QUOTE_CAPTURE_'+code)

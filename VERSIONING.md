@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.239 (pre-release).**
+**Current development build: 0.340.240 (pre-release).**
+
+## v0.340.240 strict broker-paper inspection and inventory release schemas
+
+The disposable broker-paper inspection/inventory profile now declares immutable 16-field root; 30-, 30-, 35- and 47-field quote-fixture; 26-field asset report; 9-field asset; 3-field asset timing; 28-field observation; 6-field inventory; 3-field read timing; 21-field open-order-terms; and 16-field portable-observation schemas. Saved validation consumes fixed injected request counts and account variants, exact account/asset scope, quote cryptographic policy, timing, open-order summaries, portable binding and every denied authority field. Nineteen adversarial mutations cover root and nested extensions, mapping subclasses, boolean-as-integer substitutions, changed cryptographic policy, altered counts and promoted authority.
+
+The exact-source v0.340.239 remote commit `6c41913cfeda4dbab394a41f852d0746180c8de4` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.239 result is pre-claimed. Fresh exact-source v0.340.240 public-security, research/browser/evidence and Windows installer checks remain required.
+
+This is bounded injected-object and fixed-clock evidence, not actual provider/account access, broker-paper acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This inspection-contract hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,804 tests with one expected non-Windows skip; the complete release-trial module passed 130 tests, the direct inspection/inventory focus passed 381 and the evidence/version/roadmap/installer/package focus passed 82. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `2c20ce5cacd6759432f3596c1899a549dc519ff25f6846363196d0ef28468298`; `validation/release_trials_0_340_240.json` SHA256 is `f3be73d72536540900b084cf5e325b6fa40d22bc234c087dea16438b8facfdf6`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.240 and has SHA256 `e9d4be7cded9dbbacac492ee3c00e202f7a426b5c32c37054f4cdcec35755ca2`. The 959-path proposed-candidate public-artifact audit and 4,345 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
 
 ## v0.340.239 strict durable-capacity release schemas
 

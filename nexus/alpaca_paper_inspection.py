@@ -17,6 +17,20 @@ from uuid import UUID
 
 from nexus.alpaca_paper_contract import number, text, sha
 
+REPORT_LIMITATIONS=('Sequential observations only. Matching account fields do not prove '
+    'positions/orders were atomic or complete. No asset entitlement, fees, settled funds, journal '
+    'reconciliation or trading permission is verified.')
+REPORT_PUBLIC_KEYS=frozenset(('mode','source','account_id','checks','review_reasons',
+    'observed_usd_ceiling','observed_btc_available','observed_inventory','account_fields_sha256',
+    'reported_inventory_sha256','fingerprint_scope','position_count','open_order_count',
+    'open_order_terms','sequential_account_fields_stable','atomic_snapshot',
+    'broker_account_reconciled','spendable_funds_verified','ready_for_routing','ledger_applied',
+    'broker_connected','live_orders_enabled','automatic_retry','limitations','read_timing',
+    'observation_sha256','observation_digest_scope','portable_observation'))
+INVENTORY_KEYS=frozenset(('cash','non_marginable_buying_power','btc_total','btc_available',
+    'btc_unavailable_difference','scope_supported'))
+READ_TIMING_KEYS=frozenset(('started_at','completed_at','elapsed_seconds'))
+
 ROOT = 'https://paper-api.alpaca.markets'
 ASSET_URL = ROOT + '/v2/assets/BTCUSD'
 BTC_QUOTE_URL = 'https://data.alpaca.markets/v1beta3/crypto/us/latest/quotes?symbols=BTC%2FUSD'
@@ -171,7 +185,7 @@ def _report(before, positions, orders, after, expected, source):
                 broker_account_reconciled=False, spendable_funds_verified=False,
                 ready_for_routing=False, ledger_applied=False, broker_connected=False,
                 live_orders_enabled=False, automatic_retry=False,
-                limitations='Sequential observations only. Matching account fields do not prove positions/orders were atomic or complete. No asset entitlement, fees, settled funds, journal reconciliation or trading permission is verified.')
+                limitations=REPORT_LIMITATIONS)
 
 
 class _ReadSession:

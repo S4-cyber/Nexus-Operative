@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.240
+
+The disposable broker-paper inspection/inventory profile now has immutable root, quote-fixture, asset, observation, inventory, timing, open-order and portable schemas. Saved validation consumes the fixed injected request counts and account variants, exact account/asset scope, quote cryptographic policy, portable binding and every denied authority field. Nineteen adversarial mutations cover previously accepted extension, subclass, type, policy, count and authority changes. The exact-source v0.340.239 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.240 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,804 tests with one expected non-Windows skip; the complete release-trial module passed 130 tests, the direct inspection/inventory focus passed 381 and the evidence/version/roadmap/installer/package focus passed 82. Sixteen offline profiles match 401 source files / `2c20ce5cacd6759432f3596c1899a549dc519ff25f6846363196d0ef28468298`; report SHA256 is `f3be73d72536540900b084cf5e325b6fa40d22bc234c087dea16438b8facfdf6`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.240 wheel SHA256 is `e9d4be7cded9dbbacac492ee3c00e202f7a426b5c32c37054f4cdcec35755ca2`. The 959-path proposed-candidate public-artifact audit and 4,345 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.239
 
 The disposable durable-capacity profile now has immutable root, treatment, timing, recovery, burst and execution-quality schemas. Saved validation consumes the exact four-treatment matrix, replay accounting, bounded burst equations, finite ordered timings, synthetic scope and every denied authority field without converting local speed into market throughput. Sixteen adversarial mutations cover previously accepted extension, subclass, scope, type, non-finite timing, count and authority changes. The exact-source v0.340.238 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.239 checks remain required.

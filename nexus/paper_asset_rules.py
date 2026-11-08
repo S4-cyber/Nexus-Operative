@@ -7,6 +7,16 @@ FLAGS=('source_attested','asset_entitlement_verified','constraint_semantics_veri
        'metadata_freshness_verified','broker_account_reconciled','spendable_funds_verified',
        'ready_for_routing','broker_connected','ledger_applied','live_orders_enabled',
        'money_movement_enabled','automatic_retry','release_approved')
+LIMITATIONS=('Reported paper BTC asset fields from three sequential GETs. Stable account fields are '
+    'not atomic account/asset state, provider permission scope, fresh metadata or accepted '
+    'order-size/increment semantics. No fees, funds, routing, order or funding authority; no '
+    'automatic retry.')
+PUBLIC_KEYS=frozenset(('mode','status','reported_fields_observed','account_id','source','asset',
+    'account_fields_sha256','read_timing','input_sha256','review_reasons','requests_completed',
+    'account_fields_double_checked',*FLAGS,'limitations'))
+ASSET_KEYS=frozenset(('id','symbol','asset_class','status','tradable','fractionable',
+    'min_order_size','min_trade_increment','price_increment'))
+TIMING_KEYS=frozenset(('started_at','asset_received_at','completed_at'))
 
 
 def _asset(raw):
@@ -45,6 +55,6 @@ def inspect_rules(api_key,api_secret,*,expected_account_id,confirm_read_only_pap
         result=dict(mode='READ_ONLY_PAPER_ASSET_RULES',status='REVIEW_REQUIRED',reported_fields_observed=True,
             **scope,input_sha256=sha(scope),review_reasons=reasons,requests_completed=3,
             account_fields_double_checked=True,**{flag:False for flag in FLAGS},
-            limitations='Reported paper BTC asset fields from three sequential GETs. Stable account fields are not atomic account/asset state, provider permission scope, fresh metadata or accepted order-size/increment semantics. No fees, funds, routing, order or funding authority; no automatic retry.')
+            limitations=LIMITATIONS)
         session.bind_result_projection(result)
     return result

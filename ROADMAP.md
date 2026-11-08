@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.239. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.240. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.239 gives the disposable durable-capacity and execution-quality release profile strict immutable root, treatment, timing, recovery, burst and quality schemas. Saved validation consumes the fixed four-treatment matrix, replay accounting, bounded burst equations, finite ordered timings, synthetic scope and every denied authority field without treating measured speed as market throughput. Unknown fields, mapping subclasses, boolean-for-integer substitutions, non-finite timings, altered counts or promoted authority now fail closed. This is bounded temporary-database timing and arithmetic evidence, not sustained-market realism, physical power-loss or native Windows acceptance, actual broker-paper acceptance, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.240 gives the disposable broker-paper inspection and inventory release profile strict immutable root, quote-fixture, asset, observation, inventory, timing, open-order and portable schemas. Saved validation consumes the fixed injected request counts and account variants, exact account and asset scope, portable binding and every denied authority field. Unknown fields, mapping subclasses, boolean-for-integer substitutions, changed cryptographic policy, altered counts or promoted authority now fail closed. This is bounded injected-object and fixed-clock evidence, not actual provider or account access, broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows acceptance, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

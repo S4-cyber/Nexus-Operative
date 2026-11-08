@@ -27,6 +27,8 @@ MAX_DATABASE_BYTES=4*1024*1024
 DB_BUSY_TIMEOUT_MS=10_000
 CHECKS=('original_prefix_bound','exact_nanoseconds_retained','duplicate_reused',
     'restart_replay','request_bytes_unchanged','authority_withheld')
+PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,'actual_provider_access',
+    'actual_vault_access',*observation.FLAGS))
 SCOPE_KEYS=('profile','account_sha256','quote','source','account_fields_sha256','read_timing')
 
 

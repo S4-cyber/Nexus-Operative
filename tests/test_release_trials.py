@@ -1186,6 +1186,51 @@ def test_inventory_trial_rejects_missing_or_corrupt_portable_evidence():
     with pytest.raises(ValueError,match='PAPER_OBSERVATION_INVALID'):trials._validate('inspection_inventory',changed)
 
 
+def test_inventory_trial_consumes_exact_broker_paper_scope():
+    result=trials._inspection_inventory_trial();trials._validate('inspection_inventory',result)
+    class InventoryMapping(dict):pass
+    cases=[]
+    cases.append((dict(result,unconsumed=True),'INSPECTION_PROFILE_SCHEMA'))
+    cases.append((InventoryMapping(result),'INSPECTION_PROFILE_SCHEMA'))
+    changed=copy.deepcopy(result);changed['btc_quote_observation']['unconsumed']=True
+    cases.append((changed,'BTC_QUOTE_OBSERVATION_SCHEMA'))
+    changed=copy.deepcopy(result);changed['btc_quote_observation']=InventoryMapping(changed['btc_quote_observation'])
+    cases.append((changed,'BTC_QUOTE_OBSERVATION_SCHEMA'))
+    changed=copy.deepcopy(result);changed['btc_quote_bundle']['cipher']='PLAINTEXT'
+    cases.append((changed,'BTC_QUOTE_BUNDLE_POLICY'))
+    changed=copy.deepcopy(result);changed['asset_rules_observation']['unconsumed']=True
+    cases.append((changed,'ASSET_RULES_SCHEMA'))
+    changed=copy.deepcopy(result);changed['asset_rules_observation']['asset']=InventoryMapping(changed['asset_rules_observation']['asset'])
+    cases.append((changed,'ASSET_RULES_SCHEMA'))
+    changed=copy.deepcopy(result);changed['asset_rules_observation']['read_timing']['extra']=0
+    cases.append((changed,'ASSET_RULES_SCHEMA'))
+    changed=copy.deepcopy(result);changed['asset_rules_observation']['requests_completed']=True
+    cases.append((changed,'ASSET_RULES_READER'))
+    changed=copy.deepcopy(result);changed['asset_rules_observation']['broker_connected']=0
+    cases.append((changed,'ASSET_RULES_AUTHORITY'))
+    changed=copy.deepcopy(result);changed['observations']=tuple(changed['observations'])
+    cases.append((changed,'INVENTORY_REPORT_SCHEMA'))
+    changed=copy.deepcopy(result);changed['observations'][0]['unconsumed']=True
+    cases.append((changed,'INVENTORY_REPORT_SCHEMA'))
+    changed=copy.deepcopy(result);changed['observations'][0]=InventoryMapping(changed['observations'][0])
+    cases.append((changed,'INVENTORY_REPORT_SCHEMA'))
+    changed=copy.deepcopy(result);changed['observations'][0]['observed_inventory']['extra']=None
+    cases.append((changed,'INVENTORY_NESTED_SCHEMA'))
+    changed=copy.deepcopy(result);changed['observations'][0]['read_timing']['started_at']=True
+    cases.append((changed,'INVENTORY_REPORT_SCOPE'))
+    changed=copy.deepcopy(result);changed['observations'][0]['open_order_terms']['extra']=False
+    cases.append((changed,'INVENTORY_NESTED_SCHEMA'))
+    changed=copy.deepcopy(result);changed['observations'][0]['open_order_terms']['reported_rows']=True
+    cases.append((changed,'INVENTORY_OPEN_TERMS'))
+    changed=copy.deepcopy(result);changed['get_requests']=True
+    cases.append((changed,'INVENTORY_READ_SCOPE'))
+    changed=copy.deepcopy(result);changed['limitations']='Broader scope.'
+    cases.append((changed,'INSPECTION_PROFILE_SCOPE'))
+    for changed,code in cases:
+        with pytest.raises(ValueError,match=code):
+            trials._validate('inspection_inventory',changed)
+
+
 def test_portable_observation_review_trial_rejects_boundary_or_authority_promotion():
     from nexus.paper_observation_review import fixture_report
     result=fixture_report();trials._validate('observation_review',result)

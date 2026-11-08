@@ -99,6 +99,7 @@ class DurableOrderGateway:
             yield None
             return
         if not stat.S_ISREG(observed.st_mode):raise ValueError('ORDER_HISTORY_REGULAR_FILE_REQUIRED')
+        if observed.st_nlink!=1:raise ValueError('ORDER_HISTORY_SINGLE_LINK_REQUIRED')
         db=None
         try:
             db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,

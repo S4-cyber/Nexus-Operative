@@ -141,3 +141,34 @@ def test_unlinked_recovery_does_not_create_missing_portfolio(tmp_path,monkeypatc
     gateway.initialize_account(10000)
     portfolio=tmp_path/'paper_portfolio.sqlite3';portfolio.unlink()
     assert not gateway.recovery_report()['portfolio_reconciled'] and not portfolio.exists()
+
+
+def test_hardlinked_order_history_refuses_read_without_modifying_source(tmp_path,monkeypatch):
+    """A second directory entry cannot silently alias private order history."""
+    path=tmp_path/'order_lifecycle.sqlite3'
+    gateway=DurableOrderGateway(path)
+    gateway.initialize_account(10000)
+    alias=tmp_path/'journal_alias.sqlite3'
+    try:os.link(path,alias)
+    except OSError:pytest.skip('Hardlinks unavailable on this filesystem')
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match='ORDER_HISTORY_SINGLE_LINK_REQUIRED'):
+        gateway.recovery_report()
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['journal_present']
+
+
+def test_hardlinked_linked_portfolio_refuses_recovery_without_repair(tmp_path,monkeypatch):
+    """Read-only reconciliation must not accept aliased account ledger files."""
+    gateway=linked(tmp_path,monkeypatch)
+    path=tmp_path/'paper_portfolio.sqlite3'
+    alias=tmp_path/'portfolio_alias.sqlite3'
+    try:os.link(path,alias)
+    except OSError:pytest.skip('Hardlinks unavailable on this filesystem')
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match='LINKED_PORTFOLIO_SINGLE_LINK_REQUIRED'):
+        gateway.recovery_report()
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['portfolio_reconciled']

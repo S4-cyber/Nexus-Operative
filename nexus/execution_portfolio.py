@@ -38,6 +38,7 @@ def attach_read_only(db, path):
     if path.is_symlink():raise ValueError('LINKED_PORTFOLIO_SYMLINK')
     observed=path.stat()  # Missing/inaccessible linked accounting must fail, not recreate.
     if not stat.S_ISREG(observed.st_mode):raise ValueError('LINKED_PORTFOLIO_REGULAR_FILE_REQUIRED')
+    if observed.st_nlink!=1:raise ValueError('LINKED_PORTFOLIO_SINGLE_LINK_REQUIRED')
     db.execute('ATTACH DATABASE ? AS portfolio', (path.resolve().as_uri()+'?mode=ro',))
     if db.execute('PRAGMA main.journal_mode').fetchone()[0]!='delete' or db.execute('PRAGMA portfolio.journal_mode').fetchone()[0]!='delete':
         raise ValueError('ATOMIC_PORTFOLIO_REQUIRES_DELETE_JOURNALS')

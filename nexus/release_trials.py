@@ -1146,41 +1146,26 @@ def _validate(profile, result):
             'wal_read_rejected_before_sqlite','wal_write_rejected_before_conversion','wal_rejection_preserved_files')), 'PACING_FENCES')
         _require(result['broker_wide_quota_verified'] is False and result['ready_for_routing'] is False, 'PACING_AUTHORITY')
     if profile == 'activity_acceptance':
-        _require(result['mode']=='DISPOSABLE_CROSS_JOURNAL_ACTIVITY_ACCEPTANCE_RECOVERY' and
-            result['source']=='SYNTHETIC_LOCAL_PROCESS_DEATH_FIXTURE' and
-            result['accepted_transitions_after_commit']==2, 'ACTIVITY_ACCEPTANCE_SCOPE')
-        _require(all(result[name] is True for name in ('missing_status_created_nothing',
-            'precommit_death_retained_unbound_transition','postcommit_death_replayed_bound_transition',
-            'precommit_rollback_journal_observed','fresh_process_journals_unchanged',
-            'fresh_process_vault_silent','postcommit_latest_content_replayed',
-            'postcommit_all_content_replayed','postcommit_all_pacing_operations_typed',
-            'postcommit_all_pacing_result_receipts_bound','postcommit_all_pacing_request_targets_bound',
-            'postcommit_all_normalized_results_bound','acceptance_store_binding_pinned',
-            'acceptance_object_scope_pinned','acceptance_cleanup_path_pinned',
-            'acceptance_connection_binding_pinned','acceptance_connection_content_pinned',
-            'acceptance_read_close_requires_explicit_retry',
-            'acceptance_connection_content_continuity_pinned',
-            'acceptance_write_binding_pinned','acceptance_write_ack_replayed',
-            'acceptance_write_connection_pinned',
-            'acceptance_write_connection_content_pinned',
-            'acceptance_write_connection_content_continuity_pinned',
-            'acceptance_write_file_identity_pinned',
-            'acceptance_write_committed_content_pinned',
-            'acceptance_commit_durability_replayed',
-            'acceptance_commit_sync_preserves_process_control',
-            'acceptance_read_finalization_preserves_process_control',
-            'acceptance_write_finalization_preserves_process_control',
-            'acceptance_write_close_requires_explicit_recovery',
-            'acceptance_initialization_identity_continuity_pinned',
-            'acceptance_uncommitted_initialization_replayed',
-            'acceptance_rebind_boundary_pinned',
-            'legacy_normalized_result_not_invented','legacy_normalized_history_preserved',
-            'changed_creation_window_targets_refused','changed_cursor_target_refused',
-            'request_target_disagreement_history_preserved')), 'ACTIVITY_ACCEPTANCE_RECOVERY')
-        _require(all(result[name] is False for name in ('actual_provider_access','actual_vault_access','source_attested',
-            'activity_coverage_verified','fee_execution_links_verified','broker_account_reconciled',
-            'spendable_funds_verified','ready_for_routing','broker_connected','live_orders_enabled',
-            'money_movement_enabled','release_approved')), 'ACTIVITY_ACCEPTANCE_AUTHORITY')
+        from nexus.paper_activity_acceptance_evidence import (
+            FIXTURE_AUTHORITY_FLAGS as ACTIVITY_ACCEPTANCE_AUTHORITY_FLAGS,
+            FIXTURE_CHECKS as ACTIVITY_ACCEPTANCE_CHECKS,
+            LIMITATIONS as ACTIVITY_ACCEPTANCE_LIMITATIONS,
+            MODE as ACTIVITY_ACCEPTANCE_MODE,
+            PUBLIC_FIXTURE_KEYS as ACTIVITY_ACCEPTANCE_PUBLIC_KEYS,
+            SOURCE as ACTIVITY_ACCEPTANCE_SOURCE)
+        _require(type(result) is dict and
+            set(result)==ACTIVITY_ACCEPTANCE_PUBLIC_KEYS,
+            'ACTIVITY_ACCEPTANCE_SCHEMA')
+        _require(result['mode']==ACTIVITY_ACCEPTANCE_MODE and
+            result['source']==ACTIVITY_ACCEPTANCE_SOURCE and
+            result['accepted_transitions_after_commit']==2 and
+            result['limitations']==ACTIVITY_ACCEPTANCE_LIMITATIONS,
+            'ACTIVITY_ACCEPTANCE_SCOPE')
+        _require(all(result[name] is True for name in
+            ACTIVITY_ACCEPTANCE_CHECKS), 'ACTIVITY_ACCEPTANCE_RECOVERY')
+        _require(all(result[name] is False for name in
+            ACTIVITY_ACCEPTANCE_AUTHORITY_FLAGS),
+            'ACTIVITY_ACCEPTANCE_AUTHORITY')
     if profile == 'reconciliation_acceptance':
         from nexus.paper_reconciliation_acceptance import (
             PUBLIC_FIXTURE_KEYS as RECONCILIATION_PUBLIC_KEYS)

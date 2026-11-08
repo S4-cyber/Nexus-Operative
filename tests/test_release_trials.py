@@ -500,8 +500,10 @@ def test_pacing_profile_requires_provider_post_activity_review_fences():
 
 
 def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim_authority():
-    from nexus.paper_activity_acceptance_evidence import fixture_report
+    from nexus.paper_activity_acceptance_evidence import (
+        PUBLIC_FIXTURE_KEYS, fixture_report)
     result=fixture_report();trials._validate('activity_acceptance',result)
+    assert set(result)==PUBLIC_FIXTURE_KEYS
     assert result['postcommit_latest_content_replayed'] is True
     assert result['postcommit_all_content_replayed'] is True
     assert result['accepted_transitions_after_commit']==2
@@ -538,6 +540,17 @@ def test_activity_acceptance_process_death_profile_is_mandatory_and_cannot_claim
                   'ready_for_routing','broker_connected','live_orders_enabled','money_movement_enabled','release_approved'):
         changed=dict(result,**{field:True})
         with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_AUTHORITY'):trials._validate('activity_acceptance',changed)
+    changed=dict(result,private_extension=True)
+    with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_SCHEMA'):
+        trials._validate('activity_acceptance',changed)
+    class ActivityAcceptanceMapping(dict):
+        pass
+    changed=ActivityAcceptanceMapping(result)
+    with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_SCHEMA'):
+        trials._validate('activity_acceptance',changed)
+    changed=dict(result,limitations='synthetic evidence promoted')
+    with pytest.raises(ValueError,match='ACTIVITY_ACCEPTANCE_SCOPE'):
+        trials._validate('activity_acceptance',changed)
 
 
 def test_request_activity_acceptance_is_mandatory_in_activity_profile():

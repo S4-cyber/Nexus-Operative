@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.225
+
+The root accepted-reconciliation fixture now has an immutable 52-field public schema. The complete saved release aggregate must be an exact plain dictionary containing exactly those fields and its 19 named downstream component aggregates, while validation also requires the accepted pacing request-target proof. Three regressions reproduced the absent schema, accepted extension and mapping-subclass cases, and the unconsumed request-target proof before implementation. Exact-source v0.340.224 security, Portal browser-help and saved evidence passed; complete regression and Windows remained active at this checkpoint. Fresh v0.340.225 hosted checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the root-reconciliation/release-trial focus passed 151 tests and the release/version/installer/package focus passed 81. Sixteen offline profiles match 401 source files / `51ad198266b895d8b57a0059efa315733258b15a6b1320094d7b7d6edcf97108`; report SHA256 is `d3588d77aafa2ff218445d17490e63ff4410160d440d35f8befb260e035bb5e2`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.225 wheel SHA256 is `9b38bdb29cd2041fd98b7b85e64048994a9b9a77820d3c378b2827029d842b9c`. The 944-path public-artifact audit and 4,178 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.224
 
 The exact account/activity response-bundle aggregate now has an immutable 107-field public schema. Saved reconciliation validation requires an exact plain dictionary and consumes all 87 positive semantic, timing, fee-scope, file-stability and negative-case checks before trusting the bundle. Four regressions reproduced the absent schema, accepted extension and mapping-subclass cases, and two previously unconsumed semantic checks before implementation. Exact-source v0.340.223 security passed; research and Windows remained active at this checkpoint. Fresh v0.340.224 hosted checks remain required.

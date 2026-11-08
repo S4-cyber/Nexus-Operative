@@ -736,6 +736,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('journals_unchanged',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
         (('out_of_window_observations_rejected',),False,'RECONCILIATION_ACCEPTANCE_REPLAY'),
         (('complete_accepted_history_replayed',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
+        (('accepted_pacing_request_targets_bound',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('declared_windows_cover_observation_envelope',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('journal_file_fingerprints_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('journal_file_identities_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
@@ -767,6 +768,14 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
     changed['exact_response_bundle']=ResponseBundleMapping(
         changed['exact_response_bundle'])
     with pytest.raises(ValueError,match='EXACT_RESPONSE_BUNDLE'):
+        trials._validate('reconciliation_acceptance',changed)
+    changed=copy.deepcopy(result);changed['private_extension']=True
+    with pytest.raises(ValueError,match='RECONCILIATION_ACCEPTANCE_SCHEMA'):
+        trials._validate('reconciliation_acceptance',changed)
+    class ReconciliationMapping(dict):
+        pass
+    changed=ReconciliationMapping(copy.deepcopy(result))
+    with pytest.raises(ValueError,match='RECONCILIATION_ACCEPTANCE_SCHEMA'):
         trials._validate('reconciliation_acceptance',changed)
 
 

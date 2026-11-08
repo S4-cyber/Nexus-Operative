@@ -31,6 +31,44 @@ PACING_STORE_TYPE=PaperReadPacing
 ACTIVITY_STORE_TYPE=BrokerActivityStore
 ACCEPTANCE_STORE_TYPE=PaperActivityAcceptanceStore
 
+FIXTURE_CHECKS = (
+    'passed', 'repeat_review_matches', 'stability_guard_repeat_matches',
+    'journal_file_fingerprints_rechecked',
+    'journal_file_identities_rechecked', 'journal_store_bindings_rechecked',
+    'semantic_reader_failures_rechecked',
+    'identity_replacement_failure_rejected', 'store_retarget_rejected',
+    'journals_unchanged', 'unbound_history_rejected',
+    'continuation_required_history_rejected',
+    'out_of_window_observations_rejected',
+    'declared_windows_cover_observation_envelope', 'stability_guard_bound',
+    'declared_source_mismatch_rejected', 'guard_declared_sources_agree',
+    'changed_guard_balance_rejected', 'unordered_guard_windows_rejected',
+    'outer_guard_window_coverage_rejected',
+    'guard_retained_fill_events_absent',
+    'guard_collection_observed_fill_events_absent',
+    'late_collected_historical_fill_rejected',
+    'guard_collection_observed_fee_events_absent',
+    'late_collected_historical_fee_rejected',
+    'guard_retained_fee_date_overlaps_absent',
+    'guard_fee_date_overlap_detected', 'exact_activity_head_bound',
+    'complete_accepted_history_replayed', 'legacy_baseline_absent',
+    'complete_pacing_sessions_accepted', 'accepted_pacing_operations_typed',
+    'accepted_pacing_result_receipts_bound',
+    'accepted_pacing_request_targets_bound',
+    'complete_retained_batches_accepted',
+    'complete_collection_observations_accepted',
+    'all_collection_cursor_sequences_complete',
+    'observation_arithmetic_evaluated', 'private_scope_omitted')
+FIXTURE_AUTHORITY_FLAGS = (
+    'guard_balance_instants_verified',
+    'guard_observation_windows_verified_quiet',
+    'requested_window_boundaries_verified', 'actual_provider_access',
+    'actual_vault_access', 'broker_account_reconciled',
+    'spendable_funds_verified', 'ready_for_routing', 'broker_connected',
+    'live_orders_enabled', 'money_movement_enabled', 'release_approved')
+PUBLIC_FIXTURE_KEYS = frozenset(
+    ('source', *FIXTURE_CHECKS, *FIXTURE_AUTHORITY_FLAGS))
+
 
 def _fail(code):
     raise ValueError('PAPER_RECONCILIATION_ACCEPTANCE_' + code)

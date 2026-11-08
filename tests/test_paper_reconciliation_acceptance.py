@@ -493,6 +493,7 @@ def test_cli_stability_guards_are_paired_and_never_write_journals(tmp_path):
 
 def test_release_fixture_is_repeatable_vault_and_provider_silent():
     result=subject.fixture_report()
+    assert set(result)==subject.PUBLIC_FIXTURE_KEYS
     assert result['passed'] and result['repeat_review_matches'] and result['journals_unchanged']
     assert result['unbound_history_rejected'] and result['private_scope_omitted']
     assert result['continuation_required_history_rejected']

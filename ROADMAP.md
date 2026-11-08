@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.247. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.248. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.247 makes durable persistence of a completely parsed paper response independent of renewed engagement permission and emergency-stop admission. All preflight and in-flight control checks remain mandatory; after parsing finishes, reconciliation performs no provider IO and uses repeated local store-binding and reservation proofs before the known response is written and cold-replayed. Mandatory pacing evidence asserts both permission revocation and emergency-stop activation would occur at that boundary yet cannot discard the known result as outcome-unknown. This is injected local reconciliation evidence, not actual provider/account access, broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, broker-wide coordination, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.248 separates raw retained-feed coverage from a stricter incident-free sustained-trial diagnostic. The read-only 72-hour review now counts quote-error observations, sessions containing them, manual versus other stopped sessions, paused/running sessions and a bounded incident flag. High coverage can remain visible while incident-free coverage stays false until retained quote errors and non-manual terminations are reviewed. This is local supplied-history analysis, not source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

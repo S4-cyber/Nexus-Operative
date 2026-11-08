@@ -1,6 +1,15 @@
 # Nexus Operative delivery forecast and milestone coverage
 
-+## Current candidate: v0.340.247
+## Current candidate: v0.340.248
+
+The retained forward-trial review now keeps raw declared-window coverage separate from incident-free coverage. Quote errors, non-manual stops, paused/running sessions and eligibility disagreements prevent a clean target even when declared time coverage is high. The exact-source v0.340.247 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.248 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (read-only weighted index 38%; 30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,824 tests with one expected non-Windows skip; the affected trial-review/release profile passed 187, the synchronized release/evidence/version/installer/package focus passed 211 and the explicit Portal/controller focus passed 22 plus fourteen Node controllers. Sixteen offline profiles match 401 source files / `859ef87a79b4cdbb7bcf5b9b8cd7acd30b9ffaa7a661d0142203fa67c69f58a0`; report SHA256 is `7c270992d63a70827a989ca447a8271516488775a079ecd662e1cbd0dfc0d618`. Compilation, dependency integrity and roadmap equality passed. The 161-member v0.340.248 wheel SHA256 is `765f8aa67efb711e23f98977cdcc1d21c7b59bb83da56093859a6b7777508831`. The 967-path candidate audit and 4,199 introduced-line high-confidence signature scan found zero findings; the locally reachable 12-commit history audit also found zero artifact findings. Local Gitleaks is unavailable and fresh hosted full-history security remains required. These are local/synthetic checks, not broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
+
+## Current candidate: v0.340.247
 
 After the sole paper POST has returned a completely parsed response, durable response observation now uses repeated local store-binding and reservation proofs without requesting renewed engagement permission or emergency-stop admission. All preflight and in-flight controls remain mandatory, and no further provider IO occurs. The exact-source v0.340.246 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.247 checks remain required.
 

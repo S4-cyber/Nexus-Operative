@@ -1,6 +1,6 @@
 # Nexus Operative milestone accomplishment report
 
-Report date: November 8, 2026. Development candidate: **v0.340.247**. Reviewed remote source baseline: `d73764f403ac3759e2135bc6cd407cd35ac93f10` (v0.340.246).
+Report date: November 8, 2026. Development candidate: **v0.340.248**. Reviewed remote source baseline: `0f11c0fe36f4ee2096984cbe76af211eb1a3285b` (v0.340.247).
 
 **Overall engineering estimate: about 40% (rough range 30–45%, low confidence). Major operational stages fully accepted: 0/9.** These are the existing weighted scope estimates, whose manual assessment is dated October 18; they are not a new measurement, elapsed-time percentage, probability of profitability or release authorization. Version numbers and passing tests do not automatically raise them. No dependable launch date is established.
 
@@ -22,10 +22,11 @@ Report date: November 8, 2026. Development candidate: **v0.340.247**. Reviewed r
 
 The earlier v0.340.109–111 work exposed the 28-step acceptance plan in Portal, improved narrow-window help and added an installed history-only provider/account review. Subsequent development added an installed saved-pair Activity SSE operator and substantially expanded durable reconnect, restart, interruption, credential-change, emergency-stop and cleanup-denial coverage. These are useful implementation and resilience accomplishments; their evidence is synthetic or local, not actual-account or sustained-market acceptance.
 
-The v0.340.247 source additionally makes durable observation of a completely parsed paper POST response independent of renewed engagement permission and emergency-stop admission. Both parsed-response boundary cases now retain and cold-replay the known result without another network request, while repeated store/reservation proofs and terminal provider-budget completion remain mandatory. Final local validation passed 5,822 tests with one expected non-Windows skip, the 193-test complete submission/release-profile set, the 211-test synchronized release focus and sixteen source-bound offline profiles. This is injected local reconciliation evidence, not actual broker, genuine-feed, native Windows, funding or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
+The v0.340.248 source additionally separates raw declared forward-trial coverage from an incident-free diagnostic and retains bounded quote-error and session-ending counts. High declared coverage no longer looks clean when retained quote errors, non-manual stops, paused/running sessions or eligibility disagreements remain. Final local validation passed 5,824 tests with one expected non-Windows skip, the 187-test affected profile, the 211-test synchronized release focus, the 22-test Portal focus plus fourteen Node controllers and sixteen source-bound offline profiles. This is injected/local diagnostic evidence, not an actual authorized paper-account trial, genuine-feed provenance, native Windows, funding or independent acceptance. Neither test count nor version number changes the weighted implementation estimate or accepts an operational stage.
 
 Verified prior-source hosted checkpoints:
 
+- v0.340.247 was published as `0f11c0fe36f4ee2096984cbe76af211eb1a3285b`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.240 was published as `0d6bcb0b80088b9c655409ebdf2514c450079785`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.239 was published as `6c41913cfeda4dbab394a41f852d0746180c8de4`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.
 - v0.340.238 was published as `e1cc508a4cad18eb4786e07f7ca58ca2329888ac`; repeated commit-scoped pull-request workflow and combined-status queries returned no run/check records at this checkpoint, so no hosted result is claimed.

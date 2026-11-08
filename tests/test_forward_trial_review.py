@@ -33,8 +33,9 @@ def database(tmp_path,monkeypatch,sessions):
                     policy_sha256=policy['policy_sha256'],error_type=None))
                 digest=evidence.digest(previous,payload);rows.append((sid,cycle,payload,previous,digest));previous=digest
             first=START+points[0][0] if points else START;last=START+points[-1][0] if points else START
+            reason='MANUAL_STOP' if state=='STOPPED' else 'TEST_'+state
             db.execute('INSERT INTO sessions VALUES (?,?,?,?,?,?,?)',(sid,first,last,state,evidence.canonical(policy),'{}',
-                evidence.canonical(dict(at=last,decision='STOP',reason='TEST_STOP'))))
+                evidence.canonical(dict(at=last,decision='STOP',reason=reason))))
             db.executemany('INSERT INTO forward_quotes VALUES (?,?,?,?,?)',rows)
             if rows:db.execute('INSERT INTO forward_quote_heads VALUES (?,?,?)',(sid,len(rows),previous))
     return tmp_path/'paper_forward.sqlite3'
@@ -142,6 +143,34 @@ def test_even_complete_declared_public_coverage_cannot_accept_market_or_broker_t
     assert result['coverage_fraction']=='1.000000' and result['declared_coverage_target_met']
     assert result['status']=='REVIEW_REQUIRED' and all(result[k] is False for k in trial.FLAGS)
     assert result['observations_in_window']==25921
+    assert result['incident_free_coverage_target_met'] is True
+    assert result['operational_incidents_present'] is False
+
+
+def test_coverage_target_does_not_hide_retained_quote_incidents(tmp_path,monkeypatch):
+    points=[(i,True) for i in range(0,72*3600+1,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
+    rewrite(path,lambda p:p.update(error_type='TimeoutError',quote_eligible=False))
+    result=run(path,72*3600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert result['operational_incidents_present'] is True
+    assert result['sessions_with_quote_errors']==1
+    assert result['quote_error_observations']==1
+    assert 'QUOTE_ERRORS_RETAINED_IN_WINDOW' in result['review_reasons']
+
+
+def test_coverage_target_does_not_hide_nonmanual_termination(tmp_path,monkeypatch):
+    points=[(i,True) for i in range(0,72*3600+1,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
+    with closing(sqlite3.connect(path)) as db,db:
+        last=json.loads(db.execute('SELECT last_json FROM sessions').fetchone()[0])
+        last['reason']='EMERGENCY_STOP';db.execute('UPDATE sessions SET last_json=?',(evidence.canonical(last),))
+    result=run(path,72*3600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert result['other_stopped_sessions']==1 and result['clean_manual_stop_sessions']==0
+    assert 'SESSION_TERMINATION_REQUIRES_REVIEW' in result['review_reasons']
 
 
 def test_overlap_is_unioned_once_and_session_boundaries_never_bridged(tmp_path,monkeypatch):

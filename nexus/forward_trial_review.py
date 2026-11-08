@@ -46,7 +46,10 @@ PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_secon
     'revalidated_rejected_observations_in_window','recorded_eligibility_disagreements_in_window',
     'declared_public_observations','injected_observations','unknown_source_observations','sessions_in_window',
     'nonstopped_or_cleanup_review_sessions','declared_public_covered_seconds','coverage_fraction','uncovered_seconds',
-    'uncovered_intervals','longest_uncovered_seconds','declared_coverage_target_met','evidence_snapshot_sha256',
+    'uncovered_intervals','longest_uncovered_seconds','declared_coverage_target_met',
+    'clean_manual_stop_sessions','other_stopped_sessions','paused_sessions','running_sessions',
+    'sessions_with_quote_errors','quote_error_observations','operational_incidents_present',
+    'incident_free_coverage_target_met','evidence_snapshot_sha256',
     *FLAGS,'review_reasons','limitations'))
 
 
@@ -169,6 +172,7 @@ def _review(path, *, after, until):
         for payload, in db.execute('SELECT payload FROM forward_quotes'):
             if type(payload) is not str or forward_evidence.canonical(json.loads(payload))!=payload:_fail()
         intervals=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
+        clean_stopped=other_stopped=paused=running=quote_error_sessions=quote_errors=0
         reasons={'SOURCE_LABELS_AND_HASHES_UNATTESTED','ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','EXECUTION_OWNERSHIP_NOT_CHECKED'}
         for sid,started,updated,state,policy_raw,counts_raw,last_raw in rows:
             policy,counts,last=forward_sessions.parse(started,updated,state,policy_raw,counts_raw,last_raw)
@@ -178,6 +182,7 @@ def _review(path, *, after, until):
             evidence=forward_evidence.review(db,sid)
             if not evidence['integrity_ok']:_fail()
             points=evidence['points'];seen+=len(points);previous=None;in_window=False
+            session_quote_errors=0
             guard=FeedGuard();previous_exchange=None
             for point in points:
                 if point['policy_sha256']!=expected or type(point['quote_eligible']) is not bool:_fail()
@@ -190,6 +195,10 @@ def _review(path, *, after, until):
                     revalidated+=int(checked_eligible)
                     disagreements+=int(point['quote_eligible'] is True and not checked)
                     public+=int(source==PUBLIC);injected+=int(source==INJECTED);unknown+=int(source not in (PUBLIC,INJECTED))
+                    if point.get('error_type') is not None:
+                        if (type(point['error_type']) is not str or
+                                re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}',point['error_type']) is None):_fail()
+                        session_quote_errors+=1;quote_errors+=1
                 if previous is not None:
                     old,was_good=previous;gap=at-old
                     if gap<0:_fail()
@@ -199,6 +208,11 @@ def _review(path, *, after, until):
                 previous=at,good
             if in_window:
                 session_count+=1
+                quote_error_sessions+=int(session_quote_errors>0)
+                if state=='RUNNING':running+=1
+                elif state=='PAUSED':paused+=1
+                elif last['reason']=='MANUAL_STOP':clean_stopped+=1
+                else:other_stopped+=1
                 if state!='STOPPED' or last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':flagged+=1
         if seen!=count:_fail()
         binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,quote_heads=heads,quote_rows=count)).encode()).hexdigest()
@@ -212,12 +226,16 @@ def _review(path, *, after, until):
         if cursor<end:gaps.append(end-cursor)
         fraction=covered/duration
         target=duration>=MINIMUM_SECONDS and fraction>=Decimal('.95') and not flagged and not injected and not unknown and not disagreements and selected>0
+        incidents=bool(quote_errors or other_stopped or paused or running or disagreements)
+        incident_free_target=target and not incidents
         if duration<MINIMUM_SECONDS:reasons.add('REQUESTED_WINDOW_SHORTER_THAN_72_HOURS')
         if fraction<Decimal('.95'):reasons.add('DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT')
         if injected:reasons.add('INJECTED_OBSERVATIONS_IN_WINDOW')
         if unknown:reasons.add('UNKNOWN_SOURCE_LABELS_IN_WINDOW')
         if flagged:reasons.add('NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS')
         if disagreements:reasons.add('RECORDED_ELIGIBILITY_FAILS_RETAINED_QUOTE_RECHECK')
+        if quote_errors:reasons.add('QUOTE_ERRORS_RETAINED_IN_WINDOW')
+        if other_stopped:reasons.add('SESSION_TERMINATION_REQUIRES_REVIEW')
         if not selected:reasons.add('NO_OBSERVATIONS_IN_WINDOW')
         return dict(mode='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
             after=after,until=until,window_seconds=_text(duration),minimum_trial_seconds=MINIMUM_SECONDS,
@@ -231,7 +249,13 @@ def _review(path, *, after, until):
             sessions_in_window=session_count,nonstopped_or_cleanup_review_sessions=flagged,
             declared_public_covered_seconds=_text(covered),coverage_fraction=format(fraction.quantize(Decimal('.000001')),'f'),
             uncovered_seconds=_text(duration-covered),uncovered_intervals=len(gaps),longest_uncovered_seconds=_text(max(gaps,default=Decimal(0))),
-            declared_coverage_target_met=target,evidence_snapshot_sha256=binding,
+            declared_coverage_target_met=target,
+            clean_manual_stop_sessions=clean_stopped,other_stopped_sessions=other_stopped,
+            paused_sessions=paused,running_sessions=running,
+            sessions_with_quote_errors=quote_error_sessions,quote_error_observations=quote_errors,
+            operational_incidents_present=incidents,
+            incident_free_coverage_target_met=incident_free_target,
+            evidence_snapshot_sha256=binding,
             **{flag:False for flag in FLAGS},review_reasons=sorted(reasons),
             limitations=LIMITATIONS)
 

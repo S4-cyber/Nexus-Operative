@@ -1431,6 +1431,10 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
         with pytest.raises(ValueError,match='FORWARD_COVERAGE_EVIDENCE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['recovered']['coverage_review']['declared_public_covered_seconds']='1'
     with pytest.raises(ValueError,match='FORWARD_COVERAGE_SCOPE'):trials._validate('forward',changed)
+    for field,value in (('incident_free_coverage_target_met',True),
+        ('operational_incidents_present',False)):
+        changed=copy.deepcopy(result);changed['recovered']['coverage_review'][field]=value
+        with pytest.raises(ValueError,match='FORWARD_COVERAGE_SCOPE'):trials._validate('forward',changed)
     for field,value in (('retained_quote_recheck_applied',False),('recorded_eligibility_disagreements_in_window',1),
         ('recorded_eligibility_disagreements_in_window',False),('revalidated_eligible_observations_in_window',0),
         ('revalidated_rejected_observations_in_window',0),('eligibility_count_scope','VERIFIED_MARKET_COVERAGE')):

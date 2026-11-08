@@ -2321,7 +2321,10 @@ def _validate(profile, result):
             coverage['status']=='REVIEW_REQUIRED' and coverage['read_only'] is True and
             coverage['limitations']==COVERAGE_LIMITATIONS and
             coverage['injected_observations']==result['cycles'] and
-            coverage['declared_public_covered_seconds']=='0' and coverage['declared_coverage_target_met'] is False,
+            coverage['declared_public_covered_seconds']=='0' and
+            coverage['declared_coverage_target_met'] is False and
+            coverage['incident_free_coverage_target_met'] is False and
+            coverage['operational_incidents_present'] is True,
             'FORWARD_COVERAGE_SCOPE')
         _require(coverage['retained_quote_recheck_applied'] is True and
             coverage['eligibility_count_scope']=='RECORDED_FLAGS_ONLY_SEE_REVALIDATED_COUNTS' and
@@ -2338,7 +2341,10 @@ def _validate(profile, result):
             'revalidated_eligible_observations_in_window':220,'revalidated_rejected_observations_in_window':60,
             'recorded_eligibility_disagreements_in_window':0,'declared_public_observations':0,
             'injected_observations':280,'unknown_source_observations':0,'sessions_in_window':20,
-            'nonstopped_or_cleanup_review_sessions':20,'uncovered_intervals':1}
+            'nonstopped_or_cleanup_review_sessions':20,'uncovered_intervals':1,
+            'clean_manual_stop_sessions':0,'other_stopped_sessions':0,
+            'paused_sessions':20,'running_sessions':0,
+            'sessions_with_quote_errors':20,'quote_error_observations':60}
         _require(all(type(coverage[key]) is int and coverage[key]==value
             for key,value in coverage_counts.items()) and
             coverage['after']=='1970-01-01T00:16:40Z' and coverage['until']=='1970-01-01T00:38:20Z' and

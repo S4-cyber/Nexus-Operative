@@ -8,6 +8,13 @@ import sys
 import tempfile
 
 CHILD_TIMEOUT_SECONDS=180
+LIMITATIONS=('Temporary fixture and fresh Python processes; not a real-feed run, process-kill test, '
+    'cross-version migration or independent release acceptance.')
+PUBLIC_KEYS=frozenset(('mode','passed','verified_files','recovered','broker_connected',
+    'live_orders_enabled','release_approved','limitations'))
+RECOVERED_PUBLIC_KEYS=frozenset(('session','halted','portfolio_reconciled','forward_stopped',
+    'archived_session_orders','session_order_ids','order_sha256','account_sha256','quote_head_sha256',
+    'quote_observations','policy_sha256','modeled_buy_orders','modeled_sell_orders','source_modes'))
 
 
 def canonical(value):
@@ -104,7 +111,7 @@ def run():
         return dict(mode='DISPOSABLE_INJECTED_QUOTE_RECOVERY_DRILL',passed=True,
                     verified_files=len(verified['files']),recovered=recovered,
                     broker_connected=False,live_orders_enabled=False,release_approved=False,
-                    limitations='Temporary fixture and fresh Python processes; not a real-feed run, process-kill test, cross-version migration or independent release acceptance.')
+                    limitations=LIMITATIONS)
 
 
 def main():

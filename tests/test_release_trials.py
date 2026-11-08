@@ -1324,6 +1324,33 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
         with pytest.raises(ValueError,match='FORWARD_COVERAGE_AUTHORITY'):trials._validate('forward',changed)
 
 
+def test_recovery_trial_consumes_exact_restored_scope():
+    from pathlib import Path
+    from nexus.release_roadmap import REVISION
+    path=Path(__file__).resolve().parents[1]/'validation'/('release_trials_'+REVISION.replace('.','_')+'.json')
+    result=json.loads(path.read_text())['profiles']['recovery'];trials._validate('recovery',result)
+    class RecoveryMapping(dict):pass
+    for changed,code in ((dict(result,unconsumed=True),'RECOVERY_PROFILE_SCHEMA'),
+        (RecoveryMapping(result),'RECOVERY_PROFILE_SCHEMA')):
+        with pytest.raises(ValueError,match=code):trials._validate('recovery',changed)
+    changed=copy.deepcopy(result);changed['recovered']['unconsumed']=True
+    with pytest.raises(ValueError,match='RECOVERY_RESULT_SCHEMA'):trials._validate('recovery',changed)
+    changed=copy.deepcopy(result);changed['recovered']=RecoveryMapping(changed['recovered'])
+    with pytest.raises(ValueError,match='RECOVERY_RESULT_SCHEMA'):trials._validate('recovery',changed)
+    for field,value,code in (('verified_files',True,'RECOVERY_SCOPE'),
+        ('broker_connected',0,'RECOVERY_AUTHORITY')):
+        changed=copy.deepcopy(result);changed[field]=value
+        with pytest.raises(ValueError,match=code):trials._validate('recovery',changed)
+    for field,value,code in (('session','0'*15,'RECOVERY_ORDER_BINDING'),
+        ('session_order_ids',[],'RECOVERY_ORDER_BINDING'),
+        ('quote_observations',True,'RESTORE_ACCOUNTING'),
+        ('source_modes',['PUBLIC_READER_SINGLE_SOURCE_UNATTESTED'],'RESTORE_ACCOUNTING'),
+        ('policy_sha256','0'*64,'RECOVERY_EVIDENCE_BINDING'),
+        ('account_sha256','0'*63,'RECOVERY_EVIDENCE_BINDING')):
+        changed=copy.deepcopy(result);changed['recovered'][field]=value
+        with pytest.raises(ValueError,match=code):trials._validate('recovery',changed)
+
+
 @pytest.mark.parametrize('field',trials.FIRST_RUN_HTTP_CHECKS)
 def test_http_first_run_acceptance_requires_each_scope_check(field):
     result=http_report();result['first_run_defaults'][field]=False

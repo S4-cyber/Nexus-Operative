@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.236'
+REVISION = '0.340.237'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.236 gives the disposable forward-runner release profile strict immutable root, recovery, session, latency and retained-coverage schemas. Saved validation consumes exact synthetic-only limitations, session and evidence bindings, bounded counts and timing order, complete recovery state and every false authority field. Unknown fields, mapping subclasses, duplicate session bindings and broadened scope now fail closed. This is bounded injected-quote evidence hardening, not broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.237 gives the disposable cross-database recovery release profile strict immutable root and restored-state schemas. Saved validation consumes the exact injected-only limitations, fixed backup file count, session/order identity, restored hashes, admitted fixed-policy binding, archived fill counts and complete halted/stopped/flat reconciliation state. Unknown fields, mapping subclasses, substituted counts, promoted source labels and changed bindings now fail closed. This is bounded temporary backup/restore evidence hardening, not physical power-loss proof, cross-version/native Windows acceptance, broker-paper acceptance, genuine-feed realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

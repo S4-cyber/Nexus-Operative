@@ -2150,7 +2150,42 @@ def _validate(profile, result):
                  'ORDER_OFFLOAD_MULTI_EPOCH')
         _require(all(offload[key] is False for key in OFFLOAD_FLAGS),'ORDER_OFFLOAD_AUTHORITY')
     if profile == 'recovery':
-        _require(result['recovered']['halted'] is True and result['recovered']['portfolio_reconciled'] is True, 'RESTORE_ACCOUNTING')
+        from nexus.paper_policy import POLICY, admit
+        from nexus.recovery_drill import (LIMITATIONS, PUBLIC_KEYS,
+            RECOVERED_PUBLIC_KEYS)
+        _require(type(result) is dict and frozenset(result)==PUBLIC_KEYS,
+            'RECOVERY_PROFILE_SCHEMA')
+        recovered=result['recovered']
+        _require(type(recovered) is dict and frozenset(recovered)==RECOVERED_PUBLIC_KEYS,
+            'RECOVERY_RESULT_SCHEMA')
+        _require(result['mode']=='DISPOSABLE_INJECTED_QUOTE_RECOVERY_DRILL' and
+            result['passed'] is True and type(result['verified_files']) is int and
+            result['verified_files']==5 and result['limitations']==LIMITATIONS,
+            'RECOVERY_SCOPE')
+        _require(all(result[key] is False for key in
+            ('broker_connected','live_orders_enabled','release_approved')),
+            'RECOVERY_AUTHORITY')
+        session=recovered['session'];order_ids=recovered['session_order_ids']
+        _require(type(session) is str and re.fullmatch('[a-f0-9]{16}',session) is not None and
+            type(order_ids) is list and order_ids==[
+                f'pf_{session}_7_BUY',f'pf_{session}_8_SELL'],
+            'RECOVERY_ORDER_BINDING')
+        _require(all(recovered[key] is True for key in
+            ('halted','portfolio_reconciled','forward_stopped')) and
+            type(recovered['archived_session_orders']) is int and
+            recovered['archived_session_orders']==2 and
+            type(recovered['quote_observations']) is int and recovered['quote_observations']==8 and
+            type(recovered['modeled_buy_orders']) is int and
+            type(recovered['modeled_sell_orders']) is int and
+            recovered['modeled_buy_orders']==recovered['modeled_sell_orders']==1 and
+            recovered['source_modes']==['INJECTED_TRANSPORT_UNATTESTED'],
+            'RESTORE_ACCOUNTING')
+        hashes=[recovered[key] for key in
+            ('order_sha256','account_sha256','quote_head_sha256','policy_sha256')]
+        _require(all(type(value) is str and re.fullmatch('[a-f0-9]{64}',value) is not None
+            for value in hashes) and
+            recovered['policy_sha256']==admit(POLICY['id'])['policy_sha256'],
+            'RECOVERY_EVIDENCE_BINDING')
     for name in ('broker_connected', 'live_orders_enabled', 'release_approved', 'application_accounts_changed'):
         if name in result: _require(result[name] is False, 'UNEXPECTED_AUTHORITY')
 

@@ -383,6 +383,7 @@ def test_pacing_profile_requires_single_attempt_submission_transport_fences():
                   'request_marker_admission_window_bound',
                   'response_observation_cold_replayed',
                   'response_budget_completion_cold_replayed',
+                  'post_response_local_completion_stop_independent',
                   'response_observation_completion_bracketed',
                   'response_completion_window_bound',
                   'not_sent_completion_window_bound',

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.245'
+REVISION = '0.340.246'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.245 rechecks the exact saved paper credential binding after the final permission and emergency-stop checkpoint and immediately before the sole Alpaca paper POST transport attempt. A callback failure or pair mutation closes the durable reservation as NOT_SENT, permanently leaves the request original-client-ID lookup-only and performs no POST. The mandatory pacing profile retains this injected mutation proof. This is sampled local credential-lifecycle and synthetic paper evidence, not an atomic vault lease, actual provider/account access, broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, broker-wide coordination, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.246 makes post-response local provider-budget reconciliation independent of renewed engagement permission and emergency-stop admission. After the exact paper response is retained and cold-replayed, completion reuses the final trusted transport timestamp, performs no further provider IO and remains exact-head/cold-replay checked. Mandatory pacing evidence asserts both permission revocation and emergency-stop activation would occur after response retention yet cannot strand the known result as a pending attempt. This is injected local reconciliation evidence, not actual provider/account access, broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, broker-wide coordination, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

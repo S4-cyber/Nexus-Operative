@@ -95,6 +95,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['reservation_and_marker_admission_windows_bound']
     assert result['response_observation_cold_replayed']
     assert result['response_budget_completion_cold_replayed']
+    assert result['post_response_local_completion_stop_independent']
     assert result['response_observation_completion_bracketed']
     assert result['response_and_safety_completion_windows_bound']
     assert result['alpaca_post_budget_scope_required']
@@ -895,6 +896,28 @@ def test_post_transport_loss_preserves_unknown_and_cannot_retry(prepared):
     with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
         submit(prepared,second)
     assert not second.requests
+
+
+@pytest.mark.parametrize('control', ['permission', 'emergency_stop'])
+def test_durable_response_completion_does_not_require_control_reauthorization(
+        prepared, control):
+    journal=prepared[0];opener=Opener();observed_during_control=[]
+    def response_is_retained():
+        return journal.recovery()['requests'][0]['snapshot'] is not None
+    def permission_check():
+        observed=response_is_retained();observed_during_control.append(observed)
+        return not observed if control=='permission' else True
+    def emergency_stop_check():
+        observed=response_is_retained();observed_during_control.append(observed)
+        return observed if control=='emergency_stop' else False
+    result=submit(prepared,opener,permission_check=permission_check,
+                  emergency_stop_check=emergency_stop_check)
+    history=prepared[2].history()
+    assert result['post_response_local_completion_stop_independent'] is True
+    assert observed_during_control and not any(observed_during_control)
+    assert len(history)==1 and history[0]['outcome']=='RESPONSE_OBSERVED'
+    assert history[0]['actual_posts']==1
+    assert sum(request.get_method()=='POST' for request,_ in opener.requests)==1
 
 
 def test_invalid_post_response_preserves_unknown_without_secret_or_body_echo(prepared):

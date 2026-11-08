@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.245. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.246. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.245 rechecks the exact saved paper credential binding after the final permission and emergency-stop checkpoint and immediately before the sole Alpaca paper POST transport attempt. A callback failure or pair mutation closes the durable reservation as NOT_SENT, permanently leaves the request original-client-ID lookup-only and performs no POST. The mandatory pacing profile retains this injected mutation proof. This is sampled local credential-lifecycle and synthetic paper evidence, not an atomic vault lease, actual provider/account access, broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, broker-wide coordination, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.246 makes post-response local provider-budget reconciliation independent of renewed engagement permission and emergency-stop admission. After the exact paper response is retained and cold-replayed, completion reuses the final trusted transport timestamp, performs no further provider IO and remains exact-head/cold-replay checked. Mandatory pacing evidence asserts both permission revocation and emergency-stop activation would occur after response retention yet cannot strand the known result as a pending attempt. This is injected local reconciliation evidence, not actual provider/account access, broker-paper acceptance, genuine-feed or sustained-market realism, profitability, native Windows owner-profile acceptance, broker-wide coordination, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

@@ -1,5 +1,14 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.246
+
+After the exact single-attempt paper POST response is retained and cold-replayed, terminal local provider-budget reconciliation now reuses the final trusted transport timestamp instead of requesting renewed engagement permission or emergency-stop admission. This performs no provider IO and prevents a newly asserted stop from stranding a known result as pending. The exact-source v0.340.245 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.246 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (read-only weighted index 38%; 30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,820 tests with one expected non-Windows skip; the complete submission/release-profile modules passed 191, the synchronized release/version/installer/package focus passed 276 and the explicit Portal/controller focus passed 22 plus fourteen Node controllers. Sixteen offline profiles match 401 source files / `ca860a448703938fa5c1a54a8b51caf99fab42c3cf17efa8237b605a6cc3f34a`; report SHA256 is `bda2c306cbbb9f5b2ff195ed6d9aa321a8af1568215351eb2965b63d43fb1c2d`. Compilation, dependency integrity and roadmap equality passed. The 161-member v0.340.246 wheel SHA256 is `b3fe9127b725ffddcd57b52fe8e8865bcbfbfd08df6ea4cd1a2bbac4c0f73a63`. The 965-path candidate audit, 4,167 introduced-line high-confidence signature scan and locally reachable 23-commit artifact audit found zero findings; local Gitleaks is unavailable and fresh hosted full-history security remains required. These are local/synthetic checks, not broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
+
 ## Current candidate: v0.340.245
 
 The internal explicit one-attempt paper submission boundary now rechecks the exact saved credential binding after the final permission/emergency-stop checkpoint and immediately before the sole POST transport attempt. A mutation or callback failure performs no POST, closes the durable provider budget as `NOT_SENT` and leaves the request original-client-ID lookup-only. The exact-source v0.340.244 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.245 checks remain required.

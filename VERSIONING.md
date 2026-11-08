@@ -2,7 +2,7 @@
 
 **Current development build: 0.340.247 (pre-release).**
 
-+## v0.340.247 parsed-response persistence reconciliation
+## v0.340.247 parsed-response persistence reconciliation
 
 Once the sole paper POST has returned a completely parsed response, durable response observation now uses repeated local store-binding and reservation checks without asking engagement permission or emergency-stop admission again. Every preflight and in-flight permission, stop, credential, ownership and provider-budget check remains mandatory. No additional provider IO occurs. This prevents a stop assertion or permission revocation at the parsed-response boundary from discarding a known result as outcome-unknown; exact response retention, cold replay and terminal provider-budget completion remain mandatory. The pacing release profile retains both boundary transitions.
 

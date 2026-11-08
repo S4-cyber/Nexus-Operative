@@ -14,6 +14,20 @@ from nexus.state import isolated_settings
 from nexus.tier_permissions import configure
 
 _LOCK=threading.Lock()
+LIMITATIONS=('Local commit-return timings. Linked treatments include ledger integrity, tier-entry reads '
+    'and atomic reconciliation. The separate burst treatment adds bounded local queue residence and '
+    'overload/expiry. Both exclude streaming, strategy, network, broker acknowledgments and actual '
+    'market fills. Cold validation remains full replay; all retained payloads are still hashed. No '
+    'fixed speedup or market throughput is established.')
+PUBLIC_KEYS=frozenset(('mode','simulation_only','live_orders_enabled','isolated_temporary_storage',
+    'application_accounts_changed','treatments','burst_treatment','atomic_burst_treatment',
+    'target_market_moves_per_second','target_validated','limitations'))
+TREATMENT_KEYS=frozenset(('checkpoints_enabled','cycles','durable_commands','commit_return_latency',
+    'elapsed_seconds','commands_per_second','cold_recovery_ms','warm_recovery_ms',
+    'recovery_diagnostics','accounting_consistent','portfolio_linked','tier_checks_included','scope',
+    'broker_orders'))
+LATENCY_KEYS=frozenset(('p50_ms','p95_ms','p99_ms'))
+RECOVERY_KEYS=frozenset(('cache_hit','checkpoint_sequence','prefix_replayed','tail_replayed'))
 
 
 def percentiles(samples):
@@ -75,5 +89,5 @@ def benchmark(cycles=16):
                     isolated_temporary_storage=True,application_accounts_changed=False,
                     treatments=reports,burst_treatment=burst,atomic_burst_treatment=atomic_burst,target_market_moves_per_second=30,
                     target_validated=False,
-                    limitations='Local commit-return timings. Linked treatments include ledger integrity, tier-entry reads and atomic reconciliation. The separate burst treatment adds bounded local queue residence and overload/expiry. Both exclude streaming, strategy, network, broker acknowledgments and actual market fills. Cold validation remains full replay; all retained payloads are still hashed. No fixed speedup or market throughput is established.')
+                    limitations=LIMITATIONS)
     finally:_LOCK.release()

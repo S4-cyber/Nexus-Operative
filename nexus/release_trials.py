@@ -6,6 +6,7 @@ Run: python -m nexus.release_trials --output release-trials.json
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -820,22 +821,113 @@ def _validate(profile, result):
     _require(profile in PROFILES and isinstance(result, dict), 'RESULT_SHAPE')
     # Each profile has explicit acceptance assertions; process exit 0 alone is insufficient.
     if profile == 'capacity':
-        from nexus.execution_quality import CHECKS as QUALITY_CHECKS, FLAGS as QUALITY_FLAGS
-        quality=result['execution_quality']
-        _require(quality['source']=='SYNTHETIC_EXECUTION_QUALITY_FIXTURE' and quality['passed'] is True and
-            all(quality[k] is True for k in QUALITY_CHECKS),'EXECUTION_QUALITY')
-        _require(all(quality[k] is False for k in QUALITY_FLAGS),'EXECUTION_QUALITY_AUTHORITY')
-        from nexus.paper_execution_quality_review import CHECKS as PAPER_QUALITY_CHECKS, FLAGS as PAPER_QUALITY_FLAGS
-        paper=result['paper_execution_quality']
-        _require(paper['source']=='SYNTHETIC_ACCEPTED_PAPER_EXECUTION_QUALITY_FIXTURE' and paper['passed'] is True and
-            all(paper[k] is True for k in PAPER_QUALITY_CHECKS),'PAPER_EXECUTION_QUALITY')
-        _require(all(paper[k] is False for k in PAPER_QUALITY_FLAGS),'PAPER_EXECUTION_QUALITY_AUTHORITY')
-        _require(len(result['treatments']) == 4, 'CAPACITY_TREATMENTS')
-        _require(all(t['accounting_consistent'] is True and t['broker_orders'] == 0 and t['cycles'] == 30
-                     for t in result['treatments']), 'CAPACITY_ACCOUNTING')
-        for name in ('burst_treatment', 'atomic_burst_treatment'):
-            _require(result[name]['accounting_consistent'] is True, 'BURST_ACCOUNTING')
-        _require(result['target_validated'] is False, 'UNSUPPORTED_MARKET_SPEED_CLAIM')
+        # Preserve focused fixture-validator diagnostics used by the individual
+        # quality modules while the complete release profile remains exact.
+        from nexus.execution_quality import (CHECKS as QUALITY_CHECKS,FLAGS as QUALITY_FLAGS,
+            PUBLIC_FIXTURE_KEYS as QUALITY_KEYS)
+        if 'execution_quality' in result:
+            quality=result['execution_quality']
+            _require(type(quality) is dict and frozenset(quality)==QUALITY_KEYS,
+                'EXECUTION_QUALITY_SCHEMA')
+            _require(quality['source']=='SYNTHETIC_EXECUTION_QUALITY_FIXTURE' and
+                quality['passed'] is True and
+                all(quality[k] is True for k in QUALITY_CHECKS),'EXECUTION_QUALITY')
+            _require(all(quality[k] is False for k in QUALITY_FLAGS),
+                'EXECUTION_QUALITY_AUTHORITY')
+        from nexus.paper_execution_quality_review import (CHECKS as PAPER_QUALITY_CHECKS,
+            FLAGS as PAPER_QUALITY_FLAGS,PUBLIC_FIXTURE_KEYS as PAPER_QUALITY_KEYS)
+        if 'paper_execution_quality' in result:
+            paper=result['paper_execution_quality']
+            _require(type(paper) is dict and frozenset(paper)==PAPER_QUALITY_KEYS,
+                'PAPER_EXECUTION_QUALITY_SCHEMA')
+            _require(paper['source']=='SYNTHETIC_ACCEPTED_PAPER_EXECUTION_QUALITY_FIXTURE' and
+                paper['passed'] is True and all(paper[k] is True for k in PAPER_QUALITY_CHECKS),
+                'PAPER_EXECUTION_QUALITY')
+            _require(all(paper[k] is False for k in PAPER_QUALITY_FLAGS),
+                'PAPER_EXECUTION_QUALITY_AUTHORITY')
+        if frozenset(result) and frozenset(result)<=frozenset((
+                'execution_quality','paper_execution_quality')):
+            return
+        from nexus.durable_benchmark import (LATENCY_KEYS,LIMITATIONS as CAPACITY_LIMITATIONS,
+            PUBLIC_KEYS as CAPACITY_KEYS,RECOVERY_KEYS,TREATMENT_KEYS)
+        from nexus.durable_burst import (LIMITATIONS as BURST_LIMITATIONS,
+            PUBLIC_KEYS as BURST_KEYS)
+        _require(type(result) is dict and frozenset(result)==
+            CAPACITY_KEYS|frozenset(('execution_quality','paper_execution_quality')),
+            'CAPACITY_PROFILE_SCHEMA')
+        _require(result['mode']=='OFFLINE_DURABLE_GATEWAY_BENCHMARK' and
+            result['simulation_only'] is True and
+            result['isolated_temporary_storage'] is True and
+            result['live_orders_enabled'] is False and
+            result['application_accounts_changed'] is False and
+            type(result['target_market_moves_per_second']) is int and
+            result['target_market_moves_per_second']==30 and
+            result['target_validated'] is False and
+            result['limitations']==CAPACITY_LIMITATIONS,
+            'CAPACITY_PROFILE_SCOPE')
+        def latency(value):
+            return (type(value) is dict and frozenset(value)==LATENCY_KEYS and
+                all(type(value[key]) is float and math.isfinite(value[key]) and value[key]>=0
+                    for key in LATENCY_KEYS) and
+                value['p50_ms']<=value['p95_ms']<=value['p99_ms'])
+        treatments=result['treatments']
+        _require(type(treatments) is list and len(treatments)==4 and
+            all(type(item) is dict and frozenset(item)==TREATMENT_KEYS for item in treatments),
+            'CAPACITY_TREATMENT_SCHEMA')
+        expected=(('GATEWAY_ONLY',False,False,False,False,0,241,0),
+            ('GATEWAY_ONLY',True,False,False,True,192,0,49),
+            ('LINKED_LEDGER_AND_TIER',False,True,True,False,0,242,0),
+            ('LINKED_LEDGER_AND_TIER',True,True,True,True,192,0,50))
+        for item,(scope,checkpoints,linked,tier,cache,sequence,prefix,tail) in zip(treatments,expected):
+            _require(item['scope']==scope and item['checkpoints_enabled'] is checkpoints and
+                item['portfolio_linked'] is linked and item['tier_checks_included'] is tier and
+                item['accounting_consistent'] is True and
+                type(item['cycles']) is int and item['cycles']==30 and
+                type(item['durable_commands']) is int and item['durable_commands']==240 and
+                type(item['broker_orders']) is int and item['broker_orders']==0,
+                'CAPACITY_TREATMENT_SCOPE')
+            _require(latency(item['commit_return_latency']) and
+                all(type(item[key]) is float and math.isfinite(item[key]) and item[key]>=0
+                    for key in ('elapsed_seconds','commands_per_second','cold_recovery_ms','warm_recovery_ms')) and
+                item['elapsed_seconds']>0 and item['commands_per_second']>0,
+                'CAPACITY_TREATMENT_TIMING')
+            recovery=item['recovery_diagnostics']
+            _require(type(recovery) is dict and frozenset(recovery)==RECOVERY_KEYS and
+                recovery['cache_hit'] is cache and
+                all(type(recovery[key]) is int for key in
+                    ('checkpoint_sequence','prefix_replayed','tail_replayed')) and
+                (recovery['checkpoint_sequence'],recovery['prefix_replayed'],
+                    recovery['tail_replayed'])==(sequence,prefix,tail),
+                'CAPACITY_RECOVERY_SCOPE')
+        for name,atomic in (('burst_treatment',False),('atomic_burst_treatment',True)):
+            burst=result[name]
+            _require(type(burst) is dict and frozenset(burst)==BURST_KEYS,
+                'CAPACITY_BURST_SCHEMA')
+            _require(burst['scope']=='TEMPORARY_LINKED_LEDGER_FIXTURE_BURST' and
+                burst['atomic_order_transactions'] is atomic and
+                burst['accounting_consistent'] is burst['halted'] is True and
+                burst['application_accounts_changed'] is burst['target_validated'] is False and
+                burst['limitations']==BURST_LIMITATIONS,
+                'CAPACITY_BURST_SCOPE')
+            counts=dict(offered=30,queue_capacity=8,admitted=8,overflow_rejections=22,
+                duplicate_rejections=1,broker_orders=0)
+            _require(all(type(burst[key]) is int and burst[key]==value
+                for key,value in counts.items()) and
+                all(type(burst[key]) is int and burst[key]>=0 for key in
+                    ('completed_roundtrips','expired_before_execution','halt_flushed',
+                     'duplicate_fill_replays','durable_commands')) and
+                burst['completed_roundtrips']+burst['expired_before_execution']+
+                    burst['halt_flushed']==burst['admitted'] and
+                burst['duplicate_fill_replays']==2*burst['completed_roundtrips'] and
+                burst['durable_commands']==3+8*burst['completed_roundtrips'] and
+                type(burst['queue_age_limit_ms']) is float and
+                burst['queue_age_limit_ms']==250.0,
+                'CAPACITY_BURST_COUNTS')
+            _require(all(latency(burst[key]) for key in ('queue_wait_latency',
+                    'durable_roundtrip_latency','admitted_to_completion_latency')) and
+                type(burst['cold_recovery_ms']) is float and
+                math.isfinite(burst['cold_recovery_ms']) and burst['cold_recovery_ms']>=0,
+                'CAPACITY_BURST_TIMING')
     elif profile != 'forward': _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS

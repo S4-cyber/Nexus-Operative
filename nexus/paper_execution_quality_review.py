@@ -28,6 +28,7 @@ FLAGS=tuple(dict.fromkeys((*quality.FLAGS,*accepted.FLAGS,'benchmark_source_veri
 CHECKS=('all_original_fills_derived','exact_heads_replayed','missing_fees_unlinked',
     'local_request_event_bound','changed_request_event_refused','legacy_request_event_refused',
     'repeat_review_matches','journals_unchanged','benchmark_not_attested','integer_fill_times_preserved')
+PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,*FLAGS))
 
 
 def _fail(code):raise ValueError('PAPER_EXECUTION_QUALITY_'+code)

@@ -208,6 +208,45 @@ def test_operations_trial_consumes_exact_durable_scope():
         with pytest.raises(ValueError,match=code):trials._validate('operations',changed)
 
 
+def test_capacity_trial_consumes_exact_bounded_scope():
+    result=trials._execute('capacity');trials._validate('capacity',result)
+    class ReportMapping(dict):pass
+    for changed,code in ((dict(result,unconsumed=True),'CAPACITY_PROFILE_SCHEMA'),
+        (ReportMapping(result),'CAPACITY_PROFILE_SCHEMA')):
+        with pytest.raises(ValueError,match=code):trials._validate('capacity',changed)
+    cases=[]
+    changed=copy.deepcopy(result);changed['treatments']=tuple(changed['treatments'])
+    cases.append((changed,'CAPACITY_TREATMENT_SCHEMA'))
+    changed=copy.deepcopy(result);changed['treatments'][0]['unconsumed']=True
+    cases.append((changed,'CAPACITY_TREATMENT_SCHEMA'))
+    changed=copy.deepcopy(result);changed['treatments'][0]=ReportMapping(changed['treatments'][0])
+    cases.append((changed,'CAPACITY_TREATMENT_SCHEMA'))
+    changed=copy.deepcopy(result);changed['treatments'][0]['cycles']=True
+    cases.append((changed,'CAPACITY_TREATMENT_SCOPE'))
+    changed=copy.deepcopy(result);changed['treatments'][0]['recovery_diagnostics']['extra']=0
+    cases.append((changed,'CAPACITY_RECOVERY_SCOPE'))
+    changed=copy.deepcopy(result);changed['treatments'][0]['commit_return_latency']['p50_ms']=0
+    cases.append((changed,'CAPACITY_TREATMENT_TIMING'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['unconsumed']=True
+    cases.append((changed,'CAPACITY_BURST_SCHEMA'))
+    changed=copy.deepcopy(result);changed['atomic_burst_treatment']['atomic_order_transactions']=False
+    cases.append((changed,'CAPACITY_BURST_SCOPE'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['admitted']=True
+    cases.append((changed,'CAPACITY_BURST_COUNTS'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['queue_wait_latency']['p99_ms']=float('inf')
+    cases.append((changed,'CAPACITY_BURST_TIMING'))
+    changed=copy.deepcopy(result);changed['execution_quality']['unconsumed']=True
+    cases.append((changed,'EXECUTION_QUALITY_SCHEMA'))
+    changed=copy.deepcopy(result);changed['execution_quality']['passed']=1
+    cases.append((changed,'EXECUTION_QUALITY'))
+    changed=copy.deepcopy(result);changed['paper_execution_quality']=ReportMapping(changed['paper_execution_quality'])
+    cases.append((changed,'PAPER_EXECUTION_QUALITY_SCHEMA'))
+    changed=copy.deepcopy(result);changed['paper_execution_quality']['broker_connected']=0
+    cases.append((changed,'PAPER_EXECUTION_QUALITY_AUTHORITY'))
+    for changed,code in cases:
+        with pytest.raises(ValueError,match=code):trials._validate('capacity',changed)
+
+
 def test_source_fingerprint_tracks_source_test_and_workflow_changes(tmp_path):
     for name in ('nexus','tests','tools','.github/workflows','dashboard','installer'):
         (tmp_path/name).mkdir(parents=True)

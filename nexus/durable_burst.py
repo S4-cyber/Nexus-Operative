@@ -10,6 +10,16 @@ from nexus import order_checkpoints
 CAPACITY=8
 MAX_CYCLES=30
 MAX_QUEUE_AGE_SECONDS=.250
+LIMITATIONS=('Serially drained bounded fixture burst. Includes real local queue residence, linked '
+    'ledger/tier writes, duplicate replay; cold validation is checked separately after timing. Uses '
+    'fixed synthetic quote time. Excludes feed, strategy, streaming, network and broker timing; '
+    'roundtrips are not market moves.')
+PUBLIC_KEYS=frozenset(('scope','atomic_order_transactions','offered','queue_capacity','admitted',
+    'overflow_rejections','duplicate_rejections','completed_roundtrips','expired_before_execution',
+    'halt_flushed','duplicate_fill_replays','queue_age_limit_ms','queue_wait_latency',
+    'durable_roundtrip_latency','admitted_to_completion_latency','accounting_consistent','halted',
+    'durable_commands','cold_recovery_ms','application_accounts_changed','broker_orders',
+    'target_validated','limitations'))
 
 
 def measure(root,cycles,clock=time.perf_counter,halt_after=None,atomic_orders=False):
@@ -75,4 +85,4 @@ def measure(root,cycles,clock=time.perf_counter,halt_after=None,atomic_orders=Fa
                     admitted_to_completion_latency=percentiles(end_to_end) if end_to_end else None,
                     accounting_consistent=consistent,halted=restored['halted'],durable_commands=restored['commands'],cold_recovery_ms=round(cold_ms,3),
                     application_accounts_changed=False,broker_orders=0,target_validated=False,
-                    limitations='Serially drained bounded fixture burst. Includes real local queue residence, linked ledger/tier writes, duplicate replay; cold validation is checked separately after timing. Uses fixed synthetic quote time. Excludes feed, strategy, streaming, network and broker timing; roundtrips are not market moves.')
+                    limitations=LIMITATIONS)

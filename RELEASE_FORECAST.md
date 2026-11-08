@@ -1,5 +1,13 @@
 # Nexus Operative delivery forecast and milestone coverage
 
+## Current candidate: v0.340.239
+
+The disposable durable-capacity profile now has immutable root, treatment, timing, recovery, burst and execution-quality schemas. Saved validation consumes the exact four-treatment matrix, replay accounting, bounded burst equations, finite ordered timings, synthetic scope and every denied authority field without converting local speed into market throughput. Sixteen adversarial mutations cover previously accepted extension, subclass, scope, type, non-finite timing, count and authority changes. The exact-source v0.340.238 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.239 checks remain required.
+
+No external operational gate is newly accepted. The rough 40% implementation estimate (30–45%, low confidence; manual basis October 18), 0/9 accepted stages and absence of a defensible launch date remain unchanged. Broker-paper and sustained genuine-feed acceptance remain the next major gate; funding, live execution and computer-off cloud remain unfinished.
+
+Final local validation passed 5,803 tests with one expected non-Windows skip; the complete release-trial module passed 129 tests and the capacity/evidence/version/installer focus passed 159. Sixteen offline profiles match 401 source files / `a4223f39b3c67c31d9458ffe8c47c6ab98b963f53acab829ff990ddde3cb2997`; report SHA256 is `86202a1055db6c0e2d6d04c6aa5a8eb8e9053328fa6b68471d560130e360cf89`. Compilation, dependency integrity, roadmap equality, Portal syntax and fourteen Node controllers passed. The 161-member v0.340.239 wheel SHA256 is `af79222f1c08cf703b050aed5924535c7cf064833af879035449bff002082e42`. The 958-path proposed-candidate public-artifact audit and 4,282 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
+
 ## Current candidate: v0.340.238
 
 The disposable scripted-operations profile now has immutable 18-field root and 33-field physical-offload schemas. Saved validation consumes its exact synthetic limitations, nine fixed integer counts, reconciled/deduplicated/no-history-loss state, every offload check, six exact generation/retired-ID metrics and every denied authority field. Seventeen adversarial mutations cover previously accepted extension, subclass, scope, type, count, source and authority changes. The exact-source v0.340.237 remote commit has no connector-visible pull-request workflow run or combined status; fresh exact-source v0.340.238 checks remain required.

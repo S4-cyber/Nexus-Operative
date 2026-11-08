@@ -19,6 +19,7 @@ FLAGS=('source_attested','clock_domains_verified','actual_fee_coverage_verified'
 CHECKS=('buy_sell_signs_checked','decomposition_checked','partial_opportunity_separate',
     'missing_fees_remain_unknown','duplicates_not_double_counted','conflicting_duplicates_rejected',
     'nanosecond_ordering_checked','input_order_invariant','no_fill_not_promoted')
+PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,*FLAGS))
 
 
 def _fail(code):raise ValueError('EXECUTION_QUALITY_'+code)

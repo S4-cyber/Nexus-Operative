@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.238'
+REVISION = '0.340.239'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -796,7 +796,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.238 gives the disposable operations and physical-offload release profile strict immutable root and nested schemas. Saved validation consumes every fixed operation, fill, hold, restart, archival and retained-command count; complete flat/reconciled history state; every offload check; bounded multi-epoch and legacy-retired-ID metric; and every false authority field. Unknown fields, mapping subclasses, substituted counts, broadened scope and promoted authority now fail closed. This is bounded temporary-database durability evidence, not physical power-loss or native Windows acceptance, actual broker-paper acceptance, genuine-feed realism, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.239 gives the disposable durable-capacity and execution-quality release profile strict immutable root, treatment, timing, recovery, burst and quality schemas. Saved validation consumes the fixed four-treatment matrix, replay accounting, bounded burst equations, finite ordered timings, synthetic scope and every denied authority field without treating measured speed as market throughput. Unknown fields, mapping subclasses, boolean-for-integer substitutions, non-finite timings, altered counts or promoted authority now fail closed. This is bounded temporary-database timing and arithmetic evidence, not sustained-market realism, physical power-loss or native Windows acceptance, actual broker-paper acceptance, funding/live/cloud readiness or release approval. No Portal control or editable parameter changed. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

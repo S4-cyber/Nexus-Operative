@@ -74,3 +74,47 @@ def test_normal_elapsed_gap_rewarms_without_clock_fault(tmp_path,monkeypatch):
     assert result['decision']=='HOLD' and r.status()['enabled']
     assert len(r._prices)==1
     r.stop()
+
+
+@pytest.mark.parametrize('failure',['overflow','callback'])
+def test_runtime_clock_failure_pauses_without_escaping_or_exposing_detail(tmp_path,monkeypatch,failure):
+    r,g,c=setup(tmp_path,monkeypatch)
+    if failure=='overflow':r.clock=lambda:10**1000
+    else:r.clock=lambda:(_ for _ in ()).throw(RuntimeError('private callback detail'))
+    result=r.single_cycle();session=r.sessions()['sessions'][0]
+    assert result['decision']=='PAUSED' and result['reason']=='INVALID_RUNTIME_CLOCK'
+    assert not r.status()['enabled'] and r.status()['last_error']=='INVALID_RUNTIME_CLOCK'
+    assert session['stored_state']=='PAUSED' and session['last_event']['reason']=='INVALID_RUNTIME_CLOCK'
+    assert 'private callback detail' not in str(session) and not g.recovery_report()['orders']
+
+
+def test_final_record_clock_failure_converts_hold_to_durable_pause(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);samples=iter((c.now,c.now))
+    def clock():
+        try:return next(samples)
+        except StopIteration:raise RuntimeError('private final-record detail')
+    r.clock=clock
+    result=r.single_cycle();session=r.sessions()['sessions'][0]
+    assert result['decision']=='PAUSED' and result['reason']=='INVALID_RUNTIME_CLOCK'
+    assert not r.status()['enabled'] and session['stored_state']=='PAUSED'
+    assert session['last_event']['clock_sample_valid'] is False
+    assert r.evidence_report(session['session'])['quote_evidence']['observations']==1
+    assert 'private final-record detail' not in str(session)
+
+
+def test_runtime_clock_process_control_signal_remains_observable(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch)
+    r.clock=lambda:(_ for _ in ()).throw(KeyboardInterrupt())
+    with pytest.raises(KeyboardInterrupt):r.single_cycle()
+    assert r.status()['enabled'] and not g.recovery_report()['orders']
+    r.clock=lambda:c.now;r.stop()
+
+
+def test_stop_remains_durable_and_sanitized_when_runtime_clock_fails(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch)
+    r.clock=lambda:(_ for _ in ()).throw(RuntimeError('private stop-clock detail'))
+    status=r.stop();session=r.sessions()['sessions'][0]
+    assert not status['enabled'] and not status['ownership_held']
+    assert session['stored_state']=='STOPPED' and session['last_event']['decision']=='STOP'
+    assert session['last_event']['clock_sample_valid'] is False
+    assert 'private stop-clock detail' not in str(session) and not g.recovery_report()['orders']

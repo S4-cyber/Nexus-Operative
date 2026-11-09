@@ -29,6 +29,7 @@ INTERVAL=POLICY['interval_seconds']
 RANKING_INTERVAL=POLICY['ranking_seconds']
 PRODUCT=POLICY['product']
 CLOCK_DISCONTINUITY_TOLERANCE_SECONDS=2
+MAX_WALL_CLOCK_SECONDS=253402300799
 SESSION_LIMIT=1000
 DB_BUSY_TIMEOUT_MS=10_000
 
@@ -73,6 +74,16 @@ class PaperForwardRunner:
         self._policy=admit(POLICY["id"])
         self._observation_hash=None
         self._ownership=None
+
+    @staticmethod
+    def _clock_value(callback,wall=False):
+        """Return one bounded ordinary sample; keep process-control signals visible."""
+        try:
+            value=callback()
+            valid=type(value) in (int,float) and math.isfinite(value)
+        except Exception:return None
+        if not valid or (wall and not 0<=value<MAX_WALL_CLOCK_SECONDS):return None
+        return value
 
     def _db(self):
         root=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))
@@ -119,9 +130,12 @@ class PaperForwardRunner:
             if db is not None:db.close()
 
     def _record(self,decision,reason,**extra):
-        observed=self.clock()
-        valid=type(observed) in (int,float) and math.isfinite(observed)
-        recorded=observed if valid else (self._clock_anchor[0] if self._clock_anchor else time.time())
+        observed=self._clock_value(self.clock,wall=True)
+        valid=observed is not None
+        recorded=observed if valid else (self._clock_anchor[0] if self._clock_anchor else 0)
+        if not valid and decision not in ('STOP','PAUSED'):
+            decision='PAUSED';reason='INVALID_RUNTIME_CLOCK'
+            self._error=reason;self._stop.set()
         row=dict(at=recorded,clock_sample_valid=valid,session=self._session,cycle=self._cycles,quote_evidence_sha256=self._observation_hash,decision=decision,reason=reason,
                  product=PRODUCT,tier=self._tier,simulation_only=True,**extra)
         row['policy_id']=self._policy['id'];row['policy_sha256']=self._policy['policy_sha256']
@@ -155,10 +169,11 @@ class PaperForwardRunner:
         return row
 
     def _record_quote(self,quote,eligible,error=None):
+        if self._clock_anchor is None:raise ValueError('INVALID_RUNTIME_CLOCK')
         with closing(self._db()) as db:
             with _transaction(db):
                 db.execute('BEGIN IMMEDIATE')
-                candidate=forward_evidence.append(db,self._session,self._cycles,self.clock(),quote,eligible,
+                candidate=forward_evidence.append(db,self._session,self._cycles,self._clock_anchor[0],quote,eligible,
                     'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
                     self._policy['policy_sha256'],error)
         self._observation_hash=candidate
@@ -293,7 +308,7 @@ class PaperForwardRunner:
             if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_BEFORE_FILL')
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
-            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock(),fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=lambda:self._execution_now(exchange_at))
+            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,now,fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=lambda:self._execution_now(exchange_at))
             if result.get('expired'):
                 self._prices.clear();self._last_rank=0
                 return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)
@@ -306,8 +321,9 @@ class PaperForwardRunner:
                 raise OrderCleanupFailure(oid,exc) from exc
 
     def _clock_check(self):
-        wall=self.clock();steady=self.monotonic_clock()
-        if any(type(v) not in (int,float) or not math.isfinite(v) for v in (wall,steady)):
+        wall=self._clock_value(self.clock,wall=True)
+        steady=self._clock_value(self.monotonic_clock)
+        if wall is None or steady is None:
             return 'INVALID_RUNTIME_CLOCK'
         if self._clock_anchor:
             old_wall,old_steady=self._clock_anchor
@@ -347,9 +363,10 @@ class PaperForwardRunner:
                 self._stop.set();return self._record('PAUSED','JOURNAL_OR_ID_CAPACITY_VETO')
             quote=None
             try:
-                quote=self.fetcher(PRODUCT);now=self.clock()
+                quote=self.fetcher(PRODUCT)
                 clock_reason=self._clock_check()
                 if clock_reason:return self._pause_clock(clock_reason)
+                now=self._clock_anchor[0]
                 if not isinstance(quote,dict):raise ValueError('MISSING_FORWARD_QUOTE')
                 if self._intake_stopped():return dict(decision='HOLD',reason='STOPPED_DURING_FETCH')
                 feed=self._guard.evaluate(quote,now)
@@ -484,11 +501,8 @@ class PaperForwardRunner:
             rows=[] if db is None else db.execute('SELECT id,started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions ORDER BY started_at DESC,rowid DESC LIMIT ?',(limit,)).fetchall()
         observed=None;observed_valid=False
         if any(row[3]=='RUNNING' for row in rows):
-            try:
-                observed=self.clock()
-                observed_valid=(type(observed) in (int,float) and math.isfinite(observed)
-                    and 0<=observed<253402300799)
-            except Exception:observed=None
+            observed=self._clock_value(self.clock,wall=True)
+            observed_valid=observed is not None
         results=[]
         for sid,started,updated,state,policy,counts,last in rows:
             policy,counts,last=forward_sessions.parse(started,updated,state,policy,counts,last)

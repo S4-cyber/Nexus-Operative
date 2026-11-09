@@ -1,4 +1,5 @@
 import json
+import math
 import sqlite3
 import pytest
 from nexus.paper_forward import PaperForwardRunner
@@ -32,6 +33,36 @@ def test_heartbeat_staleness_and_no_automatic_rearm(tmp_path,monkeypatch):
     assert r.status()['enabled']
     assert not g.recovery_report()['orders']
     r.stop()
+
+
+@pytest.mark.parametrize('sample',[math.nan,math.inf,-math.inf,True,None,999,10**100,10**1000],
+    ids=['nan','infinite','negative-infinite','boolean','missing','regressed','huge','overflowing-integer'])
+def test_running_session_monitor_fails_closed_on_untrusted_clock(tmp_path,monkeypatch,sample):
+    r,g,c=setup(tmp_path,monkeypatch);before=(tmp_path/'paper_forward.sqlite3').read_bytes();c.now=sample
+    session=r.sessions()['sessions'][0]
+    assert session['effective_state']=='CLOCK_REVIEW_REQUIRED'
+    assert session['review_reasons']==['SESSION_MONITOR_CLOCK_UNTRUSTED'] and session['requires_review']
+    assert not g.recovery_report()['orders'] and (tmp_path/'paper_forward.sqlite3').read_bytes()==before
+    r.clock=lambda:1000;r.stop()
+
+
+def test_running_session_monitor_sanitizes_clock_callback_failure(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);before=(tmp_path/'paper_forward.sqlite3').read_bytes();calls=[]
+    def fail():calls.append(True);raise RuntimeError('private clock detail')
+    r.clock=fail
+    session=r.sessions()['sessions'][0]
+    assert session['effective_state']=='CLOCK_REVIEW_REQUIRED'
+    assert session['review_reasons']==['SESSION_MONITOR_CLOCK_UNTRUSTED']
+    assert calls==[True] and (tmp_path/'paper_forward.sqlite3').read_bytes()==before
+    r.clock=lambda:1000;r.stop()
+
+
+def test_terminal_session_review_does_not_depend_on_current_clock(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);r.stop()
+    r.clock=lambda:(_ for _ in ()).throw(AssertionError('terminal review sampled clock'))
+    session=r.sessions()['sessions'][0]
+    assert session['stored_state']==session['effective_state']=='STOPPED'
+    assert not session['requires_review'] and session['review_reasons']==[]
 
 
 def test_outage_resets_entry_window(tmp_path,monkeypatch):

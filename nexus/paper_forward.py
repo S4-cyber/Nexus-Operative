@@ -482,19 +482,28 @@ class PaperForwardRunner:
         if type(limit) is not int or not 1<=limit<=100:raise ValueError('INVALID_SESSION_HISTORY_LIMIT')
         with self._read_db() as db:
             rows=[] if db is None else db.execute('SELECT id,started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions ORDER BY started_at DESC,rowid DESC LIMIT ?',(limit,)).fetchall()
+        observed=None;observed_valid=False
+        if any(row[3]=='RUNNING' for row in rows):
+            try:
+                observed=self.clock()
+                observed_valid=(type(observed) in (int,float) and math.isfinite(observed)
+                    and 0<=observed<253402300799)
+            except Exception:observed=None
         results=[]
         for sid,started,updated,state,policy,counts,last in rows:
             policy,counts,last=forward_sessions.parse(started,updated,state,policy,counts,last)
             interrupted=state=='RUNNING' and sid!=self._session
-            stale=state=='RUNNING' and self.clock()-updated>20
+            clock_untrusted=state=='RUNNING' and (not observed_valid or observed<updated)
+            stale=state=='RUNNING' and not clock_untrusted and observed-updated>20
             unrecorded_stop=state=='RUNNING' and sid==self._session and self._stop.is_set()
             review_reasons=[]
             if interrupted:review_reasons.append('INTERRUPTED_OR_PRIOR_SESSION')
+            if clock_untrusted:review_reasons.append('SESSION_MONITOR_CLOCK_UNTRUSTED')
             if stale:review_reasons.append('HEARTBEAT_STALE')
             if unrecorded_stop:review_reasons.append('STOPPED_WITHOUT_FINAL_RECORD')
             if last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':review_reasons.append('ORDER_CLEANUP_REQUIRES_REVIEW')
             results.append(dict(session=sid,started_at=started,updated_at=updated,stored_state=state,
-                                effective_state='INTERRUPTED_OR_PRIOR_SESSION' if interrupted else 'STOPPED_WITHOUT_FINAL_RECORD' if unrecorded_stop else 'HEARTBEAT_STALE' if stale else state,
+                                effective_state='INTERRUPTED_OR_PRIOR_SESSION' if interrupted else 'STOPPED_WITHOUT_FINAL_RECORD' if unrecorded_stop else 'CLOCK_REVIEW_REQUIRED' if clock_untrusted else 'HEARTBEAT_STALE' if stale else state,
                                 requires_review=bool(review_reasons),review_reasons=review_reasons,policy=policy,counts=counts,last_event=last))
         return dict(read_only=True,sessions=results,automatic_resume=False,session_limit=SESSION_LIMIT,
                     execution_source_of_truth='ORDER_JOURNAL_NOT_SESSION_COUNTERS')

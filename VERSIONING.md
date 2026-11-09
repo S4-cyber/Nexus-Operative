@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.252 (pre-release).**
+**Current development build: 0.340.253 (pre-release).**
+
+## v0.340.253 fail-closed session-monitor clock review
+
+Read-only retained-session monitoring now samples the wall clock exactly once only when RUNNING history requires heartbeat classification. Missing, non-finite, Boolean, regressed or ordinarily failing clock callbacks produce fixed `SESSION_MONITOR_CLOCK_UNTRUSTED` / `CLOCK_REVIEW_REQUIRED` diagnostics without exposing callback detail, mutating evidence, starting work or changing authority. Empty and terminal-only history remains clock-callback silent.
+
+The exact-source v0.340.252 hosted commit `5660ec19d66af6401d3bd4e6c271b6e8dc2bf461` exposed no connector-visible pull-request workflow run, combined commit status or review at the start of this checkpoint, so no hosted v0.340.252 result is pre-claimed. Fresh exact-source v0.340.253 public-security, research/browser/evidence and Windows installer checks remain required after publication.
+
+This is local monitoring integrity, not actual paper-account/provider acceptance, genuine-feed provenance, a sustained 72-hour market trial, profitability, native-Windows saved-credential acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter was added; the existing Trial Readiness control retains beginner-facing text and black/bright-purple bottom-right hover help. Seven tabs, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This D3/D4 monitoring hardening does not independently complete an acceptance stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,855 tests with one expected non-Windows skip; the forward/quote-intake/execution-clock/emergency-cut focus passed 270 and the release/Windows-workflow/installer/package/API focus passed 249. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `3979c2d6065efd396e7e1e68e3040663d946c8d11ef218dde85457ab28595f8c`; `validation/release_trials_0_340_253.json` SHA256 is `036d4405ff685c43ef53e99ab14ffd7add0f0fbe673cea963a42d01c6f8f487c`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.253 and has SHA256 `b75f32293032964ee987bb06664d15ff9baa2937a8d9c9b88f98f1abf27163b7`. Local Gitleaks and Playwright were unavailable; native Windows, installer execution and browser workflow acceptance were also unavailable locally. Fresh hosted exact-source workflows and full-history security remain required. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
 
 ## v0.340.252 terminal evidence binding and stop-order preservation
 

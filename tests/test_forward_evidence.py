@@ -103,3 +103,20 @@ def test_changed_session_policy_is_flagged(tmp_path,monkeypatch):
     report=r.evidence_report(r.status()['session'])
     assert 'SESSION_POLICY_FINGERPRINT_DISAGREEMENT' in report['reasons']
     assert not report['local_consistency_ok']
+
+
+@pytest.mark.parametrize('field,value,reason',[
+    ('session','f'*16,'TERMINAL_EVENT_SESSION_DISAGREEMENT'),
+    ('policy_sha256','0'*64,'TERMINAL_EVENT_POLICY_DISAGREEMENT'),
+    ('simulation_only',False,'TERMINAL_EVENT_SCOPE_DISAGREEMENT'),
+    ('clock_sample_valid',False,'TERMINAL_EVENT_CLOCK_UNTRUSTED'),
+    ('quote_evidence_sha256','0'*64,'TERMINAL_EVENT_QUOTE_HEAD_DISAGREEMENT'),
+    ('cycle',0,'TERMINAL_EVENT_CYCLE_DISAGREEMENT')])
+def test_terminal_event_binding_disagreement_is_reported(tmp_path,monkeypatch,field,value,reason):
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle();r.stop()
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        raw=db.execute('SELECT last_json FROM sessions').fetchone()[0]
+        last=json.loads(raw);last[field]=value
+        db.execute('UPDATE sessions SET last_json=?',(json.dumps(last),))
+    report=r.evidence_report(r.status()['session'])
+    assert not report['local_consistency_ok'] and reason in report['reasons']

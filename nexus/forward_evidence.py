@@ -80,6 +80,7 @@ def review(db,session):
                 maximum_gap_seconds=round(max(gaps),6) if gaps else None,
                 gaps_over_ten_seconds=sum(g>10 for g in gaps),
                 source_modes=sorted(set(p['source_mode'] for p in points)),head_sha256=previous,
+                parent_head_sha256=rows[-1][2] if rows else None,
                 points=points)
 
 

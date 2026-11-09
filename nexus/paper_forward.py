@@ -139,6 +139,11 @@ class PaperForwardRunner:
                     if policy!=self._policy:raise ValueError('FORWARD_SESSION_POLICY_CHANGED')
                     started,updated,state=old[:3]
                     row['at']=max(row['at'],updated)
+                    # A concurrently acknowledged terminal record owns the
+                    # durable session tail. The in-flight caller may return its
+                    # local reason, but can never replace STOP/PAUSED history.
+                    terminal='STOP' if state=='STOPPED' else 'PAUSED' if state=='PAUSED' else None
+                    if terminal is not None and decision!=terminal:return row
                 counts[decision]=counts.get(decision,0)+1
                 if decision=='PAUSED':state='PAUSED'
                 elif decision=='STOP':state='STOPPED'
@@ -277,15 +282,15 @@ class PaperForwardRunner:
     def _execute_locked(self,side,quantity,bid,ask,received,now,notional,exchange_at):
         clock_reason=self._clock_check()
         if clock_reason:return self._pause_clock(clock_reason)
-        if self._intake_stopped():return self._record('HOLD','RUNNER_STOPPED_BEFORE_SUBMIT')
+        if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_BEFORE_SUBMIT')
         oid='pf_'+self._session+'_'+str(self._cycles)+'_'+side
         self.orders.submit(oid,PRODUCT,side,str(notional),tier=self._tier)
         try:
-            if self._intake_stopped():return self._record('HOLD','RUNNER_STOPPED_AFTER_SUBMIT')
+            if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_AFTER_SUBMIT')
             self.orders.set_execution_terms(oid,now,self._policy['order_lifetime_seconds'])
             # Quote may precede order creation by transport latency; use a fresh
             # observation boundary so the timestamp model retains source age.
-            if self._intake_stopped():return self._record('HOLD','RUNNER_STOPPED_BEFORE_FILL')
+            if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_BEFORE_FILL')
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
             result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,self.clock(),fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=lambda:self._execution_now(exchange_at))
@@ -346,7 +351,7 @@ class PaperForwardRunner:
                 clock_reason=self._clock_check()
                 if clock_reason:return self._pause_clock(clock_reason)
                 if not isinstance(quote,dict):raise ValueError('MISSING_FORWARD_QUOTE')
-                if self._intake_stopped():return self._record('HOLD','STOPPED_DURING_FETCH')
+                if self._intake_stopped():return dict(decision='HOLD',reason='STOPPED_DURING_FETCH')
                 feed=self._guard.evaluate(quote,now)
                 if quote.get('product')!=PRODUCT:raise ValueError('QUOTE_PRODUCT_MISMATCH')
                 if not isinstance(quote.get('exchange_time'),str):raise ValueError('INVALID_EXCHANGE_TIMESTAMP')
@@ -424,7 +429,8 @@ class PaperForwardRunner:
                 reason=str(exc)
                 if reason in ('INVALID_RUNTIME_CLOCK','RUNTIME_CLOCK_DISCONTINUITY'):return self._pause_clock(reason)
                 if reason in ('STALE_OR_FUTURE_SYNTHETIC_QUOTE','STALE_OR_FUTURE_EXCHANGE_QUOTE_AT_FILL'):self._prices.clear();self._last_rank=0
-                return self._record('HOLD' if reason=='RUNNER_STOPPED_BEFORE_FILL' else 'VETO',reason)
+                if reason=='RUNNER_STOPPED_BEFORE_FILL':return dict(decision='HOLD',reason=reason)
+                return self._record('VETO',reason)
         except (OSError,sqlite3.Error,ValueError) as exc:
             self._error=type(exc).__name__;self._stop.set()
             return dict(decision='PAUSED',reason='FORWARD_STORAGE_OR_INTEGRITY_FAILURE')
@@ -453,7 +459,10 @@ class PaperForwardRunner:
         orders=self.orders.session_orders(session_id)
         policy,counts,last=forward_sessions.parse(*session)
         checked=forward_evidence.crosscheck(quotes,orders,counts,policy)
-        reasons=quotes['reasons']+checked['reasons']
+        terminal=forward_sessions.binding_reasons(last,session[2],session_id,policy,
+            quotes['head_sha256'],quotes['observations'],quotes['points'][-1]['cycle'] if quotes['points'] else 0,
+            quotes['parent_head_sha256'])
+        reasons=quotes['reasons']+checked['reasons']+terminal
         if last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':reasons.append('ORDER_CLEANUP_REQUIRES_REVIEW')
         import hashlib
         policy_digest=hashlib.sha256(forward_evidence.canonical({k:v for k,v in policy.items() if k!='policy_sha256'}).encode()).hexdigest()

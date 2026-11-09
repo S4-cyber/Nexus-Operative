@@ -186,6 +186,10 @@ def _review(path, *, after, until):
             evidence=forward_evidence.review(db,sid)
             if not evidence['integrity_ok']:_fail()
             points=evidence['points'];seen+=len(points);previous=None;in_window=False
+            terminal_reasons=forward_sessions.binding_reasons(last,state,sid,policy,
+                evidence['head_sha256'],len(points),points[-1]['cycle'] if points else 0,
+                evidence['parent_head_sha256'])
+            if terminal_reasons:_fail()
             session_quote_errors=0
             guard=FeedGuard();previous_exchange=None
             for point in points:

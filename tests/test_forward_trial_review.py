@@ -33,9 +33,14 @@ def database(tmp_path,monkeypatch,sessions):
                     policy_sha256=policy['policy_sha256'],error_type=None))
                 digest=evidence.digest(previous,payload);rows.append((sid,cycle,payload,previous,digest));previous=digest
             first=START+points[0][0] if points else START;last=START+points[-1][0] if points else START
+            decision='STOP' if state=='STOPPED' else 'PAUSED' if state=='PAUSED' else 'HOLD'
             reason='MANUAL_STOP' if state=='STOPPED' else 'TEST_'+state
-            db.execute('INSERT INTO sessions VALUES (?,?,?,?,?,?,?)',(sid,first,last,state,evidence.canonical(policy),'{}',
-                evidence.canonical(dict(at=last,decision='STOP',reason=reason))))
+            terminal=dict(at=last,decision=decision,reason=reason,session=sid,cycle=len(rows),
+                quote_evidence_sha256=previous if rows else None,policy_id=policy['id'],
+                policy_sha256=policy['policy_sha256'],product=policy['product'],
+                simulation_only=True,clock_sample_valid=True)
+            db.execute('INSERT INTO sessions VALUES (?,?,?,?,?,?,?)',(sid,first,last,state,evidence.canonical(policy),
+                evidence.canonical({decision:1}),evidence.canonical(terminal)))
             db.executemany('INSERT INTO forward_quotes VALUES (?,?,?,?,?)',rows)
             if rows:db.execute('INSERT INTO forward_quote_heads VALUES (?,?,?)',(sid,len(rows),previous))
     return tmp_path/'paper_forward.sqlite3'
@@ -67,6 +72,11 @@ def rewrite(path, change, *, policy_change=None):
             previous[sid]=digest;counts[sid]=counts.get(sid,0)+1
         for sid,head in previous.items():
             db.execute('UPDATE forward_quote_heads SET observations=?,head=? WHERE session=?',(counts[sid],head,sid))
+            last=json.loads(db.execute('SELECT last_json FROM sessions WHERE id=?',(sid,)).fetchone()[0])
+            last.update(cycle=counts[sid],quote_evidence_sha256=head)
+            if policy is not None:
+                last.update(policy_id=policy['id'],policy_sha256=policy['policy_sha256'],product=policy['product'])
+            db.execute('UPDATE sessions SET last_json=? WHERE id=?',(evidence.canonical(last),sid))
 
 
 @pytest.mark.parametrize('changes', [
@@ -236,7 +246,8 @@ def test_rejected_points_break_coverage_instead_of_bridging_outage(tmp_path,monk
 
 
 @pytest.mark.parametrize('kind',['chain','policy','orphan','duplicate_json','regression','terminal_time',
-    'point_before_session','point_after_session','metadata_budget'])
+    'terminal_state','terminal_count','terminal_session','terminal_policy','terminal_scope','terminal_clock',
+    'terminal_quote_head','point_before_session','point_after_session','metadata_budget'])
 def test_corrupt_or_incompatible_evidence_is_not_certified_or_repaired(tmp_path,monkeypatch,kind):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')])
     with closing(sqlite3.connect(path)) as db,db:
@@ -251,6 +262,19 @@ def test_corrupt_or_incompatible_evidence_is_not_certified_or_repaired(tmp_path,
         elif kind=='terminal_time':
             last=json.loads(db.execute('SELECT last_json FROM sessions').fetchone()[0])
             last['at']+=1;db.execute('UPDATE sessions SET last_json=?',(evidence.canonical(last),))
+        elif kind=='terminal_state':
+            last=json.loads(db.execute('SELECT last_json FROM sessions').fetchone()[0])
+            last['decision']='PAUSED';db.execute('UPDATE sessions SET counts_json=?,last_json=?',
+                (evidence.canonical({'PAUSED':1}),evidence.canonical(last)))
+        elif kind=='terminal_count':
+            db.execute('UPDATE sessions SET counts_json=?',(evidence.canonical({}),))
+        elif kind.startswith('terminal_'):
+            last=json.loads(db.execute('SELECT last_json FROM sessions').fetchone()[0])
+            field={'terminal_session':'session','terminal_policy':'policy_sha256',
+                'terminal_scope':'simulation_only','terminal_clock':'clock_sample_valid',
+                'terminal_quote_head':'quote_evidence_sha256'}[kind]
+            last[field]=False if kind in ('terminal_scope','terminal_clock') else 'bad'
+            db.execute('UPDATE sessions SET last_json=?',(evidence.canonical(last),))
         elif kind=='point_before_session':
             db.execute('UPDATE sessions SET started_at=started_at+1')
         elif kind=='point_after_session':

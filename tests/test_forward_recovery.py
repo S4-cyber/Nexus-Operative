@@ -72,6 +72,22 @@ def test_stop_during_fetch_keeps_snapshot_provisional_until_cycle_finishes(tmp_p
     finally:release.set();worker.join(5)
     assert not worker.is_alive()
     assert not r.recovery_status()['provisional']
+    settled=r.sessions()['sessions'][0]
+    assert settled['stored_state']=='STOPPED' and settled['last_event']['decision']=='STOP'
+
+
+def test_stop_terminal_survives_inflight_clock_pause_attempt(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);entered=threading.Event();release=threading.Event();result=[]
+    r.monotonic_clock=lambda:1000
+    def fetch(product):entered.set();assert release.wait(5);return c.quote(product)
+    r.fetcher=fetch
+    worker=threading.Thread(target=lambda:result.append(r.single_cycle()));worker.start()
+    try:
+        assert entered.wait(5);r.stop();c.now+=100;release.set();worker.join(5)
+    finally:release.set();worker.join(5)
+    assert not worker.is_alive() and result[0]['decision']=='PAUSED'
+    settled=r.sessions()['sessions'][0]
+    assert settled['stored_state']=='STOPPED' and settled['last_event']['decision']=='STOP'
 
 
 @pytest.mark.parametrize('limit',[0,101])

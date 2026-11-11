@@ -76,6 +76,10 @@ class ForwardOwnership:
                 not os.path.samestat(opened,current) or
                 (opened.st_dev,opened.st_ino)!=identity):
             _fail('STORE_CHANGED')
+        # Bracket the public lock-path sample with the acquired directory.
+        # Moving the same locked inode into a replacement directory between
+        # the first directory sample and path lstat must not acknowledge.
+        _directory_identity(self.directory,directory,changed=True)
         return True
 
     def available(self):

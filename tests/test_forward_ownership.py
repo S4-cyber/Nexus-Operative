@@ -3,6 +3,7 @@ import sys
 import threading
 import os
 import pytest
+from nexus import forward_ownership as ownership
 from nexus.forward_ownership import ForwardOwnership
 from nexus.paper_forward import PaperForwardRunner
 from test_paper_forward import setup
@@ -103,6 +104,31 @@ def test_release_rejects_late_owner_directory_replacement(tmp_path,monkeypatch):
         candidate.validate()
     with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_CHANGED'):
         candidate.release()
+    assert not candidate.held
+
+
+def test_validate_rechecks_directory_after_lock_path_sample(tmp_path,monkeypatch):
+    root=tmp_path/'owner-root';candidate=ForwardOwnership(root);candidate.acquire()
+    original=ownership._directory_identity;calls=[0]
+    if os.name=='nt':
+        def replace_after_first_sample(path,before=None,*,changed=False):
+            result=original(path,before,changed=changed);calls[0]+=int(changed)
+            if calls[0]==2:raise ValueError('PAPER_FORWARD_OWNER_STORE_CHANGED')
+            return result
+    else:
+        retired=tmp_path/'retired-owner-root'
+        def replace_after_first_sample(path,before=None,*,changed=False):
+            result=original(path,before,changed=changed)
+            if changed and calls[0]==0:
+                calls[0]+=1;os.replace(root,retired);root.mkdir()
+                os.replace(retired/candidate.path.name,candidate.path)
+                assert os.path.samestat(os.fstat(candidate._fd),candidate.path.lstat())
+            return result
+    monkeypatch.setattr(ownership,'_directory_identity',replace_after_first_sample)
+    with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_CHANGED'):
+        candidate.validate()
+    try:candidate.release()
+    except ValueError as error:assert str(error)=='PAPER_FORWARD_OWNER_STORE_CHANGED'
     assert not candidate.held
 
 

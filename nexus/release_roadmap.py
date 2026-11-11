@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.265'
+REVISION = '0.340.266'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -647,6 +647,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; forward and research-refresh owners now also bind the physical directory that scopes their lock, reject a symlinked owner directory and fail closed if that directory is replaced even when the same single-link lock inode is moved back under the public path' if item.id=='M7' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every active owner validation now brackets the public lock-path identity sample with the acquired directory identity, so replacement between those samples cannot acknowledge even when the same locked inode is moved into the replacement directory' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Forward evidence review brackets its separate quote/session snapshot with two exact order-and-linked-ledger reconciliation snapshots. Linked-ledger fingerprint/audit reads and direct settings/unused-portfolio start-preflight reads remain bound to their preflighted regular-file identities; direct reads also bind content metadata and SQLite-reported paths. All order, portfolio, forward and settings roles plus their SQLite companions must be relationship-distinct before recovery reads. Storage-directory identity and the complete expected SQLite file-set presence/identity/metadata span the entire multi-file diagnostic and recheck on success, early return and ordinary failure. Read-only preflight additionally samples whether a separate process owns the forward-worker lock, without creating or reserving it; unsafe lock-store identity fails closed. This is local supplied-history and cooperating-process integrity, not an atomic multi-file snapshot, broker/account source attestation, genuine-feed acceptance, sustained-trial evidence, native durability, funds authority or routing permission.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
@@ -657,6 +661,10 @@ DELIVERY_STAGES = tuple((dict(stage,
 
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Forward and research-refresh ownership now binds both the opened lock file and its physical containing directory. Symlinked owner directories are refused, and replacement of the lock scope fails closed even if the original single-link lock inode is moved into the replacement directory. This is cooperating-process local fencing, not distributed ownership, ACL/administrator isolation, physical durability, provider identity, broker acceptance or sustained-market evidence.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Active owner validation now samples the acquired directory both before and after validating the public lock path. A directory swap in that interval fails closed even if the same opened single-link lock inode remains at the public path. This narrows a local cooperating-process race; it is not an atomic filesystem transaction, distributed ownership, ACL/administrator isolation, broker acceptance or sustained-market evidence.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -824,7 +832,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.265 binds paper-forward and research-refresh ownership to both the opened regular single-link lock and its original physical containing directory. Symlinked owner directories are rejected, and a directory replacement fails closed even if the original locked inode is moved back under the public lock path. POSIX regression exercises that real rename/move sequence; Windows injects the equivalent acquired-directory identity disagreement because mandatory-share locks may prevent the move. Safety cancellation and the process-independent emergency cut remain available. This is sampled cooperating-process local fencing, not distributed ownership, an ACL or administrator boundary, source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.266 brackets every paper-forward and research-refresh public lock-path validation with the acquired physical directory identity. Replacement between the first directory sample and lock-path sample therefore fails closed even if the same opened regular single-link lock inode is moved back under the public path. POSIX regression exercises the actual interval rename/move; Windows injects the equivalent post-path identity disagreement because mandatory-share locks may prevent the move. Safety cancellation and the process-independent emergency cut remain available. This is sampled cooperating-process local fencing, not an atomic filesystem transaction, distributed ownership, an ACL or administrator boundary, source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

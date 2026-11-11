@@ -21,6 +21,16 @@ def _opened_identity(path, fd, before=None, *, allow_empty=False):
     return opened
 
 
+def _directory_identity(path, before=None, *, changed=False):
+    """Sample one real directory and optionally require its prior identity."""
+    try:current=path.lstat()
+    except OSError:_fail('STORE_CHANGED' if changed else 'STORE_UNAVAILABLE')
+    if (stat.S_ISLNK(current.st_mode) or not stat.S_ISDIR(current.st_mode) or
+            (before is not None and not os.path.samestat(before,current))):
+        _fail('STORE_CHANGED' if changed else 'STORE_UNAVAILABLE')
+    return current
+
+
 def _lock(fd):
     os.lseek(fd,0,os.SEEK_SET)
     if os.name=='nt':
@@ -43,17 +53,21 @@ def _unlock(fd):
 
 class ForwardOwnership:
     def __init__(self,directory):
-        self.path=Path(directory)/'paper_forward.owner.lock'
+        self.directory=Path(directory)
+        self.path=self.directory/'paper_forward.owner.lock'
         self._fd=None
         self._identity=None
+        self._directory_identity=None
 
     @property
     def held(self):return self._fd is not None
 
     def validate(self):
-        """Require the public lock path to retain the acquired OS-lock identity."""
-        fd=self._fd;identity=self._identity
-        if fd is None or identity is None:_fail('NOT_HELD')
+        """Require the lock and its public directory to retain acquired identities."""
+        fd=self._fd;identity=self._identity;directory_identity=self._directory_identity
+        if fd is None or identity is None or directory_identity is None:_fail('NOT_HELD')
+        directory=_directory_identity(self.directory,changed=True)
+        if (directory.st_dev,directory.st_ino)!=directory_identity:_fail('STORE_CHANGED')
         try:opened=os.fstat(fd);current=self.path.lstat()
         except OSError:_fail('STORE_CHANGED')
         if (stat.S_ISLNK(current.st_mode) or not stat.S_ISREG(opened.st_mode) or
@@ -67,8 +81,14 @@ class ForwardOwnership:
     def available(self):
         """Sample cross-process availability without creating or reserving it."""
         if self.held:return False
-        try:before=self.path.lstat()
+        try:directory=self.directory.lstat()
         except FileNotFoundError:return True
+        except OSError:_fail('STORE_UNAVAILABLE')
+        directory=_directory_identity(self.directory,directory)
+        try:before=self.path.lstat()
+        except FileNotFoundError:
+            _directory_identity(self.directory,directory)
+            return True
         except OSError:_fail('STORE_UNAVAILABLE')
         if (stat.S_ISLNK(before.st_mode) or not stat.S_ISREG(before.st_mode) or
                 before.st_nlink!=1 or before.st_size!=1):
@@ -78,21 +98,25 @@ class ForwardOwnership:
         try:fd=os.open(self.path,flags)
         except OSError:_fail('STORE_UNAVAILABLE')
         locked=False
+        available=False
         try:
             _opened_identity(self.path,fd,before)
-            try:_lock(fd);locked=True
-            except OSError:return False
+            try:_lock(fd);locked=True;available=True
+            except OSError:pass
             _opened_identity(self.path,fd,before)
-            return True
         finally:
             if locked:
                 try:_unlock(fd)
                 except OSError:pass
             os.close(fd)
+        _directory_identity(self.directory,directory)
+        return available
 
     def acquire(self):
         if self.held:raise ValueError('PAPER_FORWARD_OWNER_ALREADY_HELD')
-        self.path.parent.mkdir(parents=True,exist_ok=True)
+        try:self.directory.mkdir(parents=True,exist_ok=True)
+        except OSError:_fail('STORE_UNAVAILABLE')
+        directory=_directory_identity(self.directory)
         try:before=self.path.lstat()
         except FileNotFoundError:before=None
         except OSError:_fail('STORE_UNAVAILABLE')
@@ -111,15 +135,17 @@ class ForwardOwnership:
                 _opened_identity(self.path,fd,before)
             _lock(fd)
             _opened_identity(self.path,fd,before)
+            _directory_identity(self.directory,directory)
         except OSError as exc:
             os.close(fd)
             raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER') from exc
         except BaseException:
             os.close(fd);raise
         self._fd=fd;self._identity=(opened.st_dev,opened.st_ino)
+        self._directory_identity=(directory.st_dev,directory.st_ino)
         try:self.validate()
         except BaseException:
-            self._fd=None;self._identity=None;os.close(fd);raise
+            self._fd=None;self._identity=None;self._directory_identity=None;os.close(fd);raise
 
     def release(self):
         fd=self._fd
@@ -132,7 +158,7 @@ class ForwardOwnership:
             self.validate()
         except BaseException as error:exit_error=error
         finally:
-            self._fd=None;self._identity=None
+            self._fd=None;self._identity=None;self._directory_identity=None
             try:
                 # Closing releases the OS lock, including after process death.
                 os.close(fd)

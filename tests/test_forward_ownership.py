@@ -75,6 +75,37 @@ def test_unsafe_owner_store_is_rejected_without_touching_target(tmp_path,kind):
     assert target.read_bytes()==before and not candidate.held
 
 
+def test_unsafe_owner_directory_symlink_is_rejected_without_touching_target(tmp_path):
+    target=tmp_path/'private-target';target.mkdir();root=tmp_path/'owner-root'
+    try:root.symlink_to(target,target_is_directory=True)
+    except OSError:pytest.skip('directory symlink unavailable')
+    candidate=ForwardOwnership(root)
+    with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_UNAVAILABLE'):
+        candidate.available()
+    with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_UNAVAILABLE'):
+        candidate.acquire()
+    assert not list(target.iterdir()) and not candidate.held
+
+
+def test_release_rejects_late_owner_directory_replacement(tmp_path,monkeypatch):
+    root=tmp_path/'owner-root';candidate=ForwardOwnership(root);candidate.acquire()
+    if os.name=='nt':
+        # Windows may deny moving a directory containing a mandatory-share
+        # locked file. Inject the equivalent acquired-directory disagreement.
+        candidate._directory_identity=(-1,-1)
+    else:
+        retired=tmp_path/'retired-owner-root';os.replace(root,retired);root.mkdir()
+        # Preserve the same regular single-link lock inode and public lock path.
+        # Only the containing storage-directory identity now disagrees.
+        os.replace(retired/candidate.path.name,candidate.path)
+        assert os.path.samestat(os.fstat(candidate._fd),candidate.path.lstat())
+    with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_CHANGED'):
+        candidate.validate()
+    with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_CHANGED'):
+        candidate.release()
+    assert not candidate.held
+
+
 def test_release_rejects_late_owner_path_replacement(tmp_path,monkeypatch):
     candidate=ForwardOwnership(tmp_path);candidate.acquire();replacement=None
     if os.name=='nt':

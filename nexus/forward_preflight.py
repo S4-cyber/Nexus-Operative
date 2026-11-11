@@ -4,6 +4,7 @@ from decimal import Decimal
 from pathlib import Path
 import os
 import sqlite3
+import stat
 
 from nexus import emergency_intent
 from nexus.paper_policy import POLICY
@@ -27,10 +28,36 @@ def _existing(path):
 
 
 def _read(path,operation):
-    with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=.25)) as db:
-        db.set_progress_handler(lambda:1,1000000)
-        db.execute('BEGIN')
-        return operation(db)
+    path=Path(path)
+    if not _existing(path):raise ValueError('PREFLIGHT_FILE_CHANGED')
+    try:
+        observed=path.lstat();resolved=path.resolve(strict=True);after_resolve=path.lstat()
+    except OSError:raise ValueError('PREFLIGHT_FILE_CHANGED') from None
+    def current():
+        try:value=path.lstat()
+        except OSError:raise ValueError('PREFLIGHT_FILE_CHANGED') from None
+        if (not stat.S_ISREG(value.st_mode) or value.st_nlink!=1 or
+                not os.path.samestat(observed,value) or
+                (value.st_size,value.st_mtime_ns)!=(observed.st_size,observed.st_mtime_ns)):
+            raise ValueError('PREFLIGHT_FILE_CHANGED')
+    if (not os.path.samestat(observed,after_resolve) or
+            (after_resolve.st_size,after_resolve.st_mtime_ns)!=(observed.st_size,observed.st_mtime_ns)):
+        raise ValueError('PREFLIGHT_FILE_CHANGED')
+    try:
+        with closing(sqlite3.connect(resolved.as_uri()+'?mode=ro',uri=True,timeout=.25)) as db:
+            db.set_progress_handler(lambda:1,1000000)
+            db.execute('BEGIN');current()
+            try:
+                opened=[Path(filename).resolve(strict=True) for _,name,filename in db.execute('PRAGMA database_list') if name=='main']
+            except OSError:raise ValueError('PREFLIGHT_CONNECTION_MISMATCH') from None
+            if len(opened)!=1 or opened[0]!=resolved:raise ValueError('PREFLIGHT_CONNECTION_MISMATCH')
+            result=operation(db);current()
+    except BaseException as error:
+        if not isinstance(error,Exception):raise
+        current()
+        raise
+    current()
+    return result
 
 
 def _unused_portfolio(db,account):

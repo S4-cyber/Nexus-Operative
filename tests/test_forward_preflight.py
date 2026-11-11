@@ -1,5 +1,6 @@
 """Local start diagnostics never create accounting or reserve permission."""
 import os
+from pathlib import Path
 import sqlite3
 import pytest
 from fastapi.testclient import TestClient
@@ -68,6 +69,61 @@ def test_existing_unused_manual_portfolio_checked_without_initializing_orders(lo
     assert result['local_checks_clear']==(capital==10000)
     if capital!=10000:assert 'ACCOUNT_LINK_REVIEW_REQUIRED' in result['blockers']
     assert snapshot(root)==before and not gateway._path().exists()
+
+
+def test_preflight_rejects_identical_leaf_replacement_before_sqlite_open(local,monkeypatch):
+    root,_,_=local;state.load_settings();path=root/'portal_settings.sqlite3'
+    replacement=root/'replacement.sqlite3';replacement.write_bytes(path.read_bytes())
+    retired=root/'retired.sqlite3';original=Path.resolve;changed=[]
+    def replace_then_resolve(self,*args,**kwargs):
+        if self==path and not changed:
+            path.rename(retired);replacement.rename(path);changed.append(True)
+        return original(self,*args,**kwargs)
+    monkeypatch.setattr(Path,'resolve',replace_then_resolve)
+    with pytest.raises(ValueError,match='^PREFLIGHT_FILE_CHANGED$'):
+        pre._read(path,lambda _db:pytest.fail('replacement reached semantic reader'))
+    assert changed and path.read_bytes()==retired.read_bytes()
+
+
+@pytest.mark.skipif(os.name=='nt',reason='Windows denies replacing an open SQLite file')
+def test_preflight_rechecks_leaf_after_semantic_read(local):
+    root,_,_=local;state.load_settings();path=root/'portal_settings.sqlite3'
+    replacement=root/'replacement.sqlite3';replacement.write_bytes(path.read_bytes());retired=root/'retired.sqlite3'
+    def replace(db):
+        assert db.execute('SELECT COUNT(*) FROM configuration').fetchone()[0]
+        path.rename(retired);replacement.rename(path)
+        return 'must-not-return'
+    with pytest.raises(ValueError,match='^PREFLIGHT_FILE_CHANGED$'):pre._read(path,replace)
+
+
+@pytest.mark.skipif(os.name=='nt',reason='Windows denies replacing an open SQLite file')
+def test_preflight_identity_change_overrides_ordinary_reader_failure(local):
+    root,_,_=local;state.load_settings();path=root/'portal_settings.sqlite3'
+    replacement=root/'replacement.sqlite3';replacement.write_bytes(path.read_bytes());retired=root/'retired.sqlite3'
+    def replace_then_fail(_db):
+        path.rename(retired);replacement.rename(path)
+        raise ValueError('lower-priority semantic failure')
+    with pytest.raises(ValueError,match='^PREFLIGHT_FILE_CHANGED$'):pre._read(path,replace_then_fail)
+
+
+def test_preflight_process_control_signal_remains_observable(local):
+    root,_,_=local;state.load_settings();path=root/'portal_settings.sqlite3'
+    with pytest.raises(KeyboardInterrupt):pre._read(path,lambda _db:(_ for _ in ()).throw(KeyboardInterrupt()))
+
+
+def test_preflight_rejects_sqlite_reported_path_mismatch(local,monkeypatch):
+    root,_,_=local;state.load_settings();path=root/'portal_settings.sqlite3'
+    other=root/'other.sqlite3';other.write_bytes(path.read_bytes());connect=sqlite3.connect
+    class MismatchedConnection:
+        def __init__(self,*args,**kwargs):self.db=connect(*args,**kwargs)
+        def set_progress_handler(self,*args):return self.db.set_progress_handler(*args)
+        def close(self):return self.db.close()
+        def execute(self,statement,*args):
+            if statement=='PRAGMA database_list':return [(0,'main',str(other))]
+            return self.db.execute(statement,*args)
+    monkeypatch.setattr(pre.sqlite3,'connect',MismatchedConnection)
+    with pytest.raises(ValueError,match='^PREFLIGHT_CONNECTION_MISMATCH$'):
+        pre._read(path,lambda _db:pytest.fail('mismatched connection reached semantic reader'))
 
 
 def test_linked_holdings_can_start_exit_monitoring_with_bad_budget_or_tier_off(tmp_path,monkeypatch):

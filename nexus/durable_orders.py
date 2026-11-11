@@ -355,7 +355,16 @@ class DurableOrderGateway:
         root_guard=_OrderRootIdentity(self._path(),create=False);path=root_guard.path
         with self._read_connection(path,root_guard) as db:
             present=db is not None
-            gateway,count=self._read_restore(db,compare_portfolio=True,path=path,root_guard=root_guard)
+            gateway,count=self._read_restore(db,path=path,root_guard=root_guard)
+            portfolio_snapshot=None
+            if db is not None and gateway.portfolio_linked:
+                root_guard.require_current()
+                portfolio=execution_portfolio.attach_read_only(db,path.parent/'paper_portfolio.sqlite3')
+                # Bound linked-ledger intake before semantic audit readers can
+                # materialize a corrupted oversized ledger.
+                portfolio_snapshot=execution_portfolio.snapshot(portfolio,MAX_PORTFOLIO_SNAPSHOT_ROWS)
+                execution_portfolio.compare(portfolio,gateway.account)
+                root_guard.require_current()
             journal_digest=hashlib.sha256(b'nexus.order-journal-snapshot.v1\n');command_rows=checkpoint_rows=0
             if db is not None:
                 for row in db.execute('SELECT sequence,typeof(payload),hex(payload) FROM commands ORDER BY sequence'):
@@ -368,8 +377,6 @@ class DurableOrderGateway:
                     journal_digest.update(json.dumps(('checkpoint',*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
             if command_rows!=count:raise ValueError('ORDER_JOURNAL_RECOVERY_FAILED')
             journal_sha256=journal_digest.hexdigest()
-            portfolio_snapshot=(execution_portfolio.snapshot(execution_portfolio.AttachedPortfolio(db),MAX_PORTFOLIO_SNAPSHOT_ROWS)
-                                if db is not None and gateway.portfolio_linked else None)
             combined=hashlib.sha256(b'nexus.order-reconciliation-snapshot.v1\n')
             combined.update(json.dumps(dict(journal_sha256=journal_sha256,
                 portfolio_linked=gateway.portfolio_linked,

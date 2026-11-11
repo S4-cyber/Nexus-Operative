@@ -5,6 +5,7 @@ import sqlite3
 
 from fastapi.testclient import TestClient
 import pytest
+from nexus import durable_orders
 from nexus.durable_orders import DurableOrderGateway
 from nexus import emergency_intent, execution_portfolio
 from nexus.paper_forward import PaperForwardRunner
@@ -224,6 +225,14 @@ def test_session_snapshot_binds_exact_linked_portfolio_content(tmp_path,monkeypa
     assert after['journal_sha256']==before['journal_sha256']
     assert after['portfolio_sha256']!=before['portfolio_sha256']
     assert after['snapshot_sha256']!=before['snapshot_sha256']
+
+
+def test_session_snapshot_caps_linked_ledger_before_semantic_audit(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch)
+    monkeypatch.setattr(durable_orders,'MAX_PORTFOLIO_SNAPSHOT_ROWS',1)
+    monkeypatch.setattr(execution_portfolio,'compare',lambda *_:pytest.fail('semantic audit ran before intake cap'))
+    with pytest.raises(ValueError,match='PORTFOLIO_SNAPSHOT_CAP_EXCEEDED'):
+        gateway.session_orders_snapshot('a'*16)
 
 
 def test_unlinked_recovery_does_not_create_missing_portfolio(tmp_path,monkeypatch):

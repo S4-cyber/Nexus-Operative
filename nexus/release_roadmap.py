@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.256'
+REVISION = '0.340.257'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -632,11 +632,11 @@ DELIVERY_STAGES = tuple((dict(stage,
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
-    item.evidence + ('; forward evidence snapshots now stream an exact bounded fingerprint of every linked paper-portfolio table alongside the replay-validated order journal, separately identifying journal and ledger changes across a review without exposing retained rows' if item.id=='M4' else ''),
+    item.evidence + ('; forward evidence snapshots now enforce their linked-ledger row cap before semantic reconciliation readers run, then stream an exact fingerprint of every linked paper-portfolio table alongside the replay-validated order journal, separately identifying journal and ledger changes across a review without exposing retained rows' if item.id=='M4' else ''),
     item.remaining) for item in MILESTONES)
 
 DELIVERY_STAGES = tuple((dict(stage,
-    progress=stage['progress'] + ' Forward evidence review now brackets its separate quote/session snapshot with two exact order-and-linked-ledger reconciliation snapshots. The linked paper portfolio is streamed in primary-key order under a bounded row cap; a journal change and a portfolio-only change receive distinct fixed fail-closed reasons, while public output exposes only counts and one combined digest. This is local supplied-history integrity, not broker/account source attestation, genuine-feed acceptance, sustained-trial evidence, native durability, funds authority or routing permission.')
+    progress=stage['progress'] + ' Forward evidence review now brackets its separate quote/session snapshot with two exact order-and-linked-ledger reconciliation snapshots. The linked paper portfolio row cap is enforced before semantic audit readers run, then exact rows stream in primary-key order; a journal change and a portfolio-only change receive distinct fixed fail-closed reasons, while public output exposes only counts and one combined digest. This is local supplied-history integrity, not broker/account source attestation, genuine-feed acceptance, sustained-trial evidence, native durability, funds authority or routing permission.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -804,7 +804,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.256 extends each replay-validated order snapshot across the atomically linked paper-portfolio database. Exact logical ledger rows are streamed under a bounded cap into a private digest; journal and portfolio-only changes receive distinct fixed fail-closed reasons across forward review, while public output exposes only row counts and a combined snapshot identifier. This is local cross-database reconciliation integrity, not source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.257 enforces the linked paper-portfolio row cap before any semantic reconciliation reader can materialize ledger data. The bounded fingerprint and semantic audit share one read-only SQLite snapshot and root-identity fence, preserving distinct journal and portfolio-change failures while rejecting oversized linked history first. This is local cross-database reconciliation integrity, not source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

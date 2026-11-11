@@ -156,6 +156,26 @@ def test_os_owner_released_after_process_death(tmp_path):
         proc.stdin.close();proc.stdout.close()
 
 
+def test_owner_path_replacement_blocks_model_publication(local,monkeypatch,tmp_path):
+    seed();worker,_=arm(local);published=[];replacement=[None]
+    monkeypatch.setattr(hub,'register_model',lambda *_:published.append(True))
+    def replace_before_publish(product,g,limit,*,publisher,before_train,**_):
+        before_train()
+        if os.name=='nt':
+            monkeypatch.setattr(worker._owner,'validate',
+                lambda:(_ for _ in ()).throw(ValueError('PAPER_FORWARD_OWNER_STORE_CHANGED')))
+        else:
+            retired=tmp_path/'retired-refresh-owner.lock'
+            os.replace(worker._owner.path,retired);worker._owner.path.write_bytes(b'0')
+            replacement[0]=refresh.RefreshOwnership(hub.root());replacement[0].acquire()
+        publisher(product,g,'a'*64)
+    monkeypatch.setattr(prediction,'prepare',replace_before_publish)
+    state=worker.step()
+    assert state['phase']=='PAUSED' and state['reason']=='OWNERSHIP_REVIEW_REQUIRED'
+    assert not state['enabled'] and not state['ownership_held'] and not published
+    if replacement[0] is not None:replacement[0].release()
+
+
 def test_api_reads_do_not_start_worker_and_explicit_start_requires_active_portal(local,monkeypatch):
     from fastapi.testclient import TestClient
     from nexus import app

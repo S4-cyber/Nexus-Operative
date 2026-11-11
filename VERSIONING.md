@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.266 (pre-release).**
+**Current development build: 0.340.267 (pre-release).**
+
+## v0.340.267 active research-refresh ownership fence
+
+The opt-in research-refresh worker now actively revalidates its opened OS owner lease before bounded public collection requests, retained-data import, training and model-reference publication, and again after publication. If the public regular single-link owner path is replaced, the worker pauses as `OWNERSHIP_REVIEW_REQUIRED`, discards work before publication and closes its retired descriptor without acknowledging a clean stop. POSIX regression replaces the real owner path immediately before publication; Windows injects the equivalent lease disagreement because mandatory-share locks may prevent replacement.
+
+At checkpoint start, hosted `development/windows-portal-foundation` and draft PR #1 both targeted v0.340.266 commit `7550abc24d930cdb477ea170b9d261867a7ef345` / tree `ad7b22461a7c7c067cfc26677d9e6ef8250bc4d1`. GitHub exposed no pull-request workflow runs, combined statuses or reviews for that exact commit. Fresh exact-source v0.340.267 public-security, Windows/installer and browser checks remain required after publication; no hosted result is pre-claimed.
+
+This is sampled cooperating-process local fencing, not an atomic filesystem transaction, distributed ownership, an ACL or administrator boundary, physical power-loss proof, source/model acceptance, actual paper-account/provider acceptance, genuine-feed provenance, a sustained 72-hour market trial, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No Portal button or modifiable parameter changed; the existing Trial Readiness control retains beginner-facing text and black/bright-purple bottom-right hover help. Seven tabs, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This D3/M7 local-ownership hardening does not independently complete an acceptance stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,896 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 1,135.74 seconds. The direct refresh/collection/ownership focus passed 53, the broader refresh/forward/emergency/release/Windows-contract scope passed 218 and the synchronized refresh/release/roadmap/version/Windows scope passed 114; Portal API/help/probe verification passed 22. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `721889ab4e159fdce2e47c8a99925113dda87816a481efc19384710273094842`; `validation/release_trials_0_340_267.json` SHA256 is `c7f3721e167fd0d191cf5239bd6459d8dafa84c1ed0135d0b2278e76510735bb`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.267 and has SHA256 `a359ab0efd626a08b4065cea352de6fd8f0d98944ac36c3db69c0ec40535f7e4`. The 986-path/blob staged-candidate artifact audit and 4,173-line introduced high-confidence signature scan found zero findings; the locally reachable history audit exceeded its configured byte cap. Local Gitleaks and Inno Setup are unavailable. Playwright is installed but no Chromium executable is present, so browser workflow acceptance is unavailable; native Windows and installer execution are also unavailable locally. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
 
 ## v0.340.266 bracketed owner-directory validation
 

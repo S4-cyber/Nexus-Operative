@@ -73,7 +73,7 @@ class ResearchRefresh:
             self._thread=threading.Thread(target=self._run,name='nexus-local-learning',daemon=True)
             try:self._thread.start()
             except BaseException:
-                self._stop.set();self._phase='PAUSED';self._reason='WORKER_START_FAILED';self._owner.release();raise
+                self._stop.set();self._phase='PAUSED';self._reason='WORKER_START_FAILED';self._release_ownership();raise
         return self.status()
 
     def stop(self,reason='USER_STOP'):
@@ -82,7 +82,7 @@ class ResearchRefresh:
         if self._cycle.acquire(False):
             try:
                 with self._lock:
-                    if self._owner:self._owner.release()
+                    self._release_ownership()
             finally:self._cycle.release()
         return self.status()
 
@@ -94,8 +94,25 @@ class ResearchRefresh:
     def _pause(self,reason,phase='PAUSED'):
         with self._lock:self._stop.set();self._phase=phase;self._reason=reason
 
+    def _require_ownership(self):
+        owner=self._owner
+        try:
+            if owner is None or not owner.held:raise ValueError('REFRESH_OWNER_NOT_HELD')
+            owner.validate()
+        except ValueError:
+            raise ValueError('REFRESH_OWNER_STORE_CHANGED') from None
+
+    def _release_ownership(self):
+        if not self._owner:return
+        try:self._owner.release()
+        except ValueError:
+            # A changed public owner path can never be acknowledged as a clean
+            # stop. Closing the descriptor still releases its retired inode.
+            self._stop.set();self._phase='PAUSED';self._reason='OWNERSHIP_REVIEW_REQUIRED'
+
     def _before_train(self):
         with self._lock:
+            self._require_ownership()
             if self._stop.is_set() or not self._admission():raise ValueError('REFRESH_STOPPED')
             if self._fits>=MAX_FITS:raise ValueError('REFRESH_FIT_BUDGET')
             self._fits+=1
@@ -104,12 +121,14 @@ class ResearchRefresh:
         # Stop and publication serialize on this lock: no reference update after
         # stop acknowledgment. Computation/sealed candidate files may finish.
         with self._lock:
+            self._require_ownership()
             if self._stop.is_set() or not self._admission():raise ValueError('REFRESH_STOPPED')
             if hub.root().resolve()!=self._root:raise ValueError('REFRESH_DIRECTORY_CHANGED')
             now=self.clock()
             if type(now) not in (int,float) or not math.isfinite(now) or (self._last_clock is not None and now<self._last_clock):raise ValueError('REFRESH_CLOCK_FAULT')
             if self._config and self._config.get('collect_public_history'):self._collection_clock()
             hub.register_model(product,g,sha)
+            self._require_ownership()
 
     def _collection_clock(self):
         mono=self.clock();wall=self.wall_clock()
@@ -122,6 +141,7 @@ class ResearchRefresh:
 
     def _collect_public(self,config):
         with self._lock:
+            self._require_ownership()
             if self._stop.is_set() or not self._admission():raise ValueError('REFRESH_STOPPED')
             end=int((self._collection_clock()-collection.SETTLE_SECONDS)//config['granularity'])*config['granularity']
             if self._frontier is not None and end<self._frontier:raise ValueError('REFRESH_CLOCK_FAULT')
@@ -129,6 +149,7 @@ class ResearchRefresh:
         pages=4 if self._frontier is None else 1
         for page in range(pages):
             with self._lock:
+                self._require_ownership()
                 if self._stop.is_set() or not self._admission():raise ValueError('REFRESH_STOPPED')
                 if hub.root().resolve()!=self._root:raise ValueError('REFRESH_DIRECTORY_CHANGED')
                 self._collection_clock();collection.preflight()
@@ -140,6 +161,7 @@ class ResearchRefresh:
             try:rows=collection.read_window(config['product'],config['granularity'],cutoff,self.transport)
             except Exception:raise ValueError('REFRESH_SOURCE_FAILED') from None
             with self._lock:
+                self._require_ownership()
                 if self._stop.is_set() or not self._admission():raise ValueError('REFRESH_STOPPED')
                 if hub.root().resolve()!=self._root:raise ValueError('REFRESH_DIRECTORY_CHANGED')
                 received=self._collection_clock()
@@ -155,6 +177,7 @@ class ResearchRefresh:
         admitted=False
         try:
             with self._lock:
+                self._require_ownership()
                 if self._stop.is_set():return None
                 now=self.clock()
                 if type(now) not in (int,float) or not math.isfinite(now) or (self._last_clock is not None and now<self._last_clock):
@@ -168,6 +191,7 @@ class ResearchRefresh:
             if not admitted:
                 with self._lock:self._busy+=1;self._phase='WAITING';self._reason='RESEARCH_JOB_BUSY'
                 return None
+            self._require_ownership()
             if config['collect_public_history']:self._collect_public(config)
             try:hub.import_local(config['product'],config['granularity'],config['limit'])
             except ValueError as exc:
@@ -175,6 +199,7 @@ class ResearchRefresh:
             with self._lock:
                 if self._stop.is_set():return None
             generation=hub.generation(config['product'],config['granularity'])
+            self._require_ownership()
             if generation==self._generation:
                 with self._lock:self._skips+=1;self._phase='WAITING';self._reason='DATA_UNCHANGED'
                 return None
@@ -199,6 +224,7 @@ class ResearchRefresh:
             elif code=='REFRESH_CLOCK_FAULT':self._pause('CLOCK_FAULT')
             elif code=='REFRESH_STOPPED':
                 if not self._stop.is_set():self._pause('PORTAL_INACTIVE')
+            elif code.startswith('REFRESH_OWNER_'):self._pause('OWNERSHIP_REVIEW_REQUIRED')
             else:self._pause('DATA_DIRECTORY_CHANGED' if code=='REFRESH_DIRECTORY_CHANGED' else 'DATA_OR_MODEL_REVIEW_REQUIRED')
         except Exception:self._pause('STORAGE_OR_MODEL_FAILURE')
         finally:
@@ -206,7 +232,7 @@ class ResearchRefresh:
             with self._lock:
                 if not self._stop.is_set() and (self._fits>=MAX_FITS or self._polls>=MAX_POLLS or self._source_requests>=collection.MAX_SOURCE_REQUESTS):self._pause('SESSION_BUDGET_REACHED','COMPLETE')
                 if self._stop.is_set():
-                    if self._owner:self._owner.release()
+                    self._release_ownership()
                     if self._phase=='STOPPING':self._phase='STOPPED'
             self._cycle.release()
         return None
@@ -219,7 +245,7 @@ class ResearchRefresh:
         finally:
             with self._lock:
                 if not self._stop.is_set():self._pause('WORKER_EXITED')
-                if self._owner:self._owner.release()
+                self._release_ownership()
 
 
 refresh_worker=ResearchRefresh()

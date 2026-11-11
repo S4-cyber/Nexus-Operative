@@ -383,6 +383,7 @@ class DurableOrderGateway:
                 portfolio_sha256=portfolio_snapshot['snapshot_sha256'] if portfolio_snapshot else None),
                 sort_keys=True,separators=(',',':')).encode())
             snapshot_sha256=combined.hexdigest()
+            if portfolio_snapshot is not None:portfolio.require_current()
         records={**gateway.archived_intents,**gateway.intents}
         matched={key:dict(order=copy.deepcopy(record),quote_events=[]) for key,record in records.items() if key.startswith(prefix)}
         for (oid,_),detail in gateway.quote_events.items():

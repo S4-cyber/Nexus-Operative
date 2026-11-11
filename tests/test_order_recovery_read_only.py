@@ -1,6 +1,7 @@
 """Actual local journal replay and linked-file checks, never provider access."""
 from contextlib import closing
 import os
+from pathlib import Path
 import sqlite3
 
 from fastapi.testclient import TestClient
@@ -212,6 +213,47 @@ def test_main_and_attached_portfolio_reject_sql_writes_during_read(tmp_path,monk
         with pytest.raises(sqlite3.OperationalError,match='readonly'):db.execute('DELETE FROM commands')
         with pytest.raises(sqlite3.OperationalError,match='readonly'):portfolio.execute('DELETE FROM ledger')
     assert gateway.recovery_report()['portfolio_reconciled']
+
+
+def test_linked_read_rejects_identical_leaf_replacement_during_attach(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch);path=tmp_path/'paper_portfolio.sqlite3'
+    replacement=tmp_path/'replacement.sqlite3';replacement.write_bytes(path.read_bytes())
+    retired=tmp_path/'retired.sqlite3';original=Path.resolve;changed=[]
+    def replace_then_resolve(self,*args,**kwargs):
+        if self==path and not changed:
+            path.rename(retired);replacement.rename(path);changed.append(True)
+        return original(self,*args,**kwargs)
+    monkeypatch.setattr(Path,'resolve',replace_then_resolve)
+    with pytest.raises(ValueError,match='LINKED_PORTFOLIO_CHANGED'):
+        gateway.recovery_report()
+    assert changed and path.read_bytes()==retired.read_bytes()
+
+
+@pytest.mark.skipif(os.name=='nt',reason='Windows denies replacing an attached SQLite file')
+def test_linked_snapshot_rechecks_leaf_identity_after_attach(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch);path=tmp_path/'paper_portfolio.sqlite3'
+    replacement=tmp_path/'replacement.sqlite3';replacement.write_bytes(path.read_bytes())
+    retired=tmp_path/'retired.sqlite3'
+    with gateway._read_connection() as db:
+        portfolio=execution_portfolio.attach_read_only(db,path)
+        path.rename(retired);replacement.rename(path)
+        with pytest.raises(ValueError,match='LINKED_PORTFOLIO_CHANGED'):
+            execution_portfolio.snapshot(portfolio,durable_orders.MAX_PORTFOLIO_SNAPSHOT_ROWS)
+
+
+@pytest.mark.skipif(os.name=='nt',reason='Windows denies replacing an attached SQLite file')
+def test_linked_identity_change_overrides_semantic_reader_failure(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch);path=tmp_path/'paper_portfolio.sqlite3'
+    replacement=tmp_path/'replacement.sqlite3';replacement.write_bytes(path.read_bytes())
+    retired=tmp_path/'retired.sqlite3'
+    with gateway._read_connection() as db:
+        portfolio=execution_portfolio.attach_read_only(db,path)
+        def replace_then_fail(_):
+            path.rename(retired);replacement.rename(path)
+            raise ValueError('lower-priority semantic failure')
+        monkeypatch.setattr(execution_portfolio,'require_safe_ledger',replace_then_fail)
+        with pytest.raises(ValueError,match='^LINKED_PORTFOLIO_CHANGED$'):
+            execution_portfolio.compare(portfolio,{'initial':'10000','cash':'10000','positions':{}})
 
 
 def test_session_snapshot_binds_exact_linked_portfolio_content(tmp_path,monkeypatch):

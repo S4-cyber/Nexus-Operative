@@ -1,10 +1,12 @@
 """Atomic SQLite bridge for explicitly linked offline execution accounting."""
 import hashlib
 import json
+import os
 import re
 import time
 import stat
 from decimal import Decimal
+from pathlib import Path
 from nexus.paper_portfolio import create_schema, verify_ledger
 from nexus.portfolio_governor import require_safe_ledger
 from nexus.transaction_seals import append_seal
@@ -22,14 +24,30 @@ SNAPSHOT_TABLES = (
 
 class AttachedPortfolio:
     """Use the order transaction's attached portfolio database, without a second commit."""
-    def __init__(self, db):
+    def __init__(self, db, path=None, observed=None):
         self.db = db
+        self.path = path
+        self.observed = observed
+
+    def require_current(self):
+        if self.path is None:return
+        try:current=self.path.lstat()
+        except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
+        if (stat.S_ISLNK(current.st_mode) or not stat.S_ISREG(current.st_mode) or
+                not os.path.samestat(self.observed,current)):
+            raise ValueError('LINKED_PORTFOLIO_CHANGED')
 
     def execute(self, sql, parameters=()):
         return self.db.execute(re.sub(TABLES, r'portfolio.\1', sql), parameters)
 
     def executemany(self, sql, parameters):
         return self.db.executemany(re.sub(TABLES, r'portfolio.\1', sql), parameters)
+
+
+def _require_current(portfolio):
+    """Recheck identity only for explicitly bound attached-portfolio readers."""
+    checker=getattr(portfolio,'require_current',None)
+    if checker is not None:checker()
 
 
 def attach(db, path):
@@ -45,28 +63,50 @@ def attach(db, path):
 
 def attach_read_only(db, path):
     """Compare an already linked ledger without creating/migrating its file."""
-    if path.is_symlink():raise ValueError('LINKED_PORTFOLIO_SYMLINK')
-    observed=path.stat()  # Missing/inaccessible linked accounting must fail, not recreate.
+    path=Path(path)
+    observed=path.lstat()  # Missing/inaccessible linked accounting must fail, not recreate.
+    if stat.S_ISLNK(observed.st_mode):raise ValueError('LINKED_PORTFOLIO_SYMLINK')
     if not stat.S_ISREG(observed.st_mode):raise ValueError('LINKED_PORTFOLIO_REGULAR_FILE_REQUIRED')
-    db.execute('ATTACH DATABASE ? AS portfolio', (path.resolve().as_uri()+'?mode=ro',))
+    try:resolved=path.resolve(strict=True)
+    except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
+    try:after_resolve=path.lstat()
+    except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
+    if (stat.S_ISLNK(after_resolve.st_mode) or not stat.S_ISREG(after_resolve.st_mode) or
+            not os.path.samestat(observed,after_resolve)):
+        raise ValueError('LINKED_PORTFOLIO_CHANGED')
+    db.execute('ATTACH DATABASE ? AS portfolio', (resolved.as_uri()+'?mode=ro',))
     if db.execute('PRAGMA main.journal_mode').fetchone()[0]!='delete' or db.execute('PRAGMA portfolio.journal_mode').fetchone()[0]!='delete':
         raise ValueError('ATOMIC_PORTFOLIO_REQUIRES_DELETE_JOURNALS')
-    return AttachedPortfolio(db)
+    portfolio=AttachedPortfolio(db,path,observed)
+    portfolio.require_current()
+    try:
+        attached=[Path(filename).resolve(strict=True) for _,name,filename in db.execute('PRAGMA database_list') if name=='portfolio']
+    except OSError:raise ValueError('LINKED_PORTFOLIO_CONNECTION_MISMATCH') from None
+    if len(attached)!=1 or attached[0]!=resolved:
+        raise ValueError('LINKED_PORTFOLIO_CONNECTION_MISMATCH')
+    portfolio.require_current()
+    return portfolio
 
 
 def snapshot(portfolio, row_limit):
     """Stream one exact logical linked-ledger fingerprint from an open snapshot."""
     if type(row_limit) is not int or row_limit<1:raise ValueError('INVALID_PORTFOLIO_SNAPSHOT_LIMIT')
-    digest=hashlib.sha256(b'nexus.execution-portfolio-snapshot.v1\n');rows=0
-    for table,columns,ordering in SNAPSHOT_TABLES:
-        selected=','.join(part for column in columns for part in (f'typeof({column})',f'hex({column})'))
-        sql=f"SELECT {selected} FROM {table} ORDER BY {','.join(ordering)}"
-        table_rows=0
-        for row in portfolio.execute(sql):
-            rows+=1;table_rows+=1
-            if rows>row_limit:raise ValueError('PORTFOLIO_SNAPSHOT_CAP_EXCEEDED')
-            digest.update(json.dumps((table,*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
-        digest.update(json.dumps(('table_rows',table,table_rows),separators=(',',':')).encode()+b'\n')
+    _require_current(portfolio)
+    try:
+        digest=hashlib.sha256(b'nexus.execution-portfolio-snapshot.v1\n');rows=0
+        for table,columns,ordering in SNAPSHOT_TABLES:
+            selected=','.join(part for column in columns for part in (f'typeof({column})',f'hex({column})'))
+            sql=f"SELECT {selected} FROM {table} ORDER BY {','.join(ordering)}"
+            table_rows=0
+            for row in portfolio.execute(sql):
+                rows+=1;table_rows+=1
+                if rows>row_limit:raise ValueError('PORTFOLIO_SNAPSHOT_CAP_EXCEEDED')
+                digest.update(json.dumps((table,*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
+            digest.update(json.dumps(('table_rows',table,table_rows),separators=(',',':')).encode()+b'\n')
+    except Exception:
+        _require_current(portfolio)
+        raise
+    _require_current(portfolio)
     return dict(rows=rows,snapshot_sha256=digest.hexdigest())
 
 
@@ -86,12 +126,18 @@ def link(portfolio, account):
 
 
 def compare(portfolio, account):
-    require_safe_ledger(portfolio)
-    meta=dict(portfolio.execute('SELECT key,value FROM meta'))
-    actual={p:(Decimal(q),Decimal(e)) for p,q,e in portfolio.execute('SELECT product,quantity,entry FROM positions')}
-    expected={p:(Decimal(v['quantity']),Decimal(v['entry'])) for p,v in account['positions'].items()}
-    if Decimal(meta['initial'])!=Decimal(account['initial']) or Decimal(meta['cash'])!=Decimal(account['cash']) or actual!=expected:
-        raise ValueError('EXECUTION_PORTFOLIO_DISAGREEMENT')
+    _require_current(portfolio)
+    try:
+        require_safe_ledger(portfolio)
+        meta=dict(portfolio.execute('SELECT key,value FROM meta'))
+        actual={p:(Decimal(q),Decimal(e)) for p,q,e in portfolio.execute('SELECT product,quantity,entry FROM positions')}
+        expected={p:(Decimal(v['quantity']),Decimal(v['entry'])) for p,v in account['positions'].items()}
+        if Decimal(meta['initial'])!=Decimal(account['initial']) or Decimal(meta['cash'])!=Decimal(account['cash']) or actual!=expected:
+            raise ValueError('EXECUTION_PORTFOLIO_DISAGREEMENT')
+    except Exception:
+        _require_current(portfolio)
+        raise
+    _require_current(portfolio)
 
 
 def apply_fill(portfolio, order, event_id, detail, account):

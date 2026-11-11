@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.260 (pre-release).**
+**Current development build: 0.340.261 (pre-release).**
+
+## v0.340.261 complete preflight file-set binding
+
+Read-only paper-start preflight now binds the presence, regular single-link identity and size/mtime/ctime metadata of every expected order, portfolio, forward and settings SQLite path across the complete diagnostic. The binding is rechecked on normal completion, early return and every ordinary failure. Disappearance, late appearance, replacement, metadata mutation or a newly retained SQLite sidecar therefore fails closed as `PREFLIGHT_FILE_SET_CHANGED`, with the file-set disagreement taking priority over a lower-level ordinary error; process-control signals remain observable.
+
+At checkpoint start, hosted `development/windows-portal-foundation` and draft PR #1 both targeted v0.340.260 commit `a0fdd7de1bf29e66e577db012eeabb05d8b8523c` / tree `c5cb0da134df0825d6b657a8962f64fe1a470f03`. GitHub exposed no pull-request workflow runs, combined statuses or reviews for that exact commit. Fresh exact-source v0.340.261 public-security, Windows/installer and browser checks remain required after publication; no hosted result is pre-claimed.
+
+This is sampled local preflight snapshot integrity, not an atomic multi-file view, byte fingerprint, writer lock, complete hostile-filesystem or ACL proof, actual paper-account/provider acceptance, genuine-feed provenance, a sustained 72-hour market trial, profitability, native-Windows saved-credential acceptance, funding/live/cloud readiness or release approval. Preflight remains read-only and grants no reservation or running permission. No Portal button or modifiable parameter changed; the existing Trial Readiness control retains beginner-facing text and black/bright-purple bottom-right hover help. Seven tabs, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This D3 local-read hardening does not independently complete an acceptance stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,881 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 1,522.18 seconds. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `97f5b8f476d7a587bee77368c535957c4a318d7c6735ff09116bac2c3f4bafd6`; `validation/release_trials_0_340_261.json` SHA256 is `40ff14e2736e068beabef818d55a4ce32105a8850c4f4b3642a2593c1f9a2af8`. The affected preflight/order/portfolio/forward/review focus passed 80 and the synchronized preflight/release/version/roadmap/Windows-workflow focus passed 39. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.261 and has SHA256 `d6cb65f24dfa5f51f3e8375b4b7df16bfe6f5e8827761c587f35135443c8d0b7`. The locally reachable history audit exceeded its configured 1 GiB cap and is not claimed. Local Gitleaks and Inno Setup were unavailable. Playwright was installed but its configured Chromium executable `/home/agent/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome` was absent, so browser workflow acceptance was unavailable; native Windows and installer execution were also unavailable locally. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
 
 ## v0.340.260 multi-file preflight root binding
 

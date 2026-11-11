@@ -162,6 +162,38 @@ def test_preflight_root_scope_preserves_process_control_signal(local):
         with pre._root_scope(root):raise KeyboardInterrupt
 
 
+def test_preflight_rejects_missing_file_appearance_between_snapshots(local,monkeypatch):
+    root,gateway,_=local;state.load_settings();original=gateway.recovery_report
+    def appear_after_recovery():
+        report=original();(root/'paper_portfolio.sqlite3').write_bytes(b'PRIVATE-LATE-FILE')
+        return report
+    monkeypatch.setattr(gateway,'recovery_report',appear_after_recovery)
+    result=check(local)
+    assert result['blockers']==['LOCAL_HISTORY_REVIEW_REQUIRED']
+    assert not result['running_permission_granted'] and 'PRIVATE' not in str(result)
+
+
+def test_preflight_file_scope_rejects_existing_file_metadata_change(local):
+    root,_,_=local;state.load_settings();path=root/'portal_settings.sqlite3'
+    with pytest.raises(ValueError,match='^PREFLIGHT_FILE_SET_CHANGED$'):
+        with pre._file_scope([path]) as exists:
+            assert exists[path];path.write_bytes(path.read_bytes()+b'changed')
+
+
+def test_preflight_file_set_change_overrides_ordinary_failure(local):
+    root,_,_=local;path=root/'future.sqlite3'
+    with pytest.raises(ValueError,match='^PREFLIGHT_FILE_SET_CHANGED$'):
+        with pre._file_scope([path]) as exists:
+            assert not exists[path];path.parent.mkdir();path.write_bytes(b'late')
+            raise ValueError('lower-priority semantic failure')
+
+
+def test_preflight_file_scope_preserves_process_control_signal(local):
+    root,_,_=local;path=root/'future.sqlite3'
+    with pytest.raises(KeyboardInterrupt):
+        with pre._file_scope([path]):raise KeyboardInterrupt
+
+
 def test_linked_holdings_can_start_exit_monitoring_with_bad_budget_or_tier_off(tmp_path,monkeypatch):
     from test_paper_forward import setup,warmup
     runner,gateway,clock=setup(tmp_path,monkeypatch);assert warmup(runner,clock)['decision']=='BUY';runner.stop()

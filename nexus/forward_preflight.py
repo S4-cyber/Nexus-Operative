@@ -68,6 +68,48 @@ def _root_scope(path):
     binding.require_current()
 
 
+class _PreflightFileSet:
+    """Bind presence and metadata for every SQLite path in one diagnostic."""
+    def __init__(self,paths):
+        self.paths=tuple(Path(path) for path in paths);self.observed={}
+        for path in self.paths:
+            if not _existing(path):self.observed[path]=None;continue
+            try:value=path.lstat()
+            except OSError:raise ValueError('PREFLIGHT_FILE_SET_CHANGED') from None
+            if not stat.S_ISREG(value.st_mode) or value.st_nlink!=1:
+                raise ValueError('PREFLIGHT_FILE_SET_CHANGED')
+            self.observed[path]=(value.st_dev,value.st_ino,value.st_size,
+                value.st_mtime_ns,value.st_ctime_ns,value.st_nlink)
+
+    def exists(self):return {path:value is not None for path,value in self.observed.items()}
+
+    def require_current(self):
+        for path,expected in self.observed.items():
+            try:present=_existing(path)
+            except ValueError:raise ValueError('PREFLIGHT_FILE_SET_CHANGED') from None
+            if not present:
+                if expected is None:continue
+                raise ValueError('PREFLIGHT_FILE_SET_CHANGED')
+            try:value=path.lstat()
+            except OSError:raise ValueError('PREFLIGHT_FILE_SET_CHANGED') from None
+            current=(value.st_dev,value.st_ino,value.st_size,value.st_mtime_ns,
+                value.st_ctime_ns,value.st_nlink)
+            if (expected is None or not stat.S_ISREG(value.st_mode) or
+                    value.st_nlink!=1 or current!=expected):
+                raise ValueError('PREFLIGHT_FILE_SET_CHANGED')
+
+
+@contextmanager
+def _file_scope(paths):
+    binding=_PreflightFileSet(paths)
+    try:yield binding.exists()
+    except BaseException as error:
+        if not isinstance(error,Exception):raise
+        binding.require_current()
+        raise
+    binding.require_current()
+
+
 def _read(path,operation):
     path=Path(path)
     if not _existing(path):raise ValueError('PREFLIGHT_FILE_CHANGED')
@@ -133,47 +175,47 @@ def build(orders,runner,*,tier,portal_active,halted):
     try:
         with _root_scope(orders._path().parent) as root:
             paths=[orders._path(),*(root/name for name in ('paper_portfolio.sqlite3','paper_forward.sqlite3','portal_settings.sqlite3'))]
-            exists={path:_existing(path) for path in paths}
-            recovery=orders.recovery_report();account=recovery['execution_account']['account']
-            positions=(account or {}).get('positions',{})
-            if recovery['halted']:blocked.append('TRADING_CUT_ACTIVE')
-            if positions:entry_mode='RETAINED_EXIT_MONITORING'
-            if any(product!=POLICY['product'] for product in positions):blocked.append('BTC_ONLY_ACCOUNT_REQUIRED')
-            if any(order['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') for order in recovery['orders']):
-                blocked.append('PENDING_ORDERS_REVIEW_REQUIRED')
-            storage=runner.storage_capacity()
-            if not storage['session_intake_allowed'] or not storage['quote_intake_allowed']:blocked.append('EVIDENCE_CAPACITY_REVIEW_REQUIRED')
-            extra=int(not recovery['execution_account']['initialized'])+int(not recovery['portfolio_reconciled'])
-            capacity=recovery['capacity']
-            if (not capacity['lifecycle_intake_allowed'] or capacity['ordinary_commands_remaining']<(4 if positions else 12)+extra
-                or capacity['intents_remaining']<(1 if positions else 2)):blocked.append('JOURNAL_CAPACITY_REVIEW_REQUIRED')
-            settings=None
-            if not positions:
-                settings_path=root/'portal_settings.sqlite3'
-                try:
-                    def config(db):
-                        values=read_effective_settings(db)
-                        switch=db.execute('SELECT enabled FROM tier_permissions WHERE tier=?',(tier,)).fetchone()
-                        return values,switch
-                    settings,switch=_read(settings_path,config) if exists[settings_path] else (dict(DEFAULTS),None)
-                except (ValueError,sqlite3.Error,TypeError,KeyError):
-                    blocked.append('SETTINGS_REVIEW_REQUIRED');return result()
-                if not switch or type(switch[0]) is not int or switch[0]!=1:blocked.append('TIER_NOT_SELECTED')
-                budget=Decimal(str(settings['paper_budget']))
-                cap=min(Decimal(200),budget*TIERS[tier],budget*Decimal(settings[tier+'_allocation'])/100)
-                initial=Decimal(account['initial']) if account else budget
-                size=min(Decimal(POLICY['maximum_entry_usd']),initial*Decimal(POLICY['initial_entry_fraction_bps'])/10000)
-                if cap<size:blocked.append('TIER_LIMIT_TOO_SMALL')
-            if not recovery['portfolio_reconciled']:
-                info=recovery['execution_account']
-                if info['priced_fills'] or info['unpriced_fills'] or positions or (account and account['cash']!=account['initial']):
-                    blocked.append('ACCOUNT_LINK_REVIEW_REQUIRED')
-                else:
-                    target=account or dict(initial=str(settings['paper_budget']),cash=str(settings['paper_budget']),positions={})
-                    portfolio_path=root/'paper_portfolio.sqlite3'
-                    if exists[portfolio_path]:
-                        try:_read(portfolio_path,lambda db:_unused_portfolio(db,target))
-                        except (ValueError,sqlite3.Error,ArithmeticError):blocked.append('ACCOUNT_LINK_REVIEW_REQUIRED')
-                    prepare=True
+            with _file_scope(paths) as exists:
+                recovery=orders.recovery_report();account=recovery['execution_account']['account']
+                positions=(account or {}).get('positions',{})
+                if recovery['halted']:blocked.append('TRADING_CUT_ACTIVE')
+                if positions:entry_mode='RETAINED_EXIT_MONITORING'
+                if any(product!=POLICY['product'] for product in positions):blocked.append('BTC_ONLY_ACCOUNT_REQUIRED')
+                if any(order['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') for order in recovery['orders']):
+                    blocked.append('PENDING_ORDERS_REVIEW_REQUIRED')
+                storage=runner.storage_capacity()
+                if not storage['session_intake_allowed'] or not storage['quote_intake_allowed']:blocked.append('EVIDENCE_CAPACITY_REVIEW_REQUIRED')
+                extra=int(not recovery['execution_account']['initialized'])+int(not recovery['portfolio_reconciled'])
+                capacity=recovery['capacity']
+                if (not capacity['lifecycle_intake_allowed'] or capacity['ordinary_commands_remaining']<(4 if positions else 12)+extra
+                    or capacity['intents_remaining']<(1 if positions else 2)):blocked.append('JOURNAL_CAPACITY_REVIEW_REQUIRED')
+                settings=None
+                if not positions:
+                    settings_path=root/'portal_settings.sqlite3'
+                    try:
+                        def config(db):
+                            values=read_effective_settings(db)
+                            switch=db.execute('SELECT enabled FROM tier_permissions WHERE tier=?',(tier,)).fetchone()
+                            return values,switch
+                        settings,switch=_read(settings_path,config) if exists[settings_path] else (dict(DEFAULTS),None)
+                    except (ValueError,sqlite3.Error,TypeError,KeyError):
+                        blocked.append('SETTINGS_REVIEW_REQUIRED');return result()
+                    if not switch or type(switch[0]) is not int or switch[0]!=1:blocked.append('TIER_NOT_SELECTED')
+                    budget=Decimal(str(settings['paper_budget']))
+                    cap=min(Decimal(200),budget*TIERS[tier],budget*Decimal(settings[tier+'_allocation'])/100)
+                    initial=Decimal(account['initial']) if account else budget
+                    size=min(Decimal(POLICY['maximum_entry_usd']),initial*Decimal(POLICY['initial_entry_fraction_bps'])/10000)
+                    if cap<size:blocked.append('TIER_LIMIT_TOO_SMALL')
+                if not recovery['portfolio_reconciled']:
+                    info=recovery['execution_account']
+                    if info['priced_fills'] or info['unpriced_fills'] or positions or (account and account['cash']!=account['initial']):
+                        blocked.append('ACCOUNT_LINK_REVIEW_REQUIRED')
+                    else:
+                        target=account or dict(initial=str(settings['paper_budget']),cash=str(settings['paper_budget']),positions={})
+                        portfolio_path=root/'paper_portfolio.sqlite3'
+                        if exists[portfolio_path]:
+                            try:_read(portfolio_path,lambda db:_unused_portfolio(db,target))
+                            except (ValueError,sqlite3.Error,ArithmeticError):blocked.append('ACCOUNT_LINK_REVIEW_REQUIRED')
+                        prepare=True
     except (ValueError,OSError,sqlite3.Error,ArithmeticError,TypeError,KeyError):blocked.append('LOCAL_HISTORY_REVIEW_REQUIRED')
     return result()

@@ -176,6 +176,20 @@ def test_owner_path_replacement_blocks_model_publication(local,monkeypatch,tmp_p
     if replacement[0] is not None:replacement[0].release()
 
 
+def test_owner_failure_inside_model_transaction_rolls_back_reference(local,monkeypatch):
+    seed();worker,_=arm(local);artifact=hub.seal(prediction.train(hub.snapshot('BTC-USD')))
+    original=worker._owner.validate;checks=[]
+    def fail_after_reference_update():
+        checks.append(True)
+        if len(checks)==3:raise ValueError('REFRESH_OWNER_STORE_CHANGED')
+        original()
+    monkeypatch.setattr(worker._owner,'validate',fail_after_reference_update)
+    with pytest.raises(ValueError,match='REFRESH_OWNER_STORE_CHANGED'):
+        worker._publish('BTC-USD',3600,artifact['content_sha256'])
+    assert len(checks)==3
+    with pytest.raises(ValueError,match='HUB_NO_TRAINED_MODEL'):hub.latest_model('BTC-USD',3600)
+
+
 def test_api_reads_do_not_start_worker_and_explicit_start_requires_active_portal(local,monkeypatch):
     from fastapi.testclient import TestClient
     from nexus import app

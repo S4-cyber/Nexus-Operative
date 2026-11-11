@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.267 (pre-release).**
+**Current development build: 0.340.268 (pre-release).**
+
+## v0.340.268 transactional research publication guard
+
+Research-refresh ownership validation now brackets the durable model-reference update inside the same SQLite write transaction. The hub validates the active owner after acquiring the write transaction and again after updating the reference; a late failure raises before transaction exit so SQLite rolls the update back. Direct unguarded research callers remain compatible.
+
+At checkpoint start, hosted `development/windows-portal-foundation` and draft PR #1 targeted v0.340.267 commit `9e2b21552a0e74f4aed93532b8beaa75d0efa5e7` / tree `7333a84bb38a7cd8c5872e552b7a928f5818e390`. GitHub exposed no pull-request workflow runs, combined statuses or reviews for that exact commit. Fresh exact-source v0.340.268 public-security, Windows/installer and browser checks remain required after publication; no hosted result is pre-claimed.
+
+This narrows the sampled local publication window; it is not an atomic filesystem/SQLite transaction, distributed ownership, an ACL or administrator boundary, physical power-loss proof, source/model acceptance, actual paper-account/provider acceptance, genuine-feed provenance, a sustained 72-hour market trial, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No Portal button or modifiable parameter changed; the existing Trial Readiness control retains beginner-facing text and black/bright-purple bottom-right hover help. Seven tabs, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This D3/M7 local-ownership hardening does not independently complete an acceptance stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,898 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 1,025.59 seconds. The direct hub/refresh publication focus passed 57 and the synchronized hub/refresh/release/evidence/roadmap/Windows-contract scope passed 282. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `304c2c9caa06216720fd496e533115a61e25f29644ea92824d269ac18ed523f0`; `validation/release_trials_0_340_268.json` SHA256 is `31788e9dfe37b124c8c61eafa0deba0dfc2b5dda65504e504da8694dcafe7b63`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.268 and has SHA256 `51afad823f1b77b6c9821d7d26e0bc249227ea1f874ed52a952a801f9813505c`. The 987-path/blob staged-candidate artifact audit and introduced-line high-confidence signature scan found zero findings; the locally reachable history audit exceeded its configured byte cap. Local Gitleaks and Inno Setup are unavailable. Playwright is installed but no Chromium executable is present, so browser workflow acceptance is unavailable; native Windows and installer execution are also unavailable locally. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
 
 ## v0.340.267 active research-refresh ownership fence
 

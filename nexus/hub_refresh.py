@@ -127,8 +127,7 @@ class ResearchRefresh:
             now=self.clock()
             if type(now) not in (int,float) or not math.isfinite(now) or (self._last_clock is not None and now<self._last_clock):raise ValueError('REFRESH_CLOCK_FAULT')
             if self._config and self._config.get('collect_public_history'):self._collection_clock()
-            hub.register_model(product,g,sha)
-            self._require_ownership()
+            hub.register_model(product,g,sha,self._require_ownership)
 
     def _collection_clock(self):
         mono=self.clock();wall=self.wall_clock()

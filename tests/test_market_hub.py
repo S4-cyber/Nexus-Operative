@@ -212,6 +212,17 @@ def test_model_publish_rechecks_dataset_generation(hub):
     with pytest.raises(ValueError,match='DATA_CHANGED_DURING_TRAINING'):h.register_model('BTC-USD',3600,artifact['content_sha256'])
 
 
+def test_model_publish_guard_failure_after_update_rolls_back_reference(hub):
+    add();artifact=h.seal(model.train(h.snapshot('BTC-USD')));checks=[]
+    def guard():
+        checks.append(True)
+        if len(checks)==2:raise ValueError('REFRESH_OWNER_STORE_CHANGED')
+    with pytest.raises(ValueError,match='REFRESH_OWNER_STORE_CHANGED'):
+        h.register_model('BTC-USD',3600,artifact['content_sha256'],guard)
+    assert len(checks)==2
+    with pytest.raises(ValueError,match='HUB_NO_TRAINED_MODEL'):h.latest_model('BTC-USD',3600)
+
+
 def test_local_import_checks_digest_and_revision_before_hub_write(hub):
     from nexus.historical_candles import _db
     rows=bars(3)

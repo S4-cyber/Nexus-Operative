@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.267. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.268. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.267 makes the opt-in research-refresh worker actively revalidate its opened owner lease before public collection requests, retained-data intake, training and model-reference publication, then again after publication. A replaced public owner path pauses the worker as OWNERSHIP_REVIEW_REQUIRED, discards pre-publication work and closes its retired descriptor without acknowledging a clean stop. POSIX regression replaces the real owner path immediately before publication; Windows injects the equivalent lease disagreement because mandatory-share locks may prevent replacement. This is sampled cooperating-process local fencing, not an atomic filesystem transaction, distributed ownership, an ACL or administrator boundary, source attestation, model or genuine-feed acceptance, profitability, actual provider/account access, native Windows acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.268 binds research-refresh ownership validation to the durable model-reference transaction. The hub checks the active owner after acquiring its SQLite write transaction and again after updating the reference; a late check failure raises before transaction exit and rolls the reference back. Unguarded research callers remain compatible. This narrows the sampled local publication window; it is not an atomic filesystem/SQLite transaction, distributed ownership, an ACL or administrator boundary, physical power-loss proof, source attestation, model or genuine-feed acceptance, profitability, actual provider/account access, native Windows acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

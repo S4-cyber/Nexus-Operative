@@ -211,16 +211,21 @@ def import_local(product,granularity=3600,limit=1000):
     return ingest(product,granularity,records)
 
 
-def register_model(product,granularity,sha):
+def register_model(product,granularity,sha,publication_guard=None):
     if product not in PRODUCTS or type(granularity) is not int or granularity not in GRANULARITIES:raise ValueError('HUB_MARKET_SCOPE')
     model=read(sha)
     if model.get('schema')!='nexus.hub-momentum-model.v1' or model.get('product')!=product or model.get('granularity')!=granularity:raise ValueError('HUB_MODEL_IDENTITY')
     with closing(_db()) as db,db:
         db.execute('BEGIN IMMEDIATE')
+        # A guarded publisher may bind an independent owner lease to this
+        # durable update. Both checks run while the write transaction is open;
+        # a late failure therefore rolls the reference update back.
+        if publication_guard is not None:publication_guard()
         version=db.execute('SELECT version FROM generations WHERE product=? AND g=?',(product,granularity)).fetchone()
         if not version or version[0]!=model.get('dataset_generation'):raise ValueError('HUB_DATA_CHANGED_DURING_TRAINING')
         db.execute('CREATE TABLE IF NOT EXISTS model_refs(product TEXT,g INTEGER,sha TEXT NOT NULL,generation INTEGER NOT NULL,PRIMARY KEY(product,g))')
         db.execute('INSERT INTO model_refs VALUES(?,?,?,?) ON CONFLICT(product,g) DO UPDATE SET sha=excluded.sha,generation=excluded.generation',(product,granularity,sha,version[0]))
+        if publication_guard is not None:publication_guard()
 
 
 def latest_model(product,granularity):

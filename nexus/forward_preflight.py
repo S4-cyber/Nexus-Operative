@@ -10,7 +10,7 @@ from nexus import emergency_intent
 from nexus.paper_policy import POLICY
 from nexus.state import DEFAULTS,read_effective_settings
 from nexus.tier_permissions import TIERS
-from nexus.sqlite_journal_guard import check_existing
+from nexus.sqlite_journal_guard import check_existing,check_path_set
 from nexus import execution_portfolio
 from nexus.portfolio_governor import require_safe_ledger
 
@@ -175,6 +175,7 @@ def build(orders,runner,*,tier,portal_active,halted):
     try:
         with _root_scope(orders._path().parent) as root:
             paths=[orders._path(),*(root/name for name in ('paper_portfolio.sqlite3','paper_forward.sqlite3','portal_settings.sqlite3'))]
+            paths=list(check_path_set(paths,'PREFLIGHT_'))
             with _file_scope(paths) as exists:
                 recovery=orders.recovery_report();account=recovery['execution_account']['account']
                 positions=(account or {}).get('positions',{})

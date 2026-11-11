@@ -194,6 +194,16 @@ def test_preflight_file_scope_preserves_process_control_signal(local):
         with pre._file_scope([path]):raise KeyboardInterrupt
 
 
+@pytest.mark.parametrize('name',['paper_portfolio.sqlite3','portal_settings.sqlite3-journal'])
+def test_preflight_rejects_order_path_role_aliases_before_recovery(local,name,monkeypatch):
+    root,_,_=local;state.load_settings();gateway=DurableOrderGateway(root/name)
+    runner=PaperForwardRunner(gateway,lambda *_:pytest.fail('Aliased preflight fetched a quote'))
+    monkeypatch.setattr(gateway,'recovery_report',lambda:pytest.fail('Aliased path reached recovery'))
+    before=snapshot(root);result=pre.build(gateway,runner,tier='terrestrial',portal_active=True,halted=False)
+    assert result['blockers']==['LOCAL_HISTORY_REVIEW_REQUIRED'] and snapshot(root)==before
+    assert not result['running_permission_granted'] and not result['live_orders_enabled']
+
+
 def test_linked_holdings_can_start_exit_monitoring_with_bad_budget_or_tier_off(tmp_path,monkeypatch):
     from test_paper_forward import setup,warmup
     runner,gateway,clock=setup(tmp_path,monkeypatch);assert warmup(runner,clock)['decision']=='BUY';runner.stop()

@@ -213,6 +213,19 @@ def test_main_and_attached_portfolio_reject_sql_writes_during_read(tmp_path,monk
     assert gateway.recovery_report()['portfolio_reconciled']
 
 
+def test_session_snapshot_binds_exact_linked_portfolio_content(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch);session='a'*16
+    before=gateway.session_orders_snapshot(session)
+    assert before['portfolio_linked'] and before['portfolio_rows']>0
+    assert len(before['journal_sha256'])==len(before['portfolio_sha256'])==64
+    with sqlite3.connect(tmp_path/'paper_portfolio.sqlite3') as db:
+        db.execute("INSERT INTO meta VALUES ('review_fixture','changed')")
+    after=gateway.session_orders_snapshot(session)
+    assert after['journal_sha256']==before['journal_sha256']
+    assert after['portfolio_sha256']!=before['portfolio_sha256']
+    assert after['snapshot_sha256']!=before['snapshot_sha256']
+
+
 def test_unlinked_recovery_does_not_create_missing_portfolio(tmp_path,monkeypatch):
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
     gateway.initialize_account(10000)

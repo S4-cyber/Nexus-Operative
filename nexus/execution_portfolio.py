@@ -1,4 +1,6 @@
 """Atomic SQLite bridge for explicitly linked offline execution accounting."""
+import hashlib
+import json
 import re
 import time
 import stat
@@ -8,6 +10,14 @@ from nexus.portfolio_governor import require_safe_ledger
 from nexus.transaction_seals import append_seal
 
 TABLES = r'\b(meta|positions|ledger|position_events|chain_seals|execution_fills)\b'
+SNAPSHOT_TABLES = (
+    ('meta', ('key','value'), ('key',)),
+    ('positions', ('product','quantity','entry'), ('product',)),
+    ('ledger', ('id','at','action','product','cash_delta'), ('id',)),
+    ('position_events', ('id','ledger_id','action','product','quantity','entry'), ('id',)),
+    ('chain_seals', ('ledger_id','previous','digest'), ('ledger_id',)),
+    ('execution_fills', ('ledger_id','order_id','event_id','quantity','price','fee'), ('ledger_id',)),
+)
 
 
 class AttachedPortfolio:
@@ -42,6 +52,22 @@ def attach_read_only(db, path):
     if db.execute('PRAGMA main.journal_mode').fetchone()[0]!='delete' or db.execute('PRAGMA portfolio.journal_mode').fetchone()[0]!='delete':
         raise ValueError('ATOMIC_PORTFOLIO_REQUIRES_DELETE_JOURNALS')
     return AttachedPortfolio(db)
+
+
+def snapshot(portfolio, row_limit):
+    """Stream one exact logical linked-ledger fingerprint from an open snapshot."""
+    if type(row_limit) is not int or row_limit<1:raise ValueError('INVALID_PORTFOLIO_SNAPSHOT_LIMIT')
+    digest=hashlib.sha256(b'nexus.execution-portfolio-snapshot.v1\n');rows=0
+    for table,columns,ordering in SNAPSHOT_TABLES:
+        selected=','.join(part for column in columns for part in (f'typeof({column})',f'hex({column})'))
+        sql=f"SELECT {selected} FROM {table} ORDER BY {','.join(ordering)}"
+        table_rows=0
+        for row in portfolio.execute(sql):
+            rows+=1;table_rows+=1
+            if rows>row_limit:raise ValueError('PORTFOLIO_SNAPSHOT_CAP_EXCEEDED')
+            digest.update(json.dumps((table,*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
+        digest.update(json.dumps(('table_rows',table,table_rows),separators=(',',':')).encode()+b'\n')
+    return dict(rows=rows,snapshot_sha256=digest.hexdigest())
 
 
 def link(portfolio, account):

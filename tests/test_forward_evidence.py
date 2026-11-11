@@ -21,6 +21,10 @@ def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
     assert not report['provisional_active_session']
     assert report['order_journal_snapshot']['stable_during_review']
     assert report['order_journal_snapshot']['commands']>0
+    assert report['order_journal_snapshot']['portfolio_linked']
+    assert report['order_journal_snapshot']['portfolio_rows']>0
+    assert report['order_journal_snapshot']['journal_stable_during_review']
+    assert report['order_journal_snapshot']['portfolio_stable_during_review']
     assert len(report['order_journal_snapshot']['snapshot_sha256'])==64
 
 
@@ -36,6 +40,27 @@ def test_order_journal_change_during_review_fails_closed(tmp_path,monkeypatch):
     assert len(calls)==2 and calls[0]!=calls[1]
     assert not report['local_consistency_ok']
     assert 'ORDER_JOURNAL_CHANGED_DURING_REVIEW' in report['reasons']
+    assert 'LINKED_PORTFOLIO_CHANGED_DURING_REVIEW' not in report['reasons']
+    assert not report['order_journal_snapshot']['stable_during_review']
+
+
+def test_linked_portfolio_change_during_review_fails_closed(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.stop()
+    session=r.status()['session'];original=g.session_orders_snapshot;calls=[]
+    def raced_snapshot(value):
+        snapshot=original(value);calls.append(snapshot['snapshot_sha256'])
+        if len(calls)==1:
+            with sqlite3.connect(tmp_path/'paper_portfolio.sqlite3') as db:
+                db.execute("INSERT INTO meta VALUES ('review_fixture','changed')")
+        return snapshot
+    monkeypatch.setattr(g,'session_orders_snapshot',raced_snapshot)
+    report=r.evidence_report(session)
+    assert len(calls)==2 and calls[0]!=calls[1]
+    assert not report['local_consistency_ok']
+    assert 'ORDER_JOURNAL_CHANGED_DURING_REVIEW' not in report['reasons']
+    assert 'LINKED_PORTFOLIO_CHANGED_DURING_REVIEW' in report['reasons']
+    assert report['order_journal_snapshot']['journal_stable_during_review']
+    assert not report['order_journal_snapshot']['portfolio_stable_during_review']
     assert not report['order_journal_snapshot']['stable_during_review']
 
 

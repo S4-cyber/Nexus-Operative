@@ -21,6 +21,7 @@ from nexus.execution_capacity import report as capacity_report, CONTROL_RESERVE
 
 MAX_COMMANDS = 10000
 MAX_RETAINED_COMMANDS = 100000
+MAX_PORTFOLIO_SNAPSHOT_ROWS = MAX_RETAINED_COMMANDS*4+256
 DB_BUSY_TIMEOUT_MS = 10_000
 ROTATION_MARKER = 'nexus-order-rotation.intent'
 METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal', 'bind_replacement_epoch'))
@@ -347,7 +348,7 @@ class DurableOrderGateway:
         return self.session_orders_snapshot(session_id)['orders']
 
     def session_orders_snapshot(self,session_id):
-        """Return session orders and their exact replayed journal snapshot."""
+        """Return session orders and their exact journal/linked-ledger snapshot."""
         import re
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
         prefix='pf_'+session_id+'_'
@@ -355,26 +356,37 @@ class DurableOrderGateway:
         with self._read_connection(path,root_guard) as db:
             present=db is not None
             gateway,count=self._read_restore(db,compare_portfolio=True,path=path,root_guard=root_guard)
-            digest=hashlib.sha256(b'nexus.order-journal-snapshot.v1\n');command_rows=checkpoint_rows=0
+            journal_digest=hashlib.sha256(b'nexus.order-journal-snapshot.v1\n');command_rows=checkpoint_rows=0
             if db is not None:
                 for row in db.execute('SELECT sequence,typeof(payload),hex(payload) FROM commands ORDER BY sequence'):
                     command_rows+=1
                     if command_rows>MAX_RETAINED_COMMANDS:raise ValueError('RETAINED_COMMAND_HISTORY_CAP_EXCEEDED')
-                    digest.update(json.dumps(('command',*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
+                    journal_digest.update(json.dumps(('command',*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
                 for row in db.execute('SELECT sequence,typeof(prefix_sha256),hex(prefix_sha256),typeof(state_json),hex(state_json) FROM order_checkpoints ORDER BY sequence'):
                     checkpoint_rows+=1
                     if checkpoint_rows>2:raise ValueError('ORDER_CHECKPOINT_RETENTION_FAILED')
-                    digest.update(json.dumps(('checkpoint',*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
+                    journal_digest.update(json.dumps(('checkpoint',*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
             if command_rows!=count:raise ValueError('ORDER_JOURNAL_RECOVERY_FAILED')
-            snapshot_sha256=digest.hexdigest()
+            journal_sha256=journal_digest.hexdigest()
+            portfolio_snapshot=(execution_portfolio.snapshot(execution_portfolio.AttachedPortfolio(db),MAX_PORTFOLIO_SNAPSHOT_ROWS)
+                                if db is not None and gateway.portfolio_linked else None)
+            combined=hashlib.sha256(b'nexus.order-reconciliation-snapshot.v1\n')
+            combined.update(json.dumps(dict(journal_sha256=journal_sha256,
+                portfolio_linked=gateway.portfolio_linked,
+                portfolio_sha256=portfolio_snapshot['snapshot_sha256'] if portfolio_snapshot else None),
+                sort_keys=True,separators=(',',':')).encode())
+            snapshot_sha256=combined.hexdigest()
         records={**gateway.archived_intents,**gateway.intents}
         matched={key:dict(order=copy.deepcopy(record),quote_events=[]) for key,record in records.items() if key.startswith(prefix)}
         for (oid,_),detail in gateway.quote_events.items():
             if oid in matched:matched[oid]['quote_events'].append(copy.deepcopy(detail))
-        return dict(read_only=True,journal_present=present,commands=count,
+        return dict(read_only=True,journal_present=present,commands=count,journal_sha256=journal_sha256,
+                    portfolio_linked=gateway.portfolio_linked,
+                    portfolio_rows=portfolio_snapshot['rows'] if portfolio_snapshot else 0,
+                    portfolio_sha256=portfolio_snapshot['snapshot_sha256'] if portfolio_snapshot else None,
                     snapshot_sha256=snapshot_sha256,orders=list(matched.values()),
                     live_orders_enabled=False,
-                    note='Local replay-validated journal snapshot only; it grants no provider, account, funds or execution authority.')
+                    note='Local replay-validated order and linked-ledger snapshot only; it grants no provider, account, funds or execution authority.')
 
     def order_report(self,client_order_id):
         import copy

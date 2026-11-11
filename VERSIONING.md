@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.255 (pre-release).**
+**Current development build: 0.340.256 (pre-release).**
+
+## v0.340.256 linked-ledger review snapshot
+
+Forward evidence review now includes the atomically linked paper-portfolio database in each replay-validated order snapshot. The implementation streams exact typed logical rows from all six linked-ledger tables in deterministic primary-key order under a bounded cap, then combines that private ledger digest with the order journal digest. A journal mutation retains `ORDER_JOURNAL_CHANGED_DURING_REVIEW`; a portfolio-only mutation receives the distinct fixed `LINKED_PORTFOLIO_CHANGED_DURING_REVIEW` reason. Public diagnostics expose only bounded counts, one combined digest and stability flags—not retained commands, ledger rows, credentials or account data.
+
+At checkpoint start, hosted `development/windows-portal-foundation` and draft PR #1 both targeted v0.340.255 commit `09b144a041071e65a0588a95d1acd595e08c4645`. GitHub exposed no pull-request workflow runs, combined statuses or reviews for that exact commit. Fresh exact-source v0.340.256 public-security, Windows/installer and browser checks remain required after publication; no hosted result is pre-claimed.
+
+This is local supplied-history reconciliation integrity, not actual paper-account/provider acceptance, genuine-feed provenance, a sustained 72-hour market trial, profitability, native-Windows saved-credential acceptance, funding/live/cloud readiness or release approval. No Portal button or modifiable parameter changed; the existing Trial Readiness control retains beginner-facing text and black/bright-purple bottom-right hover help. Seven tabs, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This D3/D4 reconciliation hardening does not independently complete an acceptance stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,864 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 1,582.43 seconds; the release/evidence/roadmap/Windows-workflow/package focus passed 213 and the direct forward/order/portfolio focus passed 66. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `bddbf4cc6aca8db40c249ddf40870947541e31db86035a58f396d3f6fd769dfb`; `validation/release_trials_0_340_256.json` SHA256 is `0ad509618fda902b850e3bdb44f6964fea16903e5a1290163b7650947a6b8899`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.256 and has SHA256 `46a6d33c6dd98b4f691cd63e7c8ca4bdf2a2fa590e4e6a2bbe5ca0c69b0ae959`. The candidate path and introduced-line scans found no high-confidence secret signature or sensitive artifact path. Local Gitleaks was unavailable. Playwright was installed but its Chromium executable was absent, so browser workflow acceptance was unavailable; native Windows and installer execution were also unavailable locally. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
+
 
 ## v0.340.255 stable cross-database forward review
 

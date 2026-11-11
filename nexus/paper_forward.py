@@ -468,18 +468,24 @@ class PaperForwardRunner:
     def evidence_report(self,session_id):
         import re
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
+        order_snapshot=self.orders.session_orders_snapshot(session_id)
         with self._read_db() as db:
             if db is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
             session=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(session_id,)).fetchone()
             if session is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
             quotes=forward_evidence.review(db,session_id)
-        orders=self.orders.session_orders(session_id)
+        final_order_snapshot=self.orders.session_orders_snapshot(session_id)
+        orders=order_snapshot['orders']
         policy,counts,last=forward_sessions.parse(*session)
         checked=forward_evidence.crosscheck(quotes,orders,counts,policy)
         terminal=forward_sessions.binding_reasons(last,session[2],session_id,policy,
             quotes['head_sha256'],quotes['observations'],quotes['points'][-1]['cycle'] if quotes['points'] else 0,
             quotes['parent_head_sha256'])
         reasons=quotes['reasons']+checked['reasons']+terminal
+        order_snapshot_stable=(order_snapshot['journal_present']==final_order_snapshot['journal_present']
+            and order_snapshot['commands']==final_order_snapshot['commands']
+            and order_snapshot['snapshot_sha256']==final_order_snapshot['snapshot_sha256'])
+        if not order_snapshot_stable:reasons.append('ORDER_JOURNAL_CHANGED_DURING_REVIEW')
         if last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':reasons.append('ORDER_CLEANUP_REQUIRES_REVIEW')
         import hashlib
         policy_digest=hashlib.sha256(forward_evidence.canonical({k:v for k,v in policy.items() if k!='policy_sha256'}).encode()).hexdigest()
@@ -490,10 +496,13 @@ class PaperForwardRunner:
         return dict(mode='READ_ONLY_FORWARD_EVIDENCE_REVIEW',read_only=True,session=session_id,
                     started_at=session[0],updated_at=session[1],stored_state=session[2],policy=policy,
                     counters=counts,quote_evidence=summary,execution_crosscheck=checked,
+                    order_journal_snapshot=dict(journal_present=order_snapshot['journal_present'],
+                        commands=order_snapshot['commands'],snapshot_sha256=order_snapshot['snapshot_sha256'],
+                        stable_during_review=order_snapshot_stable),
                     provisional_active_session=session_id==self._session and not self._stop.is_set(),
                     local_consistency_ok=not reasons,reasons=sorted(set(reasons)),
                     live_orders_enabled=False,release_approved=False,strategy_validated=False,
-                    limitations='Local consistency diagnostics, not independent market attestation or sustained-run acceptance. Injected transports are labeled separately. Counters may miss a committed fill after a process crash; the order ledger is authoritative. Local hashes cannot prevent coordinated database rewrites. Review while stopped for a stable cross-database snapshot.')
+                    limitations='Local consistency diagnostics, not independent market attestation or sustained-run acceptance. Injected transports are labeled separately. Counters may miss a committed fill after a process crash; the order ledger is authoritative. Two replay-validated order-journal snapshots bracket the separate forward-database read; any observed journal change fails the review closed. Local hashes cannot prevent coordinated database rewrites. Review while stopped for a stable cross-database snapshot.')
 
     def sessions(self,limit=20):
         if type(limit) is not int or not 1<=limit<=100:raise ValueError('INVALID_SESSION_HISTORY_LIMIT')

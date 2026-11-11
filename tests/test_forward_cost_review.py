@@ -11,6 +11,12 @@ def fixture(tmp_path,monkeypatch):
     return r,g,session,orders
 
 
+def replace_snapshot_orders(gateway,monkeypatch,orders):
+    original=gateway.session_orders_snapshot
+    monkeypatch.setattr(gateway,'session_orders_snapshot',
+        lambda session:{**original(session),'orders':orders})
+
+
 def test_review_reports_exact_modeled_cost_totals(tmp_path,monkeypatch):
     r,g,sid,orders=fixture(tmp_path,monkeypatch)
     report=r.evidence_report(sid);checked=report['execution_crosscheck']
@@ -30,7 +36,7 @@ def test_quote_cost_or_policy_disagreement_is_reported(tmp_path,monkeypatch,fiel
     event=altered[0]['quote_events'][0]
     if field in event:event[field]=value
     else:event['assumptions'][field]=value
-    monkeypatch.setattr(g,'session_orders',lambda session:altered)
+    replace_snapshot_orders(g,monkeypatch,altered)
     report=r.evidence_report(sid)
     assert not report['local_consistency_ok']
     assert 'FILL_MODEL_OR_POLICY_DISAGREEMENT' in report['reasons']
@@ -39,7 +45,7 @@ def test_quote_cost_or_policy_disagreement_is_reported(tmp_path,monkeypatch,fiel
 def test_order_totals_must_match_quote_event_totals(tmp_path,monkeypatch):
     r,g,sid,orders=fixture(tmp_path,monkeypatch)
     orders[0]['order']['simulated_fee_total']='99'
-    monkeypatch.setattr(g,'session_orders',lambda session:orders)
+    replace_snapshot_orders(g,monkeypatch,orders)
     assert 'FILL_MODEL_OR_POLICY_DISAGREEMENT' in r.evidence_report(sid)['reasons']
 
 

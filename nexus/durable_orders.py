@@ -5,6 +5,7 @@ Fresh processes replay prefixes before accepting cached state.
 No positions or account balances are inferred from reference-notional fills.
 """
 import copy
+import hashlib
 import json
 import math
 import os
@@ -343,17 +344,37 @@ class DurableOrderGateway:
         return {**OrderGateway().connections(),'alpaca_paper_contract':catalogue()}
 
     def session_orders(self,session_id):
-        import copy,re
+        return self.session_orders_snapshot(session_id)['orders']
+
+    def session_orders_snapshot(self,session_id):
+        """Return session orders and their exact replayed journal snapshot."""
+        import re
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
         prefix='pf_'+session_id+'_'
         root_guard=_OrderRootIdentity(self._path(),create=False);path=root_guard.path
         with self._read_connection(path,root_guard) as db:
-            gateway,_=self._read_restore(db,compare_portfolio=True,path=path,root_guard=root_guard)
+            present=db is not None
+            gateway,count=self._read_restore(db,compare_portfolio=True,path=path,root_guard=root_guard)
+            digest=hashlib.sha256(b'nexus.order-journal-snapshot.v1\n');command_rows=checkpoint_rows=0
+            if db is not None:
+                for row in db.execute('SELECT sequence,typeof(payload),hex(payload) FROM commands ORDER BY sequence'):
+                    command_rows+=1
+                    if command_rows>MAX_RETAINED_COMMANDS:raise ValueError('RETAINED_COMMAND_HISTORY_CAP_EXCEEDED')
+                    digest.update(json.dumps(('command',*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
+                for row in db.execute('SELECT sequence,typeof(prefix_sha256),hex(prefix_sha256),typeof(state_json),hex(state_json) FROM order_checkpoints ORDER BY sequence'):
+                    checkpoint_rows+=1
+                    if checkpoint_rows>2:raise ValueError('ORDER_CHECKPOINT_RETENTION_FAILED')
+                    digest.update(json.dumps(('checkpoint',*row),ensure_ascii=True,separators=(',',':')).encode()+b'\n')
+            if command_rows!=count:raise ValueError('ORDER_JOURNAL_RECOVERY_FAILED')
+            snapshot_sha256=digest.hexdigest()
         records={**gateway.archived_intents,**gateway.intents}
         matched={key:dict(order=copy.deepcopy(record),quote_events=[]) for key,record in records.items() if key.startswith(prefix)}
         for (oid,_),detail in gateway.quote_events.items():
             if oid in matched:matched[oid]['quote_events'].append(copy.deepcopy(detail))
-        return list(matched.values())
+        return dict(read_only=True,journal_present=present,commands=count,
+                    snapshot_sha256=snapshot_sha256,orders=list(matched.values()),
+                    live_orders_enabled=False,
+                    note='Local replay-validated journal snapshot only; it grants no provider, account, funds or execution authority.')
 
     def order_report(self,client_order_id):
         import copy

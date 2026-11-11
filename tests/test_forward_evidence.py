@@ -19,6 +19,24 @@ def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
     assert report['execution_crosscheck']['modeled_sell_orders']==1
     assert not report['release_approved'] and not report['strategy_validated']
     assert not report['provisional_active_session']
+    assert report['order_journal_snapshot']['stable_during_review']
+    assert report['order_journal_snapshot']['commands']>0
+    assert len(report['order_journal_snapshot']['snapshot_sha256'])==64
+
+
+def test_order_journal_change_during_review_fails_closed(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.stop()
+    session=r.status()['session'];original=g.session_orders_snapshot;calls=[]
+    def raced_snapshot(value):
+        snapshot=original(value);calls.append(snapshot['snapshot_sha256'])
+        if len(calls)==1:g.emergency_halt()
+        return snapshot
+    monkeypatch.setattr(g,'session_orders_snapshot',raced_snapshot)
+    report=r.evidence_report(session)
+    assert len(calls)==2 and calls[0]!=calls[1]
+    assert not report['local_consistency_ok']
+    assert 'ORDER_JOURNAL_CHANGED_DURING_REVIEW' in report['reasons']
+    assert not report['order_journal_snapshot']['stable_during_review']
 
 
 def test_quote_payload_edit_and_tail_deletion_detected(tmp_path,monkeypatch):

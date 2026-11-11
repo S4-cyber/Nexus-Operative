@@ -21,6 +21,9 @@ def test_missing_reads_leave_no_directory_and_do_not_attest_flat_account(tmp_pat
     assert report['commands']==0 and not report['portfolio_reconciled']
     assert not report['execution_account']['initialized'] and not report['live_orders_enabled']
     assert gateway.session_orders('a'*16)==[]
+    snapshot=gateway.session_orders_snapshot('a'*16)
+    assert snapshot['read_only'] and not snapshot['journal_present'] and snapshot['commands']==0
+    assert snapshot['orders']==[] and len(snapshot['snapshot_sha256'])==64
     with pytest.raises(ValueError,match='UNKNOWN_ORDER_ID'):gateway.order_report('absent')
     recovery=runner.recovery_status()
     assert recovery['order_history_present'] is False
@@ -53,6 +56,20 @@ def test_linked_recovery_uses_no_writable_schema_path_and_preserves_all_bytes(tm
     # All read handles must close for Windows backup/replacement workflows.
     for path in before:
         moved=path.with_suffix('.moved');path.rename(moved);moved.rename(path)
+
+
+def test_session_order_snapshot_is_stable_read_only_and_changes_with_history(tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
+    gateway.initialize_account(10000)
+    before_files={path:path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+    first=gateway.session_orders_snapshot('a'*16)
+    second=gateway.session_orders_snapshot('a'*16)
+    assert first==second and first['journal_present'] and first['commands']==1
+    assert {path:path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}==before_files
+    gateway.emergency_halt()
+    final=gateway.session_orders_snapshot('a'*16)
+    assert final['commands']==2 and final['snapshot_sha256']!=first['snapshot_sha256']
 
 
 def test_write_operation_pins_dynamic_root_before_emergency_check(tmp_path,monkeypatch):

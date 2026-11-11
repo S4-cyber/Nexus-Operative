@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from nexus import forward_preflight as pre, state
 from nexus.durable_orders import DurableOrderGateway
 from nexus.paper_forward import PaperForwardRunner
+from nexus.forward_ownership import ForwardOwnership
 from nexus.tier_permissions import configure
 
 
@@ -229,3 +230,22 @@ def test_active_worker_and_api_diagnostics_never_authorize_or_write(local,monkey
     original=runner.status
     monkeypatch.setattr(runner,'status',lambda:{**original(),'worker_alive':True})
     assert check(local)['blockers']==['RUNNER_ALREADY_ACTIVE'] and snapshot(root)==before
+
+
+def test_external_forward_owner_blocks_preflight_before_recovery(local,monkeypatch):
+    root,gateway,_=local;state.load_settings();owner=ForwardOwnership(root);owner.acquire()
+    before=snapshot(root)
+    monkeypatch.setattr(gateway,'recovery_report',lambda:pytest.fail('External owner reached recovery'))
+    try:result=check(local)
+    finally:owner.release()
+    assert result['blockers']==['RUNNER_ALREADY_ACTIVE'] and snapshot(root)==before
+    assert not result['running_permission_granted'] and not result['live_orders_enabled']
+
+
+def test_malformed_forward_owner_store_fails_preflight_closed(local,monkeypatch):
+    root,gateway,_=local;state.load_settings();lock=root/'paper_forward.owner.lock'
+    lock.write_bytes(b'PRIVATE-MALFORMED-LOCK');before=snapshot(root)
+    monkeypatch.setattr(gateway,'recovery_report',lambda:pytest.fail('Malformed owner reached recovery'))
+    result=check(local)
+    assert result['blockers']==['LOCAL_HISTORY_REVIEW_REQUIRED'] and snapshot(root)==before
+    assert 'PRIVATE' not in str(result) and not result['running_permission_granted']

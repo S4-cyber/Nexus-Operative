@@ -12,6 +12,7 @@ from nexus.state import DEFAULTS,read_effective_settings
 from nexus.tier_permissions import TIERS
 from nexus.sqlite_journal_guard import check_existing,check_path_set
 from nexus import execution_portfolio
+from nexus.forward_ownership import ForwardOwnership
 from nexus.portfolio_governor import require_safe_ledger
 
 MAX_FILE_BYTES=1024*1024*1024
@@ -171,6 +172,10 @@ def build(orders,runner,*,tier,portal_active,halted):
     status=runner.status()
     if status['enabled'] or status['worker_alive'] or status['ownership_held']:blocked.append('RUNNER_ALREADY_ACTIVE')
     if status['cut_requested']:blocked.append('TRADING_CUT_ACTIVE')
+    if not blocked:
+        try:
+            if not ForwardOwnership(orders._path().parent).available():blocked.append('RUNNER_ALREADY_ACTIVE')
+        except (ValueError,OSError):blocked.append('LOCAL_HISTORY_REVIEW_REQUIRED')
     if blocked:return result()
     try:
         with _root_scope(orders._path().parent) as root:

@@ -75,6 +75,48 @@ def test_unsafe_owner_store_is_rejected_without_touching_target(tmp_path,kind):
     assert target.read_bytes()==before and not candidate.held
 
 
+def test_release_rejects_late_owner_path_replacement(tmp_path,monkeypatch):
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();replacement=None
+    if os.name=='nt':
+        # Windows correctly denies renaming the mandatory-share locked file;
+        # inject the equivalent late identity disagreement for portable exit
+        # error-priority coverage.
+        monkeypatch.setattr(candidate,'validate',
+            lambda: (_ for _ in ()).throw(ValueError('PAPER_FORWARD_OWNER_STORE_CHANGED')))
+    else:
+        retired=tmp_path/'retired-owner.lock';os.replace(candidate.path,retired)
+        candidate.path.write_bytes(b'0')
+        replacement=ForwardOwnership(tmp_path);replacement.acquire()
+        with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_CHANGED'):
+            candidate.validate()
+    with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_CHANGED'):
+        candidate.release()
+    assert not candidate.held
+    if replacement is not None:replacement.release()
+
+
+def test_runtime_owner_replacement_fails_before_quote_or_order_mutation(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);before_history=r.history();before_orders=g.recovery_report()
+    replacement=[None]
+    def replace_during_fetch(product):
+        if os.name=='nt':
+            monkeypatch.setattr(r._ownership,'validate',
+                lambda: (_ for _ in ()).throw(ValueError('PAPER_FORWARD_OWNER_STORE_CHANGED')))
+        else:
+            retired=tmp_path/'retired-forward-owner.lock'
+            os.replace(r._ownership.path,retired);r._ownership.path.write_bytes(b'0')
+            replacement[0]=ForwardOwnership(tmp_path);replacement[0].acquire()
+        return c.quote(product)
+    r.fetcher=replace_during_fetch
+    with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_CHANGED'):
+        r.single_cycle()
+    assert not r.status()['enabled'] and not r.status()['ownership_held']
+    assert r.history()==before_history and g.recovery_report()==before_orders
+    # The process-independent cut signal never depends on the owner lock.
+    r.request_cut();assert r.status()['cut_requested']
+    if replacement[0] is not None:replacement[0].release()
+
+
 def test_failed_preparation_releases_ownership(tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch);r.stop()
     with pytest.raises(ValueError,match='POLICY_NOT_ADMITTED'):r.prepare('terrestrial','invalid')

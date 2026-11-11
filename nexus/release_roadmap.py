@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.263'
+REVISION = '0.340.264'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -639,8 +639,16 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; read-only start preflight now samples the actual cross-process forward-owner lock before replay, while lock acquisition and sampling reject symlink, hardlink, malformed and pathname-replaced lock stores without treating the sample as a reservation' if item.id=='M7' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the forward worker now revalidates its exact opened regular single-link owner path through preparation, quote intake, submit/fill boundaries, diagnostic commits and release, while cancellation and the independent emergency cut remain available after ownership uncertainty' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Forward evidence review brackets its separate quote/session snapshot with two exact order-and-linked-ledger reconciliation snapshots. Linked-ledger fingerprint/audit reads and direct settings/unused-portfolio start-preflight reads remain bound to their preflighted regular-file identities; direct reads also bind content metadata and SQLite-reported paths. All order, portfolio, forward and settings roles plus their SQLite companions must be relationship-distinct before recovery reads. Storage-directory identity and the complete expected SQLite file-set presence/identity/metadata span the entire multi-file diagnostic and recheck on success, early return and ordinary failure. Read-only preflight additionally samples whether a separate process owns the forward-worker lock, without creating or reserving it; unsafe lock-store identity fails closed. This is local supplied-history and cooperating-process integrity, not an atomic multi-file snapshot, broker/account source attestation, genuine-feed acceptance, sustained-trial evidence, native durability, funds authority or routing permission.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The active forward worker now binds its OS lock descriptor to the same regular single-link public pathname throughout preparation, quote intake, order submit/fill checkpoints, forward diagnostic commits and final release. A late replacement stops the worker and prevents successful acknowledgement while safety cancellation and the process-independent emergency cut remain available. This is sampled cooperating-process local fencing, not distributed ownership, an ACL/administrator boundary, physical durability, broker acceptance or sustained-market evidence.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -808,7 +816,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.263 makes the read-only paper-start diagnostic sample the actual cross-process forward-worker lock before any recovery replay. A separately running worker now blocks preflight even when the current process is idle. Sampling creates nothing and immediately releases its test lock; acquisition and sampling reject symlink, hardlink, malformed and pathname-replaced owner stores without following or rewriting them. Start still repeats admission and lock acquisition, so this is sampled cooperating-process integrity, not a reservation, atomic multi-file snapshot, distributed lock, ACL or administrator exclusion, source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.264 binds the active forward worker\'s OS lock descriptor to the same regular single-link public pathname throughout preparation, quote intake, order submit/fill checkpoints, diagnostic commits and final release. A late replacement stops the worker and prevents successful acknowledgement, while safety cancellation and the process-independent emergency cut remain available. POSIX regression uses an actual renamed-and-replaced lock path; Windows injects the equivalent late identity disagreement because the kernel denies renaming the open mandatory-share lock. This is sampled cooperating-process local fencing, not distributed ownership, an ACL or administrator boundary, source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

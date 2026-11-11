@@ -45,9 +45,24 @@ class ForwardOwnership:
     def __init__(self,directory):
         self.path=Path(directory)/'paper_forward.owner.lock'
         self._fd=None
+        self._identity=None
 
     @property
     def held(self):return self._fd is not None
+
+    def validate(self):
+        """Require the public lock path to retain the acquired OS-lock identity."""
+        fd=self._fd;identity=self._identity
+        if fd is None or identity is None:_fail('NOT_HELD')
+        try:opened=os.fstat(fd);current=self.path.lstat()
+        except OSError:_fail('STORE_CHANGED')
+        if (stat.S_ISLNK(current.st_mode) or not stat.S_ISREG(opened.st_mode) or
+                not stat.S_ISREG(current.st_mode) or opened.st_nlink!=1 or
+                current.st_nlink!=1 or opened.st_size!=1 or current.st_size!=1 or
+                not os.path.samestat(opened,current) or
+                (opened.st_dev,opened.st_ino)!=identity):
+            _fail('STORE_CHANGED')
+        return True
 
     def available(self):
         """Sample cross-process availability without creating or reserving it."""
@@ -101,14 +116,30 @@ class ForwardOwnership:
             raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER') from exc
         except BaseException:
             os.close(fd);raise
-        self._fd=fd
+        self._fd=fd;self._identity=(opened.st_dev,opened.st_ino)
+        try:self.validate()
+        except BaseException:
+            self._fd=None;self._identity=None;os.close(fd);raise
 
     def release(self):
         fd=self._fd
         if fd is None:return
-        self._fd=None
-        # Closing the descriptor releases the OS lock, including after process death.
-        os.close(fd)
+        exit_error=None
+        try:
+            # Keep the opened lease authoritative through finalization. A
+            # replacement pathname can otherwise admit another cooperating
+            # worker while this descriptor still owns only the retired inode.
+            self.validate()
+        except BaseException as error:exit_error=error
+        finally:
+            self._fd=None;self._identity=None
+            try:
+                # Closing releases the OS lock, including after process death.
+                os.close(fd)
+            except BaseException:
+                if exit_error is None:raise
+        if exit_error is not None:raise exit_error
 
     def __del__(self):
-        self.release()
+        try:self.release()
+        except BaseException:pass

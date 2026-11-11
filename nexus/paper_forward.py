@@ -130,6 +130,7 @@ class PaperForwardRunner:
             if db is not None:db.close()
 
     def _record(self,decision,reason,**extra):
+        self._require_ownership()
         observed=self._clock_value(self.clock,wall=True)
         valid=observed is not None
         recorded=observed if valid else (self._clock_anchor[0] if self._clock_anchor else 0)
@@ -165,10 +166,12 @@ class PaperForwardRunner:
                            (self._session,started,row['at'],state,json.dumps(self._policy,sort_keys=True),json.dumps(counts,sort_keys=True),json.dumps(row,allow_nan=False)))
                 db.execute('INSERT INTO cycles(at,detail) VALUES (?,?)',(row['at'],json.dumps(row,allow_nan=False)))
                 db.execute('DELETE FROM cycles WHERE id NOT IN (SELECT id FROM cycles ORDER BY id DESC LIMIT 1000)')
+        self._require_ownership()
         with self._lock:self._last=row
         return row
 
     def _record_quote(self,quote,eligible,error=None):
+        self._require_ownership()
         if self._clock_anchor is None:raise ValueError('INVALID_RUNTIME_CLOCK')
         with closing(self._db()) as db:
             with _transaction(db):
@@ -176,6 +179,7 @@ class PaperForwardRunner:
                 candidate=forward_evidence.append(db,self._session,self._cycles,self._clock_anchor[0],quote,eligible,
                     'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
                     self._policy['policy_sha256'],error)
+        self._require_ownership()
         self._observation_hash=candidate
 
     def request_cut(self):
@@ -194,6 +198,15 @@ class PaperForwardRunner:
     def _intake_stopped(self):
         return self._stop.is_set() or self._cut_active()
 
+    def _require_ownership(self):
+        owner=self._ownership
+        try:
+            if owner is None:raise ValueError('PAPER_FORWARD_OWNER_NOT_HELD')
+            owner.validate()
+        except ValueError:
+            self._error='PAPER_FORWARD_OWNER_STORE_CHANGED';self._stop.set()
+            raise
+
     def prepare(self,tier,policy_id=POLICY['id']):
         """Validate/start session state without starting a thread (also testable offline)."""
         with self._cycle_lock,self._lock:
@@ -204,6 +217,7 @@ class PaperForwardRunner:
             self._ownership=ForwardOwnership(self.orders._path().parent)
             self._ownership.acquire()
             try:
+                self._require_ownership()
                 self._clock_anchor=None
                 reason=self._clock_check()
                 if reason:raise ValueError(reason)
@@ -217,9 +231,11 @@ class PaperForwardRunner:
                 if not existing_positions:require_entry(tier,1)
                 if report['halted']:raise ValueError('EMERGENCY_HALT_ACTIVE')
                 if not report['execution_account']['initialized']:
+                    self._require_ownership()
                     self.orders.initialize_account(load_settings()['paper_budget'])
                     report=self.orders.recovery_report()
                 if not report['portfolio_reconciled']:
+                    self._require_ownership()
                     self.orders.link_portfolio()
                     report=self.orders.recovery_report()
                 if any(p!=PRODUCT for p in report['execution_account']['account']['positions']):
@@ -286,6 +302,7 @@ class PaperForwardRunner:
         with self._execution_lock:return self._execute_locked(*args)
 
     def _execution_now(self,exchange_at):
+        self._require_ownership()
         if self._intake_stopped():raise ValueError('RUNNER_STOPPED_BEFORE_FILL')
         reason=self._clock_check()
         if reason:raise ValueError(reason)
@@ -295,17 +312,21 @@ class PaperForwardRunner:
         return now
 
     def _execute_locked(self,side,quantity,bid,ask,received,now,notional,exchange_at):
+        self._require_ownership()
         clock_reason=self._clock_check()
         if clock_reason:return self._pause_clock(clock_reason)
         if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_BEFORE_SUBMIT')
         oid='pf_'+self._session+'_'+str(self._cycles)+'_'+side
+        self._require_ownership()
         self.orders.submit(oid,PRODUCT,side,str(notional),tier=self._tier)
         try:
             if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_AFTER_SUBMIT')
+            self._require_ownership()
             self.orders.set_execution_terms(oid,now,self._policy['order_lifetime_seconds'])
             # Quote may precede order creation by transport latency; use a fresh
             # observation boundary so the timestamp model retains source age.
             if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_BEFORE_FILL')
+            self._require_ownership()
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
             result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,now,fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=lambda:self._execution_now(exchange_at))
@@ -341,6 +362,7 @@ class PaperForwardRunner:
         if not self._cycle_lock.acquire(blocking=False):return dict(decision='HOLD',reason='CYCLE_BUSY')
         try:
             if self._intake_stopped():return dict(decision='HOLD',reason='PAPER_FORWARD_STOPPED')
+            self._require_ownership()
             self._cycles+=1
             self._observation_hash=None
             with closing(self._db()) as db:
@@ -348,12 +370,14 @@ class PaperForwardRunner:
                 if metadata is None:raise ValueError('FORWARD_SESSION_MISSING')
                 stored_policy,_,_=forward_sessions.parse(*metadata)
                 if stored_policy!=self._policy:raise ValueError('FORWARD_SESSION_POLICY_CHANGED')
+            self._require_ownership()
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
             storage=self.storage_capacity()
             if not storage['quote_intake_allowed']:
                 self._stop.set();return self._record('PAUSED','FORWARD_QUOTE_EVIDENCE_CAP')
             report=self.orders.recovery_report()
+            self._require_ownership()
             if report['halted'] or not report['portfolio_reconciled']:
                 self._stop.set();return self._record('PAUSED','HALT_OR_RECONCILIATION_VETO')
             has_position=bool(report['execution_account']['account']['positions'])
@@ -363,7 +387,9 @@ class PaperForwardRunner:
                 self._stop.set();return self._record('PAUSED','JOURNAL_OR_ID_CAPACITY_VETO')
             quote=None
             try:
+                self._require_ownership()
                 quote=self.fetcher(PRODUCT)
+                self._require_ownership()
                 clock_reason=self._clock_check()
                 if clock_reason:return self._pause_clock(clock_reason)
                 now=self._clock_anchor[0]

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.259'
+REVISION = '0.340.260'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -632,11 +632,11 @@ DELIVERY_STAGES = tuple((dict(stage,
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
-    item.evidence + ('; forward evidence snapshots now enforce their linked-ledger row cap before semantic reconciliation readers run, bind the read-only SQLite attachment to the exact preflighted regular-file identity throughout fingerprint and audit reads, and bind each direct start-preflight SQLite read to one regular-file identity, content-metadata sample and SQLite-reported path before allowing its local diagnostic result' if item.id=='M4' else ''),
+    item.evidence + ('; forward evidence snapshots now enforce their linked-ledger row cap before semantic reconciliation readers run, bind the read-only SQLite attachment to the exact preflighted regular-file identity throughout fingerprint and audit reads, bind each direct start-preflight SQLite read to one regular-file identity, content-metadata sample and SQLite-reported path, and hold one storage-directory identity fence across the complete multi-file diagnostic before allowing its local result' if item.id=='M4' else ''),
     item.remaining) for item in MILESTONES)
 
 DELIVERY_STAGES = tuple((dict(stage,
-    progress=stage['progress'] + ' Forward evidence review brackets its separate quote/session snapshot with two exact order-and-linked-ledger reconciliation snapshots. Linked-ledger fingerprint/audit reads and direct settings/unused-portfolio start-preflight reads remain bound to their preflighted regular-file identities; direct reads also bind content metadata and SQLite-reported paths, rechecking on success and ordinary failure. This is local supplied-history integrity, not broker/account source attestation, genuine-feed acceptance, sustained-trial evidence, native durability, funds authority or routing permission.')
+    progress=stage['progress'] + ' Forward evidence review brackets its separate quote/session snapshot with two exact order-and-linked-ledger reconciliation snapshots. Linked-ledger fingerprint/audit reads and direct settings/unused-portfolio start-preflight reads remain bound to their preflighted regular-file identities; direct reads also bind content metadata and SQLite-reported paths. One storage-directory identity fence now spans the entire multi-file diagnostic and rechecks on success and ordinary failure. This is local supplied-history integrity, not an atomic multi-file snapshot, broker/account source attestation, genuine-feed acceptance, sustained-trial evidence, native durability, funds authority or routing permission.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 # Human engineering estimates; reassess on substantial integration/evidence or
@@ -804,7 +804,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.259 binds each direct start-preflight SQLite read to one preflighted regular-file identity, size/mtime sample and SQLite-reported resolved path. It rechecks the binding before and after semantic reads and on ordinary failure, while leaving process-control signals observable, so a same-path replacement cannot silently supply a different local readiness snapshot. This is local preflight integrity, not an atomic multi-file snapshot, source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.260 binds one storage-directory identity across the complete multi-file paper-start preflight and rechecks it on success, early return and ordinary failure. An identical replacement root can no longer mix otherwise valid order, settings, portfolio or forward snapshots, and a root change takes priority over lower-level ordinary errors while process-control signals remain observable. This is sampled local preflight integrity, not an atomic multi-file snapshot, ACL or administrator exclusion, source attestation, genuine-feed or sustained-market acceptance, profitability, actual provider/account access, native Windows owner-profile acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

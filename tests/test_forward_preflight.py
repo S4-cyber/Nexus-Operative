@@ -1,6 +1,7 @@
 """Local start diagnostics never create accounting or reserve permission."""
 import os
 from pathlib import Path
+import shutil
 import sqlite3
 import pytest
 from fastapi.testclient import TestClient
@@ -124,6 +125,41 @@ def test_preflight_rejects_sqlite_reported_path_mismatch(local,monkeypatch):
     monkeypatch.setattr(pre.sqlite3,'connect',MismatchedConnection)
     with pytest.raises(ValueError,match='^PREFLIGHT_CONNECTION_MISMATCH$'):
         pre._read(path,lambda _db:pytest.fail('mismatched connection reached semantic reader'))
+
+
+@pytest.mark.skipif(os.name=='nt',reason='Windows directory replacement semantics differ')
+def test_preflight_rejects_identical_storage_root_replacement_between_snapshots(local,monkeypatch):
+    root,gateway,_=local;state.load_settings();retired=root.parent/'retired-data'
+    original=gateway.recovery_report
+    def replace_after_recovery():
+        report=original();root.rename(retired);shutil.copytree(retired,root)
+        return report
+    monkeypatch.setattr(gateway,'recovery_report',replace_after_recovery)
+    result=check(local)
+    assert result['blockers']==['LOCAL_HISTORY_REVIEW_REQUIRED']
+    assert not result['running_permission_granted'] and not result['live_orders_enabled']
+
+
+@pytest.mark.skipif(os.name=='nt',reason='Windows directory replacement semantics differ')
+def test_preflight_root_change_overrides_ordinary_failure(local):
+    root,_,_=local;state.load_settings();retired=root.parent/'retired-data'
+    with pytest.raises(ValueError,match='^PREFLIGHT_STORAGE_ROOT_CHANGED$'):
+        with pre._root_scope(root):
+            root.rename(retired);root.mkdir()
+            raise ValueError('lower-priority semantic failure')
+
+
+def test_preflight_root_scope_does_not_create_missing_storage(local):
+    root,_,_=local
+    with pytest.raises(ValueError,match='^PREFLIGHT_STORAGE_ROOT_CHANGED$'):
+        with pre._root_scope(root):
+            assert not root.exists();root.mkdir()
+
+
+def test_preflight_root_scope_preserves_process_control_signal(local):
+    root,_,_=local;state.load_settings()
+    with pytest.raises(KeyboardInterrupt):
+        with pre._root_scope(root):raise KeyboardInterrupt
 
 
 def test_linked_holdings_can_start_exit_monitoring_with_bad_budget_or_tier_off(tmp_path,monkeypatch):

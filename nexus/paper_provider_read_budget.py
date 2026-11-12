@@ -16,6 +16,8 @@ import stat
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus.broker_lookup_policy import classify, clock
+from nexus.local_owner_scope import (
+    posix_owner_directory_safe, posix_owner_file_safe)
 from nexus.paper_read_pacing import OPERATIONS, OPERATION_PATTERNS
 from nexus.sqlite_journal_guard import check_existing
 
@@ -422,56 +424,4 @@ class _ProviderOwnership:
         if self.fd is None: _fail('OWNER_REQUIRED')
         try:
             if self.path.is_symlink(): _fail('OWNER_FILE_CHANGED')
-            current, opened = self.path.stat(), os.fstat(self.fd)
-        except OSError:
-            _fail('OWNER_FILE_CHANGED')
-        if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or opened.st_size != 1 or
-                (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino)):
-            _fail('OWNER_FILE_CHANGED')
-
-    def identity(self):
-        self.validate(); info = os.fstat(self.fd)
-        return sha(dict(journal_path=str(self.budget.path.resolve()), lock_device=info.st_dev, lock_inode=info.st_ino))
-
-    def __enter__(self):
-        if self.fd is not None: _fail('OWNER_ALREADY_HELD')
-        self.budget._path_check()
-        if self.path.is_symlink(): _fail('OWNER_SYMLINK')
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        fd = os.open(self.path, os.O_RDWR | os.O_CREAT | getattr(os, 'O_NOFOLLOW', 0), 0o600)
-        try:
-            if not stat.S_ISREG(os.fstat(fd).st_mode): _fail('OWNER_FILE_INVALID')
-            if os.fstat(fd).st_size == 0: os.write(fd, b'0')
-            os.lseek(fd, 0, os.SEEK_SET)
-            if os.name == 'nt':
-                import msvcrt
-                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            self.fd = fd; self.validate(); self.lease = object(); return self
-        except BaseException as error:
-            self.fd = None; os.close(fd)
-            if isinstance(error, OSError): _fail('OWNER_BUSY_OR_UNAVAILABLE')
-            raise
-
-    def __exit__(self, *args):
-        fd = self.fd
-        if fd is None:
-            return
-        exit_error = None
-        try:
-            # Retain the opened ownership proof through caller finalization;
-            # a replaced pathname must not turn a completed read into success.
-            self.validate()
-        except BaseException as error:
-            exit_error = error
-        finally:
-            self.fd = None
-            try:
-                os.close(fd)
-            except BaseException:
-                if exit_error is None:
-                    raise
-        if exit_error is not None:
-            raise exit_error
+            current, opened = 

@@ -42,6 +42,15 @@ def owner_directory_matches(path, identity):
     return identity is not None and owner_directory_identity(path) == identity
 
 
+def open_owner_file(path):
+    """Open an owner file and distinguish an exclusive creation from inheritance."""
+    flags = os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0)
+    try:
+        return os.open(path, flags | os.O_CREAT | os.O_EXCL, 0o600), True
+    except FileExistsError:
+        return os.open(path, flags), False
+
+
 def owner_marker_valid(fd):
     """Require the complete fixed owner marker without changing it."""
     try:
@@ -51,3 +60,45 @@ def owner_marker_valid(fd):
     except OSError:
         return False
     return marker == b'0'
+
+
+def prepare_owner_file(path, fd, created, directory_identity):
+    """Initialize only a fresh owner file; inherited state is never repaired."""
+    try:
+        current = path.stat()
+        opened = os.fstat(fd)
+    except OSError:
+        return False
+    if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or
+            (current.st_dev, current.st_ino) !=
+            (opened.st_dev, opened.st_ino) or
+            not posix_owner_file_safe(current) or
+            not posix_owner_file_safe(opened) or
+            not owner_directory_matches(path.parent, directory_identity)):
+        return False
+    if created:
+        if opened.st_size != 0:
+            return False
+        try:
+            os.lseek(fd, 0, os.SEEK_SET)
+            if os.write(fd, b'0') != 1:
+                return False
+        except OSError:
+            return False
+    elif opened.st_size != 1:
+        return False
+    if not owner_marker_valid(fd):
+        return False
+    try:
+        current = path.stat()
+        opened = os.fstat(fd)
+    except OSError:
+        return False
+    return (stat.S_ISREG(opened.st_mode) and opened.st_nlink == 1 and
+        opened.st_size == 1 and
+        (current.st_dev, current.st_ino) ==
+        (opened.st_dev, opened.st_ino) and
+        posix_owner_file_safe(current) and
+        posix_owner_file_safe(opened) and
+        owner_directory_matches(path.parent, directory_identity) and
+        owner_marker_valid(fd))

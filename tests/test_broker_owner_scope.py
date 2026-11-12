@@ -97,6 +97,46 @@ def test_inherited_broker_owner_rejects_corrupt_marker_without_repair(
 
 
 @pytest.mark.parametrize('index', range(4))
+def test_inherited_empty_broker_owner_is_not_initialized(
+        tmp_path, index):
+    prefix, subject = subjects(tmp_path)[index]
+    lock = subject.path.resolve().with_name(subject.path.name + '.owner.lock')
+    lock.touch()
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_INVALID$'):
+        with subject.ownership():
+            pass
+    assert lock.read_bytes() == b''
+
+
+@pytest.mark.skipif(os.name == 'nt',
+    reason='POSIX hard-link scope is not Windows ACL evidence')
+@pytest.mark.parametrize('index', range(4))
+def test_inherited_multilink_broker_owner_is_not_initialized(
+        tmp_path, index):
+    prefix, subject = subjects(tmp_path)[index]
+    lock = subject.path.resolve().with_name(subject.path.name + '.owner.lock')
+    lock.touch()
+    alias = tmp_path / f'owner-alias-{index}.lock'
+    os.link(lock, alias)
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_INVALID$'):
+        with subject.ownership():
+            pass
+    assert lock.read_bytes() == alias.read_bytes() == b''
+    assert lock.stat().st_nlink == 2
+
+
+@pytest.mark.parametrize('index', range(4))
+def test_inherited_valid_broker_owner_remains_usable(
+        tmp_path, index):
+    _, subject = subjects(tmp_path)[index]
+    lock = subject.path.resolve().with_name(subject.path.name + '.owner.lock')
+    lock.write_bytes(b'0')
+    with subject.ownership() as owner:
+        owner.validate()
+    assert lock.read_bytes() == b'0'
+
+
+@pytest.mark.parametrize('index', range(4))
 def test_active_broker_owner_detects_same_inode_marker_corruption(
         tmp_path, index):
     prefix, subject = subjects(tmp_path)[index]

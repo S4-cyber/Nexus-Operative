@@ -17,8 +17,9 @@ from nexus.alpaca_paper_contract import canonical, sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus.broker_lookup_policy import clock
 from nexus.local_owner_scope import (
-    owner_directory_identity, owner_directory_matches, owner_marker_valid,
-    posix_owner_directory_safe, posix_owner_file_safe)
+    open_owner_file, owner_directory_identity, owner_directory_matches,
+    owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe,
+    prepare_owner_file)
 from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.paper-provider-post-budget.v1'
@@ -570,21 +571,12 @@ class _PostOwnership:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         directory_identity = owner_directory_identity(self.path.parent)
         if directory_identity is None: _fail('OWNER_FILE_INVALID')
-        fd = os.open(self.path, os.O_RDWR | os.O_CREAT | getattr(os, 'O_NOFOLLOW', 0), 0o600)
+        fd, created = open_owner_file(self.path)
         self.directory_identity = directory_identity
         try:
-            opened = os.fstat(fd)
-            try: directory = self.path.parent.stat()
-            except OSError: _fail('OWNER_FILE_INVALID')
-            if (not stat.S_ISREG(opened.st_mode) or
-                    not posix_owner_file_safe(opened) or
-                    not posix_owner_directory_safe(directory) or
-                    not owner_directory_matches(self.path.parent,
-                        self.directory_identity)):
+            if not prepare_owner_file(self.path, fd, created,
+                    self.directory_identity):
                 _fail('OWNER_FILE_INVALID')
-            if os.fstat(fd).st_size == 0: os.write(fd, b'0')
-            os.lseek(fd, 0, os.SEEK_SET)
-            if not owner_marker_valid(fd): _fail('OWNER_FILE_INVALID')
             if os.name == 'nt':
                 import msvcrt
                 msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)

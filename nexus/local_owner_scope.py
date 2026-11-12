@@ -42,6 +42,17 @@ def owner_directory_matches(path, identity):
     return identity is not None and owner_directory_identity(path) == identity
 
 
+def _directory_identity(path):
+    """Return one no-follow directory identity without making a scope claim."""
+    try:
+        info = path.lstat()
+    except OSError:
+        return None
+    if not stat.S_ISDIR(info.st_mode):
+        return None
+    return info.st_dev, info.st_ino
+
+
 def open_owner_file(path):
     """Open an owner file and distinguish an exclusive creation from inheritance."""
     flags = os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0)
@@ -75,6 +86,10 @@ def _sync_owner(path, fd, directory_identity):
         return True
     flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
         getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0))
+    entry_parent = path.parent.parent
+    entry_parent_identity = _directory_identity(entry_parent)
+    if entry_parent_identity is None:
+        return False
     try:
         directory_fd = os.open(path.parent, flags)
     except OSError:
@@ -87,14 +102,34 @@ def _sync_owner(path, fd, directory_identity):
             return False
         os.fsync(directory_fd)
         final = os.fstat(directory_fd)
-        return (stat.S_ISDIR(final.st_mode) and
+        if not (stat.S_ISDIR(final.st_mode) and
             (final.st_dev, final.st_ino) == directory_identity and
             posix_owner_directory_safe(final) and
-            owner_directory_matches(path.parent, directory_identity))
+            owner_directory_matches(path.parent, directory_identity)):
+            return False
     except OSError:
         return False
     finally:
         os.close(directory_fd)
+    try:
+        entry_parent_fd = os.open(entry_parent, flags)
+    except OSError:
+        return False
+    try:
+        opened = os.fstat(entry_parent_fd)
+        if (not stat.S_ISDIR(opened.st_mode) or
+                (opened.st_dev, opened.st_ino) != entry_parent_identity):
+            return False
+        os.fsync(entry_parent_fd)
+        final = os.fstat(entry_parent_fd)
+        return (stat.S_ISDIR(final.st_mode) and
+            (final.st_dev, final.st_ino) == entry_parent_identity and
+            _directory_identity(entry_parent) == entry_parent_identity and
+            owner_directory_matches(path.parent, directory_identity))
+    except OSError:
+        return False
+    finally:
+        os.close(entry_parent_fd)
 
 
 def prepare_owner_file(path, fd, created, directory_identity):

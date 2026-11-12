@@ -2300,9 +2300,7 @@ def _validate(profile, result):
              'actual_stream_connection','actual_vault_access')),
             'EXPLICIT_ACTIVITY_SSE_CHECKPOINT_AUTHORITY')
         reconnect_budget=result['explicit_activity_sse_reconnect_budget']
-        _require(reconnect_budget['source']==
-            'TEMPORARY_INJECTED_ACTIVITY_SSE_RECONNECT_BUDGET_FIXTURE' and
-            all(reconnect_budget[k] is True for k in ('passed',
+        reconnect_budget_checks=(
                 'first_failure_retained_without_retry',
                 'lost_reservation_ack_replays_without_provider_request',
                 'lost_retry_result_ack_replays_without_new_attempt',
@@ -2334,9 +2332,20 @@ def _validate(profile, result):
                 'uncertain_outcome_closes_without_retry_or_external_access',
                 'uncertain_outcome_close_replay_is_byte_stable',
                 'no_sleep_loop_or_financial_authority',
-                'no_private_identifier_or_credential_echo')) and
-            reconnect_budget['actual_storage_retained'] is False,
-            'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET')
+                'no_private_identifier_or_credential_echo')
+        _require(type(reconnect_budget) is dict and
+            reconnect_budget.get('source') ==
+                'TEMPORARY_INJECTED_ACTIVITY_SSE_RECONNECT_BUDGET_FIXTURE' and
+            reconnect_budget.get('actual_storage_retained') is False,
+            'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_ENVELOPE')
+        # Keep the externally visible diagnostic finite and privacy-safe while
+        # identifying the exact synthetic invariant that failed.  Never append
+        # values, exception text, paths or provider data to this fixed code.
+        for key in reconnect_budget_checks:
+            _require(reconnect_budget.get(key) is True,
+                'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_' + key.upper())
+        _require(reconnect_budget.get('passed') is True,
+            'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_PASSED')
         _require(all(reconnect_budget[k] is False for k in
             (*ACTIVITY_SSE_RECONNECT_BUDGET_FLAGS,'actual_provider_access',
              'actual_stream_connection','actual_vault_access')),

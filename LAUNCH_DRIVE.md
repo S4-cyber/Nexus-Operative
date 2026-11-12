@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.285 privacy-safe reconnect evidence diagnostics
+
+Exact-source v0.340.284 passed hosted public security/Gitleaks and Portal browser/help, but its Windows offline evidence stopped at the aggregated reconnect-budget fixture boundary. v0.340.285 preserves every existing validation and authority denial while assigning fixed allowlisted codes to the individual reviewed synthetic invariants. Raw values, exception text, paths, credentials, provider data and retained evidence are never appended.
+
+The prior failed run remains evidence and is not presumed flaky. No control or editable parameter changed, so seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency cut remain intact. Rough implementation remains about 40% (weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 stages accepted. This does not approve release or trading, predict launch timing, or establish broker, genuine-feed, sustained-market, profitability, funding/live/cloud or native Windows acceptance. Historical results and synthetic scores are not future profit predictions.
+
+Local validation passed 5,986 tests with one expected platform skip and one known warning; the synchronized scope passed 217 and all sixteen offline profiles plus saved-evidence verification passed. Source fingerprint is `e748678a62ba98c4f979f0325d9f4081236b0f9b2050f257eff77385361bc2d4`; evidence SHA256 is `a7be686f1ba80991a66c42083bf93654f772f2875017120b55e2d7a72fcc9d3a`. Compilation, Portal syntax, fourteen Node controllers, packaging and candidate/introduced-content audits passed. Fresh hosted Windows evidence remains the next immediate gate.
+
 ## v0.340.284 Windows Trial Readiness canonical path binding
 
 Hosted v0.340.283 commit `f98c9315a903b93d65eeb6b32f65e8b9b4f7f95d` / tree `73014cee2b895027d2cb16ca99c7300265219b74` passed public security/Gitleaks run `43218869700` and browser-help job `131184975240`. Windows offline evidence job `131184975674` then isolated the remaining failure to the actual loopback Trial Readiness endpoint. That path fence canonicalized all four paths but searched the resulting tuple with the original lexical owner path. v0.340.284 binds the owner by the checked set's stable fourth position and uses the canonical forward path for retained-history review, closing false misses caused by Windows drive, case or reparse normalization.

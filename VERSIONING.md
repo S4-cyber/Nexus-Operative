@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.284 (pre-release).**
+**Current development build: 0.340.285 (pre-release).**
+
+## v0.340.285 privacy-safe reconnect evidence diagnostics
+
+Hosted v0.340.284 commit `1d62cce5da6c4dc687b3f0b1607331f0b066e412` passed public security/Gitleaks and Portal browser/help, while Windows offline evidence failed at the previously aggregated `RELEASE_TRIAL_EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET` boundary. The same synthetic fixture passed locally and on the preceding Windows commit, but the failed attempt is retained and is not classified as a flake. The complete regression and Windows installer jobs were still active at checkpoint start.
+
+Every positive reconnect-budget fixture invariant now has its own fixed allowlisted release diagnostic. Validation still requires the identical source envelope, all positive invariants, zero retained storage, and every authority flag false. Diagnostics contain only reviewed constant names; values, exception text, paths, credentials, provider responses and private evidence remain suppressed. No acceptance condition, retry rule, risk control, permission, account check, exit or emergency-stop boundary changed.
+
+This is release-diagnostic hardening, not actual broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native Windows/installer acceptance, funding/live/cloud readiness or release approval. No Portal control or modifiable parameter changed; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. Release approval and trading permission remain false; historical and synthetic results are not future profit predictions.
+
+Local validation passed 5,986 tests with one expected non-Windows skip and one existing Starlette/httpx warning in 723.11 seconds; the synchronized release/evidence/roadmap/version/packaging/Windows-workflow scope passed 217. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `e748678a62ba98c4f979f0325d9f4081236b0f9b2050f257eff77385361bc2d4`; evidence SHA256 is `a7be686f1ba80991a66c42083bf93654f772f2875017120b55e2d7a72fcc9d3a`. Compilation, Portal JavaScript syntax and all fourteen Node controllers passed. The 162-member v0.340.285 wheel has SHA256 `2278c129a1713643b06998447277559fdb7ab847c4a6980dc3ebb3e7c3354399`. The 1,006-path candidate audit and 4,140-added-line high-confidence signature scan found zero findings. Fresh exact-source hosted results remain mandatory.
 
 ## v0.340.284 Windows Trial Readiness canonical path binding
 

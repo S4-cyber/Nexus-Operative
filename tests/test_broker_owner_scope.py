@@ -343,4 +343,53 @@ def test_active_broker_owner_detects_exact_directory_replacement(
         owner.validate()
     with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):
         owner.__exit__(None, None, None)
-    assert owner.fd is None and owner.directory_identity is None
+    assert (owner.fd is None and owner.directory_identity is None and
+        owner.entry_parent_identity is None)
+
+
+@pytest.mark.skipif(os.name == 'nt',
+    reason='Windows does not portably rename an opened owner hierarchy')
+def test_broker_owner_rejects_parent_entry_replacement_before_prepare(
+        tmp_path):
+    entry_parent = tmp_path / 'entry-parent'
+    owner_directory = entry_parent / 'owner-directory'
+    owner_directory.mkdir(parents=True)
+    path = owner_directory / 'owner.lock'
+    directory_identity = owner_scope.owner_directory_identity(owner_directory)
+    entry_parent_identity = owner_scope.owner_entry_parent_identity(
+        entry_parent)
+    descriptor, created = owner_scope.open_owner_file(path)
+    retired = tmp_path / 'retired-entry-parent'
+    os.replace(entry_parent, retired)
+    entry_parent.mkdir()
+    os.replace(retired / owner_directory.name, owner_directory)
+    try:
+        assert not owner_scope.prepare_owner_file(path, descriptor, created,
+            directory_identity, entry_parent_identity)
+    finally:
+        os.close(descriptor)
+    assert path.read_bytes() == b''
+
+
+@pytest.mark.parametrize('index', range(4))
+def test_active_broker_owner_detects_parent_entry_replacement(
+        tmp_path, index):
+    entry_parent = tmp_path / 'entry-parent'
+    owner_directory = entry_parent / 'owner-directory'
+    owner_directory.mkdir(parents=True)
+    prefix, subject = subjects(owner_directory)[index]
+    owner = subject.ownership()
+    owner.__enter__()
+    if os.name == 'nt':
+        owner.entry_parent_identity = (-1, -1)
+    else:
+        retired = tmp_path / 'retired-entry-parent'
+        os.replace(entry_parent, retired)
+        entry_parent.mkdir()
+        os.replace(retired / owner_directory.name, owner_directory)
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):
+        owner.validate()
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):
+        owner.__exit__(None, None, None)
+    assert (owner.fd is None and owner.directory_identity is None and
+        owner.entry_parent_identity is None)

@@ -45,7 +45,9 @@ PACING_PUBLIC_KEYS = frozenset(('read_completion','snapshot_time',
     'wal_write_rejected_before_conversion','wal_rejection_preserved_files',
     'broker_wide_quota_verified','ready_for_routing','limitations'))
 OWNER_SCOPE_DURABILITY_CHECKS = ('fresh_marker_file_synced',
-    'file_sync_uncertainty_denied','inherited_marker_resynced')
+    'file_sync_uncertainty_denied','inherited_marker_resynced',
+    'preopen_parent_entry_replacement_denied',
+    'active_parent_entry_replacement_denied')
 OWNER_SCOPE_DURABILITY_FLAGS = ('native_windows_owner_profile_accepted',
     'broker_account_accepted','release_approved')
 INSPECTION_LIMITATIONS=('Fixed response objects and clocks; no actual credentials, provider, '
@@ -512,15 +514,17 @@ def _owner_scope_durability_trial():
             parent.mkdir()
             path = parent / 'owner.lock'
             identity = scope.owner_directory_identity(parent)
-            _require(identity is not None, 'OWNER_DURABILITY_DIRECTORY')
+            entry_identity = scope.owner_entry_parent_identity(parent.parent)
+            _require(identity is not None and entry_identity is not None,
+                'OWNER_DURABILITY_DIRECTORY')
             descriptor, created = scope.open_owner_file(path)
             _require(created is True, 'OWNER_DURABILITY_CREATE')
-            return path, identity, descriptor
+            return path, identity, entry_identity, descriptor
 
         original_fsync = scope.os.fsync
         original_open = scope.os.open
         calls = []
-        path, identity, descriptor = candidate('success')
+        path, identity, entry_identity, descriptor = candidate('success')
 
         def observe_sync(value):
             calls.append('directory' if stat.S_ISDIR(
@@ -530,7 +534,7 @@ def _owner_scope_durability_trial():
         scope.os.fsync = observe_sync
         try:
             success = scope.prepare_owner_file(
-                path, descriptor, True, identity)
+                path, descriptor, True, identity, entry_identity)
         finally:
             os.close(descriptor)
             scope.os.fsync = original_fsync
@@ -538,7 +542,7 @@ def _owner_scope_durability_trial():
             ['file', 'directory', 'directory'])
         fresh_marker_file_synced = success and calls == expected
 
-        path, identity, descriptor = candidate('file-failure')
+        path, identity, entry_identity, descriptor = candidate('file-failure')
         file_failed = False
 
         def fail_file_sync(value):
@@ -551,7 +555,8 @@ def _owner_scope_durability_trial():
         scope.os.fsync = fail_file_sync
         try:
             file_sync_uncertainty_denied = (not scope.prepare_owner_file(
-                path, descriptor, True, identity) and file_failed)
+                path, descriptor, True, identity, entry_identity) and
+                file_failed)
         finally:
             os.close(descriptor)
             scope.os.fsync = original_fsync
@@ -562,7 +567,8 @@ def _owner_scope_durability_trial():
         parent_entry_sync_uncertainty_denied = None
         wrong_parent_entry_descriptor_denied = None
         if parent_supported:
-            path, identity, descriptor = candidate('parent-failure')
+            path, identity, entry_identity, descriptor = candidate(
+                'parent-failure')
             parent_failed = False
 
             def fail_parent_sync(value):
@@ -576,14 +582,16 @@ def _owner_scope_durability_trial():
             try:
                 parent_sync_uncertainty_denied = (
                     not scope.prepare_owner_file(
-                        path, descriptor, True, identity) and parent_failed)
+                        path, descriptor, True, identity, entry_identity) and
+                    parent_failed)
             finally:
                 os.close(descriptor)
                 scope.os.fsync = original_fsync
 
             foreign = root / 'foreign'
             foreign.mkdir()
-            path, identity, descriptor = candidate('wrong-parent')
+            path, identity, entry_identity, descriptor = candidate(
+                'wrong-parent')
             substituted = False
             directory_syncs = 0
 
@@ -606,14 +614,15 @@ def _owner_scope_durability_trial():
             try:
                 wrong_parent_descriptor_denied = (
                     not scope.prepare_owner_file(
-                        path, descriptor, True, identity) and
+                        path, descriptor, True, identity, entry_identity) and
                     substituted and directory_syncs == 0)
             finally:
                 os.close(descriptor)
                 scope.os.open = original_open
                 scope.os.fsync = original_fsync
 
-            path, identity, descriptor = candidate('entry-parent-failure')
+            path, identity, entry_identity, descriptor = candidate(
+                'entry-parent-failure')
             directory_syncs = 0
 
             def fail_entry_parent_sync(value):
@@ -628,7 +637,7 @@ def _owner_scope_durability_trial():
             try:
                 parent_entry_sync_uncertainty_denied = (
                     not scope.prepare_owner_file(
-                        path, descriptor, True, identity) and
+                        path, descriptor, True, identity, entry_identity) and
                     directory_syncs == 2)
             finally:
                 os.close(descriptor)
@@ -636,7 +645,8 @@ def _owner_scope_durability_trial():
 
             foreign = root / 'foreign-entry-parent'
             foreign.mkdir()
-            path, identity, descriptor = candidate('wrong-entry-parent')
+            path, identity, entry_identity, descriptor = candidate(
+                'wrong-entry-parent')
             directory_opens = 0
             directory_syncs = 0
 
@@ -659,7 +669,7 @@ def _owner_scope_durability_trial():
             try:
                 wrong_parent_entry_descriptor_denied = (
                     not scope.prepare_owner_file(
-                        path, descriptor, True, identity) and
+                        path, descriptor, True, identity, entry_identity) and
                     directory_opens == 2 and directory_syncs == 1)
             finally:
                 os.close(descriptor)
@@ -671,6 +681,8 @@ def _owner_scope_durability_trial():
         inherited = inherited_parent / 'owner.lock'
         inherited.write_bytes(b'0')
         inherited_identity = scope.owner_directory_identity(inherited_parent)
+        inherited_entry_identity = scope.owner_entry_parent_identity(
+            inherited_parent.parent)
         descriptor, created = scope.open_owner_file(inherited)
         inherited_syncs = 0
 
@@ -682,7 +694,8 @@ def _owner_scope_durability_trial():
         scope.os.fsync = count_inherited_sync
         try:
             inherited_ok = scope.prepare_owner_file(
-                inherited, descriptor, created, inherited_identity)
+                inherited, descriptor, created, inherited_identity,
+                inherited_entry_identity)
         finally:
             os.close(descriptor)
             scope.os.fsync = original_fsync
@@ -690,9 +703,58 @@ def _owner_scope_durability_trial():
         inherited_marker_resynced = (created is False and inherited_ok and
             inherited_syncs == inherited_expected_syncs)
 
+        path, identity, entry_identity, descriptor = candidate(
+            'preopen-entry-parent')
+        try:
+            preopen_parent_entry_replacement_denied = (
+                not scope.prepare_owner_file(path, descriptor, True, identity,
+                    (-1, -1)))
+        finally:
+            os.close(descriptor)
+
+        from nexus.paper_provider_post_budget import PaperProviderPostBudget
+        active_scope = root / 'active-entry-parent'
+        active_owner_directory = active_scope / 'owner-directory'
+        active_owner_directory.mkdir(parents=True)
+        active_subject = PaperProviderPostBudget(
+            active_owner_directory / 'post.sqlite3')
+        active_owner = active_subject.ownership()
+        active_owner.__enter__()
+        if os.name == 'nt':
+            # Windows cannot portably rename this opened hierarchy. Exercise
+            # the identical retained-identity refusal without claiming native
+            # owner-profile or filesystem acceptance.
+            active_owner.entry_parent_identity = (-1, -1)
+        else:
+            retired_scope = root / 'retired-active-entry-parent'
+            os.replace(active_scope, retired_scope)
+            active_scope.mkdir()
+            os.replace(retired_scope / active_owner_directory.name,
+                active_owner_directory)
+        active_validate_denied = False
+        active_exit_denied = False
+        try:
+            active_owner.validate()
+        except ValueError as error:
+            active_validate_denied = (str(error) ==
+                'PAPER_PROVIDER_POST_BUDGET_OWNER_FILE_CHANGED')
+        try:
+            active_owner.__exit__(None, None, None)
+        except ValueError as error:
+            active_exit_denied = (str(error) ==
+                'PAPER_PROVIDER_POST_BUDGET_OWNER_FILE_CHANGED')
+        active_parent_entry_replacement_denied = (
+            active_validate_denied and active_exit_denied and
+            active_owner.fd is None and
+            active_owner.entry_parent_identity is None)
+
     checks = dict(fresh_marker_file_synced=fresh_marker_file_synced,
         file_sync_uncertainty_denied=file_sync_uncertainty_denied,
-        inherited_marker_resynced=inherited_marker_resynced)
+        inherited_marker_resynced=inherited_marker_resynced,
+        preopen_parent_entry_replacement_denied=
+            preopen_parent_entry_replacement_denied,
+        active_parent_entry_replacement_denied=
+            active_parent_entry_replacement_denied)
     return dict(source='TEMPORARY_LOCAL_OWNER_DURABILITY_FIXTURE',
         passed=all(checks.values()) and
             (not parent_supported or (parent_sync_uncertainty_denied and

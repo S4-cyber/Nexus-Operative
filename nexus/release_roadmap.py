@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.280'
+REVISION = '0.340.281'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -739,6 +739,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Every valid shared broker-paper owner marker now requires exact file fsync before lock authority and identity-bound parent-directory fsync on POSIX. Inherited retries repeat the same barrier, so a prior graceful sync failure cannot be promoted by reopening the retained marker. File-sync uncertainty, directory-sync uncertainty or a substituted directory descriptor fails closed. Python exposes no portable Windows directory-fsync API, so Windows retains the file barrier and independent native acceptance gate. This is graceful local durability handling, not physical power-loss, distributed ownership, native-owner, provider/account or broker acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every broker-paper owner lease now pins the no-follow immediate-parent directory identity before opening its marker and brackets all active marker/directory checks with that identity, so moving the same owner directory under a replacement parent fails closed before acknowledged work and during exit' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Every valid shared broker-paper owner lease now captures the no-follow identity of the directory that publishes its exact owner-directory entry before opening the marker. That identity is required during marker preparation, every active validation and context exit, so a replacement immediate parent cannot inherit authority by moving the same owner directory back under the public pathname. This is one additional local ancestry level, not full ancestor-chain, extended-ACL, distributed-owner, native-profile, provider/account or broker acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -904,7 +912,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.280 extends every valid shared provider POST, provider-read, account-read pacing and Activity SSE cursor owner-marker barrier on POSIX: after the exact marker file and its safe containing directory are fsynced, the directory entry itself is committed through a separately opened no-follow immediate-parent descriptor bound to a sampled device/inode. Flush uncertainty or a substituted descriptor at either directory layer fails closed, and inherited retries repeat all barriers. Windows retains the exact file barrier and independent native acceptance gate because Python has no portable Windows directory-fsync API. This strengthens local broker-paper durability handling, but it is not ancestor-chain or physical power-loss proof, distributed ownership, native-owner, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.281 pins the no-follow immediate-parent identity for every valid shared provider POST, provider-read, account-read pacing and Activity SSE cursor owner lease before opening its marker, then rechecks that exact identity during preparation, every active validation and context exit. Moving the same still-locked owner directory beneath a replacement parent therefore fails closed before further acknowledged work. The prior exact file and POSIX directory-entry durability barriers remain mandatory. This is one additional local ancestry level, not full ancestor-chain or physical power-loss proof, distributed ownership, native-owner, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

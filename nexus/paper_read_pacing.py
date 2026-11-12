@@ -20,6 +20,7 @@ from nexus.alpaca_paper_inspection import _uuid
 from nexus.broker_lookup_policy import classify, clock
 from nexus.local_owner_scope import (
     open_owner_file, owner_directory_identity, owner_directory_matches,
+    owner_entry_parent_identity, owner_entry_parent_matches,
     owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe,
     prepare_owner_file)
 from nexus.sqlite_journal_guard import check_existing
@@ -564,9 +565,14 @@ class _ReadOwnership:
         self.fd = None
         self.lease = None
         self.directory_identity = None
+        self.entry_parent_identity = None
 
     def validate(self):
-        if self.fd is None or self.directory_identity is None: _fail('OWNER_REQUIRED')
+        if (self.fd is None or self.directory_identity is None or
+                self.entry_parent_identity is None): _fail('OWNER_REQUIRED')
+        if not owner_entry_parent_matches(self.path.parent.parent,
+                self.entry_parent_identity):
+            _fail('OWNER_FILE_CHANGED')
         if not owner_directory_matches(self.path.parent, self.directory_identity):
             _fail('OWNER_FILE_CHANGED')
         try:
@@ -585,6 +591,9 @@ class _ReadOwnership:
             _fail('OWNER_FILE_CHANGED')
         if not owner_directory_matches(self.path.parent, self.directory_identity):
             _fail('OWNER_FILE_CHANGED')
+        if not owner_entry_parent_matches(self.path.parent.parent,
+                self.entry_parent_identity):
+            _fail('OWNER_FILE_CHANGED')
 
     def identity(self):
         self.validate()
@@ -598,12 +607,16 @@ class _ReadOwnership:
         if self.path.is_symlink(): _fail('OWNER_SYMLINK')
         self.path.parent.mkdir(parents=True, exist_ok=True)
         directory_identity = owner_directory_identity(self.path.parent)
-        if directory_identity is None: _fail('OWNER_FILE_INVALID')
+        entry_parent_identity = owner_entry_parent_identity(
+            self.path.parent.parent)
+        if directory_identity is None or entry_parent_identity is None:
+            _fail('OWNER_FILE_INVALID')
         fd, created = open_owner_file(self.path)
         self.directory_identity = directory_identity
+        self.entry_parent_identity = entry_parent_identity
         try:
             if not prepare_owner_file(self.path, fd, created,
-                    self.directory_identity):
+                    self.directory_identity, self.entry_parent_identity):
                 _fail('OWNER_FILE_INVALID')
             if os.name == 'nt':
                 import msvcrt
@@ -617,6 +630,7 @@ class _ReadOwnership:
             return self
         except BaseException as error:
             self.fd = None; self.directory_identity = None
+            self.entry_parent_identity = None
             os.close(fd)
             if isinstance(error, OSError): _fail('OWNER_BUSY_OR_UNAVAILABLE')
             raise
@@ -634,6 +648,7 @@ class _ReadOwnership:
             exit_error = error
         finally:
             self.fd = None; self.directory_identity = None
+            self.entry_parent_identity = None
             try:
                 os.close(fd)
             except BaseException:

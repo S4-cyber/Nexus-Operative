@@ -42,7 +42,7 @@ def owner_directory_matches(path, identity):
     return identity is not None and owner_directory_identity(path) == identity
 
 
-def _directory_identity(path):
+def owner_entry_parent_identity(path):
     """Return one no-follow directory identity without making a scope claim."""
     try:
         info = path.lstat()
@@ -51,6 +51,12 @@ def _directory_identity(path):
     if not stat.S_ISDIR(info.st_mode):
         return None
     return info.st_dev, info.st_ino
+
+
+def owner_entry_parent_matches(path, identity):
+    """Recheck the exact directory that publishes the owner-directory entry."""
+    return (identity is not None and
+        owner_entry_parent_identity(path) == identity)
 
 
 def open_owner_file(path):
@@ -73,7 +79,7 @@ def owner_marker_valid(fd):
     return marker == b'0'
 
 
-def _sync_owner(path, fd, directory_identity):
+def _sync_owner(path, fd, directory_identity, entry_parent_identity):
     """Durably publish one exact owner marker where supported."""
     try:
         os.fsync(fd)
@@ -87,8 +93,7 @@ def _sync_owner(path, fd, directory_identity):
     flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
         getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0))
     entry_parent = path.parent.parent
-    entry_parent_identity = _directory_identity(entry_parent)
-    if entry_parent_identity is None:
+    if not owner_entry_parent_matches(entry_parent, entry_parent_identity):
         return False
     try:
         directory_fd = os.open(path.parent, flags)
@@ -124,7 +129,7 @@ def _sync_owner(path, fd, directory_identity):
         final = os.fstat(entry_parent_fd)
         return (stat.S_ISDIR(final.st_mode) and
             (final.st_dev, final.st_ino) == entry_parent_identity and
-            _directory_identity(entry_parent) == entry_parent_identity and
+            owner_entry_parent_matches(entry_parent, entry_parent_identity) and
             owner_directory_matches(path.parent, directory_identity))
     except OSError:
         return False
@@ -132,7 +137,8 @@ def _sync_owner(path, fd, directory_identity):
         os.close(entry_parent_fd)
 
 
-def prepare_owner_file(path, fd, created, directory_identity):
+def prepare_owner_file(path, fd, created, directory_identity,
+        entry_parent_identity):
     """Initialize only a fresh owner file; inherited state is never repaired."""
     try:
         current = path.stat()
@@ -144,7 +150,9 @@ def prepare_owner_file(path, fd, created, directory_identity):
             (opened.st_dev, opened.st_ino) or
             not posix_owner_file_safe(current) or
             not posix_owner_file_safe(opened) or
-            not owner_directory_matches(path.parent, directory_identity)):
+            not owner_directory_matches(path.parent, directory_identity) or
+            not owner_entry_parent_matches(path.parent.parent,
+                entry_parent_identity)):
         return False
     if created:
         if opened.st_size != 0:
@@ -159,7 +167,7 @@ def prepare_owner_file(path, fd, created, directory_identity):
         return False
     if not owner_marker_valid(fd):
         return False
-    if not _sync_owner(path, fd, directory_identity):
+    if not _sync_owner(path, fd, directory_identity, entry_parent_identity):
         return False
     try:
         current = path.stat()
@@ -173,4 +181,6 @@ def prepare_owner_file(path, fd, created, directory_identity):
         posix_owner_file_safe(current) and
         posix_owner_file_safe(opened) and
         owner_directory_matches(path.parent, directory_identity) and
+        owner_entry_parent_matches(path.parent.parent,
+            entry_parent_identity) and
         owner_marker_valid(fd))

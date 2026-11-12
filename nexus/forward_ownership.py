@@ -144,12 +144,15 @@ class ForwardOwnership:
         try:
             opened=_opened_identity(self.path,fd,before)
             _posix_owner_scope(opened)
-            _marker_content(fd)
             try:_lock(fd);locked=True;available=True
             except OSError:pass
+            # Windows byte-range locks deny reads through a second handle.
+            # Probe the lock before reading the marker so a healthy external
+            # owner is reported as busy instead of as a corrupt store.
+            if locked:_marker_content(fd)
             opened=_opened_identity(self.path,fd,before)
             _posix_owner_scope(opened,changed=True)
-            _marker_content(fd,changed=True)
+            if locked:_marker_content(fd,changed=True)
         finally:
             if locked:
                 try:_unlock(fd)
@@ -195,10 +198,10 @@ class ForwardOwnership:
         try:
             opened=_opened_identity(self.path,fd,before)
             _posix_owner_scope(opened)
-            _marker_content(fd)
             try:_lock(fd)
             except OSError as exc:
                 raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER') from exc
+            _marker_content(fd)
             opened=_opened_identity(self.path,fd,before)
             _posix_owner_scope(opened,changed=True)
             _marker_content(fd,changed=True)
@@ -261,8 +264,11 @@ class ForwardOwnership:
                 os.write(fd,b'0')
                 opened=_opened_identity(self.path,fd,before)
                 _posix_owner_scope(opened)
-            _marker_content(fd)
             _lock(fd)
+            # An inherited Windows marker is unreadable until this process
+            # owns its byte-range lock. A fresh marker is likewise validated
+            # only after ownership is established.
+            _marker_content(fd)
             opened=_opened_identity(self.path,fd,before)
             _posix_owner_scope(opened,changed=True)
             _marker_content(fd,changed=True)

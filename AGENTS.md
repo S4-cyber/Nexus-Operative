@@ -1,5 +1,13 @@
 # Nexus Operative continuity instructions
 
+## v0.340.289 Windows inherited-owner lock ordering
+
+Exact-source v0.340.288 public security, offline release evidence and Portal browser/help passed. Its native-Windows complete regression and installer lanes both reached the one-hour boundary with the same five ownership failures: reads through a second handle to an externally byte-locked marker raised `PermissionError`, which was misclassified as corrupt/unavailable, and three test snapshots directly read that locked byte. The cancelled conclusions are retained as failed acceptance evidence, not treated as infrastructure passes.
+
+v0.340.289 takes the existing one-byte OS lock before reading or durably revalidating an inherited Forward or paper-read owner marker. A fresh empty paper-read marker is still initialized before the one-byte lock; malformed unlocked markers remain rejected without repair. Windows-safe test snapshots compare owner-file identity, link count and size without treating lock-mutated timestamps as stable, while the owning descriptor verifies marker content. Deterministic ordering tests require inherited preparation/reads to occur only after locking and prove a busy marker is never read.
+
+No UI control, permission, account check, limit, exit or emergency-stop boundary changed. Seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults and fail-closed behavior remain intact. This does not establish broker, genuine-feed, sustained-market, profitability, Windows installer, funding/live/cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages accepted. Fresh exact-source hosted Windows evidence is required.
+
 ## v0.340.288 Windows owner coordination and portable evidence repair
 
 The recovered v0.340.286 hosted lanes passed public security/Gitleaks and Portal browser/help, but the Windows offline-evidence job failed on same-process Activity SSE cursor ownership. The complete Windows regression later finished with 66 failures: most were cascades from validating saved POSIX durability evidence against the Windows reader platform, while the remainder exposed same-process owner opens before the local claim, mutable Windows lock metadata in Trial Readiness, and POSIX-only rename mechanics in Windows recovery tests. The installer lane was cancelled while install testing was active. Exact v0.340.287 had no hosted run, so none of these gates was treated as accepted.

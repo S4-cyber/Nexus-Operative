@@ -152,6 +152,35 @@ with g.ownership() as owner:
         child.stdin.close(); child.stdout.close(); child.stderr.close()
 
 
+def test_inherited_read_owner_marker_is_prepared_after_lock(gate,monkeypatch):
+    with gate.ownership():pass
+    original_lock=policy._lock_owner_file
+    original_prepare=policy.prepare_owner_file
+    locked=[False]
+    def lock(fd):
+        original_lock(fd);locked[0]=True
+    def prepare(path,fd,created,directory_identity,entry_parent_identity):
+        assert created or locked[0]
+        return original_prepare(path,fd,created,directory_identity,
+            entry_parent_identity)
+    monkeypatch.setattr(policy,'_lock_owner_file',lock)
+    monkeypatch.setattr(policy,'prepare_owner_file',prepare)
+    with gate.ownership():pass
+
+
+def test_busy_read_owner_marker_is_never_prepared(gate,monkeypatch):
+    with gate.ownership():pass
+    marker=gate.path.with_name(gate.path.name+'.owner.lock')
+    before=marker.read_bytes()
+    monkeypatch.setattr(policy,'_lock_owner_file',lambda fd:
+        (_ for _ in ()).throw(PermissionError('simulated byte-range owner')))
+    monkeypatch.setattr(policy,'prepare_owner_file',lambda *a,**k:
+        pytest.fail('busy marker was prepared before ownership'))
+    with pytest.raises(ValueError,match='OWNER_BUSY_OR_UNAVAILABLE'):
+        with gate.ownership():pass
+    assert marker.read_bytes()==before
+
+
 def test_sqlite_wait_rechecks_clock_and_review_head(gate, monkeypatch):
     pending(gate); head = gate.inspect()['head_sha256']; token = gate.inspect()['pending_token']
     entered = threading.Event(); at = [1000]; original = gate._connect

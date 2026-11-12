@@ -619,15 +619,18 @@ class _ReadOwnership:
                     self.entry_parent_identity is None):
                 _fail('OWNER_FILE_INVALID')
             fd, created = open_owner_file(self.path)
-            if not prepare_owner_file(self.path, fd, created,
+            # A fresh zero-length file must receive its durable marker before
+            # a one-byte lock can be taken. An inherited Windows file must be
+            # locked first because a healthy external byte-range lock denies
+            # marker reads through this second handle. This preserves the
+            # distinction between busy ownership and invalid retained state.
+            if created and not prepare_owner_file(self.path, fd, True,
                     self.directory_identity, self.entry_parent_identity):
                 _fail('OWNER_FILE_INVALID')
-            if os.name == 'nt':
-                import msvcrt
-                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            _lock_owner_file(fd)
+            if not created and not prepare_owner_file(self.path, fd, False,
+                    self.directory_identity, self.entry_parent_identity):
+                _fail('OWNER_FILE_INVALID')
             self.fd = fd
             self.validate()
             self.lease=object()
@@ -664,6 +667,17 @@ class _ReadOwnership:
                 self.process_owner.release()
         if exit_error is not None:
             raise exit_error
+
+
+def _lock_owner_file(fd):
+    """Take the one-byte owner lock without reading an inherited marker."""
+    os.lseek(fd, 0, os.SEEK_SET)
+    if os.name == 'nt':
+        import msvcrt
+        msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
 
 OPERATION_CHECKS=('five_actual_readers_typed','five_request_receipts_bound','five_request_targets_bound',

@@ -10,6 +10,12 @@ from nexus.paper_forward import PaperForwardRunner
 from test_paper_forward import setup
 
 
+def lock_snapshot(path):
+    """Compare owner-file identity without reading a Windows-locked byte."""
+    info=path.lstat()
+    return (info.st_dev,info.st_ino,info.st_nlink,info.st_size)
+
+
 def test_second_runner_rejected_before_account_or_session_change(tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch)
     second=PaperForwardRunner(g,c.quote,lambda:c.now)
@@ -51,7 +57,8 @@ def test_existing_review_lease_never_creates_and_blocks_runner(tmp_path):
     candidate.acquire();candidate.release();before=candidate.path.read_bytes()
     with candidate.existing_lease():
         assert candidate.held and not ForwardOwnership(tmp_path).available()
-        assert candidate.path.read_bytes()==before
+        os.lseek(candidate._fd,0,os.SEEK_SET)
+        assert os.read(candidate._fd,2)==before
     assert not candidate.held and candidate.path.read_bytes()==before
 
 
@@ -166,13 +173,43 @@ def test_availability_probe_detects_external_process_without_mutation(tmp_path):
     process=subprocess.Popen([sys.executable,'-c',expression,str(tmp_path)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
     try:
         assert process.stdout.readline().strip()=='ready';candidate=ForwardOwnership(tmp_path)
-        before=candidate.path.read_bytes();assert not candidate.available()
-        assert candidate.path.read_bytes()==before
+        before=lock_snapshot(candidate.path);assert not candidate.available()
+        assert lock_snapshot(candidate.path)==before
         process.kill();process.wait(timeout=10)
-        assert candidate.available() and candidate.path.read_bytes()==before
+        assert candidate.available() and lock_snapshot(candidate.path)==before
+        assert candidate.path.read_bytes()==b'0'
     finally:
         if process.poll() is None:process.kill();process.wait(timeout=10)
         process.stdin.close();process.stdout.close()
+
+
+@pytest.mark.parametrize('operation',['available','acquire','acquire_existing'])
+def test_inherited_marker_is_checked_only_after_lock(tmp_path,monkeypatch,operation):
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()
+    original_lock=ownership._lock;original_marker=ownership._marker_content
+    locked=[False]
+    def lock(fd):
+        original_lock(fd);locked[0]=True
+    def marker(fd,*,changed=False):
+        assert locked[0]
+        return original_marker(fd,changed=changed)
+    monkeypatch.setattr(ownership,'_lock',lock)
+    monkeypatch.setattr(ownership,'_marker_content',marker)
+    result=getattr(candidate,operation)()
+    if operation=='available':assert result is True
+    else:assert candidate.held;candidate.release()
+
+
+def test_busy_inherited_marker_is_never_read(tmp_path,monkeypatch):
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()
+    def busy(fd):raise PermissionError('simulated byte-range owner')
+    monkeypatch.setattr(ownership,'_lock',busy)
+    monkeypatch.setattr(ownership,'_marker_content',lambda *a,**k:
+        pytest.fail('busy marker was read before ownership'))
+    assert candidate.available() is False
+    for operation in (candidate.acquire,candidate.acquire_existing):
+        with pytest.raises(ValueError,match='OWNED_BY_ANOTHER_RUNNER'):
+            operation()
 
 
 @pytest.mark.parametrize('kind',['symlink','hardlink','oversized'])

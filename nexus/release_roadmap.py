@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.288'
+REVISION = '0.340.289'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -919,7 +919,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.288 repairs the exact native-Windows regression cluster exposed by the v0.340.286 hosted lanes. Every local broker-paper owner type now reserves its normalized path before opening or preparing the marker, so same-process contenders cannot mutate a shared owner file before being rejected. Saved owner-durability evidence records its generating platform scope and revalidates against that scope rather than the reader platform; Windows Trial Readiness binds owner identity without fingerprinting lock metadata that the OS may alter during acquisition. Windows-only recovery tests now exercise the same fail-closed identity boundary without trying to rename open SQLite files. This is portability and local coordination hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.289 repairs the five native-Windows ownership failures exposed by exact-source v0.340.288 hosted regression and installer lanes. Inherited Forward and paper-read owner markers are now read only after the one-byte OS lock succeeds, so a healthy external Windows owner is classified as busy instead of as corrupt or unavailable. Fresh empty owner files are still durably initialized before locking, malformed unlocked stores still fail closed, and deterministic ordering tests cover the platform-independent contract. This is Windows coordination hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness, native installer acceptance or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

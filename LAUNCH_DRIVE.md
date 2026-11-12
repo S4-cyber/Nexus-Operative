@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.289 Windows inherited-owner lock ordering
+
+Exact-source v0.340.288 passed public security/Gitleaks, bounded offline release evidence and real-browser Portal/help acceptance. Its complete Windows regression and installer jobs both reached the one-hour boundary with the same five failures: Windows refused second-handle reads of a byte-range-locked owner marker, so healthy external ownership was misclassified and test snapshots raised `PermissionError`. v0.340.289 acquires inherited Forward and paper-read OS locks before marker inspection, retains pre-lock initialization only for fresh empty markers, and uses Windows-safe no-mutation snapshots.
+
+This does not activate a broker, real account, live orders, money movement, cloud deployment or release authority. It does not prove native Windows/installer behavior until a fresh exact-source lane passes, sustained realistic market coverage, profitability or future returns. No UI control or editable parameter changed: seven tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks and fail-closed exits remain intact. Rough implementation remains about 40% (weighted 38%, uncertainty 30–45%, low confidence); 0/9 stages are independently accepted.
+
 ## v0.340.288 Windows owner coordination and portable evidence repair
 
 The completed v0.340.286 Windows regression exposed a 66-failure cluster rather than an accepted gate: saved POSIX durability evidence was being compared to the Windows reader, cooperating same-process owners could reach marker preparation before rejection, Windows lock acquisition changed metadata included in Trial Readiness fingerprints, and two recovery tests attempted POSIX-style renames of open SQLite files. v0.340.288 moves every local process claim ahead of owner-file preparation, records exact generating-platform durability scope, keeps the readiness owner identity-bound without fingerprinting mutable lock metadata, and gives Windows tests an equivalent fail-closed identity injection. Cross-process authority remains OS-lock-backed; emergency stop remains independently owned.

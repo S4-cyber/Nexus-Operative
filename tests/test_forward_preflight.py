@@ -25,7 +25,17 @@ def check(local,**options):
     return pre.build(gateway,runner,tier='terrestrial',portal_active=options.get('portal_active',True),halted=options.get('halted',False))
 
 
-def snapshot(root):return {str(p.relative_to(root)):p.read_bytes() for p in root.rglob('*') if p.is_file()}
+def snapshot(root):
+    result={}
+    for path in root.rglob('*'):
+        if not path.is_file():continue
+        relative=str(path.relative_to(root))
+        if path.name.endswith('.owner.lock'):
+            info=path.lstat()
+            result[relative]=('OWNER_LOCK',info.st_dev,info.st_ino,
+                info.st_nlink,info.st_size)
+        else:result[relative]=path.read_bytes()
+    return result
 
 
 def test_pristine_preflight_never_creates_storage_or_selects_tier(local):

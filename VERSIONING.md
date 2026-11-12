@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.288 (pre-release).**
+**Current development build: 0.340.289 (pre-release).**
+
+## v0.340.289 Windows inherited-owner lock ordering
+
+Exact-source v0.340.288 public security, offline release evidence and Portal browser/help passed. Both native-Windows long lanes then reached their one-hour boundary with the same five ownership failures. A healthy external Windows byte-range lock denied second-handle marker reads, causing Forward ownership and paper-read interruption to report corrupt/unavailable state instead of a busy owner; test snapshots also attempted forbidden reads of that locked byte.
+
+This pre-release locks inherited Forward and paper-read owner files before marker inspection. Fresh empty paper-read owner files are still initialized and synchronized before the one-byte lock, malformed unlocked markers remain fail-closed, and ordering regressions make the Windows contract deterministic on every platform. Windows-safe snapshots compare stable owner-file metadata and marker content is read through the owning descriptor.
+
+The change preserves OFF-by-default engagement, fixed limits, account checks, fail-closed exits and independent emergency-stop ownership. It adds no UI button or editable parameter, so the seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. It is not broker, sustained-market, profitability, native Windows/installer, funding, live, cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages fully accepted. Fresh exact-source hosted Windows evidence is required.
 
 ## v0.340.288 Windows owner coordination and portable evidence repair
 

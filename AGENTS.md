@@ -1,6 +1,6 @@
 # Nexus Operative continuity instructions
 
-+## v0.340.280 durable broker owner-directory entry publication
+## v0.340.280 durable broker owner-directory entry publication
 
 Every valid provider POST, provider-read, account-read pacing and Activity SSE cursor owner lock now extends the POSIX durability barrier through the exact owner directory entry. After the fixed marker file and its safe containing directory are fsynced, the immediate parent is sampled without following the leaf, opened with directory/no-follow flags, bound to the sampled device/inode, fsynced and rechecked together with the owner directory. Flush uncertainty or a substituted descriptor at either directory layer fails closed. Inherited retries repeat all barriers, so retained state cannot silently promote a prior graceful failure.
 

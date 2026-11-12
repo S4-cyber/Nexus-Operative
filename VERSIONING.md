@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.273 (pre-release).**
+**Current development build: 0.340.274 (pre-release).**
+
+## v0.340.274 POSIX owner-directory mode fence
+
+Paper-forward coordination now creates a missing exact POSIX owner directory with private mode and rejects an existing exact owner directory that is group- or world-writable. The directory must remain owned by the current effective user without foreign write permission across availability checks, acquisition, post-lock validation and every active lease check. Unsafe inherited state is rejected without repair, and later mode drift invalidates the lease before further acknowledged work.
+
+At checkpoint start, hosted `development/windows-portal-foundation` and draft PR #1 targeted v0.340.273 commit `d8cead96386e5b1873ef6165e69fa21e749d9ef1` / tree `d1f7bcb27d86c0a2d753850d4b9db4bd5cca6cbf`. GitHub exposed no workflow runs, combined statuses or reviews for that exact commit. Fresh exact-source v0.340.274 public-security, Windows/installer and browser checks remain required after publication; no hosted result is pre-claimed.
+
+This is an exact-directory POSIX mode-bit/current-user fence, not ancestor-path review, extended-ACL review, Windows ACL or administrator isolation, distributed ownership, genuine-market proof, actual broker/account acceptance, a passed sustained 72-hour trial, profitability, funding/live/cloud readiness or release approval. No Portal button or modifiable parameter changed; the existing Trial Readiness control retains beginner-facing text and black/bright-purple bottom-right hover help. Seven tabs, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This M7/D3 local-ownership hardening does not independently complete an acceptance stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,920 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 664.86 seconds. The direct ownership/preflight/Trial Readiness/roadmap/version scope passed 91, the broader ownership/forward/research/emergency/release/installer/Windows-contract scope passed 383 and final post-document synchronization passed 108. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `b1ed8a6ef5a8659ebf53bad88f5a66c797a633ff295534421bcf1965406bb7a5`; `validation/release_trials_0_340_274.json` SHA256 is `5006e0797062dfb81060943c1ddcbe9d7b6b5ab2f650a4b697859531b4d0e347`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.274 and has SHA256 `3265e60bb51ba8b22c9bf73ddb446281c725f5094fd93ba8bec2c9b6b5754fe0`. The 993-path/blob staged-candidate artifact audit and 4,160-line introduced high-confidence signature scan found zero findings; the locally reachable history audit exceeded its configured byte cap. A local rendered-browser attempt reached system Chromium but the restricted runtime again denied Chromium's process-singleton socket (`Operation not permitted`), so browser acceptance is unverified. Local Gitleaks and Inno Setup are unavailable; native Windows and installer execution are also unavailable locally. These are local/synthetic checks, not actual broker, genuine-feed, sustained-market, native Windows owner-profile, funding, live, cloud or release acceptance.
+
 
 ## v0.340.273 POSIX owner-scope fence
 

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.273'
+REVISION = '0.340.274'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -691,6 +691,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' POSIX paper-forward ownership now rejects a lock file or containing directory not owned by the current effective user, and requires the lock file to stay owner-readable/writable without group/other write access throughout an active lease. Unsafe inherited state is never repaired. This is mode-bit/current-user local hardening, not directory ACL, extended-ACL, Windows ACL, administrator, broker or sustained-market acceptance.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the POSIX owner directory is now created private and must remain free of group/other write permission before acquisition and throughout an active lease, rejecting unsafe inherited state without repair' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The exact POSIX owner directory is now created private and must remain non-group/world-writable across availability, acquisition and every active lease check. Unsafe inherited mode and later drift fail closed without repair. This remains an exact-directory mode-bit fence, not ancestor-path, extended-ACL, Windows ACL, administrator, broker or sustained-market acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -856,7 +864,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.273 requires the POSIX paper-forward owner file and containing directory to remain owned by the current effective user, and the owner file to remain owner-readable/writable without group/other write access before acquisition and throughout the active lease. Unsafe inherited state and later mode drift fail closed without repair. This strengthens local coordination scope, but it is not directory or extended-ACL acceptance, Windows ACL acceptance, an administrator boundary, distributed ownership, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.274 creates the exact POSIX paper-forward owner directory private and requires it to remain owned by the current effective user without group/other write permission before acquisition and throughout the active lease. Unsafe inherited state and later mode drift fail closed without repair. This strengthens exact-directory local coordination, but it is not ancestor-path or extended-ACL acceptance, Windows ACL acceptance, an administrator boundary, distributed ownership, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

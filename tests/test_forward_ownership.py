@@ -2,6 +2,7 @@ import subprocess
 import sys
 import threading
 import os
+import stat
 import pytest
 from nexus import forward_ownership as ownership
 from nexus.forward_ownership import ForwardOwnership
@@ -118,6 +119,35 @@ def test_active_owner_detects_posix_mode_drift(tmp_path):
     with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
         candidate.release()
     assert not candidate.held and candidate.path.read_bytes()==b'0'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX mode bits are not Windows ACL evidence')
+def test_posix_owner_directory_rejects_foreign_write_without_repair(tmp_path):
+    root=tmp_path/'owner-root';root.mkdir();root.chmod(0o770)
+    candidate=ForwardOwnership(root)
+    for operation in (candidate.available,candidate.acquire,candidate.acquire_existing):
+        with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_UNAVAILABLE$'):
+            operation()
+        assert not candidate.held and not candidate.path.exists()
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX mode bits are not Windows ACL evidence')
+def test_active_owner_detects_posix_directory_mode_drift(tmp_path):
+    root=tmp_path/'owner-root';candidate=ForwardOwnership(root);candidate.acquire()
+    root.chmod(0o770)
+    with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
+        candidate.validate()
+    with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
+        candidate.release()
+    assert not candidate.held and candidate.path.read_bytes()==b'0'
+    root.chmod(0o700)
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX mode bits are not Windows ACL evidence')
+def test_created_posix_owner_directory_is_private(tmp_path):
+    root=tmp_path/'new-owner-root';candidate=ForwardOwnership(root);candidate.acquire()
+    assert stat.S_IMODE(root.stat().st_mode)&0o077==0
+    candidate.release()
 
 
 @pytest.mark.skipif(os.name=='nt',reason='POSIX ownership is not Windows ACL evidence')

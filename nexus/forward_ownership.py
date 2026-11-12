@@ -37,8 +37,8 @@ def _posix_owner_scope(info, *, directory=False, changed=False):
     """Reject a POSIX owner scope another local account may replace or edit."""
     if os.name=='nt':return True
     mode=stat.S_IMODE(info.st_mode)
-    safe=(info.st_uid==os.geteuid() and
-        (directory or (not mode&0o022 and mode&0o600==0o600)))
+    safe=(info.st_uid==os.geteuid() and not mode&0o022 and
+        (directory or mode&0o600==0o600))
     if not safe:_fail('STORE_CHANGED' if changed else 'STORE_UNAVAILABLE')
     return True
 
@@ -202,7 +202,7 @@ class ForwardOwnership:
 
     def acquire(self):
         if self.held:raise ValueError('PAPER_FORWARD_OWNER_ALREADY_HELD')
-        try:self.directory.mkdir(parents=True,exist_ok=True)
+        try:self.directory.mkdir(mode=0o700,parents=True,exist_ok=True)
         except OSError:_fail('STORE_UNAVAILABLE')
         directory=_directory_identity(self.directory)
         try:before=self.path.lstat()

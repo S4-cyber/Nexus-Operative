@@ -100,6 +100,33 @@ def test_acquire_rechecks_marker_after_lock(tmp_path,monkeypatch):
     assert calls[0]==2 and not candidate.held and candidate.path.read_bytes()==b'1'
 
 
+@pytest.mark.skipif(os.name=='nt',reason='POSIX mode bits are not Windows ACL evidence')
+def test_posix_owner_file_rejects_foreign_write_without_repair(tmp_path):
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()
+    candidate.path.chmod(0o660);before=candidate.path.read_bytes()
+    for operation in (candidate.available,candidate.acquire,candidate.acquire_existing):
+        with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_UNAVAILABLE$'):
+            operation()
+        assert not candidate.held and candidate.path.read_bytes()==before
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX mode bits are not Windows ACL evidence')
+def test_active_owner_detects_posix_mode_drift(tmp_path):
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.path.chmod(0o660)
+    with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
+        candidate.validate()
+    with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
+        candidate.release()
+    assert not candidate.held and candidate.path.read_bytes()==b'0'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX ownership is not Windows ACL evidence')
+def test_posix_foreign_owned_scope_is_rejected():
+    foreign=type('ForeignStat',(),dict(st_uid=os.geteuid()+1,st_mode=0o40700))()
+    with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_UNAVAILABLE$'):
+        ownership._posix_owner_scope(foreign,directory=True)
+
+
 def test_availability_probe_detects_external_process_without_mutation(tmp_path):
     expression='from nexus.forward_ownership import ForwardOwnership; import sys; lock=ForwardOwnership(sys.argv[1]); lock.acquire(); print("ready",flush=True); sys.stdin.read()'
     process=subprocess.Popen([sys.executable,'-c',expression,str(tmp_path)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)

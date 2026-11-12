@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.272'
+REVISION = '0.340.273'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -683,6 +683,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Paper-forward ownership now validates its fixed one-byte marker before and after OS lock acquisition and during every active lease check. Corrupt existing state is not repaired, and a same-inode marker change invalidates the lease before further acknowledged work. This is local cooperating-process integrity, not distributed ownership, ACL isolation, broker acceptance or sustained-market evidence.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; on POSIX, paper-forward ownership also requires the lock file and containing directory to remain owned by the current effective user, and the lock file to remain owner-readable/writable without group/other write access, rejecting unsafe inherited state without repair and detecting mode drift during an active lease' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' POSIX paper-forward ownership now rejects a lock file or containing directory not owned by the current effective user, and requires the lock file to stay owner-readable/writable without group/other write access throughout an active lease. Unsafe inherited state is never repaired. This is mode-bit/current-user local hardening, not directory ACL, extended-ACL, Windows ACL, administrator, broker or sustained-market acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -848,7 +856,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.272 requires the fixed one-byte paper-forward ownership marker before and after every local OS lock acquisition and during every active lease validation. A malformed existing marker fails closed without repair; an in-place marker change after acquisition invalidates the lease before further acknowledged work. This strengthens cooperating-process ownership integrity, but it is not distributed ownership, an ACL or administrator boundary, genuine-feed or broker acceptance, profitability, native Windows acceptance, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.273 requires the POSIX paper-forward owner file and containing directory to remain owned by the current effective user, and the owner file to remain owner-readable/writable without group/other write access before acquisition and throughout the active lease. Unsafe inherited state and later mode drift fail closed without repair. This strengthens local coordination scope, but it is not directory or extended-ACL acceptance, Windows ACL acceptance, an administrator boundary, distributed ownership, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

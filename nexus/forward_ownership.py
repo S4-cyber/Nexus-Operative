@@ -33,6 +33,16 @@ def _marker_content(fd, *, changed=False):
     return True
 
 
+def _posix_owner_scope(info, *, directory=False, changed=False):
+    """Reject a POSIX owner scope another local account may replace or edit."""
+    if os.name=='nt':return True
+    mode=stat.S_IMODE(info.st_mode)
+    safe=(info.st_uid==os.geteuid() and
+        (directory or (not mode&0o022 and mode&0o600==0o600)))
+    if not safe:_fail('STORE_CHANGED' if changed else 'STORE_UNAVAILABLE')
+    return True
+
+
 def _directory_identity(path, before=None, *, changed=False):
     """Sample one real directory and optionally require its prior identity."""
     try:current=path.lstat()
@@ -40,6 +50,7 @@ def _directory_identity(path, before=None, *, changed=False):
     if (stat.S_ISLNK(current.st_mode) or not stat.S_ISDIR(current.st_mode) or
             (before is not None and not os.path.samestat(before,current))):
         _fail('STORE_CHANGED' if changed else 'STORE_UNAVAILABLE')
+    _posix_owner_scope(current,directory=True,changed=changed)
     return current
 
 
@@ -88,6 +99,7 @@ class ForwardOwnership:
                 not os.path.samestat(opened,current) or
                 (opened.st_dev,opened.st_ino)!=identity):
             _fail('STORE_CHANGED')
+        _posix_owner_scope(opened,changed=True)
         _marker_content(fd,changed=True)
         # Bracket the public lock-path sample with the acquired directory.
         # Moving the same locked inode into a replacement directory between
@@ -117,11 +129,13 @@ class ForwardOwnership:
         locked=False
         available=False
         try:
-            _opened_identity(self.path,fd,before)
+            opened=_opened_identity(self.path,fd,before)
+            _posix_owner_scope(opened)
             _marker_content(fd)
             try:_lock(fd);locked=True;available=True
             except OSError:pass
-            _opened_identity(self.path,fd,before)
+            opened=_opened_identity(self.path,fd,before)
+            _posix_owner_scope(opened,changed=True)
             _marker_content(fd,changed=True)
         finally:
             if locked:
@@ -154,11 +168,13 @@ class ForwardOwnership:
         except OSError:_fail('STORE_UNAVAILABLE')
         try:
             opened=_opened_identity(self.path,fd,before)
+            _posix_owner_scope(opened)
             _marker_content(fd)
             try:_lock(fd)
             except OSError as exc:
                 raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER') from exc
-            _opened_identity(self.path,fd,before)
+            opened=_opened_identity(self.path,fd,before)
+            _posix_owner_scope(opened,changed=True)
             _marker_content(fd,changed=True)
             _directory_identity(self.directory,directory)
         except BaseException:
@@ -202,12 +218,15 @@ class ForwardOwnership:
         except OSError:_fail('STORE_UNAVAILABLE')
         try:
             opened=_opened_identity(self.path,fd,before,allow_empty=True)
+            _posix_owner_scope(opened)
             if opened.st_size==0:
                 os.write(fd,b'0')
-                _opened_identity(self.path,fd,before)
+                opened=_opened_identity(self.path,fd,before)
+                _posix_owner_scope(opened)
             _marker_content(fd)
             _lock(fd)
-            _opened_identity(self.path,fd,before)
+            opened=_opened_identity(self.path,fd,before)
+            _posix_owner_scope(opened,changed=True)
             _marker_content(fd,changed=True)
             _directory_identity(self.directory,directory)
         except OSError as exc:

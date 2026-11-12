@@ -82,3 +82,29 @@ def test_broker_owner_rejects_writable_exact_directory_without_repair(
     assert stat.S_IMODE(root.stat().st_mode) == 0o770
     assert not subject.path.resolve().with_name(
         subject.path.name + '.owner.lock').exists()
+
+
+@pytest.mark.parametrize('index', range(4))
+def test_inherited_broker_owner_rejects_corrupt_marker_without_repair(
+        tmp_path, index):
+    prefix, subject = subjects(tmp_path)[index]
+    lock = subject.path.resolve().with_name(subject.path.name + '.owner.lock')
+    lock.write_bytes(b'1')
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_INVALID$'):
+        with subject.ownership():
+            pass
+    assert lock.read_bytes() == b'1'
+
+
+@pytest.mark.parametrize('index', range(4))
+def test_active_broker_owner_detects_same_inode_marker_corruption(
+        tmp_path, index):
+    prefix, subject = subjects(tmp_path)[index]
+    owner = subject.ownership()
+    owner.__enter__()
+    owner.path.write_bytes(b'1')
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):
+        owner.validate()
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):
+        owner.__exit__(None, None, None)
+    assert owner.fd is None and owner.path.read_bytes() == b'1'

@@ -24,3 +24,14 @@ def posix_owner_directory_safe(info):
     mode = stat.S_IMODE(info.st_mode)
     return (stat.S_ISDIR(info.st_mode) and info.st_uid == os.geteuid() and
         mode & 0o022 == 0)
+
+
+def owner_marker_valid(fd):
+    """Require the complete fixed owner marker without changing it."""
+    try:
+        os.lseek(fd, 0, os.SEEK_SET)
+        marker = os.read(fd, 2)
+        os.lseek(fd, 0, os.SEEK_SET)
+    except OSError:
+        return False
+    return marker == b'0'

@@ -22,7 +22,7 @@ from nexus.alpaca_activity_sse_reconnect_review import (
 from nexus.alpaca_activity_sse_review import SOURCES, ULID
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.local_owner_scope import (
-    posix_owner_directory_safe, posix_owner_file_safe)
+    owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe)
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_existing,
     require_file_fingerprints, require_file_identities)
@@ -140,7 +140,8 @@ class _CursorOwnership:
                 (opened.st_dev, opened.st_ino) or
                 not posix_owner_file_safe(current) or
                 not posix_owner_file_safe(opened) or
-                not posix_owner_directory_safe(directory)):
+                not posix_owner_directory_safe(directory) or
+                not owner_marker_valid(self.fd)):
             _fail('OWNER_FILE_CHANGED')
 
     def __enter__(self):
@@ -173,6 +174,8 @@ class _CursorOwnership:
             if opened.st_size == 0:
                 os.write(fd, b'0')
             os.lseek(fd, 0, os.SEEK_SET)
+            if not owner_marker_valid(fd):
+                _fail('OWNER_FILE_INVALID')
             if os.name == 'nt':
                 import msvcrt
                 msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)

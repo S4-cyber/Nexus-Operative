@@ -19,7 +19,7 @@ from nexus.alpaca_paper_contract import canonical, sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus.broker_lookup_policy import classify, clock
 from nexus.local_owner_scope import (
-    posix_owner_directory_safe, posix_owner_file_safe)
+    owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe)
 from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.paper-read-pacing.v1'
@@ -575,7 +575,8 @@ class _ReadOwnership:
                 (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino) or
                 not posix_owner_file_safe(current) or
                 not posix_owner_file_safe(opened) or
-                not posix_owner_directory_safe(directory)):
+                not posix_owner_directory_safe(directory) or
+                not owner_marker_valid(self.fd)):
             _fail('OWNER_FILE_CHANGED')
 
     def identity(self):
@@ -603,6 +604,7 @@ class _ReadOwnership:
                 _fail('OWNER_FILE_INVALID')
             if os.fstat(fd).st_size == 0: os.write(fd, b'0')
             os.lseek(fd, 0, os.SEEK_SET)
+            if not owner_marker_valid(fd): _fail('OWNER_FILE_INVALID')
             if os.name == 'nt':
                 import msvcrt
                 msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)

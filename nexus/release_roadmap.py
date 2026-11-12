@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.275'
+REVISION = '0.340.276'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -707,6 +707,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' POSIX broker-paper coordination locks for provider POST, provider-read, account-read pacing and Activity SSE cursor checkpoints now require current-user lock/directory ownership, owner read/write lock access and no group/other write permission before mutation and throughout the active lease. Unsafe inherited locks and exact directories are not repaired; active mode drift fails closed. This is local mode-bit coordination hardening, not ancestor-path or extended-ACL review, Windows ACL acceptance, distributed ownership, provider identity, broker acceptance or sustained-market evidence.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; provider POST, provider-read, account-read pacing and Activity SSE cursor ownership now also require the complete fixed marker before OS lock acquisition and throughout the active lease, rejecting malformed inherited markers without repair and detecting same-inode marker corruption before further acknowledged work' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Shared broker-paper owner locks now validate the complete fixed marker before OS locking and during every active lease check. Malformed inherited markers are not repaired, and same-inode mutation invalidates the lease before further acknowledged work. This is cooperating-process local marker integrity, not distributed ownership, provider identity, broker acceptance, sustained-market evidence or routing authority.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -872,7 +880,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.275 extends the POSIX current-user/mode-bit fence to the shared provider POST, provider-read, account-read pacing and Activity SSE cursor owner locks. Unsafe inherited locks and exact directories are rejected before mutation without chmod repair, and active lock/directory mode drift fails closed. This strengthens local broker-paper coordination, but it is not ancestor-path or extended-ACL acceptance, Windows ACL acceptance, an administrator boundary, distributed ownership, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.276 requires the complete fixed marker on shared provider POST, provider-read, account-read pacing and Activity SSE cursor owner locks before OS lock acquisition and throughout the active lease. Malformed inherited markers are rejected without repair, and same-inode marker corruption fails closed. This strengthens local broker-paper coordination, but it is not distributed ownership, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

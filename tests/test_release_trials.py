@@ -140,6 +140,12 @@ def test_http_paper_evidence_cannot_be_missing_or_relabelled_as_broker_io():
     with pytest.raises(ValueError, match='HTTP_PAPER_SCOPE'): trials._validate('http', result)
 
 
+def test_http_trial_readiness_requires_local_owner_quiescence_check():
+    result=http_report();result['trial_readiness_owner_quiescence_checked']=False
+    with pytest.raises(ValueError,match='HTTP_TRIAL_READINESS_READ'):
+        trials._validate('http',result)
+
+
 @pytest.mark.parametrize(('host_os','native_checked','tool_invocations'), [
     ('WINDOWS_NT',False,17),
     ('WINDOWS_NT',True,16),

@@ -1,5 +1,5 @@
 """Explicit local coverage/quote-capacity review, never session admission."""
-from contextlib import contextmanager
+from contextlib import contextmanager,nullcontext
 from datetime import datetime,timezone
 import math
 import os
@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 from nexus import forward_trial_review as trial,forward_evidence
 from nexus.durable_orders import DurableOrderGateway
+from nexus.forward_ownership import ForwardOwnership
 from nexus.paper_forward import SESSION_LIMIT
 from nexus.paper_policy import POLICY
 from nexus.sqlite_journal_guard import (capture_file_fingerprints,
@@ -88,14 +89,28 @@ class _ReadinessFiles:
 
 
 @contextmanager
-def _readiness_scope(root,paths):
+def _readiness_scope(root,paths,*,owner_index=None,history_index=0):
     binding=_ReadinessFiles(root,paths)
-    try:yield
-    except BaseException as error:
-        if not isinstance(error,Exception):raise
-        binding.require_current()
+    owner_present=owner_index is not None and binding.present[owner_index]
+    history_present=binding.present[history_index]
+    if owner_index is not None and history_present and not owner_present:
+        binding.require_current();_ReadinessFiles._fail('OWNER_REVIEW_REQUIRED')
+    lease=(ForwardOwnership(root).existing_lease() if owner_present else
+        nullcontext())
+    state=('LOCAL_OWNER_LEASE_HELD_DURING_REVIEW' if owner_present else
+        'OWNER_PATH_ABSENCE_BOUND') if owner_index is not None else 'CUSTOM_GATEWAY_NOT_CHECKED'
+    try:
+        with lease:
+            try:yield state
+            except BaseException as error:
+                if not isinstance(error,Exception):raise
+                binding.require_current()
+                raise
+            binding.require_current()
+    except ValueError as error:
+        if str(error).startswith('PAPER_FORWARD_'):
+            binding.require_current();_ReadinessFiles._fail('OWNER_REVIEW_REQUIRED')
         raise
-    binding.require_current()
 
 def build(path,*,hours=72,now=None,order_gateway=None):
     if type(hours) is not int or hours not in HOURS:raise ValueError('INVALID_TRIAL_WINDOW')
@@ -106,14 +121,17 @@ def build(path,*,hours=72,now=None,order_gateway=None):
     order_path=root/'order_lifecycle.sqlite3'
     gateway=order_gateway or DurableOrderGateway(order_path)
     gateway_path=getattr(gateway,'_path',None)
+    owner_index=None
     if callable(gateway_path):
         order_path=Path(gateway_path())
         if order_path.parent.resolve()!=root.resolve():
             raise ValueError(FILE_PREFIX+'STORAGE_ROOT_MISMATCH')
         paths=tuple(check_path_set(
-            (path,order_path,root/'paper_portfolio.sqlite3'),FILE_PREFIX))
+            (path,order_path,root/'paper_portfolio.sqlite3',
+             root/'paper_forward.owner.lock'),FILE_PREFIX))
+        owner_index=paths.index(root/'paper_forward.owner.lock')
     else:paths=(path,)
-    with _readiness_scope(root,paths):
+    with _readiness_scope(root,paths,owner_index=owner_index) as owner_state:
         end=int(now);seconds=hours*3600
         utc=lambda value:datetime.fromtimestamp(value,timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         after,until=utc(end-seconds),utc(end)
@@ -153,5 +171,9 @@ def build(path,*,hours=72,now=None,order_gateway=None):
             room_for_conservative_requested_window=(capacity['ordinary_commands_remaining']>=forecast_commands and
                 capacity['intents_remaining']>=forecast_intents and capacity['lifecycle_intake_allowed']),
             scope='Conservative local upper bound using the runner admission reserve on every policy-cadence cycle. It is not an expected trade count, a storage reservation, strategy evidence or permission. Logical archival preserves retained commands and cannot create indefinite capacity.'),
+        local_owner_quiescence=dict(checked=owner_index is not None,state=owner_state,
+            retained_history_requires_owner_lock=True,active_owner_detected=False,
+            cross_host_or_distributed_owner_checked=False,owner_file_created=False,
+            scope='Existing local OS owner lease held across retained review, or owner-path absence bound while no history exists. This is not distributed ownership, an ACL, administrator isolation or execution permission.'),
         **{flag:False for flag in trial.FLAGS},
-        limitations='Local sampled operational review only. The forward/order/portfolio file-set fence is not a lock or atomic snapshot. Clear quote, session or order capacity estimates and a declared coverage target never accept a sustained trial, strategy, source, account, broker or release. Stop for stable final evidence. No engine/session starts, vault/provider access, repairs or account writes.')
+        limitations='Local sampled operational review only. The existing local owner lease prevents a cooperating paper-forward process from running during retained review, but the forward/order/portfolio file-set fence is not an atomic snapshot, distributed lock, ACL or administrator boundary. Clear quote, session or order capacity estimates and a declared coverage target never accept a sustained trial, strategy, source, account, broker or release. Stop for stable final evidence. No engine/session starts, vault/provider access, repairs or account writes.')

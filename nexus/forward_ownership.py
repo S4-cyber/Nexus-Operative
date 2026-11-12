@@ -1,4 +1,5 @@
 """Process ownership for the opt-in forward worker, never an execution permission."""
+from contextlib import contextmanager
 import os
 from pathlib import Path
 import stat
@@ -115,6 +116,57 @@ class ForwardOwnership:
             os.close(fd)
         _directory_identity(self.directory,directory)
         return available
+
+    def acquire_existing(self):
+        """Hold an existing owner file without creating or modifying it.
+
+        This is for stable read-only evidence review.  It cannot bootstrap an
+        owner path and grants no execution permission; a retained history whose
+        owner file is absent therefore needs explicit review instead of having
+        a coordination file silently created by a diagnostic.
+        """
+        if self.held:raise ValueError('PAPER_FORWARD_OWNER_ALREADY_HELD')
+        try:directory=self.directory.lstat()
+        except OSError:_fail('STORE_UNAVAILABLE')
+        directory=_directory_identity(self.directory,directory)
+        try:before=self.path.lstat()
+        except OSError:_fail('STORE_UNAVAILABLE')
+        if (stat.S_ISLNK(before.st_mode) or not stat.S_ISREG(before.st_mode) or
+                before.st_nlink!=1 or before.st_size!=1):
+            _fail('STORE_UNAVAILABLE')
+        flags=(os.O_RDWR|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|
+            getattr(os,'O_CLOEXEC',0))
+        try:fd=os.open(self.path,flags)
+        except OSError:_fail('STORE_UNAVAILABLE')
+        try:
+            opened=_opened_identity(self.path,fd,before)
+            try:_lock(fd)
+            except OSError as exc:
+                raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER') from exc
+            _opened_identity(self.path,fd,before)
+            _directory_identity(self.directory,directory)
+        except BaseException:
+            os.close(fd);raise
+        self._fd=fd;self._identity=(opened.st_dev,opened.st_ino)
+        self._directory_identity=(directory.st_dev,directory.st_ino)
+        try:self.validate()
+        except BaseException:
+            self._fd=None;self._identity=None;self._directory_identity=None;os.close(fd);raise
+
+    @contextmanager
+    def existing_lease(self):
+        """Bracket a read-only review with the existing cross-process lease."""
+        self.acquire_existing();body_error=None
+        try:yield self
+        except BaseException as error:
+            body_error=error
+            raise
+        finally:
+            try:self.release()
+            except BaseException:
+                # A cleanup disagreement must not replace KeyboardInterrupt,
+                # SystemExit, or the original review failure.
+                if body_error is None:raise
 
     def acquire(self):
         if self.held:raise ValueError('PAPER_FORWARD_OWNER_ALREADY_HELD')

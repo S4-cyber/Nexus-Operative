@@ -25,17 +25,23 @@ def test_absent_history_forecasts_quote_room_without_creating_anything(tmp_path)
     assert not orders['journal_present'] and orders['next_cycle_reserve_clear']
     assert orders['commands_per_cycle_upper_bound']==12 and orders['intents_per_cycle_upper_bound']==2
     assert orders['estimated_upper_bound_commands']==51841*12 and not orders['room_for_conservative_requested_window']
+    owner=report['local_owner_quiescence']
+    assert owner['checked'] and owner['state']=='OWNER_PATH_ABSENCE_BOUND'
+    assert owner['retained_history_requires_owner_lock'] and not owner['owner_file_created']
     assert all(report[k] is False for k in trial.FLAGS)
     assert not ready.build(path,hours=168,now=START+168*3600)['quote_capacity']['room_for_additional_requested_window']
 
 
 def test_retained_injected_history_remains_review_and_file_bytes_unchanged(tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.INJECTED,'STOPPED')]);before=snapshot(tmp_path)
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();owner.release();before=snapshot(tmp_path)
     report=ready.build(path,hours=1,now=START+3600)
     assert report['review']['injected_observations']==3 and not report['review']['declared_coverage_target_met']
     assert report['review']['retained_sessions']==1 and report['session_capacity']['retained']==1
     assert report['quote_capacity']['retained']==3 and report['quote_capacity']['remaining']==99997
     assert snapshot(tmp_path)==before
+    assert report['local_owner_quiescence']['state']=='LOCAL_OWNER_LEASE_HELD_DURING_REVIEW'
     assert all(report[k] is False and report['review'][k] is False for k in trial.FLAGS)
 
 
@@ -169,3 +175,20 @@ def test_process_control_signal_is_not_replaced_by_late_file_change(tmp_path):
             raise KeyboardInterrupt()
     with pytest.raises(KeyboardInterrupt):
         ready.build(path,hours=1,now=START+3600,order_gateway=Gateway())
+
+
+def test_retained_history_without_existing_owner_lease_fails_closed(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[]);before=snapshot(tmp_path)
+    with pytest.raises(ValueError,match='^TRIAL_READINESS_OWNER_REVIEW_REQUIRED$'):
+        ready.build(path,hours=1,now=START+3600)
+    assert snapshot(tmp_path)==before
+
+
+def test_active_forward_owner_blocks_trial_readiness_without_mutation(tmp_path):
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();before=snapshot(tmp_path)
+    try:
+        with pytest.raises(ValueError,match='^TRIAL_READINESS_OWNER_REVIEW_REQUIRED$'):
+            ready.build(tmp_path/'paper_forward.sqlite3',hours=1,now=START+3600)
+        assert snapshot(tmp_path)==before
+    finally:owner.release()

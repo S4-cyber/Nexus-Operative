@@ -40,6 +40,29 @@ def test_read_only_availability_probe_never_creates_or_reserves_lock(tmp_path):
     candidate=ForwardOwnership(tmp_path)
     assert candidate.available() and not candidate.path.exists() and not list(tmp_path.iterdir())
     candidate.acquire();candidate.release()
+
+
+def test_existing_review_lease_never_creates_and_blocks_runner(tmp_path):
+    candidate=ForwardOwnership(tmp_path)
+    with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_UNAVAILABLE'):
+        with candidate.existing_lease():pass
+    assert not candidate.path.exists() and not list(tmp_path.iterdir())
+    candidate.acquire();candidate.release();before=candidate.path.read_bytes()
+    with candidate.existing_lease():
+        assert candidate.held and not ForwardOwnership(tmp_path).available()
+        assert candidate.path.read_bytes()==before
+    assert not candidate.held and candidate.path.read_bytes()==before
+
+
+def test_existing_review_lease_preserves_process_control_signal(tmp_path,monkeypatch):
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()
+    review=ForwardOwnership(tmp_path)
+    with pytest.raises(KeyboardInterrupt):
+        with review.existing_lease():
+            monkeypatch.setattr(review,'validate',lambda: (_ for _ in ()).throw(
+                ValueError('PAPER_FORWARD_OWNER_STORE_CHANGED')))
+            raise KeyboardInterrupt()
+    assert not review.held
     before=candidate.path.read_bytes()
     assert candidate.available() and candidate.path.read_bytes()==before
     candidate.acquire();candidate.release()

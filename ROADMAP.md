@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.269. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.270. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.269 binds the retained forward-trial coverage result to one sampled regular single-link SQLite file across preflight, read-only snapshot replay, connection close and result finalization. Path replacement before open or after close now fails with the fixed review error; the opened SQLite main path must match the pinned resolved path. This strengthens local sustained-trial evidence handling, but sampled hashes and pathname identities are not a writer lock, ACL or administrator boundary, source attestation, genuine-feed or broker acceptance, profitability, native Windows acceptance, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.270 binds the installed Trial Readiness composite to one sampled storage-root identity and one complete forward/order/portfolio SQLite file set. Absence, regular single-link identity, bounded bytes and retained SQLite sidecars are checked before and after the forward-coverage and durable-capacity reads; late appearance, replacement, mutation or root substitution fails closed instead of acknowledging a mixed-generation diagnostic. This strengthens local sustained-trial and reconciliation evidence handling, but the sampled fence is not a writer lock, atomic snapshot, ACL or administrator boundary, genuine-feed or broker acceptance, profitability, native Windows acceptance, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

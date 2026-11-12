@@ -92,3 +92,80 @@ def test_order_capacity_snapshot_is_read_only_and_uses_retained_position_reserve
     assert capacity['retained_position'] and capacity['commands_per_cycle_upper_bound']==4
     assert capacity['intents_per_cycle_upper_bound']==1 and capacity['next_cycle_reserve_clear']
     assert not capacity['room_for_conservative_requested_window'] and not (tmp_path/'unused').exists()
+
+
+def test_late_forward_history_appearance_invalidates_absent_review(tmp_path):
+    path=tmp_path/'paper_forward.sqlite3'
+    class Gateway:
+        def recovery_report(self):
+            path.write_bytes(b'LATE_RETAINED_HISTORY')
+            return dict(journal_present=False,capacity=dict(ordinary_commands_remaining=20,
+                intents_remaining=4,lifecycle_intake_allowed=True),
+                execution_account=dict(account=None))
+    with pytest.raises(ValueError,match='^TRIAL_READINESS_FILE_SET_CHANGED$'):
+        ready.build(path,hours=1,now=START+3600,order_gateway=Gateway())
+
+
+def test_late_order_journal_mutation_invalidates_composite_result(tmp_path,monkeypatch):
+    from nexus.durable_orders import DurableOrderGateway
+    gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
+    gateway.emergency_halt()
+    original=DurableOrderGateway.recovery_report
+    changed=False
+    def mutate_after_review(self):
+        nonlocal changed
+        result=original(self)
+        if not changed:
+            changed=True
+            self.reset();self.emergency_halt()
+        return result
+    monkeypatch.setattr(DurableOrderGateway,'recovery_report',mutate_after_review)
+    with pytest.raises(ValueError,match='^TRIAL_READINESS_FILE_SET_CHANGED$'):
+        ready.build(tmp_path/'paper_forward.sqlite3',hours=1,now=START+3600,
+            order_gateway=gateway)
+
+
+def test_late_portfolio_appearance_invalidates_composite_result(tmp_path,monkeypatch):
+    from nexus.durable_orders import DurableOrderGateway
+    gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
+    gateway.emergency_halt()
+    original=DurableOrderGateway.recovery_report
+    def create_after_review(self):
+        result=original(self)
+        (tmp_path/'paper_portfolio.sqlite3').write_bytes(b'LATE_PORTFOLIO')
+        return result
+    monkeypatch.setattr(DurableOrderGateway,'recovery_report',create_after_review)
+    with pytest.raises(ValueError,match='^TRIAL_READINESS_FILE_SET_CHANGED$'):
+        ready.build(tmp_path/'paper_forward.sqlite3',hours=1,now=START+3600,
+            order_gateway=gateway)
+
+
+def test_late_storage_root_replacement_invalidates_composite_result(tmp_path):
+    root=tmp_path/'storage';root.mkdir();path=root/'paper_forward.sqlite3'
+    class Gateway:
+        def recovery_report(self):
+            retired=tmp_path/'retired';root.rename(retired);root.mkdir()
+            return dict(journal_present=False,capacity=dict(ordinary_commands_remaining=20,
+                intents_remaining=4,lifecycle_intake_allowed=True),
+                execution_account=dict(account=None))
+    with pytest.raises(ValueError,match='^TRIAL_READINESS_STORAGE_ROOT_CHANGED$'):
+        ready.build(path,hours=1,now=START+3600,order_gateway=Gateway())
+
+
+def test_initial_sqlite_sidecar_is_rejected_without_mutation(tmp_path):
+    path=tmp_path/'paper_forward.sqlite3';sidecar=Path(str(path)+'-journal')
+    sidecar.write_bytes(b'PRIVATE_RETAINED_ROLLBACK')
+    before=snapshot(tmp_path)
+    with pytest.raises(ValueError,match='^TRIAL_READINESS_SQLITE_SIDECAR_REVIEW_REQUIRED$'):
+        ready.build(path,hours=1,now=START+3600)
+    assert snapshot(tmp_path)==before
+
+
+def test_process_control_signal_is_not_replaced_by_late_file_change(tmp_path):
+    path=tmp_path/'paper_forward.sqlite3'
+    class Gateway:
+        def recovery_report(self):
+            path.write_bytes(b'LATE_RETAINED_HISTORY')
+            raise KeyboardInterrupt()
+    with pytest.raises(KeyboardInterrupt):
+        ready.build(path,hours=1,now=START+3600,order_gateway=Gateway())

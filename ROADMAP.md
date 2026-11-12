@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.283. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.284. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.283 gives the bounded real-loopback Windows release profile fixed, allowlisted failure boundaries for each public endpoint, Host/Origin boundary checks, first-run defaults, paced paper reads and packaged private tools. Raw exception text, paths, environment and child output remain suppressed, existing narrower release codes remain authoritative, and unreviewed diagnostic labels fail before execution. This makes the recurring hosted HTTP child failure actionable without weakening timeouts, checks or privacy. It is release-diagnostic hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.284 keeps the Trial Readiness owner path bound by its reviewed position in the canonical four-path fence instead of searching resolved paths with the original lexical spelling. This closes a Windows normalization boundary where drive, case or reparse spelling can change during resolution and falsely reject an otherwise valid read-only absence review. The canonical forward path is used for the retained-history read, while the configured root identity, owner lease/absence binding, fail-closed file-set checks and zero-write behavior remain mandatory. It is local readiness portability hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

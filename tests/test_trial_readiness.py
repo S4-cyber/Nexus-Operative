@@ -32,6 +32,21 @@ def test_absent_history_forecasts_quote_room_without_creating_anything(tmp_path)
     assert not ready.build(path,hours=168,now=START+168*3600)['quote_capacity']['room_for_additional_requested_window']
 
 
+def test_owner_absence_binding_survives_windows_style_path_normalization(tmp_path,monkeypatch):
+    root=tmp_path/'unused';path=root/'paper_forward.sqlite3'
+    owner=root/'paper_forward.owner.lock'
+    normalized_owner=root/'PAPER_FORWARD.OWNER.LOCK'
+    original_resolve=Path.resolve
+    def windows_style_resolve(self,*args,**kwargs):
+        if self==owner:return normalized_owner
+        return original_resolve(self,*args,**kwargs)
+    monkeypatch.setattr(Path,'resolve',windows_style_resolve)
+    report=ready.build(path,now=START+72*3600)
+    assert report['status']=='NO_RETAINED_HISTORY'
+    assert report['local_owner_quiescence']['state']=='OWNER_PATH_ABSENCE_BOUND'
+    assert not root.exists()
+
+
 def test_retained_injected_history_remains_review_and_file_bytes_unchanged(tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.INJECTED,'STOPPED')]);before=snapshot(tmp_path)
     from nexus.forward_ownership import ForwardOwnership

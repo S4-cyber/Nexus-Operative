@@ -129,7 +129,15 @@ def build(path,*,hours=72,now=None,order_gateway=None):
         paths=tuple(check_path_set(
             (path,order_path,root/'paper_portfolio.sqlite3',
              root/'paper_forward.owner.lock'),FILE_PREFIX))
-        owner_index=paths.index(root/'paper_forward.owner.lock')
+        # check_path_set preserves the reviewed order while resolving every
+        # pathname.  Do not search that canonical tuple with the original
+        # lexical owner path: Windows may normalize drive spelling, case or a
+        # reparse alias during resolve(), making an equivalent path compare
+        # differently.  The fourth checked path is the owner path by
+        # construction, and binding by position keeps it inside the same
+        # four-path fence without another normalization boundary.
+        owner_index=3
+        path=paths[0]
     else:paths=(path,)
     with _readiness_scope(root,paths,owner_index=owner_index) as owner_state:
         end=int(now);seconds=hours*3600

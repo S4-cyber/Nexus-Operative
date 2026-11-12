@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.284 Windows Trial Readiness canonical path binding
+
+Hosted v0.340.283 commit `f98c9315a903b93d65eeb6b32f65e8b9b4f7f95d` / tree `73014cee2b895027d2cb16ca99c7300265219b74` passed public security/Gitleaks run `43218869700` and browser-help job `131184975240`. Windows offline evidence job `131184975674` then isolated the remaining failure to the actual loopback Trial Readiness endpoint. That path fence canonicalized all four paths but searched the resulting tuple with the original lexical owner path. v0.340.284 binds the owner by the checked set's stable fourth position and uses the canonical forward path for retained-history review, closing false misses caused by Windows drive, case or reparse normalization.
+
+The configured root identity and canonical four-file set remain separate fences. Existing retained history still requires the owner lease; absent history binds absence without creating storage; late file/root changes fail closed. No control or editable parameter changed, so all seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and independent emergency cut remain intact.
+
+Rough implementation remains about 40% (weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 stages accepted. This does not approve release or trading, predict launch timing, or establish broker, genuine-feed, sustained-market, profitability, funding/live/cloud or native Windows acceptance. Historical results and synthetic scores are not future profit predictions.
+
+Local validation passed 5,986 tests with one expected non-Windows skip and one existing warning in 683.78 seconds; the direct endpoint/real-loopback scope passed 25 and the synchronized release/evidence/version/workflow/packaging scope passed 274. All sixteen bounded offline profiles passed against 403 source files / `b8d25a22983b766087fb88243cb0559d37ed92610c8568a407e8f1fffaccd20e`; evidence SHA256 is `0585292c310583b436426254c77e93e19e5c3509b2ce59c67bde4f339f7930f4`. The complete history audit passed 1,094 commits, 10,005 blobs / 1,211,573,131 bytes and 1,026 paths with zero findings. Compilation, Portal syntax, fourteen Node controllers and the 162-member wheel passed; wheel SHA256 is `9d87092f1b8651b25b003696bd83fb9984473e47b5f8f5419827b080e4bc03b1`. Fresh exact-source hosted security, browser, Windows regression/evidence and installer execution remain required.
+
 ## v0.340.283 privacy-safe Windows HTTP release diagnostics
 
 Hosted v0.340.282 commit `2966c3add3b1925143e3fe95d1c8637fe8b15351` / tree `777c9e5cd221399192e3435cf2fbcefe4d736e7c` passed full-history security/Gitleaks run `43214349239` and browser-help job `131169658137`, but Windows offline evidence job `131169658080` again stopped with only `RELEASE_TRIAL_HTTP_CHILD_FAILED`. v0.340.283 retains stderr/path/environment suppression while assigning fixed allowlisted boundaries to each reviewed real-loopback endpoint and its Host/Origin, defaults, pacing and packaged-tool phases. Existing narrower release failures remain unchanged; an unknown phase label cannot execute.

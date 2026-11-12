@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.283 (pre-release).**
+**Current development build: 0.340.284 (pre-release).**
+
+## v0.340.284 Windows Trial Readiness canonical path binding
+
+The read-only Trial Readiness composition now treats the four canonical paths returned by its reviewed path-set checker as an ordered binding. The owner coordination path is the checked fourth entry, rather than a fresh lookup using the original lexical spelling, and the checked canonical forward path is used for retained-history review. This prevents Windows drive, case or reparse normalization from turning an equivalent checked owner path into a false missing-index failure. Root identity sampling, four-path presence/fingerprint checks, retained-history owner leasing and no-history absence binding remain unchanged and fail closed.
+
+At checkpoint start, hosted `development/windows-portal-foundation` targeted v0.340.283 commit `f98c9315a903b93d65eeb6b32f65e8b9b4f7f95d` / exact tree `73014cee2b895027d2cb16ca99c7300265219b74`. Public-security/Gitleaks run `43218869700` and browser-help job `131184975240` passed. Windows offline-release-evidence job `131184975674` failed with the new precise `RELEASE_TRIAL_HTTP_ENDPOINT_TRIAL_READINESS_FAILED`; complete regression and Windows installer jobs were still active when this checkpoint began. Fresh exact-source v0.340.284 results are required and not pre-claimed.
+
+This is local read-only path portability hardening, not actual broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native Windows/installer acceptance, funding/live/cloud readiness or release approval. No Portal control or modifiable parameter changed; seven beginner-friendly tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This repair does not complete a stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Local validation passed 5,986 tests with one expected non-Windows skip and one existing Starlette/httpx warning in 683.78 seconds; the direct Trial Readiness and real-loopback scope passed 25, and the synchronized release/evidence/version/workflow/packaging scope passed 274. All sixteen bounded offline profiles pass and saved evidence matches 403 source files / `b8d25a22983b766087fb88243cb0559d37ed92610c8568a407e8f1fffaccd20e`; `validation/release_trials_0_340_284.json` SHA256 is `0585292c310583b436426254c77e93e19e5c3509b2ce59c67bde4f339f7930f4`. The complete fetched-history artifact audit passed 1,094 commits, 10,005 blobs / 1,211,573,131 bytes and 1,026 paths with zero findings. Compilation, Portal JavaScript syntax, fourteen Node controllers and the 162-member v0.340.284 wheel passed; wheel SHA256 is `9d87092f1b8651b25b003696bd83fb9984473e47b5f8f5419827b080e4bc03b1`. Fresh hosted Windows, browser and security gates remain mandatory. These local results do not claim native Windows or external acceptance.
 
 ## v0.340.283 privacy-safe Windows HTTP release diagnostics
 

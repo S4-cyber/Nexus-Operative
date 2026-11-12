@@ -104,7 +104,12 @@ def test_acquire_rechecks_marker_after_lock(tmp_path,monkeypatch):
     original=ownership._marker_content;calls=[0]
     def corrupt_after_first_check(fd,*,changed=False):
         calls[0]+=1;result=original(fd,changed=changed)
-        if calls[0]==1:candidate.path.write_bytes(b'1')
+        if calls[0]==1:
+            # Mutate through the owning descriptor. Windows correctly denies a
+            # second handle while the mandatory byte-range lock is held.
+            os.lseek(fd,0,os.SEEK_SET)
+            assert os.write(fd,b'1')==1
+            os.fsync(fd)
         return result
     monkeypatch.setattr(ownership,'_marker_content',corrupt_after_first_check)
     with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):

@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.289 (pre-release).**
+**Current development build: 0.340.290 (pre-release).**
+
+## v0.340.290 Windows owner mutation regression and CI budgets
+
+Exact-source v0.340.289 passed public security/Gitleaks, bounded offline release evidence and Portal browser/help. Both complete Windows lanes were cancelled at the one-hour job boundary and retain failed acceptance status. The research lane reported 4,710 passes and the installer lane 5,064 passes before cancellation; each had one common failure because the synthetic post-lock marker-corruption test attempted a second path-based write that Windows correctly denies while the byte-range lock is held.
+
+This pre-release changes the fixture to inject the marker mutation through the descriptor that owns the OS lock. The production code must still perform its second marker-content read and fail closed on the changed byte. Based on the two terminal measurements, the Windows regression job remains bounded at 90 minutes and the combined regression/package/installer job at 120 minutes. Per-process installer limits and all release-evidence checks remain unchanged.
+
+The change preserves OFF-by-default engagement, fixed limits, account checks, fail-closed exits and independent emergency-stop ownership. It adds no UI button or editable parameter, so the seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. It is not broker, sustained-market, profitability, native Windows/installer, funding, live, cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages fully accepted. Fresh exact-source hosted Windows evidence is required.
 
 ## v0.340.289 Windows inherited-owner lock ordering
 

@@ -34,7 +34,7 @@ def test_installer_smoke_bounds_every_external_process_and_records_phases():
 
 def test_windows_workflow_retains_outer_timeout_and_always_uploads_diagnostics():
     workflow=(ROOT/'.github/workflows/windows-release.yml').read_text(encoding='utf-8')
-    assert 'timeout-minutes: 60' in workflow
+    assert 'timeout-minutes: 120' in workflow
     assert './tools/windows_installer_smoke.ps1' in workflow
     assert 'name: Validate installer phase evidence\n        timeout-minutes: 1' in workflow
     assert 'python tools/windows_installer_phase_review.py --input' in workflow

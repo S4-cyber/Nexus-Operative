@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.289'
+REVISION = '0.340.290'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -919,7 +919,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.289 repairs the five native-Windows ownership failures exposed by exact-source v0.340.288 hosted regression and installer lanes. Inherited Forward and paper-read owner markers are now read only after the one-byte OS lock succeeds, so a healthy external Windows owner is classified as busy instead of as corrupt or unavailable. Fresh empty owner files are still durably initialized before locking, malformed unlocked stores still fail closed, and deterministic ordering tests cover the platform-independent contract. This is Windows coordination hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness, native installer acceptance or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.290 repairs the final native-Windows inherited-owner regression exposed by exact-source v0.340.289. The post-lock corruption test now mutates through the descriptor that owns the byte-range lock instead of attempting a second Windows handle, preserving the production requirement that marker content be revalidated after acquisition. The two complete Windows lanes retain finite budgets expanded from measured terminal progress: 90 minutes for regression and 120 minutes for regression plus packaging and installer acceptance. This is test and CI-gate hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness, native installer acceptance or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

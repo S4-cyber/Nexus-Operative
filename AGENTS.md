@@ -1,5 +1,13 @@
 # Nexus Operative continuity instructions
 
+## v0.340.290 Windows owner mutation regression and CI budgets
+
+Exact-source v0.340.289 passed hosted public security, bounded offline release evidence and Portal browser/help, but its complete Windows regression and installer lanes were cancelled at the one-hour boundary. Each lane exposed the same remaining failure: the deterministic post-lock marker-corruption test attempted to rewrite the locked marker through a second path handle. Windows correctly denied that handle with `PermissionError`, while the production owner descriptor remained valid. The research lane reached 4,710 passes and the installer lane 5,064 passes before cancellation; neither cancelled lane is accepted.
+
+v0.340.290 mutates the synthetic corruption byte through the descriptor that owns the byte-range lock, then requires the production revalidation read to reject the changed marker. The production ownership ordering and fail-closed behavior are unchanged. Measured terminal progress replaces the stale one-hour outer limits with finite 90-minute regression and 120-minute regression-plus-installer budgets; individual installer child processes remain independently bounded.
+
+No UI control, permission, account check, limit, exit or emergency-stop boundary changed. Seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults and fail-closed behavior remain intact. This does not establish broker, genuine-feed, sustained-market, profitability, Windows installer, funding/live/cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages accepted. Fresh exact-source hosted Windows evidence is required.
+
 ## v0.340.289 Windows inherited-owner lock ordering
 
 Exact-source v0.340.288 public security, offline release evidence and Portal browser/help passed. Its native-Windows complete regression and installer lanes both reached the one-hour boundary with the same five ownership failures: reads through a second handle to an externally byte-locked marker raised `PermissionError`, which was misclassified as corrupt/unavailable, and three test snapshots directly read that locked byte. The cancelled conclusions are retained as failed acceptance evidence, not treated as infrastructure passes.

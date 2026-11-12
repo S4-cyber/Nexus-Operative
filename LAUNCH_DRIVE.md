@@ -1,5 +1,11 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.290 Windows owner mutation regression and CI budgets
+
+Exact-source v0.340.289 passed hosted public security/Gitleaks, bounded offline release evidence and real-browser Portal/help acceptance. Its complete Windows regression and installer jobs both reached their one-hour boundary and were cancelled. Both showed the same remaining test-only failure: the post-lock corruption fixture tried to open and rewrite a marker already held by the production byte-range lock, which Windows correctly denied. v0.340.290 performs that injected mutation through the owning descriptor and preserves the required second marker validation. The measured terminal runs reached 4,710 and 5,064 passes, so the complete regression receives a finite 90-minute budget and the regression-plus-packaging/installer lane a finite 120-minute budget. All installer child processes retain their separate bounds.
+
+This does not activate a broker, real account, live orders, money movement, cloud deployment or release authority. It does not prove native Windows/installer behavior until a fresh exact-source lane passes, sustained realistic market coverage, profitability or future returns. No UI control or editable parameter changed: seven tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks and fail-closed exits remain intact. Rough implementation remains about 40% (weighted 38%, uncertainty 30–45%, low confidence); 0/9 stages are independently accepted.
+
 ## v0.340.289 Windows inherited-owner lock ordering
 
 Exact-source v0.340.288 passed public security/Gitleaks, bounded offline release evidence and real-browser Portal/help acceptance. Its complete Windows regression and installer jobs both reached the one-hour boundary with the same five failures: Windows refused second-handle reads of a byte-range-locked owner marker, so healthy external ownership was misclassified and test snapshots raised `PermissionError`. v0.340.289 acquires inherited Forward and paper-read OS locks before marker inspection, retains pre-lock initialization only for fresh empty markers, and uses Windows-safe no-mutation snapshots.

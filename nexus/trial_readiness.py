@@ -47,11 +47,25 @@ class _ReadinessFiles:
                 self._fail('STORAGE_ROOT_CHANGED')
             self.root_observed=observed;self.root=resolved
         self.paths=tuple(Path(path) for path in paths)
-        self.present=tuple(self._present(path) for path in self.paths)
-        existing=tuple(path for path,present in zip(self.paths,self.present) if present)
+        identity_only=frozenset(identity_only_indexes)
+        self.identity_only=identity_only
+        self.present=tuple(self._present(path,identity_only=index in identity_only)
+            for index,path in enumerate(self.paths))
+        # The owner marker is validated through the descriptor that holds its
+        # byte-range lock.  Windows denies a second handle while that lock is
+        # active, so the generic pathname-open identity helper must not reopen
+        # it. ForwardOwnership still checks its exact path/descriptor identity,
+        # marker byte, directory and finalization while the lease is held.
+        existing=tuple(path for index,(path,present) in
+            enumerate(zip(self.paths,self.present))
+            if present and index not in identity_only)
         self.existing=existing
         self.identities=(capture_file_identities(existing,FILE_PREFIX) if existing else ())
-        identity_only=frozenset(identity_only_indexes)
+        self.identity_only_identities={}
+        for index in identity_only:
+            if index>=len(self.paths) or not self.present[index]:continue
+            identity=capture_file_identities((self.paths[index],),FILE_PREFIX)[0]
+            self.identity_only_identities[index]=(identity[1],identity[2])
         self.fingerprinted=tuple(path for index,(path,present) in
             enumerate(zip(self.paths,self.present))
             if present and index not in identity_only)
@@ -69,8 +83,22 @@ class _ReadinessFiles:
         except OSError:_ReadinessFiles._fail('FILE_SET_UNAVAILABLE')
         _ReadinessFiles._fail('SQLITE_SIDECAR_REVIEW_REQUIRED')
 
-    def _present(self,path):
+    def _present(self,path,*,identity_only=False):
         self._rollback_clear(path)
+        if identity_only:
+            for suffix in ('-wal','-shm'):
+                try:Path(str(path)+suffix).lstat()
+                except FileNotFoundError:continue
+                except OSError:self._fail('FILE_UNAVAILABLE')
+                self._fail('WAL_SIDECAR_REVIEW_REQUIRED')
+            try:observed=path.lstat()
+            except FileNotFoundError:return False
+            except OSError:self._fail('FILE_UNAVAILABLE')
+            if (stat.S_ISLNK(observed.st_mode) or
+                    not stat.S_ISREG(observed.st_mode) or
+                    observed.st_nlink!=1 or observed.st_size>MAX_FILE_BYTES):
+                self._fail('FILE_UNAVAILABLE')
+            return True
         return check_existing(path,MAX_FILE_BYTES,FILE_PREFIX)
 
     def require_current(self):
@@ -83,7 +111,9 @@ class _ReadinessFiles:
                     not stat.S_ISDIR(current.st_mode) or
                     not os.path.samestat(self.root_observed,current)):
                 self._fail('STORAGE_ROOT_CHANGED')
-        try:present=tuple(self._present(path) for path in self.paths)
+        try:present=tuple(self._present(path,
+            identity_only=index in self.identity_only)
+            for index,path in enumerate(self.paths))
         except ValueError:self._fail('FILE_SET_CHANGED')
         if present!=self.present:self._fail('FILE_SET_CHANGED')
         if self.existing:
@@ -95,6 +125,12 @@ class _ReadinessFiles:
                         self.fingerprints,FILE_PREFIX)
             except ValueError:self._fail('FILE_SET_CHANGED')
 
+    def require_identity_only_lease(self,index,lease):
+        expected=self.identity_only_identities.get(index)
+        if expected is None:self._fail('FILE_SET_CHANGED')
+        try:lease.require_identity(expected)
+        except ValueError:self._fail('FILE_SET_CHANGED')
+
 
 @contextmanager
 def _readiness_scope(root,paths,*,owner_index=None,history_index=0):
@@ -104,18 +140,21 @@ def _readiness_scope(root,paths,*,owner_index=None,history_index=0):
     history_present=binding.present[history_index]
     if owner_index is not None and history_present and not owner_present:
         binding.require_current();_ReadinessFiles._fail('OWNER_REVIEW_REQUIRED')
-    lease=(ForwardOwnership(root).existing_lease() if owner_present else
-        nullcontext())
+    owner=ForwardOwnership(root) if owner_present else None
+    lease=owner.existing_lease() if owner_present else nullcontext()
     state=('LOCAL_OWNER_LEASE_HELD_DURING_REVIEW' if owner_present else
         'OWNER_PATH_ABSENCE_BOUND') if owner_index is not None else 'CUSTOM_GATEWAY_NOT_CHECKED'
     try:
         with lease:
+            if owner_present:binding.require_identity_only_lease(owner_index,owner)
             try:yield state
             except BaseException as error:
                 if not isinstance(error,Exception):raise
                 binding.require_current()
+                if owner_present:binding.require_identity_only_lease(owner_index,owner)
                 raise
             binding.require_current()
+            if owner_present:binding.require_identity_only_lease(owner_index,owner)
     except ValueError as error:
         if str(error).startswith('PAPER_FORWARD_'):
             binding.require_current();_ReadinessFiles._fail('OWNER_REVIEW_REQUIRED')

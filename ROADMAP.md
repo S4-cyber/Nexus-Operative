@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.290. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.291. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.290 repairs the final native-Windows inherited-owner regression exposed by exact-source v0.340.289. The post-lock corruption test now mutates through the descriptor that owns the byte-range lock instead of attempting a second Windows handle, preserving the production requirement that marker content be revalidated after acquisition. The two complete Windows lanes retain finite budgets expanded from measured terminal progress: 90 minutes for regression and 120 minutes for regression plus packaging and installer acceptance. This is test and CI-gate hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness, native installer acceptance or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.291 repairs two native-Windows Trial Readiness boundaries exposed by exact-source v0.340.290. The read-only file-set fence samples the exact owner-marker identity before lease acquisition but no longer reopens that byte through a second handle while Windows byte-range ownership is active. The owning ForwardOwnership descriptor instead proves the original identity, fixed marker, public path, directory and finalization throughout the review. Active-owner test snapshots likewise inspect the marker through the descriptor that owns its lock. Both v0.340.290 long lanes retained the same two terminal failures and never reached packaging; they are failed acceptance evidence, not passes. This is Windows coordination and test portability hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness, native installer acceptance or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

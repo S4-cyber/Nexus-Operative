@@ -12,7 +12,20 @@ from nexus import forward_trial_review as trial
 from test_forward_trial_review import database,START
 
 
-def snapshot(path):return {str(p.relative_to(path)):p.read_bytes() for p in path.rglob('*') if p.is_file()}
+def snapshot(path,owner=None):
+    result={}
+    for p in path.rglob('*'):
+        if not p.is_file():continue
+        if owner is not None and p==owner.path:
+            owner.validate()
+            position=os.lseek(owner._fd,0,os.SEEK_CUR)
+            try:
+                os.lseek(owner._fd,0,os.SEEK_SET)
+                content=os.read(owner._fd,2)
+            finally:os.lseek(owner._fd,position,os.SEEK_SET)
+        else:content=p.read_bytes()
+        result[str(p.relative_to(path))]=content
+    return result
 
 
 def test_absent_history_forecasts_quote_room_without_creating_anything(tmp_path):
@@ -61,6 +74,34 @@ def test_retained_injected_history_remains_review_and_file_bytes_unchanged(tmp_p
     assert snapshot(tmp_path)==before
     assert report['local_owner_quiescence']['state']=='LOCAL_OWNER_LEASE_HELD_DURING_REVIEW'
     assert all(report[k] is False and report['review'][k] is False for k in trial.FLAGS)
+
+
+def test_retained_review_never_reopens_owner_marker_through_generic_guard(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True)],trial.INJECTED,'STOPPED')])
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();owner.release()
+    original=ready.check_existing
+    def reject_owner_reopen(candidate,*args,**kwargs):
+        if Path(candidate).name=='paper_forward.owner.lock':
+            raise AssertionError('owner marker must use its locking descriptor')
+        return original(candidate,*args,**kwargs)
+    monkeypatch.setattr(ready,'check_existing',reject_owner_reopen)
+    report=ready.build(path,hours=1,now=START+3600)
+    assert report['local_owner_quiescence']['state']=='LOCAL_OWNER_LEASE_HELD_DURING_REVIEW'
+
+
+def test_owner_replacement_before_readiness_lease_fails_closed(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True)],trial.INJECTED,'STOPPED')])
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();owner.release()
+    original=ForwardOwnership.acquire_existing
+    def replace_before_acquire(self):
+        self.path.rename(tmp_path/'retired-owner.lock')
+        self.path.write_bytes(b'0')
+        return original(self)
+    monkeypatch.setattr(ForwardOwnership,'acquire_existing',replace_before_acquire)
+    with pytest.raises(ValueError,match='^TRIAL_READINESS_FILE_SET_CHANGED$'):
+        ready.build(path,hours=1,now=START+3600)
 
 
 @pytest.mark.parametrize('kind',['journal','wal','shm','corrupt','hardlink','oversized'])
@@ -244,9 +285,9 @@ def test_retained_history_without_existing_owner_lease_fails_closed(tmp_path,mon
 
 def test_active_forward_owner_blocks_trial_readiness_without_mutation(tmp_path):
     from nexus.forward_ownership import ForwardOwnership
-    owner=ForwardOwnership(tmp_path);owner.acquire();before=snapshot(tmp_path)
+    owner=ForwardOwnership(tmp_path);owner.acquire();before=snapshot(tmp_path,owner)
     try:
         with pytest.raises(ValueError,match='^TRIAL_READINESS_OWNER_REVIEW_REQUIRED$'):
             ready.build(tmp_path/'paper_forward.sqlite3',hours=1,now=START+3600)
-        assert snapshot(tmp_path)==before
+        assert snapshot(tmp_path,owner)==before
     finally:owner.release()

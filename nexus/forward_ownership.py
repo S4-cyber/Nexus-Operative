@@ -88,6 +88,15 @@ class ForwardOwnership:
     @property
     def held(self):return self._fd is not None
 
+    def require_identity(self,expected):
+        """Require this held descriptor to match a prior pathname sample."""
+        if (type(expected) is not tuple or len(expected)!=2 or
+                any(type(value) is not int for value in expected)):
+            _fail('STORE_CHANGED')
+        self.validate()
+        if self._identity!=expected:_fail('STORE_CHANGED')
+        return True
+
     def validate(self):
         """Require the lock and its public directory to retain acquired identities."""
         fd=self._fd;identity=self._identity;directory_identity=self._directory_identity

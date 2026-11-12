@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.287 Windows cursor ownership and emergency reserve readiness
+
+Exact-source v0.340.286 passed hosted public security/Gitleaks and Portal browser/help. Its Windows offline evidence then isolated a concrete failure: the provider-open cursor owner did not block a competing same-process checkpoint under native Windows. v0.340.287 adds a PID-and-normalized-path process claim beside the OS-backed cursor lock, retaining the OS lock for cross-process coordination. Trial Readiness now separately validates total command capacity and the fixed halt/cancel/expiry reserve; missing or inconsistent fields fail closed, and a depleted reserve cannot appear ready for another cycle or conservative sustained window.
+
+The existing Trial Readiness control explains the new read-only fields; there is no new button or editable parameter. Seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and emergency-stop independence remain intact. Rough implementation remains about 40% (weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 stages accepted. This does not approve release or trading, predict launch timing, or establish broker, genuine-feed, sustained-market, profitability, funding/live/cloud or native Windows acceptance. Historical results and synthetic scores are not future profit predictions.
+
+Local validation passed 5,990 tests with one expected platform skip and one existing warning; the synchronized release scope passed 707 and the final direct scope passed 492. All sixteen bounded offline profiles and source-bound saved-evidence verification passed. Compilation, Portal syntax, fourteen Node controllers, the 162-member wheel and the 1,008-path candidate audit passed; the wheel SHA256 is `6fcd81894aa3958664b587b48e869ad159bbb5b70bb443797ea9ba74a7d026e4`. Local browser acquisition failed on empty/truncated restricted-runtime archives, and local Gitleaks, Inno Setup and native Windows execution remain unavailable. Fresh exact-source hosted Windows, browser and security evidence is required.
+
 ## v0.340.286 exact reconnect evidence schema
 
 Exact-source v0.340.285 passed hosted public security/Gitleaks, while every Windows job received no runner, ran zero steps and was cancelled after about fifteen minutes. No Windows acceptance is claimed. v0.340.286 independently closes a saved-evidence schema gap: the reconnect-budget fixture must now be one exact plain dictionary with exactly the reviewed fields before any value is consumed. Missing, additional or subclass-provided fields fail closed with a fixed diagnostic.

@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 from nexus import forward_trial_review as trial,forward_evidence
 from nexus.durable_orders import DurableOrderGateway
+from nexus.execution_capacity import CONTROL_RESERVE
 from nexus.forward_ownership import ForwardOwnership
 from nexus.paper_forward import SESSION_LIMIT
 from nexus.paper_policy import POLICY
@@ -149,7 +150,23 @@ def build(path,*,hours=72,now=None,order_gateway=None):
         sessions=review['retained_sessions'] if review else 0
         remaining=max(0,forward_evidence.LIMIT-retained)
         needed=math.ceil(seconds/POLICY['interval_seconds'])+1
-        orders=gateway.recovery_report();capacity=orders['capacity']
+        orders=gateway.recovery_report()
+        try:
+            capacity=orders['capacity']
+            ordinary_remaining=capacity['ordinary_commands_remaining']
+            intents_remaining=capacity['intents_remaining']
+            total_remaining=capacity['total_commands_remaining']
+            control_reserved=capacity['control_commands_reserved']
+            lifecycle_allowed=capacity['lifecycle_intake_allowed']
+        except (KeyError,TypeError):
+            raise ValueError(FILE_PREFIX+'ORDER_CAPACITY_INVALID') from None
+        if (any(type(value) is not int or value<0 for value in
+                (ordinary_remaining,intents_remaining,total_remaining,
+                 control_reserved)) or
+                type(lifecycle_allowed) is not bool or
+                control_reserved!=min(CONTROL_RESERVE,total_remaining)):
+            raise ValueError(FILE_PREFIX+'ORDER_CAPACITY_INVALID')
+        emergency_reserve_clear=(control_reserved==CONTROL_RESERVE)
         account=orders['execution_account']['account'] or {}
         retained_position=bool(account.get('positions'))
         # Mirror the runner's per-cycle admission reserve. This deliberately assumes
@@ -170,15 +187,21 @@ def build(path,*,hours=72,now=None,order_gateway=None):
             additional_sessions_required=1,room_for_additional_session=sessions<SESSION_LIMIT,
             scope='One additional local session record only; no ownership, uptime, cleanup or automatic-start guarantee.'),
         order_capacity=dict(journal_present=orders['journal_present'],retained_position=retained_position,
-            ordinary_commands_remaining=capacity['ordinary_commands_remaining'],intents_remaining=capacity['intents_remaining'],
+            ordinary_commands_remaining=ordinary_remaining,intents_remaining=intents_remaining,
+            total_commands_remaining=total_remaining,
+            control_commands_reserved=control_reserved,
+            required_control_command_reserve=CONTROL_RESERVE,
+            emergency_control_reserve_clear=emergency_reserve_clear,
             commands_per_cycle_upper_bound=writes_per_cycle,intents_per_cycle_upper_bound=intents_per_cycle,
             estimated_cycle_observations=needed,estimated_upper_bound_commands=forecast_commands,
             estimated_upper_bound_intents=forecast_intents,
-            next_cycle_reserve_clear=(capacity['ordinary_commands_remaining']>=writes_per_cycle and
-                capacity['intents_remaining']>=intents_per_cycle and capacity['lifecycle_intake_allowed']),
-            room_for_conservative_requested_window=(capacity['ordinary_commands_remaining']>=forecast_commands and
-                capacity['intents_remaining']>=forecast_intents and capacity['lifecycle_intake_allowed']),
-            scope='Conservative local upper bound using the runner admission reserve on every policy-cadence cycle. It is not an expected trade count, a storage reservation, strategy evidence or permission. Logical archival preserves retained commands and cannot create indefinite capacity.'),
+            next_cycle_reserve_clear=(ordinary_remaining>=writes_per_cycle and
+                intents_remaining>=intents_per_cycle and lifecycle_allowed and
+                emergency_reserve_clear),
+            room_for_conservative_requested_window=(ordinary_remaining>=forecast_commands and
+                intents_remaining>=forecast_intents and lifecycle_allowed and
+                emergency_reserve_clear),
+            scope='Conservative local upper bound using the runner admission reserve on every policy-cadence cycle. The fixed control reserve is reported separately for halt, cancel and expiry paths; it is not a guarantee that an operation will succeed. This is not an expected trade count, a storage reservation, strategy evidence or permission. Logical archival preserves retained commands and cannot create indefinite capacity.'),
         local_owner_quiescence=dict(checked=owner_index is not None,state=owner_state,
             retained_history_requires_owner_lock=True,active_owner_detected=False,
             cross_host_or_distributed_owner_checked=False,owner_file_created=False,

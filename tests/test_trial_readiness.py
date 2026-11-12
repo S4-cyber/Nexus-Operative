@@ -23,6 +23,9 @@ def test_absent_history_forecasts_quote_room_without_creating_anything(tmp_path)
     sessions=report['session_capacity'];assert sessions['retained']==0 and sessions['remaining']==sessions['limit'] and sessions['room_for_additional_session']
     orders=report['order_capacity']
     assert not orders['journal_present'] and orders['next_cycle_reserve_clear']
+    assert orders['total_commands_remaining']==10000
+    assert orders['control_commands_reserved']==orders['required_control_command_reserve']==1001
+    assert orders['emergency_control_reserve_clear']
     assert orders['commands_per_cycle_upper_bound']==12 and orders['intents_per_cycle_upper_bound']==2
     assert orders['estimated_upper_bound_commands']==51841*12 and not orders['room_for_conservative_requested_window']
     owner=report['local_owner_quiescence']
@@ -107,6 +110,7 @@ def test_order_capacity_snapshot_is_read_only_and_uses_retained_position_reserve
     class Gateway:
         def recovery_report(self):
             return dict(journal_present=True,capacity=dict(ordinary_commands_remaining=20,intents_remaining=4,
+                total_commands_remaining=1021,control_commands_reserved=1001,
                 lifecycle_intake_allowed=True),execution_account=dict(account=dict(positions={'BTC-USD':'fixture'})))
     report=ready.build(tmp_path/'unused'/'paper_forward.sqlite3',hours=1,now=START+3600,order_gateway=Gateway())
     capacity=report['order_capacity']
@@ -115,13 +119,51 @@ def test_order_capacity_snapshot_is_read_only_and_uses_retained_position_reserve
     assert not capacity['room_for_conservative_requested_window'] and not (tmp_path/'unused').exists()
 
 
+def test_depleted_control_reserve_blocks_trial_capacity_without_io(tmp_path):
+    class Gateway:
+        def recovery_report(self):
+            return dict(journal_present=True,capacity=dict(ordinary_commands_remaining=0,
+                intents_remaining=4,total_commands_remaining=1000,control_commands_reserved=1000,
+                lifecycle_intake_allowed=True),execution_account=dict(account=None))
+    report=ready.build(tmp_path/'unused'/'paper_forward.sqlite3',hours=1,
+        now=START+3600,order_gateway=Gateway())
+    capacity=report['order_capacity']
+    assert capacity['required_control_command_reserve']==1001
+    assert not capacity['emergency_control_reserve_clear']
+    assert not capacity['next_cycle_reserve_clear']
+    assert not capacity['room_for_conservative_requested_window']
+    assert not (tmp_path/'unused').exists()
+
+
+@pytest.mark.parametrize('capacity',[
+    dict(ordinary_commands_remaining=20,intents_remaining=4,
+        total_commands_remaining=1021,lifecycle_intake_allowed=True),
+    dict(ordinary_commands_remaining=20,intents_remaining=4,
+        total_commands_remaining=1021,control_commands_reserved=1000,
+        lifecycle_intake_allowed=True),
+    dict(ordinary_commands_remaining=20,intents_remaining=4,
+        total_commands_remaining=1021,control_commands_reserved=1001,
+        lifecycle_intake_allowed=1),
+])
+def test_invalid_control_capacity_schema_fails_closed_without_io(tmp_path,capacity):
+    class Gateway:
+        def recovery_report(self):
+            return dict(journal_present=False,capacity=capacity,
+                execution_account=dict(account=None))
+    with pytest.raises(ValueError,match='^TRIAL_READINESS_ORDER_CAPACITY_INVALID$'):
+        ready.build(tmp_path/'unused'/'paper_forward.sqlite3',hours=1,
+            now=START+3600,order_gateway=Gateway())
+    assert not (tmp_path/'unused').exists()
+
+
 def test_late_forward_history_appearance_invalidates_absent_review(tmp_path):
     path=tmp_path/'paper_forward.sqlite3'
     class Gateway:
         def recovery_report(self):
             path.write_bytes(b'LATE_RETAINED_HISTORY')
             return dict(journal_present=False,capacity=dict(ordinary_commands_remaining=20,
-                intents_remaining=4,lifecycle_intake_allowed=True),
+                intents_remaining=4,total_commands_remaining=1021,control_commands_reserved=1001,
+                lifecycle_intake_allowed=True),
                 execution_account=dict(account=None))
     with pytest.raises(ValueError,match='^TRIAL_READINESS_FILE_SET_CHANGED$'):
         ready.build(path,hours=1,now=START+3600,order_gateway=Gateway())
@@ -167,7 +209,8 @@ def test_late_storage_root_replacement_invalidates_composite_result(tmp_path):
         def recovery_report(self):
             retired=tmp_path/'retired';root.rename(retired);root.mkdir()
             return dict(journal_present=False,capacity=dict(ordinary_commands_remaining=20,
-                intents_remaining=4,lifecycle_intake_allowed=True),
+                intents_remaining=4,total_commands_remaining=1021,control_commands_reserved=1001,
+                lifecycle_intake_allowed=True),
                 execution_account=dict(account=None))
     with pytest.raises(ValueError,match='^TRIAL_READINESS_STORAGE_ROOT_CHANGED$'):
         ready.build(path,hours=1,now=START+3600,order_gateway=Gateway())

@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import sqlite3
 import stat
+import threading
 
 from nexus.alpaca_activity_normalizer import _uuid
 from nexus.alpaca_activity_sse_reconnect_review import (
@@ -55,6 +56,8 @@ FLAGS = ('actual_provider_access', 'actual_vault_access',
     'native_power_loss_durability_verified', 'fee_coverage_complete',
     'broker_account_reconciled', 'ready_for_routing',
     'live_orders_enabled', 'money_movement_enabled', 'release_approved')
+_PROCESS_OWNER_GUARD = threading.Lock()
+_PROCESS_OWNER_KEYS = set()
 
 
 def _fail(code):
@@ -126,6 +129,23 @@ class _CursorOwnership:
         self.fd = None
         self.directory_identity = None
         self.entry_parent_identity = None
+        self.process_owner_key = None
+
+    def _claim_process_owner(self):
+        key = (os.getpid(), os.path.normcase(str(self.path)))
+        with _PROCESS_OWNER_GUARD:
+            if key in _PROCESS_OWNER_KEYS:
+                _fail('OWNER_BUSY_OR_UNAVAILABLE')
+            self.process_owner_key = key
+            _PROCESS_OWNER_KEYS.add(key)
+
+    def _release_process_owner(self):
+        key = self.process_owner_key
+        if key is None:
+            return
+        with _PROCESS_OWNER_GUARD:
+            _PROCESS_OWNER_KEYS.discard(key)
+        self.process_owner_key = None
 
     def validate(self):
         if (self.fd is None or self.directory_identity is None or
@@ -183,6 +203,11 @@ class _CursorOwnership:
             if not prepare_owner_file(self.path, fd, created,
                     self.directory_identity, self.entry_parent_identity):
                 _fail('OWNER_FILE_INVALID')
+            # Windows byte-range locks do not reliably reject a second handle
+            # opened by the same process.  Keep an in-process claim as well as
+            # the OS lock so cooperating threads cannot checkpoint through an
+            # active provider-open ownership interval.
+            self._claim_process_owner()
             if os.name == 'nt':
                 import msvcrt
                 msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
@@ -196,6 +221,7 @@ class _CursorOwnership:
             self.fd = None
             self.directory_identity = None
             self.entry_parent_identity = None
+            self._release_process_owner()
             os.close(fd)
             if isinstance(error, OSError):
                 _fail('OWNER_BUSY_OR_UNAVAILABLE')
@@ -222,6 +248,8 @@ class _CursorOwnership:
             except BaseException:
                 if exit_error is None:
                     raise
+            finally:
+                self._release_process_owner()
         if exit_error is not None:
             raise exit_error
 

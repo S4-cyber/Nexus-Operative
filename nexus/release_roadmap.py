@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.286'
+REVISION = '0.340.287'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -888,6 +888,13 @@ NEXT = (
     'Evaluate free-tier computer-off hosting and secure headless operation without assuming anonymous hosting, free unlimited compute or automatic paid upgrades.',
 )
 
+# Record the current bounded coordination evidence without promoting either
+# milestone: native Windows and sustained operational acceptance remain open.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; Trial Readiness now consumes an exact durable-capacity report that separates ordinary commands from the fixed halt/cancel/expiry reserve, fails closed on malformed values and refuses next-cycle or conservative full-window readiness when that emergency/control reserve is depleted' if item.id == 'M5' else
+        '; Activity SSE cursor checkpoint ownership now combines the OS-backed lock with a PID-and-normalized-path process claim so a second cooperating Windows handle cannot checkpoint during provider open; fresh native cross-process and provider-paper acceptance remain required' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -912,7 +919,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.286 requires the synthetic Activity SSE reconnect-budget evidence to have one exact reviewed schema before any invariant or authority value is consumed. Dict subclasses, missing fields and additional unreviewed fields fail closed, preventing private extensions or future fields from entering saved release evidence silently. The v0.340.285 fixed privacy-safe invariant diagnostics remain unchanged. This is local evidence-boundary hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.287 closes two bounded local coordination gaps exposed while the exact-source v0.340.286 Windows lanes executed. Activity SSE cursor ownership now combines the OS-backed lock with a process-local exact-path claim, so a second cooperating Windows handle in the same process cannot checkpoint during provider-open ownership. Trial Readiness now validates and reports total capacity plus the separate fixed halt/cancel/expiry control reserve; malformed reports fail closed and a depleted control reserve blocks both next-cycle and full-window readiness. This is local broker-paper safety and diagnostic hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

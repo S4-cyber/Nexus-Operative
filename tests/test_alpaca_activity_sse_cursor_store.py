@@ -64,9 +64,14 @@ def test_checkpoint_writer_obeys_exclusive_cursor_ownership(tmp_path):
     later = pair(4, 'dddddddd-dddd-dddd-dddd-dddddddddddd',
         'fixture_client_3')
     second_report, second_before, second_after = checked(initial, later)
+    contender = store.ownership()
 
     with store.ownership() as owner:
         owner.validate()
+        with pytest.raises(ValueError,
+                match='ALPACA_ACTIVITY_SSE_CURSOR_STORE_OWNER_BUSY_OR_UNAVAILABLE'):
+            contender._claim_process_owner()
+        assert contender.process_owner_key is None
         with pytest.raises(ValueError,
                 match='ALPACA_ACTIVITY_SSE_CURSOR_STORE_OWNER_BUSY_OR_UNAVAILABLE'):
             store.checkpoint(second_report, previous_cursor=second_before,

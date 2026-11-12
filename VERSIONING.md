@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.286 (pre-release).**
+**Current development build: 0.340.287 (pre-release).**
+
+## v0.340.287 Windows cursor ownership and emergency reserve readiness
+
+Exact-source v0.340.286 commit `5a74834bdd6e58bac015495058d771277eb36f1c` passed public security/Gitleaks run `43249520688` and Portal browser/help job `131291174609`. Windows offline-release-evidence job `131291174635` executed and failed at the precise `RELEASE_TRIAL_EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_PROVIDER_OPEN_CURSOR_OWNER_BLOCKS_COMPETING_CHECKPOINT` invariant. The result is retained as a real same-process Windows ownership defect, not dismissed as infrastructure or a flake. Complete regression and Windows packaging/installer work remained in progress at recovery.
+
+Activity SSE cursor ownership now holds a normalized-path process claim for the current PID together with its existing OS lock. This closes the Windows behavior where another handle in the same process could bypass the intended provider-open checkpoint exclusion while preserving the OS-backed cross-process boundary. Trial Readiness now requires exact nonnegative total-command and control-reserve capacity fields, checks the fixed reserve invariant, exposes whether emergency/control capacity is intact, and refuses next-cycle or full-window readiness when it is depleted. The Portal validates the same relationships and explains that the reserve covers halt, cancel and expiry paths without guaranteeing an exit.
+
+No new button or editable parameter was introduced; seven beginner-friendly tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed behavior and exits remain unchanged. This does not establish broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native Windows/installer acceptance, funding/live/cloud readiness or release approval. Rough implementation remains about 40% (weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. Release approval and trading permission remain false; historical and synthetic results are not future profit predictions.
+
+Local validation passed 5,990 tests with one expected non-Windows skip and one existing Starlette/httpx warning in 695.55 seconds; the synchronized cursor/readiness/release/evidence/roadmap/version/packaging/Windows-workflow scope passed 707 and the final direct scope passed 492. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `0e808aa71dfac03cf51ca47d1a772c3da15f8072666eb4b28f1ed3f0a19e965e`; evidence SHA256 is `333da6ed1bf4c69d09dbff8705471bcf6fee9f76ebae67f522b8bf3775118a63`. Compilation, Portal JavaScript syntax and all fourteen Node controllers passed. The 162-member wheel reports v0.340.287 and has SHA256 `6fcd81894aa3958664b587b48e869ad159bbb5b70bb443797ea9ba74a7d026e4`. The 1,008-path/blob candidate audit and 4,246-added-line signature scan found zero findings. The restricted local runtime could not obtain a nonempty Chromium archive, so browser acceptance is unavailable locally; local Gitleaks, Inno Setup and native Windows execution are also unavailable. Fresh exact-source hosted evidence remains required.
 
 ## v0.340.286 exact reconnect evidence schema
 

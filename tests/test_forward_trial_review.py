@@ -1,5 +1,5 @@
 """Disposable real SQLite chains; declared public labels are never attestation."""
-from contextlib import closing
+from contextlib import closing,contextmanager
 from decimal import localcontext
 import json
 import os
@@ -315,3 +315,30 @@ def test_read_contention_is_bounded_redacted_and_recovers(tmp_path,monkeypatch):
         blocker.execute('BEGIN EXCLUSIVE')
         with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):run(path)
     assert path.read_bytes()==before and run(path)==expected
+
+
+def test_path_replacement_before_snapshot_open_is_rejected(tmp_path,monkeypatch):
+    path=database(tmp_path/'first',monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')])
+    replacement=database(tmp_path/'second',monkeypatch,[([(0,True),(6,True)],trial.PUBLIC,'STOPPED')])
+    original_connect=trial.sqlite3.connect;retired=tmp_path/'retired.sqlite3';changed=False
+    def replace_then_connect(*args,**kwargs):
+        nonlocal changed
+        if not changed:
+            changed=True;os.replace(path,retired);os.replace(replacement,path)
+        return original_connect(*args,**kwargs)
+    monkeypatch.setattr(trial.sqlite3,'connect',replace_then_connect)
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):run(path)
+    assert changed and path.exists() and retired.exists()
+
+
+def test_path_replacement_after_snapshot_close_is_rejected(tmp_path,monkeypatch):
+    path=database(tmp_path/'first',monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')])
+    replacement=database(tmp_path/'second',monkeypatch,[([(0,True),(6,True)],trial.PUBLIC,'STOPPED')])
+    original_snapshot=trial._snapshot;retired=tmp_path/'retired.sqlite3'
+    @contextmanager
+    def replace_after_close(bound,stable_source):
+        with original_snapshot(bound,stable_source) as db:yield db
+        os.replace(path,retired);os.replace(replacement,path)
+    monkeypatch.setattr(trial,'_snapshot',replace_after_close)
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):run(path)
+    assert path.exists() and retired.exists()

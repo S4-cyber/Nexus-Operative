@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.268'
+REVISION = '0.340.269'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -840,7 +840,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.268 binds research-refresh ownership validation to the durable model-reference transaction. The hub checks the active owner after acquiring its SQLite write transaction and again after updating the reference; a late check failure raises before transaction exit and rolls the reference back. Unguarded research callers remain compatible. This narrows the sampled local publication window; it is not an atomic filesystem/SQLite transaction, distributed ownership, an ACL or administrator boundary, physical power-loss proof, source attestation, model or genuine-feed acceptance, profitability, actual provider/account access, native Windows acceptance, broker reconciliation, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.269 binds the retained forward-trial coverage result to one sampled regular single-link SQLite file across preflight, read-only snapshot replay, connection close and result finalization. Path replacement before open or after close now fails with the fixed review error; the opened SQLite main path must match the pinned resolved path. This strengthens local sustained-trial evidence handling, but sampled hashes and pathname identities are not a writer lock, ACL or administrator boundary, source attestation, genuine-feed or broker acceptance, profitability, native Windows acceptance, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -20,11 +20,15 @@ from nexus import forward_evidence, forward_sessions
 from nexus.paper_forward import SESSION_LIMIT
 from nexus.feed_guard import FeedGuard
 from nexus.paper_policy import admit
+from nexus.sqlite_journal_guard import (capture_file_fingerprints,
+    capture_file_identities, guard_file_set_finalization,
+    require_file_fingerprints, require_file_identities)
 
 MINIMUM_SECONDS=72*3600
 MAX_WINDOW_SECONDS=7*86400
 MAX_GAP_SECONDS=10
 MAX_PAYLOAD_BYTES=64*1024*1024
+MAX_DATABASE_BYTES=1024*1024*1024
 DB_BUSY_TIMEOUT_MS=10_000
 PUBLIC='PUBLIC_READER_SINGLE_SOURCE_UNATTESTED'
 INJECTED='INJECTED_TRANSPORT_UNATTESTED'
@@ -39,7 +43,7 @@ LIMITATIONS=('Private local operational evidence only. Coverage requires both a 
     'boundaries are not bridged, and over-limit uncovered gaps remain operational incidents even when aggregate coverage '
     'exceeds 95%. This rechecks supplied content, not independent feeds, clock authenticity, genuine market '
     'data, uptime, broker execution, profitability, account reconciliation or a passed sustained trial. Labels/hashes are '
-    'rewritable; snapshot is not an execution lock. No provider/credential access, account mutation, automatic start or '
+    'rewritable; sampled file identity/fingerprint binding and the read snapshot are not an execution lock. No provider/credential access, account mutation, automatic start or '
     'release permission.')
 PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_seconds','minimum_trial_seconds',
     'maximum_covered_gap_seconds','required_coverage_fraction','retained_observations','retained_sessions',
@@ -60,7 +64,7 @@ def existing_history(path):
     from nexus.sqlite_journal_guard import check_existing
     path=Path(path)
     if os.path.lexists(str(path)+'-journal'):_fail()
-    return check_existing(path,1024*1024*1024,'TRIAL_')
+    return check_existing(path,MAX_DATABASE_BYTES,'TRIAL_')
 
 
 def _fail():raise ValueError('FORWARD_TRIAL_REVIEW_FAILED') from None
@@ -73,14 +77,20 @@ def _database_busy(error):
 
 
 @contextmanager
-def _snapshot(path):
+def _snapshot(path, stable_source):
     """Open one bounded read snapshot and redact exhausted lock contention."""
     db=None
     try:
-        db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+        db=sqlite3.connect(path.as_uri()+'?mode=ro',uri=True,
             timeout=DB_BUSY_TIMEOUT_MS/1000)
         db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
         db.execute('BEGIN')
+        stable_source()
+        try:
+            opened=[Path(filename).resolve(strict=True) for _,name,filename in
+                db.execute('PRAGMA database_list') if name=='main']
+        except OSError:_fail()
+        if len(opened)!=1 or opened[0]!=path:_fail()
         yield db
     except sqlite3.OperationalError as error:
         if _database_busy(error):_fail()
@@ -147,13 +157,36 @@ def review(path, *, after, until):
 
 
 def _review(path, *, after, until):
-    """Bounded one-transaction local review; no app environment or default path."""
+    """Bind a result to one exact retained file through finalization."""
     start,end=_window(after),_window(until)
     if not 0<end-start<=MAX_WINDOW_SECONDS:_fail()
     path=Path(path)
     if not existing_history(path):raise FileNotFoundError('FORWARD_TRIAL_REVIEW_FAILED')
+    try:
+        identities=capture_file_identities((path,),'FORWARD_TRIAL_REVIEW_')
+        pinned=Path(identities[0][0])
+        paths=(pinned,);limits=(MAX_DATABASE_BYTES,)
+        fingerprints=capture_file_fingerprints(paths,limits,
+            'FORWARD_TRIAL_REVIEW_')
+        def stable_source():
+            try:
+                require_file_identities(paths,identities,
+                    'FORWARD_TRIAL_REVIEW_')
+                require_file_fingerprints(paths,limits,fingerprints,
+                    'FORWARD_TRIAL_REVIEW_')
+            except ValueError:_fail()
+        with guard_file_set_finalization(paths,limits,identities,fingerprints,
+                'FORWARD_TRIAL_REVIEW_'):
+            result=_review_bound(pinned,after=after,until=until,start=start,end=end,
+                stable_source=stable_source)
+        return result
+    except ValueError:_fail()
+
+
+def _review_bound(path, *, after, until, start, end, stable_source):
+    """Bounded one-transaction local review; no app environment or default path."""
     deadline=time.monotonic()+20
-    with _snapshot(path) as db:
+    with _snapshot(path,stable_source) as db:
         db.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)
         count,size,largest=db.execute('SELECT COUNT(*),COALESCE(SUM(length(CAST(payload AS BLOB))),0),COALESCE(MAX(length(CAST(payload AS BLOB))),0) FROM forward_quotes').fetchone()
         if count>forward_evidence.LIMIT or size>MAX_PAYLOAD_BYTES or largest>8192:_fail()

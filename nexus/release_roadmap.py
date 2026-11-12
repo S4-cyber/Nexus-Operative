@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.276'
+REVISION = '0.340.277'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -715,6 +715,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Shared broker-paper owner locks now validate the complete fixed marker before OS locking and during every active lease check. Malformed inherited markers are not repaired, and same-inode mutation invalidates the lease before further acknowledged work. This is cooperating-process local marker integrity, not distributed ownership, provider identity, broker acceptance, sustained-market evidence or routing authority.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; provider POST, provider-read, account-read pacing and Activity SSE cursor ownership now pin the exact containing directory device/inode before opening and bracket every public lock-path/marker validation with that identity, so replacing the directory cannot preserve lease authority even when the same locked inode is moved back into the public pathname' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Shared broker-paper owner locks now bind the exact containing directory identity before opening and bracket active lock-path/marker checks with that identity. A replacement directory cannot inherit the lease by receiving the same still-locked inode. This is local exact-directory identity hardening, not distributed ownership, extended-ACL review, Windows owner-profile acceptance, provider identity, broker acceptance or sustained-market evidence.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -880,7 +888,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.276 requires the complete fixed marker on shared provider POST, provider-read, account-read pacing and Activity SSE cursor owner locks before OS lock acquisition and throughout the active lease. Malformed inherited markers are rejected without repair, and same-inode marker corruption fails closed. This strengthens local broker-paper coordination, but it is not distributed ownership, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.277 pins the exact containing directory identity for shared provider POST, provider-read, account-read pacing and Activity SSE cursor owner locks before opening, then brackets public lock-path and marker validation with that identity throughout the active lease. Replacing the directory cannot preserve lease authority even if the same locked inode is moved back into the public pathname. This strengthens local broker-paper coordination, but it is not distributed ownership, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

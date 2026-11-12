@@ -22,7 +22,8 @@ from nexus.alpaca_activity_sse_reconnect_review import (
 from nexus.alpaca_activity_sse_review import SOURCES, ULID
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.local_owner_scope import (
-    owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe)
+    owner_directory_identity, owner_directory_matches, owner_marker_valid,
+    posix_owner_directory_safe, posix_owner_file_safe)
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_existing,
     require_file_fingerprints, require_file_identities)
@@ -121,10 +122,14 @@ class _CursorOwnership:
         self.path = store.path.resolve().with_name(
             store.path.name + '.owner.lock')
         self.fd = None
+        self.directory_identity = None
 
     def validate(self):
-        if self.fd is None:
+        if self.fd is None or self.directory_identity is None:
             _fail('OWNER_REQUIRED')
+        if not owner_directory_matches(self.path.parent,
+                self.directory_identity):
+            _fail('OWNER_FILE_CHANGED')
         if not _store_binding_matches(self.store, self.store_binding):
             _fail('STORE_BINDING_CHANGED')
         try:
@@ -143,6 +148,9 @@ class _CursorOwnership:
                 not posix_owner_directory_safe(directory) or
                 not owner_marker_valid(self.fd)):
             _fail('OWNER_FILE_CHANGED')
+        if not owner_directory_matches(self.path.parent,
+                self.directory_identity):
+            _fail('OWNER_FILE_CHANGED')
 
     def __enter__(self):
         if self.fd is not None:
@@ -153,14 +161,12 @@ class _CursorOwnership:
         if self.path.is_symlink():
             _fail('OWNER_SYMLINK')
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            directory = self.path.parent.stat()
-        except OSError:
-            _fail('OWNER_FILE_INVALID')
-        if not posix_owner_directory_safe(directory):
+        directory_identity = owner_directory_identity(self.path.parent)
+        if directory_identity is None:
             _fail('OWNER_FILE_INVALID')
         fd = os.open(self.path,
             os.O_RDWR | os.O_CREAT | getattr(os, 'O_NOFOLLOW', 0), 0o600)
+        self.directory_identity = directory_identity
         try:
             opened = os.fstat(fd)
             try:
@@ -169,7 +175,9 @@ class _CursorOwnership:
                 _fail('OWNER_FILE_INVALID')
             if (not stat.S_ISREG(opened.st_mode) or
                     not posix_owner_file_safe(opened) or
-                    not posix_owner_directory_safe(directory)):
+                    not posix_owner_directory_safe(directory) or
+                    not owner_directory_matches(self.path.parent,
+                        self.directory_identity)):
                 _fail('OWNER_FILE_INVALID')
             if opened.st_size == 0:
                 os.write(fd, b'0')
@@ -187,6 +195,7 @@ class _CursorOwnership:
             return self
         except BaseException as error:
             self.fd = None
+            self.directory_identity = None
             os.close(fd)
             if isinstance(error, OSError):
                 _fail('OWNER_BUSY_OR_UNAVAILABLE')
@@ -206,6 +215,7 @@ class _CursorOwnership:
             exit_error = error
         finally:
             self.fd = None
+            self.directory_identity = None
             try:
                 os.close(fd)
             except BaseException:

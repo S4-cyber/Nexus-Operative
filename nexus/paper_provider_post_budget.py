@@ -17,7 +17,8 @@ from nexus.alpaca_paper_contract import canonical, sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus.broker_lookup_policy import clock
 from nexus.local_owner_scope import (
-    owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe)
+    owner_directory_identity, owner_directory_matches, owner_marker_valid,
+    posix_owner_directory_safe, posix_owner_file_safe)
 from nexus.sqlite_journal_guard import check_existing
 
 SCHEMA = 'nexus.paper-provider-post-budget.v1'
@@ -535,10 +536,12 @@ class _PostOwnership:
     def __init__(self, budget):
         self.budget = budget
         self.path = budget.path.resolve().with_name(budget.path.name + '.owner.lock')
-        self.fd = None; self.lease = None
+        self.fd = None; self.lease = None; self.directory_identity = None
 
     def validate(self):
-        if self.fd is None: _fail('OWNER_REQUIRED')
+        if self.fd is None or self.directory_identity is None: _fail('OWNER_REQUIRED')
+        if not owner_directory_matches(self.path.parent, self.directory_identity):
+            _fail('OWNER_FILE_CHANGED')
         try:
             if self.path.is_symlink(): _fail('OWNER_FILE_CHANGED')
             current, opened = self.path.stat(), os.fstat(self.fd)
@@ -552,6 +555,8 @@ class _PostOwnership:
                 not posix_owner_directory_safe(directory) or
                 not owner_marker_valid(self.fd)):
             _fail('OWNER_FILE_CHANGED')
+        if not owner_directory_matches(self.path.parent, self.directory_identity):
+            _fail('OWNER_FILE_CHANGED')
 
     def identity(self):
         self.validate(); info = os.fstat(self.fd)
@@ -563,17 +568,19 @@ class _PostOwnership:
         self.budget._path_check()
         if self.path.is_symlink(): _fail('OWNER_SYMLINK')
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        try: directory = self.path.parent.stat()
-        except OSError: _fail('OWNER_FILE_INVALID')
-        if not posix_owner_directory_safe(directory): _fail('OWNER_FILE_INVALID')
+        directory_identity = owner_directory_identity(self.path.parent)
+        if directory_identity is None: _fail('OWNER_FILE_INVALID')
         fd = os.open(self.path, os.O_RDWR | os.O_CREAT | getattr(os, 'O_NOFOLLOW', 0), 0o600)
+        self.directory_identity = directory_identity
         try:
             opened = os.fstat(fd)
             try: directory = self.path.parent.stat()
             except OSError: _fail('OWNER_FILE_INVALID')
             if (not stat.S_ISREG(opened.st_mode) or
                     not posix_owner_file_safe(opened) or
-                    not posix_owner_directory_safe(directory)):
+                    not posix_owner_directory_safe(directory) or
+                    not owner_directory_matches(self.path.parent,
+                        self.directory_identity)):
                 _fail('OWNER_FILE_INVALID')
             if os.fstat(fd).st_size == 0: os.write(fd, b'0')
             os.lseek(fd, 0, os.SEEK_SET)
@@ -586,7 +593,7 @@ class _PostOwnership:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             self.fd = fd; self.validate(); self.lease = object(); return self
         except BaseException as error:
-            self.fd = None; os.close(fd)
+            self.fd = None; self.directory_identity = None; os.close(fd)
             if isinstance(error, OSError): _fail('OWNER_BUSY_OR_UNAVAILABLE')
             raise
 
@@ -604,7 +611,7 @@ class _PostOwnership:
         except BaseException as error:
             exit_error = error
         finally:
-            self.fd = None
+            self.fd = None; self.directory_identity = None
             try:
                 os.close(fd)
             except BaseException:

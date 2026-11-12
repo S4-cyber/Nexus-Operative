@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.276 (pre-release).**
+**Current development build: 0.340.277 (pre-release).**
+
+## v0.340.277 broker owner-directory identity binding
+
+The shared provider POST budget, provider-read budget, account-read pacing journal and Activity SSE cursor checkpoint now capture the exact containing directory device/inode before opening their owner lock, then bracket every public lock-path and fixed-marker validation with that directory identity. Replacing the directory can no longer preserve lease authority by moving the same still-locked inode back into the public pathname. The lease fails closed before further acknowledged work and again during context exit.
+
+At checkpoint start, hosted `development/windows-portal-foundation` and draft PR #1 targeted v0.340.276 commit `83da00e8bb53d46a8df6bea51c81b9df34d73d88` / exact verified tree `ccb742b721dda003dcc1bda11018b45f65c686b4`. GitHub exposed no workflow runs, combined statuses or reviews for that exact head. Fresh exact-source v0.340.277 hosted public-security, Windows/installer and browser checks remain required after publication; no hosted result is pre-claimed.
+
+This is exact-directory identity integrity for cooperating local broker-paper processes, not ancestor-path or extended-ACL review, Windows owner-profile acceptance, distributed ownership, provider identity, genuine-market proof, actual broker/account acceptance, a passed sustained 72-hour trial, profitability, funding/live/cloud readiness or release approval. No Portal button or modifiable parameter changed; the existing Trial Readiness control retains beginner-facing text and black/bright-purple bottom-right hover help. Seven tabs, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This M8/D4 local broker coordination hardening does not independently complete an acceptance stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,948 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 704.93 seconds. The direct broker-owner/journal scope passed 202. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `4949f508f4b41c1129309c717e3221e63adfc23775c5181e693fe3f53c3649ee`; `validation/release_trials_0_340_277.json` SHA256 is `99e74b36a4ad311f90039f5e93eb1ea253232c95607cc6a78a90770078fdb7ad`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript syntax and all fourteen Node controllers passed. The 162-member wheel reports v0.340.277 and has SHA256 `d832e6137010945f8d07e09492d65cabd00d0c5dfafbc65aa576776c52ec0b70`. The 998-path/blob staged-candidate artifact audit and 4,231-line introduced high-confidence signature scan found zero findings; the locally reachable history audit exceeded its configured byte cap. A local rendered-browser attempt reached system Chromium but the restricted runtime denied Chromium's process-singleton socket (`Operation not permitted`), so browser acceptance is unverified. Local Gitleaks and Inno Setup are unavailable; native Windows and installer execution are also unavailable locally. These are local/synthetic checks, not actual broker, genuine-feed, sustained-market, native Windows owner-profile, funding, live, cloud or release acceptance.
+
 
 ## v0.340.276 broker owner-marker integrity
 

@@ -108,3 +108,25 @@ def test_active_broker_owner_detects_same_inode_marker_corruption(
     with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):
         owner.__exit__(None, None, None)
     assert owner.fd is None and owner.path.read_bytes() == b'1'
+
+
+@pytest.mark.parametrize('index', range(4))
+def test_active_broker_owner_detects_exact_directory_replacement(
+        tmp_path, index):
+    root = tmp_path / 'owner-root'
+    root.mkdir()
+    prefix, subject = subjects(root)[index]
+    owner = subject.ownership()
+    owner.__enter__()
+    if os.name == 'nt':
+        owner.directory_identity = (-1, -1)
+    else:
+        retired = tmp_path / 'retired-owner-root'
+        os.replace(root, retired)
+        root.mkdir()
+        os.replace(retired / owner.path.name, root / owner.path.name)
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):
+        owner.validate()
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):
+        owner.__exit__(None, None, None)
+    assert owner.fd is None and owner.directory_identity is None

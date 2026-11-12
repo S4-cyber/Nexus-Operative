@@ -26,6 +26,22 @@ def posix_owner_directory_safe(info):
         mode & 0o022 == 0)
 
 
+def owner_directory_identity(path):
+    """Return one safe exact-directory identity, or ``None`` on disagreement."""
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    if not posix_owner_directory_safe(info):
+        return None
+    return info.st_dev, info.st_ino
+
+
+def owner_directory_matches(path, identity):
+    """Recheck a previously sampled exact-directory identity and mode scope."""
+    return identity is not None and owner_directory_identity(path) == identity
+
+
 def owner_marker_valid(fd):
     """Require the complete fixed owner marker without changing it."""
     try:

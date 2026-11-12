@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.285'
+REVISION = '0.340.286'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -912,7 +912,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.285 makes the Windows offline-evidence reconnect-budget failure actionable without exposing private data: each reviewed synthetic reconnect invariant now has a fixed allowlisted release code, while fixture values, exception text, paths, credentials and provider data remain suppressed. The validation conditions and authority denials are unchanged. This is diagnostic hardening for an unaccepted Windows evidence gate, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.286 requires the synthetic Activity SSE reconnect-budget evidence to have one exact reviewed schema before any invariant or authority value is consumed. Dict subclasses, missing fields and additional unreviewed fields fail closed, preventing private extensions or future fields from entering saved release evidence silently. The v0.340.285 fixed privacy-safe invariant diagnostics remain unchanged. This is local evidence-boundary hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

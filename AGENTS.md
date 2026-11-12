@@ -1,5 +1,15 @@
 # Nexus Operative continuity instructions
 
+## v0.340.286 exact reconnect evidence schema
+
+Hosted v0.340.285 commit `9d0f120a4249ad2dbf47a97a30f1027ef80f18ea` passed public security/Gitleaks. Its research and installer Windows jobs received no runner, executed zero steps and were cancelled after about fifteen minutes. Those are infrastructure cancellations, not CI evidence. The v0.340.284 reconnect-budget fixture failure remains unresolved until a Windows evidence job actually executes.
+
+v0.340.286 requires the synthetic reconnect-budget report to be an exact plain dict with exactly the reviewed source, result, storage, invariant and authority keys. Missing keys, extra fields and mapping subclasses fail closed before values are consumed. This prevents unreviewed private or future fields from entering saved evidence. The fixed privacy-safe invariant diagnostics remain unchanged. No UI control or editable parameter changed; seven tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and emergency-stop independence remain unchanged.
+
+This is local evidence-schema hardening, not broker/account or genuine-feed acceptance, a sustained realistic trial, profitability, native Windows/installer acceptance, funding/live/cloud readiness or release approval. Rough implementation remains about 40% (weighted index 38%; 30–45%, low confidence), with 0/9 stages fully accepted. Historical results and synthetic scores are not future profit predictions.
+
+Local validation passed 5,986 tests with one expected non-Windows skip and one existing Starlette/httpx warning in 688.19 seconds; the synchronized release/evidence/roadmap/version/packaging/Windows-workflow scope passed 217. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `22b4b42e0827c20f88f7e03988b1973a1022937bdc94812b9d45fd8587b2a777`; evidence SHA256 is `f754e6813b522584f3d474f6a88ada3a0e3eed000b770f991ab00970f49054ab`. Compilation, Portal JavaScript syntax and all fourteen Node controllers passed. The 162-member v0.340.286 wheel has SHA256 `bd324ca0727f54ebcbf7e28ab5d8e8e2054653dc2c198f28ec5156d4422f6825`. The 1,007-path candidate audit and introduced-line high-confidence signature scan found zero findings. Fresh exact-source hosted Windows evidence remains mandatory.
+
 ## v0.340.285 privacy-safe reconnect evidence diagnostics
 
 Hosted v0.340.284 commit `1d62cce5da6c4dc687b3f0b1607331f0b066e412` passed public security/Gitleaks and Portal browser/help. Its Windows offline-evidence job failed at the aggregated `RELEASE_TRIAL_EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET` boundary while complete regression and Windows installer work remained active. The same synthetic fixture passed locally, including 50 isolated repetitions, and on the preceding Windows commit, but the failed run remains evidence and is not assumed to be a flake.

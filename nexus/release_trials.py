@@ -2333,6 +2333,14 @@ def _validate(profile, result):
                 'uncertain_outcome_close_replay_is_byte_stable',
                 'no_sleep_loop_or_financial_authority',
                 'no_private_identifier_or_credential_echo')
+        reconnect_budget_keys={
+            'source','passed','actual_storage_retained',
+            'actual_provider_access','actual_stream_connection',
+            'actual_vault_access',*reconnect_budget_checks,
+            *ACTIVITY_SSE_RECONNECT_BUDGET_FLAGS}
+        _require(type(reconnect_budget) is dict and
+            set(reconnect_budget) == reconnect_budget_keys,
+            'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_SCHEMA')
         _require(type(reconnect_budget) is dict and
             reconnect_budget.get('source') ==
                 'TEMPORARY_INJECTED_ACTIVITY_SSE_RECONNECT_BUDGET_FIXTURE' and

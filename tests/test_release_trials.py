@@ -957,6 +957,26 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
             '^RELEASE_TRIAL_EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_'
             'PROVIDER_RETRY_AFTER_EXTENDS_DURABLE_BACKOFF$')):
         trials._validate('reconciliation_acceptance',changed)
+    changed=copy.deepcopy(result)
+    changed['explicit_activity_sse_reconnect_budget'][
+        'unreviewed_private_extension']=True
+    with pytest.raises(ValueError,match=(
+            '^RELEASE_TRIAL_EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_SCHEMA$')):
+        trials._validate('reconciliation_acceptance',changed)
+    changed=copy.deepcopy(result)
+    del changed['explicit_activity_sse_reconnect_budget'][
+        'no_private_identifier_or_credential_echo']
+    with pytest.raises(ValueError,match=(
+            '^RELEASE_TRIAL_EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_SCHEMA$')):
+        trials._validate('reconciliation_acceptance',changed)
+    class ReconnectBudgetMapping(dict):
+        pass
+    changed=copy.deepcopy(result)
+    changed['explicit_activity_sse_reconnect_budget']=ReconnectBudgetMapping(
+        changed['explicit_activity_sse_reconnect_budget'])
+    with pytest.raises(ValueError,match=(
+            '^RELEASE_TRIAL_EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET_SCHEMA$')):
+        trials._validate('reconciliation_acceptance',changed)
     class ResponseBundleMapping(dict):
         pass
     changed=copy.deepcopy(result)

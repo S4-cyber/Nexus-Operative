@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.285 (pre-release).**
+**Current development build: 0.340.286 (pre-release).**
+
+## v0.340.286 exact reconnect evidence schema
+
+Hosted v0.340.285 commit `9d0f120a4249ad2dbf47a97a30f1027ef80f18ea` passed public repository security/Gitleaks. Its three research jobs and Windows installer job were assigned no runner, executed zero steps and were cancelled after about fifteen minutes; they are infrastructure cancellations, not test passes or failures. The prior v0.340.284 synthetic reconnect failure remains unresolved pending an executing Windows evidence lane.
+
+The reconnect-budget release validator now requires an exact plain-dict key set before reading the source envelope, positive synthetic invariants or authority denials. Missing fields, extra unreviewed fields and dict subclasses fail with one fixed schema diagnostic. This prevents private extensions or newly introduced fields from entering durable saved evidence without explicit review. The v0.340.285 fixed invariant codes and all prior validation conditions remain unchanged.
+
+This is local evidence-boundary hardening, not actual broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native Windows/installer acceptance, funding/live/cloud readiness or release approval. No Portal control or modifiable parameter changed; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. Release approval and trading permission remain false; historical and synthetic results are not future profit predictions.
+
+Local validation passed 5,986 tests with one expected non-Windows skip and one existing Starlette/httpx warning in 688.19 seconds; the synchronized release/evidence/roadmap/version/packaging/Windows-workflow scope passed 217. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `22b4b42e0827c20f88f7e03988b1973a1022937bdc94812b9d45fd8587b2a777`; evidence SHA256 is `f754e6813b522584f3d474f6a88ada3a0e3eed000b770f991ab00970f49054ab`. Compilation, Portal JavaScript syntax and all fourteen Node controllers passed. The 162-member v0.340.286 wheel has SHA256 `bd324ca0727f54ebcbf7e28ab5d8e8e2054653dc2c198f28ec5156d4422f6825`. The 1,007-path candidate audit and introduced-line high-confidence signature scan found zero findings. Fresh exact-source hosted Windows evidence remains mandatory.
 
 ## v0.340.285 privacy-safe reconnect evidence diagnostics
 

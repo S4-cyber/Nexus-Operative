@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.286 exact reconnect evidence schema
+
+Exact-source v0.340.285 passed hosted public security/Gitleaks, while every Windows job received no runner, ran zero steps and was cancelled after about fifteen minutes. No Windows acceptance is claimed. v0.340.286 independently closes a saved-evidence schema gap: the reconnect-budget fixture must now be one exact plain dictionary with exactly the reviewed fields before any value is consumed. Missing, additional or subclass-provided fields fail closed with a fixed diagnostic.
+
+No control or editable parameter changed, so seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency cut remain intact. Rough implementation remains about 40% (weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 stages accepted. This does not approve release or trading, predict launch timing, or establish broker, genuine-feed, sustained-market, profitability, funding/live/cloud or native Windows acceptance. Historical results and synthetic scores are not future profit predictions.
+
+Local validation passed 5,986 tests with one expected non-Windows skip and one existing warning; the synchronized release scope passed 217. All sixteen bounded offline profiles and saved-evidence verification passed against the current 403-file source fingerprint. Compilation, Portal syntax, fourteen Node controllers, the 162-member wheel and the candidate artifact audit passed. These local and synthetic checks do not replace exact-source hosted or independent acceptance.
+
 ## v0.340.285 privacy-safe reconnect evidence diagnostics
 
 Exact-source v0.340.284 passed hosted public security/Gitleaks and Portal browser/help, but its Windows offline evidence stopped at the aggregated reconnect-budget fixture boundary. v0.340.285 preserves every existing validation and authority denial while assigning fixed allowlisted codes to the individual reviewed synthetic invariants. Raw values, exception text, paths, credentials, provider data and retained evidence are never appended.

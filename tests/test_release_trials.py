@@ -373,6 +373,25 @@ def test_pacing_fixture_reports_actual_retained_fences_without_provider_authorit
         with pytest.raises(ValueError, match='PACING_AUTHORITY'): trials._validate('pacing', dict(result, **{field:True}))
 
 
+def test_pacing_profile_requires_owner_scope_durability_fences():
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    for field in trials.OWNER_SCOPE_DURABILITY_CHECKS:
+        changed=copy.deepcopy(result)
+        changed['owner_scope_durability'][field]=False
+        with pytest.raises(ValueError,match='OWNER_DURABILITY_FENCES'):
+            trials._validate('pacing',changed)
+    changed=copy.deepcopy(result)
+    changed['owner_scope_durability'][
+        'parent_directory_sync_supported']=os.name=='nt'
+    with pytest.raises(ValueError,match='OWNER_DURABILITY_PARENT'):
+        trials._validate('pacing',changed)
+    for field in trials.OWNER_SCOPE_DURABILITY_FLAGS:
+        changed=copy.deepcopy(result)
+        changed['owner_scope_durability'][field]=True
+        with pytest.raises(ValueError,match='OWNER_DURABILITY_AUTHORITY'):
+            trials._validate('pacing',changed)
+
+
 def test_pacing_profile_requires_single_attempt_submission_transport_fences():
     result=trials._pacing_trial();trials._validate('pacing',result)
     for field in ('marker_committed_before_post','exactly_one_post','response_retained',

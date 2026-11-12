@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.278'
+REVISION = '0.340.279'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -731,6 +731,14 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Shared broker-paper owner locks now distinguish exclusive creation from inheritance before marker initialization. Only a freshly and exclusively created regular single-link file may receive the fixed marker; inherited empty, multiply linked or malformed files are rejected unchanged. This is local cooperating-process state-integrity hardening, not distributed ownership, extended-ACL review, Windows owner-profile acceptance, provider identity, broker acceptance or sustained-market evidence.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every valid provider POST, provider-read, account-read pacing and Activity SSE cursor owner marker now crosses an exact file-fsync barrier before lock authority, then flushes its identity-bound parent directory on POSIX; inherited retries repeat the same barrier, while sync uncertainty or a substituted directory descriptor fails closed' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Every valid shared broker-paper owner marker now requires exact file fsync before lock authority and identity-bound parent-directory fsync on POSIX. Inherited retries repeat the same barrier, so a prior graceful sync failure cannot be promoted by reopening the retained marker. File-sync uncertainty, directory-sync uncertainty or a substituted directory descriptor fails closed. Python exposes no portable Windows directory-fsync API, so Windows retains the file barrier and independent native acceptance gate. This is graceful local durability handling, not physical power-loss, distributed ownership, native-owner, provider/account or broker acceptance.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -896,7 +904,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.278 initializes shared provider POST, provider-read, account-read pacing and Activity SSE cursor owner markers only after exclusive file creation. Every inherited lock must already be the exact regular single-link marker file; empty, multiply linked or malformed inherited state is rejected byte-for-byte without repair. This strengthens local broker-paper coordination, but it is not distributed ownership, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.279 requires every valid shared provider POST, provider-read, account-read pacing and Activity SSE cursor owner marker to cross exact file fsync before lock authority, followed by identity-bound parent-directory fsync on POSIX. Inherited retries repeat the same barrier, so retained state cannot silently promote a prior graceful sync failure. Sync uncertainty and substituted directory descriptors fail closed; Windows retains the file barrier and independent native acceptance gate because Python has no portable Windows directory-fsync API. This strengthens local broker-paper durability handling, but it is not physical power-loss, distributed ownership, native-owner, genuine-feed or broker acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

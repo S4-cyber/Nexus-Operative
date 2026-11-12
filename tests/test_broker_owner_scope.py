@@ -4,6 +4,7 @@ import stat
 
 import pytest
 
+import nexus.local_owner_scope as owner_scope
 from nexus.alpaca_activity_sse_cursor_store import ActivitySSECursorStore
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
 from nexus.paper_provider_read_budget import PaperProviderReadBudget
@@ -33,6 +34,122 @@ def test_created_broker_owner_lock_is_private(tmp_path, index):
         assert owner.path.stat().st_uid == os.geteuid()
         assert owner.path.parent.stat().st_uid == os.geteuid()
     assert prefix
+
+
+@pytest.mark.parametrize('index', range(4))
+def test_created_broker_owner_marker_is_synced_before_use(
+        tmp_path, monkeypatch, index):
+    _, subject = subjects(tmp_path)[index]
+    original = owner_scope.os.fsync
+    synced = []
+
+    def fsync(descriptor):
+        synced.append('directory' if stat.S_ISDIR(
+            os.fstat(descriptor).st_mode) else 'file')
+        return original(descriptor)
+
+    monkeypatch.setattr(owner_scope.os, 'fsync', fsync)
+    with subject.ownership() as owner:
+        owner.validate()
+    assert synced == (['file'] if os.name == 'nt' else
+        ['file', 'directory'])
+
+
+@pytest.mark.parametrize('index', range(4))
+def test_created_broker_owner_rejects_file_sync_uncertainty(
+        tmp_path, monkeypatch, index):
+    prefix, subject = subjects(tmp_path)[index]
+    original = owner_scope.os.fsync
+    failed = False
+
+    def fsync(descriptor):
+        nonlocal failed
+        if not failed and stat.S_ISREG(os.fstat(descriptor).st_mode):
+            failed = True
+            raise OSError('injected owner-marker flush failure')
+        return original(descriptor)
+
+    monkeypatch.setattr(owner_scope.os, 'fsync', fsync)
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_INVALID$'):
+        with subject.ownership():
+            pass
+    assert failed
+
+
+@pytest.mark.skipif(os.name == 'nt',
+    reason='Python exposes no portable Windows directory fsync')
+def test_created_broker_owner_rejects_parent_sync_uncertainty(
+        tmp_path, monkeypatch):
+    prefix, subject = subjects(tmp_path)[0]
+    original = owner_scope.os.fsync
+    failed = False
+
+    def fsync(descriptor):
+        nonlocal failed
+        if not failed and stat.S_ISDIR(os.fstat(descriptor).st_mode):
+            failed = True
+            raise OSError('injected owner-directory flush failure')
+        return original(descriptor)
+
+    monkeypatch.setattr(owner_scope.os, 'fsync', fsync)
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_INVALID$'):
+        with subject.ownership():
+            pass
+    assert failed
+
+
+@pytest.mark.skipif(os.name == 'nt',
+    reason='Python exposes no portable Windows directory fsync')
+def test_created_broker_owner_binds_parent_sync_descriptor(
+        tmp_path, monkeypatch):
+    prefix, subject = subjects(tmp_path)[0]
+    foreign = tmp_path / 'foreign-owner-root'
+    foreign.mkdir()
+    original_open = owner_scope.os.open
+    original_fsync = owner_scope.os.fsync
+    substituted = False
+    directory_syncs = 0
+
+    def open_file(path, flags, *args, **kwargs):
+        nonlocal substituted
+        if not substituted and flags & getattr(os, 'O_DIRECTORY', 0):
+            substituted = True
+            return original_open(foreign, flags, *args, **kwargs)
+        return original_open(path, flags, *args, **kwargs)
+
+    def fsync(descriptor):
+        nonlocal directory_syncs
+        if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+            directory_syncs += 1
+        return original_fsync(descriptor)
+
+    monkeypatch.setattr(owner_scope.os, 'open', open_file)
+    monkeypatch.setattr(owner_scope.os, 'fsync', fsync)
+    with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_INVALID$'):
+        with subject.ownership():
+            pass
+    assert substituted and directory_syncs == 0
+
+
+@pytest.mark.parametrize('index', range(4))
+def test_inherited_broker_owner_repeats_durability_barrier(
+        tmp_path, monkeypatch, index):
+    _, subject = subjects(tmp_path)[index]
+    lock = subject.path.resolve().with_name(subject.path.name + '.owner.lock')
+    lock.write_bytes(b'0')
+    original = owner_scope.os.fsync
+    synced = []
+
+    def fsync(descriptor):
+        synced.append('directory' if stat.S_ISDIR(
+            os.fstat(descriptor).st_mode) else 'file')
+        return original(descriptor)
+
+    monkeypatch.setattr(owner_scope.os, 'fsync', fsync)
+    with subject.ownership() as owner:
+        owner.validate()
+    assert synced == (['file'] if os.name == 'nt' else
+        ['file', 'directory'])
 
 
 @pytest.mark.skipif(os.name == 'nt',

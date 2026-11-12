@@ -62,6 +62,41 @@ def owner_marker_valid(fd):
     return marker == b'0'
 
 
+def _sync_owner(path, fd, directory_identity):
+    """Durably publish one exact owner marker where supported."""
+    try:
+        os.fsync(fd)
+    except OSError:
+        return False
+    if os.name == 'nt':
+        # Python exposes no portable Windows directory-fsync API.  The exact
+        # file barrier remains mandatory; native owner-profile acceptance is
+        # an independent release gate.
+        return True
+    flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
+        getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0))
+    try:
+        directory_fd = os.open(path.parent, flags)
+    except OSError:
+        return False
+    try:
+        opened = os.fstat(directory_fd)
+        if (not stat.S_ISDIR(opened.st_mode) or
+                (opened.st_dev, opened.st_ino) != directory_identity or
+                not posix_owner_directory_safe(opened)):
+            return False
+        os.fsync(directory_fd)
+        final = os.fstat(directory_fd)
+        return (stat.S_ISDIR(final.st_mode) and
+            (final.st_dev, final.st_ino) == directory_identity and
+            posix_owner_directory_safe(final) and
+            owner_directory_matches(path.parent, directory_identity))
+    except OSError:
+        return False
+    finally:
+        os.close(directory_fd)
+
+
 def prepare_owner_file(path, fd, created, directory_identity):
     """Initialize only a fresh owner file; inherited state is never repaired."""
     try:
@@ -88,6 +123,8 @@ def prepare_owner_file(path, fd, created, directory_identity):
     elif opened.st_size != 1:
         return False
     if not owner_marker_valid(fd):
+        return False
+    if not _sync_owner(path, fd, directory_identity):
         return False
     try:
         current = path.stat()

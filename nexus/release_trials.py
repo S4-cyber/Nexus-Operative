@@ -31,7 +31,8 @@ PACING_LIMITATIONS = ('Disposable local journal policy only; no provider '
     'requests, actual rate-limit acceptance, distributed ownership or '
     'runtime default integration.')
 PACING_PUBLIC_KEYS = frozenset(('read_completion','snapshot_time',
-    'path_preflight','typed_operations','bounded_recovery_crash_drill',
+    'path_preflight','typed_operations','owner_scope_durability',
+    'bounded_recovery_crash_drill',
     'bounded_recovery_step','submission_admission',
     'single_attempt_submission_transport','resolved_unknown_post_recovery',
     'provider_read_budget_recovery','account_read_pacing_recovery',
@@ -43,6 +44,10 @@ PACING_PUBLIC_KEYS = frozenset(('read_completion','snapshot_time',
     'interrupted_full_day_cooldown','wal_read_rejected_before_sqlite',
     'wal_write_rejected_before_conversion','wal_rejection_preserved_files',
     'broker_wide_quota_verified','ready_for_routing','limitations'))
+OWNER_SCOPE_DURABILITY_CHECKS = ('fresh_marker_file_synced',
+    'file_sync_uncertainty_denied','inherited_marker_resynced')
+OWNER_SCOPE_DURABILITY_FLAGS = ('native_windows_owner_profile_accepted',
+    'broker_account_accepted','release_approved')
 INSPECTION_LIMITATIONS=('Fixed response objects and clocks; no actual credentials, provider, '
     'rendered UI, account reconciliation or spendable funds.')
 INSPECTION_PUBLIC_KEYS=frozenset(('passed','source','btc_quote_observation',
@@ -493,6 +498,159 @@ def _http_trial():
     return result
 
 
+def _owner_scope_durability_trial():
+    """Exercise the exact owner-marker durability helper offline."""
+    import stat
+    from nexus import local_owner_scope as scope
+
+    with tempfile.TemporaryDirectory(
+            prefix='nexus-owner-durability-trial-') as directory:
+        root = Path(directory)
+
+        def candidate(name):
+            parent = root / name
+            parent.mkdir()
+            path = parent / 'owner.lock'
+            identity = scope.owner_directory_identity(parent)
+            _require(identity is not None, 'OWNER_DURABILITY_DIRECTORY')
+            descriptor, created = scope.open_owner_file(path)
+            _require(created is True, 'OWNER_DURABILITY_CREATE')
+            return path, identity, descriptor
+
+        original_fsync = scope.os.fsync
+        original_open = scope.os.open
+        calls = []
+        path, identity, descriptor = candidate('success')
+
+        def observe_sync(value):
+            calls.append('directory' if stat.S_ISDIR(
+                os.fstat(value).st_mode) else 'file')
+            return original_fsync(value)
+
+        scope.os.fsync = observe_sync
+        try:
+            success = scope.prepare_owner_file(
+                path, descriptor, True, identity)
+        finally:
+            os.close(descriptor)
+            scope.os.fsync = original_fsync
+        expected = ['file'] if os.name == 'nt' else ['file', 'directory']
+        fresh_marker_file_synced = success and calls == expected
+
+        path, identity, descriptor = candidate('file-failure')
+        file_failed = False
+
+        def fail_file_sync(value):
+            nonlocal file_failed
+            if stat.S_ISREG(os.fstat(value).st_mode):
+                file_failed = True
+                raise OSError('injected')
+            return original_fsync(value)
+
+        scope.os.fsync = fail_file_sync
+        try:
+            file_sync_uncertainty_denied = (not scope.prepare_owner_file(
+                path, descriptor, True, identity) and file_failed)
+        finally:
+            os.close(descriptor)
+            scope.os.fsync = original_fsync
+
+        parent_supported = os.name != 'nt'
+        parent_sync_uncertainty_denied = None
+        wrong_parent_descriptor_denied = None
+        if parent_supported:
+            path, identity, descriptor = candidate('parent-failure')
+            parent_failed = False
+
+            def fail_parent_sync(value):
+                nonlocal parent_failed
+                if stat.S_ISDIR(os.fstat(value).st_mode):
+                    parent_failed = True
+                    raise OSError('injected')
+                return original_fsync(value)
+
+            scope.os.fsync = fail_parent_sync
+            try:
+                parent_sync_uncertainty_denied = (
+                    not scope.prepare_owner_file(
+                        path, descriptor, True, identity) and parent_failed)
+            finally:
+                os.close(descriptor)
+                scope.os.fsync = original_fsync
+
+            foreign = root / 'foreign'
+            foreign.mkdir()
+            path, identity, descriptor = candidate('wrong-parent')
+            substituted = False
+            directory_syncs = 0
+
+            def substitute_parent(value, flags, *args, **kwargs):
+                nonlocal substituted
+                if (not substituted and
+                        flags & getattr(os, 'O_DIRECTORY', 0)):
+                    substituted = True
+                    return original_open(foreign, flags, *args, **kwargs)
+                return original_open(value, flags, *args, **kwargs)
+
+            def count_parent_sync(value):
+                nonlocal directory_syncs
+                if stat.S_ISDIR(os.fstat(value).st_mode):
+                    directory_syncs += 1
+                return original_fsync(value)
+
+            scope.os.open = substitute_parent
+            scope.os.fsync = count_parent_sync
+            try:
+                wrong_parent_descriptor_denied = (
+                    not scope.prepare_owner_file(
+                        path, descriptor, True, identity) and
+                    substituted and directory_syncs == 0)
+            finally:
+                os.close(descriptor)
+                scope.os.open = original_open
+                scope.os.fsync = original_fsync
+
+        inherited_parent = root / 'inherited'
+        inherited_parent.mkdir()
+        inherited = inherited_parent / 'owner.lock'
+        inherited.write_bytes(b'0')
+        inherited_identity = scope.owner_directory_identity(inherited_parent)
+        descriptor, created = scope.open_owner_file(inherited)
+        inherited_syncs = 0
+
+        def count_inherited_sync(value):
+            nonlocal inherited_syncs
+            inherited_syncs += 1
+            return original_fsync(value)
+
+        scope.os.fsync = count_inherited_sync
+        try:
+            inherited_ok = scope.prepare_owner_file(
+                inherited, descriptor, created, inherited_identity)
+        finally:
+            os.close(descriptor)
+            scope.os.fsync = original_fsync
+        inherited_expected_syncs = 1 if os.name == 'nt' else 2
+        inherited_marker_resynced = (created is False and inherited_ok and
+            inherited_syncs == inherited_expected_syncs)
+
+    checks = dict(fresh_marker_file_synced=fresh_marker_file_synced,
+        file_sync_uncertainty_denied=file_sync_uncertainty_denied,
+        inherited_marker_resynced=inherited_marker_resynced)
+    return dict(source='TEMPORARY_LOCAL_OWNER_DURABILITY_FIXTURE',
+        passed=all(checks.values()) and
+            (not parent_supported or (parent_sync_uncertainty_denied and
+                wrong_parent_descriptor_denied)),
+        **checks, parent_directory_sync_supported=parent_supported,
+        parent_sync_uncertainty_denied=parent_sync_uncertainty_denied,
+        wrong_parent_descriptor_denied=wrong_parent_descriptor_denied,
+        native_windows_owner_profile_accepted=False,
+        broker_account_accepted=False, release_approved=False,
+        limitations=('Disposable local file-sync and POSIX directory-sync '
+            'fixture only; no physical power-loss, native Windows profile, '
+            'broker account, distributed ownership or release acceptance.'))
+
+
 def _pacing_trial():
     """Fixed local reservation/cooldown fixture; no HTTP or credential access."""
     from nexus.paper_read_pacing import PaperReadPacing,typed_fixture_report
@@ -569,7 +727,7 @@ def _pacing_trial():
         from nexus.sqlite_journal_guard import path_fixture_report
         from nexus.alpaca_paper_contract import timestamp_fixture_report
         from nexus.paper_read_pacing import completion_fixture_report
-        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_budget_recovery=read_recovery,account_read_pacing_recovery=account_recovery,provider_read_history_review=provider_read_review,account_read_history_review=account_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),owner_scope_durability=_owner_scope_durability_trial(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_budget_recovery=read_recovery,account_read_pacing_recovery=account_recovery,provider_read_history_review=provider_read_review,account_read_history_review=account_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -1498,6 +1656,22 @@ def _validate(profile, result):
         _require(result['source']=='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE' and
             result['limitations']==PACING_LIMITATIONS,
             'PACING_PROFILE_SCOPE')
+        owner=result['owner_scope_durability']
+        _require(owner['source']=='TEMPORARY_LOCAL_OWNER_DURABILITY_FIXTURE' and
+            owner['passed'] is True and all(owner[key] is True
+                for key in OWNER_SCOPE_DURABILITY_CHECKS),
+            'OWNER_DURABILITY_FENCES')
+        parent_supported=os.name!='nt'
+        _require(owner['parent_directory_sync_supported'] is parent_supported and
+            (all(owner[key] is True for key in
+                ('parent_sync_uncertainty_denied',
+                 'wrong_parent_descriptor_denied')) if parent_supported else
+             all(owner[key] is None for key in
+                ('parent_sync_uncertainty_denied',
+                 'wrong_parent_descriptor_denied'))),
+            'OWNER_DURABILITY_PARENT')
+        _require(all(owner[key] is False for key in
+            OWNER_SCOPE_DURABILITY_FLAGS),'OWNER_DURABILITY_AUTHORITY')
         from nexus.paper_read_pacing import (OPERATION_CHECKS,
             OPERATION_FLAGS,OPERATION_PUBLIC_KEYS)
         typed=result['typed_operations']

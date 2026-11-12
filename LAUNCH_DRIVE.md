@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.288 Windows owner coordination and portable evidence repair
+
+The completed v0.340.286 Windows regression exposed a 66-failure cluster rather than an accepted gate: saved POSIX durability evidence was being compared to the Windows reader, cooperating same-process owners could reach marker preparation before rejection, Windows lock acquisition changed metadata included in Trial Readiness fingerprints, and two recovery tests attempted POSIX-style renames of open SQLite files. v0.340.288 moves every local process claim ahead of owner-file preparation, records exact generating-platform durability scope, keeps the readiness owner identity-bound without fingerprinting mutable lock metadata, and gives Windows tests an equivalent fail-closed identity injection. Cross-process authority remains OS-lock-backed; emergency stop remains independently owned.
+
+This does not activate a broker, a real account, live orders, money movement, cloud deployment or release authority. It does not prove native Windows/installer behavior, sustained realistic market coverage, profitability or future returns. No UI control or editable parameter changed: seven tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks and fail-closed exits remain intact. Rough implementation remains about 40% (weighted 38%, uncertainty 30–45%, low confidence); 0/9 stages are independently accepted.
+
+Local evidence: 5,994 passed, one expected non-Windows skip, one existing warning; 568 focused tests passed; all 16 offline profiles and saved-evidence verification passed against 403 files / `0d109404d9e553d6eba4d16817e19f700a65b5ff6bca32305bb4c925c65edf70`. Compilation, Portal syntax, 14 Node controllers and the 162-member v0.340.288 wheel passed. Fresh exact-source hosted Windows, installer, browser and security results remain required.
+
 ## v0.340.287 Windows cursor ownership and emergency reserve readiness
 
 Exact-source v0.340.286 passed hosted public security/Gitleaks and Portal browser/help. Its Windows offline evidence then isolated a concrete failure: the provider-open cursor owner did not block a competing same-process checkpoint under native Windows. v0.340.287 adds a PID-and-normalized-path process claim beside the OS-backed cursor lock, retaining the OS lock for cross-process coordination. Trial Readiness now separately validates total command capacity and the fixed halt/cancel/expiry reserve; missing or inconsistent fields fail closed, and a depleted reserve cannot appear ready for another cycle or conservative sustained window.

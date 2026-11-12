@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.287 (pre-release).**
+**Current development build: 0.340.288 (pre-release).**
+
+## v0.340.288 Windows owner coordination and portable evidence repair
+
+This pre-release repairs the concrete Windows regression cluster from the completed v0.340.286 lanes. All broker-paper owner types and Forward Ownership now claim the normalized local path before opening or preparing a marker while retaining OS locks for cross-process safety. Offline owner-durability evidence carries an exact generating-platform scope; Trial Readiness does not fingerprint lock metadata that Windows may alter during acquisition; Windows recovery tests exercise equivalent root-identity failure without renaming open SQLite files.
+
+The change preserves OFF-by-default engagement, fixed limits, account checks, fail-closed exits and independent emergency-stop ownership. It adds no UI button or editable parameter, so the seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. It is not broker, sustained-market, native Windows/installer, funding, live, cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages fully accepted.
+
+Local validation passed 5,994 tests with one expected non-Windows skip and one existing warning in 690.03 seconds; the focused scope passed 568. Sixteen bounded offline profiles and saved evidence match 403 source files / `0d109404d9e553d6eba4d16817e19f700a65b5ff6bca32305bb4c925c65edf70`; evidence SHA256 is `15d31b50470fe0578f6f4e606d782bd0301c8c8a93eff9bff3606da14f5a9a65`. Compilation, Portal syntax, all fourteen Node controllers and the 162-member wheel passed; wheel SHA256 is `849d5bdd18c822703647193ff21b56aa4fc6446c7925b89062b126db84f228f1`. Candidate, added-line and complete reachable-history artifact scans found zero findings; local Gitleaks remains unavailable. Fresh exact-source hosted gates remain required.
 
 ## v0.340.287 Windows cursor ownership and emergency reserve readiness
 

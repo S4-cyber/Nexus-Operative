@@ -311,12 +311,31 @@ def test_inherited_valid_broker_owner_remains_usable(
 
 
 @pytest.mark.parametrize('index', range(4))
+def test_active_broker_owner_blocks_same_process_before_second_open(
+        tmp_path, index):
+    prefix, subject = subjects(tmp_path)[index]
+    contender = subject.ownership()
+    with subject.ownership():
+        with pytest.raises(ValueError,
+                match=f'^{prefix}_OWNER_BUSY_OR_UNAVAILABLE$'):
+            contender.__enter__()
+        assert contender.fd is None and contender.process_owner.key is None
+    with contender:
+        contender.validate()
+
+
+@pytest.mark.parametrize('index', range(4))
 def test_active_broker_owner_detects_same_inode_marker_corruption(
         tmp_path, index):
     prefix, subject = subjects(tmp_path)[index]
     owner = subject.ownership()
     owner.__enter__()
-    owner.path.write_bytes(b'1')
+    if os.name == 'nt':
+        os.lseek(owner.fd, 0, os.SEEK_SET)
+        assert os.write(owner.fd, b'1') == 1
+        os.fsync(owner.fd)
+    else:
+        owner.path.write_bytes(b'1')
     with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):
         owner.validate()
     with pytest.raises(ValueError, match=f'^{prefix}_OWNER_FILE_CHANGED$'):

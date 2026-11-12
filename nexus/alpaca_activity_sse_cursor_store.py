@@ -13,7 +13,6 @@ from pathlib import Path
 import re
 import sqlite3
 import stat
-import threading
 
 from nexus.alpaca_activity_normalizer import _uuid
 from nexus.alpaca_activity_sse_reconnect_review import (
@@ -23,7 +22,8 @@ from nexus.alpaca_activity_sse_reconnect_review import (
 from nexus.alpaca_activity_sse_review import SOURCES, ULID
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.local_owner_scope import (
-    open_owner_file, owner_directory_identity, owner_directory_matches,
+    ProcessOwnerClaim, open_owner_file, owner_directory_identity,
+    owner_directory_matches,
     owner_entry_parent_identity, owner_entry_parent_matches,
     owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe,
     prepare_owner_file)
@@ -56,10 +56,6 @@ FLAGS = ('actual_provider_access', 'actual_vault_access',
     'native_power_loss_durability_verified', 'fee_coverage_complete',
     'broker_account_reconciled', 'ready_for_routing',
     'live_orders_enabled', 'money_movement_enabled', 'release_approved')
-_PROCESS_OWNER_GUARD = threading.Lock()
-_PROCESS_OWNER_KEYS = set()
-
-
 def _fail(code):
     raise ValueError('ALPACA_ACTIVITY_SSE_CURSOR_STORE_' + code) from None
 
@@ -129,23 +125,7 @@ class _CursorOwnership:
         self.fd = None
         self.directory_identity = None
         self.entry_parent_identity = None
-        self.process_owner_key = None
-
-    def _claim_process_owner(self):
-        key = (os.getpid(), os.path.normcase(str(self.path)))
-        with _PROCESS_OWNER_GUARD:
-            if key in _PROCESS_OWNER_KEYS:
-                _fail('OWNER_BUSY_OR_UNAVAILABLE')
-            self.process_owner_key = key
-            _PROCESS_OWNER_KEYS.add(key)
-
-    def _release_process_owner(self):
-        key = self.process_owner_key
-        if key is None:
-            return
-        with _PROCESS_OWNER_GUARD:
-            _PROCESS_OWNER_KEYS.discard(key)
-        self.process_owner_key = None
+        self.process_owner = ProcessOwnerClaim(self.path)
 
     def validate(self):
         if (self.fd is None or self.directory_identity is None or
@@ -190,24 +170,21 @@ class _CursorOwnership:
         self.store._check()
         if self.path.is_symlink():
             _fail('OWNER_SYMLINK')
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        directory_identity = owner_directory_identity(self.path.parent)
-        entry_parent_identity = owner_entry_parent_identity(
-            self.path.parent.parent)
-        if directory_identity is None or entry_parent_identity is None:
-            _fail('OWNER_FILE_INVALID')
-        fd, created = open_owner_file(self.path)
-        self.directory_identity = directory_identity
-        self.entry_parent_identity = entry_parent_identity
+        if not self.process_owner.acquire():
+            _fail('OWNER_BUSY_OR_UNAVAILABLE')
+        fd = None
         try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.directory_identity = owner_directory_identity(self.path.parent)
+            self.entry_parent_identity = owner_entry_parent_identity(
+                self.path.parent.parent)
+            if (self.directory_identity is None or
+                    self.entry_parent_identity is None):
+                _fail('OWNER_FILE_INVALID')
+            fd, created = open_owner_file(self.path)
             if not prepare_owner_file(self.path, fd, created,
                     self.directory_identity, self.entry_parent_identity):
                 _fail('OWNER_FILE_INVALID')
-            # Windows byte-range locks do not reliably reject a second handle
-            # opened by the same process.  Keep an in-process claim as well as
-            # the OS lock so cooperating threads cannot checkpoint through an
-            # active provider-open ownership interval.
-            self._claim_process_owner()
             if os.name == 'nt':
                 import msvcrt
                 msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
@@ -221,8 +198,9 @@ class _CursorOwnership:
             self.fd = None
             self.directory_identity = None
             self.entry_parent_identity = None
-            self._release_process_owner()
-            os.close(fd)
+            self.process_owner.release()
+            if fd is not None:
+                os.close(fd)
             if isinstance(error, OSError):
                 _fail('OWNER_BUSY_OR_UNAVAILABLE')
             raise
@@ -249,7 +227,7 @@ class _CursorOwnership:
                 if exit_error is None:
                     raise
             finally:
-                self._release_process_owner()
+                self.process_owner.release()
         if exit_error is not None:
             raise exit_error
 

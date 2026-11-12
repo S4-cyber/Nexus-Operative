@@ -127,14 +127,21 @@ def test_write_fails_closed_if_storage_root_replaced_after_order_open(tmp_path,m
     root=tmp_path/'state';root.mkdir();retired=tmp_path/'retired'
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(root));gateway=DurableOrderGateway();original=gateway._connect
     def replace_after_connect(path=None):
-        db=original(path);root.rename(retired);root.mkdir();return db
+        db=original(path)
+        if os.name=='nt':
+            monkeypatch.setattr(durable_orders._OrderRootIdentity,
+                'require_current',lambda self: (_ for _ in ()).throw(
+                    ValueError('ORDER_STORAGE_ROOT_CHANGED')))
+        else:root.rename(retired);root.mkdir()
+        return db
     monkeypatch.setattr(gateway,'_connect',replace_after_connect)
     with pytest.raises(ValueError,match='ORDER_STORAGE_ROOT_CHANGED'):
         gateway.initialize_account(10000)
-    assert not (root/'order_lifecycle.sqlite3').exists()
+    assert (root/'order_lifecycle.sqlite3').exists() is (os.name=='nt')
     assert not (root/'paper_portfolio.sqlite3').exists()
-    assert (retired/'order_lifecycle.sqlite3').exists()
-    with sqlite3.connect(retired/'order_lifecycle.sqlite3') as db:
+    retained=(root if os.name=='nt' else retired)/'order_lifecycle.sqlite3'
+    assert retained.exists()
+    with sqlite3.connect(retained) as db:
         assert db.execute('SELECT COUNT(*) FROM commands').fetchone()==(0,)
 
 
@@ -143,13 +150,19 @@ def test_linked_read_fails_closed_if_storage_root_replaced_during_restore(tmp_pa
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(root));gateway=DurableOrderGateway()
     gateway.initialize_account(10000);gateway.link_portfolio();original=gateway._restore
     def replace_after_restore(db):
-        restored=original(db);root.rename(retired);root.mkdir();return restored
+        restored=original(db)
+        if os.name=='nt':
+            monkeypatch.setattr(durable_orders._OrderRootIdentity,
+                'require_current',lambda self: (_ for _ in ()).throw(
+                    ValueError('ORDER_STORAGE_ROOT_CHANGED')))
+        else:root.rename(retired);root.mkdir()
+        return restored
     monkeypatch.setattr(gateway,'_restore',replace_after_restore)
     with pytest.raises(ValueError,match='ORDER_STORAGE_ROOT_CHANGED'):
         gateway.recovery_report()
-    assert not any(root.iterdir())
-    assert (retired/'order_lifecycle.sqlite3').exists()
-    assert (retired/'paper_portfolio.sqlite3').exists()
+    retained=root if os.name=='nt' else retired
+    assert (retained/'order_lifecycle.sqlite3').exists()
+    assert (retained/'paper_portfolio.sqlite3').exists()
 
 
 def test_write_rejects_symlink_storage_root(tmp_path,monkeypatch):

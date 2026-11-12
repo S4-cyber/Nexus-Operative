@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 import stat
 
+from nexus.local_owner_scope import ProcessOwnerClaim
+
 
 def _fail(code):
     raise ValueError('PAPER_FORWARD_OWNER_'+code) from None
@@ -81,6 +83,7 @@ class ForwardOwnership:
         self._fd=None
         self._identity=None
         self._directory_identity=None
+        self._process_claim=ProcessOwnerClaim(self.path)
 
     @property
     def held(self):return self._fd is not None
@@ -110,6 +113,13 @@ class ForwardOwnership:
     def available(self):
         """Sample cross-process availability without creating or reserving it."""
         if self.held:return False
+        claim=ProcessOwnerClaim(self.path)
+        if not claim.acquire():return False
+        try:return self._available_claimed()
+        finally:claim.release()
+
+    def _available_claimed(self):
+        """Availability sample after the exact process path is reserved."""
         try:directory=self.directory.lstat()
         except FileNotFoundError:return True
         except OSError:_fail('STORE_UNAVAILABLE')
@@ -125,6 +135,9 @@ class ForwardOwnership:
         flags=(os.O_RDWR|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|
             getattr(os,'O_CLOEXEC',0))
         try:fd=os.open(self.path,flags)
+        except PermissionError:
+            if os.name=='nt':return False
+            _fail('STORE_UNAVAILABLE')
         except OSError:_fail('STORE_UNAVAILABLE')
         locked=False
         available=False
@@ -154,6 +167,15 @@ class ForwardOwnership:
         a coordination file silently created by a diagnostic.
         """
         if self.held:raise ValueError('PAPER_FORWARD_OWNER_ALREADY_HELD')
+        if not self._process_claim.acquire():
+            raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER')
+        fd=None
+        try:self._acquire_existing_claimed()
+        except BaseException:
+            self._process_claim.release()
+            raise
+
+    def _acquire_existing_claimed(self):
         try:directory=self.directory.lstat()
         except OSError:_fail('STORE_UNAVAILABLE')
         directory=_directory_identity(self.directory,directory)
@@ -165,6 +187,10 @@ class ForwardOwnership:
         flags=(os.O_RDWR|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|
             getattr(os,'O_CLOEXEC',0))
         try:fd=os.open(self.path,flags)
+        except PermissionError as exc:
+            if os.name=='nt':
+                raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER') from exc
+            _fail('STORE_UNAVAILABLE')
         except OSError:_fail('STORE_UNAVAILABLE')
         try:
             opened=_opened_identity(self.path,fd,before)
@@ -202,6 +228,14 @@ class ForwardOwnership:
 
     def acquire(self):
         if self.held:raise ValueError('PAPER_FORWARD_OWNER_ALREADY_HELD')
+        if not self._process_claim.acquire():
+            raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER')
+        try:self._acquire_claimed()
+        except BaseException:
+            self._process_claim.release()
+            raise
+
+    def _acquire_claimed(self):
         try:self.directory.mkdir(mode=0o700,parents=True,exist_ok=True)
         except OSError:_fail('STORE_UNAVAILABLE')
         directory=_directory_identity(self.directory)
@@ -215,6 +249,10 @@ class ForwardOwnership:
         flags=(os.O_RDWR|os.O_CREAT|getattr(os,'O_BINARY',0)|
             getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_CLOEXEC',0))
         try:fd=os.open(self.path,flags,0o600)
+        except PermissionError as exc:
+            if os.name=='nt':
+                raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER') from exc
+            _fail('STORE_UNAVAILABLE')
         except OSError:_fail('STORE_UNAVAILABLE')
         try:
             opened=_opened_identity(self.path,fd,before,allow_empty=True)
@@ -257,6 +295,7 @@ class ForwardOwnership:
                 os.close(fd)
             except BaseException:
                 if exit_error is None:raise
+            finally:self._process_claim.release()
         if exit_error is not None:raise exit_error
 
     def __del__(self):

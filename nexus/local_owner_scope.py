@@ -5,7 +5,47 @@ ownership boundary.  Windows callers retain their existing OS-lock behavior;
 POSIX mode bits must not be presented as Windows ACL evidence.
 """
 import os
+from pathlib import Path
 import stat
+import threading
+
+
+_PROCESS_OWNER_GUARD = threading.Lock()
+_PROCESS_OWNER_KEYS = set()
+
+
+class ProcessOwnerClaim:
+    """Process-local companion to an OS lock.
+
+    Windows byte-range locks may allow or reject a second handle in the same
+    process before the caller reaches the lock operation.  Claiming the exact
+    normalized path first gives every cooperating in-process caller one
+    deterministic busy boundary while the OS lock remains authoritative
+    across processes and process death.
+    """
+
+    def __init__(self, path):
+        self.path = Path(path).resolve()
+        self.key = None
+
+    def acquire(self):
+        key = (os.getpid(), os.path.normcase(str(self.path)))
+        with _PROCESS_OWNER_GUARD:
+            if self.key is not None or key in _PROCESS_OWNER_KEYS:
+                return False
+            # Assign before publishing so asynchronous cleanup can always
+            # discard the right key, including around the set mutation.
+            self.key = key
+            _PROCESS_OWNER_KEYS.add(key)
+        return True
+
+    def release(self):
+        key = self.key
+        if key is None:
+            return
+        with _PROCESS_OWNER_GUARD:
+            _PROCESS_OWNER_KEYS.discard(key)
+        self.key = None
 
 
 def posix_owner_file_safe(info):

@@ -29,7 +29,7 @@ class _ReadinessFiles:
     generations and also binds absence: a file that appears during review is
     a changed result, not still "no retained history".
     """
-    def __init__(self,root,paths):
+    def __init__(self,root,paths,*,identity_only_indexes=()):
         self.configured_root=Path(root)
         try:observed=self.configured_root.lstat()
         except FileNotFoundError:
@@ -51,8 +51,13 @@ class _ReadinessFiles:
         existing=tuple(path for path,present in zip(self.paths,self.present) if present)
         self.existing=existing
         self.identities=(capture_file_identities(existing,FILE_PREFIX) if existing else ())
-        self.fingerprints=(capture_file_fingerprints(existing,
-            (MAX_FILE_BYTES,)*len(existing),FILE_PREFIX) if existing else ())
+        identity_only=frozenset(identity_only_indexes)
+        self.fingerprinted=tuple(path for index,(path,present) in
+            enumerate(zip(self.paths,self.present))
+            if present and index not in identity_only)
+        self.fingerprints=(capture_file_fingerprints(self.fingerprinted,
+            (MAX_FILE_BYTES,)*len(self.fingerprinted),FILE_PREFIX)
+            if self.fingerprinted else ())
 
     @staticmethod
     def _fail(code):raise ValueError(FILE_PREFIX+code) from None
@@ -84,14 +89,17 @@ class _ReadinessFiles:
         if self.existing:
             try:
                 require_file_identities(self.existing,self.identities,FILE_PREFIX)
-                require_file_fingerprints(self.existing,
-                    (MAX_FILE_BYTES,)*len(self.existing),self.fingerprints,FILE_PREFIX)
+                if self.fingerprinted:
+                    require_file_fingerprints(self.fingerprinted,
+                        (MAX_FILE_BYTES,)*len(self.fingerprinted),
+                        self.fingerprints,FILE_PREFIX)
             except ValueError:self._fail('FILE_SET_CHANGED')
 
 
 @contextmanager
 def _readiness_scope(root,paths,*,owner_index=None,history_index=0):
-    binding=_ReadinessFiles(root,paths)
+    binding=_ReadinessFiles(root,paths,
+        identity_only_indexes=(() if owner_index is None else (owner_index,)))
     owner_present=owner_index is not None and binding.present[owner_index]
     history_present=binding.present[history_index]
     if owner_index is not None and history_present and not owner_present:

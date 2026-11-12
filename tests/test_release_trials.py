@@ -393,8 +393,13 @@ def test_pacing_fixture_reports_actual_retained_fences_without_provider_authorit
         with pytest.raises(ValueError, match='PACING_AUTHORITY'): trials._validate('pacing', dict(result, **{field:True}))
 
 
-def test_pacing_profile_requires_owner_scope_durability_fences():
+def test_pacing_profile_requires_owner_scope_durability_fences(monkeypatch):
     result=trials._pacing_trial();trials._validate('pacing',result)
+    recorded=result['owner_scope_durability']['platform_scope']
+    monkeypatch.setattr(trials,'os',type('ForeignHost',(),{
+        'name':'nt' if os.name!='nt' else 'posix'})())
+    trials._validate('pacing',result)
+    assert result['owner_scope_durability']['platform_scope']==recorded
     for field in trials.OWNER_SCOPE_DURABILITY_CHECKS:
         changed=copy.deepcopy(result)
         changed['owner_scope_durability'][field]=False
@@ -404,6 +409,14 @@ def test_pacing_profile_requires_owner_scope_durability_fences():
     changed['owner_scope_durability'][
         'parent_directory_sync_supported']=os.name=='nt'
     with pytest.raises(ValueError,match='OWNER_DURABILITY_PARENT'):
+        trials._validate('pacing',changed)
+    changed=copy.deepcopy(result)
+    changed['owner_scope_durability']['platform_scope']='UNREVIEWED_SCOPE'
+    with pytest.raises(ValueError,match='OWNER_DURABILITY_PARENT'):
+        trials._validate('pacing',changed)
+    changed=copy.deepcopy(result)
+    changed['owner_scope_durability']['private_extension']=True
+    with pytest.raises(ValueError,match='OWNER_DURABILITY_SCHEMA'):
         trials._validate('pacing',changed)
     for field in trials.OWNER_SCOPE_DURABILITY_FLAGS:
         changed=copy.deepcopy(result)

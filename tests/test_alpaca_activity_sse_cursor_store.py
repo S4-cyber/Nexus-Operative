@@ -70,8 +70,8 @@ def test_checkpoint_writer_obeys_exclusive_cursor_ownership(tmp_path):
         owner.validate()
         with pytest.raises(ValueError,
                 match='ALPACA_ACTIVITY_SSE_CURSOR_STORE_OWNER_BUSY_OR_UNAVAILABLE'):
-            contender._claim_process_owner()
-        assert contender.process_owner_key is None
+            contender.__enter__()
+        assert contender.process_owner.key is None and contender.fd is None
         with pytest.raises(ValueError,
                 match='ALPACA_ACTIVITY_SSE_CURSOR_STORE_OWNER_BUSY_OR_UNAVAILABLE'):
             store.checkpoint(second_report, previous_cursor=second_before,

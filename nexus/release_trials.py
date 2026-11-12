@@ -50,6 +50,18 @@ OWNER_SCOPE_DURABILITY_CHECKS = ('fresh_marker_file_synced',
     'active_parent_entry_replacement_denied')
 OWNER_SCOPE_DURABILITY_FLAGS = ('native_windows_owner_profile_accepted',
     'broker_account_accepted','release_approved')
+OWNER_SCOPE_DURABILITY_PARENT_CHECKS = (
+    'parent_sync_uncertainty_denied','wrong_parent_descriptor_denied',
+    'parent_entry_sync_uncertainty_denied',
+    'wrong_parent_entry_descriptor_denied')
+OWNER_SCOPE_DURABILITY_SCOPES = {
+    'POSIX_FILE_AND_DIRECTORY_SYNC': True,
+    'WINDOWS_FILE_SYNC_ONLY': False,
+}
+OWNER_SCOPE_DURABILITY_PUBLIC_KEYS = frozenset((
+    'source','passed','platform_scope','parent_directory_sync_supported',
+    'limitations',*OWNER_SCOPE_DURABILITY_CHECKS,
+    *OWNER_SCOPE_DURABILITY_PARENT_CHECKS,*OWNER_SCOPE_DURABILITY_FLAGS))
 INSPECTION_LIMITATIONS=('Fixed response objects and clocks; no actual credentials, provider, '
     'rendered UI, account reconciliation or spendable funds.')
 INSPECTION_PUBLIC_KEYS=frozenset(('passed','source','btc_quote_observation',
@@ -809,7 +821,10 @@ def _owner_scope_durability_trial():
                 wrong_parent_descriptor_denied and
                 parent_entry_sync_uncertainty_denied and
                 wrong_parent_entry_descriptor_denied)),
-        **checks, parent_directory_sync_supported=parent_supported,
+        **checks,
+        platform_scope=('POSIX_FILE_AND_DIRECTORY_SYNC' if parent_supported
+            else 'WINDOWS_FILE_SYNC_ONLY'),
+        parent_directory_sync_supported=parent_supported,
         parent_sync_uncertainty_denied=parent_sync_uncertainty_denied,
         wrong_parent_descriptor_denied=wrong_parent_descriptor_denied,
         parent_entry_sync_uncertainty_denied=
@@ -1829,22 +1844,21 @@ def _validate(profile, result):
             result['limitations']==PACING_LIMITATIONS,
             'PACING_PROFILE_SCOPE')
         owner=result['owner_scope_durability']
+        _require(type(owner) is dict and
+            frozenset(owner)==OWNER_SCOPE_DURABILITY_PUBLIC_KEYS,
+            'OWNER_DURABILITY_SCHEMA')
         _require(owner['source']=='TEMPORARY_LOCAL_OWNER_DURABILITY_FIXTURE' and
             owner['passed'] is True and all(owner[key] is True
                 for key in OWNER_SCOPE_DURABILITY_CHECKS),
             'OWNER_DURABILITY_FENCES')
-        parent_supported=os.name!='nt'
-        _require(owner['parent_directory_sync_supported'] is parent_supported and
+        platform_scope=owner['platform_scope']
+        parent_supported=OWNER_SCOPE_DURABILITY_SCOPES.get(platform_scope)
+        _require(type(parent_supported) is bool and
+            owner['parent_directory_sync_supported'] is parent_supported and
             (all(owner[key] is True for key in
-                ('parent_sync_uncertainty_denied',
-                 'wrong_parent_descriptor_denied',
-                 'parent_entry_sync_uncertainty_denied',
-                 'wrong_parent_entry_descriptor_denied')) if parent_supported else
+                OWNER_SCOPE_DURABILITY_PARENT_CHECKS) if parent_supported else
              all(owner[key] is None for key in
-                ('parent_sync_uncertainty_denied',
-                 'wrong_parent_descriptor_denied',
-                 'parent_entry_sync_uncertainty_denied',
-                 'wrong_parent_entry_descriptor_denied'))),
+                OWNER_SCOPE_DURABILITY_PARENT_CHECKS)),
             'OWNER_DURABILITY_PARENT')
         _require(all(owner[key] is False for key in
             OWNER_SCOPE_DURABILITY_FLAGS),'OWNER_DURABILITY_AUTHORITY')

@@ -80,7 +80,11 @@ def test_corrupt_owner_marker_is_never_accepted_or_repaired(tmp_path):
 
 def test_active_owner_detects_in_place_marker_corruption(tmp_path):
     candidate=ForwardOwnership(tmp_path);candidate.acquire()
-    candidate.path.write_bytes(b'1')
+    if os.name=='nt':
+        os.lseek(candidate._fd,0,os.SEEK_SET)
+        assert os.write(candidate._fd,b'1')==1
+        os.fsync(candidate._fd)
+    else:candidate.path.write_bytes(b'1')
     with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
         candidate.validate()
     with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
@@ -245,7 +249,7 @@ def test_validate_rechecks_directory_after_lock_path_sample(tmp_path,monkeypatch
 
 
 def test_release_rejects_late_owner_path_replacement(tmp_path,monkeypatch):
-    candidate=ForwardOwnership(tmp_path);candidate.acquire();replacement=None
+    candidate=ForwardOwnership(tmp_path);candidate.acquire()
     if os.name=='nt':
         # Windows correctly denies renaming the mandatory-share locked file;
         # inject the equivalent late identity disagreement for portable exit
@@ -255,13 +259,11 @@ def test_release_rejects_late_owner_path_replacement(tmp_path,monkeypatch):
     else:
         retired=tmp_path/'retired-owner.lock';os.replace(candidate.path,retired)
         candidate.path.write_bytes(b'0')
-        replacement=ForwardOwnership(tmp_path);replacement.acquire()
         with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_CHANGED'):
             candidate.validate()
     with pytest.raises(ValueError,match='PAPER_FORWARD_OWNER_STORE_CHANGED'):
         candidate.release()
     assert not candidate.held
-    if replacement is not None:replacement.release()
 
 
 def test_runtime_owner_replacement_fails_before_quote_or_order_mutation(tmp_path,monkeypatch):

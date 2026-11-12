@@ -17,7 +17,8 @@ from nexus.alpaca_paper_contract import canonical, sha
 from nexus.alpaca_paper_inspection import _uuid
 from nexus.broker_lookup_policy import clock
 from nexus.local_owner_scope import (
-    open_owner_file, owner_directory_identity, owner_directory_matches,
+    ProcessOwnerClaim, open_owner_file, owner_directory_identity,
+    owner_directory_matches,
     owner_entry_parent_identity, owner_entry_parent_matches,
     owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe,
     prepare_owner_file)
@@ -540,6 +541,7 @@ class _PostOwnership:
         self.path = budget.path.resolve().with_name(budget.path.name + '.owner.lock')
         self.fd = None; self.lease = None; self.directory_identity = None
         self.entry_parent_identity = None
+        self.process_owner = ProcessOwnerClaim(self.path)
 
     def validate(self):
         if (self.fd is None or self.directory_identity is None or
@@ -577,16 +579,18 @@ class _PostOwnership:
         if self.fd is not None: _fail('OWNER_ALREADY_HELD')
         self.budget._path_check()
         if self.path.is_symlink(): _fail('OWNER_SYMLINK')
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        directory_identity = owner_directory_identity(self.path.parent)
-        entry_parent_identity = owner_entry_parent_identity(
-            self.path.parent.parent)
-        if directory_identity is None or entry_parent_identity is None:
-            _fail('OWNER_FILE_INVALID')
-        fd, created = open_owner_file(self.path)
-        self.directory_identity = directory_identity
-        self.entry_parent_identity = entry_parent_identity
+        if not self.process_owner.acquire():
+            _fail('OWNER_BUSY_OR_UNAVAILABLE')
+        fd = None
         try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.directory_identity = owner_directory_identity(self.path.parent)
+            self.entry_parent_identity = owner_entry_parent_identity(
+                self.path.parent.parent)
+            if (self.directory_identity is None or
+                    self.entry_parent_identity is None):
+                _fail('OWNER_FILE_INVALID')
+            fd, created = open_owner_file(self.path)
             if not prepare_owner_file(self.path, fd, created,
                     self.directory_identity, self.entry_parent_identity):
                 _fail('OWNER_FILE_INVALID')
@@ -599,7 +603,10 @@ class _PostOwnership:
             self.fd = fd; self.validate(); self.lease = object(); return self
         except BaseException as error:
             self.fd = None; self.directory_identity = None
-            self.entry_parent_identity = None; os.close(fd)
+            self.entry_parent_identity = None
+            self.process_owner.release()
+            if fd is not None:
+                os.close(fd)
             if isinstance(error, OSError): _fail('OWNER_BUSY_OR_UNAVAILABLE')
             raise
 
@@ -624,5 +631,7 @@ class _PostOwnership:
             except BaseException:
                 if exit_error is None:
                     raise
+            finally:
+                self.process_owner.release()
         if exit_error is not None:
             raise exit_error

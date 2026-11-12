@@ -22,6 +22,17 @@ def _opened_identity(path, fd, before=None, *, allow_empty=False):
     return opened
 
 
+def _marker_content(fd, *, changed=False):
+    """Require the fixed owner marker without changing it."""
+    try:
+        os.lseek(fd,0,os.SEEK_SET)
+        marker=os.read(fd,2)
+        os.lseek(fd,0,os.SEEK_SET)
+    except OSError:_fail('STORE_CHANGED' if changed else 'STORE_UNAVAILABLE')
+    if marker!=b'0':_fail('STORE_CHANGED' if changed else 'STORE_UNAVAILABLE')
+    return True
+
+
 def _directory_identity(path, before=None, *, changed=False):
     """Sample one real directory and optionally require its prior identity."""
     try:current=path.lstat()
@@ -77,6 +88,7 @@ class ForwardOwnership:
                 not os.path.samestat(opened,current) or
                 (opened.st_dev,opened.st_ino)!=identity):
             _fail('STORE_CHANGED')
+        _marker_content(fd,changed=True)
         # Bracket the public lock-path sample with the acquired directory.
         # Moving the same locked inode into a replacement directory between
         # the first directory sample and path lstat must not acknowledge.
@@ -106,9 +118,11 @@ class ForwardOwnership:
         available=False
         try:
             _opened_identity(self.path,fd,before)
+            _marker_content(fd)
             try:_lock(fd);locked=True;available=True
             except OSError:pass
             _opened_identity(self.path,fd,before)
+            _marker_content(fd,changed=True)
         finally:
             if locked:
                 try:_unlock(fd)
@@ -140,10 +154,12 @@ class ForwardOwnership:
         except OSError:_fail('STORE_UNAVAILABLE')
         try:
             opened=_opened_identity(self.path,fd,before)
+            _marker_content(fd)
             try:_lock(fd)
             except OSError as exc:
                 raise ValueError('PAPER_FORWARD_OWNED_BY_ANOTHER_RUNNER') from exc
             _opened_identity(self.path,fd,before)
+            _marker_content(fd,changed=True)
             _directory_identity(self.directory,directory)
         except BaseException:
             os.close(fd);raise
@@ -189,8 +205,10 @@ class ForwardOwnership:
             if opened.st_size==0:
                 os.write(fd,b'0')
                 _opened_identity(self.path,fd,before)
+            _marker_content(fd)
             _lock(fd)
             _opened_identity(self.path,fd,before)
+            _marker_content(fd,changed=True)
             _directory_identity(self.directory,directory)
         except OSError as exc:
             os.close(fd)

@@ -68,6 +68,38 @@ def test_existing_review_lease_preserves_process_control_signal(tmp_path,monkeyp
     candidate.acquire();candidate.release()
 
 
+def test_corrupt_owner_marker_is_never_accepted_or_repaired(tmp_path):
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()
+    candidate.path.write_bytes(b'1');before=candidate.path.read_bytes()
+    for operation in (candidate.available,candidate.acquire,candidate.acquire_existing):
+        with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_UNAVAILABLE$'):
+            operation()
+        assert not candidate.held and candidate.path.read_bytes()==before
+
+
+def test_active_owner_detects_in_place_marker_corruption(tmp_path):
+    candidate=ForwardOwnership(tmp_path);candidate.acquire()
+    candidate.path.write_bytes(b'1')
+    with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
+        candidate.validate()
+    with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
+        candidate.release()
+    assert not candidate.held and candidate.path.read_bytes()==b'1'
+
+
+def test_acquire_rechecks_marker_after_lock(tmp_path,monkeypatch):
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()
+    original=ownership._marker_content;calls=[0]
+    def corrupt_after_first_check(fd,*,changed=False):
+        calls[0]+=1;result=original(fd,changed=changed)
+        if calls[0]==1:candidate.path.write_bytes(b'1')
+        return result
+    monkeypatch.setattr(ownership,'_marker_content',corrupt_after_first_check)
+    with pytest.raises(ValueError,match='^PAPER_FORWARD_OWNER_STORE_CHANGED$'):
+        candidate.acquire_existing()
+    assert calls[0]==2 and not candidate.held and candidate.path.read_bytes()==b'1'
+
+
 def test_availability_probe_detects_external_process_without_mutation(tmp_path):
     expression='from nexus.forward_ownership import ForwardOwnership; import sys; lock=ForwardOwnership(sys.argv[1]); lock.acquire(); print("ready",flush=True); sys.stdin.read()'
     process=subprocess.Popen([sys.executable,'-c',expression,str(tmp_path)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)

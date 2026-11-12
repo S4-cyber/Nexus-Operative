@@ -10,9 +10,9 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 
-# Full reachable history measured 548,857,439 uncompressed bytes on 2026-10-28.
-# Keep a finite budget with growth headroom; scan all objects without pruning.
-MAX_BYTES = 1024 * 1024 * 1024
+# Full reachable history measured 1,202,605,780 uncompressed bytes on 2026-11-12.
+# Keep a finite 1.5-GiB budget with growth headroom; scan all objects without pruning.
+MAX_BYTES = 1536 * 1024 * 1024
 MAX_OBJECTS = 100000
 PRIVATE_MAGIC = (b'SQLite format 3\x00', b'-----'+b'BEGIN PRIVATE KEY-----', b'-----'+b'BEGIN RSA PRIVATE KEY-----',
                  b'-----'+b'BEGIN EC PRIVATE KEY-----', b'-----'+b'BEGIN OPENSSH PRIVATE KEY-----',

@@ -140,6 +140,12 @@ def test_aggregate_history_byte_cap_still_refuses_without_skipping_objects(tmp_p
     with pytest.raises(ValueError,match='HISTORY_BYTE_CAP'):audit.audit(root,history=True)
 
 
+def test_history_budget_is_finite_and_above_measured_reachable_history():
+    measured_bytes=1_202_605_780
+    assert audit.MAX_BYTES == 1536 * 1024 * 1024
+    assert measured_bytes < audit.MAX_BYTES < 2 * 1024 * 1024 * 1024
+
+
 @pytest.mark.parametrize('reason,expected',[('HISTORY_BYTE_CAP','HISTORY_BYTE_CAP'),
     ('PRIVATE_PATH_OR_SECRET','INTERNAL_ERROR')])
 def test_incomplete_audit_reports_only_allowlisted_reason(tmp_path,monkeypatch,capsys,reason,expected):

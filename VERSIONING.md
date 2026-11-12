@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.281 (pre-release).**
+**Current development build: 0.340.282 (pre-release).**
+
+## v0.340.282 complete-history security-audit capacity repair
+
+The public-repository gate still scans every path and blob reachable from all fetched refs, but its finite aggregate byte ceiling now reflects the measured repository. Reachable history at the v0.340.281 head contains 15,212 objects, including 9,972 blobs and 1,202,605,780 uncompressed blob bytes (1.120 GiB). The prior 1 GiB ceiling therefore failed closed with `PUBLIC_REPOSITORY_AUDIT_INCOMPLETE:HISTORY_BYTE_CAP`; v0.340.282 raises only that ceiling to 1.5 GiB. It does not prune objects, omit refs, weaken any artifact/content rule or introduce a private exception.
+
+At checkpoint start, hosted `development/windows-portal-foundation` and draft PR #1 targeted v0.340.281 commit `64a3603edde74c145e9f31651b59ea390eba1f51` / exact verified tree `41d24c84bbbfe3ff4d91d2ba688dca1cc3590477`. Public repository security run `43210621845` failed specifically in job `131156969516` at the complete-history audit with the byte-cap reason above; its Gitleaks step was consequently skipped. Fresh exact-source v0.340.282 hosted public-security, Windows/installer and browser results remain required after publication and are not pre-claimed.
+
+This is M9/D9 release-security capacity maintenance, not security acceptance by itself. It does not establish actual broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, Windows installer acceptance, funding/live/cloud readiness or release approval. No Portal control or modifiable parameter changed; seven beginner-friendly tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This repair does not independently complete a stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,983 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 699.63 seconds; the synchronized security/workflow/release scope passed 261. The complete fetched-history audit passed 1,091 commits, 9,972 blobs / 1,202,605,780 bytes and 1,023 paths with zero findings. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `91579adaa1615cf8f69943ba6a97e361ef9aa944f7ce5a57d43c0ec24bee546b`; `validation/release_trials_0_340_282.json` SHA256 is `9752ed9236a06fee6d35eb229784dfd465c95c7a11dccc11138201bd684822dd`. Compilation, dependency integrity, generated-roadmap equality, Portal JavaScript syntax and all fourteen Node controllers passed. The 162-member wheel reports v0.340.282 and has SHA256 `e8a92d21826369d950b7a0f08666120c0e9e2f55f6e2026445e318fe402dbe44`. Local Gitleaks, Inno Setup and a Windows/Wine runtime are unavailable; native Windows, installer and rendered-browser acceptance remain hosted gates. These local/synthetic results are not broker, genuine-feed, sustained-market, native Windows, funding, live, cloud or release acceptance.
+
 
 ## v0.340.281 active broker owner-entry parent identity fence
 

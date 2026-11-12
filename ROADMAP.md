@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.282. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.283. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.282 restores the mandatory complete public-repository history audit after reachable uncompressed blobs grew to 1,202,605,780 bytes: the finite ceiling is now 1.5 GiB, with every reachable object still scanned and no pruning, omission or private exception. This is release-security capacity maintenance, not proof that the independent hosted gate has passed, broker or sustained-market acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.283 gives the bounded real-loopback Windows release profile fixed, allowlisted failure boundaries for each public endpoint, Host/Origin boundary checks, first-run defaults, paced paper reads and packaged private tools. Raw exception text, paths, environment and child output remain suppressed, existing narrower release codes remain authoritative, and unreviewed diagnostic labels fail before execution. This makes the recurring hosted HTTP child failure actionable without weakening timeouts, checks or privacy. It is release-diagnostic hardening, not broker or sustained-market acceptance, profitability, funding/live/cloud readiness or release approval. No engagement control or editable parameter changed; the existing trial-readiness button retains black/bright-purple bottom-right hover help. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

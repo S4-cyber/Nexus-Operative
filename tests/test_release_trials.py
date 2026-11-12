@@ -66,6 +66,26 @@ def test_http_trial_never_reprobes_unscoped_request(error):
     assert len(opener.requests) == 1
 
 
+def test_http_phase_emits_only_allowlisted_code_and_preserves_typed_failure():
+    private='C:/private/account.sqlite3 SECRET_MUST_NOT_ESCAPE'
+    def failed():raise OSError(private)
+    with pytest.raises(trials.ReleaseTrialError,
+            match='^RELEASE_TRIAL_HTTP_ENDPOINT_TRIAL_READINESS_FAILED$') as caught:
+        trials._http_phase('ENDPOINT_TRIAL_READINESS',failed)
+    assert private not in str(caught.value)
+    def typed():raise trials.ReleaseTrialError('RELEASE_TRIAL_HTTP_STATUS')
+    with pytest.raises(trials.ReleaseTrialError,match='^RELEASE_TRIAL_HTTP_STATUS$'):
+        trials._http_phase('PACING',typed)
+
+
+def test_http_phase_rejects_unreviewed_diagnostic_label_before_operation():
+    called=[]
+    with pytest.raises(trials.ReleaseTrialError,
+            match='^RELEASE_TRIAL_HTTP_PHASE_CONFIGURATION$'):
+        trials._http_phase('PRIVATE_PATH',lambda:called.append(True))
+    assert called == []
+
+
 def test_real_http_process_starts_stopped_without_data_credentials_or_external_io(tmp_path):
     env = {**os.environ, 'NEXUS_PORTABLE_DATA': str(tmp_path)}
     code = 'import json; from nexus.release_trials import _http_trial; print(json.dumps(_http_trial()))'

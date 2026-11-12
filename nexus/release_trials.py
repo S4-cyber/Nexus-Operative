@@ -106,6 +106,34 @@ def _child_failure(profile, child):
     raise ReleaseTrialError('RELEASE_TRIAL_' + profile.upper() + '_CHILD_FAILED')
 
 
+HTTP_FAILURE_PHASES = frozenset({
+    'ENDPOINT_STATUS', 'ENDPOINT_ROADMAP', 'ENDPOINT_ONBOARDING_TASKS',
+    'ENDPOINT_ONBOARDING_READINESS', 'ENDPOINT_AI_STATUS',
+    'ENDPOINT_PORTFOLIO', 'ENDPOINT_FORWARD_STATUS',
+    'ENDPOINT_FORWARD_SESSIONS', 'ENDPOINT_FORWARD_PREFLIGHT',
+    'ENDPOINT_FOUND_MARKETS', 'ENDPOINT_TRIAL_READINESS',
+    'ENDPOINT_EXECUTION_RECOVERY', 'ENDPOINT_FORWARD_RECOVERY',
+    'ENDPOINT_ROOT_REDIRECT', 'ENDPOINT_PORTAL', 'BOUNDARY', 'DEFAULTS',
+    'PACING', 'PAPER_TOOLS'})
+
+
+def _http_phase(phase, operation, *args, **kwargs):
+    """Convert one known HTTP-trial boundary to a fixed privacy-safe code.
+
+    Windows child failures otherwise collapse to ``HTTP_CHILD_FAILED`` after
+    the parent intentionally discards stderr.  The allowlist keeps diagnostics
+    actionable without exposing exception text, paths, environment or child
+    output.  Existing typed release failures retain their narrower code.
+    """
+    _require(phase in HTTP_FAILURE_PHASES, 'HTTP_PHASE_CONFIGURATION')
+    try:
+        return operation(*args, **kwargs)
+    except ReleaseTrialError:
+        raise
+    except Exception:
+        raise ReleaseTrialError('RELEASE_TRIAL_HTTP_' + phase + '_FAILED') from None
+
+
 def _http_trial_response_body(response, *, tolerate_precredential_denial_reset=False):
     """Bounded trial-only read; a rejected pre-credential request may close early.
 
@@ -387,21 +415,40 @@ def _http_trial():
             time.sleep(.01)
         opener = build_opener(ProxyHandler({}))
         base = 'http://127.0.0.1:' + str(listener.getsockname()[1])
-        for path in ('/api/status', '/api/roadmap', '/api/onboarding/tasks', '/api/onboarding/readiness', '/api/paper/ai-provider/status', '/api/paper/portfolio', '/api/paper/forward', '/api/paper/forward/sessions', '/api/paper/forward/preflight', '/api/research/found-markets', '/api/paper/forward/trial-readiness', '/api/execution/recovery', '/api/paper/forward/recovery', '/', '/portal'):
+        endpoints = (
+            ('ENDPOINT_STATUS', '/api/status'),
+            ('ENDPOINT_ROADMAP', '/api/roadmap'),
+            ('ENDPOINT_ONBOARDING_TASKS', '/api/onboarding/tasks'),
+            ('ENDPOINT_ONBOARDING_READINESS', '/api/onboarding/readiness'),
+            ('ENDPOINT_AI_STATUS', '/api/paper/ai-provider/status'),
+            ('ENDPOINT_PORTFOLIO', '/api/paper/portfolio'),
+            ('ENDPOINT_FORWARD_STATUS', '/api/paper/forward'),
+            ('ENDPOINT_FORWARD_SESSIONS', '/api/paper/forward/sessions'),
+            ('ENDPOINT_FORWARD_PREFLIGHT', '/api/paper/forward/preflight'),
+            ('ENDPOINT_FOUND_MARKETS', '/api/research/found-markets'),
+            ('ENDPOINT_TRIAL_READINESS', '/api/paper/forward/trial-readiness'),
+            ('ENDPOINT_EXECUTION_RECOVERY', '/api/execution/recovery'),
+            ('ENDPOINT_FORWARD_RECOVERY', '/api/paper/forward/recovery'),
+            ('ENDPOINT_ROOT_REDIRECT', '/'), ('ENDPOINT_PORTAL', '/portal'))
+        def read_endpoint(path):
             with opener.open(base + path, timeout=5) as response:
                 body = response.read(2 * 1024 * 1024)
                 _require(response.status == 200, 'HTTP_STATUS')
-                responses[path] = json.loads(body) if path.startswith('/api/') else body.decode('utf-8')
+                return json.loads(body) if path.startswith('/api/') else body.decode('utf-8')
+        for phase, path in endpoints:
+            responses[path] = _http_phase(phase, read_endpoint, path)
         from urllib.request import Request
         from urllib.error import HTTPError
-        for headers in ({'Host':'rebinding.example'},{'Origin':'https://foreign.example'}):
-            try:
-                with opener.open(Request(base+'/api/status',headers=headers),timeout=5):
-                    _require(False,'HTTP_UNTRUSTED_ADMITTED')
-            except HTTPError as error:
-                _require(error.code==403 and error.headers.get('Cache-Control')=='no-store','HTTP_BOUNDARY')
-        with opener.open(base+'/api/status',timeout=5) as response:
-            _require(response.headers.get('Cache-Control')=='no-store','HTTP_PRIVATE_CACHE')
+        def check_boundary():
+            for headers in ({'Host':'rebinding.example'},{'Origin':'https://foreign.example'}):
+                try:
+                    with opener.open(Request(base+'/api/status',headers=headers),timeout=5):
+                        _require(False,'HTTP_UNTRUSTED_ADMITTED')
+                except HTTPError as error:
+                    _require(error.code==403 and error.headers.get('Cache-Control')=='no-store','HTTP_BOUNDARY')
+            with opener.open(base+'/api/status',timeout=5) as response:
+                _require(response.headers.get('Cache-Control')=='no-store','HTTP_PRIVATE_CACHE')
+        _http_phase('BOUNDARY', check_boundary)
         status = responses['/api/status']
         _require(status['portal_enabled'] is False, 'ENGINE_AUTOSTART')
         for name in ('broker_connected', 'live_orders_enabled', 'money_movement_enabled'):
@@ -434,9 +481,9 @@ def _http_trial():
         _require('nexus' in responses['/portal'].lower() and 'url=/portal' in responses['/'], 'PORTAL_CONTENT')
         _require(not list(root.rglob('*')), 'READ_ONLY_STARTUP_WROTE_DATA')
         _require(not any(attempts.values()), 'UNEXPECTED_EXTERNAL_ACCESS')
-        first_run_defaults = _http_defaults_trial(base,root)
+        first_run_defaults = _http_phase('DEFAULTS', _http_defaults_trial, base, root)
         _require(not any(attempts.values()),'HTTP_FIRST_RUN_EXTERNAL_ACCESS')
-        paper_pacing = _http_pacing_trial(base, root)
+        paper_pacing = _http_phase('PACING', _http_pacing_trial, base, root)
         _require(not any(attempts.values()), 'HTTP_PAPER_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, passive_forward_reads_preserved_missing_storage=True, **attempts,
@@ -496,7 +543,8 @@ def _http_trial():
     result['lifecycle_stop_scope'] = 'DEDICATED_APPLICATION_LIFECYCLE_WORKER'
     result['shutdown_fence_order'] = lifecycle_stop_order
     from tools.packaged_paper_tools_smoke import run as paper_tools_trial
-    result['paper_tools_source']=paper_tools_trial([sys.executable,str(Path(__file__).resolve().parents[1]/'portable'/'desktop.py')])
+    result['paper_tools_source']=_http_phase('PAPER_TOOLS', paper_tools_trial,
+        [sys.executable,str(Path(__file__).resolve().parents[1]/'portable'/'desktop.py')])
     return result
 
 

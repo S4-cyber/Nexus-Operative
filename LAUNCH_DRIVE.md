@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.283 privacy-safe Windows HTTP release diagnostics
+
+Hosted v0.340.282 commit `2966c3add3b1925143e3fe95d1c8637fe8b15351` / tree `777c9e5cd221399192e3435cf2fbcefe4d736e7c` passed full-history security/Gitleaks run `43214349239` and browser-help job `131169658137`, but Windows offline evidence job `131169658080` again stopped with only `RELEASE_TRIAL_HTTP_CHILD_FAILED`. v0.340.283 retains stderr/path/environment suppression while assigning fixed allowlisted boundaries to each reviewed real-loopback endpoint and its Host/Origin, defaults, pacing and packaged-tool phases. Existing narrower release failures remain unchanged; an unknown phase label cannot execute.
+
+This makes the Windows gate actionable without weakening its timeout, evidence schema, validation or privacy. It is not a broker/account, genuine-feed, sustained-market, profitability, native Windows/installer, funding/live/cloud or release acceptance claim. No Portal control or editable parameter changed; seven tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+Rough implementation remains about 40% (weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages accepted. Release approval, trading permission and launch timing remain separate. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,985 tests with one expected non-Windows skip and one existing warning in 666.52 seconds; the synchronized release/workflow scope passed 263. All sixteen bounded offline profiles and saved evidence match 403 source files / `b4ab3fca6b384f0f0faad2a35ab47bfac515e723af9c15d4ff95333bd6dbd0f4`; evidence SHA256 is `409de8f0d949ac45ba06b87ffd8f7a91b48713d4c0c73f4bff8f478746162d00`. The complete history audit passed 1,092 commits, 9,983 blobs / 1,205,497,361 bytes and 1,024 paths with zero findings. Compilation, dependencies, roadmap, Portal syntax, fourteen Node controllers and the 162-member wheel passed; wheel SHA256 is `aa33e43ec021deb566b982ed6eb57420d225ae1d3463cb98aced8d5b7750c8e5`.
+
 ## v0.340.282 complete-history security-audit capacity repair
 
 Hosted v0.340.281 commit `64a3603edde74c145e9f31651b59ea390eba1f51` / tree `41d24c84bbbfe3ff4d91d2ba688dca1cc3590477` exposed a precise release-gate failure: public-security run `43210621845`, job `131156969516`, stopped at the mandatory reachable-history audit with `PUBLIC_REPOSITORY_AUDIT_INCOMPLETE:HISTORY_BYTE_CAP`. The complete object set measured 15,212 objects, including 9,972 blobs and 1,202,605,780 uncompressed blob bytes (1.120 GiB), beyond the old 1 GiB finite ceiling. v0.340.282 raises only that ceiling to 1.5 GiB. All fetched refs and reachable objects remain mandatory; no pruning, omission, weakened rule or private exception is allowed. Fresh exact-source hosted results remain required and are not pre-claimed.

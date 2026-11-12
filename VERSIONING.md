@@ -1,6 +1,19 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.282 (pre-release).**
+**Current development build: 0.340.283 (pre-release).**
+
+## v0.340.283 privacy-safe Windows HTTP release diagnostics
+
+The bounded real-loopback release profile now converts untyped failures at each reviewed public endpoint, Host/Origin boundary check, first-run defaults flow, paced paper-read flow and packaged private-tool flow into a fixed allowlisted release code. Raw exception text, paths, environment values, child stdout/stderr and private data remain suppressed. Existing typed release failures retain their narrower code, and an unreviewed phase label fails before its operation can run. Passing report data and every acceptance condition remain unchanged.
+
+At checkpoint start, hosted `development/windows-portal-foundation` targeted v0.340.282 commit `2966c3add3b1925143e3fe95d1c8637fe8b15351` / exact tree `777c9e5cd221399192e3435cf2fbcefe4d736e7c`. Public-security run `43214349239` passed the complete reachable-history artifact audit and checksum-pinned Gitleaks. Browser-help job `131169658137` passed. Windows offline-release-evidence job `131169658080` failed after its bounded trials with only the deliberately generic `RELEASE_TRIAL_HTTP_CHILD_FAILED`; exact-source regression remained active and Windows packaging pending. v0.340.283 narrows that diagnostic surface without claiming or bypassing a fix for the underlying Windows failure.
+
+This is release-diagnostic hardening, not actual broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native Windows/installer acceptance, funding/live/cloud readiness or release approval. No Portal control or modifiable parameter changed; seven beginner-friendly tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
+
+The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This diagnostic increment does not complete a stage and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
+
+Final local validation passed 5,985 tests with one expected non-Windows skip and one existing Starlette/httpx warning in 666.52 seconds; the synchronized release/workflow scope passed 263. All sixteen bounded offline profiles and saved evidence match 403 source files / `b4ab3fca6b384f0f0faad2a35ab47bfac515e723af9c15d4ff95333bd6dbd0f4`; evidence SHA256 is `409de8f0d949ac45ba06b87ffd8f7a91b48713d4c0c73f4bff8f478746162d00`. The complete fetched-history audit passed 1,092 commits, 9,983 blobs / 1,205,497,361 bytes and 1,024 paths with zero findings. Compilation, dependency integrity, roadmap equality, Portal syntax and all fourteen Node controllers passed. The 162-member v0.340.283 wheel has SHA256 `aa33e43ec021deb566b982ed6eb57420d225ae1d3463cb98aced8d5b7750c8e5`. Local Inno Setup and Windows/Wine remain unavailable. These local results do not claim native Windows or external acceptance.
+
 
 ## v0.340.282 complete-history security-audit capacity repair
 

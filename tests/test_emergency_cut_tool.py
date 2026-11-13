@@ -132,6 +132,52 @@ def test_parent_alias_is_pinned_before_priority_and_cut_storage(tmp_path,monkeyp
     assert not list(second.iterdir())
 
 
+def test_new_data_root_is_not_created_until_after_priority_request(tmp_path,monkeypatch):
+    root=tmp_path/'new-state';events=[]
+    def priority():
+        assert not root.exists();events.append('priority')
+        return dict(attempted=False,confirmed=False,priority_class='STANDARD')
+    monkeypatch.setattr(emergency_priority,'request',priority)
+    from nexus.emergency_cut_tool import activate
+    report=activate(root)
+    assert events==['priority'] and report['passed']
+    assert report['data_root_path_pinned'] is True and root.is_dir()
+
+
+def test_data_root_replacement_during_priority_cannot_claim_verified_cut(tmp_path,monkeypatch):
+    root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
+    original=emergency_priority.request
+    def replace_root():
+        root.rename(retired);root.mkdir()
+        return original()
+    monkeypatch.setattr(emergency_priority,'request',replace_root)
+    from nexus.emergency_cut_tool import activate
+    report=activate(root)
+    assert not report['passed'] and not report['halted']
+    assert report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['data_root_path_pinned'] is False
+    assert not list(root.iterdir()) and not list(retired.iterdir())
+
+
+def test_data_root_replacement_after_intent_never_targets_replacement_store(tmp_path,monkeypatch):
+    root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
+    original=emergency_intent.persist;calls=[]
+    def replace_after_intent(order_path):
+        original(order_path);calls.append(1)
+        if len(calls)==1:
+            root.rename(retired);root.mkdir()
+    monkeypatch.setattr(emergency_intent,'persist',replace_after_intent)
+    from nexus.emergency_cut_tool import activate
+    report=activate(root)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert not report['emergency_intent_present']
+    assert report['data_root_path_pinned'] is False
+    assert emergency_intent.requested(retired/'order_lifecycle.sqlite3')
+    assert not list(root.iterdir())
+
+
 def test_storage_failure_retains_cut_until_explicit_retry_finishes_cleanup(tmp_path,monkeypatch):
     gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
     gateway.submit('storage-fault','BTC-USD','BUY',1,tier='terrestrial')

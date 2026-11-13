@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.292'
+REVISION = '0.340.293'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -895,6 +895,12 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
         '; Activity SSE cursor checkpoint ownership now combines the OS-backed lock with a PID-and-normalized-path process claim so a second cooperating Windows handle cannot checkpoint during provider open; fresh native cross-process and provider-paper acceptance remain required' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
+# Keep the standalone cut's public-root claim sampled and conservative.  This
+# does not replace native ordinary-profile or sustained pressure acceptance.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the standalone emergency-stop process now samples an existing resolved data-root identity before priority elevation, exclusively initializes a root observed absent only afterward, and rechecks the identity throughout intent/SQLite work, refusing a concurrently replaced public root instead of reporting VERIFIED for a cut applied only to replacement storage' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -919,7 +925,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.292 pins the Windows cross-version recovery check to v0.340.252, a genuinely prior release that contains the trusted terminal-clock evidence required by current fail-closed consistency review. The former v0.64 fixture is intentionally rejected because its retained terminal event predates that evidence; the production check is not weakened or defaulted true. Local current-application recovery of the new fixture preserves halt state, reconciled portfolio state and the expected account, order, policy and quote hashes. This is recovery-fixture and CI-contract hardening, not prior-installer upgrade acceptance, broker or sustained-market acceptance, profitability, funding/live/cloud readiness, native installer acceptance or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.293 samples an existing resolved data-root identity before the standalone emergency-stop process raises its best-effort priority, exclusively initializes a root observed absent only afterward, and rechecks that identity throughout intent and durable-order halt work. A concurrent public-root replacement now returns UNCONFIRMED with data_root_path_pinned false instead of allowing a replacement store to produce a false VERIFIED result. The cut remains local paper-only with no reset, network, credential, broker, funds or live authority. This is sampled local pathname hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

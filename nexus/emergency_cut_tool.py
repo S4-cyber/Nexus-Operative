@@ -25,44 +25,77 @@ PUBLIC_KEYS = frozenset(('mode','passed','halted','emergency_cut_state',
 
 
 def _resolved_data_root(data_root):
-    """Pin one non-symlink data-root target before any cut storage access."""
+    """Resolve one non-symlink data-root before cut storage access."""
     candidate = Path(data_root or os.environ.get('NEXUS_PORTABLE_DATA',
         str(Path.home()/'.nexus-operative'))).expanduser()
     if candidate.is_symlink():raise ValueError('DATA_ROOT_SYMLINK')
     try:before = candidate.lstat()
     except FileNotFoundError:
-        return candidate.resolve(strict=False)
+        return candidate.resolve(strict=False),None
     if not stat.S_ISDIR(before.st_mode):raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
     resolved = candidate.resolve(strict=True)
     after = candidate.lstat()
     if candidate.is_symlink() or not os.path.samestat(before,after):
         raise ValueError('DATA_ROOT_CHANGED')
-    return resolved
+    return resolved,before
+
+
+def _initialize_data_root(root):
+    """Exclusively create a root observed absent before priority elevation."""
+    root.parent.mkdir(parents=True,exist_ok=True)
+    try:root.mkdir(mode=0o700)
+    except FileExistsError:raise ValueError('DATA_ROOT_CHANGED')
+    identity=root.lstat()
+    if root.is_symlink() or not stat.S_ISDIR(identity.st_mode):
+        raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
+    return identity
+
+
+def _same_data_root(root,identity):
+    """Conservatively sample the public root identity throughout the cut."""
+    if identity is None:return False
+    try:current=root.lstat()
+    except OSError:return False
+    return (not root.is_symlink() and stat.S_ISDIR(current.st_mode)
+        and os.path.samestat(identity,current))
 
 
 def activate(data_root=None):
-    root = _resolved_data_root(data_root)
+    root,root_identity = _resolved_data_root(data_root)
     priority = emergency_priority.request()
+    if root_identity is None:root_identity=_initialize_data_root(root)
+    root_stable = _same_data_root(root,root_identity)
     order_path = root/'order_lifecycle.sqlite3'
-    if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
     intent_preceded = durable_halt = final_intent = False
     try:
+        if not root_stable:raise ValueError('DATA_ROOT_CHANGED')
+        if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
         try:
             emergency_intent.persist(order_path)
             intent_preceded = True
+            if not _same_data_root(root,root_identity):
+                raise ValueError('DATA_ROOT_CHANGED')
         finally:
             try:
-                result = DurableOrderGateway(order_path).emergency_halt()
-                durable_halt = result.get('halted') is True
+                if _same_data_root(root,root_identity):
+                    result = DurableOrderGateway(order_path).emergency_halt()
+                    durable_halt = result.get('halted') is True
+                else:raise ValueError('DATA_ROOT_CHANGED')
             finally:
                 # Reassert after SQLite so a concurrently finishing explicit
                 # reset cannot leave the standalone request without a latch.
-                emergency_intent.persist(order_path)
-                final_intent = emergency_intent.requested(order_path)
+                if _same_data_root(root,root_identity):
+                    emergency_intent.persist(order_path)
+                    if not _same_data_root(root,root_identity):
+                        raise ValueError('DATA_ROOT_CHANGED')
+                    final_intent = emergency_intent.requested(order_path)
     except (ValueError, OSError, sqlite3.Error, RuntimeError):
-        try:final_intent = emergency_intent.requested(order_path)
-        except (ValueError, OSError):final_intent = False
-    verified = intent_preceded and durable_halt and final_intent
+        if _same_data_root(root,root_identity):
+            try:final_intent = emergency_intent.requested(order_path)
+            except (ValueError, OSError):final_intent = False
+        else:final_intent = False
+    root_stable = _same_data_root(root,root_identity)
+    verified = root_stable and intent_preceded and durable_halt and final_intent
     return dict(mode='NEXUS_LOCAL_PAPER_EMERGENCY_STOP',passed=verified,
         halted=final_intent or durable_halt,
         emergency_cut_state='VERIFIED' if verified else 'UNCONFIRMED',
@@ -72,7 +105,7 @@ def activate(data_root=None):
         emergency_priority_attempted=priority['attempted'],
         emergency_priority_confirmed=priority['confirmed'],
         emergency_priority_class=priority['priority_class'],
-        data_root_path_pinned=True,
+        data_root_path_pinned=root_stable,
         desktop_started=False,network_requested=False,credential_access_requested=False,
         broker_connected=False,live_orders_enabled=False,money_movement_enabled=False,
         reset_available=False,automatic_restart=False,

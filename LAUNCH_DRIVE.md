@@ -1,5 +1,17 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.298 emergency intent-to-halt handoff identity
+
+The standalone cut previously observed its independent latch after persistence but did not prove that same entry survived until durable cancellation began. A concurrent clear could therefore remove the fence, let the final reassertion recreate it and leave the public ordering claim too strong.
+
+v0.340.298 samples the exact no-follow latch entry after the exact-boolean presence check and rechecks its identity immediately before the durable halt. Missing or replaced state loses ordering confirmation but never suppresses the independent durable-halt or final-latch attempts. Pinned-root identity, exact halt acknowledgement and exact final-latch evidence remain mandatory.
+
+No UI, permission, limit, account check or exit changed. Seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults and fail-closed behavior remain intact. This is sampled local handoff evidence, not an atomic cross-process lock, administrator boundary, native Windows/ordinary-user or sustained-pressure acceptance, broker or market acceptance, funding/live/cloud readiness or release approval. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 accepted stages.
+
+Complete local validation passed 6,023 tests with one expected non-Windows skip and one existing warning in 1,746.41 seconds; the synchronized focus passed 99 and the evidence/history focus passed 361. All 16 bounded offline profiles and independent saved-evidence verification match 403 source files / `860889986fcc4869acfee7947655ab872447585032da8328517c01f5658ca919`; evidence SHA256 is `09dcc1094eac79aaaba189c02674880176ffd5443fff32d23058f8e7a0e48e38`. Parent v0.340.297 passed hosted security/Gitleaks, saved evidence, browser/help, complete Windows regressions and EXE/installer packaging. Its development regression and installer each passed 5,961 tests with 62 skips and one warning. Exact-head installer evidence retained 10 phases/20 records in one session; distribution ZIP SHA256 is `2f805a9479aa9b168ab6b4591d5ac351849383056640ae79c63e074e40a4967e`, evidence ZIP SHA256 is `ecdb8eb84771332d4d892601191ee9c51c635ed7d165214e618e7a66ad16ec91`, and installer SHA256 is `3d02fa74039ac815225763b9ad29baa52b4fef999c4b67e0d6f4b27996a6d616`. These do not establish native-window, ordinary-user, broker, sustained-market, funding/live/cloud or release acceptance. Fresh v0.340.298 hosted gates remain required.
+
+Compilation, dependency integrity, deterministic-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 162-member v0.340.298 wheel SHA256 is `69c1bd215471117194d53497d4056ed5002f599aff2fae3091099418af90aa57`. The staged 1,019-path / 1,019-blob artifact audit and high-confidence credential-pattern scan found zero findings; local Gitleaks is unavailable.
+
 ## v0.340.297 verified pre-halt intent ordering
 
 The emergency command previously treated the intent writer's ordinary return as proof that the independent latch was present before durable cancellation. A silent faulty write could therefore leave the ordering claim true even though only the final post-halt latch became observable.

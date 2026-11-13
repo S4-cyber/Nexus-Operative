@@ -271,6 +271,24 @@ def test_malformed_pre_halt_intent_read_cannot_claim_ordering(
     assert report['halted'] and report['data_root_path_pinned']
 
 
+def test_cleared_pre_halt_intent_cannot_claim_handoff_ordering(
+        tmp_path,monkeypatch):
+    original=emergency_intent.requested;calls=[]
+    def clear_after_observation(order_path):
+        calls.append(1)
+        present=original(order_path)
+        if len(calls)==1:emergency_intent.clear(order_path)
+        return present
+    monkeypatch.setattr(emergency_intent,'requested',clear_after_observation)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed'] and report['emergency_intent_present']
+    assert report['halted'] and report['data_root_path_pinned']
+    assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
+
+
 @pytest.mark.parametrize('outcome',[LookupError('UNEXPECTED_GATEWAY_FAULT'),None,
     {'halted':1}])
 def test_unexpected_or_malformed_halt_acknowledgement_keeps_latch_unconfirmed(

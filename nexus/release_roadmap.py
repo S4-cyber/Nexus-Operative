@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.297'
+REVISION = '0.340.298'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -921,6 +921,12 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the standalone emergency-stop process accepts only the exact boolean True from final intent inspection, so malformed truthy helper returns remain unconfirmed and every public cut-state field retains its boolean schema' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
+# A separate reset can remove or replace the latch after the first observation.
+# Preserve the independent halt attempt but never promote that broken handoff.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the standalone emergency-stop process samples the exact latch entry after its first confirmed observation and rechecks the same entry immediately before durable-halt handoff, so a concurrent clear or replacement loses ordering confirmation without suppressing the independent halt or final-latch attempts' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -945,7 +951,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.297 observes the independent emergency-intent latch after persistence and before the durable SQLite halt, and accepts only the exact boolean True as evidence that intake was fenced first. A silent first write, unreadable status or malformed truthy status cannot claim latch-before-halt ordering or promote the cut to VERIFIED; durable cancellation and the final latch are still attempted independently. The existing pinned-root, explicit durable-halt and exact final-latch requirements remain mandatory. The command remains local paper-only with no reset, network, credential, broker, funds or live authority. This is sampled local ordering-evidence hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.298 samples the exact independent emergency-intent entry after the first confirmed persistence observation and rechecks that same entry immediately before handing off to the durable SQLite halt. A concurrent clear or replacement cannot retain latch-before-halt ordering or promote the cut to VERIFIED; the durable halt and final latch are still attempted independently. Existing pinned-root, exact boolean observation, explicit durable-halt and final-latch requirements remain mandatory. The command remains local paper-only with no reset, network, credential, broker, funds or live authority. This is sampled local handoff-integrity hardening, not an atomic cross-process lock, administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -87,6 +87,20 @@ def _intent_present(result):
     return result is True
 
 
+def _intent_identity(order_path):
+    """Sample the exact latch entry without following it."""
+    try:return emergency_intent.path(order_path).lstat()
+    except OSError:return None
+
+
+def _same_intent(order_path,identity):
+    """Require the observed latch entry to survive until durable handoff."""
+    if identity is None:return False
+    try:current=emergency_intent.path(order_path).lstat()
+    except OSError:return False
+    return os.path.samestat(identity,current)
+
+
 def activate(data_root=None):
     root,root_identity = _resolved_data_root(data_root)
     priority = _request_priority()
@@ -94,6 +108,7 @@ def activate(data_root=None):
     root_stable = _same_data_root(root,root_identity)
     order_path = root/'order_lifecycle.sqlite3'
     intent_preceded = durable_halt = final_intent = False
+    intent_identity = None
     try:
         if not root_stable:raise ValueError('DATA_ROOT_CHANGED')
         if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
@@ -108,9 +123,18 @@ def activate(data_root=None):
             # ``VERIFIED``.
             intent_preceded = _intent_present(
                 emergency_intent.requested(order_path))
+            if intent_preceded:intent_identity=_intent_identity(order_path)
+            intent_preceded = intent_identity is not None
         finally:
             try:
                 if _same_data_root(root,root_identity):
+                    # Reset is intentionally a separate explicit workflow.
+                    # If it removes or replaces the independently observed
+                    # latch before this handoff, retain the authoritative
+                    # SQLite halt attempt but never claim that intake stayed
+                    # fenced ahead of it.
+                    if not _same_intent(order_path,intent_identity):
+                        intent_preceded = False
                     result = DurableOrderGateway(order_path).emergency_halt()
                     durable_halt = _halt_confirmed(result)
                 else:raise ValueError('DATA_ROOT_CHANGED')

@@ -1,6 +1,18 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.297 (pre-release).**
+**Current development build: 0.340.298 (pre-release).**
+
+## v0.340.298 emergency intent-to-halt handoff identity
+
+The independent emergency latch was observed after persistence but its exact entry was not retained through the immediate handoff to durable SQLite cancellation. A concurrent clear could remove the observed fence before the halt, after which the final reassertion recreated it while the public result still claimed latch-before-halt ordering.
+
+v0.340.298 samples the no-follow latch entry after the exact-boolean presence observation and requires that same entry identity immediately before the durable halt. Missing or replaced state clears the ordering claim and prevents `VERIFIED`; it does not suppress the durable halt or final-latch attempts. Existing stable-root, exact halt acknowledgement and exact final-latch requirements remain mandatory.
+
+The command remains local paper-only with no Portal, network, vault, broker, reset, live-order or money path. No button or editable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks and fail-closed exits remain unchanged. This is sampled local handoff-integrity hardening, not an atomic cross-process lock, administrator boundary, distributed stop, native Windows/ordinary-user or sustained-pressure acceptance, broker or market acceptance, funding/live/cloud readiness or release approval. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages accepted.
+
+Complete local validation passed 6,023 tests with one expected non-Windows skip and one existing Starlette/httpx warning in 1,746.41 seconds; the synchronized focus passed 99 and the evidence/history focus passed 361. All sixteen bounded offline profiles and independent saved-evidence verification match 403 source files / `860889986fcc4869acfee7947655ab872447585032da8328517c01f5658ca919`; evidence SHA256 is `09dcc1094eac79aaaba189c02674880176ffd5443fff32d23058f8e7a0e48e38`. Parent v0.340.297 passed hosted public security/Gitleaks, saved evidence, browser/help, complete Windows PR/development regressions and the development EXE/installer lane. Both development Windows executions passed 5,961 tests with 62 skips and one warning. Independently downloaded v0.340.297 distribution and installer-evidence ZIPs matched their hosted SHA256 digests `2f805a9479aa9b168ab6b4591d5ac351849383056640ae79c63e074e40a4967e` and `ecdb8eb84771332d4d892601191ee9c51c635ed7d165214e618e7a66ad16ec91`; installer SHA256 is `3d02fa74039ac815225763b9ad29baa52b4fef999c4b67e0d6f4b27996a6d616`. The exact-source review retained 10 phases/20 records and a 52.998-second maximum under the 300-second bound. These remain CI/synthetic checks, not clean-machine native-window ordinary-user, broker, sustained-market, funding/live/cloud or release acceptance. Fresh exact-source v0.340.298 gates remain mandatory.
+
+Compilation, dependency integrity, deterministic-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 162-member v0.340.298 wheel reports the synchronized version and has SHA256 `69c1bd215471117194d53497d4056ed5002f599aff2fae3091099418af90aa57`. The staged 1,019-path / 1,019-blob public-artifact audit and high-confidence credential-pattern scan found zero findings; local Gitleaks is unavailable.
 
 ## v0.340.297 verified pre-halt intent ordering
 

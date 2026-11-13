@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.296. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.297. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.296 requires an exact boolean True from final emergency-intent inspection. Truthy integers, strings, mappings, sequences, None and other malformed helper results remain unconfirmed, cannot promote the cut to VERIFIED and cannot escape into the public boolean evidence schema. The existing pinned-root, latch-before-halt, explicit durable-halt and final-latch requirements remain mandatory. The command remains local paper-only with no reset, network, credential, broker, funds or live authority. This is local output/trust-boundary hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.297 observes the independent emergency-intent latch after persistence and before the durable SQLite halt, and accepts only the exact boolean True as evidence that intake was fenced first. A silent first write, unreadable status or malformed truthy status cannot claim latch-before-halt ordering or promote the cut to VERIFIED; durable cancellation and the final latch are still attempted independently. The existing pinned-root, explicit durable-halt and exact final-latch requirements remain mandatory. The command remains local paper-only with no reset, network, credential, broker, funds or live authority. This is sampled local ordering-evidence hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

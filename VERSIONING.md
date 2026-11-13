@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.296 (pre-release).**
+**Current development build: 0.340.297 (pre-release).**
+
+## v0.340.297 verified pre-halt intent ordering
+
+The emergency command previously inferred that the independent latch preceded durable cancellation from `persist()` returning normally. Because the writer intentionally has no acknowledgement return, a faulty or substituted helper could silently omit the first write, let cancellation proceed and create only the final latch while the result still claimed the required order.
+
+This pre-release observes intent presence after the first persistence attempt and requires the exact boolean `True` before setting the ordering evidence. A silent first write, unreadable state or malformed truthy result remains unconfirmed and cannot promote the command to `VERIFIED`. The durable halt and final latch continue through independent nested attempts; stable root identity, an exact durable-halt acknowledgement and an exact final latch are still required.
+
+The standalone command remains local paper-only and starts no desktop, network, credential, broker, reset, live-order or money-movement path. OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No Portal button or editable parameter changed, so seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local ordering-evidence hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or market acceptance, funding/live/cloud readiness or release approval. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages accepted.
+
+Final local validation passed 6,022 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 1,595.30 seconds; the synchronized emergency/version/roadmap/workflow scope passed 72. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `e5676ea262d3b7b3c0b8a4f00622013021b6e742645e5fd386f179c23b68ccae`; evidence SHA256 is `6da7eedfdfb3025e2dece98595947b20d187779472c476c8509ba1797ec04e4d`. Compilation, dependency integrity, deterministic-roadmap generation and Portal syntax passed. The 162-member v0.340.297 wheel reports the synchronized version and has SHA256 `b3e8d3e7ffb7b4d111e58408651c7f20af4b4af4aa31b33e802ee812ab7fcc39`. The staged 1,018-path / 1,018-blob public-artifact audit and 4,181-line high-confidence credential scan found zero findings; local Gitleaks is unavailable. Parent v0.340.296 passed hosted security/Gitleaks, saved evidence, browser/help, both complete 5,959-pass/62-skip Windows regressions and the development EXE/installer lane. Install/reinstall, current and pinned-prior recovery, data-preserving uninstall, 10-phase/20-record sequence review and source/artifact binding passed; independently downloaded installer SHA256 is `cf5acac0c874b0a105a4312fe1748f7f76426a493fb72f0ace171f5c36a81c16`. These remain CI/synthetic checks rather than clean-machine native-window ordinary-user, broker, sustained-market, funding/live/cloud or release acceptance. Fresh exact-source v0.340.297 gates remain mandatory.
 
 ## v0.340.296 emergency-intent evidence boundary
 

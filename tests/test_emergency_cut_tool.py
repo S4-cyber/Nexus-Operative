@@ -189,7 +189,7 @@ def test_data_root_replacement_after_intent_never_targets_replacement_store(tmp_
     from nexus.emergency_cut_tool import activate
     report=activate(root)
     assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
-    assert report['intent_preceded_durable_halt']
+    assert not report['intent_preceded_durable_halt']
     assert not report['durable_order_halt_confirmed']
     assert not report['emergency_intent_present']
     assert report['data_root_path_pinned'] is False
@@ -238,6 +238,39 @@ def test_unexpected_first_intent_fault_still_attempts_halt_and_final_latch(
     assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
 
 
+def test_silent_first_intent_write_cannot_claim_pre_halt_ordering(
+        tmp_path,monkeypatch):
+    original=emergency_intent.persist;calls=[]
+    def silently_drop_once(order_path):
+        calls.append(1)
+        if len(calls)==1:return None
+        return original(order_path)
+    monkeypatch.setattr(emergency_intent,'persist',silently_drop_once)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed'] and report['emergency_intent_present']
+    assert report['halted'] and report['data_root_path_pinned']
+    assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
+
+
+def test_malformed_pre_halt_intent_read_cannot_claim_ordering(
+        tmp_path,monkeypatch):
+    original=emergency_intent.requested;calls=[]
+    def malformed_once(order_path):
+        calls.append(1)
+        if len(calls)==1:return 1
+        return original(order_path)
+    monkeypatch.setattr(emergency_intent,'requested',malformed_once)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed'] and report['emergency_intent_present']
+    assert report['halted'] and report['data_root_path_pinned']
+
+
 @pytest.mark.parametrize('outcome',[LookupError('UNEXPECTED_GATEWAY_FAULT'),None,
     {'halted':1}])
 def test_unexpected_or_malformed_halt_acknowledgement_keeps_latch_unconfirmed(
@@ -265,7 +298,7 @@ def test_unexpected_intent_status_fault_never_escapes_emergency_boundary(
     from nexus.emergency_cut_tool import activate
     report=activate(tmp_path)
     assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
-    assert report['intent_preceded_durable_halt']
+    assert not report['intent_preceded_durable_halt']
     assert not report['durable_order_halt_confirmed']
     assert not report['emergency_intent_present'] and not report['halted']
     assert report['data_root_path_pinned']
@@ -277,7 +310,7 @@ def test_malformed_intent_status_cannot_confirm_or_change_boolean_schema(
     monkeypatch.setattr(emergency_intent,'requested',lambda *_:outcome)
     from nexus.emergency_cut_tool import activate
     report=activate(tmp_path)
-    assert report['intent_preceded_durable_halt']
+    assert not report['intent_preceded_durable_halt']
     assert report['durable_order_halt_confirmed']
     assert report['halted'] is True
     assert report['emergency_intent_present'] is False

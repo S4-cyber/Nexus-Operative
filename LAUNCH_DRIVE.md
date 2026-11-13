@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.297 verified pre-halt intent ordering
+
+The emergency command previously treated the intent writer's ordinary return as proof that the independent latch was present before durable cancellation. A silent faulty write could therefore leave the ordering claim true even though only the final post-halt latch became observable.
+
+v0.340.297 re-reads the latch after the first persistence attempt and requires the exact boolean `True` before claiming latch-before-halt ordering. Silent writes, status faults and malformed truthy results cannot make the command `VERIFIED`. Durable halt and final latch attempts remain independent, and pinned-root identity plus exact halt/final-latch evidence remain mandatory.
+
+No button or editable parameter changed. Seven tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, fail-closed exits and independent emergency-stop behavior remain unchanged. The command remains local paper-only with no reset, desktop, network, credential, broker, live-order, funds or release authority. This is not distributed-stop, administrator, physical-power-loss, broker, sustained-market, native-profile, funding/live/cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages fully accepted. Historical and synthetic results are not future-profit predictions.
+
+Final local validation passed 6,022 tests with one expected non-Windows skip and one existing warning in 1,595.30 seconds; 72 synchronized emergency/version/roadmap/workflow tests passed. All 16 bounded offline profiles and saved-evidence verification match 403 source files / `e5676ea262d3b7b3c0b8a4f00622013021b6e742645e5fd386f179c23b68ccae`; evidence SHA256 is `6da7eedfdfb3025e2dece98595947b20d187779472c476c8509ba1797ec04e4d`. Compilation, dependency integrity, roadmap generation and Portal syntax passed. The 162-member v0.340.297 wheel SHA256 is `b3e8d3e7ffb7b4d111e58408651c7f20af4b4af4aa31b33e802ee812ab7fcc39`. The staged 1,018-path / 1,018-blob artifact audit and 4,181-line credential scan found zero findings; local Gitleaks is unavailable. Parent v0.340.296 passed hosted security/Gitleaks, evidence, browser/help and both complete 5,959-pass/62-skip Windows regressions. Its development installer lane passed EXE/installer packaging, install/reinstall, current and pinned-prior recovery, data-preserving uninstall, 10-phase/20-record review and artifact binding; the independently rehashed installer SHA256 is `cf5acac0c874b0a105a4312fe1748f7f76426a493fb72f0ace171f5c36a81c16`. These remain CI/synthetic checks, not clean-machine native-window ordinary-user, broker, sustained-market, funding/live/cloud or release acceptance. Parent evidence is not current acceptance.
+
 ## v0.340.296 emergency-intent evidence boundary
 
 The final emergency-intent reader previously flowed directly into public cut evidence after ordinary and recovery paths. A malformed truthy helper value could therefore influence verification and violate the documented boolean result schema.

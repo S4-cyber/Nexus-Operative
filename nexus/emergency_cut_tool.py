@@ -99,9 +99,15 @@ def activate(data_root=None):
         if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
         try:
             emergency_intent.persist(order_path)
-            intent_preceded = True
             if not _same_data_root(root,root_identity):
                 raise ValueError('DATA_ROOT_CHANGED')
+            # ``persist`` deliberately has no success return value.  Observe
+            # the latch itself before claiming that intake was fenced ahead
+            # of the durable cancellation phase.  A silent/malformed helper
+            # can never manufacture the ordering evidence required by
+            # ``VERIFIED``.
+            intent_preceded = _intent_present(
+                emergency_intent.requested(order_path))
         finally:
             try:
                 if _same_data_root(root,root_identity):

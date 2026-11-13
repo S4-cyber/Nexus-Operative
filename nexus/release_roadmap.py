@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.298'
+REVISION = '0.340.299'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -951,7 +951,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.298 samples the exact independent emergency-intent entry after the first confirmed persistence observation and rechecks that same entry immediately before handing off to the durable SQLite halt. A concurrent clear or replacement cannot retain latch-before-halt ordering or promote the cut to VERIFIED; the durable halt and final latch are still attempted independently. Existing pinned-root, exact boolean observation, explicit durable-halt and final-latch requirements remain mandatory. The command remains local paper-only with no reset, network, credential, broker, funds or live authority. This is sampled local handoff-integrity hardening, not an atomic cross-process lock, administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.299 samples the exact final independent emergency-intent entry after its exact-boolean presence observation and rechecks that same no-follow entry immediately before constructing the public result. A clear or replacement between those two samples cannot leave a stale positive presence flag or promote the cut to VERIFIED; the durable SQLite halt remains independently reported. A later explicit reset remains possible. Existing pinned-root, latch-before-halt identity, exact durable-halt acknowledgement and final-latch requirements remain mandatory. The command remains local paper-only with no reset, network, credential, broker, funds or live authority. This is sampled local reporting-boundary hardening, not an atomic cross-process lock, administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -108,7 +108,7 @@ def activate(data_root=None):
     root_stable = _same_data_root(root,root_identity)
     order_path = root/'order_lifecycle.sqlite3'
     intent_preceded = durable_halt = final_intent = False
-    intent_identity = None
+    intent_identity = final_intent_identity = None
     try:
         if not root_stable:raise ValueError('DATA_ROOT_CHANGED')
         if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
@@ -147,6 +147,9 @@ def activate(data_root=None):
                         raise ValueError('DATA_ROOT_CHANGED')
                     final_intent = _intent_present(
                         emergency_intent.requested(order_path))
+                    if final_intent:
+                        final_intent_identity = _intent_identity(order_path)
+                    final_intent = final_intent_identity is not None
     except Exception:
         # An emergency command must still return a conservative structured
         # result after an unforeseen ordinary storage/helper fault.  System
@@ -154,11 +157,21 @@ def activate(data_root=None):
         # nested finally blocks above already attempted the independent latch,
         # durable halt and final latch before control reaches this boundary.
         if _same_data_root(root,root_identity):
-            try:final_intent = _intent_present(
-                emergency_intent.requested(order_path))
+            try:
+                final_intent = _intent_present(
+                    emergency_intent.requested(order_path))
+                if final_intent:
+                    final_intent_identity = _intent_identity(order_path)
+                final_intent = final_intent_identity is not None
             except Exception:final_intent = False
         else:final_intent = False
     root_stable = _same_data_root(root,root_identity)
+    # The final presence read is evidence only if that exact no-follow entry
+    # survives until this last result sample.  A clear/replacement observed
+    # here cannot leave a stale positive flag or promote ``VERIFIED``.  This
+    # remains sampled evidence; a later explicit reset is still possible.
+    final_intent = bool(root_stable and final_intent and
+        _same_intent(order_path,final_intent_identity))
     verified = root_stable and intent_preceded and durable_halt and final_intent
     return dict(mode='NEXUS_LOCAL_PAPER_EMERGENCY_STOP',passed=verified,
         halted=final_intent or durable_halt,

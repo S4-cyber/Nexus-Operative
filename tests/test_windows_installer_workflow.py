@@ -3,6 +3,7 @@ import re
 
 
 ROOT=Path(__file__).resolve().parents[1]
+PRIOR_RECOVERY_FIXTURE_COMMIT='5660ec19d66af6401d3bd4e6c271b6e8dc2bf461'
 
 
 def test_installer_smoke_bounds_every_external_process_and_records_phases():
@@ -57,3 +58,6 @@ def test_windows_workflow_retains_outer_timeout_and_always_uploads_diagnostics()
     assert workflow.index('python tools/windows_distribution_binding_review.py') < workflow.index('name: Upload distribution with source and checksum manifest')
     assert 'name: Preserve installer acceptance evidence\n        if: always()' in workflow
     assert '${{ runner.temp }}/nexus-installer-evidence' in workflow
+    assert workflow.count(PRIOR_RECOVERY_FIXTURE_COMMIT)==2
+    assert '09bb7280cd2e654018d491db52e19660b2b8e180' not in workflow
+    assert 'trusted terminal-clock' in workflow

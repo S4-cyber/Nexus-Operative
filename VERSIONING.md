@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.291 (pre-release).**
+**Current development build: 0.340.292 (pre-release).**
+
+## v0.340.292 compatible cross-version recovery fixture
+
+Exact-source v0.340.291 passed hosted public security/Gitleaks, bounded offline release evidence, Portal browser/help and complete native-Windows regression. Its exact-head installer run likewise passed 5,941 tests with 62 platform skips, PyInstaller, standalone paper tools, EXE startup, Inno Setup, install/reinstall, installed starts and same-version packaged recovery before failing only at prior-version recovery. That result reproduced the earlier initial-publication installer failure without relying on the initial publication's known truncated `VERSIONING.md`.
+
+The pinned v0.64 data fixture predates the trusted terminal-clock field now required by fail-closed consistency review, so current code correctly reported `TERMINAL_EVENT_CLOCK_UNTRUSTED`. This pre-release replaces that fixture with v0.340.252 commit `5660ec19d66af6401d3bd4e6c271b6e8dc2bf461`. It remains an older release and locally passed current-application recovery with halt, reconciliation and account/order/policy/quote hashes preserved. The terminal-clock check is unchanged; missing evidence continues to fail closed.
+
+The change preserves OFF-by-default engagement, fixed limits, account checks, fail-closed exits and independent emergency-stop ownership. It adds no UI button or editable parameter, so the seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. This is a disposable data-recovery compatibility check, not a prior-installer binary upgrade, broker, sustained-market, profitability, native Windows/installer, funding, live, cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages fully accepted. Fresh exact-source hosted gates are required.
+
+Local validation passed 6,002 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 1,564.41 seconds; the direct workflow/recovery-source/roadmap/version scope passed 15. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `da0cecbd12271f7cc6b441ea73765460811b981829d2eab5b75677abce83a40a`; evidence SHA256 is `33086606434aaf94f9b8d9d95cf5c5588d09c91241b35ed2129ebcd8370e3d71`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and all fourteen controllers passed. The 162-member v0.340.292 wheel SHA256 is `7007c56eec299c4ffd9a976b9bad0a92d6c5ef4368b0db6c2141dcafeed62f3d`.
 
 ## v0.340.291 Windows Trial Readiness owner-descriptor binding
 

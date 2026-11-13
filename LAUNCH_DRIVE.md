@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.292 compatible cross-version recovery fixture
+
+Exact-source v0.340.291 passed public security, offline release evidence, Portal browser/help and the complete native-Windows regression. Its exact-head installer lane also passed 5,941 tests with 62 platform skips, build, install, reinstall, installed starts and same-version recovery, then failed only because its v0.64 retained-data fixture lacks trusted terminal-clock evidence now required by the current fail-closed reviewer. This independently reproduced the earlier initial-publication installer failure.
+
+v0.340.292 pins that disposable check to v0.340.252 commit `5660ec19d66af6401d3bd4e6c271b6e8dc2bf461`. Current code locally recovered the older data as halted and reconciled with expected account, order, policy and quote hashes. Missing terminal-clock evidence still fails closed; no production safety check was relaxed.
+
+No button or editable parameter changed. Seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and independent emergency-stop behavior remain unchanged. This is not a prior-installer binary upgrade, actual broker/account or genuine-feed acceptance, a sustained realistic trial, profitability, native Windows installer acceptance, funding/live/cloud readiness or release approval. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages fully accepted. Historical and synthetic results are not future profit predictions.
+
+Local validation passed 6,002 tests with one expected skip and one existing warning. The focused contract scope passed 15, all 16 bounded offline profiles and saved-evidence verification passed, compilation/dependencies/roadmap/Portal/all 14 controllers passed, and the 162-member wheel is version 0.340.292. The evidence SHA256 is `33086606434aaf94f9b8d9d95cf5c5588d09c91241b35ed2129ebcd8370e3d71`; wheel SHA256 is `7007c56eec299c4ffd9a976b9bad0a92d6c5ef4368b0db6c2141dcafeed62f3d`. All authority flags remain false.
+
 ## v0.340.291 Windows Trial Readiness owner-descriptor binding
 
 Both exact-source v0.340.290 long Windows lanes terminated with the same two Trial Readiness failures after 5,937 passing tests and 62 platform skips. Generic read-only file-set revalidation attempted a second handle to the byte-locked Forward owner marker, and the active-owner test snapshot repeated that Windows-invalid access. The installer lane stopped before packaging.

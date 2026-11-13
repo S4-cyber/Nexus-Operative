@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.293 (pre-release).**
+**Current development build: 0.340.294 (pre-release).**
+
+## v0.340.294 emergency-priority fault containment
+
+The standalone emergency command requests higher Windows process priority before it touches cut storage, but that scheduling request is diagnostic and must never control whether the cut proceeds. Although the helper handled known platform errors, an unexpected ordinary exception or malformed helper result could still escape before the intent latch was persisted.
+
+This pre-release contains the complete best-effort boundary in the standalone cut. Exceptions, non-dict responses, non-boolean flags and inconsistent attempted/confirmed/class tuples are reduced to a conservative `STANDARD` and unconfirmed diagnostic. The command then continues the authoritative pinned-root, intent-latch and durable SQLite halt sequence. A priority result cannot make the cut pass; `VERIFIED` still requires the latch to precede the durable halt, final latch presence and an unchanged data-root identity.
+
+The standalone command remains local paper-only and starts no desktop, network, credential, broker, reset, live-order or money-movement path. OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No Portal button or editable parameter changed, so seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is exception-boundary hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or market acceptance, funding/live/cloud readiness or release approval. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages accepted.
+
+Complete local validation passed 6,010 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 1,615.64 seconds; the synchronized emergency/version/roadmap/Windows-workflow scope passed 86. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `d6aad154e28d96238fd1e04051845cd14cb193c9731615b5c16190760689eab0`; evidence SHA256 is `43b196291b3d68bbbd5e4c1237aa5e36c1ed5d350cbb4b1ae97e70c782f3955a`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and all fourteen controllers passed. The 162-member v0.340.294 wheel SHA256 is `d7e1a9978bd0528d48db3918a975f5965e8c9b3546f909e3323cb3e1df8312f7`. The staged 1,015-path public-artifact audit and 4,172-line high-confidence credential scan found zero findings; local Gitleaks is unavailable. Fresh exact-source hosted gates remain mandatory before publication.
 
 ## v0.340.293 standalone emergency-root identity fence
 

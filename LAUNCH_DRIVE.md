@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.294 emergency-priority fault containment
+
+Best-effort process priority previously relied on its helper returning a well-formed diagnostic. An unexpected ordinary helper exception or malformed report could escape before the standalone emergency command wrote its independent intent latch.
+
+v0.340.294 contains that boundary. Exceptions and malformed or inconsistent priority reports become `STANDARD`/unconfirmed diagnostics, while the pinned-root latch and durable SQLite halt continue. Priority never grants success; `VERIFIED` still requires the latch-before-halt ordering, durable halt, final intent and stable data-root identity.
+
+No button or editable parameter changed. Seven tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, fail-closed exits and independent emergency-stop behavior remain unchanged. The command remains local paper-only with no reset, desktop, network, credential, broker, live-order, funds or release authority. This is not distributed-stop, administrator, physical-power-loss, broker, sustained-market, native-profile, funding/live/cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages fully accepted. Historical and synthetic results are not future-profit predictions.
+
+Complete local validation passed 6,010 tests with one expected non-Windows skip and one existing warning in 1,615.64 seconds; the synchronized focus passed 86. All 16 bounded offline profiles and saved-evidence verification match 403 source files / `d6aad154e28d96238fd1e04051845cd14cb193c9731615b5c16190760689eab0`; evidence SHA256 is `43b196291b3d68bbbd5e4c1237aa5e36c1ed5d350cbb4b1ae97e70c782f3955a`. Compilation, dependencies, roadmap, Portal syntax and all 14 controllers passed. The 162-member v0.340.294 wheel SHA256 is `d7e1a9978bd0528d48db3918a975f5965e8c9b3546f909e3323cb3e1df8312f7`. The staged 1,015-path artifact audit and 4,172-line credential scan found zero findings; local Gitleaks is unavailable. Fresh exact-source hosted gates remain mandatory before publication.
+
 ## v0.340.293 standalone emergency-root identity fence
 
 The standalone emergency command previously resolved the configured data root without retaining its identity across priority elevation and later latch/SQLite work. If that public directory was replaced at the boundary, the command could halt the replacement store and falsely report `VERIFIED` while a running process still used the displaced root.

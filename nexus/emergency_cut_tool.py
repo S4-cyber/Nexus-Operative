@@ -60,9 +60,27 @@ def _same_data_root(root,identity):
         and os.path.samestat(identity,current))
 
 
+def _request_priority():
+    """Contain all best-effort priority faults before authoritative cut work."""
+    fallback = dict(attempted=os.name == 'nt',confirmed=False,
+        priority_class='STANDARD')
+    try:result=emergency_priority.request()
+    except Exception:return fallback
+    if type(result) is not dict:return fallback
+    attempted=result.get('attempted');confirmed=result.get('confirmed')
+    priority_class=result.get('priority_class')
+    if (type(attempted) is not bool or type(confirmed) is not bool
+            or (attempted,confirmed,priority_class) not in (
+                (False,False,'STANDARD'),(True,False,'STANDARD'),
+                (True,True,'HIGH'))):
+        return fallback
+    return dict(attempted=attempted,confirmed=confirmed,
+        priority_class=priority_class)
+
+
 def activate(data_root=None):
     root,root_identity = _resolved_data_root(data_root)
-    priority = emergency_priority.request()
+    priority = _request_priority()
     if root_identity is None:root_identity=_initialize_data_root(root)
     root_stable = _same_data_root(root,root_identity)
     order_path = root/'order_lifecycle.sqlite3'

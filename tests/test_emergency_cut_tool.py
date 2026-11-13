@@ -104,6 +104,25 @@ def test_priority_failure_never_prevents_latch_or_durable_halt(tmp_path,monkeypa
     assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
 
 
+@pytest.mark.parametrize('failure',[RuntimeError('PRIORITY_API_FAILED'),None,
+    {'attempted':True,'confirmed':True,'priority_class':'STANDARD'},
+    {'attempted':False,'confirmed':False,'priority_class':'HIGH'},
+    {'attempted':1,'confirmed':False,'priority_class':'STANDARD'}])
+def test_unexpected_or_malformed_priority_result_never_prevents_cut(
+        tmp_path,monkeypatch,failure):
+    def broken_priority():
+        if isinstance(failure,BaseException):raise failure
+        return failure
+    monkeypatch.setattr(emergency_priority,'request',broken_priority)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert report['passed'] and report['durable_order_halt_confirmed']
+    assert report['emergency_priority_attempted'] is (os.name=='nt')
+    assert not report['emergency_priority_confirmed']
+    assert report['emergency_priority_class']=='STANDARD'
+    assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
+
+
 def test_data_root_leaf_symlink_is_rejected_before_priority_or_storage(tmp_path,monkeypatch):
     actual=tmp_path/'actual';actual.mkdir();alias=tmp_path/'alias'
     try:alias.symlink_to(actual,target_is_directory=True)

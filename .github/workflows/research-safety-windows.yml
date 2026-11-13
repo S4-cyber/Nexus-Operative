@@ -10,10 +10,10 @@ permissions:
 jobs:
   offline-regression:
     runs-on: windows-latest
-    # Exact v0.340.289 reached 4,710 passing tests after 59m13s on hosted
-    # Python 3.11 before the old outer deadline cancelled the remaining tail.
-    # Keep the complete suite bounded while allowing that measured tail.
-    timeout-minutes: 90
+    # Exact v0.340.299 reached 5,423 passes / 90% after 89m06s on hosted
+    # Python 3.11 before the 90-minute outer deadline cancelled the tail.
+    # Keep the complete suite bounded with measured load/runtime headroom.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:

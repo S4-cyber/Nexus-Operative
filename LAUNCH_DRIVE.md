@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.296 emergency-intent evidence boundary
+
+The final emergency-intent reader previously flowed directly into public cut evidence after ordinary and recovery paths. A malformed truthy helper value could therefore influence verification and violate the documented boolean result schema.
+
+v0.340.296 accepts only the exact boolean `True` from final intent inspection. `None`, integers, strings, mappings, sequences and every other malformed result remain unconfirmed, cannot make the cut `VERIFIED` and cannot escape through public boolean state fields. Pinned-root identity, latch-before-halt ordering, explicit durable-halt confirmation and an exact final latch remain mandatory.
+
+No button or editable parameter changed. Seven tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, fail-closed exits and independent emergency-stop behavior remain unchanged. The command remains local paper-only with no reset, desktop, network, credential, broker, live-order, funds or release authority. This is not distributed-stop, administrator, physical-power-loss, broker, sustained-market, native-profile, funding/live/cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages fully accepted. Historical and synthetic results are not future-profit predictions.
+
+Final local validation passed 6,020 tests with one expected non-Windows skip and one existing warning in 1,733.75 seconds. All 16 bounded offline profiles and saved-evidence verification match 403 source files / `4dcf090dff235893f13152401c7f1985a2ab3fdce87a1956b8d59d694325cf71`; evidence SHA256 is `705f00ddbde4759e3505aa35d3a78fa8fb836eda3f329bc0c4c1af08101efbfa`. Compilation, dependencies, roadmap equality, Portal syntax and all 14 controllers passed. The 162-member v0.340.296 wheel SHA256 is `872a7ec0b27e41d2a11a6de7c95fd2d0d6ff52def01a337b88d0691cea377b39`. The staged 1,017-path / 1,017-blob artifact audit and 4,162-line credential scan found zero findings; local Gitleaks is unavailable. Exact-source parent v0.340.295 passed hosted security/Gitleaks, evidence/browser and 5,954 Windows tests with 62 platform skips. Its development-branch installer lane and all fresh v0.340.296 gates remain mandatory.
+
 ## v0.340.295 emergency authoritative-phase fault containment
 
 Unexpected ordinary faults in intent persistence, the durable gateway or final intent inspection could previously escape the standalone emergency command after priority setup. Malformed gateway acknowledgements also lacked one explicit conservative acceptance rule.

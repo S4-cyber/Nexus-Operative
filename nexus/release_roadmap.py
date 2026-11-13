@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.295'
+REVISION = '0.340.296'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -914,6 +914,13 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the standalone emergency-stop process contains unforeseen ordinary latch, durable-halt and status-helper faults after completing its nested fallback attempts, and accepts only an ordinary explicit boolean halt acknowledgement' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
+# Public emergency evidence accepts only the exact boolean result from the
+# intent reader.  Truthy malformed helper returns cannot alter its schema or
+# promote an otherwise incomplete cut.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the standalone emergency-stop process accepts only the exact boolean True from final intent inspection, so malformed truthy helper returns remain unconfirmed and every public cut-state field retains its boolean schema' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -938,7 +945,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.295 contains unforeseen ordinary latch, durable-halt and status-helper faults inside the standalone emergency phase after its nested fallback attempts run. Malformed or non-boolean halt acknowledgements remain unconfirmed. Only a stable pinned data root, proven latch-before-halt ordering, an explicit ordinary boolean durable-halt acknowledgement and a final observed latch can make the cut VERIFIED. The command remains local paper-only with no reset, network, credential, broker, funds or live authority. This is local exception-boundary hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.296 requires an exact boolean True from final emergency-intent inspection. Truthy integers, strings, mappings, sequences, None and other malformed helper results remain unconfirmed, cannot promote the cut to VERIFIED and cannot escape into the public boolean evidence schema. The existing pinned-root, latch-before-halt, explicit durable-halt and final-latch requirements remain mandatory. The command remains local paper-only with no reset, network, credential, broker, funds or live authority. This is local output/trust-boundary hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -269,3 +269,21 @@ def test_unexpected_intent_status_fault_never_escapes_emergency_boundary(
     assert not report['durable_order_halt_confirmed']
     assert not report['emergency_intent_present'] and not report['halted']
     assert report['data_root_path_pinned']
+
+
+@pytest.mark.parametrize('outcome',[None,1,'present',{},[]])
+def test_malformed_intent_status_cannot_confirm_or_change_boolean_schema(
+        tmp_path,monkeypatch,outcome):
+    monkeypatch.setattr(emergency_intent,'requested',lambda *_:outcome)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed']
+    assert report['halted'] is True
+    assert report['emergency_intent_present'] is False
+    assert report['passed'] is False
+    assert report['emergency_cut_state']=='UNCONFIRMED'
+    assert all(type(report[key]) is bool for key in (
+        'passed','halted','intent_preceded_durable_halt',
+        'emergency_intent_present','durable_order_halt_confirmed',
+        'data_root_path_pinned'))

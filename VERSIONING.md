@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.295 (pre-release).**
+**Current development build: 0.340.296 (pre-release).**
+
+## v0.340.296 emergency-intent evidence boundary
+
+The standalone emergency command previously assigned the final intent-reader result directly to public evidence. Although the production reader returns a boolean, an unforeseen malformed truthy helper result could influence verification and escape through fields whose release contract requires exact booleans.
+
+This pre-release accepts only the exact boolean `True` from final intent inspection on both the ordinary path and fault-recovery path. `None`, truthy integers, strings, mappings, sequences and every other malformed result remain unconfirmed. They cannot make the cut `VERIFIED`, and all public cut-state flags retain an exact boolean schema. The stable pinned root, proven latch-before-halt order, explicit durable-halt acknowledgement and exact final latch remain independent mandatory conditions.
+
+The standalone command remains local paper-only and starts no desktop, network, credential, broker, reset, live-order or money-movement path. OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No Portal button or editable parameter changed, so seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is local output/trust-boundary hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or market acceptance, funding/live/cloud readiness or release approval. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages accepted.
+
+Final local validation passed 6,020 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 1,733.75 seconds. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `4dcf090dff235893f13152401c7f1985a2ab3fdce87a1956b8d59d694325cf71`; evidence SHA256 is `705f00ddbde4759e3505aa35d3a78fa8fb836eda3f329bc0c4c1af08101efbfa`. Compilation, dependency integrity, deterministic-roadmap equality, Portal syntax and all fourteen controllers passed. The 162-member v0.340.296 wheel reports the synchronized version and has SHA256 `872a7ec0b27e41d2a11a6de7c95fd2d0d6ff52def01a337b88d0691cea377b39`. The staged 1,017-path / 1,017-blob artifact audit and 4,162-line high-confidence credential scan found zero findings; local Gitleaks is unavailable. Exact-source parent v0.340.295 passed hosted public security/Gitleaks, bounded evidence/browser and the complete Windows PR regression with 5,954 passes, 62 platform skips and one warning. Its development-branch installer lane and fresh exact-source v0.340.296 gates remain mandatory; no parent result is promoted to current acceptance.
 
 ## v0.340.295 emergency authoritative-phase fault containment
 

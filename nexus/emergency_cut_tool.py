@@ -82,6 +82,11 @@ def _halt_confirmed(result):
     return type(result) is dict and result.get('halted') is True
 
 
+def _intent_present(result):
+    """Accept only the intent reader's exact boolean presence result."""
+    return result is True
+
+
 def activate(data_root=None):
     root,root_identity = _resolved_data_root(data_root)
     priority = _request_priority()
@@ -110,7 +115,8 @@ def activate(data_root=None):
                     emergency_intent.persist(order_path)
                     if not _same_data_root(root,root_identity):
                         raise ValueError('DATA_ROOT_CHANGED')
-                    final_intent = emergency_intent.requested(order_path)
+                    final_intent = _intent_present(
+                        emergency_intent.requested(order_path))
     except Exception:
         # An emergency command must still return a conservative structured
         # result after an unforeseen ordinary storage/helper fault.  System
@@ -118,7 +124,8 @@ def activate(data_root=None):
         # nested finally blocks above already attempted the independent latch,
         # durable halt and final latch before control reaches this boundary.
         if _same_data_root(root,root_identity):
-            try:final_intent = emergency_intent.requested(order_path)
+            try:final_intent = _intent_present(
+                emergency_intent.requested(order_path))
             except Exception:final_intent = False
         else:final_intent = False
     root_stable = _same_data_root(root,root_identity)

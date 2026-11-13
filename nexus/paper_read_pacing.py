@@ -24,7 +24,8 @@ from nexus.local_owner_scope import (
     owner_entry_parent_identity, owner_entry_parent_matches,
     owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe,
     prepare_owner_file)
-from nexus.sqlite_journal_guard import check_existing
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, require_file_identities, check_existing)
 
 SCHEMA = 'nexus.paper-read-pacing.v1'
 RECOVERY_POLICY = 'nexus.paper-read-pacing-recovery.v1'
@@ -81,6 +82,125 @@ def _database_busy(error):
         any(word in str(error).lower() for word in ('busy', 'locked')))
 
 
+def _main_fingerprint(path):
+    """Hash the exact bounded main file while the writer owns SQLite.
+
+    Unlike a cold review fingerprint, this intentionally permits the retained
+    rollback-journal sidecar that SQLite is recovering inside the caller's
+    write transaction.  The public main-file identity is separately pinned
+    around this sample; WAL and shared-memory layouts remain rejected by the
+    ordinary preflight.
+    """
+    def fail():
+        _fail('CONNECTION_CONTENT_CHANGED')
+    path = Path(path)
+    try:
+        observed = path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink != 1 or
+                not 1 <= observed.st_size <= MAX_DATABASE_BYTES):
+            fail()
+        resolved = path.resolve()
+        flags = (os.O_RDONLY | getattr(os, 'O_BINARY', 0) |
+            getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+        digest = hashlib.sha256(); remaining = MAX_DATABASE_BYTES + 1
+        with os.fdopen(os.open(resolved, flags), 'rb', buffering=0) as stream:
+            before = os.fstat(stream.fileno())
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+                    not 1 <= before.st_size <= MAX_DATABASE_BYTES or
+                    (before.st_dev, before.st_ino) !=
+                        (observed.st_dev, observed.st_ino)):
+                fail()
+            while remaining:
+                block = stream.read(min(1024 * 1024, remaining))
+                if not block:
+                    break
+                digest.update(block); remaining -= len(block)
+            after = os.fstat(stream.fileno())
+        final = path.lstat()
+        def boundary(value, *, pathname=False):
+            return (value.st_dev, value.st_ino, value.st_size,
+                value.st_mtime_ns,
+                value.st_ctime_ns if os.name != 'nt' or not pathname else None,
+                value.st_nlink)
+        if (remaining == 0 or boundary(observed, pathname=True) !=
+                boundary(before, pathname=True) or
+                boundary(before) != boundary(after) or
+                boundary(after, pathname=True) !=
+                    boundary(final, pathname=True) or
+                not stat.S_ISREG(final.st_mode)):
+            fail()
+        return (str(resolved), after.st_dev, after.st_ino, after.st_size,
+            after.st_mtime_ns,
+            after.st_ctime_ns if os.name != 'nt' else None,
+            after.st_nlink, digest.hexdigest())
+    except ValueError:
+        raise
+    except (OSError, RuntimeError, TypeError):
+        fail()
+
+
+def _require_main_connection(db, bound_path):
+    """Require SQLite to report exactly the pre-resolved pacing main path."""
+    try:
+        rows = db.execute('PRAGMA database_list').fetchall()
+        if (len(rows) != 1 or len(rows[0]) != 3 or
+                type(rows[0][0]) is not int or rows[0][1] != 'main' or
+                type(rows[0][2]) is not str or not rows[0][2] or
+                Path(rows[0][2]).resolve() != bound_path):
+            _fail('CONNECTION_BINDING_CHANGED')
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        _fail('CONNECTION_BINDING_CHANGED')
+    except (OSError, RuntimeError, sqlite3.Error, TypeError):
+        _fail('CONNECTION_BINDING_CHANGED')
+
+
+def _require_main_connection_content(db, bound_path):
+    """Match an existing writer's exact main bytes before journal mutation."""
+    try:
+        # Serialization is performed first so SQLite can complete a retained
+        # hot-journal rollback from a process-death boundary.  The caller has
+        # already pinned the main-file identity and repeats that proof around
+        # this comparison; the bounded pathname fingerprint below must match
+        # the exact bytes SQLite exposes after recovery.
+        serialized = db.serialize(name='main')
+        observed = _main_fingerprint(bound_path)
+        if (type(serialized) is not bytes or
+                len(serialized) != observed[3] or
+                hashlib.sha256(serialized).hexdigest() != observed[7]):
+            _fail('CONNECTION_CONTENT_CHANGED')
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        _fail('CONNECTION_CONTENT_CHANGED')
+    except (MemoryError, OSError, OverflowError, RuntimeError,
+            sqlite3.Error, TypeError):
+        _fail('CONNECTION_CONTENT_CHANGED')
+
+
+def _main_has_content(bound_path):
+    """Return the pinned main-file size class without leaking path errors."""
+    try:
+        observed = bound_path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink != 1 or
+                observed.st_size > MAX_DATABASE_BYTES):
+            _fail('CONNECTION_CONTENT_CHANGED')
+        return observed.st_size > 0
+    except ValueError:
+        raise
+    except (OSError, RuntimeError, TypeError):
+        _fail('CONNECTION_CONTENT_CHANGED')
+
+
 @contextmanager
 def _transaction(db):
     """Normalize bounded SQLite operation/commit contention without retry."""
@@ -104,25 +224,81 @@ class PaperReadPacing:
         check_existing(self.path, MAX_DATABASE_BYTES, 'PAPER_READ_PACING_')
 
     def _connect(self, write=False):
-        self._path_check(); new = False
+        try:
+            bound_path = self.path.resolve()
+        except (OSError, RuntimeError, TypeError):
+            _fail('CONNECTION_BINDING_CHANGED')
+        self._path_check(); new = False; bound_identity = None
+        recovery_pending = False
+        if self.path.exists():
+            bound_identity = capture_file_identities((self.path,),
+                'PAPER_READ_PACING_')
+            if write:
+                journal = self.path.with_name(self.path.name + '-journal')
+                try:
+                    journal.lstat()
+                except FileNotFoundError:
+                    pass
+                except OSError:
+                    _fail('FILE_UNAVAILABLE')
+                else:
+                    recovery_pending = True
         if write and not self.path.exists():
             self.path.parent.mkdir(parents=True, exist_ok=True)
             try:
                 fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-                os.close(fd); new = True
+                try:
+                    opened = os.fstat(fd)
+                    bound_identity = ((str(bound_path), opened.st_dev,
+                        opened.st_ino),)
+                finally:
+                    os.close(fd)
+                new = True
             except FileExistsError: pass
             self._path_check()
-        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
-            uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
+        def require_bound_path():
+            try:
+                if self.path.resolve() != bound_path:
+                    _fail('CONNECTION_BINDING_CHANGED')
+                if bound_identity is not None:
+                    require_file_identities((self.path,), bound_identity,
+                        'PAPER_READ_PACING_')
+            except ValueError:
+                raise
+            except (OSError, RuntimeError, TypeError):
+                _fail('CONNECTION_BINDING_CHANGED')
+        require_bound_path()
+        db = sqlite3.connect(bound_path.as_uri() +
+            ('?mode=rw' if write else '?mode=ro'), uri=True,
+            timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
-            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+            require_bound_path()
+            _require_main_connection(db, bound_path)
+            require_bound_path()
+            if (write and not new and not recovery_pending and
+                    _main_has_content(bound_path)):
+                _require_main_connection_content(db, bound_path)
+                require_bound_path()
+            def setup(statement):
+                require_bound_path()
+                result = db.execute(statement)
+                require_bound_path()
+                return result
+            setup(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
-                db.execute('PRAGMA journal_mode=DELETE'); db.execute('PRAGMA synchronous=FULL')
-                size = db.execute('PRAGMA page_size').fetchone()[0]
-                db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES // size}')
-                db.execute('BEGIN IMMEDIATE')
+                setup('PRAGMA journal_mode=DELETE'); setup('PRAGMA synchronous=FULL')
+                size = setup('PRAGMA page_size').fetchone()[0]
+                setup(f'PRAGMA max_page_count={MAX_DATABASE_BYTES // size}')
+                setup('BEGIN IMMEDIATE')
+                # BEGIN IMMEDIATE lets SQLite complete a retained hot-journal
+                # rollback.  Verify the recovered connection and pathname
+                # bytes before the first application-level append.
+                if (not new and recovery_pending and
+                        _main_has_content(bound_path)):
+                    _require_main_connection_content(db, bound_path)
+                    require_bound_path()
                 if new:
-                    db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
+                    setup('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._append(db, 0, dict(schema=SCHEMA, account_sha256=self.account_digest), ZERO)
             return db
         except sqlite3.OperationalError as error:

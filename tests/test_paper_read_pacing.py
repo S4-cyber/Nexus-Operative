@@ -203,6 +203,58 @@ def test_corrupt_foreign_empty_and_symlink_history_never_admit(gate, tmp_path):
         with pytest.raises(ValueError, match='SYMLINK'): policy.PaperReadPacing(link, ACCOUNT).inspect()
 
 
+def test_writer_rejects_sqlite_main_path_disagreement_before_append(gate,
+        tmp_path, monkeypatch):
+    finish(gate, begin(gate)); expected = gate.inspect()
+    before = gate.path.read_bytes(); other = tmp_path / 'other.sqlite3'
+    real_connect = policy.sqlite3.connect
+
+    class Rows:
+        def fetchall(self):
+            return [(0, 'main', str(other))]
+
+    class Connection:
+        def __init__(self, value): self.value = value
+        def execute(self, statement, *args):
+            if statement == 'PRAGMA database_list': return Rows()
+            return self.value.execute(statement, *args)
+        def close(self): return self.value.close()
+        def __enter__(self): self.value.__enter__(); return self
+        def __exit__(self, *args): return self.value.__exit__(*args)
+        def __getattr__(self, name): return getattr(self.value, name)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(policy.sqlite3, 'connect',
+            lambda *args, **kwargs: Connection(real_connect(*args, **kwargs)))
+        with pytest.raises(ValueError,
+                match='PAPER_READ_PACING_CONNECTION_BINDING_CHANGED'):
+            begin(gate, 1060)
+    assert gate.path.read_bytes() == before and gate.inspect() == expected
+
+
+def test_writer_rejects_sqlite_main_content_disagreement_before_append(gate,
+        monkeypatch):
+    finish(gate, begin(gate)); expected = gate.inspect()
+    before = gate.path.read_bytes(); real_connect = policy.sqlite3.connect
+
+    class Connection:
+        def __init__(self, value): self.value = value
+        def serialize(self, *args, **kwargs):
+            data = self.value.serialize(*args, **kwargs)
+            return bytes((data[0] ^ 1,)) + data[1:]
+        def __enter__(self): self.value.__enter__(); return self
+        def __exit__(self, *args): return self.value.__exit__(*args)
+        def __getattr__(self, name): return getattr(self.value, name)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(policy.sqlite3, 'connect',
+            lambda *args, **kwargs: Connection(real_connect(*args, **kwargs)))
+        with pytest.raises(ValueError,
+                match='PAPER_READ_PACING_CONNECTION_CONTENT_CHANGED'):
+            begin(gate, 1060)
+    assert gate.path.read_bytes() == before and gate.inspect() == expected
+
+
 def test_lost_result_ack_retains_commit_and_never_retries_storage(gate, monkeypatch):
     original = gate.finish; calls = []
     def lose(*args, **kwargs):

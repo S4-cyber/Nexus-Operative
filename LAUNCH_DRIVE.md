@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.295 emergency authoritative-phase fault containment
+
+Unexpected ordinary faults in intent persistence, the durable gateway or final intent inspection could previously escape the standalone emergency command after priority setup. Malformed gateway acknowledgements also lacked one explicit conservative acceptance rule.
+
+v0.340.295 keeps all ordinary authoritative phases inside the emergency boundary without changing their nested attempt order. Intent, durable halt and final intent are still attempted independently; only an exact built-in dictionary with `halted is True` confirms the halt. Unexpected exceptions, missing responses and truthy non-booleans produce structured `UNCONFIRMED` evidence. Interrupts and process exits continue to propagate.
+
+No button or editable parameter changed. Seven tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, fail-closed exits and independent emergency-stop behavior remain unchanged. The command remains local paper-only with no reset, desktop, network, credential, broker, live-order, funds or release authority. This is not distributed-stop, administrator, physical-power-loss, broker, sustained-market, native-profile, funding/live/cloud or release acceptance. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages fully accepted. Historical and synthetic results are not future-profit predictions.
+
+Final local validation passed 6,015 tests with one expected non-Windows skip and one existing warning in 1,961.51 seconds. All 16 bounded offline profiles and saved-evidence verification match 403 source files / `b42bc2c8c746fde1694ee99988439a75b3ca0d329f43aa5fac7d3ce21f1df2a2`; evidence SHA256 is `c2672b046a87ad61e6def53720fd183b2dcdfe6ba3f86fbdd527949409670b20`. Compilation, dependencies, roadmap equality, Portal syntax and all 14 controllers passed. The 162-member v0.340.295 wheel SHA256 is `b0ae11cb241a00afad4d7416521f2892e2204fc071a9b213deef958dd2c86d82`. The staged 1,016-path / 1,016-blob artifact audit and 4,198-line credential scan found zero findings; local Gitleaks is unavailable. Exact-source parent v0.340.294 passed hosted security/Gitleaks, evidence/browser, 5,949 Windows tests with 62 platform skips, EXE/Inno packaging and all install/reinstall/recovery/uninstall/artifact-binding phases. Fresh v0.340.295 hosted gates remain mandatory; the parent result is not v0.340.295 acceptance.
+
 ## v0.340.294 emergency-priority fault containment
 
 Best-effort process priority previously relied on its helper returning a well-formed diagnostic. An unexpected ordinary helper exception or malformed report could escape before the standalone emergency command wrote its independent intent latch.

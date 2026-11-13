@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.294 (pre-release).**
+**Current development build: 0.340.295 (pre-release).**
+
+## v0.340.295 emergency authoritative-phase fault containment
+
+The standalone emergency command previously contained priority-helper failures, but an unexpected ordinary exception from intent persistence, the durable gateway or final intent inspection could escape the command boundary. A malformed gateway result also lacked a single strict acknowledgement rule.
+
+This pre-release contains every ordinary authoritative phase behind the local emergency boundary while retaining the existing nested fallback attempts. The command still attempts the first latch, durable SQLite halt and final latch in that order even when an earlier phase fails. Only an exact built-in dictionary whose `halted` member is the boolean `True` confirms the durable halt. Unexpected exceptions, `None`, truthy integers and other malformed results return structured `UNCONFIRMED` evidence and cannot promote the cut to `VERIFIED`. `SystemExit`, `KeyboardInterrupt` and other `BaseException` subclasses remain outside the boundary.
+
+The standalone command remains local paper-only and starts no desktop, network, credential, broker, reset, live-order or money-movement path. OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No Portal button or editable parameter changed, so seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is ordinary local exception-boundary hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or market acceptance, funding/live/cloud readiness or release approval. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 stages accepted.
+
+Final local validation passed 6,015 tests with one expected non-Windows skip and one existing Starlette/httpx deprecation warning in 1,961.51 seconds. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `b42bc2c8c746fde1694ee99988439a75b3ca0d329f43aa5fac7d3ce21f1df2a2`; evidence SHA256 is `c2672b046a87ad61e6def53720fd183b2dcdfe6ba3f86fbdd527949409670b20`. Compilation, dependency integrity, deterministic-roadmap equality, Portal syntax and all fourteen controllers passed. The 162-member v0.340.295 wheel reports the synchronized version and has SHA256 `b0ae11cb241a00afad4d7416521f2892e2204fc071a9b213deef958dd2c86d82`. The staged 1,016-path / 1,016-blob artifact audit and 4,198-line high-confidence credential scan found zero findings; local Gitleaks is unavailable. Exact-source parent v0.340.294 passed hosted public security/Gitleaks, bounded evidence/browser, 5,949 Windows tests with 62 platform skips, standalone EXE and installer packaging, install, reinstall, retained-data recovery, uninstall and artifact binding. Fresh exact-source v0.340.295 hosted gates remain mandatory and no parent result is promoted to current acceptance.
 
 ## v0.340.294 emergency-priority fault containment
 

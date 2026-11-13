@@ -7,7 +7,6 @@ order cancellation remains the authoritative cleanup acknowledgment.
 """
 import json
 import os
-import sqlite3
 import stat
 from pathlib import Path
 
@@ -78,6 +77,11 @@ def _request_priority():
         priority_class=priority_class)
 
 
+def _halt_confirmed(result):
+    """Accept only the gateway's ordinary, explicit halt acknowledgement."""
+    return type(result) is dict and result.get('halted') is True
+
+
 def activate(data_root=None):
     root,root_identity = _resolved_data_root(data_root)
     priority = _request_priority()
@@ -97,7 +101,7 @@ def activate(data_root=None):
             try:
                 if _same_data_root(root,root_identity):
                     result = DurableOrderGateway(order_path).emergency_halt()
-                    durable_halt = result.get('halted') is True
+                    durable_halt = _halt_confirmed(result)
                 else:raise ValueError('DATA_ROOT_CHANGED')
             finally:
                 # Reassert after SQLite so a concurrently finishing explicit
@@ -107,10 +111,15 @@ def activate(data_root=None):
                     if not _same_data_root(root,root_identity):
                         raise ValueError('DATA_ROOT_CHANGED')
                     final_intent = emergency_intent.requested(order_path)
-    except (ValueError, OSError, sqlite3.Error, RuntimeError):
+    except Exception:
+        # An emergency command must still return a conservative structured
+        # result after an unforeseen ordinary storage/helper fault.  System
+        # exits and interrupts are intentionally not swallowed here.  The
+        # nested finally blocks above already attempted the independent latch,
+        # durable halt and final latch before control reaches this boundary.
         if _same_data_root(root,root_identity):
             try:final_intent = emergency_intent.requested(order_path)
-            except (ValueError, OSError):final_intent = False
+            except Exception:final_intent = False
         else:final_intent = False
     root_stable = _same_data_root(root,root_identity)
     verified = root_stable and intent_preceded and durable_halt and final_intent

@@ -219,3 +219,53 @@ def test_storage_failure_retains_cut_until_explicit_retry_finishes_cleanup(tmp_p
     after=gateway.recovery_report()
     assert after['halted'] and after['orders'][0]['status']=='SIMULATED_CANCELLED'
     assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
+
+
+def test_unexpected_first_intent_fault_still_attempts_halt_and_final_latch(
+        tmp_path,monkeypatch):
+    original=emergency_intent.persist;calls=[]
+    def fail_once(order_path):
+        calls.append(1)
+        if len(calls)==1:raise LookupError('UNEXPECTED_INTENT_HELPER_FAULT')
+        return original(order_path)
+    monkeypatch.setattr(emergency_intent,'persist',fail_once)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed'] and report['emergency_intent_present']
+    assert report['halted'] and report['data_root_path_pinned']
+    assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
+
+
+@pytest.mark.parametrize('outcome',[LookupError('UNEXPECTED_GATEWAY_FAULT'),None,
+    {'halted':1}])
+def test_unexpected_or_malformed_halt_acknowledgement_keeps_latch_unconfirmed(
+        tmp_path,monkeypatch,outcome):
+    def broken_halt(_self):
+        if isinstance(outcome,BaseException):raise outcome
+        return outcome
+    monkeypatch.setattr(DurableOrderGateway,'emergency_halt',broken_halt)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert report['emergency_intent_present'] and report['halted']
+    assert report['data_root_path_pinned']
+    assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
+
+
+def test_unexpected_intent_status_fault_never_escapes_emergency_boundary(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(DurableOrderGateway,'emergency_halt',
+        lambda _self:(_ for _ in ()).throw(LookupError('UNEXPECTED_GATEWAY_FAULT')))
+    monkeypatch.setattr(emergency_intent,'requested',
+        lambda *_:(_ for _ in ()).throw(LookupError('UNEXPECTED_STATUS_FAULT')))
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert not report['emergency_intent_present'] and not report['halted']
+    assert report['data_root_path_pinned']

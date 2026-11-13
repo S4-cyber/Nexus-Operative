@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.294'
+REVISION = '0.340.295'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -907,6 +907,13 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the standalone emergency-stop process contains unexpected best-effort priority-helper failures and malformed reports as STANDARD/unconfirmed diagnostics, then continues the authoritative intent-latch and durable-halt path' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
+# The authoritative emergency phase contains unforeseen ordinary helper/storage
+# failures as an unconfirmed result only after its nested fallback attempts.
+# Malformed halt acknowledgements never grant durable-halt confirmation.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the standalone emergency-stop process contains unforeseen ordinary latch, durable-halt and status-helper faults after completing its nested fallback attempts, and accepts only an ordinary explicit boolean halt acknowledgement' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -931,7 +938,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.294 treats process-priority elevation as strictly best-effort: an unexpected helper exception, non-dict response or inconsistent diagnostic tuple becomes a conservative STANDARD/unconfirmed result and cannot preempt the intent latch or durable order halt. Only the independently verified latch, SQLite halt and pinned data-root path can make the cut VERIFIED. The cut remains local paper-only with no reset, network, credential, broker, funds or live authority. This is local exception-boundary hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.295 contains unforeseen ordinary latch, durable-halt and status-helper faults inside the standalone emergency phase after its nested fallback attempts run. Malformed or non-boolean halt acknowledgements remain unconfirmed. Only a stable pinned data root, proven latch-before-halt ordering, an explicit ordinary boolean durable-halt acknowledgement and a final observed latch can make the cut VERIFIED. The command remains local paper-only with no reset, network, credential, broker, funds or live authority. This is local exception-boundary hardening, not an administrator boundary, distributed stop, physical-power-loss proof, native ordinary-profile or sustained-pressure acceptance, broker or sustained-market acceptance, funding/live/cloud readiness or release approval. No new button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

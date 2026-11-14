@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.301. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.302. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.301 carries the pre-resolved regular single-link pacing, activity and acceptance journal paths through every reconciliation acceptance status subread and the nested four-observation stability review. Caller path aliases cannot retarget semantic replay after the complete journal set has been fingerprinted and pinned; the existing identity, fingerprint, exact-head, store-binding and read-only failure checks remain mandatory. This is sampled local path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.302 resolves the provider-POST reconciliation composer's three ancillary pacing, activity and acceptance journal paths once before identity capture or any component call. Semantic status, POST/activity and guarded account-evidence subreads receive only those pinned resolved paths; a mutable parent alias cannot switch journals within a sampled reader and switch back before the next file-set check. Existing five-file identities, fingerprints, exact heads, store bindings, read-only failure checks and authority denials remain mandatory. This is sampled local path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

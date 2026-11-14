@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.316'
+REVISION = '0.340.317'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -962,6 +962,13 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; Windows emergency-latch persist and clear now hold a backup-semantics directory handle without delete/rename sharing across entry access and final identity acknowledgement, with native rename-denial acceptance retained for the Windows lane' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
+# Open the exact public Windows parent with OPEN_REPARSE_POINT rather than its
+# resolved target, then prove that handle is a non-reparse directory. This keeps
+# a late junction/symlink substitution inside the fail-closed lease boundary.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Windows emergency-latch lease now opens the exact public parent path and rejects non-directory or reparse-point handles before entry access, while the native regression contract records ordinary Windows file-handle rename denial as conservative success rather than sampled-identity failure' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -986,7 +993,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.316 holds a native Windows backup-semantics handle on the resolved emergency-latch parent without delete/rename sharing throughout persist or clear, then requires the same sampled public parent before acknowledgement. This closes the descriptorless rename window while retaining POSIX directory descriptors and fsync. Handle acquisition or close uncertainty fails closed, and a native Windows regression requires rename denial until the lease closes. This is a local cooperating-process pathname lease, not administrator/ACL isolation, distributed coordination or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.317 opens the exact public Windows emergency-latch parent with OPEN_REPARSE_POINT instead of leasing a pre-resolved target, then requires the native handle to report a directory without reparse attributes before any entry access. A late junction/symlink substitution therefore fails closed rather than moving the lease onto its target. The Windows regression contract now also records that an open latch file can deny rename before sampled-identity detection; this conservative denial is expected and is no longer misclassified as a failed safety property. POSIX directory descriptors and fsync remain unchanged. This is a local cooperating-process pathname lease, not administrator/ACL isolation, distributed coordination or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

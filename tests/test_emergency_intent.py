@@ -13,21 +13,47 @@ def test_windows_directory_lease_excludes_delete_sharing_and_closes(
     calls=[]
     class Function:
         argtypes=None;restype=None
-        def __init__(self,result):self.result=result
-        def __call__(self,*args):calls.append(args);return self.result
-    create=Function(37);close=Function(True)
+        def __init__(self,name,result):self.name=name;self.result=result
+        def __call__(self,*args):
+            calls.append((self.name,args))
+            if self.name=='inspect':args[1]._obj.dwFileAttributes=0x10
+            return self.result
+    create=Function('create',37);inspect=Function('inspect',True)
+    close=Function('close',True)
     class Kernel:
-        CreateFileW=create;CloseHandle=close
+        CreateFileW=create;GetFileInformationByHandle=inspect;CloseHandle=close
     monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
     lease=intent._windows_pin_directory(tmp_path)
     assert isinstance(lease,intent._WindowsDirectoryLease)
-    selected,access,sharing,security,disposition,flags,template=calls[0]
-    assert selected==str(tmp_path.resolve()) and access==0x80
+    selected,access,sharing,security,disposition,flags,template=calls[0][1]
+    assert calls[0][0]=='create' and selected==str(tmp_path.absolute()) and access==0x80
     assert sharing==0x3 and not sharing&0x4
     assert security is None and disposition==3
     assert flags==0x02200000 and template is None
-    lease.close();assert calls[1]==(37,) and lease.handle is None
-    lease.close();assert len(calls)==2
+    assert calls[1][0]=='inspect' and calls[1][1][0]==37
+    lease.close();assert calls[2]==('close',(37,)) and lease.handle is None
+    lease.close();assert len(calls)==3
+
+
+@pytest.mark.parametrize('attributes',[0,0x10|0x400])
+def test_windows_directory_lease_rejects_non_directory_or_reparse_target(
+        tmp_path,monkeypatch,attributes):
+    closed=[]
+    class Function:
+        argtypes=None;restype=None
+        def __init__(self,call):self.call=call
+        def __call__(self,*args):return self.call(*args)
+    def inspect(_handle,information):
+        information._obj.dwFileAttributes=attributes
+        return True
+    class Kernel:
+        CreateFileW=Function(lambda *_args:39)
+        GetFileInformationByHandle=Function(inspect)
+        CloseHandle=Function(lambda handle:closed.append(handle) or True)
+    monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent._windows_pin_directory(tmp_path)
+    assert closed==[39]
 
 
 def test_windows_directory_lease_uses_path_operations_and_closes(
@@ -224,17 +250,25 @@ def test_clear_never_acknowledges_replaced_parent(tmp_path,monkeypatch):
 def test_descriptorless_persist_never_acknowledges_replaced_parent(
         tmp_path,monkeypatch):
     root=tmp_path/'state';order=root/'orders.sqlite3';retired=tmp_path/'retired'
-    root.mkdir();original=intent.os.fsync;swapped=False
+    root.mkdir();original=intent.os.fsync;rename_attempted=False
     monkeypatch.setattr(intent,'_pin_directory',lambda _directory:None)
     def swap_after_file_sync(fd):
-        nonlocal swapped
-        if stat.S_ISREG(os.fstat(fd).st_mode) and not swapped:
-            swapped=True;root.rename(retired);root.mkdir()
+        nonlocal rename_attempted
+        if stat.S_ISREG(os.fstat(fd).st_mode) and not rename_attempted:
+            rename_attempted=True;root.rename(retired);root.mkdir()
         return original(fd)
     monkeypatch.setattr(intent.os,'fsync',swap_after_file_sync)
+    if os.name=='nt':
+        # Even without the directory lease, the still-open latch file denies
+        # this parent rename on Windows. That is a conservative failure, not a
+        # sampled-identity error, and the durable latch remains observable.
+        with pytest.raises(PermissionError):intent.persist(order)
+        assert rename_attempted and root.is_dir() and not retired.exists()
+        assert intent.path(order).read_bytes()==intent.RECORD
+        return
     with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
         intent.persist(order)
-    assert swapped and (retired/'emergency_cut.intent').read_bytes()==intent.RECORD
+    assert rename_attempted and (retired/'emergency_cut.intent').read_bytes()==intent.RECORD
     assert not intent.requested(order)
 
 

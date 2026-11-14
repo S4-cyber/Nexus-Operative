@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.314'
+REVISION = '0.340.315'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -948,6 +948,13 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; owner-dispatched Windows validation can bind one exact 40-character review commit only after proving it descends from the refreshed development head, while an omitted commit must equal that refreshed head' if item.id == 'M1' else ''),
     item.remaining) for item in MILESTONES)
 
+# A Windows directory cannot be opened for fsync through the standard Python
+# API. Keep its emergency latch entry operation bound to a sampled resolved
+# parent identity, while POSIX retains its stronger descriptor/fsync boundary.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; emergency-latch persist and clear now bind the resolved parent identity before every entry operation and recheck it before acknowledgement even when Windows cannot supply a directory descriptor, including the already-absent clear path' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -972,7 +979,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.314 adds an immutable manual Windows release-validation path for stacked review commits. A supplied source must be one exact lowercase 40-character SHA, must be the checked-out commit and must descend from the freshly fetched development head before any repository code runs; omitting it requires the checkout to equal that refreshed head. Existing push binding, the 150-minute outer budget, 20-minute evidence tail and every regression, EXE, installer, recovery, distribution-binding and upload gate remain mandatory. This enables exact-source review but is not a successful Windows run or acceptance. Runtime behavior, OFF defaults, risk limits, account checks, fail-closed exits and independent emergency stop are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.315 binds emergency-latch persist and clear operations to one sampled resolved parent-directory identity before entry access and rechecks that identity before acknowledging completion. The check remains mandatory when Windows cannot supply the POSIX directory descriptor/fsync boundary, and a clear that observes an already-absent entry must still prove it inspected the same parent. Retargeting is reported as fixed fail-closed storage uncertainty; the application keeps its process-local cut and independent durable-order halt attempt. POSIX descriptor and directory-fsync behavior remains mandatory. This is sampled local path integrity, not an atomic Windows directory lease, ACL/administrator protection or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -390,5 +390,7 @@ def test_selected_leaf_symlink_cannot_be_hidden_by_parent_pinning(tmp_path, fiel
     selected_alias = alias / '..' / link.name
     assert subject._frozen_path(selected_alias, 'TEST_PATH_INVALID') == link
     args[field] = selected_alias
+    before = snapshot(tmp_path)
     with pytest.raises(ValueError, match='FILE_IDENTITY_UNAVAILABLE'):
         subject.review(**args)
+    assert snapshot(tmp_path) == before

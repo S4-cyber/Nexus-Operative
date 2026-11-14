@@ -22,6 +22,43 @@ def requested(order_path):
     return True
 
 
+def _sample_directory(directory):
+    """Capture one resolved parent identity for descriptorless fallbacks."""
+    resolved_before=directory.resolve(strict=True)
+    before=directory.lstat()
+    resolved_after=directory.resolve(strict=True)
+    after=directory.lstat()
+    if (resolved_before!=resolved_after or
+            not stat.S_ISDIR(before.st_mode) or
+            not stat.S_ISDIR(after.st_mode) or
+            not os.path.samestat(before,after)):
+        raise OSError('EMERGENCY_INTENT_DIRECTORY_CHANGED')
+    return resolved_after,after
+
+
+def _verify_directory(directory,identity,fd):
+    """Require the sampled public parent and optional owner descriptor."""
+    expected_resolved,expected_stat=identity
+    try:
+        resolved_before=directory.resolve(strict=True)
+        before=directory.lstat()
+        resolved_after=directory.resolve(strict=True)
+        after=directory.lstat()
+        opened=None if fd is None else os.fstat(fd)
+    except OSError:
+        raise OSError('EMERGENCY_INTENT_DIRECTORY_CHANGED') from None
+    if (resolved_before!=expected_resolved or
+            resolved_after!=expected_resolved or
+            not stat.S_ISDIR(before.st_mode) or
+            not stat.S_ISDIR(after.st_mode) or
+            not os.path.samestat(expected_stat,before) or
+            not os.path.samestat(before,after) or
+            (opened is not None and (
+                not stat.S_ISDIR(opened.st_mode) or
+                not os.path.samestat(expected_stat,opened)))):
+        raise OSError('EMERGENCY_INTENT_DIRECTORY_CHANGED')
+
+
 def _pin_directory(directory):
     # Windows cannot open directories for fsync through the standard os API.
     if os.name == 'nt':return None
@@ -39,14 +76,13 @@ def _pin_directory(directory):
     return fd
 
 
-def _sync_directory(directory,fd):
-    if fd is None:return
+def _sync_directory(directory,fd,identity):
     # Sync the directory actually used for the entry operation, then ensure its
     # pathname still resolves to that same directory before acknowledging it.
-    os.fsync(fd)
-    current=directory.lstat();opened=os.fstat(fd)
-    if not os.path.samestat(opened,current):
-        raise OSError('EMERGENCY_INTENT_DIRECTORY_CHANGED')
+    # Windows has no standard directory-fsync descriptor, so the resolved-path
+    # and identity sample remains mandatory even when ``fd`` is unavailable.
+    if fd is not None:os.fsync(fd)
+    _verify_directory(directory,identity,fd)
 
 
 def _entry_requested(order_path,target,fd):
@@ -59,8 +95,10 @@ def _entry_requested(order_path,target,fd):
 def persist(order_path):
     target = path(order_path)
     target.parent.mkdir(parents=True, exist_ok=True)
+    directory_identity=_sample_directory(target.parent)
     directory_fd=_pin_directory(target.parent)
     try:
+        _verify_directory(target.parent,directory_identity,directory_fd)
         entry=target if directory_fd is None else target.name
         options={} if directory_fd is None else {'dir_fd':directory_fd}
         try:fd = os.open(entry, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600,**options)
@@ -70,27 +108,29 @@ def persist(order_path):
             if not _entry_requested(order_path,target,directory_fd):raise
             # A previous/interrupted latch is already conservative recovery evidence.
             # Do not follow it or rewrite it; only an explicit reset removes it.
-            _sync_directory(target.parent,directory_fd)
+            _sync_directory(target.parent,directory_fd,directory_identity)
             return
         try:
             with os.fdopen(fd, 'wb') as stream:
                 stream.write(RECORD)
                 stream.flush()
                 os.fsync(stream.fileno())
-        finally:_sync_directory(target.parent,directory_fd)
+        finally:_sync_directory(target.parent,directory_fd,directory_identity)
     finally:
         if directory_fd is not None:os.close(directory_fd)
 
 
 def clear(order_path):
     target = path(order_path)
-    try:directory_fd=_pin_directory(target.parent)
+    try:directory_identity=_sample_directory(target.parent)
     except FileNotFoundError:return
+    directory_fd=_pin_directory(target.parent)
     try:
+        _verify_directory(target.parent,directory_identity,directory_fd)
         try:
             if directory_fd is None:target.unlink()
             else:os.unlink(target.name,dir_fd=directory_fd)
-        except FileNotFoundError:return
-        _sync_directory(target.parent,directory_fd)
+        except FileNotFoundError:pass
+        _sync_directory(target.parent,directory_fd,directory_identity)
     finally:
         if directory_fd is not None:os.close(directory_fd)

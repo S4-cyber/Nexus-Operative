@@ -1,6 +1,7 @@
 """Independent local intent durability and conservative startup; no external IO."""
 import os
 import stat
+from pathlib import Path
 import pytest
 from nexus import app as api, emergency_intent as intent
 from test_emergency_storage import control, rig
@@ -159,3 +160,56 @@ def test_clear_never_acknowledges_replaced_parent(tmp_path,monkeypatch):
         intent.clear(order)
     assert swapped and intent.requested(order)
     assert not (retired/'emergency_cut.intent').exists()
+
+
+def test_descriptorless_persist_never_acknowledges_replaced_parent(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    root.mkdir();original=intent.os.fsync;swapped=False
+    monkeypatch.setattr(intent,'_pin_directory',lambda _directory:None)
+    def swap_after_file_sync(fd):
+        nonlocal swapped
+        if stat.S_ISREG(os.fstat(fd).st_mode) and not swapped:
+            swapped=True;root.rename(retired);root.mkdir()
+        return original(fd)
+    monkeypatch.setattr(intent.os,'fsync',swap_after_file_sync)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.persist(order)
+    assert swapped and (retired/'emergency_cut.intent').read_bytes()==intent.RECORD
+    assert not intent.requested(order)
+
+
+def test_descriptorless_clear_never_acknowledges_replaced_parent(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    intent.persist(order);original=intent.os.unlink;swapped=False
+    monkeypatch.setattr(intent,'_pin_directory',lambda _directory:None)
+    def unlink_then_replace(selected,*args,**kwargs):
+        nonlocal swapped
+        result=original(selected,*args,**kwargs)
+        if Path(selected)==intent.path(order) and not swapped:
+            swapped=True;root.rename(retired);root.mkdir()
+            intent.path(order).write_bytes(intent.RECORD)
+        return result
+    monkeypatch.setattr(intent.os,'unlink',unlink_then_replace)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.clear(order)
+    assert swapped and intent.requested(order)
+    assert not (retired/'emergency_cut.intent').exists()
+
+
+def test_descriptorless_missing_clear_rechecks_parent_before_acknowledgement(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    intent.persist(order);original=intent.os.unlink;swapped=False
+    monkeypatch.setattr(intent,'_pin_directory',lambda _directory:None)
+    def replace_before_missing_unlink(selected,*args,**kwargs):
+        nonlocal swapped
+        if Path(selected)==intent.path(order) and not swapped:
+            swapped=True;root.rename(retired);root.mkdir()
+        return original(selected,*args,**kwargs)
+    monkeypatch.setattr(intent.os,'unlink',replace_before_missing_unlink)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.clear(order)
+    assert swapped and not intent.requested(order)
+    assert (retired/'emergency_cut.intent').read_bytes()==intent.RECORD

@@ -1,5 +1,9 @@
 # Nexus Operative continuity instructions
 
+## v0.340.306 provider selected-leaf path validation
+
+The provider POST activity, fee-reference and known-fee reserve read-only reviews now freeze each selected parent directory without resolving away the final filename. Existing no-follow identity and bounded fingerprint checks can reject direct leaf symlinks, hardlinks and mid-review symlink substitutions. Twenty-seven parametrized regression cases exercise those boundaries and assert private journal preservation. This is sampled local path hardening, not an atomic multi-file snapshot or administrator boundary. No UI controls changed: seven beginner tabs, black/bright-purple bottom-right hover help, OFF engagement defaults, bounded risk, account checks and independent emergency stop remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source release evidence, security, full Windows regression, browser and installer checks are required before promotion; no result is claimed in advance.
+
 ## v0.340.305 private observation parent-path binding
 
 The private observation encryption tool checked resolved source and output paths but retained caller parent-alias spellings across the hidden passphrase prompt. A mutable parent alias could redirect the later exclusive encrypted or plaintext copy creation away from the path that passed preflight.

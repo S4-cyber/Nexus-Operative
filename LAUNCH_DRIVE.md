@@ -1,5 +1,9 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.306 provider selected-leaf path validation
+
+The provider POST activity, fee-reference and known-fee reserve read-only reviews now freeze each selected parent directory without resolving away the final filename. Existing no-follow identity and bounded fingerprint checks can reject direct leaf symlinks, hardlinks and mid-review symlink substitutions. Twenty-seven parametrized regression cases exercise those boundaries and assert private journal preservation. This is sampled local path hardening, not an atomic multi-file snapshot or administrator boundary. No UI controls changed: seven beginner tabs, black/bright-purple bottom-right hover help, OFF engagement defaults, bounded risk, account checks and independent emergency stop remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source release evidence, security, full Windows regression, browser and installer checks are required before promotion; no result is claimed in advance.
+
 ## v0.340.305 private observation parent-path binding
 
 The private observation encryption tool previously retained caller parent-alias spellings across the hidden passphrase prompt after validating their resolved targets. This pre-release freezes each resolved parent before the source read and output creation while retaining leaf-level no-follow and exclusive-create enforcement. Existing authenticated encryption, strict portable-observation validation, private prompting, no-overwrite behavior and authority denials remain required.

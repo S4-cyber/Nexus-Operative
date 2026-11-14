@@ -425,3 +425,70 @@ def test_fixture_is_public_aggregate_only():
     assert all(token not in encoded for token in (
         'nx_accept_fixture', '01234567', 'retained_fee_reference_sha256',
         'fee_amount', '2026-10-18'))
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_leaf_symlink_cannot_be_hidden_by_parent_pinning(tmp_path, field):
+    args = subject._fixture(tmp_path)
+    selected = Path(args[field])
+    link = tmp_path / (field + '-selected-leaf.sqlite3')
+    try:
+        link.symlink_to(selected)
+    except (OSError, NotImplementedError):
+        pytest.skip('symlink creation unavailable for this Windows profile')
+    alias = tmp_path / (field + '-parent-alias')
+    alias.mkdir()
+    selected_alias = alias / '..' / link.name
+    assert subject._frozen_path(selected_alias, 'TEST_PATH_INVALID') == link
+    args[field] = selected_alias
+    before = snapshot(tmp_path)
+    with pytest.raises(ValueError, match='FILE_IDENTITY_UNAVAILABLE'):
+        subject.review(**args)
+    assert snapshot(tmp_path) == before
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_leaf_replaced_with_symlink_during_semantic_read_fails_closed(
+        tmp_path, monkeypatch, field):
+    args = subject._fixture(tmp_path)
+    selected = Path(args[field])
+    backup = tmp_path / (field + '-original.sqlite3')
+    staged_link = tmp_path / (field + '-replacement-link.sqlite3')
+    try:
+        staged_link.symlink_to(backup)
+    except (OSError, NotImplementedError):
+        pytest.skip('symlink creation unavailable for this Windows profile')
+    original_bytes = selected.read_bytes()
+    original = subject.reconciliation.review
+
+    def replace(*args, **kwargs):
+        result = original(*args, **kwargs)
+        selected.replace(backup)
+        staged_link.replace(selected)
+        return result
+
+    monkeypatch.setattr(subject.reconciliation, 'review', replace)
+    with pytest.raises(ValueError, match='PAPER_PROVIDER_POST_FEE_REFERENCE_FILE_IDENTITY_CHANGED'):
+        subject.review(**args)
+    assert selected.is_symlink()
+    assert backup.read_bytes() == original_bytes
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_hardlink_alias_is_rejected_before_semantic_read(tmp_path, field):
+    args = subject._fixture(tmp_path)
+    selected = Path(args[field])
+    alias = tmp_path / (field + '-hardlink.sqlite3')
+    try:
+        alias.hardlink_to(selected)
+    except (OSError, NotImplementedError):
+        pytest.skip('hardlink creation unavailable for this test volume')
+    parent = tmp_path / (field + '-hardlink-parent')
+    parent.mkdir()
+    supplied = parent / '..' / alias.name
+    assert subject._frozen_path(supplied, 'TEST_PATH_INVALID') == alias
+    args[field] = supplied
+    before = snapshot(tmp_path)
+    with pytest.raises(ValueError, match='FILE_IDENTITY_UNAVAILABLE'):
+        subject.review(**args)
+    assert snapshot(tmp_path) == before

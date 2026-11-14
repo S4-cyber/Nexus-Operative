@@ -57,11 +57,17 @@ def _resolved_data_root(data_root):
 
 
 def _same_directory(path,identity):
-    """Sample one exact ordinary directory without following its leaf."""
-    try:current=path.lstat()
+    """Sample one exact canonical directory without accepting parent aliases."""
+    try:
+        resolved_before=path.resolve(strict=True)
+        before=path.lstat()
+        resolved_after=path.resolve(strict=True)
+        after=path.lstat()
     except OSError:return False
-    return (not path.is_symlink() and stat.S_ISDIR(current.st_mode)
-        and os.path.samestat(identity,current))
+    return (resolved_before==path and resolved_after==path
+        and stat.S_ISDIR(before.st_mode) and stat.S_ISDIR(after.st_mode)
+        and os.path.samestat(identity,before)
+        and os.path.samestat(before,after))
 
 
 def _initialize_data_root(root,anchor_lease):
@@ -91,11 +97,7 @@ def _initialize_data_root(root,anchor_lease):
 
 def _same_data_root(root,identity):
     """Conservatively sample the public root identity throughout the cut."""
-    if identity is None:return False
-    try:current=root.lstat()
-    except OSError:return False
-    return (not root.is_symlink() and stat.S_ISDIR(current.st_mode)
-        and os.path.samestat(identity,current))
+    return identity is not None and _same_directory(root,identity)
 
 
 def _request_priority():

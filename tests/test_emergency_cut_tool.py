@@ -176,6 +176,23 @@ def test_absent_data_root_ancestor_replacement_during_priority_prevents_creation
     assert not root.exists() and not (retired/'nested'/'state').exists()
 
 
+def test_absent_data_root_same_inode_ancestor_alias_prevents_creation(
+        tmp_path,monkeypatch):
+    parent=tmp_path/'selected';retired=tmp_path/'retired';parent.mkdir()
+    root=parent/'nested'/'state'
+    def priority():
+        parent.rename(retired)
+        try:parent.symlink_to(retired,target_is_directory=True)
+        except (OSError,NotImplementedError):
+            retired.rename(parent);pytest.skip('Directory symlinks unavailable')
+        return dict(attempted=False,confirmed=False,priority_class='STANDARD')
+    monkeypatch.setattr(emergency_priority,'request',priority)
+    from nexus.emergency_cut_tool import activate
+    with pytest.raises(ValueError,match='DATA_ROOT_CHANGED'):activate(root)
+    assert parent.is_symlink()
+    assert not (retired/'nested'/'state').exists()
+
+
 def test_absent_data_root_ancestor_replacement_after_parent_creation_is_rejected(
         tmp_path,monkeypatch):
     parent=tmp_path/'selected';retired=tmp_path/'retired';parent.mkdir()
@@ -223,6 +240,26 @@ def test_data_root_replacement_during_priority_cannot_claim_verified_cut(tmp_pat
     assert not list(root.iterdir()) and not list(retired.iterdir())
 
 
+def test_same_inode_root_parent_alias_during_priority_cannot_claim_cut(
+        tmp_path,monkeypatch):
+    parent=tmp_path/'selected';retired=tmp_path/'retired';root=parent/'state'
+    root.mkdir(parents=True)
+    def priority():
+        parent.rename(retired)
+        try:parent.symlink_to(retired,target_is_directory=True)
+        except (OSError,NotImplementedError):
+            retired.rename(parent);pytest.skip('Directory symlinks unavailable')
+        return dict(attempted=False,confirmed=False,priority_class='STANDARD')
+    monkeypatch.setattr(emergency_priority,'request',priority)
+    from nexus.emergency_cut_tool import activate
+    report=activate(root)
+    assert not report['passed'] and not report['halted']
+    assert report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['data_root_path_pinned']
+    assert parent.is_symlink()
+    assert not list(root.iterdir()) and not list((retired/'state').iterdir())
+
+
 def test_data_root_replacement_after_intent_never_targets_replacement_store(tmp_path,monkeypatch):
     root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
     original=emergency_intent.persist;calls=[]
@@ -240,6 +277,30 @@ def test_data_root_replacement_after_intent_never_targets_replacement_store(tmp_
     assert report['data_root_path_pinned'] is False
     assert emergency_intent.requested(retired/'order_lifecycle.sqlite3')
     assert not list(root.iterdir())
+
+
+def test_same_inode_root_parent_alias_after_intent_prevents_sqlite_target(
+        tmp_path,monkeypatch):
+    parent=tmp_path/'selected';retired=tmp_path/'retired';root=parent/'state'
+    root.mkdir(parents=True);original=emergency_intent.persist;calls=[]
+    def alias_after_intent(order_path):
+        original(order_path);calls.append(1)
+        if len(calls)==1:
+            parent.rename(retired)
+            try:parent.symlink_to(retired,target_is_directory=True)
+            except (OSError,NotImplementedError):
+                parent.unlink();retired.rename(parent)
+                pytest.skip('Directory symlinks unavailable')
+    monkeypatch.setattr(emergency_intent,'persist',alias_after_intent)
+    from nexus.emergency_cut_tool import activate
+    report=activate(root)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert not report['emergency_intent_present']
+    assert not report['data_root_path_pinned']
+    assert emergency_intent.requested(retired/'state'/'order_lifecycle.sqlite3')
+    assert not (retired/'state'/'order_lifecycle.sqlite3').exists()
 
 
 def test_root_replacement_during_pre_halt_latch_sample_prevents_sqlite_target(

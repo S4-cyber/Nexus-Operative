@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.310'
+REVISION = '0.340.311'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -898,7 +898,7 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 # Keep the standalone cut's public-root claim sampled and conservative.  This
 # does not replace native ordinary-profile or sustained pressure acceptance.
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
-    item.evidence + ('; the standalone emergency-stop process now samples an existing resolved data-root identity before priority elevation, exclusively initializes a root observed absent only afterward, and rechecks the identity throughout intent/SQLite work, refusing a concurrently replaced public root instead of reporting VERIFIED for a cut applied only to replacement storage' if item.id == 'M7' else ''),
+    item.evidence + ('; the standalone emergency-stop process now samples an existing resolved data-root identity before priority elevation, exclusively initializes a root observed absent only afterward, and requires every sampled root or absent-root ancestor path to remain canonical while rechecking identity throughout intent/SQLite work, refusing both replacement roots and same-inode parent aliases instead of reporting VERIFIED for an ambiguously addressed cut' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
 # Best-effort process priority is diagnostic only.  Unexpected helper failures
@@ -951,7 +951,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.310 leases the nearest existing resolved ancestor of a previously absent emergency data root before priority work, rechecks that ancestor around parent-hierarchy creation and pins the immediate parent across exclusive root creation. An observed ancestor replacement during priority or directory creation, or movement of the just-created root, now stops before latch or SQLite access with a fixed fail-closed diagnostic. Existing data roots retain their identity sampling, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, risk limits, account checks and fail-closed exits. This is sampled local filesystem hardening, not an atomic continuous monitor, ACL or administrator boundary, physical-power-loss proof, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.311 requires every sampled emergency data-root or absent-root ancestor path to resolve to its exact canonical pathname before and after identity inspection. A same-inode parent directory moved behind a newly inserted symlink can no longer preserve a pinned-path claim, redirect absent-root creation or reach SQLite after the first intent latch. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, risk limits, account checks and fail-closed exits remain unchanged. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL or administrator boundary, physical-power-loss proof, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

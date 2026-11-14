@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.318'
+REVISION = '0.340.319'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -977,6 +977,20 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; a failed first local provider-POST budget transaction now removes only its captured unchanged empty regular single-link main file when no SQLite sidecar exists, allowing one exact clean retry while replacement, bytes, links, sidecars or cleanup uncertainty remain retained and blocked' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
+# Freeze the selected provider-POST parent before any operation and bind the
+# mutable store path/scope/digest through owner acquisition, SQLite setup and
+# rollback cleanup. Retargeting cannot redirect a write or delete a decoy.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the local provider-POST budget now freezes its selected parent while retaining final-leaf checks, binds path plus provider scope/digest through active ownership, requires the captured regular single-link main-file identity and exact SQLite main path throughout setup, and performs failed-first-write cleanup only against the captured path so mutable aliases, inode replacement, foreign connections or object retargeting cannot redirect a write or delete a decoy' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Windows permits a directory rename despite the directory handle used by the
+# prior lease on the hosted runner. Hold a verified regular child without
+# delete sharing as the effective parent-rename barrier.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the native Windows emergency-latch lease now also holds a fixed validated regular single-link child guard without delete sharing through final acknowledgement because hosted run 43634033695 proved the directory handle alone did not deny parent rename; unsafe guards fail closed and a fresh exact-source native pass remains required' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -1001,7 +1015,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.318 closes a first-write recovery gap in the local provider-POST pacing journal. If the first SQLite setup or transaction aborts, Nexus closes the connection and removes only the captured unchanged empty regular single-link main file when no rollback, WAL or shared-memory sidecar exists, so an exact clean operator retry is not poisoned by a schema-less path. Replacement, bytes, links, sidecars, close failure or cleanup uncertainty retain the path and fail closed for review. This does not retry or rearm a provider request, reclaim attempt capacity, attest broker-wide pacing, authorize routing or accept an account. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.319 binds the local provider-POST pacing journal to one selected physical parent and immutable provider scope before ownership or SQLite work. The final leaf remains separately inspectable, active ownership rechecks the exact path, scope and digest, and connection setup requires the captured regular single-link main-file identity plus the exact SQLite main pathname before and after setup statements. Failed-first-write cleanup uses only the captured path, so a mutable parent alias, inode replacement, foreign SQLite connection or retargeted store object cannot redirect a journal write or cause cleanup to delete a decoy. Retargeting rolls back and fails closed. Hosted Windows run 43634033695 proved the emergency directory handle alone did not deny parent rename, so the lease now also holds a validated fixed regular single-link child guard without delete sharing through final acknowledgement; unsafe guards fail closed and fresh exact-source native validation remains required. No provider request is retried or rearmed, no attempt capacity is reclaimed and no broker-wide pacing, account, routing, funds, live or release authority is granted. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

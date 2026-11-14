@@ -1,10 +1,16 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.319 provider-POST store binding and Windows emergency child lease
+
+The local provider-POST pacing journal now freezes its selected parent, binds the exact path, provider scope and digest through ownership, and requires the captured regular single-link main-file identity plus exact SQLite main pathname throughout setup and rollback cleanup. A mutable parent alias, inode replacement, foreign connection or retargeted store object cannot redirect a write or make cleanup follow the replacement path. Retargeting rolls back and fails closed. Windows run 43634033695 showed that the existing directory handle did not block parent rename, so the emergency latch now holds a validated fixed regular single-link child handle without delete sharing for the full lease and rejects directory, reparse or hardlinked guards. A fresh hosted Windows pass remains required. This is local path/store and emergency-lease integrity, not broker-wide pacing, account acceptance, routing permission, native durability or release acceptance.
+
+**Current development build: 0.340.319 (pre-release).**
+
 ## v0.340.318 provider-POST first-write recovery
 
 The local provider-POST pacing journal now removes only its exact captured empty regular single-link main file after a failed first setup or transaction, and only when no SQLite sidecar exists. Replacement, bytes, links, sidecars or cleanup uncertainty remain retained and blocked. This is local fail-closed retry hygiene, not automatic provider retry, broker-wide pacing, account acceptance, routing permission, native durability or release acceptance.
 
-**Current development build: 0.340.318 (pre-release).**
+**Previous development build: 0.340.318 (pre-release).**
 
 ## v0.340.317 exact Windows emergency-parent lease
 

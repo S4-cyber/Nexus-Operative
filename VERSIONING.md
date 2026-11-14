@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.303 (pre-release).**
+**Current development build: 0.340.304 (pre-release).**
+
+## v0.340.304 activity-acceptance parent-path binding
+
+This pre-release freezes the resolved parent of each pacing, activity-retention, acceptance and private order-input path before the activity-acceptance composition uses it. The selected leaf remains separately inspectable, preserving rejection of direct symlinks while preventing a mutable parent alias from retargeting later path resolution.
+
+No user control or editable parameter changed, so the seven-tab beginner layout and black/bright-purple bottom-right hover help remain unchanged. Permissions remain OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are preserved. This is sampled local path-scope hardening, not broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval.
+
+The direct acceptance/path scope passed 159 tests, the broader request/replay/account/quality/pacing scope passed 228, and the finalized release/version/roadmap/evidence/Windows-workflow scope passed 185, with two existing dependency warnings in each run. Sixteen bounded profiles and saved evidence verify against 403 source files / `2f96c5c0073a00702ad7f085b51ba93f21827b70c3c5f6d706871a02b6b09f64`; evidence SHA256 is `bb8917776a8172fa080d3a25e0c6594b7c26e4fcb97ecd2d702545a07dbf77ce`. The 162-member wheel reports v0.340.304 and has SHA256 `439e68511d68d9a05975987b425528b767200e5a6a1b88d114c5166aaf67130f`. Public scanning and hosted Windows/security/browser/installer gates are still required. Implementation remains a rough weighted 38% (30–45%, low confidence), 0/9 stages accepted; release approval and trading permission are false. Historical and synthetic results are not future profit predictions.
 
 ## v0.340.303 provider reconciliation chain parent-alias binding
 

@@ -42,14 +42,18 @@ def _private_path(value):
     path = Path(value)
     try:
         absolute = path.absolute()
-        resolved = path.resolve()
+        # Freeze the caller-selected parent before any later open or journal
+        # composition.  Keeping the final name separate preserves lstat-based
+        # rejection of a symlink at the selected leaf.
+        pinned = absolute.parent.resolve() / absolute.name
+        resolved = pinned.resolve()
         protected=[ROOT]
         if getattr(sys,'frozen',False):protected.append(Path(sys.executable).resolve().parent)
     except (OSError, RuntimeError):
         _fail()
     if any(absolute.is_relative_to(folder) or resolved.is_relative_to(folder) for folder in protected):
         _fail()
-    return path, resolved
+    return pinned, resolved
 
 
 def _orders(path, account):

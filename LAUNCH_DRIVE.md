@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.304 activity-acceptance parent-path binding
+
+The activity-acceptance composition previously validated resolved private paths but passed original caller spellings into later journal and input operations. This pre-release freezes each resolved parent before component construction or file opening while keeping the leaf name visible to no-follow symlink checks. Existing path separation, bounds, account binding, exact heads, replay and fail-closed authority denials remain required.
+
+This change adds no Portal control or editable parameter; seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. Engagement remains OFF by default, with limits, account checks, fail-closed exits and the independent emergency cut intact. It is sampled local path-scope hardening, not broker/account or source acceptance, a genuine or sustained market trial, profitability, native Windows ordinary-user acceptance, funding/live/cloud readiness or release approval. Historical and synthetic results are not future profit predictions.
+
+The direct acceptance/path scope passed 159 tests, a broader request/replay/account/quality/pacing scope passed 228, and the finalized release/version/roadmap/evidence/Windows-workflow scope passed 185, each with two existing dependency warnings. All sixteen bounded profiles and saved evidence verify against 403 source files / `2f96c5c0073a00702ad7f085b51ba93f21827b70c3c5f6d706871a02b6b09f64`; evidence SHA256 is `bb8917776a8172fa080d3a25e0c6594b7c26e4fcb97ecd2d702545a07dbf77ce`. The synchronized 162-member wheel SHA256 is `439e68511d68d9a05975987b425528b767200e5a6a1b88d114c5166aaf67130f`. Public audit and fresh exact-source hosted gates remain required. Weighted implementation remains 38% (roughly 30–45%, low confidence), with 0/9 independently accepted stages; release approval and trading permission remain false.
+
 ## v0.340.303 provider reconciliation chain parent-alias binding
 
 Three read-only provider-POST compositions retained caller parent-alias spellings for pacing, activity and acceptance journals even though they repeatedly checked the selected file identities. The aliases are now resolved once before identity capture and every nested activity, reconciliation, accepted-history or fee-reference subread receives the pinned path. Existing exact-head, bounded-fingerprint, store-binding, independent-replay and fail-closed authority checks remain required.

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.303'
+REVISION = '0.340.304'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -951,7 +951,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.303 resolves each caller-supplied pacing, activity and acceptance journal path once across the provider-POST activity, fee-reference and known-fee reserve compositions before file identity capture or nested semantic review. Parent-alias spellings cannot switch journals inside one sampled reader and switch back before the next five-file check. Existing bounded fingerprints, exact heads, store bindings, independent replays, read-only failure checks and authority denials remain mandatory. This is sampled local reconciliation-chain path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.304 freezes the resolved parent of every activity-acceptance pacing, retention, acceptance and private order-input path before journal composition or file opening while preserving no-follow rejection of a symlink at the selected leaf. Caller parent-alias spellings can no longer retarget later component resolution away from the preflighted path set. Existing distinct-path, bounded-file, exact-head, account, replay, read-only failure and authority-denial checks remain mandatory. This is sampled local activity-acceptance path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

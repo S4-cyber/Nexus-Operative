@@ -69,6 +69,77 @@ def test_failed_first_transaction_restores_absence_and_exact_retry(tmp_path):
     assert path.is_file() and budget.inspect()['head_sha256']==head
 
 
+def test_constructor_pins_parent_alias_before_first_write(tmp_path):
+    original=tmp_path/'original';replacement=tmp_path/'replacement'
+    original.mkdir();replacement.mkdir();alias=tmp_path/'selected'
+    try:alias.symlink_to(original,target_is_directory=True)
+    except OSError:pytest.skip('directory symlink unavailable')
+    budget=PaperProviderPostBudget(alias/'post.sqlite3')
+    alias.unlink();alias.symlink_to(replacement,target_is_directory=True)
+    assert budget.path==original.resolve()/'post.sqlite3'
+    result=budget.ensure_initialized(expected_head=ZERO)
+    assert result['provider_binding_initialized'] is True
+    assert budget.path.is_file()
+    assert not (replacement/'post.sqlite3').exists()
+
+
+def test_first_write_cleanup_uses_captured_path_after_object_retarget(
+        tmp_path,monkeypatch):
+    path=tmp_path/'post.sqlite3';decoy=tmp_path/'decoy.sqlite3'
+    decoy.write_bytes(b'do-not-delete');budget=PaperProviderPostBudget(path)
+    def connect(*_args,**_kwargs):
+        budget.path=decoy
+        raise sqlite3.OperationalError('injected retargeted connect failure')
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
+        budget.ensure_initialized(expected_head=ZERO)
+    assert not path.exists()
+    assert decoy.read_bytes()==b'do-not-delete'
+
+
+def test_first_write_refuses_main_file_replacement_before_sqlite_setup(
+        tmp_path,monkeypatch):
+    path=tmp_path/'post.sqlite3';replacement=tmp_path/'replacement.sqlite3'
+    sqlite3.connect(replacement).close();replacement_bytes=replacement.read_bytes()
+    budget=PaperProviderPostBudget(path);original=subject.sqlite3.connect
+    def replace_then_connect(*args,**kwargs):
+        os.replace(replacement,path)
+        return original(*args,**kwargs)
+    monkeypatch.setattr(subject.sqlite3,'connect',replace_then_connect)
+    with pytest.raises(ValueError,match='UNCOMMITTED_CLEANUP_UNCERTAIN'):
+        budget.ensure_initialized(expected_head=ZERO)
+    assert path.read_bytes()==replacement_bytes
+
+
+def test_read_refuses_valid_foreign_sqlite_connection(tmp_path,monkeypatch):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    budget.ensure_initialized(expected_head=ZERO)
+    foreign=PaperProviderPostBudget(tmp_path/'foreign.sqlite3')
+    foreign.ensure_initialized(expected_head=ZERO)
+    original=subject.sqlite3.connect;before=budget.path.read_bytes()
+    def connect_foreign(*_args,**_kwargs):
+        return original(foreign.path)
+    monkeypatch.setattr(subject.sqlite3,'connect',connect_foreign)
+    with pytest.raises(ValueError,match='CONNECTION_BINDING_CHANGED'):
+        budget.inspect()
+    assert budget.path.read_bytes()==before
+
+
+def test_active_ownership_retarget_rolls_back_exact_first_write(tmp_path):
+    path=tmp_path/'post.sqlite3';decoy=tmp_path/'decoy.sqlite3'
+    budget=PaperProviderPostBudget(path)
+    def retarget():
+        budget.path=decoy
+        return 1000
+    with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
+        with budget.ownership() as owner:
+            budget.begin(account_id=ACCOUNT,
+                request_before_head_sha256=DIGEST,payload_sha256='b'*64,
+                client_order_id='nx_retarget',admission=retarget,
+                ownership=owner,expected_head=ZERO)
+    assert not path.exists() and not decoy.exists()
+
+
 def test_fresh_connection_failure_restores_absence_and_exact_retry(
         tmp_path,monkeypatch):
     path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)

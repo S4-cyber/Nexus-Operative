@@ -65,6 +65,48 @@ def _digest(value, code):
     return value
 
 
+def _frozen_path(value, code='PATH_INVALID'):
+    """Pin one selected parent while retaining the final leaf for lstat."""
+    try:
+        selected = Path(value).absolute()
+        return selected.parent.resolve() / selected.name
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        _fail(code)
+
+
+def _file_identity(path, code='FILE_CHANGED'):
+    """Capture one regular single-link main-file identity without following."""
+    try:
+        path = Path(path); observed = path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink != 1):
+            raise RuntimeError
+        return str(path.resolve()), observed.st_dev, observed.st_ino
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        _fail(code)
+
+
+def _require_file_identity(path, identity):
+    if _file_identity(path) != identity:
+        _fail('FILE_CHANGED')
+
+
+def _require_main_connection(db, path):
+    """Reject a valid SQLite handle that is not the captured main pathname."""
+    try:
+        rows = db.execute('PRAGMA database_list').fetchall()
+        if (len(rows) != 1 or len(rows[0]) != 3 or
+                type(rows[0][0]) is not int or rows[0][1] != 'main' or
+                type(rows[0][2]) is not str or not rows[0][2] or
+                _frozen_path(rows[0][2], 'CONNECTION_BINDING_CHANGED') != path):
+            _fail('CONNECTION_BINDING_CHANGED')
+    except ValueError:
+        raise
+    except (AttributeError, OSError, RuntimeError, sqlite3.Error, TypeError):
+        _fail('CONNECTION_BINDING_CHANGED')
+
+
 def _discard_uncommitted_new(path, identity):
     """Remove only the exact empty file from an aborted first transaction.
 
@@ -111,45 +153,93 @@ class PaperProviderPostBudget:
         if (type(provider_scope) is not str or
                 re.fullmatch(r'[A-Z][A-Z0-9_]{0,63}', provider_scope) is None):
             _fail('PROVIDER_SCOPE_INVALID')
-        self.path = Path(path)
+        self.path = _frozen_path(path)
         self.provider_scope = provider_scope
         self.provider_digest = hashlib.sha256(provider_scope.encode()).hexdigest()
         self._active_completion = None
 
-    def _path_check(self):
-        check_existing(self.path, MAX_DATABASE_BYTES, 'PAPER_PROVIDER_POST_BUDGET_')
+    def _capture_binding(self):
+        """Bind mutable public attributes to one selected journal scope."""
+        path = _frozen_path(self.path, 'STORE_BINDING_CHANGED')
+        scope = self.provider_scope
+        digest = self.provider_digest
+        if (type(scope) is not str or
+                re.fullmatch(r'[A-Z][A-Z0-9_]{0,63}', scope) is None or
+                type(digest) is not str or
+                hashlib.sha256(scope.encode()).hexdigest() != digest):
+            _fail('STORE_BINDING_CHANGED')
+        return path, scope, digest
+
+    def _require_binding(self, binding):
+        try:
+            path, scope, digest = binding
+            if (self._capture_binding() != (path, scope, digest) or
+                    self.path != path):
+                _fail('STORE_BINDING_CHANGED')
+        except ValueError:
+            raise
+        except (AttributeError, OSError, RuntimeError, TypeError):
+            _fail('STORE_BINDING_CHANGED')
+
+    def _path_check(self, path=None):
+        check_existing(self.path if path is None else path,
+            MAX_DATABASE_BYTES, 'PAPER_PROVIDER_POST_BUDGET_')
 
     def _open(self, write=False):
-        self._path_check(); new = False; created_identity = None; db = None
-        if write and not self.path.exists():
-            self.path.parent.mkdir(parents=True, exist_ok=True)
+        binding = self._capture_binding(); bound_path = binding[0]
+        self._path_check(bound_path); self._require_binding(binding)
+        new = False; created_identity = None; db = None
+        try:
+            main_identity = _file_identity(bound_path)
+        except ValueError as error:
+            if str(error) != 'PAPER_PROVIDER_POST_BUDGET_FILE_CHANGED' or bound_path.exists():
+                raise
+            main_identity = None
+        if write and not bound_path.exists():
+            bound_path.parent.mkdir(parents=True, exist_ok=True)
+            self._require_binding(binding)
             try:
-                fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+                fd = os.open(bound_path,
+                    os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             except FileExistsError:
                 pass
             else:
                 new = True
                 try:
                     opened = os.fstat(fd)
-                    created_identity = (str(self.path.resolve()),
+                    created_identity = (str(bound_path.resolve()),
                                         opened.st_dev, opened.st_ino)
+                    main_identity = created_identity
                 finally:
                     os.close(fd)
-            self._path_check()
+            self._path_check(bound_path); self._require_binding(binding)
         try:
-            db = sqlite3.connect(self.path.resolve().as_uri() +
+            self._require_binding(binding)
+            if main_identity is not None:
+                _require_file_identity(bound_path, main_identity)
+            db = sqlite3.connect(bound_path.resolve().as_uri() +
                                  ('?mode=rw' if write else '?mode=ro'),
                                  uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
-            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+            def setup(statement):
+                self._require_binding(binding)
+                _require_file_identity(bound_path, main_identity)
+                result = db.execute(statement)
+                _require_main_connection(db, bound_path)
+                _require_file_identity(bound_path, main_identity)
+                self._require_binding(binding)
+                return result
+            _require_main_connection(db, bound_path)
+            setup(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
-                db.execute('PRAGMA journal_mode=DELETE'); db.execute('PRAGMA synchronous=FULL')
-                page_size = db.execute('PRAGMA page_size').fetchone()[0]
-                db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES // page_size}')
-                db.execute('BEGIN IMMEDIATE')
+                setup('PRAGMA journal_mode=DELETE'); setup('PRAGMA synchronous=FULL')
+                page_size = setup('PRAGMA page_size').fetchone()[0]
+                setup(f'PRAGMA max_page_count={MAX_DATABASE_BYTES // page_size}')
+                setup('BEGIN IMMEDIATE')
                 if new:
-                    db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
+                    setup('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._append(db, 0, dict(schema=SCHEMA, provider_sha256=self.provider_digest), ZERO)
-            return db, new, created_identity
+                    self._require_binding(binding)
+            return db, new, created_identity, binding
         except sqlite3.OperationalError as error:
             if db is not None:
                 try:
@@ -157,7 +247,8 @@ class PaperProviderPostBudget:
                 except BaseException:
                     if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
                     raise
-            if new: _discard_uncommitted_new(self.path, created_identity)
+            if new: _discard_uncommitted_new(bound_path, created_identity)
+            self._require_binding(binding)
             if _database_busy(error):
                 _fail('DATABASE_BUSY')
             raise
@@ -168,17 +259,19 @@ class PaperProviderPostBudget:
                 except BaseException:
                     if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
                     raise
-            if new: _discard_uncommitted_new(self.path, created_identity)
+            if new: _discard_uncommitted_new(bound_path, created_identity)
+            self._require_binding(binding)
             raise
 
     def _connect(self):
-        db, _new, _identity = self._open()
+        db, _new, _identity, _binding = self._open()
         return db
 
     @contextmanager
     def _write_connection(self):
         """Close one write connection and safely undo only a fresh rollback."""
-        db, new, created_identity = self._open(write=True)
+        db, new, created_identity, binding = self._open(write=True)
+        bound_path = binding[0]
         try:
             yield db
         except BaseException:
@@ -187,9 +280,15 @@ class PaperProviderPostBudget:
             except BaseException:
                 if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
                 raise
-            if new: _discard_uncommitted_new(self.path, created_identity)
+            if new: _discard_uncommitted_new(bound_path, created_identity)
+            self._require_binding(binding)
             raise
         else:
+            binding_error = None
+            try:
+                self._require_binding(binding)
+            except BaseException as error:
+                binding_error = error
             uncommitted = db.in_transaction
             try:
                 db.close()
@@ -197,7 +296,11 @@ class PaperProviderPostBudget:
                 if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
                 raise
             if new and uncommitted:
-                _discard_uncommitted_new(self.path, created_identity)
+                _discard_uncommitted_new(bound_path, created_identity)
+            if binding_error is not None:
+                raise binding_error
+            self._require_binding(binding)
+            if new and uncommitted:
                 _fail('UNCOMMITTED_TRANSACTION')
 
     @staticmethod
@@ -626,12 +729,15 @@ class PaperProviderPostBudget:
 class _PostOwnership:
     def __init__(self, budget):
         self.budget = budget
-        self.path = budget.path.resolve().with_name(budget.path.name + '.owner.lock')
+        self.budget_binding = budget._capture_binding()
+        bound_path = self.budget_binding[0]
+        self.path = bound_path.with_name(bound_path.name + '.owner.lock')
         self.fd = None; self.lease = None; self.directory_identity = None
         self.entry_parent_identity = None
         self.process_owner = ProcessOwnerClaim(self.path)
 
     def validate(self):
+        self.budget._require_binding(self.budget_binding)
         if (self.fd is None or self.directory_identity is None or
                 self.entry_parent_identity is None): _fail('OWNER_REQUIRED')
         if not owner_entry_parent_matches(self.path.parent.parent,
@@ -660,12 +766,13 @@ class _PostOwnership:
 
     def identity(self):
         self.validate(); info = os.fstat(self.fd)
-        return sha(dict(journal_path=str(self.budget.path.resolve()),
+        return sha(dict(journal_path=str(self.budget_binding[0]),
                         lock_device=info.st_dev, lock_inode=info.st_ino))
 
     def __enter__(self):
         if self.fd is not None: _fail('OWNER_ALREADY_HELD')
-        self.budget._path_check()
+        self.budget._require_binding(self.budget_binding)
+        self.budget._path_check(self.budget_binding[0])
         if self.path.is_symlink(): _fail('OWNER_SYMLINK')
         if not self.process_owner.acquire():
             _fail('OWNER_BUSY_OR_UNAVAILABLE')

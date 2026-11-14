@@ -16,9 +16,16 @@ def test_windows_directory_lease_excludes_delete_sharing_and_closes(
         def __init__(self,name,result):self.name=name;self.result=result
         def __call__(self,*args):
             calls.append((self.name,args))
-            if self.name=='inspect':args[1]._obj.dwFileAttributes=0x10
+            if self.name=='inspect':
+                args[1]._obj.dwFileAttributes=0x10 if args[0]==37 else 0
+                args[1]._obj.nNumberOfLinks=1
             return self.result
-    create=Function('create',37);inspect=Function('inspect',True)
+    handles=iter((37,38))
+    class Create:
+        argtypes=None;restype=None
+        def __call__(self,*args):
+            calls.append(('create',args));return next(handles)
+    create=Create();inspect=Function('inspect',True)
     close=Function('close',True)
     class Kernel:
         CreateFileW=create;GetFileInformationByHandle=inspect;CloseHandle=close
@@ -31,8 +38,16 @@ def test_windows_directory_lease_excludes_delete_sharing_and_closes(
     assert security is None and disposition==3
     assert flags==0x02200000 and template is None
     assert calls[1][0]=='inspect' and calls[1][1][0]==37
-    lease.close();assert calls[2]==('close',(37,)) and lease.handle is None
-    lease.close();assert len(calls)==3
+    child,child_access,child_sharing,_,child_disposition,child_flags,_=calls[2][1]
+    assert calls[2][0]=='create'
+    assert child==str((tmp_path/intent.WINDOWS_LEASE_NAME).absolute())
+    assert child_access==0x80 and child_sharing==0x3 and not child_sharing&0x4
+    assert child_disposition==4 and child_flags==0x00200000
+    assert calls[3][0]=='inspect' and calls[3][1][0]==38
+    lease.close()
+    assert calls[4:]==[('close',(38,)),('close',(37,))]
+    assert lease.handle is None and lease.child_handle is None
+    lease.close();assert len(calls)==6
 
 
 @pytest.mark.parametrize('attributes',[0,0x10|0x400])
@@ -43,17 +58,63 @@ def test_windows_directory_lease_rejects_non_directory_or_reparse_target(
         argtypes=None;restype=None
         def __init__(self,call):self.call=call
         def __call__(self,*args):return self.call(*args)
-    def inspect(_handle,information):
-        information._obj.dwFileAttributes=attributes
+    def inspect(handle,information):
+        information._obj.dwFileAttributes=attributes if handle==39 else 0
+        information._obj.nNumberOfLinks=1
         return True
     class Kernel:
-        CreateFileW=Function(lambda *_args:39)
+        CreateFileW=Function(lambda path,*_args:39 if path==str(tmp_path.absolute()) else 40)
         GetFileInformationByHandle=Function(inspect)
         CloseHandle=Function(lambda handle:closed.append(handle) or True)
     monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
     with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
         intent._windows_pin_directory(tmp_path)
     assert closed==[39]
+
+
+@pytest.mark.parametrize(('attributes','links'),[(0x10,1),(0x400,1),(0,2)])
+def test_windows_directory_lease_rejects_unsafe_child_guard(
+        tmp_path,monkeypatch,attributes,links):
+    closed=[]
+    class Function:
+        argtypes=None;restype=None
+        def __init__(self,call):self.call=call
+        def __call__(self,*args):return self.call(*args)
+    def inspect(handle,information):
+        information._obj.dwFileAttributes=0x10 if handle==45 else attributes
+        information._obj.nNumberOfLinks=1 if handle==45 else links
+        return True
+    class Kernel:
+        CreateFileW=Function(lambda path,*_args:45 if path==str(tmp_path.absolute()) else 46)
+        GetFileInformationByHandle=Function(inspect)
+        CloseHandle=Function(lambda handle:closed.append(handle) or True)
+    monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent._windows_pin_directory(tmp_path)
+    assert closed==[46,45]
+
+
+def test_windows_directory_lease_closes_both_handles_after_child_open_failure(
+        tmp_path,monkeypatch):
+    closed=[]
+    class Function:
+        argtypes=None;restype=None
+        def __init__(self,call):self.call=call
+        def __call__(self,*args):return self.call(*args)
+    def create(path,*_args):
+        return 47 if path==str(tmp_path.absolute()) else ctypes.c_void_p(-1).value
+    def inspect(_handle,information):
+        information._obj.dwFileAttributes=0x10
+        return True
+    class Kernel:
+        CreateFileW=Function(create)
+        GetFileInformationByHandle=Function(inspect)
+        CloseHandle=Function(lambda handle:closed.append(handle) or True)
+    monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
+    monkeypatch.setattr(ctypes,'get_last_error',lambda:5,raising=False)
+    monkeypatch.setattr(ctypes,'WinError',lambda error:OSError(error,'denied'),raising=False)
+    with pytest.raises(OSError):intent._windows_pin_directory(tmp_path)
+    assert closed==[47]
 
 
 def test_windows_directory_lease_uses_path_operations_and_closes(

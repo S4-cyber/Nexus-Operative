@@ -9,22 +9,26 @@ import stat
 from pathlib import Path
 
 RECORD = b'NEXUS_LOCAL_TRADING_CUT_V1\n'
+WINDOWS_LEASE_NAME = '.nexus-emergency-directory.lease'
 
 
 class _WindowsDirectoryLease:
-    """Win32 directory handle opened without rename/delete sharing."""
-    __slots__=('handle','_close')
+    """Win32 directory and child handles opened without delete sharing."""
+    __slots__=('handle','child_handle','_close')
 
-    def __init__(self,handle,close):
-        self.handle=handle;self._close=close
+    def __init__(self,handle,close,child_handle=None):
+        self.handle=handle;self.child_handle=child_handle;self._close=close
 
     def close(self):
-        handle=self.handle
-        if handle is None:return
-        self.handle=None
-        if not self._close(handle):
-            import ctypes
-            raise ctypes.WinError(ctypes.get_last_error())
+        import ctypes
+        handles=(self.child_handle,self.handle)
+        self.child_handle=None;self.handle=None
+        error=None
+        for handle in handles:
+            if handle is not None and not self._close(handle) and error is None:
+                error=ctypes.get_last_error()
+        if error is not None:
+            raise ctypes.WinError(error)
 
 
 def path(order_path):
@@ -92,7 +96,15 @@ def _pin_directory(directory):
 
 
 def _windows_pin_directory(directory):
-    """Hold the exact public directory against retargeting until acknowledgement."""
+    """Hold the exact public directory against retargeting until acknowledgement.
+
+    Windows permits a directory rename despite a handle opened without delete
+    sharing on some supported filesystems. A fixed regular child opened without
+    delete sharing supplies the effective parent-rename barrier. Both handles
+    remain necessary: the directory handle proves the selected public object,
+    while the child handle keeps that object named until the operation is
+    durably acknowledged.
+    """
     import ctypes
     from ctypes import wintypes
     kernel=ctypes.WinDLL('kernel32',use_last_error=True)
@@ -131,6 +143,18 @@ def _windows_pin_directory(directory):
         # FILE_ATTRIBUTE_DIRECTORY and FILE_ATTRIBUTE_REPARSE_POINT.
         if (not information.dwFileAttributes&0x00000010 or
                 information.dwFileAttributes&0x00000400):
+            raise OSError('EMERGENCY_INTENT_DIRECTORY_CHANGED')
+        child=create(str((directory/WINDOWS_LEASE_NAME).absolute()),
+                     0x00000080,0x00000003,None,4,0x00200000,None)
+        if child in (None,ctypes.c_void_p(-1).value):
+            raise ctypes.WinError(ctypes.get_last_error())
+        lease.child_handle=child;child_information=FileInformation()
+        if not inspect(child,ctypes.byref(child_information)):
+            error=ctypes.get_last_error()
+            raise ctypes.WinError(error)
+        if (child_information.dwFileAttributes&0x00000010 or
+                child_information.dwFileAttributes&0x00000400 or
+                child_information.nNumberOfLinks!=1):
             raise OSError('EMERGENCY_INTENT_DIRECTORY_CHANGED')
     except BaseException:
         lease.close();raise

@@ -255,6 +255,51 @@ def test_silent_first_intent_write_cannot_claim_pre_halt_ordering(
     assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
 
 
+@pytest.mark.parametrize('kind',['malformed','directory','symlink','hardlink'])
+def test_existing_noncanonical_latch_blocks_but_cannot_claim_verified_cut(
+        tmp_path,kind):
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    latch=emergency_intent.path(order_path)
+    if kind=='malformed':latch.write_bytes(b'INCOMPLETE')
+    elif kind=='directory':latch.mkdir()
+    elif kind=='symlink':
+        target=tmp_path/'foreign-latch';target.write_bytes(emergency_intent.RECORD)
+        try:latch.symlink_to(target)
+        except (OSError,NotImplementedError):pytest.skip('Symlinks unavailable')
+    else:
+        latch.write_bytes(emergency_intent.RECORD);alias=tmp_path/'latch-alias'
+        try:alias.hardlink_to(latch)
+        except (OSError,NotImplementedError):pytest.skip('Hardlinks unavailable')
+    before=latch.lstat()
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed'] and report['halted']
+    assert not report['emergency_intent_present'] and report['data_root_path_pinned']
+    after=latch.lstat()
+    assert os.path.samestat(before,after)
+    assert emergency_intent.requested(order_path)
+
+
+def test_in_place_intent_mutation_before_halt_loses_ordering_and_final_proof(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    original=emergency_cut_tool._intent_identity;calls=[]
+    def corrupt_after_identity(order_path):
+        identity=original(order_path);calls.append(1)
+        if len(calls)==1:
+            emergency_intent.path(order_path).write_bytes(b'MALFORMED')
+        return identity
+    monkeypatch.setattr(emergency_cut_tool,'_intent_identity',corrupt_after_identity)
+    report=emergency_cut_tool.activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed'] and report['halted']
+    assert not report['emergency_intent_present'] and report['data_root_path_pinned']
+    assert emergency_intent.path(tmp_path/'order_lifecycle.sqlite3').read_bytes()==b'MALFORMED'
+
+
 def test_malformed_pre_halt_intent_read_cannot_claim_ordering(
         tmp_path,monkeypatch):
     original=emergency_intent.requested;calls=[]

@@ -87,17 +87,52 @@ def _intent_present(result):
     return result is True
 
 
-def _intent_identity(order_path):
-    """Sample the exact latch entry without following it."""
-    try:return emergency_intent.path(order_path).lstat()
+def _validated_intent_identity(order_path):
+    """Read one exact durable latch record without following aliases."""
+    target=emergency_intent.path(order_path)
+    try:before=target.lstat()
     except OSError:return None
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or
+            before.st_size!=len(emergency_intent.RECORD)):
+        return None
+    flags=(os.O_RDONLY | getattr(os,'O_NOFOLLOW',0) |
+        getattr(os,'O_BINARY',0) | getattr(os,'O_NONBLOCK',0))
+    try:fd=os.open(target,flags)
+    except OSError:return None
+    try:
+        with os.fdopen(fd,'rb') as stream:
+            opened=os.fstat(stream.fileno())
+            if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink!=1 or
+                    opened.st_size!=len(emergency_intent.RECORD) or
+                    not os.path.samestat(before,opened)):
+                return None
+            record=stream.read(len(emergency_intent.RECORD)+1)
+            after=os.fstat(stream.fileno())
+    except OSError:return None
+    try:final=target.lstat()
+    except OSError:return None
+    if (record!=emergency_intent.RECORD or not stat.S_ISREG(final.st_mode) or
+            final.st_nlink!=1 or final.st_size!=len(emergency_intent.RECORD) or
+            not os.path.samestat(opened,after) or
+            not os.path.samestat(after,final)):
+        return None
+    if any(getattr(opened,key)!=getattr(after,key) or
+            getattr(before,key)!=getattr(final,key)
+            for key in ('st_size','st_mtime_ns','st_ctime_ns','st_nlink')):
+        return None
+    return final
+
+
+def _intent_identity(order_path):
+    """Sample one complete, regular, single-link latch record."""
+    return _validated_intent_identity(order_path)
 
 
 def _same_intent(order_path,identity):
-    """Require the observed latch entry to survive until durable handoff."""
+    """Require the exact validated latch to survive until durable handoff."""
     if identity is None:return False
-    try:current=emergency_intent.path(order_path).lstat()
-    except OSError:return False
+    current=_validated_intent_identity(order_path)
+    if current is None:return False
     return os.path.samestat(identity,current)
 
 

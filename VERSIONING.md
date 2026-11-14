@@ -1,6 +1,16 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.301 (pre-release).**
+**Current development build: 0.340.302 (pre-release).**
+
+## v0.340.302 provider-post reconciliation parent-alias binding
+
+The provider-POST reconciliation composer froze caller path objects and repeatedly checked the selected five-file set, but it retained the original parent-alias spellings for three ancillary journals. A parent alias could switch to different stable journals inside one semantic subread and switch back before the next sampled identity check.
+
+v0.340.302 resolves the pacing, activity and acceptance journal paths once before identity capture or any component call. Status, POST/activity and guarded account-evidence subreads receive only those pinned resolved paths. Existing file identities, bounded fingerprints, exact heads, store bindings, read-only failure checks and authority denials remain mandatory.
+
+No Portal control or modifiable parameter changed, so seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain intact. This is sampled local reconciliation path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, funding/live/cloud readiness or release approval. Rough implementation remains weighted 38% (roughly 30–45%, low confidence), with 0/9 major stages fully accepted. Release approval and trading permission remain false; historical results and synthetic scores are not future profit predictions.
+
+The direct provider-POST reconciliation module passed 341 tests with one existing Starlette/httpx warning; the synchronized provider/release/version/roadmap/Windows-workflow scope passed 130 with the same warning. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `b90d43513f1be64742ccd407005b6ce611d15a7868378979e73ab12259a60b16`; `validation/release_trials_0_340_302.json` SHA256 is `1f04acfd3e1f0a6fd0dfcf568d140b961b0b5f6e36c514df08510237db3741c4`. Compilation, dependency integrity, deterministic-roadmap equality and Portal JavaScript syntax passed. The 162-member v0.340.302 wheel reports the synchronized version and has SHA256 `fb58ed10e22182fb5b28c433769c9dc80cb548cc669aecbaab2ed3ef03624ab2`. The staged 1,023-path / 1,023-blob public-artifact audit and high-confidence introduced credential-pattern scan found zero findings. Local Gitleaks and native Windows/Inno Setup remain unavailable; fresh exact-source hosted security, evidence/browser, Windows regression and installer execution are mandatory before publication.
 
 ## v0.340.301 reconciliation semantic-path binding
 

@@ -1233,6 +1233,40 @@ def test_ancillary_paths_are_frozen_before_component_composition(
 
 @pytest.mark.parametrize('field', (
     'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_ancillary_parent_aliases_are_resolved_before_component_composition(
+        tmp_path, monkeypatch, field):
+    options=subject._fixture(tmp_path);original_path=Path(options[field]).resolve()
+    alias=tmp_path/'caller-alias-component';alias.mkdir()
+    options[field]=alias/'..'/original_path.name
+    original_status=subject.acceptance_status
+    original_posts=subject.post_activity.review
+    original_evidence=subject.evidence.review_with_stability_guards
+    status_seen=[];component_seen=[]
+
+    def inspect_status(**kwargs):
+        status_seen.append(Path(kwargs[field]))
+        return original_status(**kwargs)
+
+    def inspect_posts(*args,**kwargs):
+        component_seen.append(Path(kwargs['account_bindings'][0][field]))
+        return original_posts(*args,**kwargs)
+
+    def inspect_evidence(**kwargs):
+        component_seen.append(Path(kwargs[field]))
+        return original_evidence(**kwargs)
+
+    monkeypatch.setattr(subject,'acceptance_status',inspect_status)
+    monkeypatch.setattr(subject.post_activity,'review',inspect_posts)
+    monkeypatch.setattr(subject.evidence,'review_with_stability_guards',
+        inspect_evidence)
+    result=subject.review(**options)
+    assert result['journals_rechecked_unchanged']
+    assert status_seen and component_seen
+    assert all(path==original_path for path in status_seen+component_seen)
+
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
 def test_ancillary_file_replacement_at_same_path_fails_closed(
         tmp_path, monkeypatch, field):
     options=subject._fixture(tmp_path);path=Path(options[field])

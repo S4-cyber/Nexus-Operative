@@ -340,6 +340,28 @@ def test_account_binding_paths_are_frozen_before_post_review(
 
 @pytest.mark.parametrize('field', (
     'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_account_binding_parent_aliases_are_resolved_before_nested_reviews(
+        tmp_path, monkeypatch, field):
+    budget,head,binding=prepared(tmp_path)
+    original_path=Path(binding[field]).resolve()
+    alias=tmp_path/'caller-alias-component';alias.mkdir()
+    binding[field]=alias/'..'/original_path.name
+    original_activity=subject.activity.review
+    seen=[]
+
+    def inspect_path(**kwargs):
+        seen.append(Path(kwargs[field]))
+        return original_activity(**kwargs)
+
+    monkeypatch.setattr(subject.activity,'review',inspect_path)
+    result=subject.review(budget,expected_post_head=head,
+        account_bindings=[binding])
+    assert result['complete_local_post_activity_consistent']
+    assert seen and all(path==original_path for path in seen)
+
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
 def test_ancillary_file_replacement_at_same_path_fails_closed(
         tmp_path, monkeypatch, field):
     budget,head,binding=prepared(tmp_path)

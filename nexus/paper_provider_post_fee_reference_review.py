@@ -95,8 +95,8 @@ def _stable_reader(post_budget, journal, store_binding, paths,
 
 def _frozen_path(value, code):
     try:
-        return Path(value)
-    except (TypeError, ValueError, OSError, AttributeError):
+        return Path(value).resolve()
+    except (TypeError, ValueError, OSError, RuntimeError, AttributeError):
         _fail(code)
 
 

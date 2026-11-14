@@ -230,6 +230,32 @@ def test_ancillary_paths_are_frozen_before_nested_reviews(
     assert seen and all(path==original_path for path in seen)
 
 
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_ancillary_parent_aliases_are_resolved_before_nested_reviews(
+        tmp_path, monkeypatch, field):
+    args=subject._fixture(tmp_path);original_path=Path(args[field]).resolve()
+    alias=tmp_path/'caller-alias-component';alias.mkdir()
+    args[field]=alias/'..'/original_path.name
+    original_reconciliation=subject.reconciliation.review
+    original_accepted=subject.accepted.review
+    seen=[]
+
+    def inspect_reconciliation(**kwargs):
+        seen.append(Path(kwargs[field]))
+        return original_reconciliation(**kwargs)
+
+    def inspect_accepted(**kwargs):
+        seen.append(Path(kwargs[field]))
+        return original_accepted(**kwargs)
+
+    monkeypatch.setattr(subject.reconciliation,'review',inspect_reconciliation)
+    monkeypatch.setattr(subject.accepted,'review',inspect_accepted)
+    result=subject.review(**args)
+    assert result['journals_rechecked_unchanged']
+    assert seen and all(path==original_path for path in seen)
+
+
 @pytest.mark.parametrize('target', (
     'post_budget', 'journal', 'pacing_path', 'activity_store_path',
     'acceptance_store_path'))

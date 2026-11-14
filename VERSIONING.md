@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.302 (pre-release).**
+**Current development build: 0.340.303 (pre-release).**
+
+## v0.340.303 provider reconciliation chain parent-alias binding
+
+This pre-release resolves caller-supplied pacing, activity and acceptance paths once across the provider-POST activity, fee-reference and known-fee reserve compositions before file identity capture or any nested semantic review. Parent-alias spellings cannot retarget a semantic subread within one sampled file-set interval. Bounded fingerprints, exact heads, store bindings, independent replays, read-only failure checks and all authority denials remain mandatory.
+
+No user control or editable parameter changed, so the seven-tab beginner layout and black/bright-purple bottom-right hover help remain unchanged. Permissions remain OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are preserved. This is sampled local reconciliation path-scope hardening, not broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval.
+
+The direct three-composition suite passed 166 tests with two existing dependency warnings; the broader provider/release surface reached 648 passes before the required versioned evidence file was generated, and the finalized evidence/version/roadmap/Windows-workflow suite passed 95. Sixteen bounded profiles and saved evidence verify against 403 source files / `3ede2aad04936b35017098a9091e75c76a24b03a174cc5d6aeff5adfab7541d2`; evidence SHA256 is `9d52193640a0554c31d99bdb3ad2fcd4b934d5b80ca5cf714729a440c9c6ea53`. The synchronized 162-member wheel SHA256 is `9eb3ca90e902999c098d4583abe52fd8fd40284da67b33e32711cb49d769fa98`. The staged 1,024-path/1,024-blob public audit and introduced credential-pattern scan found zero findings; exact-source hosted security/browser/Windows/installer gates remain required. Implementation remains a rough weighted 38% (30–45%, low confidence), 0/9 stages accepted; release approval and trading permission are false. Historical and synthetic results are not future profit predictions.
 
 ## v0.340.302 provider-post reconciliation parent-alias binding
 

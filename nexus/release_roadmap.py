@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.302'
+REVISION = '0.340.303'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -951,7 +951,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.302 resolves the provider-POST reconciliation composer\'s three ancillary pacing, activity and acceptance journal paths once before identity capture or any component call. Semantic status, POST/activity and guarded account-evidence subreads receive only those pinned resolved paths; a mutable parent alias cannot switch journals within a sampled reader and switch back before the next file-set check. Existing five-file identities, fingerprints, exact heads, store bindings, read-only failure checks and authority denials remain mandatory. This is sampled local path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.303 resolves each caller-supplied pacing, activity and acceptance journal path once across the provider-POST activity, fee-reference and known-fee reserve compositions before file identity capture or nested semantic review. Parent-alias spellings cannot switch journals inside one sampled reader and switch back before the next five-file check. Existing bounded fingerprints, exact heads, store bindings, independent replays, read-only failure checks and authority denials remain mandatory. This is sampled local reconciliation-chain path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

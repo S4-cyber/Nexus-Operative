@@ -197,6 +197,48 @@ def test_data_root_replacement_after_intent_never_targets_replacement_store(tmp_
     assert not list(root.iterdir())
 
 
+def test_root_replacement_during_pre_halt_latch_sample_prevents_sqlite_target(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
+    from nexus import emergency_cut_tool
+    original=emergency_cut_tool._same_intent;calls=[]
+    def replace_after_sample(order_path,identity):
+        result=original(order_path,identity);calls.append(1)
+        if len(calls)==1:
+            root.rename(retired);root.mkdir()
+            (retired/'emergency_cut.intent').replace(root/'emergency_cut.intent')
+        return result
+    monkeypatch.setattr(emergency_cut_tool,'_same_intent',replace_after_sample)
+    report=emergency_cut_tool.activate(root)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert not report['emergency_intent_present'] and not report['data_root_path_pinned']
+    assert not (root/'order_lifecycle.sqlite3').exists()
+    assert not (retired/'order_lifecycle.sqlite3').exists()
+
+
+def test_root_replacement_during_final_latch_sample_cannot_keep_verified_claim(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
+    from nexus import emergency_cut_tool
+    original=emergency_cut_tool._same_intent;calls=[]
+    def replace_after_sample(order_path,identity):
+        result=original(order_path,identity);calls.append(1)
+        if len(calls)==2:
+            root.rename(retired);root.mkdir()
+            (retired/'emergency_cut.intent').replace(root/'emergency_cut.intent')
+        return result
+    monkeypatch.setattr(emergency_cut_tool,'_same_intent',replace_after_sample)
+    report=emergency_cut_tool.activate(root)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed'] and report['halted']
+    assert not report['emergency_intent_present'] and not report['data_root_path_pinned']
+    assert not (root/'order_lifecycle.sqlite3').exists()
+    assert DurableOrderGateway(retired/'order_lifecycle.sqlite3').recovery_report()['halted']
+
+
 def test_storage_failure_retains_cut_until_explicit_retry_finishes_cleanup(tmp_path,monkeypatch):
     gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
     gateway.submit('storage-fault','BTC-USD','BUY',1,tier='terrestrial')

@@ -170,8 +170,14 @@ def activate(data_root=None):
                     # fenced ahead of it.
                     if not _same_intent(order_path,intent_identity):
                         intent_preceded = False
+                    if not _same_data_root(root,root_identity):
+                        intent_preceded = False
+                        raise ValueError('DATA_ROOT_CHANGED')
                     result = DurableOrderGateway(order_path).emergency_halt()
                     durable_halt = _halt_confirmed(result)
+                    if not _same_data_root(root,root_identity):
+                        durable_halt = False
+                        raise ValueError('DATA_ROOT_CHANGED')
                 else:raise ValueError('DATA_ROOT_CHANGED')
             finally:
                 # Reassert after SQLite so a concurrently finishing explicit
@@ -207,6 +213,12 @@ def activate(data_root=None):
     # remains sampled evidence; a later explicit reset is still possible.
     final_intent = bool(root_stable and final_intent and
         _same_intent(order_path,final_intent_identity))
+    # Bracket the last latch sample with the data-root identity.  A same-inode
+    # latch moved into a replacement root during ``_same_intent`` must not keep
+    # the earlier root sample authoritative for the public VERIFIED result.
+    root_stable = bool(root_stable and
+        _same_data_root(root,root_identity))
+    final_intent = bool(root_stable and final_intent)
     verified = root_stable and intent_preceded and durable_halt and final_intent
     return dict(mode='NEXUS_LOCAL_PAPER_EMERGENCY_STOP',passed=verified,
         halted=final_intent or durable_halt,

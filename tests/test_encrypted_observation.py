@@ -103,6 +103,36 @@ def test_cli_password_mismatch_and_missing_parent_are_not_success(tmp_path,monke
     assert capsys.readouterr().out.strip()=='ENCRYPTED_OBSERVATION_FAILED'
 
 
+def test_private_paths_pin_resolved_parent_and_preserve_leaf_name(tmp_path):
+    private=tmp_path/'private';private.mkdir()
+    alias=private/'caller-alias-component';alias.mkdir()
+    source=private/'original.json';source.write_bytes(plaintext())
+    output=private/'copy.nexusenc'
+    assert encrypted._private_path(alias/'..'/source.name)==source
+    assert encrypted._private_path(alias/'..'/output.name)==output
+
+
+def test_cli_output_stays_in_pinned_parent_across_prompt_alias_swap(
+        tmp_path,monkeypatch,capsys):
+    if os.name=='nt':pytest.skip('No Windows symlink privilege assumed')
+    first=tmp_path/'first';second=tmp_path/'second';first.mkdir();second.mkdir()
+    source=first/'original.json';source.write_bytes(plaintext())
+    alias=tmp_path/'active';alias.symlink_to(first,target_is_directory=True)
+    replies=iter([PHRASE,PHRASE])
+    def swap_then_reply(_):
+        value=next(replies)
+        if alias.is_symlink():
+            alias.unlink();alias.symlink_to(second,target_is_directory=True)
+        return value
+    monkeypatch.setattr(encrypted.getpass,'getpass',swap_then_reply)
+    monkeypatch.setattr(sys,'argv',['tool','seal',str(alias/source.name),
+        '--output',str(alias/'copy.nexusenc')])
+    assert encrypted.main()==0
+    assert capsys.readouterr().out.strip()=='ENCRYPTED_COPY_CREATED'
+    assert (first/'copy.nexusenc').is_file()
+    assert not (second/'copy.nexusenc').exists()
+
+
 def test_bounded_source_read_does_not_accept_oversized_or_nonregular_files(tmp_path):
     source=tmp_path/'large';source.write_bytes(b'x'*101)
     with pytest.raises(ValueError,match='^ENCRYPTED_OBSERVATION_FAILED$'):encrypted._read(source,100)

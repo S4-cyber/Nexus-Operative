@@ -1,5 +1,15 @@
 # Nexus Operative continuity instructions
 
+## v0.340.305 private observation parent-path binding
+
+The private observation encryption tool checked resolved source and output paths but retained caller parent-alias spellings across the hidden passphrase prompt. A mutable parent alias could redirect the later exclusive encrypted or plaintext copy creation away from the path that passed preflight.
+
+v0.340.305 freezes each resolved parent before reading or prompting while retaining the selected leaf name for O_NOFOLLOW/O_EXCL rejection. Direct leaf symlinks, existing outputs, malformed observations, incorrect passphrases and protected checkout/install paths still fail closed. The tool still never overwrites or deletes the original.
+
+No Portal control or modifiable parameter changed, so seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain intact. This is sampled local private-evidence path-scope hardening, not an ACL/administrator boundary, secure deletion, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, funding/live/cloud readiness or release approval. Rough implementation remains weighted 38% (roughly 30–45%, low confidence), with 0/9 major stages fully accepted. Release approval and trading permission remain false; historical results and synthetic scores are not future profit predictions.
+
+The direct encryption and portable-observation scope passed 82 tests and the finalized release/version/roadmap/evidence/Windows-workflow scope passed 185, both with two existing dependency warnings. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `84142cee52e78b4d8fb0f7030cc578670e615882b8dac40b221b3acdbcf79c62`; `validation/release_trials_0_340_305.json` SHA256 is `660ca27c425eb82be4e37e25230153e20714b44c53068e80f6225b9f31ae67a0`. Compilation, dependency integrity, deterministic-roadmap equality and Portal JavaScript syntax passed. The 162-member v0.340.305 wheel reports the synchronized version and has SHA256 `4bfaf38e6168a082a13454bd98e06ff583da30b16ba5f58421582b2a5e7c1ecb`. Public-artifact and hosted exact-source gates remain mandatory.
+
 ## v0.340.304 activity-acceptance parent-path binding
 
 The activity-acceptance probe validated resolved private paths but retained the caller's original parent-alias spelling when constructing pacing, activity-retention and acceptance journals or opening the private order input. A mutable parent alias could therefore redirect a later component resolution away from the path set that passed preflight.

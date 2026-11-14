@@ -44,11 +44,16 @@ def _fail():raise ValueError('ENCRYPTED_OBSERVATION_FAILED') from None
 def _private_path(value):
     path=Path(value)
     try:
-        absolute=path.absolute();resolved=path.resolve();protected=[ROOT]
+        absolute=path.absolute()
+        # Freeze the caller-selected parent before a hidden passphrase prompt
+        # can delay the later source open or exclusive output creation.  Keep
+        # the leaf name intact so O_NOFOLLOW/O_EXCL still reject leaf aliases.
+        pinned=absolute.parent.resolve()/absolute.name
+        resolved=pinned.resolve();protected=[ROOT]
         if getattr(sys,'frozen',False):protected.append(Path(sys.executable).resolve().parent)
     except (OSError,RuntimeError):_fail()
     if any(absolute.is_relative_to(folder) or resolved.is_relative_to(folder) for folder in protected):_fail()
-    return path
+    return pinned
 
 
 def _derive(passphrase,salt):

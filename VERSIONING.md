@@ -1,6 +1,14 @@
 # Nexus Operative versioning and launch gates
 
-**Current development build: 0.340.304 (pre-release).**
+**Current development build: 0.340.305 (pre-release).**
+
+## v0.340.305 private observation parent-path binding
+
+This pre-release pins the resolved parent of private observation source and output paths before the hidden passphrase prompt. The selected leaf name remains intact for O_NOFOLLOW and O_EXCL enforcement, preventing a mutable parent alias from redirecting the later read or copy while preserving direct-symlink and existing-output rejection.
+
+No user control or editable parameter changed, so the seven-tab beginner layout and black/bright-purple bottom-right hover help remain unchanged. Permissions remain OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are preserved. This is sampled local private-evidence path-scope hardening, not an ACL/administrator boundary, secure deletion, broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval.
+
+The direct encryption and portable-observation scope passed 82 tests and the finalized release/version/roadmap/evidence/Windows-workflow scope passed 185, both with two existing dependency warnings. Sixteen bounded profiles and saved evidence verify against 403 source files / `84142cee52e78b4d8fb0f7030cc578670e615882b8dac40b221b3acdbcf79c62`; evidence SHA256 is `660ca27c425eb82be4e37e25230153e20714b44c53068e80f6225b9f31ae67a0`. The 162-member wheel reports v0.340.305 and has SHA256 `4bfaf38e6168a082a13454bd98e06ff583da30b16ba5f58421582b2a5e7c1ecb`. Public scanning and hosted Windows/security/browser/installer gates are still required. Implementation remains a rough weighted 38% (30–45%, low confidence), 0/9 stages accepted; release approval and trading permission are false. Historical and synthetic results are not future profit predictions.
 
 ## v0.340.304 activity-acceptance parent-path binding
 

@@ -63,8 +63,10 @@ def _same_directory(path,identity):
         before=path.lstat()
         resolved_after=path.resolve(strict=True)
         after=path.lstat()
+        resolved_final=path.resolve(strict=True)
     except OSError:return False
     return (resolved_before==path and resolved_after==path
+        and resolved_final==path
         and stat.S_ISDIR(before.st_mode) and stat.S_ISDIR(after.st_mode)
         and os.path.samestat(identity,before)
         and os.path.samestat(before,after))

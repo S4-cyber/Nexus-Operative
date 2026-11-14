@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.313'
+REVISION = '0.340.314'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -941,6 +941,13 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the source-bound Windows regression and packaging lane now has a finite 150-minute outer budget and a separate 20-minute distribution-evidence tail after exact development run 43595758062 exhausted the old 120-minute budget only after full regression, EXE, install/reinstall, prior-version recovery, uninstall and phase review had passed' if item.id == 'M1' else ''),
     item.remaining) for item in MILESTONES)
 
+# Manual installer validation may bind an immutable stacked review commit, but
+# only after proving the current development head is its ancestor. The default
+# dispatch remains the refreshed exact development head.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; owner-dispatched Windows validation can bind one exact 40-character review commit only after proving it descends from the refreshed development head, while an omitted commit must equal that refreshed head' if item.id == 'M1' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -965,7 +972,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.313 preserves the complete source-bound Windows regression, EXE, installer, recovery and distribution-binding lane while increasing its finite outer budget from 120 to 150 minutes and bounding the release-trial/manifest tail at 20 minutes. Exact development run 43595758062 passed the complete test, Portal syntax, standalone private-tool, EXE startup, installer build, install/reinstall, prior-version recovery, data-preserving uninstall and phase-review steps before the old outer deadline cancelled the distribution-evidence tail; the cancelled run is not acceptance and fresh exact-source execution remains mandatory. Runtime behavior, OFF defaults, risk limits, account checks, fail-closed exits and independent emergency stop are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.314 adds an immutable manual Windows release-validation path for stacked review commits. A supplied source must be one exact lowercase 40-character SHA, must be the checked-out commit and must descend from the freshly fetched development head before any repository code runs; omitting it requires the checkout to equal that refreshed head. Existing push binding, the 150-minute outer budget, 20-minute evidence tail and every regression, EXE, installer, recovery, distribution-binding and upload gate remain mandatory. This enables exact-source review but is not a successful Windows run or acceptance. Runtime behavior, OFF defaults, risk limits, account checks, fail-closed exits and independent emergency stop are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

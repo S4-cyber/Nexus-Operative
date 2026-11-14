@@ -38,6 +38,16 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert 'timeout-minutes: 150' in workflow
     assert 'name: Create distribution checksum manifest\n        timeout-minutes: 20' in workflow
     assert 'old 120m deadline cancelled' in workflow
+    assert "source_commit:\n        description: 'Optional exact 40-character commit descended from the current development head'" in workflow
+    assert "required: false\n        default: ''" in workflow
+    assert 'fetch-depth: 0' in workflow
+    assert "REQUESTED_SOURCE_COMMIT: ${{ inputs.source_commit }}" in workflow
+    assert "if ($requested -cnotmatch '^[0-9a-f]{40}$')" in workflow
+    assert 'git fetch --no-tags origin development/windows-portal-foundation:refs/remotes/origin/development/windows-portal-foundation' in workflow
+    assert 'git merge-base --is-ancestor $development $actual' in workflow
+    assert 'Requested source commit is not descended from the current development head' in workflow
+    assert 'Mutable development dispatch did not resolve to its refreshed head' in workflow
+    assert workflow.index('git merge-base --is-ancestor $development $actual') < workflow.index('NEXUS_SOURCE_COMMIT=$actual')
     assert './tools/windows_installer_smoke.ps1' in workflow
     assert 'name: Validate installer phase evidence\n        timeout-minutes: 1' in workflow
     assert 'python tools/windows_installer_phase_review.py --input' in workflow

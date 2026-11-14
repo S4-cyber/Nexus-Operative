@@ -12,6 +12,11 @@ on:
         default: development/windows-portal-foundation
         options:
           - development/windows-portal-foundation
+      source_commit:
+        description: 'Optional exact 40-character commit descended from the current development head'
+        type: string
+        required: false
+        default: ''
 concurrency:
   group: nexus-windows-${{ github.ref }}
   cancel-in-progress: false
@@ -29,13 +34,37 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-          ref: ${{ github.event_name == 'push' && github.sha || inputs.source_branch || 'development/windows-portal-foundation' }}
-      - name: Bind push evidence to the triggering source commit
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'push' && github.sha || inputs.source_commit || inputs.source_branch || 'development/windows-portal-foundation' }}
+      - name: Bind evidence to an exact reviewed source commit
+        env:
+          REQUESTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
         shell: pwsh
         run: |
           $actual = git rev-parse HEAD
-          if ('${{ github.event_name }}' -eq 'push' -and $actual -ne $env:GITHUB_SHA) {
+          $eventName = '${{ github.event_name }}'
+          $requested = "$env:REQUESTED_SOURCE_COMMIT".Trim()
+          if ($eventName -eq 'push' -and $actual -ne $env:GITHUB_SHA) {
             throw 'Checked-out source does not match triggering push SHA'
+          }
+          if ($eventName -eq 'workflow_dispatch') {
+            git fetch --no-tags origin development/windows-portal-foundation:refs/remotes/origin/development/windows-portal-foundation
+            if ($LASTEXITCODE -ne 0) { throw 'Could not refresh the reviewed development head' }
+            $development = git rev-parse refs/remotes/origin/development/windows-portal-foundation
+            if ($requested) {
+              if ($requested -cnotmatch '^[0-9a-f]{40}$') {
+                throw 'Manual source commit must be one exact lowercase 40-character SHA'
+              }
+              if ($actual -cne $requested) {
+                throw 'Checked-out source does not match requested exact commit'
+              }
+              git merge-base --is-ancestor $development $actual
+              if ($LASTEXITCODE -ne 0) {
+                throw 'Requested source commit is not descended from the current development head'
+              }
+            } elseif ($actual -ne $development) {
+              throw 'Mutable development dispatch did not resolve to its refreshed head'
+            }
           }
           Add-Content -Path $env:GITHUB_ENV -Value "NEXUS_SOURCE_COMMIT=$actual" -Encoding UTF8
       - name: Check out pinned prior-version recovery fixture source

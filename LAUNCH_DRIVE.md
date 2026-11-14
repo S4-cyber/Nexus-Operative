@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.305 private observation parent-path binding
+
+The private observation encryption tool previously retained caller parent-alias spellings across the hidden passphrase prompt after validating their resolved targets. This pre-release freezes each resolved parent before the source read and output creation while retaining leaf-level no-follow and exclusive-create enforcement. Existing authenticated encryption, strict portable-observation validation, private prompting, no-overwrite behavior and authority denials remain required.
+
+This change adds no Portal control or editable parameter; seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. Engagement remains OFF by default, with limits, account checks, fail-closed exits and the independent emergency cut intact. It is sampled local private-evidence hardening, not an ACL/administrator boundary, secure deletion, broker/account or source acceptance, a genuine or sustained market trial, profitability, native Windows ordinary-user acceptance, funding/live/cloud readiness or release approval. Historical and synthetic results are not future profit predictions.
+
+The direct encryption/portable-observation scope passed 82 tests and the finalized release/version/roadmap/evidence/Windows-workflow scope passed 185, both with two existing dependency warnings. All sixteen bounded profiles and saved evidence verify against 403 source files / `84142cee52e78b4d8fb0f7030cc578670e615882b8dac40b221b3acdbcf79c62`; evidence SHA256 is `660ca27c425eb82be4e37e25230153e20714b44c53068e80f6225b9f31ae67a0`. The synchronized 162-member wheel SHA256 is `4bfaf38e6168a082a13454bd98e06ff583da30b16ba5f58421582b2a5e7c1ecb`. Public audit and fresh exact-source hosted gates remain required. Weighted implementation remains 38% (roughly 30–45%, low confidence), with 0/9 independently accepted stages; release approval and trading permission remain false.
+
 ## v0.340.304 activity-acceptance parent-path binding
 
 The activity-acceptance composition previously validated resolved private paths but passed original caller spellings into later journal and input operations. This pre-release freezes each resolved parent before component construction or file opening while keeping the leaf name visible to no-follow symlink checks. Existing path separation, bounds, account binding, exact heads, replay and fail-closed authority denials remain required.

@@ -1,12 +1,12 @@
 # Nexus Operative — read-only 1.0 roadmap
 
-Revision: 0.340.304. Branch: `development/windows-portal-foundation`.
+Revision: 0.340.305. Branch: `development/windows-portal-foundation`.
 
 Generated from `nexus/release_roadmap.py`. View in PORTAL or `GET /api/roadmap`. Changes require source review; the application has no roadmap write endpoint.
 
 Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.
 
-Current hardening: v0.340.304 freezes the resolved parent of every activity-acceptance pacing, retention, acceptance and private order-input path before journal composition or file opening while preserving no-follow rejection of a symlink at the selected leaf. Caller parent-alias spellings can no longer retarget later component resolution away from the preflighted path set. Existing distinct-path, bounded-file, exact-head, account, replay, read-only failure and authority-denial checks remain mandatory. This is sampled local activity-acceptance path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 major stages fully accepted.
+Current hardening: v0.340.305 freezes the resolved parent of both the private observation source and exclusive output path before any hidden passphrase prompt. The final selected filename remains separately visible to O_NOFOLLOW and O_EXCL, so a direct leaf symlink or existing destination still fails closed while a mutable parent alias cannot redirect the later read or encrypted/plaintext copy creation. Existing bounded input, authenticated encryption, strict observation validation, private terminal prompt, no-overwrite behavior and authority denials remain mandatory. This is sampled local private-evidence path-scope hardening, not an ACL/administrator boundary, secure deletion, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 major stages fully accepted.
 
 ```mermaid
 flowchart TD

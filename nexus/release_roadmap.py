@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.305'
+REVISION = '0.340.306'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -951,7 +951,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.305 freezes the resolved parent of both the private observation source and exclusive output path before any hidden passphrase prompt. The final selected filename remains separately visible to O_NOFOLLOW and O_EXCL, so a direct leaf symlink or existing destination still fails closed while a mutable parent alias cannot redirect the later read or encrypted/plaintext copy creation. Existing bounded input, authenticated encryption, strict observation validation, private terminal prompt, no-overwrite behavior and authority denials remain mandatory. This is sampled local private-evidence path-scope hardening, not an ACL/administrator boundary, secure deletion, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% (weighted 38%; 30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.306 preserves caller-selected leaf names while freezing parent directories in the provider POST activity, fee-reference and known-fee reserve read-only compositions. Existing no-follow identity and bounded-fingerprint guards now see selected leaf symlinks and hardlinks rather than a silently resolved target. Twenty-seven new parametrized regression cases cover initial selected-leaf symlinks, mid-review symlink replacement and hardlink aliases with private journal preservation assertions. Existing exact heads, store binding, independent replay, fail-closed authority denials, OFF defaults, risk limits, account checks and independent emergency stop remain mandatory. This is sampled local path-scope hardening, not an atomic multi-file snapshot, ACL or administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -1,5 +1,15 @@
 # Nexus Operative continuity instructions
 
+## v0.340.304 activity-acceptance parent-path binding
+
+The activity-acceptance probe validated resolved private paths but retained the caller's original parent-alias spelling when constructing pacing, activity-retention and acceptance journals or opening the private order input. A mutable parent alias could therefore redirect a later component resolution away from the path set that passed preflight.
+
+v0.340.304 resolves and freezes each selected parent before composition while retaining the final filename separately so a symlink at the selected leaf is still rejected by no-follow inspection. Existing related-path, bounded-file, exact-head, account-binding, replay, read-only failure and authority-denial checks remain mandatory.
+
+No Portal control or modifiable parameter changed, so seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain intact. This is sampled local activity-acceptance path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, funding/live/cloud readiness or release approval. Rough implementation remains weighted 38% (roughly 30–45%, low confidence), with 0/9 major stages fully accepted. Release approval and trading permission remain false; historical results and synthetic scores are not future profit predictions.
+
+The direct acceptance/path suite passed 159 tests, the broader request/replay/account/quality/pacing scope passed 228, and the finalized release/version/roadmap/evidence/Windows-workflow scope passed 185, each with two existing dependency warnings. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `2f96c5c0073a00702ad7f085b51ba93f21827b70c3c5f6d706871a02b6b09f64`; `validation/release_trials_0_340_304.json` SHA256 is `bb8917776a8172fa080d3a25e0c6594b7c26e4fcb97ecd2d702545a07dbf77ce`. Compilation, dependency integrity, deterministic-roadmap equality and Portal JavaScript syntax passed. The 162-member v0.340.304 wheel reports the synchronized version and has SHA256 `439e68511d68d9a05975987b425528b767200e5a6a1b88d114c5166aaf67130f`. Public-artifact and hosted exact-source gates remain mandatory.
+
 ## v0.340.303 provider reconciliation chain parent-alias binding
 
 The provider-POST activity, fee-reference and known-fee reserve compositions froze caller path objects and repeatedly checked their five-file sets, but retained original parent-alias spellings for the pacing, activity and acceptance journals. A parent alias could switch to different stable journals inside one semantic subread and switch back before the next sampled identity check.

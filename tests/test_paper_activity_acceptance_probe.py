@@ -109,6 +109,22 @@ def test_all_private_paths_must_be_distinct_before_vault_or_network(vault,tmp_pa
     assert vault.reads==0 and not opener.requests and not activity.exists()
 
 
+def test_private_parent_aliases_are_pinned_before_component_construction(tmp_path):
+    private=tmp_path/'private';private.mkdir()
+    alias=private/'caller-alias-component';alias.mkdir()
+    supplied={name:alias/'..'/f'{name}.sqlite3' for name in
+        ('pacing','activity','acceptance')}
+    account,pacing,activity,acceptance=probe._paths(ACCOUNT,
+        supplied['pacing'],supplied['activity'],supplied['acceptance'])
+    assert account==ACCOUNT
+    assert pacing.path==private/'pacing.sqlite3'
+    assert activity.path==private/'activity.sqlite3'
+    assert acceptance.path==private/'acceptance.sqlite3'
+    order=private/'orders.json';order.write_text('[]',encoding='utf-8')
+    pinned,resolved=probe._private_path(alias/'..'/'orders.json')
+    assert pinned==order and resolved==order
+
+
 @pytest.mark.parametrize('kind',['duplicate-json','symlink','hardlink','directory'])
 def test_unsafe_order_input_is_rejected_before_vault_or_network(vault,tmp_path,kind):
     source,pacing,activity,acceptance=paths(tmp_path);opener=Opener()

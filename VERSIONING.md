@@ -1,10 +1,16 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.318 provider-POST first-write recovery
+
+The local provider-POST pacing journal now removes only its exact captured empty regular single-link main file after a failed first setup or transaction, and only when no SQLite sidecar exists. Replacement, bytes, links, sidecars or cleanup uncertainty remain retained and blocked. This is local fail-closed retry hygiene, not automatic provider retry, broker-wide pacing, account acceptance, routing permission, native durability or release acceptance.
+
+**Current development build: 0.340.318 (pre-release).**
+
 ## v0.340.317 exact Windows emergency-parent lease
 
 The native emergency-latch lease now opens the exact public Windows parent path with `OPEN_REPARSE_POINT` instead of following a pre-resolved path, and validates the resulting handle as a directory without reparse attributes before any latch entry access. A late junction or symlink replacement therefore fails closed rather than leasing its redirected target. The Windows regression contract also now recognizes ordinary access denial when the still-open latch file itself blocks a parent rename; that is conservative prevention, not evidence that the sampled-identity fence failed. PR #28's Windows regression failure remains recorded and is not dismissed as flaky. POSIX directory descriptors and fsync remain unchanged. This is not administrator/ACL isolation, distributed coordination or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
 
-**Current development build: 0.340.317 (pre-release).**
+**Previous development build: 0.340.317 (pre-release).**
 
 ## v0.340.316 native Windows emergency-latch directory lease
 

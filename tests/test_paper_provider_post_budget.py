@@ -58,6 +58,71 @@ def test_exact_head_initialization_creates_only_provider_binding(tmp_path):
     assert budget.path.read_bytes()==before
 
 
+def test_failed_first_transaction_restores_absence_and_exact_retry(tmp_path):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    with pytest.raises(ValueError,match='HEAD_CHANGED'):
+        begin(budget,head='f'*64)
+    assert not path.exists()
+    assert all(not path.with_name(path.name+suffix).exists() for suffix in
+        ('-journal','-wal','-shm'))
+    owner,token=begin(budget);head=finish(budget,owner,token)
+    assert path.is_file() and budget.inspect()['head_sha256']==head
+
+
+def test_fresh_connection_failure_restores_absence_and_exact_retry(
+        tmp_path,monkeypatch):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    original=subject.sqlite3.connect;failed=False
+    def connect(*args,**kwargs):
+        nonlocal failed
+        if not failed:
+            failed=True
+            raise sqlite3.OperationalError('injected first connect failure')
+        return original(*args,**kwargs)
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    with pytest.raises(sqlite3.OperationalError,
+            match='injected first connect failure'):
+        budget.ensure_initialized(expected_head=ZERO)
+    assert failed and not path.exists()
+    result=budget.ensure_initialized(expected_head=ZERO)
+    assert result['provider_binding_initialized'] is True
+    assert path.is_file() and budget.inspect()['attempts']==0
+
+
+def test_uncommitted_cleanup_never_deletes_ambiguous_state(tmp_path):
+    path=tmp_path/'post.sqlite3';path.touch(mode=0o600)
+    observed=path.lstat()
+    identity=(str(path.resolve()),observed.st_dev,observed.st_ino)
+
+    replacement=tmp_path/'replacement.sqlite3'
+    replacement.touch(mode=0o600);os.replace(replacement,path)
+    with pytest.raises(ValueError,match='UNCOMMITTED_CLEANUP_UNCERTAIN'):
+        subject._discard_uncommitted_new(path,identity)
+    assert path.exists()
+
+    observed=path.lstat()
+    identity=(str(path.resolve()),observed.st_dev,observed.st_ino)
+    sidecar=path.with_name(path.name+'-journal');sidecar.write_bytes(b'private')
+    with pytest.raises(ValueError,match='UNCOMMITTED_CLEANUP_UNCERTAIN'):
+        subject._discard_uncommitted_new(path,identity)
+    assert path.exists() and sidecar.read_bytes()==b'private'
+
+    sidecar.unlink();path.write_bytes(b'private uncommitted state')
+    observed=path.lstat()
+    identity=(str(path.resolve()),observed.st_dev,observed.st_ino)
+    with pytest.raises(ValueError,match='UNCOMMITTED_CLEANUP_UNCERTAIN'):
+        subject._discard_uncommitted_new(path,identity)
+    assert path.read_bytes()==b'private uncommitted state'
+
+    linked=tmp_path/'linked.sqlite3';linked.touch(mode=0o600)
+    alias=tmp_path/'linked-alias.sqlite3';os.link(linked,alias)
+    observed=linked.lstat()
+    identity=(str(linked.resolve()),observed.st_dev,observed.st_ino)
+    with pytest.raises(ValueError,match='UNCOMMITTED_CLEANUP_UNCERTAIN'):
+        subject._discard_uncommitted_new(linked,identity)
+    assert linked.exists() and alias.exists()
+
+
 def test_pending_receipt_is_read_only_hash_bound_and_requires_active_lease(tmp_path):
     path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
     owner,token=begin(budget);before=path.read_bytes()

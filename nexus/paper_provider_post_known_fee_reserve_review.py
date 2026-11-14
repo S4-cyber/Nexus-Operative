@@ -97,7 +97,10 @@ def _stable_reader(post_budget, journal, store_binding, paths,
 
 def _frozen_path(value, code):
     try:
-        return Path(value).resolve()
+        # Pin the parent but retain the caller-selected leaf for lstat/O_NOFOLLOW.
+        # Resolving the whole path here would hide a final-component symlink.
+        path = Path(value).absolute()
+        return path.parent.resolve() / path.name
     except (TypeError, ValueError, OSError, RuntimeError, AttributeError):
         _fail(code)
 

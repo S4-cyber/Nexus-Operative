@@ -163,6 +163,51 @@ def test_new_data_root_is_not_created_until_after_priority_request(tmp_path,monk
     assert report['data_root_path_pinned'] is True and root.is_dir()
 
 
+def test_absent_data_root_ancestor_replacement_during_priority_prevents_creation(
+        tmp_path,monkeypatch):
+    parent=tmp_path/'selected';retired=tmp_path/'retired';parent.mkdir()
+    root=parent/'nested'/'state'
+    def priority():
+        parent.rename(retired);parent.mkdir()
+        return dict(attempted=False,confirmed=False,priority_class='STANDARD')
+    monkeypatch.setattr(emergency_priority,'request',priority)
+    from nexus.emergency_cut_tool import activate
+    with pytest.raises(ValueError,match='DATA_ROOT_CHANGED'):activate(root)
+    assert not root.exists() and not (retired/'nested'/'state').exists()
+
+
+def test_absent_data_root_ancestor_replacement_after_parent_creation_is_rejected(
+        tmp_path,monkeypatch):
+    parent=tmp_path/'selected';retired=tmp_path/'retired';parent.mkdir()
+    root=parent/'nested'/'state';original=Path.mkdir
+    def replace_after_parent(self,*args,**kwargs):
+        result=original(self,*args,**kwargs)
+        if self==root.parent:
+            parent.rename(retired);original(parent)
+        return result
+    monkeypatch.setattr(Path,'mkdir',replace_after_parent)
+    from nexus.emergency_cut_tool import activate
+    with pytest.raises(ValueError,match='DATA_ROOT_CHANGED'):activate(root)
+    assert not root.exists() and not (retired/'nested'/'state').exists()
+
+
+def test_absent_data_root_parent_replacement_after_root_creation_is_rejected(
+        tmp_path,monkeypatch):
+    parent=tmp_path/'selected';retired=tmp_path/'retired';parent.mkdir()
+    root=parent/'nested'/'state';original=Path.mkdir
+    def replace_after_root(self,*args,**kwargs):
+        result=original(self,*args,**kwargs)
+        if self==root:
+            parent.rename(retired);original(parent)
+        return result
+    monkeypatch.setattr(Path,'mkdir',replace_after_root)
+    from nexus.emergency_cut_tool import activate
+    with pytest.raises(ValueError,match='DATA_ROOT_CHANGED'):activate(root)
+    assert not root.exists()
+    assert (retired/'nested'/'state').is_dir()
+    assert not list((retired/'nested'/'state').iterdir())
+
+
 def test_data_root_replacement_during_priority_cannot_claim_verified_cut(tmp_path,monkeypatch):
     root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
     original=emergency_priority.request
